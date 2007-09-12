@@ -1,0 +1,94 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ProjectGuid>{bfc4c1c4-a556-480a-bd60-93c373de99f1}</ProjectGuid>
+    <MainSource>MiscUnits100.dpk</MainSource>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
+    <DCC_DependencyCheckOutputName>..\..\BPLs\MiscUnits100.bpl</DCC_DependencyCheckOutputName>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <Version>7.0</Version>
+    <DCC_DebugInformation>False</DCC_DebugInformation>
+    <DCC_LocalDebugSymbols>False</DCC_LocalDebugSymbols>
+    <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
+    <DCC_Define>RELEASE</DCC_Define>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <Version>7.0</Version>
+    <DCC_DcuOutput>..\..\..\dcus</DCC_DcuOutput>
+    <DCC_ObjOutput>..\..\..\dcus</DCC_ObjOutput>
+    <DCC_HppOutput>..\..\..\dcus</DCC_HppOutput>
+    <DCC_BplOutput>..\..\BPLs</DCC_BplOutput>
+    <DCC_DcpOutput>..\..\BPLs</DCC_DcpOutput>
+    <DCC_UnitSearchPath>..\..\BPLs</DCC_UnitSearchPath>
+    <DCC_ResourcePath>..\..\BPLs</DCC_ResourcePath>
+    <DCC_ObjPath>..\..\BPLs</DCC_ObjPath>
+    <DCC_IncludePath>..\..\BPLs</DCC_IncludePath>
+  </PropertyGroup>
+  <ProjectExtensions>
+    <Borland.Personality>Delphi.Personality</Borland.Personality>
+    <Borland.ProjectType>Package</Borland.ProjectType>
+    <BorlandProject>
+<BorlandProject><Delphi.Personality><Parameters><Parameters Name="UseLauncher">False</Parameters><Parameters Name="LoadAllSymbols">True</Parameters><Parameters Name="LoadUnspecifiedSymbols">False</Parameters></Parameters><Package_Options><Package_Options Name="PackageDescription">Colin Wilson - Miscellaneous Components</Package_Options><Package_Options Name="ImplicitBuild">True</Package_Options><Package_Options Name="DesigntimeOnly">False</Package_Options><Package_Options Name="RuntimeOnly">False</Package_Options></Package_Options><VersionInfo><VersionInfo Name="IncludeVerInfo">True</VersionInfo><VersionInfo Name="AutoIncBuild">False</VersionInfo><VersionInfo Name="MajorVer">10</VersionInfo><VersionInfo Name="MinorVer">0</VersionInfo><VersionInfo Name="Release">0</VersionInfo><VersionInfo Name="Build">1</VersionInfo><VersionInfo Name="Debug">False</VersionInfo><VersionInfo Name="PreRelease">False</VersionInfo><VersionInfo Name="Special">False</VersionInfo><VersionInfo Name="Private">False</VersionInfo><VersionInfo Name="DLL">False</VersionInfo><VersionInfo Name="Locale">2057</VersionInfo><VersionInfo Name="CodePage">1252</VersionInfo></VersionInfo><VersionInfoKeys><VersionInfoKeys Name="CompanyName">Colin Wilson</VersionInfoKeys><VersionInfoKeys Name="FileDescription">Miscellaneous Components for Borland Developer Studio 2006</VersionInfoKeys><VersionInfoKeys Name="FileVersion">10.0.0.1</VersionInfoKeys><VersionInfoKeys Name="InternalName">MiscUnits100.bpl</VersionInfoKeys><VersionInfoKeys Name="LegalCopyright">Copyright (c) Colin Wilson 2005</VersionInfoKeys><VersionInfoKeys Name="LegalTrademarks">All rights reserved</VersionInfoKeys><VersionInfoKeys Name="OriginalFilename">MiscUnits100.bpl</VersionInfoKeys><VersionInfoKeys Name="ProductName">Colin Wilson's Delphi Components</VersionInfoKeys><VersionInfoKeys Name="ProductVersion">10.0.0.1</VersionInfoKeys><VersionInfoKeys Name="Comments">Freeware.  All source released under MPL 1.1</VersionInfoKeys></VersionInfoKeys><Source><Source Name="MainSource">MiscUnits100.dpk</Source></Source></Delphi.Personality></BorlandProject></BorlandProject>
+  </ProjectExtensions>
+  <Import Project="$(MSBuildBinPath)\Borland.Delphi.Targets" />
+  <ItemGroup>
+    <DelphiCompile Include="MiscUnits100.dpk">
+      <MainSource>MainSource</MainSource>
+    </DelphiCompile>
+    <DCCReference Include="C:\ImageTypes100.dcp" />
+    <DCCReference Include="C:\LowLevel100.dcp" />
+    <DCCReference Include="C:\rtl.dcp" />
+    <DCCReference Include="C:\vcl.dcp" />
+    <DCCReference Include="C:\vclie.dcp" />
+    <DCCReference Include="cmpColorSelector.pas" />
+    <DCCReference Include="cmpCountryComboBox.pas" />
+    <DCCReference Include="cmpCWRichEdit.pas" />
+    <DCCReference Include="cmpCWSpellChecker.pas" />
+    <DCCReference Include="cmpExplorerTree.pas" />
+    <DCCReference Include="cmpExSplitter.pas" />
+    <DCCReference Include="cmpExToolBar.pas" />
+    <DCCReference Include="cmpExWebBrowser.pas" />
+    <DCCReference Include="cmpFakeCombobox.pas" />
+    <DCCReference Include="cmpFileCopier.pas" />
+    <DCCReference Include="cmpHexDump.pas" />
+    <DCCReference Include="cmpHyperlinkButton.pas" />
+    <DCCReference Include="cmpIniFilePersistentOptions.pas" />
+    <DCCReference Include="cmpMessageDisplay.pas" />
+    <DCCReference Include="cmpMRUList.pas" />
+    <DCCReference Include="cmpNewsRichEdit.pas" />
+    <DCCReference Include="cmpNTAboutBox.pas" />
+    <DCCReference Include="cmpPersistentOptions.pas" />
+    <DCCReference Include="cmpPersistentPosition.pas" />
+    <DCCReference Include="cmpPropertyListBox.pas" />
+    <DCCReference Include="cmpRegistryPersistentOptions.pas" />
+    <DCCReference Include="cmpRuler.pas" />
+    <DCCReference Include="cmpRunOnce.pas" />
+    <DCCReference Include="cmpSizingPageControl.pas" />
+    <DCCReference Include="cmpSpellChecker.pas" />
+    <DCCReference Include="cmpSplitterPanel.pas" />
+    <DCCReference Include="cmpStandardSystemMenu.pas" />
+    <DCCReference Include="cmpSuDoku.pas" />
+    <DCCReference Include="cmpTextDisplay.pas" />
+    <DCCReference Include="cmpTexturedPanel.pas" />
+    <DCCReference Include="cmpThemedScrollBox.pas" />
+    <DCCReference Include="cmpTrayIcon.pas" />
+    <DCCReference Include="cmpUCtrls.pas" />
+    <DCCReference Include="cmpUserDatabase.pas" />
+    <DCCReference Include="cmpXMLPersistentOptions.pas" />
+    <DCCReference Include="CustomAlignPanel.pas" />
+    <DCCReference Include="ExCoolBar.pas" />
+    <DCCReference Include="ImageTypes.dcp" />
+    <DCCReference Include="ImageTypes1.dcp" />
+    <DCCReference Include="ImageTypes10.dcp" />
+    <DCCReference Include="ImageTypes9.dcp" />
+    <DCCReference Include="ImageTypes90.dcp" />
+    <DCCReference Include="MiscUnitsReg.pas" />
+    <DCCReference Include="SpellCheckerForm.pas" />
+    <DCCReference Include="unitHTMLHelpViewer.pas" />
+    <DCCReference Include="unitHTMLStringsDisplayObject.pas" />
+    <DCCReference Include="unitNewsStringsDisplayObject.pas" />
+  </ItemGroup>
+</Project>
