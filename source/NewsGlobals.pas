@@ -385,6 +385,12 @@ var
   s1, s2 : string;
   ch : char;
   encoder : TidEncoderQuotedPrintable;
+
+  function IsURL(const S1: string): Boolean;
+  begin
+    Result := ContainsText(S1, '://') and not ContainsText(S1, ' ');
+  end;
+
 begin
   holdQuotedPrintable := False;
   i := 0;
@@ -427,7 +433,7 @@ begin
       len := Length (s1);
 
       holdQuotedPrintable := False;
-      if len >ml then
+      if (len >ml) and not IsURL(s1) then
       begin
         p := ml;
         while (p > 0) and not (s1 [p] in [#9, ' ']) do
