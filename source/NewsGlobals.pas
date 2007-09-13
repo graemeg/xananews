@@ -80,11 +80,11 @@ var
   gReadLnDelay : Integer = 0;
 
 resourcestring
-  rstConfirmMakeDormant = 'Making a group dormant removes it from all batches and sets its default actions to ''do nothing'''#13#10#13#10'Are you sure you want to make %s dormant';
-  rstConfirmUnsubscribe = 'Are you sure you want to delete all messages for %s';
+  rstConfirmMakeDormant = 'Making a group dormant removes it from all batches and sets its default actions to ''do nothing'''#13#10#13#10'Are you sure you want to make %s dormant?';
+  rstConfirmUnsubscribe = 'Are you sure you want to delete all messages for %s?';
   rstSelectedGroups = 'the selected groups';
-  rstOutstandingMessages = 'There are unposted messages in the queue.  Do you want to save them so that they can be sent when you next run XanaNews';
-  rstOutstandingEditors = 'There are open message editors.  Do you want to discard their contents';
+  rstOutstandingMessages = 'There are unposted messages in the queue.  Do you want to save them so that they can be sent when you next run XanaNews?';
+  rstOutstandingEditors = 'There are open message editors.  Do you want to discard their contents?';
   rstSubject = 'Subject';
   rstPostingHost = 'NNTP Posting Host';
   rstOK = 'OK';
@@ -95,7 +95,7 @@ resourcestring
   rstConnectingTo = 'Connecting to %s';
   rstDone = 'Done';
   rstFrom = 'from';
-  rstCloseConnection = 'Do you want to disconnect from the internet';
+  rstCloseConnection = 'Do you want to disconnect from the internet?';
 
   rstQueuedPending = 'Queued.  %s will go next';
   rstGettingArticles = 'Getting articles for %s';
@@ -108,16 +108,16 @@ resourcestring
   rstGetArticleBodyFrom = 'Get article body from ';
 
   rstAnyAvailable = 'Any Available';
-  rstDeleteMessage = 'Are you sure you want delete all account details and messages for %s';
+  rstDeleteMessage = 'Are you sure you want delete all account details and messages for %s?';
   rstSelectedAccounts = 'the selected accounts';
 
   rstArticleFolders = 'Archived Messages';
   rstPurgedMessages = 'Purged Messages';
   rstDefaultFolderName = '%s - Messages';
-  rstIsNewAccount = '%s is a new account.  Do you want to download its newsgroups list now';
-  rstNewGroupsAvaliable = 'There are new newsgroups available on %s.  Do you want to review them now';
+  rstIsNewAccount = '%s is a new account.  Do you want to download its newsgroups list now?';
+  rstNewGroupsAvaliable = 'There are new newsgroups available on %s.  Do you want to review them now?';
   rstAdminOnly = 'You can only change the default newsreader if you are an Administrator or Power User';
-  rstConfirmDefaultNewsreader = 'Settings for the previous default newsreader will be lost.'#13#10#13#10'Are you sure you want to make XanaNews your default newsreader';
+  rstConfirmDefaultNewsreader = 'Settings for the previous default newsreader will be lost.'#13#10#13#10'Are you sure you want to make XanaNews your default newsreader?';
   rstDefaultIdentity = 'Default Identity';
 
   rstMail = 'Mail';

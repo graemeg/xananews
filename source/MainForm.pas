@@ -1803,7 +1803,7 @@ begin { actArticleReplyToArticleExecute }
 
     if SameText (article.Header ['Followup-To'], 'poster') then
     begin
-      mr := MessageBox (handle, 'The author of this message has indicated that they want to receive follow-ups by E-Mail.  '#13#10#13#10'Do you want to send your reply by E-Mail', 'XanaNews', MB_YESNOCANCEL or MB_ICONQUESTION);
+      mr := MessageBox (handle, 'The author of this message has indicated that they want to receive follow-ups by E-Mail.  '#13#10#13#10'Do you want to send your reply by E-Mail?', 'XanaNews', MB_YESNOCANCEL or MB_ICONQUESTION);
       if (mr = IDYES) or (mr = IDCANCEL) then
       begin
         if mr = IDYES then
@@ -1913,7 +1913,7 @@ begin
   node := vstSubscribed.FocusedNode;
   fldr := GetNodeArticleFolder (node);
   if Assigned (fldr) and not (fldr is TPurgedMessages) and not (fldr is TSentMessages) and
-     (MessageBox (Handle, PChar (Format ('Are you sure you want to delete folder %s', [fldr.Name])), PChar (Application.Title), MB_YESNO or MB_DEFBUTTON2) = ID_YES) then
+     (MessageBox (Handle, PChar (Format ('Are you sure you want to delete folder %s?', [fldr.Name])), PChar (Application.Title), MB_YESNO or MB_DEFBUTTON2) = ID_YES) then
   begin
     BeginPurge (fldr);
     SendMessage (handle, WM_GROUPSCHANGING, 0, 0);
@@ -9799,7 +9799,7 @@ end;
 
 procedure TfmMain.actToolsTestCrashExecute(Sender: TObject);
 begin
-  if Windows.MessageBox (Handle, 'Do you want XanaNews to crash', 'Crash XanaNews', MB_YESNO or MB_DEFBUTTON2 or MB_ICONSTOP) = IDYES then
+  if Windows.MessageBox (Handle, 'Do you want XanaNews to crash?', 'Crash XanaNews', MB_YESNO or MB_DEFBUTTON2 or MB_ICONSTOP) = IDYES then
   begin
     fLastFocusedArticleContainer := Nil;
     MessageBeep (fLastFocusedArticleContainer.FirstArticle.CodePage)
