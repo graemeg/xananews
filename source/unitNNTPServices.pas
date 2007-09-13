@@ -1724,7 +1724,7 @@ begin
     else
     begin
       fNNTPSettings.SetIdentityName(NNTPAccounts.Identities.DefaultIdentity.Name);
-      fDisplaySettings.DefaultCodepage := CP_USASCII;
+      fDisplaySettings.DefaultCodepage := DefaultCodePage;
       fPostingSettings.QuoteHeader := '%author% wrote:';
       fPostingSettings.QuoteLineMarker := '> ';
       fPostingSettings.MaxPostLines := 5000;
