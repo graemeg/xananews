@@ -187,7 +187,8 @@ begin
 
     TabSheet1.Caption := 'About ' + st;
 
-    st := st + Format (' Version %d.%d.%d.%d', [HiWord (info^.dwProductVersionMS), LoWord (info^.dwProductVersionMS), HiWord (info^.dwProductVersionLS), LoWord (info^.dwProductVersionLS)])
+    st := st + Format (' Version %d.%d.%d.%d', [HiWord (info^.dwProductVersionMS), LoWord (info^.dwProductVersionMS), HiWord (info^.dwProductVersionLS), LoWord (info^.dwProductVersionLS)]);
+    st := st + ' - Unnoficial Release';
   end;
 
   if fThanksTo = '' then
