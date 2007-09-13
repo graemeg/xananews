@@ -197,7 +197,7 @@ function WideReverseString (const st : WideString) : WideString;
 procedure LoadRASEntries;
 function HeaderCharset (h : string) : string;
 procedure DecodeFromEMail (const from : string; var fromName, fromEMail : string);
-function DecodeHeader (const header : string; codePage : PInteger = Nil) : string;
+function DecodeHeader (const header : string; codePage : PInteger = Nil) : widestring;
 function GenerateMessageID (const product, stub, host : string) : string;
 function EncodeHeader (const header : string; codepage : Integer; from : boolean) : string;
 procedure SetTempStatusMessage (const msg : string; pos, max : word);
@@ -825,79 +825,115 @@ var
   gDecoderMIME : TidDecoderMIME = Nil;
   gDecoderQuotedPrintable : TidDecoderQuotedPrintable = Nil;
 
-function DecodeHeader(const header: string; codePage : PInteger = Nil) : string;
-const
-  SPACES: set of Char = [' ', #9, #10, #13, '''', '"'];    {Do not Localize}
+//Searches Data for an RFC-1522 chunk, starting at cFrom.
+//If a chunk is found, cFrom and cTo contain positions of the first
+//and last character, respectively.
+function FindChunk(const Data: string; var cFrom, cTo: integer): boolean;
 var
-  sp, cp, rcp : Integer;
-
-  function GetEncoding (const header : string; var pos : Integer; var codePage : Integer) : string;
-  var
-    p, p1, p2, p3 : Integer;
-    decoder : TidDecoder;
-    enc : char;
-    st : string;
-  begin
-    p1 := 0; p2 := 0; p3 := 0;
-    codePage := CP_USASCII;
-
-    p := PosEx ('=?', header, pos);
-    if (p > 1) and (not (header [p - 1] in SPACES)) then
-      p := PosEx (' =?', header, p + 2);
-
-    if p > 0 then
-    begin
-      p1 := PosEx ('?', header, p + 2);
-      if p1 > 0 then
-      begin
-        p2 := PosEx ('?', header, p1 + 1);
-        if p2 > 0 then
-          p3 := PosEx ('?=', header, p2 + 1)
-      end
+ State: byte;
+ i: integer;
+begin
+  Result:=false;
+  i:=cFrom;
+  State:=0;
+  while i<=Length(Data) do begin
+    case State of
+      0: if Data[i]='=' then begin
+           State:=1;
+           cFrom:=i;
+         end;
+      1: if Data[i]='?' then
+           State:=2
+         else
+           State:=0;
+      2,3,4:
+         if Data[i] in [' ', #8, #13, #10] then
+           State:=0
+         else if Data[i]='?' then
+           inc(State);
+      5: if Data[i]='=' then begin
+           cTo:=i;
+           Result:=true;
+           EXIT;
+         end else
+           State:=4;
     end;
+    inc(i);
+  end;
+end;
 
-    if (p > 0) and (p1 > 0) and (p2 > 0) and (p3 > 0) then
-    begin
-      codepage := MIMECharsetNameToCodePage (Copy (header, p + 2, p1 - (p + 2)));
-      enc := UpCase (header [p1 + 1]);
-      if enc = 'B' then
-      begin
-        if not Assigned (gDecoderMIME) then
-          gDecoderMIME := TidDecoderMIME.Create(nil);
-        decoder := gDecoderMIME
-      end
-      else
-      begin
-        if not Assigned (gDecoderQuotedPrintable) then
-          gDecoderQuotedPrintable := TidDecoderQuotedPrintable.Create(nil);
-        decoder := gDecoderQuotedPrintable
-      end;
+procedure ControlsToSpaces(var Str: widestring);
+var x: integer;
+begin
+  for x:=1 to Length(Str) do
+    if Ord(Str[x])<32 then Str[x]:=' ';
+end;
 
-      st := StringReplace (Copy (header, p2 + 1, p3 - p2 - 1), '_', ' ', [rfReplaceAll]);
-      if (enc = 'B') and ((Length (st) mod 4) <> 0) then
-        st := Copy (st, 1, (Length (st) div 4) * 4);
-      result := Copy (header, pos, p - pos) + decoder.DecodeString(st);
-      pos := p3 + 2;
-    end
-    else
-    begin
-      result := Copy (header, pos, MaxInt);
-      pos := 0;
-    end
+//Decodes a RFC-1522 chunk into widestring.
+//Expects a single, pre-stripped chunk as input ('ISO-8859-1?q?data')
+function DecodeChunk(Input: string): Widestring;
+var
+  cp, data: string;
+  enc: char;
+  x, cpnum: integer;
+  AttachSpace: boolean;
+begin
+  Result:='';
+  x:=Pos('?', Input);
+  //Checks for encoding byte, '?', and at least one byte of data.
+  if Length(Input) < x+3 then EXIT;
+  //Encoding should be exactly one character
+  if Input[x+2] <> '?' then EXIT;
+
+  cp:=LowerCase(Copy(Input, 1, x-1));
+  cpnum:=MIMECharsetNameToCodePage(cp);
+  enc:=Input[x+1];
+  data:=Copy(Input, x+3, maxint);
+
+  if enc in ['b', 'B'] then begin
+    with TidDecoderMIME.Create(nil) do begin
+      data:=DecodeString(data);
+      Free;
+    end;
+  end
+  else begin
+    //TidDecoderQuotedPrintable does not deal with underscore encoded spaces
+    data:=StringReplace(data, '_', ' ', [rfReplaceAll]);
+    AttachSpace:=data[Length(data)]=' ';
+    with TidDecoderQuotedPrintable.Create(nil) do begin
+      data:=DecodeString(data);
+      Free;
+    end;
+    //Unfortunately, the Decoder will also trim trailing spaces
+    if AttachSpace then data:=data+' ';
   end;
 
-begin
-  sp := 1;
-  rcp := CP_USASCII;
-  result := '';
-  repeat
-    result := result + GetEncoding (header, sp, cp);
-    if cp <> CP_USASCII then
-      rcp := cp
-  until sp = 0;
+  //Convert character data to widestring
+  setlength(Result, Length(data));
+  x:=MultiByteToWideChar(cpnum, 0, @data[1], Length(data),
+      @Result[1], Length(Result));
+  setlength(Result, x);
+end;
 
-  if Assigned (codePage) then
-    codePage^ := rcp
+function DecodeHeader(const header: string; codePage : PInteger = Nil) : widestring;
+const CP_UTF_16 = 1200;
+var
+ chkStart, chkEnd, lastChkEnd: integer;
+begin
+  Result := '';
+  lastChkEnd := 0;
+  chkStart := 1;
+  while FindChunk(Header, chkStart, chkEnd) do begin
+    Result := Result +
+              Copy(Header, lastChkEnd+1, chkStart-lastChkEnd-1) +
+              DecodeChunk(Copy(Header, chkStart+2, chkEnd-chkStart-3));
+    lastChkEnd := chkEnd;
+    chkStart := chkEnd+1;
+  end;
+  Result := Result + Copy(Header, lastChkEnd+1, MaxInt);
+  //Not exactly clean, but this parameter seems not to be used anyway.
+  if Assigned(CodePage) then
+    CodePage^ := CP_UTF_16;
 end;
 
 var
