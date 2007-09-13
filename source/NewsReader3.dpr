@@ -127,6 +127,7 @@ begin
 end;
 
 begin
+  Application.MainFormOnTaskBar := True;
   {$ifdef FastMM}
 //  RegisterExpectedMemoryLeak (TCriticalSection); {In Indy 9}
   {$endif}
