@@ -8,7 +8,7 @@ function DoNewUserConfig (const keyName : string) : boolean;
 
 implementation
 
-uses NewUserWizardForm, NewsGlobals;
+uses NewUserWizardForm, NewsGlobals, SplashForm;
 
 function  DoNewUserConfig (const keyName : string) : boolean;
 var
@@ -17,6 +17,8 @@ var
 begin
   dlg := TfrmNewUserWizard.Create(nil);
   try
+    if Assigned(fmSplash) then
+      fmSplash.Visible := False;
     if dlg.ShowModal = mrOK then
     begin
       reg := CreateEXSettings;
@@ -51,7 +53,9 @@ begin
       finally
         reg.Free
       end;
-      result := True
+      result := True;
+      if Assigned(fmSplash) then
+        fmSplash.Visible := True;
     end
     else
       result := False
