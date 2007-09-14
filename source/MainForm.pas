@@ -3103,12 +3103,12 @@ var
   f : TForm;
   article : TArticle;
 begin
-  if IsIconic (Application.Handle) then
-    ShowWindow (Application.Handle, SW_RESTORE)
+  if IsIconic (Handle) then
+    ShowWindow (Handle, SW_RESTORE)
   else
     if fTrayed then
     begin
-      ShowWindow (Application.Handle, SW_SHOW);
+      ShowWindow (Handle, SW_SHOW);
       if fWasMaximized then
         ShowWindow (Handle, SW_SHOWMAXIMIZED)
       else
@@ -4576,7 +4576,7 @@ begin
 
                 // Hide the main form & app windw
     ShowWindow (Handle, SW_HIDE);
-    ShowWindow (Application.Handle, SW_HIDE);
+//    ShowWindow (Application.Handle, SW_HIDE);
     fTrayed := True;
 
     fSnapToFirstUnreadMessageAfterTray := True;
