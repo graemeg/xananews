@@ -829,6 +829,8 @@ var
 //If a chunk is found, cFrom and cTo contain positions of the first
 //and last character, respectively.
 function FindChunk(const Data: string; var cFrom, cTo: integer): boolean;
+const
+ ChunkChars = ['A'..'Z'] + ['a'..'z'] + ['0'..'9'] + ['=', '?', '-', '_'];
 var
  State: byte;
  i: integer;
@@ -847,7 +849,8 @@ begin
          else
            State:=0;
       2,3,4:
-         if Data[i] in [' ', #8, #13, #10] then
+         //FIX: Some clients actually include spaces in chunks.
+         if (State<>4) and not (Data[i] in ChunkChars) then
            State:=0
          else if Data[i]='?' then
            inc(State);
@@ -855,7 +858,7 @@ begin
            cTo:=i;
            Result:=true;
            EXIT;
-         end else
+         end else if Data[i]<>'?' then
            State:=4;
     end;
     inc(i);
@@ -929,6 +932,12 @@ begin
               DecodeChunk(Copy(Header, chkStart+2, chkEnd-chkStart-3));
     lastChkEnd := chkEnd;
     chkStart := chkEnd+1;
+    //If a chunk is followed by ' =?', ignore it
+    if (Length(Header)>chkStart+8) and
+       (Header[chkStart] in [' ', #8]) and
+       (Header[chkStart+1]='=') and
+       (Header[chkStart+2]='?')
+    then inc(lastChkEnd);
   end;
   Result := Result + Copy(Header, lastChkEnd+1, MaxInt);
   //Not exactly clean, but this parameter seems not to be used anyway.
