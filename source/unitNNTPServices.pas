@@ -327,6 +327,7 @@ private
   fHideIgnoredMessages : boolean;
 
   fSecret : boolean;
+  fHideMessagesNotToMe: boolean;
 
   function FindChild (article, child : TArticleBase) : boolean;
   procedure PruneDummyArticles (article : TArticleBase);
@@ -347,6 +348,7 @@ private
   procedure SetHideReadMessages(const Value: boolean);
   function GetUnreadInterestingArticleCount: Integer;
   procedure SetHideIgnoredMessages(const Value: boolean);
+  procedure SetHideMessagesNotToMe(const Value: boolean);
 protected
   fThreads : TList;                     // List of TArticleBase thread roots
   fUnreadArticleCount : Integer;
@@ -449,6 +451,7 @@ public
   property UnreadXanaNewsArticleCount : Integer read GetUnreadXanaNewsArticleCount;
   property Next : TArticleContainer read GetNext;
   property HideReadMessages : boolean read fHideReadMessages write SetHideReadMessages;
+  property HideMessagesNotToMe : boolean read fHideMessagesNotToMe write SetHideMessagesNotToMe;
   property HideIgnoredMessages : boolean read fHideIgnoredMessages write SetHideIgnoredMessages;
   property MessagebaseSize : Int64 read GetMessagebaseSize;
   property Secret : boolean read fSecret write SetSecret;
@@ -3297,6 +3300,7 @@ begin
       fThreadSortOrder := DisplaySettings.ThreadSortOrder;
       fThreadOrder := DisplaySettings.ThreadOrder;
       fHideReadMessages := Options.HideReadMessages;
+      fHideMessagesNotToMe := False;
       fHideIgnoredMessages := Options.HideIgnoredMessages;
 
       fileName := gMessageBaseRoot + '\' + FixFileNameString (Owner.AccountName) + '\' + FixFileNameString (Name) + '\articles.dat';
@@ -4101,7 +4105,7 @@ begin { GroupArticles }
     art := TArticle (fArticles [i]);
     art.fSibling := Nil;
 
-    if (hideReadMessages and art.IsRead) or (hideIgnoredMessages and art.IsIgnore) or (Assigned (filters) and filters.HasFilters and filters.BlockArticle (art)) then
+    if (HideMessagesNotToMe and not art.IsMine) or (hideReadMessages and art.IsRead) or (hideIgnoredMessages and art.IsIgnore) or (Assigned (filters) and filters.HasFilters and filters.BlockArticle (art)) then
     begin
       Inc (i);
       Continue
@@ -5350,6 +5354,15 @@ begin
   end
 end;
 
+procedure TArticleContainer.SetHideMessagesNotToMe(const Value: boolean);
+begin
+  if fHideMessagesNotToMe <> Value then
+  begin
+    fHideMessagesNotToMe := Value;
+    ResortArticles
+  end
+end;
+
 procedure TArticleContainer.SetHideReadMessages(const Value: boolean);
 begin
   if fHideReadMessages <> Value then
@@ -5454,17 +5467,17 @@ begin
 
             l := ArticleBase [0];
 
-            if hideReadMessages or hideIgnoredMessages or fDisplayFiltered then
+            if HideMessagesNotToMe or hideReadMessages or hideIgnoredMessages or fDisplayFiltered then
               fThreads.Add(l);
 
             for i := 1 to ArticleCount - 1 do
             begin
               n := ArticleBase [i];
 
-              if (hideReadMessages and n.IsRead) or (hideIgnoredMessages and n.IsIgnore) or (fDisplayFiltered and filters.BlockArticle (n)) then
+              if (HideMessagesNotToMe and not n.IsMine) or (hideReadMessages and n.IsRead) or (hideIgnoredMessages and n.IsIgnore) or (fDisplayFiltered and filters.BlockArticle (n)) then
                 Continue;
 
-              if hideReadMessages or hideIgnoredMessages or fDisplayFiltered then
+              if HideMessagesNotToMe or hideReadMessages or hideIgnoredMessages or fDisplayFiltered then
                 fThreads.Add(n);
 
               l.fSibling := n;
@@ -5508,10 +5521,10 @@ begin
           for i := 0 to ArticleCount - 1 do
           begin
             n := ArticleBase [i];
-            if (hideReadMessages and n.IsRead) or (hideIgnoredMessages and n.IsIgnore) or (fDisplayFiltered and filters.BlockArticle (n)) then
+            if (HideMessagesNotToMe and not n.IsMine) or (hideReadMessages and n.IsRead) or (hideIgnoredMessages and n.IsIgnore) or (fDisplayFiltered and filters.BlockArticle (n)) then
               Continue;
 
-            if hideReadMessages or hideReadMessages or fDisplayFiltered then
+            if HideMessagesNotToMe or hideReadMessages or HideIgnoredMessages or fDisplayFiltered then
               fThreads.Add(n);
 
             if l <> Nil then
@@ -5644,6 +5657,7 @@ begin
     reDo := False;
     fThreads.Clear;
     hideReadMessages := self.HideReadMessages;
+    hideMessagesNotToMe := self.HideMessagesNotToMe;
     hideIgnoredMessages := self.HideIgnoredMessages;
 
     if self is TSubscribedGroup then
@@ -5668,7 +5682,7 @@ begin
           article.fSibling := Nil;            // otherwise we *really* bugger up!
           article.fChild := Nil;
 
-          if (hideReadMessages and article.IsRead) or (hideIgnoredMessages and article.IsIgnore) or (Assigned (filters) and filters.BlockArticle (article)) then
+          if (HideMessagesNotToMe and not article.IsMine) or (hideReadMessages and article.IsRead) or (hideIgnoredMessages and article.IsIgnore) or (Assigned (filters) and filters.BlockArticle (article)) then
 
           begin                                 // Ignore this message
 
@@ -6421,7 +6435,7 @@ begin
   while p.Parent <> Nil do
     p := p.Parent;
 
-  if (p.fOwner.fThreadOrder = toThreaded) or (p.fOwner.fThreadSortOrder = soSubject) or (p.fOwner.HideReadMessages) or (p.fOwner.HideIgnoredMessages) or (p.fOwner.fDisplayFiltered) then
+  if (p.fOwner.fThreadOrder = toThreaded) or (p.fOwner.fThreadSortOrder = soSubject) or (p.fOwner.HideReadMessages) or (p.fOwner.HideIgnoredMessages) or (p.fOwner.fDisplayFiltered) or (p.fOwner.fHideMessagesNotToMe) then
     result := Odd (p.Owner.fThreads.IndexOf(p))
   else
     result := Odd (p.Owner.IndexOf(p))
@@ -6920,7 +6934,7 @@ end;
 
 function TArticleObjectContainer.GetThreadCount: Integer;
 begin
-  if (ThreadOrder = toThreaded) or (ThreadSortOrder = soSubject) or hideReadMessages or hideIgnoredMessages or fDisplayFiltered then
+  if (ThreadOrder = toThreaded) or (ThreadSortOrder = soSubject) or hideReadMessages or HideMessagesNotToMe or hideIgnoredMessages or fDisplayFiltered then
   begin
     LoadArticles;
     result := fThreads.Count
@@ -6937,7 +6951,7 @@ end;
 function TArticleObjectContainer.GetThreads(idx: Integer): TArticleBase;
 begin
   LoadArticles;
-  if (ThreadOrder = toThreaded) or (ThreadSortOrder = soSubject) or hideReadMessages or hideIgnoredMessages or fDisplayFiltered then
+  if (ThreadOrder = toThreaded) or (ThreadSortOrder = soSubject) or hideReadMessages or HideMessagesNotToMe or hideIgnoredMessages or fDisplayFiltered then
     result := TArticleBase (fThreads [idx])
   else
     result := TArticleBase (fArticles [idx]);

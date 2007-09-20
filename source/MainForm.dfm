@@ -3931,6 +3931,12 @@ object fmMain: TfmMain
       ImageIndex = 0
       ShortCut = 16451
     end
+    object actViewHideMessagesNotToMe: TAction
+      Category = 'View'
+      Caption = 'Hide Messages Not To Me'
+      Hint = 'Hide messages not to me'
+      OnExecute = actViewHideMessagesNotToMeExecute
+    end
     object actEditDelete: TAction
       Category = 'Edit'
       Caption = '&Delete'
@@ -5094,6 +5100,9 @@ object fmMain: TfmMain
       end
       object HideIgnoredMessages1: TMenuItem
         Action = actViewHideIgnoredMessages
+      end
+      object HideMessagesNotToMe1: TMenuItem
+        Action = actViewHideMessagesNotToMe
       end
       object AutofitImages1: TMenuItem
         Action = actViewAutofitImages

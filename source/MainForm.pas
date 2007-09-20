@@ -653,6 +653,8 @@ type
     actViewToolbarCaptions: TAction;
     actViewToolbarCaptions1: TMenuItem;
     N54: TMenuItem;
+    actViewHideMessagesNotToMe: TAction;
+    HideMessagesNotToMe1: TMenuItem;
     procedure PersistentPositionGetSettingsFile(Owner: TObject;
       var fileName: string);
     procedure PersistentPositionGetSettingsClass(Owner: TObject;
@@ -956,6 +958,7 @@ type
     procedure actArticleGoToNextDontMarkExecute(Sender: TObject);
     procedure actViewShowSecretsExecute(Sender: TObject);
     procedure actSearchFindAnyKeywordExecute(Sender: TObject);
+    procedure actViewHideMessagesNotToMeExecute(Sender: TObject);
   private
     fHeaderSortCol : Integer;
     fURL : string;
@@ -1988,6 +1991,28 @@ procedure TfmMain.actHelpAboutExecute(Sender: TObject);
 begin
   NTAboutBox.ThanksTo := fDeservesMedals;
   NTAboutBox.Execute
+end;
+
+procedure TfmMain.actViewHideMessagesNotToMeExecute(Sender: TObject);
+var
+  art : TArticleBase;
+  artno : Integer;
+begin
+  if Assigned (fLastFocusedArticleContainer) then
+  begin
+    art := GetFocusedArticle;
+    if Assigned (art) then
+      artno := art.ArticleNo
+    else
+      artNo := -1;
+
+    fLastFocusedArticleContainer.HideMessagesNotToMe := not fLastFocusedArticleContainer.HideMessagesNotToMe;
+    vstArticles.RootNodeCount := fLastFocusedArticleContainer.ThreadCount;
+    Refresh_vstArticles;
+
+     if artNo <> -1 then
+       GoToArticle (fLastFocusedArticleContainer.FindArticleNo (artNo));
+  end
 end;
 
 procedure TfmMain.actMessageDeleteExecute(Sender: TObject);
@@ -3378,7 +3403,10 @@ begin
       actViewHideReadMessagesExecute (self);
 
     if fLastFocusedArticleContainer.HideIgnoredMessages <> Options.HideIgnoredMessages then
-      actViewHideIgnoredMessagesExecute (self)
+      actViewHideIgnoredMessagesExecute (self);
+
+    if fLastFocusedArticleContainer.HideMessagesNotToMe then
+      actViewHideMessagesNotToMeExecute (self);
   end;
 
   vstSubscribed.DefaultNodeHeight := Abs (vstSubscribed.Font.Height) + 7;
@@ -8691,6 +8719,7 @@ begin
   begin
     ctnr.fFocused := True;
     ctnr.HideReadMessages := Options.HideReadMessages;
+    ctnr.HideMessagesNotToMe := False;
     ctnr.HideIgnoredMessages := Options.HideIgnoredMessages;
     vstArticles.RootNodeCount := ctnr.ThreadCount;
 
@@ -9419,14 +9448,18 @@ begin
     actViewHideReadMessages.Enabled := True;
     actViewHideReadMessages.Checked := fLastFocusedArticleContainer.HideReadMessages;
     actViewHideIgnoredMessages.Enabled := True;
-    actViewHideIgnoredMessages.Checked := fLastFocusedArticleContainer.HideIgnoredMessages
+    actViewHideIgnoredMessages.Checked := fLastFocusedArticleContainer.HideIgnoredMessages;
+    actViewHideMessagesNotToMe.Enabled := True;
+    actViewHideMessagesNotToMe.Checked := fLastFocusedArticleContainer.HideMessagesNotToMe;
   end
   else
   begin
     actViewHideReadMessages.Enabled := False;
     actViewHideReadMessages.Checked := Options.HideReadMessages;
     actViewHideIgnoredMessages.Enabled := False;
-    actViewHideIgnoredMessages.Checked := Options.HideIgnoredMessages
+    actViewHideIgnoredMessages.Checked := Options.HideIgnoredMessages;
+    actViewHideMessagesNotToMe.Enabled := False;
+    actViewHideMessagesNotToMe.Checked := False;
   end;
 
   actViewShowBookmarkPane.Checked := pnlBookmark.Visible;
