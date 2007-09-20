@@ -1018,11 +1018,11 @@ type
     fClicked : boolean;
     fNxStack : boolean;
     fAutoGetMessages : boolean;
-    fOldMonitorWindowProc : TWndMethod;
+//    fOldMonitorWindowProc : TWndMethod;
     fDontMarkOnLeave : boolean;
     procedure PopulateSearchBarOpCombo;
 
-    procedure MonitorWindowProc (var message : TMessage);
+//    procedure MonitorWindowProc (var message : TMessage);
     procedure CheckScheduledBatches;
     procedure CheckDeferredCombineList (article : TArticleBase);
 
@@ -1177,7 +1177,7 @@ type
     procedure DoSaveAttachment(const title : string; var fileName: string; var mp: TmvMessagePart);
     procedure GetSingleArticle (grp : TSubscribedGroup; articleNo : Integer);
 
-    procedure MonitorControl (ctrl : TControl);
+//    procedure MonitorControl (ctrl : TControl);
 
     procedure LoadToolbarLayout;
     procedure SaveToolbarLayout;
@@ -11049,19 +11049,19 @@ begin
       unitNewsReaderOptions.Options.BookmarkColumnPCs [i] := (Columns [i].Width * 100 + cw div 2) div cw;
 end;
 
-procedure TfmMain.MonitorControl(ctrl: TControl);
-begin
-  fOldMonitorWindowProc := ctrl.WindowProc;
-  ctrl.WindowProc := MonitorWindowProc
-end;
+//procedure TfmMain.MonitorControl(ctrl: TControl);
+//begin
+//  fOldMonitorWindowProc := ctrl.WindowProc;
+//  ctrl.WindowProc := MonitorWindowProc
+//end;
 
-procedure TfmMain.MonitorWindowProc(var message: TMessage);
-begin
-  fOldMonitorWindowProc (message);
-
-//  if message.Msg = WM_PAINT then
-    Windows.Beep(880, 1)
-end;
+//procedure TfmMain.MonitorWindowProc(var message: TMessage);
+//begin
+//  fOldMonitorWindowProc (message);
+//
+////  if message.Msg = WM_PAINT then
+//    Windows.Beep(880, 1)
+//end;
 
 function TfmMain.ForEachSelectedBranch(proc: TArticleIteratorProc;
   param: Integer; startAtRoot : boolean): Integer;
