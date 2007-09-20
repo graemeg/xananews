@@ -48,7 +48,7 @@ object fmPostMessage: TfmPostMessage
     Caption = '&Subject'
   end
   object cbGroup: TComboBox
-    Left = 80
+    Left = 79
     Top = 12
     Width = 471
     Height = 21
@@ -57,7 +57,7 @@ object fmPostMessage: TfmPostMessage
     TabOrder = 0
   end
   object cbFollowUpTo: TComboBox
-    Left = 80
+    Left = 79
     Top = 36
     Width = 471
     Height = 21
@@ -68,7 +68,7 @@ object fmPostMessage: TfmPostMessage
   object edSubject: TExRichEdit
     Left = 79
     Top = 58
-    Width = 470
+    Width = 471
     Height = 23
     RightMargin = 0
     Anchors = [akLeft, akTop, akRight]
@@ -141,8 +141,10 @@ object fmPostMessage: TfmPostMessage
     inherited cbCharset: TComboBox
       Left = 381
       Top = 265
+      Width = 169
       ExplicitLeft = 381
       ExplicitTop = 265
+      ExplicitWidth = 169
     end
     inherited btnCancel: TButton
       Left = 564
@@ -170,9 +172,9 @@ object fmPostMessage: TfmPostMessage
       ExplicitTop = 273
     end
     inherited cbIdentity: TComboBox
-      Left = 380
+      Left = 381
       Top = 289
-      ExplicitLeft = 380
+      ExplicitLeft = 381
       ExplicitTop = 289
     end
   end
