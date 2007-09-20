@@ -959,6 +959,10 @@ type
     procedure actViewShowSecretsExecute(Sender: TObject);
     procedure actSearchFindAnyKeywordExecute(Sender: TObject);
     procedure actViewHideMessagesNotToMeExecute(Sender: TObject);
+    procedure vstSubscribedCollapsed(Sender: TBaseVirtualTree;
+      Node: PVirtualNode);
+    procedure vstSubscribedExpanded(Sender: TBaseVirtualTree;
+      Node: PVirtualNode);
   private
     fHeaderSortCol : Integer;
     fURL : string;
@@ -4588,7 +4592,8 @@ begin
         EnableShortcuts (True)
       end;
       Options.SaveKeyboardShortcuts;
-      SaveToolbarLayout
+      SaveToolbarLayout;
+      NNTPAccounts.SaveToRegistry;
     end
   end
   else
@@ -7971,6 +7976,16 @@ begin
     Allowed := False
 end;
 
+procedure TfmMain.vstSubscribedExpanded(Sender: TBaseVirtualTree;
+  Node: PVirtualNode);
+var
+  Data: PObject;
+begin
+  Data := PObject (Sender.GetNodeData(Node));
+  if Data^ is TNNTPAccount then
+    TNNTPAccount(Data^).DisplaySettings.Expanded := True;
+end;
+
 (*----------------------------------------------------------------------*
  | TfmMain.vstSubscribedFocusChanged                                    |
  |                                                                      |
@@ -8192,7 +8207,12 @@ begin
         data^ := account;
 
         if account.SubscribedGroupCount > 0 then
-          InitialStates := InitialStates + [ivshasChildren]
+          InitialStates := InitialStates + [ivshasChildren];
+        if not Options.AutoExpandGroupTree and not Options.AutoContractGroupTree then
+        begin
+          if account.DisplaySettings.Expanded then
+            InitialStates := InitialStates + [ivsExpanded];
+        end;
       end
     end
   end
@@ -11677,6 +11697,16 @@ begin
       DeleteObject (rgn);
     end
   end
+end;
+
+procedure TfmMain.vstSubscribedCollapsed(Sender: TBaseVirtualTree;
+  Node: PVirtualNode);
+var
+  Data: PObject;
+begin
+  Data := PObject (Sender.GetNodeData(Node));
+  if Data^ is TNNTPAccount then
+    TNNTPAccount(Data^).DisplaySettings.Expanded := False;
 end;
 
 procedure TfmMain.actSearchFindAnyKeywordExecute(Sender: TObject);

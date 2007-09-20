@@ -425,11 +425,13 @@ object fmMain: TfmMain
       TreeOptions.SelectionOptions = [toMultiSelect, toRightClickSelect]
       TreeOptions.StringOptions = [toAutoAcceptEditChange]
       OnAfterItemPaint = vstSubscribedAfterItemPaint
+      OnCollapsed = vstSubscribedCollapsed
       OnDblClick = vstSubscribedDblClick
       OnDragOver = vstSubscribedDragOver
       OnDragDrop = vstSubscribedDragDrop
       OnEdited = vstSubscribedEdited
       OnEditing = vstSubscribedEditing
+      OnExpanded = vstSubscribedExpanded
       OnFocusChanged = vstSubscribedFocusChanged
       OnGetText = vstSubscribedGetText
       OnPaintText = vstSubscribedPaintText

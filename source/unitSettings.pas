@@ -103,6 +103,7 @@ private
   fThreadSortOrder : Integer;
   fThreadSortDirection : Integer;
   fGatherSubjects : Integer;
+  fExpanded: Integer;
 
   function GetDefaultCodePage: Integer;
   procedure SetDefaultCodePage(const Value: Integer);
@@ -122,6 +123,8 @@ private
   procedure SetThreadSortOrder(const Value: TThreadSortOrder);
   function GetGatherSubjects: boolean;
   procedure SetGatherSubjects(const Value: boolean);
+  function GetExpanded: boolean;
+  procedure SetExpanded(const Value: boolean);
 public
   constructor Create (AParent : TSettings); override;
   procedure Assign (source : TPersistent); override;
@@ -137,6 +140,7 @@ published
   property ThreadSortOrder : TThreadSortOrder read GetThreadSortOrder write SetThreadSortOrder;
   property ThreadSortDirection : TThreadSortDirection read GetThreadSortDirection write SetThreadSortDirection;
   property GatherSubjects : boolean read GetGatherSubjects write SetGatherSubjects;
+  property Expanded : boolean read GetExpanded write SetExpanded;
 end;
 
 
@@ -695,6 +699,7 @@ begin
     fPurgeFolder := #1;
     fSoundFile := #1;
     fTruncateFrom := #1;
+    fExpanded := 0;
   end
   else
   begin
@@ -733,6 +738,11 @@ end;
 function TDisplaySettings.GetDefaultCodePage: Integer;
 begin
   result := GetProp (fDefaultCodePage, 'DefaultCodePage');
+end;
+
+function TDisplaySettings.GetExpanded: boolean;
+begin
+  result := Boolean(fExpanded);
 end;
 
 function TDisplaySettings.GetGatherSubjects: boolean;
@@ -787,6 +797,7 @@ begin
     fTruncateFrom := reg.GetStringValue ('Truncate Messages From', fTruncateFrom);
     fMessagebaseManagementDefault := reg.GetIntegerValue ('Messagebase Management Default', 1);
     fGatherSubjects := reg.GetIntegerValue('Gather Subjects', 0);
+    fExpanded := reg.GetIntegerValue('Expanded', 0);
 
     fThreadOrder := reg.GetIntegerValue('Thread Order', Integer (toThreaded));
     fThreadSortDirection := reg.GetIntegerValue('Thread Sort Direction', Integer (sdAscending));
@@ -808,12 +819,18 @@ begin
     fThreadOrder         := reg.GetIntegerValue ('Thread Order', -1);
     fThreadSortOrder     := reg.GetIntegerValue ('Thread Sort Order', -1);
     fThreadSortDirection := reg.GetIntegerValue ('Thread Sort Direction', -1);
+    fExpanded            := reg.GetIntegerValue ('Expanded', 0);
   end
 end;
 
 procedure TDisplaySettings.SetDefaultCodePage(const Value: Integer);
 begin
   SetProp (fDefaultCodePage, 'DefaultCodePage', Value);
+end;
+
+procedure TDisplaySettings.SetExpanded(const Value: boolean);
+begin
+  fExpanded := Ord (Value);
 end;
 
 procedure TDisplaySettings.SetGatherSubjects(const Value: boolean);
@@ -873,6 +890,7 @@ begin
     reg.SetIntegerValue ('Thread Order', fThreadOrder, Integer (toThreaded));
     reg.SetIntegerValue('Thread Sort Direction', fThreadSortDirection, Integer (sdAscending));
     reg.SetIntegerValue ('Thread Sort Order', fThreadSortOrder, Integer (soDate));
+    reg.SetIntegerValue ('Expanded', fExpanded, 0);
   end
   else
   begin
@@ -882,6 +900,7 @@ begin
     WritePropToRegistry (reg, 'Sound File', fSoundFile, 'SoundFile');
     WritePropToRegistry (reg, 'Messagebase Management Default', fMessagebaseManagementDefault, 'MessagebaseManagementDefault');
     WritePropToRegistry (reg, 'Gather Subjects', fGatherSubjects, 'GatherSubjects');
+    WritePropToRegistry (reg, 'Expanded', fExpanded, 'Expanded');
 
     WritePropToRegistry (reg, 'Thread Order', fThreadOrder, 'ThreadOrder');
     WritePropToRegistry (reg, 'Thread Sort Direction', fThreadSortDirection, 'ThreadSortDirection');
