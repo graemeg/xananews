@@ -128,6 +128,7 @@ private
   function GetMessagesInThread: Integer;
   function GetUnreadMessagesInThread: Integer;
   function GetHasNoReplies: boolean;
+  function GetIsFromMe: Boolean;
 protected
   fMsg : TmvMessage;
   fBytes: Integer;
@@ -220,6 +221,7 @@ public
   property CrosspostedTo : Integer read GetCrosspostedTo;
   property MessagesInThread : Integer read GetMessagesInThread;
   property UnreadMessagesInThread : Integer read GetUnreadMessagesInThread;
+  property IsFromMe: Boolean read GetIsFromMe;
 end;
 
 //-----------------------------------------------------------------------
@@ -6377,7 +6379,7 @@ begin
       doWholeThread := (action = baIgnoreThread) or (action = baMarkAsReadThread);
       while p <> Nil do
       begin
-        if (action = baIgnore) or (action = baIgnoreThread) then
+        if (action = baIgnore) or (action = baIgnoreThread) and not p.IsFromMe then
           p.IsIgnore := True
         else
           if (action = baMarkAsRead) or (action = baMarkAsReadThread) then
@@ -6385,7 +6387,7 @@ begin
 
         if doWholeThread then
         begin
-          if p.Child <> Nil then
+          if (p.Child <> Nil) and not p.IsFromMe then
             p := p.Child
           else
             if p.Sibling <> Nil then
@@ -6405,6 +6407,11 @@ begin
       end
     end
   end;
+end;
+
+function TArticleBase.GetIsFromMe: Boolean;
+begin
+  Result := FromName = Owner.Identity.UserName;
 end;
 
 function TArticleBase.GetIsIgnore: boolean;

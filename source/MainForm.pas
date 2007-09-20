@@ -7607,7 +7607,7 @@ begin
           Options.Appearance [apIgnoredMessages].ApplyFontAndGetColor(Canvas.Font)
         else
         if article.IsMine then
-          if article.FromName = article.Owner.Identity.UserName then
+          if article.IsFromMe then
             Options.Appearance [apMessagesFromMe].ApplyFontAndGetColor(Canvas.Font)
           else
             if article.IsXanaNews and not Options.DontHighlightXanaNewsUsers then
