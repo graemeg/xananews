@@ -467,13 +467,17 @@ procedure TfmePost.PasteQuote(const quote: string);
 var
   s1 : TStrings;
   wrap : boolean;
+  NewText: WideString;
 begin
   s1 := TStringList.Create;
   try
     s1.Text := quote;
     wrap := (fPostingSettings.TextPartStyle <> tpQuotedPrintable) and (fPostingSettings.TextPartStyle <> tpFlowed) and  (fPostingSettings.MaxPostLineLength <> 0);
     FixQuotes (s1, wrap, fPostingSettings.MaxPostLineLength, fPostingSettings.QuoteLineMarker, False, Options.StrictSigSep);
-    mmoMessage.SelText := StringToWideString (s1.Text, fCodePage);
+    NewText := StringToWideString (s1.Text, fCodePage);
+    mmoMessage.SelText := NewText;
+    if (fPostingSettings.PostingStyle = psBottom) then
+      mmoMessage.SelStart := mmoMessage.SelStart + Length(NewText) - 2;
   finally
     s1.Free
   end
