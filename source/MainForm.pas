@@ -963,6 +963,7 @@ type
       Node: PVirtualNode);
     procedure vstSubscribedExpanded(Sender: TBaseVirtualTree;
       Node: PVirtualNode);
+    procedure ApplicationEvents1Hint(Sender: TObject);
   private
     fHeaderSortCol : Integer;
     fURL : string;
@@ -3347,6 +3348,11 @@ begin
   if not CallHelp then
     PostMessage (Application.Handle, CM_INVOKEHELP, HELP_CONTENTS, 0);
   Result := False
+end;
+
+procedure TfmMain.ApplicationEvents1Hint(Sender: TObject);
+begin
+  if Monitor.Handle = 0 then ApplicationEvents1.CancelDispatch;
 end;
 
 (*----------------------------------------------------------------------*

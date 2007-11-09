@@ -3840,6 +3840,7 @@ object fmMain: TfmMain
     OnDeactivate = ApplicationEvents1Deactivate
     OnException = ApplicationEvents1Exception
     OnHelp = ApplicationEvents1Help
+    OnHint = ApplicationEvents1Hint
     OnMessage = ApplicationEvents1Message
     Left = 736
     Top = 312
