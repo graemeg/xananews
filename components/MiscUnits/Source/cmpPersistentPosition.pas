@@ -272,7 +272,7 @@ begin
         if wasVisible then
           case TWindowState (reg.GetIntegerValue ('State', Integer (wsNormal))) of
             wsNormal : wp.ShowCmd := SW_SHOW;
-            wsMinimized : wp.showCmd := SW_SHOWMINIMIZED;
+//            wsMinimized : wp.showCmd := SW_SHOWMINIMIZED; doesn't work so well when mainforontaskbar is set
             wsMaximized : wp.showCmd := SW_SHOWMAXIMIZED
           end
         else
@@ -321,11 +321,11 @@ begin
     wp.length := sizeof (wp);
     GetWindowPlacement (fm.Handle, @wp);
 
-    if IsIconic (Application.Handle) then
-      state := Ord (wsMinimized)
-    else
+//    if IsIconic (Application.Handle) then
+//      state := Ord (wsMinimized)
+//    else
       case wp.showCmd of
-        SW_SHOWMINIMIZED : state := Ord (wsMinimized);
+//        SW_SHOWMINIMIZED : state := Ord (wsMinimized);
         SW_SHOWMAXIMIZED : state := Ord (wsMaximized);
         else
           state := Ord (wsNormal)
