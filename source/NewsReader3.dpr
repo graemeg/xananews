@@ -100,7 +100,8 @@ uses
   SearchDialog in 'SearchDialog.pas' {dlgSearch},
   unitRFC2646Coder in 'unitRFC2646Coder.pas',
   ReadLnDelayDialog in 'ReadLnDelayDialog.pas' {dlgReadLnDelay},
-  unitMessageBaseSearch in 'unitMessageBaseSearch.pas';
+  unitMessageBaseSearch in 'unitMessageBaseSearch.pas',
+  RtlVclOptimize in 'RtlVclOptimize.pas';
 
 {$R *.res}
 {$R I.RES}
