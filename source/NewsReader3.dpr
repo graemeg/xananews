@@ -11,6 +11,7 @@ uses
   SysUtils,
   SyncObjs,
   NewsGlobals,
+  IdSSLOpenSSLHeaders in 'IdSSLOpenSSLHeaders.pas',
   MainForm in 'MainForm.pas' {fmMain},
   SplashForm in 'SplashForm.pas' {fmSplash},
   AccountsDialog in 'AccountsDialog.pas' {dlgAccounts},
