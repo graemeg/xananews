@@ -19,6 +19,8 @@ uses
 type
   TIdDecoderQuotedPrintable = class(TIdDecoder)
   public
+    // If you get an error here about method not found in base class,
+    // you need to change your search path to use Indy9 instead of Indy 10
     procedure DecodeToStream(AIn: string; ADest: TStream); override;
   end;
 
