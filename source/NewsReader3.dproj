@@ -95,6 +95,7 @@
     <DCCReference Include="IdentityDialog.pas">
       <Form>dlgIdentity</Form>
     </DCCReference>
+    <DCCReference Include="IdSSLOpenSSL.pas" />
     <DCCReference Include="IdSSLOpenSSLHeaders.pas" />
     <DCCReference Include="MailAccountForm.pas">
       <Form>fmMailAccount</Form>
