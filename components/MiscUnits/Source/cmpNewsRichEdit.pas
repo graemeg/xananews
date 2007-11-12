@@ -364,6 +364,7 @@ begin
       begin
         fEOL := True;
         sol := True;
+        pc := c;
         Inc (p);
         Inc (i);
         if p^ = #10 then
