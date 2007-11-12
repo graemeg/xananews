@@ -1,5 +1,7 @@
 program NewsReader3;
 
+{$R 'sslcerts.res' 'sslcerts.rc'}
+
 uses
   madListHardware,
   madListProcesses,
@@ -11,8 +13,6 @@ uses
   SysUtils,
   SyncObjs,
   NewsGlobals,
-  IdSSLOpenSSLHeaders in 'IdSSLOpenSSLHeaders.pas',
-  IdSSLOpenSSL in 'IdSSLOpenSSL.pas',
   MainForm in 'MainForm.pas' {fmMain},
   SplashForm in 'SplashForm.pas' {fmSplash},
   AccountsDialog in 'AccountsDialog.pas' {dlgAccounts},

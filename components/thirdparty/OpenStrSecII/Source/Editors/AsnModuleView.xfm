@@ -1,0 +1,101 @@
+object frmASNModule: TfrmASNModule
+  Left = 202
+  Top = 197
+  Width = 870
+  Height = 640
+  VertScrollBar.Range = 41
+  ActiveControl = btnOK
+  Caption = 'ASN Module View'
+  Color = clBackground
+  Font.Color = clText
+  Font.Height = 11
+  Font.Name = 'MS Sans Serif'
+  Font.Pitch = fpVariable
+  Font.Style = []
+  ParentFont = False
+  PixelsPerInch = 96
+  TextHeight = 18
+  TextWidth = 5
+  object Panel1: TPanel
+    Left = 0
+    Top = 599
+    Width = 870
+    Height = 41
+    Align = alBottom
+    TabOrder = 0
+    object btnOK: TButton
+      Left = 776
+      Top = 8
+      Width = 75
+      Height = 25
+      Anchors = [akRight, akBottom]
+      Caption = '&OK'
+      Default = True
+      ModalResult = 1
+      TabOrder = 0
+    end
+    object btnCancel: TButton
+      Left = 696
+      Top = 8
+      Width = 75
+      Height = 25
+      Cancel = True
+      Caption = '&Cancel'
+      ModalResult = 2
+      TabOrder = 1
+    end
+    object btnSave: TButton
+      Left = 616
+      Top = 8
+      Width = 75
+      Height = 25
+      Caption = '&Save'
+      TabOrder = 2
+      OnClick = btnSaveClick
+    end
+    object btnOpen: TButton
+      Left = 536
+      Top = 8
+      Width = 75
+      Height = 25
+      Caption = '&Open'
+      TabOrder = 3
+      OnClick = btnOpenClick
+    end
+  end
+  object memASNModule: TMemo
+    Left = 0
+    Top = 0
+    Width = 870
+    Height = 599
+    Align = alClient
+    ScrollBars = ssBoth
+    TabOrder = 1
+    WantTabs = True
+    OnChange = memASNModuleChange
+  end
+  object OpenDialog1: TOpenDialog
+    DefaultExt = 'asn'
+    Filter = 
+      'ASN Module (*.asn)|*.asn|Text file (*.txt)|*.txt|Any file (*.*)|' +
+      '*.*'
+    FilterIndex = 0
+    Height = 0
+    Title = 'Open ASN Module'
+    Width = 0
+    Left = 448
+    Top = 320
+  end
+  object SaveDialog1: TSaveDialog
+    DefaultExt = 'asn'
+    Filter = 
+      'ASN Module (*.asn)|*.asn|Text file (*.txt)|*.txt|Any file (*.*)|' +
+      '*.*'
+    FilterIndex = 0
+    Height = 0
+    Title = 'Save ASN Module'
+    Width = 0
+    Left = 480
+    Top = 320
+  end
+end

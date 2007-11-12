@@ -1285,8 +1285,6 @@ begin
               SMTP.AuthenticationType := atLogin;
             if Settings.SSLrequired then
             begin
-              SSLHandler.SSLOptions.Method := sslvTLSv1;
-              SSLHandler.PassThrough := True;
               SMTP.IOHandler := SSLHandler;
               SMTP.Port := Settings.SSLPort;
             end
@@ -1296,7 +1294,6 @@ begin
             if Settings.SSLRequired then
             begin
               SMTP.SendCmd('STARTTLS', 220);
-              SSLHandler.PassThrough := False;
             end;
             if (SMTP.AuthenticationType <> atNone) then
               SMTP.Authenticate;

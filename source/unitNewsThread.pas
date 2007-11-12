@@ -13,7 +13,7 @@ unit unitNewsThread;
 
 interface
 
-uses Windows, Classes, Graphics, SysUtils, unitNNTPServices, unitMailServices, SyncObjs, IdTCPClient, ConTnrs, IdSSLOpenSSL, unitSettings, unitIdentities, IdMessage, NewsGlobals;
+uses Windows, Classes, Graphics, SysUtils, unitNNTPServices, unitMailServices, SyncObjs, IdTCPClient, ConTnrs, IdSSLOpenSSL, unitSettings, unitIdentities, IdMessage, NewsGlobals, SsTLSIdIOHandler; 
 
 type
 TNNTPThreadState = (tsDormant, tsPending, tsBusy, tsDone);
@@ -28,7 +28,7 @@ private
   fTrigger : TEvent;
   fState : TNNTPThreadState;
   fGetter : TTCPGetter;
-  fSSLHandler: TIdSSLIOHandlerSocket;
+  fSSLHandler: TSsTLSIdIOHandlerSocket;
   fUISync : TCriticalSection;
   function GetLastResponse: string;
 
@@ -53,7 +53,7 @@ public
   property Client : TidTCPClient read fClient;
   property LastResponse : string read GetLastResponse;
   property Getter : TTCPGetter read fGetter;
-  property SSLHandler : TidSSLIOHandlerSocket read fSSLHandler;
+  property SSLHandler : TSsTLSIdIOHandlerSocket read fSSLHandler;
 end;
 
 TTCPThreadClass = class of TTCPThread;
@@ -410,7 +410,8 @@ implementation
 
 uses unitNNTPThreadManager, unitNewsReaderOptions, unitNNTPThreads,
      idCoder, idCoderUUE, idCoderMIME, unitCharsetMap, unitSearchString,
-     IdSMTP, idHeaderList, unitLog, unitRFC2646Coder;
+     IdSMTP, idHeaderList, unitLog, unitRFC2646Coder, TLSInternalServer,
+     StreamSecII;
 
 { TTCPThread }
 
@@ -425,15 +426,35 @@ uses unitNNTPThreadManager, unitNewsReaderOptions, unitNNTPThreads,
  |   ANNTPAccount: TNNTPAccount         The account to work on.         |
  *----------------------------------------------------------------------*)
 constructor TTCPThread.Create(AGetter : TTCPGetter; ASettings : TServerSettings);
+var
+  trustedCAStream: TResourceStream;
+  intermediateCAStream: TResourceStream;
 begin
   inherited Create (True);      // Create suspended.
   fUISync := TCriticalSection.Create;
   fGetter := AGetter;
   fSettings := ASettings;
   fTrigger := TEvent.Create(Nil, False, False, '');
-  fSSLHandler := TIdSSLIOHandlerSocket.Create(nil);
-  fSSLHandler.SSLOptions.Mode := sslmClient;
-  fSSLHandler.SSLOptions.Method := sslvSSLv23;
+  fSSLHandler := TSsTLSIdIOHandlerSocket.Create(nil);
+  fSSLHandler.TLSServer := TTLSInternalServer.Create(nil);
+  fSSLHandler.TLSServer.ClientOrServer := cosClientSide;
+  fSSLHandler.TLSServer.Options.Export40Bit := prAllowed;
+  fSSLHandler.TLSServer.Options.HashAlgorithmMD5 := prAllowed;
+  fSSLHandler.TLSServer.Options.SignatureRSA := prAllowed;
+  fSSLHandler.TLSServer.Options.BulkCipherRC2 := prAllowed;
+  trustedCAStream := TResourceStream.Create(hInstance, 'trustedca', RT_RCDATA);
+  try
+    fSSLHandler.TLSServer.LoadP7BRootCertsFromStream(trustedCAStream);
+  finally
+    trustedCAStream.Free;
+  end;
+  intermediateCAStream := TResourceStream.Create(hInstance, 'intermediateca', RT_RCDATA);
+  try
+    fSSLHandler.TLSServer.LoadP7BRootCertsFromStream(intermediateCAStream);
+  finally
+    intermediateCAStream.Free;
+  end;
+
   Resume;
 end;
 
