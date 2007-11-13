@@ -21,7 +21,7 @@ object fmNTAboutBox: TfmNTAboutBox
     Top = 0
     Width = 371
     Height = 287
-    ActivePage = TabSheet1
+    ActivePage = TabSheet3
     Align = alClient
     TabOrder = 0
     object TabSheet1: TTabSheet
@@ -167,6 +167,83 @@ object fmNTAboutBox: TfmNTAboutBox
         Width = 337
         Height = 185
         ItemHeight = 13
+        TabOrder = 0
+      end
+    end
+    object TabSheet3: TTabSheet
+      Caption = 'SSL Support'
+      ImageIndex = 2
+      object Memo1: TMemo
+        Left = 0
+        Top = 0
+        Width = 363
+        Height = 259
+        Align = alClient
+        Lines.Strings = (
+          'SSL support provided by OpenStrSecII, which is:'
+          ''
+          '  Copyright (c) 2004, Henrick Wibell Hellstr'#246'm, StreamSec'
+          '  All rights reserved.'
+          ''
+          
+            '  Redistribution and use in source and binary forms, with or wit' +
+            'hout'
+          
+            '  modification, are permitted provided that the following condit' +
+            'ions are met:'
+          ''
+          
+            '    * Redistributions of source code must retain the above copyr' +
+            'ight notice,'
+          '      this list of conditions and the following disclaimer.'
+          
+            '    * Redistributions in binary form must reproduce the above co' +
+            'pyright notice,'
+          
+            '      this list of conditions and the following disclaimer in th' +
+            'e documentation'
+          '      and/or other materials provided with the distribution.'
+          
+            '    * Neither the name of StreamSec nor the names of its contrib' +
+            'utors may be'
+          
+            '      used to endorse or promote products derived from this soft' +
+            'ware without'
+          '      specific prior written permission.'
+          ''
+          
+            '  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIB' +
+            'UTORS "AS IS"'
+          
+            '  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMI' +
+            'TED TO, THE'
+          
+            '  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTIC' +
+            'ULAR PURPOSE'
+          
+            '  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTR' +
+            'IBUTORS BE'
+          
+            '  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLAR' +
+            'Y, OR'
+          
+            '  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREM' +
+            'ENT OF'
+          
+            '  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; O' +
+            'R BUSINESS'
+          
+            '  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, W' +
+            'HETHER IN'
+          
+            '  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR O' +
+            'THERWISE)'
+          
+            '  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF AD' +
+            'VISED OF THE'
+          '  POSSIBILITY OF SUCH DAMAGE.')
+        ReadOnly = True
+        ScrollBars = ssBoth
         TabOrder = 0
       end
     end

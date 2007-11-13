@@ -27,6 +27,8 @@ type
     hlbSupport: THyperlinkButton;
     stThankYou: TLabel;
     lbDonations: TListBox;
+    TabSheet3: TTabSheet;
+    Memo1: TMemo;
     procedure FormShow(Sender: TObject);
   private
     fThanksTo : string;
@@ -194,7 +196,6 @@ begin
   if fThanksTo = '' then
   begin
     TabSheet2.Free;
-    TabSheet1.TabVisible := False
   end
   else
   begin
