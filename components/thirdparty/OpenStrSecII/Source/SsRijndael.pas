@@ -2436,5 +2436,9 @@ initialization
   {$IFDEF PCFB}      RegisterCipherClass( TRijndael_PCFB );      {$ENDIF}
   {$IFDEF PIPEDPCFB} RegisterCipherClass( TRijndael_PipedPCFB ); {$ENDIF}
   {$IFDEF AESWRAP}   RegisterCipherClass( TAES_Wrap );           {$ENDIF}
+finalization
+{$IFDEF AES_BG}
+  CompilerFooler := ''; // fixes memory leak
+{$ENDIF AES_BG}
 {$ENDIF}
 end.

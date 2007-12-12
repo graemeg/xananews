@@ -40,8 +40,7 @@ procedure TRFC2646Decoder.DecodeBuffer(buf: PChar; bufLen: Integer;
 var
   s : string;
 begin
-  SetLength (s, bufLen);
-  Move (buf^, s [1], bufLen);
+  SetString(s, buf, bufLen);
   DecodeToStream (s, ADest);
 end;
 

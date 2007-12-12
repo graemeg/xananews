@@ -399,14 +399,14 @@ const
   prime521                = ellipticCurve + '.35';
 
 
-function GetObjectName(OID: string): string;
+function GetObjectName(const OID: string): string;
 function HashAlgorithmToOID(HashAlgorithm: THashAlgorithm): string;
 function OIDToHashAlgorithm(const OID: string; var HA: THashAlgorithm): Boolean;
 
-procedure RegisterOID(var OID, OIDName: string; OIDDecl: string = '');
-function GetRegistredOID(OIDName: string): string;
-function GetRegistredOIDName(OID: string): string;
-function GetOIDDeclaration(OID: string): string;
+procedure RegisterOID(var OID, OIDName: string; const OIDDecl: string = '');
+function GetRegistredOID(const OIDName: string): string;
+function GetRegistredOIDName(const OID: string): string;
+function GetOIDDeclaration(const OID: string): string;
 procedure GetOIDDeclarations(List: TStrings);
 
 implementation
@@ -440,7 +440,7 @@ begin
   CleanUpOIDs(OIDs);
 end;
 
-procedure RegisterOID(var OID, OIDName: string; OIDDecl: string = '');
+procedure RegisterOID(var OID, OIDName: string; const OIDDecl: string = '');
 const
   NumChars: set of Char = ['0','1','2','3','4','5','6','7','8','9'];
 type
@@ -456,7 +456,7 @@ var
   SL, SL0: TStringList;
 begin
   SL := nil;
-  Trim(OIDDecl);
+  //Trim(OIDDecl);
   if OID = '' then begin
     K := Pos('{',OIDDecl) + 1;
     repeat
@@ -572,7 +572,7 @@ begin
   SL.Values[SId] := OIDName;
 end;
 
-function GetRegistredOID(OIDName: string): string;
+function GetRegistredOID(const OIDName: string): string;
 begin
   Result := OIDNames.Values[OIDName];
 end;
@@ -589,7 +589,7 @@ begin
   end;
 end;
 
-function GetRegistredOIDName(OID: string): string;
+function GetRegistredOIDName(const OID: string): string;
 var
   Id: Int64;
   I, J: Integer;
@@ -622,7 +622,7 @@ begin
   end;
 end;
 
-function GetOIDDeclaration(OID: string): string;
+function GetOIDDeclaration(const OID: string): string;
 var
   SId: string;
   I, J: Integer;
@@ -708,12 +708,12 @@ begin
     Result := False;
 end;
 
-function GetObjectName(OID: string): string;
+function GetObjectName(const OID: string): string;
 var
   P, I: Integer;
   BestMatch, BestName: string;
 
-  function Derivate(Match, Name, OID: string): string;
+  function Derivate(const Match, Name, OID: string): string;
   var
     I: Integer;
   begin
@@ -729,7 +729,7 @@ var
     Result := Result + '}';
   end;
 
-  function IsSubOIDOf(OID, Match: string): Boolean;
+  function IsSubOIDOf(const OID, Match: string): Boolean;
   begin
     Result := Length(Match) < Length(OID);
     if Result then

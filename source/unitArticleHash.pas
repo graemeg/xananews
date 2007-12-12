@@ -267,32 +267,28 @@ function FindHashMessage (table : PPHashItem; hash : DWORD; const msg : string) 
 var
   pp : PPHashitem;
   p : PHashItem;
-  a : TArticleBase;
 begin
   pp := table;
   Inc (pp, hash);
   p := pp^;
 
-  result := Nil;
   if p <> Nil then
     if (DWORD (p) and $80000000) <> 0 then      // Position contains a single article.
     begin
-      a := TArticleBase (DWORD (p) and $7fffffff);
-      if a.MessageID = msg then                // Is it the right one?
-        result := a
+      Result := TArticleBase (DWORD (p) and $7fffffff);
+      if Result.MessageID = msg then                // Is it the right one?
+        Exit;
     end
     else
     begin                                       // Position contains a linked list of hash items
       repeat
-        a := p^.article;                        // Find the article in it
-        if a.MessageID = msg then
-        begin
-          result := a;
-          exit
-        end;
+        Result := p^.article;                        // Find the article in it
+        if Result.MessageID = msg then
+          exit;
         p := p^.next
       until p = Nil;
-    end
+    end;
+  Result := nil;
 end;
 
 (*----------------------------------------------------------------------*
@@ -362,9 +358,9 @@ var
   I: Integer;
 begin
   Result := 0;
-  for I := 1 to Length(Key) do
+  for I := 0 to Length(Key) - 1 do
     Result := ((Result shl 2) or (Result shr (SizeOf(Result) * 8 - 2))) xor
-      Ord(Key[I]);
+      Ord(Key[I + 1]);
 
   result := result mod hashSize
 end;

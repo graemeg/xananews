@@ -145,7 +145,7 @@ end;
 
 EIdNNTPConnectionRefused = class (EIdProtocolReplyError);
 
-Procedure ParseXOVER(Aline : String; var AArticleIndex : Cardinal;
+Procedure ParseXOVER(const Aline : String; var AArticleIndex : Cardinal;
   var ASubject,
       AFrom : String;
   var ADate : TDateTime;
@@ -165,7 +165,7 @@ uses IdResourceStrings, IdComponent, NewsGlobals, unitSearchString, unitLog;
 var
   lastGoodDate : TDateTime = 0;
 
-Procedure ParseXOVER(Aline : String; var AArticleIndex : Cardinal;
+Procedure ParseXOVER(const Aline : String; var AArticleIndex : Cardinal;
   var ASubject,
       AFrom : String;
   var ADate : TDateTime;
@@ -175,32 +175,71 @@ Procedure ParseXOVER(Aline : String; var AArticleIndex : Cardinal;
       ALineCount : Cardinal;
   var AExtraData : String);
 
+  function NextItem(P: PChar; var S: string): PChar;
+  begin
+    Result := P;
+    if Result <> nil then
+    begin
+      while Result^ <> #0 do
+      begin
+        if Result^ = #9 then
+          Break;
+        Inc(Result);
+      end;
+
+      if Result^ = #0 then
+      begin
+        S := '';
+        Result := nil;
+      end
+      else
+      begin
+        SetString(S, P, Result - P);
+        Inc(Result);
+        {Strip backspace and tab junk sequences which occur after a tab separator so they don't throw off any code}
+        if (Result^ = #8) and (Result[1] = #9) then
+          Inc(Result, 2);
+      end;
+    end
+    else
+      S := '';
+  end;
+
+  function NextItemStr(var P: PChar): string;
+  begin
+    P := NextItem(P, Result);
+  end;
+
+var
+  P: PChar;
 begin
-  {Strip backspace and tab junk sequences which occur after a tab separator so they don't throw off any code}
-  ALine := StringReplace(ALine,#9#8#9,#9,[rfReplaceAll]);
+  P := PChar(Aline);
+
   {Article Index}
-  AArticleIndex := StrToCard ( Fetch( ALine, #9 ) );
+  AArticleIndex := StrToCard ( NextItemStr(P) );
   {Subject}
-  ASubject := Fetch ( ALine, #9 );
+  P := NextItem(P, ASubject);
   {From}
-  AFrom := Fetch ( ALine, #9 );
+  P := NextItem(P, AFrom);
   {Date}
   try
-    ADate := GMTToLocalDateTime ( Fetch ( Aline, #9 ) );
+    ADate := GMTToLocalDateTime ( NextItemStr(P) );
     lastGoodDate := ADate;
   except
     ADate := LastGoodDate;
   end;
   {Message ID}
-  AMsgId := Fetch ( Aline, #9 );
+  P := NextItem(P, AMsgId);
   {References}
-  AReferences := Fetch( ALine, #9);
+  P := NextItem(P, AReferences);
   {Byte Count}
-  AByteCount := StrToCard(Fetch(ALine,#9));
+  AByteCount := StrToCard( NextItemStr(P) );
   {Line Count}
-  ALineCount := StrToCard(Fetch(ALine,#9));
+  ALineCount := StrToCard( NextItemStr(P) );
   {Extra data}
-  AExtraData := ALine;
+  AExtraData := P;
+  if (AExtraData <> '') and (Pos(#9#8#9, AExtraData) > 0) then
+    AExtraData := StringReplace(AExtraData,#9#8#9,#9,[rfReplaceAll]);
 end;
 
 Procedure ParseNewsGroup(ALine : String; var ANewsGroup : String;

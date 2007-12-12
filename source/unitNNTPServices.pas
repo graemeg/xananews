@@ -845,6 +845,30 @@ implementation
 uses IdNNTPX, unitArticleHash, unitNewsReaderOptions, unitCharsetMap,
      unitSavedArticles, unitMailServices, unitNewUserWizard, unitLog, unitCheckVersion, unitNNTPThreadManager, DateUtils;
 
+
+(*----------------------------------------------------------------------*
+ | function ForceRenameFile : Boolean                                   |
+ |                                                                      |
+ | Renames a file                                                       |
+ |                                                                      |
+ | Parameters:                                                          |
+ |                                                                      |
+ |   Source: string             File that should be renamed             |
+ |   Dest  : string             Destination file name                   |
+ |                                                                      |
+ | The function returns true if the file was successfully renamed       |
+ *----------------------------------------------------------------------*)
+function ForceRenameFile(const Source, Dest: string): Boolean;
+begin
+  Result := MoveFileEx(PChar(Source), PChar(Dest), MOVEFILE_REPLACE_EXISTING or MOVEFILE_COPY_ALLOWED);
+  if not Result then
+  begin
+    Sleep(100);
+    DeleteFile(Dest);
+    Result := RenameFile(Source, Dest);
+  end;
+end;
+
 (*----------------------------------------------------------------------*
  | function CompareThreads : Integer                                    |
  |                                                                      |
@@ -3472,19 +3496,13 @@ begin
 
     finally
       w.Free;
-      Sleep (100);
-      DeleteFile (fileName);
-      RenameFile (newFileName, fileName);
       ms.Free;
-
       FreeAndNil (fMessageFile);
 
+      ForceRenameFile(newFileName, fileName);
+
       if recreateMessageFile then
-      begin
-        Sleep (100);
-        DeleteFile (msgFileName);
-        RenameFile (newMsgFileName, msgFileName)
-      end;
+        ForceRenameFile(newMsgFileName, msgFileName);
     end;
     fFlagsDirty := False;
   finally
@@ -5564,14 +5582,14 @@ begin
 
     fSortBuf.Sort(CompareThreads);
 
-    root := TArticle (fSortBuf [0]);
+    root := TArticle (fSortBuf.List^ [0]);
     p := root;
     ct := fSortBuf.Count;
     i := 1;
 
     while i < ct do
     begin
-      p.fSibling := TArticle (fSortBuf [i]);
+      p.fSibling := TArticle (fSortBuf.List^ [i]);
       p := p.fSibling;
       Inc (i)
     end;
@@ -5614,7 +5632,7 @@ begin
       begin
         SortSiblings (l.fChild);
         if i < c then
-          n := TArticle (fThreads [i])
+          n := TArticle (fThreads.List^ [i])
         else
           n := Nil;
         l.fSibling := n;
@@ -5652,6 +5670,10 @@ var
   id : TIdentity;
   id_not_table : PPhashItem;
   reDo : boolean;
+
+  Identities: TList;
+  articleFromName : string;
+  articleFromEmail : string;
 begin
   reDo := True;
   while reDo do
@@ -5670,10 +5692,16 @@ begin
     if not filters.HasFilters then
       filters := Nil;
 
+    Identities := nil;
     id_not_table := AllocHashTable;            // Create a separate table for ignored messages
     try
       id_table := AllocHashTable;
       try
+        Identities := TList.Create;
+        // initialize identities local cache
+        for j := 0 to NNTPAccounts.Identities.Count - 1 do
+          Identities.Add(NNTPAccounts.Identities [j]);
+
         i := 0;
         while i < ArticleCount do
         begin
@@ -5708,10 +5736,12 @@ begin
                                                 // it doesn't matter if there are - they
                                                 // will 'point to' the same article.
             mine := False;
-            for j := 0 to NNTPAccounts.Identities.Count - 1 do
+            articleFromName := article.FromName;
+            articleFromEmail := article.FromEmail;
+            for j := 0 to Identities.Count - 1 do
             begin
-              id := NNTPAccounts.Identities [j];
-              mine := (article.FromName = id.UserName) and (article.FromEmail = id.EMailAddress);
+              id := TIdentity(Identities.List^ [j]);
+              mine := (articleFromName = id.UserName) and (articleFromEmail = id.EMailAddress);
               if mine then
                 break
             end;
@@ -5768,8 +5798,7 @@ begin
             begin
                                           // Move the ID into ref
               len := Integer (pe) - Integer (ps);
-              SetLength (ref, len);
-              Move (ps^, ref [1], len);
+              SetString(ref,  ps, len);
 
                                           // Skip spaces before the next id
               while pe^ = ' ' do
@@ -5925,8 +5954,7 @@ begin
                 len := DWORD (pe) - DWORD (ps) + 1;
 
                                               // Move the ID into ref
-                SetLength (ref, len);
-                Move (ps^, ref [1], len);
+                SetString(ref, ps, len);
 
                 pe := ps;
                 Dec (pe);
@@ -5989,7 +6017,8 @@ begin
           SetThreadFlags (article.Child, fgMine)
       end
     finally
-      FreeHashTable (id_not_table)
+      FreeHashTable (id_not_table);
+      Identities.Free;
     end
   end
 end;
@@ -6917,7 +6946,7 @@ begin
   if not fArticlesLoaded then
     LoadArticles;
   if idx < fArticles.Count then
-    result := TArticleBase (fArticles [idx])
+    result := TArticleBase (fArticles.List^ [idx])
   else
     result := Nil
 end;
