@@ -5884,6 +5884,8 @@ begin
               article.IsMine := True;
               article := article.fParent
             end;
+
+            article.IsMine := True
           end
         end;     // End 'for each article
 
