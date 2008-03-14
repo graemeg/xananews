@@ -41,7 +41,7 @@ uses Windows, Classes, SysUtils, unitNNTPServices, iniFiles;
 type
 PPHashItem = ^PHashItem;
 PHashItem = ^THashItem;
-THashItem = record
+THashItem = packed record
   Next: PHashItem;
   article : TArticleBase;
 end;
@@ -57,7 +57,7 @@ procedure FreeHashTable (Table : PPHashItem);
 implementation
 
 const
-  hashSize = 30241;                     // Prime numbers work best - makes a
+  hashSize = 49157;                     // Prime numbers work best - makes a
                                         // Huge difference to the distribution
 (*----------------------------------------------------------------------*
  | procedure AddHash                                                    |
@@ -353,7 +353,7 @@ end;
  |                                                                      |
  | The function returns the hash value for the string.                  |
  *----------------------------------------------------------------------*)
-function HashOf(const Key: string): Cardinal;
+(*function HashOf(const Key: string): Cardinal;
 var
   I: Integer;
 begin
@@ -363,6 +363,19 @@ begin
       Ord(Key[I + 1]);
 
   result := result mod hashSize
+end;*)
+
+function HashOf(const Key : string) : Cardinal;
+{Note: this hash function is described in "The C Programming Language"
+       by Brian Kernighan and Donald Ritchie, Prentice Hall}
+var
+  i : integer;
+begin
+  Result := 0;
+  for i := 1 to length(Key) do begin
+    Result := (Result * 31) + ord(Key[i]);
+  end;
+  Result := Result mod hashSize
 end;
 
 (*

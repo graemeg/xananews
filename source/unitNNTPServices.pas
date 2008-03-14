@@ -3271,7 +3271,8 @@ begin
   ClearThreadInfo;
   NNTPAccounts.PerfCue (880, 'Leaving group');
 
-  SaveArticles (False);
+  if FlagsDirty then
+    SaveArticles (False);
   NNTPAccounts.PerfCue (660, 'Saved Articles');
   fFocused := False;
 
@@ -4313,11 +4314,11 @@ begin
     reader := TTextFileReader.Create(fileName)
   else
     reader := Nil;
+  fUnreadArticleCount := 0;
   if Assigned (reader) then
   try
     fUnloadedArticleCount := 0;
     fRawLastArticle := 0;
-    fUnreadArticleCount := 0;
     while reader.ReadLn(st) do
     try
       Inc (fUnloadedArticleCount);
@@ -5876,15 +5877,13 @@ begin
             prevArticle.fChild := article
           end;
 
-          if (article.fFlags and fgMine) <> 0 then
+          if article.IsMine then
           begin
             while article.fParent <> Nil do
             begin
-              article.fFlags := article.fFlags or fgMine;
+              article.IsMine := True;
               article := article.fParent
             end;
-
-            article.IsMine := True
           end
         end;     // End 'for each article
 
@@ -6810,12 +6809,15 @@ end;
 
 procedure TArticleBase.SetFlag(flag: DWORD; value: boolean);
 begin
-  if value then
-    fFlags := fFlags or flag
-  else
-    fFlags := fFlags and not flag;
-
-  Owner.fFlagsDirty := True
+  if ((fFlags and flag) <> 0) <> value then
+  begin
+    if value then
+      fFlags := fFlags or flag
+    else
+      fFlags := fFlags and not flag;
+    if (flag <> fgMine) and (flag <> fgReply) then
+      Owner.fFlagsDirty := True;
+  end;
 end;
 
 procedure TArticleBase.SetIsCancelled(const Value: boolean);

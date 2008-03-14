@@ -322,6 +322,11 @@ var
   buffer, pBuffer: pointer;
   info : PVSFixedFileInfo;
 begin
+  if gProductVersion <> '' then
+  begin
+    Result := gProductVersion;
+    Exit;
+  end;
   result := '';         // Get it from the versioninfo resource
   size := GetFileVersionInfoSize (PChar (ParamStr (0)), zero);
   if size > 0 then

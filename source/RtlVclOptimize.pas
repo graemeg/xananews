@@ -11,15 +11,20 @@ the specific language governing rights and limitations under the License.
 The Original Code is: RtlVclOptimize.pas, released on 2007-05-08
 
 The Initial Developer of the Original Code is Andreas Hausladen
-Portions created by Andreas Hausladen are Copyright (C) 2006, 2007 Andreas Hausladen.
+Portions created by Andreas Hausladen are Copyright (C) 2006-2008 Andreas Hausladen.
 All Rights Reserved.
 
 Contributor(s): -
 
 History:
+  Versino 2.73 (2008-02-29):
+    - Fixed: Faster StrScan returned nil when doing a search for #0
+    - Updated: FastFileExists code updated to newest DelphiSpeedUp code
+    - Added: LStrAsg, LStrLAsg speed optimization (QC 50564)
+
   Version 2.71 (2007-11-13):
     - Improved: Better cache algorithm for LoadResString
-    - Added: LStrAsg, LStrLAsg, WStrSet speed optimization (QC 50564)
+    - Added: WStrSet speed optimization (QC 50564)
     - Added: Faster Trim function (QC 53744)
     - Added: Faster WideStrUtils.InOpSet (QC 43080)
     - Added: SysFreeString delaying and reusage of released WideStrings.
@@ -51,11 +56,7 @@ unit RtlVclOptimize;
   { If NOLEADBYTES_HOOK is defined and SysLocal.LeadBytes is [], some ANSI
     functions are replaced by faster functions that ignore the LeadBytes. }
 
-{$DEFINE STRING_ASSIGN_OPTIMIZE}
-  { Defining STRING_ASSIGN_OPTIMIZE activates the string assignment optimization
-    which replaces the memory lock XCHG opcode. (Idea by Pierre le Riche) }
-
-{$DEFINE CACHE_WIDESTRINGS}
+{.$DEFINE CACHE_WIDESTRINGS}
   { If CACHE_WIDESTRINGS is defined all calls to SysFreeString are intercepted
     and the WideString is stored in a cache that can be used for a new WideString
     allocation of the same length. Every now and then a kind of Garbage Collector
@@ -126,7 +127,6 @@ type
 const
   RaiseLastOSError: procedure = RaiseLastWin32Error;
 {$ENDIF COMPILER5}
-
 
 
 {------------------------------------------------------------------------------}
@@ -237,10 +237,6 @@ var
   OrgLStrCmp: Pointer;
   OrgWStrCmp: Pointer;
 
-procedure _LStrCmp_LStrEqual{left: AnsiString; right: AnsiString}; forward;
-procedure _WStrCmp_WStrEqual{left: WideString; right: WideString}; forward;
-
-{$IFDEF STRING_ASSIGN_OPTIMIZE}
 procedure _LStrAsg(var dest; const source);
 asm
         { ->    EAX pointer to dest   str      }
@@ -320,7 +316,9 @@ asm
                 CALL    System.@FreeMem
 @@done:
 end;
-{$ENDIF STRING_ASSIGN_OPTIMIZE}
+
+procedure _LStrCmp_LStrEqual{left: AnsiString; right: AnsiString}; forward;
+procedure _WStrCmp_WStrEqual{left: WideString; right: WideString}; forward;
 
 {------------------------------------------------------------------------------}
  (* ***** BEGIN LICENSE BLOCK *****
@@ -1007,7 +1005,7 @@ begin
         Exit;
       Inc(Result);
     end;
-    if Result^ <> Chr then
+    if Chr = #0 then
       Exit;
   end;
   Result := nil;
@@ -1016,13 +1014,14 @@ end;
 function FastStrScan(const Str: PAnsiChar; Chr: AnsiChar): PAnsiChar;
 begin
   Result := Str;
-  while Result^ <> AnsiChar(#0) do
+  while Result^ <> #0 do
   begin
     if Result^ = Chr then
       Exit;
     Inc(Result);
   end;
-  Result := nil;
+  if Chr <> #0 then
+    Result := nil;
 end;
 
 { Less CALLs by inlining the functions. }
@@ -1556,7 +1555,7 @@ begin
   Count := $100;
   P := GetActualAddr(GetWStrSetLength);
   Inc(PByte(P), 16);
-  while (Count > 0) and not IsBadReadPtr(P, SizeOf(TLocation)) do
+  while (Count > 0) and not IsBadReadPtr(P, SizeOf(TLocation)) do // safe because we are in a CODE segment
   begin
     if (P.Call = $E8) and (P.PopRet = $C35B5E5F) then
     begin
@@ -1642,15 +1641,13 @@ end;
 
 {------------------------------------------------------------------------------}
 
+function GetLStrAsg: Pointer; asm mov eax, OFFSET System.@LStrAsg; end;
+function GetLStrLAsg: Pointer; asm mov eax, OFFSET System.@LStrLAsg; end;
 function GetLStrCmp: Pointer; asm mov eax, OFFSET System.@LStrCmp; end;
 function GetWStrCmp: Pointer; asm mov eax, OFFSET System.@WStrCmp; end;
 {$IFNDEF COMPILER9}
 function GetLStrPos: Pointer; asm mov eax, OFFSET System.@LStrPos; end;
 {$ENDIF ~COMPILER9}
-{$IFDEF STRING_ASSIGN_OPTIMIZE}
-function GetLStrLAsg: Pointer; asm mov eax, OFFSET System.@LStrLAsg; end;
-function GetLStrAsg: Pointer; asm mov eax, OFFSET System.@LStrAsg; end;
-{$ENDIF STRING_ASSIGN_OPTIMIZE}
 
 {------------------------------------------------------------------------------}
 { List optimization                                                            }
@@ -2598,7 +2595,8 @@ end;
 {------------------------------------------------------------------------------}
 {.$IFNDEF COMPILER10_UP}
 { GetFileAttributes() is a lot faster than the FindFirstFile call in the original
-  FileExists function that calls FileAge. BDS 2006 fixes this. }
+  FileExists function that calls FileAge. BDS 2006 fixes this this but cannot
+  find opened SHARE_EXCLUSIVE files. }
 function FastFileExists(const Filename: string): Boolean;
 
   function FailSafe(const Filename: string): Boolean;
@@ -2608,7 +2606,7 @@ function FastFileExists(const Filename: string): Boolean;
   begin
     { Either the file is locked/share_exclusive or we got an access denied }
     h := FindFirstFile(PChar(Filename), FindData);
-    if h <> 0 then
+    if h <> INVALID_HANDLE_VALUE then
     begin
       Windows.FindClose(h);
       Result := FindData.dwFileAttributes and FILE_ATTRIBUTE_DIRECTORY = 0;
@@ -2629,7 +2627,8 @@ begin
     LastError := GetLastError();
     Result := (LastError <> ERROR_FILE_NOT_FOUND) and
               (LastError <> ERROR_PATH_NOT_FOUND) and
-              FailSafe(Filename);
+              (LastError <> ERROR_INVALID_NAME) and
+              ((LastError = ERROR_SHARING_VIOLATION) or FailSafe(Filename));
   end;
 end;
 {.$ENDIF ~COMPILER10_UP}
@@ -3509,10 +3508,8 @@ initialization
 
   CodeRedirect(OrgLStrCmp, @_LStrCmp_LStrEqual);
   CodeRedirect(OrgWStrCmp, @_WStrCmp_WStrEqual);
-  {$IFDEF STRING_ASSIGN_OPTIMIZE}
-  CodeRedirect(GetLStrLAsg, @_LStrLAsg);
   CodeRedirect(GetLStrAsg, @_LStrAsg);
-  {$ENDIF STRING_ASSIGN_OPTIMIZE}
+  CodeRedirect(GetLStrLAsg, @_LStrLAsg);
 
   CodeRedirect(@SysUtils.AnsiCompareText, @FastAnsiCompareText);
   {$IFDEF COMPILER9_UP}
@@ -3538,8 +3535,7 @@ initialization
     InjectCode(@SysUtils.StrByteType, @FastAnsiStrByteType, 6);
   end;
   {$ENDIF NOLEADBYTES_HOOK}
-  InjectCode(@SysUtils.StrScan, @FastStrScan, 17);
-  //CodeRedirect(@SysUtils.StrScan, @FastStrScan);
+  CodeRedirect(@SysUtils.StrScan, @FastStrScan);
 
   {$IFDEF CACHE_WIDESTRINGS}
   InitWideStringOptimize;
@@ -3628,5 +3624,4 @@ finalization
 {$ENDIF CACHE_WIDESTRINGS}
 
 end.
-
 
