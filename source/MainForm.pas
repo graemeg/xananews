@@ -11344,7 +11344,6 @@ var
             art.Msg.DecodeBody(f, ttyEnc)
           else
             art.Msg.MessageParts [0].GetData(f);
-        NextArticle
       end
     end
     else
