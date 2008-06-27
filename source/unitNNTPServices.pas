@@ -1151,7 +1151,7 @@ end;
 procedure TNNTPAccounts.ConfirmMessagebaseRoot (rootReg : TExSettings);
 begin
   if rootReg.HasValue('Messagebase Directory') then
-    gMessagebaseRoot := rootReg.GetStringValue('Messagebase Directory', gMessagebaseRoot)
+    gMessagebaseRoot := ExpandFileName(rootReg.GetStringValue('Messagebase Directory', gMessagebaseRoot))
   else
   begin
             // But handle legacy entries too.
@@ -1160,7 +1160,7 @@ begin
       gMessagebaseRoot := gXanaNewsDir
     else
       if rootReg.GetBooleanValue ('Use old directory structure', False) then
-        gMessagebaseRoot := gXanaNewsDir;
+        gMessagebaseRoot := ExpandFileName(gXanaNewsDir);
     rootReg.SetStringValue('Messagebase Directory', gMessagebaseRoot, '')
   end
 end;

@@ -1400,7 +1400,7 @@ begin
   gExSettingsFile := fn;
   if gExSettingsFile <> '' then
     Delete (gExSettingsFile, 1, 1);
-
+  gExSettingsFile := ExpandFileName(gExSettingsFile);
 end;
 
 initialization
