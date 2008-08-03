@@ -228,7 +228,7 @@ begin
     if Request is TPosterRequest then
     begin
       att := TPosterRequest (Request).Attachments;
-      mmoMessage.Text := TPosterRequest (Request).Msg
+      mmoMessage.Text := InitialText
     end
     else
       if Request is TEmailerRequest then
