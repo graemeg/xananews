@@ -5322,9 +5322,7 @@ begin
 
       if postingSettings.QuoteSalutation <> '' then
       begin
-        if (s.Count > 0) and (s [s.Count - 1] <> '') then
-          s.Add('');
-        s.Add(ExpandQuoteHeader (postingSettings.QuoteSalutation))
+        s.Insert(0, ExpandQuoteHeader (postingSettings.QuoteSalutation))
       end;
 
       result := StringToWideString (s.Text, article.CodePage)
