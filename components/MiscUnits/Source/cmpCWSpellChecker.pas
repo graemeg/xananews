@@ -3,7 +3,7 @@ unit cmpCWSpellChecker;
 interface
 
 uses
-  SysUtils, Classes, Controls, cmpSpellChecker, cmpCWRichEdit;
+  SysUtils, Classes, Controls, Forms, cmpSpellChecker, cmpCWRichEdit;
 
 type
   TCWSpellChecker = class(TSpellChecker)
@@ -12,7 +12,7 @@ type
   protected
   public
     destructor Destroy; override;
-    function CheckAndShowModal (SkipFirstLine : boolean) : Integer;
+    function CheckAndShowModal(PopupParent: TCustomForm; SkipFirstLine : boolean) : Integer;
   published
     property ExRichEdit : TCustomExRichEdit read fEXRichEdit write fEXRichEdit;
   end;
@@ -23,7 +23,7 @@ uses SpellCheckerForm;
 
 { TCWSpellChecker }
 
-function TCWSpellChecker.CheckAndShowModal (SkipFirstLine : boolean) : Integer;
+function TCWSpellChecker.CheckAndShowModal(PopupParent: TCustomForm; SkipFirstLine : boolean) : Integer;
 var
   ss, se : Integer;
   txt : WideString;
@@ -41,6 +41,8 @@ begin
       fmSpellChecker := TfmSpellChecker.Create(nil);
       fmSpellChecker.QuoteChars := QuoteChars;
       fmSpellChecker.Initialize (self, ss, se, suggestions);
+      fmSpellChecker.PopupParent := PopupParent;
+      fmSpellChecker.PopupMode   := pmExplicit;
       result := fmSpellChecker.ShowModal
     end
   finally

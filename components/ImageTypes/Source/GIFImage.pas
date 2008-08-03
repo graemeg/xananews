@@ -1,9 +1,5 @@
 unit GIFImage;
 ////////////////////////////////////////////////////////////////////////////////
-// Changed 2001.07.23 by Finn Tolderlund
-// Changed according to e-mail from "Rolf Frei" <rolf@eicom.ch>
-//   on 2001.07.23 so that it works in Delphi 6.
-//
 //                                                                            //
 // Project:	GIF Graphics Object                                           //
 // Module:	gifimage                                                      //
@@ -18,6 +14,125 @@ unit GIFImage;
 // Copyright:	(c) 1997-99 Anders Melander.                                  //
 //		All rights reserved.                                          //
 // Formatting:	2 space indent, 8 space tabs, 80 columns.                     //
+//                                                                            //
+////////////////////////////////////////////////////////////////////////////////
+// Changed 2001.07.23 by Finn Tolderlund:                                     //
+// Changed according to e-mail from "Rolf Frei" <rolf@eicom.ch>               //
+//   on 2001.07.23 so that it works in Delphi 6.                              //
+//                                                                            //
+// Changed 2002.07.07 by Finn Tolderlund:                                     //
+// Incorporated additional modifications by Alexey Barkovoy (clootie@reactor.ru)
+// found in his Delphi 6 GifImage.pas (from 22-Dec-2001).                     //
+// Alexey Barkovoy's Delphi 6 gifimage.pas can be downloaded from             //
+//   http://clootie.narod.ru/delphi/download_vcl.html                         //
+// These changes made showing of animated gif files more stable. The code     //
+// from 2001.07.23 could crash sometimes with an Execption EAccessViolation.  //
+//                                                                            //
+// Changed 2002.10.06 by Finn Tolderlund:                                     //
+// Delphi 7 compatible.                                                       //
+//                                                                            //
+// Changed 2003-03-06 by Finn Tolderlund:                                     //
+// Changes made as a result of postings in borland.public.delphi.graphics     //
+// from 2003-02-28 to 2003-03-05 where white (255,255,255) in a bitmap        //
+// was converted to (254,254,254) in the gif.                                 //
+// The doCreateOptimizedPaletteFromSingleBitmap function and                  //
+// the CreateOptimizedPaletteFromManyBitmaps function is changed so that      //
+// the correct offset 246 is used instead of 245.                             //
+// The ReduceColors function is changed according to Anders Melander's post   //
+// so that a colour get converted to the precise colour if that colour is     //
+// present in the palette when using ColorReduction rmQuantize.               //
+//                                                                            //
+// Changed 2003-03-09 by Finn Tolderlund:                                     //
+// Delphi 7 version is now assumed if unknown compiler version is unknown     //
+// for better compatibility with future Delphi versions.                      //
+// Hopefully this code is now compatible with future Delphi versions,         //
+// unless Borland makes some changes that breaks existing code.               //
+//                                                                            //
+// Changed 2003-08-04 by Finn Tolderlund:                                     //
+// Changed procedure AddMaskOnly so that it doesn't leak a GDI HBitmap-object //
+// and it doesn't release the handle of the source bitmap which               //
+// is used to assign to the GIF object as in gif.assign(bm);                  //
+// These changes were made as a result of a news post made by Renate Schaaf   //
+// with the subject "TGifImage HBitmap leak on assign?"                       //
+// in borland.public.delphi.graphics on Mon 28 Jul 2003 and Sun 03 Aug 2003.  //
+//                                                                            //
+// Changed 2004.03.09 by Finn Tolderlund:                                     //
+// Added a ForceFrame property to the TGIFImage class.                        //
+// The ForceFrame property can be used to make TGIFImage display a apecific   //
+// sub frame from an animated gif.                                            //
+// How to use: Set the Animate property to False and set the ForceFrame       //
+// property to a desired frame number (0-N)                                   //
+// Normal display: Set the ForceFrame property to -1 and set Animate to True. //
+// If ForceFrame is negative TGIFImage behaves just as before this change.    //
+// Note that if the sub frame in the gif only contains part of the image      //
+// (i.e. only the changes from previous frames) the result is unpredictable.  //
+// The result is best if each sub frame contains a whole image.               //
+// If the sub frame is transparent the background is not automatically        //
+// restored, you must do so yourself if you want that.                        //
+// If you are using a TImage to display the gif you can use                   //
+// Image.Parent.Invalidate or Image.Parent.Refresh to restore the background. //
+// This change was made as a result of a email correspondance with            //
+// Tineke Kosmis (http://www.classe.nl/) which requested such a property.     //
+//                                                                            //
+// Changed 2006.07.09 by Finn Tolderlund:                                     //
+// Added conditional switch as default: FIXHEADER_WIDTHHEIGHT_SILENT          //
+// When the switch is defined:                                                //
+// When loading a gif all frames are examined. If a frame has a larger        //
+// Width/Height than the header values then the header values are updated     //
+// with the larger values from the frame.                                     //
+// I had a MANTA.GIF where the header said 120x89 but the frames said 200x148 //
+// and the frames got clipped. MSIE didn't clip it.                           //
+// http://www.graphcomp.com/info/specs/ani_gif.html :                         //
+// Do not assume all of your images are the same size. Read through their     //
+// sizes and set the logical screen to the largest width & height included    //
+// in the file.                                                               //
+// By removing the define FIXHEADER_WIDTHHEIGHT_SILENT                        //
+// the header is not altered. This makes the unit work as before.             //
+//                                                                            //
+// Changed 2006.07.10 by Finn Tolderlund:                                     //
+// Added conditional switch as default: DEFAULT_GOCLEARLOOP                   //
+// When the switch is defined:                                                //
+// When loading a gif default DrawOptions include goClearLoop                 //
+// Same as adding goClearLoop manually to DrawOptions.                        //
+// This will clear an animated gif before first frame on each loop.           //
+// Someone sent me a 'conductor.gif' where some of the last frame was retaind //
+// when beginning a new loop and that was visually incorrect.                 //
+// Without glClearLoop the first frame may look different on the second loop  //
+// because some part of the last frame could still be present.                //
+// With goClearLoop the first frame will always look the same on each loop.   //
+// I think the last is better.                                                //
+//                                                                            //
+// Changed 2006.07.29 by Finn Tolderlund:                                     //
+// Added a check in procedure TGIFSubImage.Decompress to make sure that       //
+// the InitialBitsPerCode variable never exeeds the value 15.                 //
+// Someone sent an animated iup110296.gif (corrupt I think) which caused      //
+// this unit to crash in function NextLZW because InitialBitsPerCode was 20.  //
+// This fix prevents the crash and should not cause problems with other gifs. //
+// Not sure that the fix is the correct way to handle it. It seems to work.   //
+//                                                                            //
+// Changed 2006.10.09 by Finn Tolderlund:                                     //
+// Received a mail from Michael Thomas Greer with a fix that allows           //
+// the TGIFSubImage.Pixels[] property to be writeable. The help file states   //
+// that the Pixels property can be written, but it was read-only.             //
+// Help file: "Write Pixels to change the color index of individual pixels".  //
+//                                                                            //
+// Changed 2006.10.16 by Finn Tolderlund:                                     //
+// Received a mail from Maurizio Lotauro who was using Delphi 5 and FastMM4.  //
+// FastMM4 complains about a memory leak when using Delphi 5.                 //
+// I don't have Delphi 5 installed so I can't test if there really is a       //
+// memory leak or if it's just FastMM4 which can't detect it correctly.       //
+// The problem and fix only applies to Delphi 5 or older.                     //
+// Added a fix to keep FastMM4 happy. See more at this link:                  //
+// http://sourceforge.net/forum/forum.php?thread_id=1559584&forum_id=443400   //
+//                                                                            //
+// Changed 2007.01.18 by Finn Tolderlund:                                     //
+// The ReduceColors function is changed so that it's now possible to use      //
+// the TFastColorLookup class if you use ColorReduction rmQuantize.           //
+// The TFastColorLookup class was removed 2003-03-06, but is introduced again //
+// because Paul Lopez needed speed when adding images to a gif.               //
+// This changes how rmQuantize works: It's now fast but less precise.         //
+// This means:                                                                //
+// Use rmQuantizeWindows to get precision, use rmQuantize if you need speed.  //
 //                                                                            //
 ////////////////////////////////////////////////////////////////////////////////
 //                                                                            //
@@ -149,11 +264,24 @@ interface
                                 SERIALIZE_RENDER is defined, the draw threads
                                 uses TThread.Synchronize to serialize GIF to
                                 bitmap rendering.
+
+  FIXHEADER_WIDTHHEIGHT_SILENT  Define this symbol to adjust Width and Height
+                                in the header if any of the frames has a larger
+                                Width or Height.
+
+  DEFAULT_GOCLEARLOOP           Define this symbol to clear animation on each
+                                loop before first frame.
+                                Same as adding goClearLoop to DrawOptions.
+                                STRICT_MOZILLA does the same,
+                                but STRICT_MOZILLA does something more.
+
 *)
 
 {$DEFINE REGISTER_TGIFIMAGE}
 {$DEFINE PIXELFORMAT_TOO_SLOW}
 {$DEFINE CREATEDIBSECTION_SLOW}
+{$DEFINE FIXHEADER_WIDTHHEIGHT_SILENT}
+{$DEFINE DEFAULT_GOCLEARLOOP}
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -239,10 +367,26 @@ interface
   {$DEFINE VER125_PLUS}
   {$DEFINE VER13_PLUS}
   {$DEFINE VER14_PLUS}
+  {$DEFINE VER15_PLUS}
   {$DEFINE BAD_STACK_ALIGNMENT}
 {$ENDIF}
 
-{$IF RTLVersion >= 17.0}
+// 2003.03.09 ->
+// Unknown compiler version - assume D4 compatible
+//{$IFNDEF VER9x}
+//  {$IFNDEF VER10_PLUS}
+//    {$DEFINE VER10_PLUS}
+//    {$DEFINE VER11_PLUS}
+//    {$DEFINE VER12_PLUS}
+//    {$DEFINE BAD_STACK_ALIGNMENT}
+//  {$ENDIF}
+//{$ENDIF}
+// 2003.03.09 <-
+
+// 2003.03.09 ->
+// Unknown compiler version - assume D7 compatible
+{$IFNDEF VER9x}
+{$IFNDEF VER10_PLUS}
 {$WARN SYMBOL_PLATFORM OFF}
   {$DEFINE VER10_PLUS}
   {$DEFINE VER11_PLUS}
@@ -250,18 +394,11 @@ interface
   {$DEFINE VER125_PLUS}
   {$DEFINE VER13_PLUS}
   {$DEFINE VER14_PLUS}
+  {$DEFINE VER15_PLUS}
   {$DEFINE BAD_STACK_ALIGNMENT}
-{$IFEND}
-
-// Unknown compiler version - assume D4 compatible
-{$IFNDEF VER9x}
-  {$IFNDEF VER10_PLUS}
-    {$DEFINE VER10_PLUS}
-    {$DEFINE VER11_PLUS}
-    {$DEFINE VER12_PLUS}
-    {$DEFINE BAD_STACK_ALIGNMENT}
-  {$ENDIF}
 {$ENDIF}
+{$ENDIF}
+// 2003.03.09 <-
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -710,6 +847,9 @@ type
     procedure DoSetBounds(ALeft, ATop, AWidth, AHeight: integer);
     function GetClientRect: TRect;
     function GetPixel(x, y: integer): BYTE;
+// 2006.10.09 ->
+    procedure SetPixel(x, y: integer; Value: BYTE);
+// 2006.10.09 <-
     function GetScanline(y: integer): pointer;
     procedure NewBitmap;
     procedure FreeBitmap;
@@ -757,7 +897,10 @@ type
     property Empty: boolean read GetEmpty;
     property Transparent: boolean read FTransparent;
     property GraphicControlExtension: TGIFGraphicControlExtension read FGCE;
-    property Pixels[x, y: integer]: BYTE read GetPixel;
+// 2006.10.09 ->
+//  property Pixels[x, y: integer]: BYTE read GetPixel;
+    property Pixels[x, y: integer]: BYTE read GetPixel write SetPixel;
+// 2006.10.09 <-
     property Scanline[y: integer]: pointer read GetScanline;
   end;
 
@@ -1125,6 +1268,7 @@ type
     FDrawPainter	: TGIFPainter;
     FThreadPriority	: TThreadPriority;
     FAnimationSpeed	: integer;
+    FForceFrame: Integer;  // 2004.03.09
     FDrawBackgroundColor: TColor;
     FOnStartPaint	: TNotifyEvent;
     FOnPaint		: TNotifyEvent;
@@ -1135,6 +1279,9 @@ type
     FPaletteModified	: Boolean;
     FOnProgress		: TProgressEvent;
 {$ENDIF}
+    function GetAnimate: Boolean;  // 2002.07.07
+    procedure SetAnimate(const Value: Boolean);  // 2002.07.07
+    procedure SetForceFrame(const Value: Integer);  // 2004.03.09
   protected
     // Obsolete: procedure Changed(Sender: TObject); {$IFDEF VER9x} virtual; {$ELSE} override; {$ENDIF}
     function GetHeight: Integer; override;
@@ -1174,11 +1321,15 @@ type
     procedure Progress(Sender: TObject; Stage: TProgressStage;
       PercentDone: Byte;  RedrawNow: Boolean; const R: TRect; const Msg: string); dynamic;
 {$ENDIF}
+{$IFDEF FIXHEADER_WIDTHHEIGHT_SILENT}
+    procedure FixHeaderWidthHeight;  // 2006.07.09
+{$ENDIF}
   public
     constructor Create; override;
     destructor Destroy; override;
     procedure SaveToStream(Stream: TStream); override;
     procedure LoadFromStream(Stream: TStream); override;
+    procedure LoadFromResourceName(Instance: THandle; const ResName: String);  // 2002.07.07
     function Add(Source: TPersistent): integer;
     procedure Pack;
     procedure OptimizeColorMap;
@@ -1216,6 +1367,8 @@ type
     property DitherMode: TDitherMode read FDitherMode write FDitherMode;
     property Compression: TGIFCompression read FCompression write FCompression;
     property AnimationSpeed: integer read FAnimationSpeed write SetAnimationSpeed;
+    property Animate: Boolean read GetAnimate write SetAnimate;  // 2002.07.07
+    property ForceFrame: Integer read FForceFrame write SetForceFrame;  // 2004.03.09
     property Painters: TThreadList read FPainters;
     property ThreadPriority: TThreadPriority read FThreadPriority write FThreadPriority;
     property Bitmap: TBitmap read GetBitmap; // Volatile - beware!
@@ -1287,6 +1440,9 @@ var
   GIFImageDefaultDrawOptions : TGIFDrawOptions =
     [goAsync, goLoop, goTransparent, goAnimate, goDither, goAutoDither
 {$IFDEF STRICT_MOZILLA}
+     ,goClearOnLoop
+{$ENDIF}
+{$IFDEF DEFAULT_GOCLEARLOOP} // 2006.07.10
      ,goClearOnLoop
 {$ENDIF}
     ];
@@ -4395,16 +4551,34 @@ var
 begin
   LogicalPalette.palVersion := $0300;
   LogicalPalette.palNumEntries := Colors;
+// 2003.03.06 ->
+  {reset palette to black}
+  FillChar(LogicalPalette.palPalEntry, SizeOf(LogicalPalette.palPalEntry), 0);
+  for i := 0 to 255 do
+    LogicalPalette.palPalEntry[i].peFlags := PC_NOCOLLAPSE;
+// 2003.03.06 <-
 
   if (Windows) then
   begin
     // Get the windows 20 color system palette
     SystemPalette := GetStockObject(DEFAULT_PALETTE);
     GetPaletteEntries(SystemPalette, 0, 10, LogicalPalette.palPalEntry[0]);
-    GetPaletteEntries(SystemPalette, 10, 10, LogicalPalette.palPalEntry[245]);
+    //GetPaletteEntries(SystemPalette, 10, 10, LogicalPalette.palPalEntry[245]);  // wrong offset
+    GetPaletteEntries(SystemPalette, 10, 10, LogicalPalette.palPalEntry[246]);  // 2003.03.06
     Colors := 236;
     Offset := 10;
     LogicalPalette.palNumEntries := 256;
+{ Test code
+// 2003.03.06 ->
+    // Get the windows 20 color system palette
+    SystemPalette := GetStockObject(DEFAULT_PALETTE);
+    GetPaletteEntries(SystemPalette, 0, 10, LogicalPalette.palPalEntry[0]);
+    GetPaletteEntries(SystemPalette, 10, 10, LogicalPalette.palPalEntry[10]);
+    Colors := 236;
+    Offset := 20;
+    LogicalPalette.palNumEntries := 256;
+// 2003.03.06 <-
+}
   end else
     Offset := 0;
 
@@ -4458,16 +4632,34 @@ begin
 
   LogicalPalette.palVersion := $0300;
   LogicalPalette.palNumEntries := Colors;
+// 2003.03.06 ->
+  {reset palette to black}
+  FillChar(LogicalPalette.palPalEntry, SizeOf(LogicalPalette.palPalEntry), 0);
+  for i := 0 to 255 do
+    LogicalPalette.palPalEntry[i].peFlags := PC_NOCOLLAPSE;
+// 2003.03.06 <-
 
   if (Windows) then
   begin
     // Get the windows 20 color system palette
     SystemPalette := GetStockObject(DEFAULT_PALETTE);
     GetPaletteEntries(SystemPalette, 0, 10, LogicalPalette.palPalEntry[0]);
-    GetPaletteEntries(SystemPalette, 10, 10, LogicalPalette.palPalEntry[245]);
+    //GetPaletteEntries(SystemPalette, 10, 10, LogicalPalette.palPalEntry[245]);  // wrong offset
+    GetPaletteEntries(SystemPalette, 10, 10, LogicalPalette.palPalEntry[246]);  // 2003.03.06
     Colors := 236;
     Offset := 10;
     LogicalPalette.palNumEntries := 256;
+{ Test code
+// 2003.03.06 ->
+    // Get the windows 20 color system palette
+    SystemPalette := GetStockObject(DEFAULT_PALETTE);
+    GetPaletteEntries(SystemPalette, 0, 10, LogicalPalette.palPalEntry[0]);
+    GetPaletteEntries(SystemPalette, 10, 10, LogicalPalette.palPalEntry[10]);
+    Colors := 236;
+    Offset := 20;
+    LogicalPalette.palNumEntries := 256;
+// 2003.03.06 <-
+}
   end else
     Offset := 0;
 
@@ -4484,7 +4676,6 @@ begin
         DIB.Free;
       end;
     end;
-    FillChar (RGBQuadArray, SizeOf (RGBQuadArray), 0);
     ColorQuantizer.GetColorTable(RGBQuadArray);
   finally
     ColorQuantizer.Free;
@@ -4677,7 +4868,10 @@ begin
         // rmWindowsGray:
         //  ColorLookup := TGrayWindowsLookup.Create(Palette);
         rmQuantize:
+// 2007.01.18 ->  // switch back to TFastColorLookup
           ColorLookup := TFastColorLookup.Create(Palette);
+//          ColorLookup := TSlowColorLookup.Create(Palette);  // 2003-03-06
+// 2007.01.18 <-
         rmNetscape:
           ColorLookup := TNetscapeColorLookup.Create(Palette);
         rmGrayScale:
@@ -4685,7 +4879,8 @@ begin
         rmMonochrome:
           ColorLookup := TMonochromeLookup.Create(Palette);
       else
-        ColorLookup := TFastColorLookup.Create(Palette);
+//        ColorLookup := TFastColorLookup.Create(Palette);
+        ColorLookup := TSlowColorLookup.Create(Palette);  // 2003-03-06
       end;
 
       // Nothing to do if palette doesn't contain any colors
@@ -5952,7 +6147,10 @@ begin
   *)
   if (Stream.Read(InitialBitsPerCode, 1) <> 1) then
     exit;
-
+// 2006.07.29 ->
+  if InitialBitsPerCode > 8 then
+    InitialBitsPerCode := 8;
+// 2006.07.29 <-
   (*
   **  Initialize the Compression routines
   *)
@@ -7884,6 +8082,17 @@ begin
   Result := BYTE(PChar(longInt(Scanline[y]) + x)^);
 end;
 
+// 2006.10.09 ->
+procedure TGIFSubImage.SetPixel(x, y: integer; Value: BYTE );
+begin
+  if (x < 0) or (x > Width-1) or (y < 0) or (y > Height-1) then
+    Error(sBadPixelCoordinates);
+  if Value >= ActiveColorMap.FCount then
+    Error(sBadColorIndex);
+  BYTE(PChar(longInt(Scanline[y]) + x)^) := Value;
+end;
+// 2006.10.09 <-
+
 function TGIFSubImage.GetScanline(y: integer): pointer;
 begin
   if (y < 0) or (y > Height-1) then
@@ -8229,10 +8438,11 @@ var
     // Encapsulate the mask
     Mask := TBitmap.Create;
     try
-      Mask.Handle := hMask;
+//      Mask.Handle := hMask;  // 2003.08.04
+      Mask.Handle := Windows.CopyImage(hMask, IMAGE_BITMAP, 0, 0, LR_COPYRETURNORG);  // 2003.08.04
       AddMask(Mask);
     finally
-      Mask.ReleaseHandle;
+//      Mask.ReleaseHandle;  // 2003.08.04
       Mask.Free;
     end;
   end;
@@ -10057,20 +10267,17 @@ begin
   // paranoid about the way PainterRef is being used...
   if Image <> nil then  // 2001.02.23
   begin  // 2001.02.23
-  with Image.Painters.LockList do
-    try
-      // Zap pointer to self and remove from painter list
-      if (PainterRef <> nil) and (PainterRef^ = self) then
-        PainterRef^ := nil;
-
-    finally
-      Image.Painters.UnLockList;
-    end;
-
-  Image.Painters.Remove(self);
-  FImage := nil;
+    with Image.Painters.LockList do
+      try
+        // Zap pointer to self and remove from painter list
+        if (PainterRef <> nil) and (PainterRef^ = self) then
+          PainterRef^ := nil;
+      finally
+        Image.Painters.UnLockList;
+      end;
+    Image.Painters.Remove(self);
+    FImage := nil;
   end;  // 2001.02.23
-
 
   // Free buffers
   if (BackupBuffer <> nil) then
@@ -11172,6 +11379,7 @@ begin
   FDrawBackgroundColor := clNone;
   IsDrawing := False;
   IsInsideGetPalette := False;
+  FForceFrame := -1;  // 2004.03.09
   NewImage;
 end;
 
@@ -11290,6 +11498,25 @@ begin
   // Zap all bitmaps
   Pack;
   Changed(self);
+end;
+
+function TGIFImage.GetAnimate: Boolean;
+begin  // 2002.07.07
+  Result:= goAnimate in DrawOptions;
+end;
+
+procedure TGIFImage.SetAnimate(const Value: Boolean);
+begin  // 2002.07.07
+  if Value then
+    DrawOptions:= DrawOptions + [goAnimate]
+  else
+    DrawOptions:= DrawOptions - [goAnimate];
+end;
+
+procedure TGIFImage.SetForceFrame(const Value: Integer);
+begin  // 2004.03.09
+  FForceFrame := Value;
+  Changed(Self);
 end;
 
 procedure TGIFImage.SetAnimationSpeed(Value: integer);
@@ -11593,6 +11820,25 @@ begin
   end;
 end;
 
+// 2006.07.09 ->
+{$IFDEF FIXHEADER_WIDTHHEIGHT_SILENT}
+procedure TGIFImage.FixHeaderWidthHeight;
+var
+  i, w, h: Integer;
+begin
+  for i := 0 to Images.Count - 1 do
+  begin
+    w := Images.SubImages[i].Left + Images.SubImages[i].Width;
+    h := Images.SubImages[i].Top + Images.SubImages[i].Height;
+    if w > Header.Width then
+      Header.Width := w;
+    if h > Header.Height then
+      Header.Height := h;
+  end;
+end;
+{$ENDIF}
+// 2006.07.09 <-
+
 procedure TGIFImage.LoadFromStream(Stream: TStream);
 var
   n			: Integer;
@@ -11608,6 +11854,9 @@ begin
       FHeader.LoadFromStream(Stream);
       // Read images
       FImages.LoadFromStream(Stream, self);
+      {$IFDEF FIXHEADER_WIDTHHEIGHT_SILENT}
+      FixHeaderWidthHeight;  // 2006.07.09
+      {$ENDIF}
       // Read trailer
       with TGIFTrailer.Create(self) do
         try
@@ -11627,6 +11876,19 @@ begin
     else
       n := 0;
     Progress(Self, psEnding, n, True, Rect(0,0,0,0), sProgressLoading);
+  end;
+end;
+
+procedure TGIFImage.LoadFromResourceName(Instance: THandle; const ResName: String);
+// 2002.07.07
+var
+  Stream: TCustomMemoryStream;
+begin
+  Stream := TResourceStream.Create(Instance, ResName, RT_RCDATA);
+  try
+    LoadFromStream(Stream);
+  finally
+    Stream.Free;
   end;
 end;
 
@@ -11895,7 +12157,15 @@ begin
         FDrawOptions := TGIFImage(Source).DrawOptions;
         FColorReduction := TGIFImage(Source).ColorReduction;
         FDitherMode := TGIFImage(Source).DitherMode;
-
+        FForceFrame := TGIFImage(Source).ForceFrame;  // 2004.03.09
+// 2002.07.07 ->
+        FOnWarning:= TGIFImage(Source).FOnWarning;
+        FOnStartPaint:= TGIFImage(Source).FOnStartPaint;
+        FOnPaint:= TGIFImage(Source).FOnPaint;
+        FOnEndPaint:= TGIFImage(Source).FOnEndPaint;
+        FOnAfterPaint:= TGIFImage(Source).FOnAfterPaint;
+        FOnLoop:= TGIFImage(Source).FOnLoop;
+// 2002.07.07 <-
         for i := 0 to TGIFImage(Source).Images.Count-1 do
         begin
           Image := TGIFSubImage.Create(self);
@@ -11904,6 +12174,9 @@ begin
           Progress(Self, psRunning, MulDiv((i+1), 100, TGIFImage(Source).Images.Count),
             False, Rect(0,0,0,0), sProgressCopying);
         end;
+        {$IFDEF FIXHEADER_WIDTHHEIGHT_SILENT}
+        FixHeaderWidthHeight;  // 2006.07.09
+        {$ENDIF}
       finally
         if ExceptObject = nil then
           i := 100
@@ -11949,7 +12222,9 @@ var
   Buffer		: Pointer;
   Stream		: TMemoryStream;
   Bmp			: TBitmap;
-begin
+{$ENDIF}  // 2002.07.07
+begin  // 2002.07.07
+{$IFDEF REGISTER_TGIFIMAGE}  // 2002.07.07
   if (AData = 0) then
     AData := GetClipboardData(AFormat);
   if (AData <> 0) and (AFormat = CF_GIF) then
@@ -11984,12 +12259,10 @@ begin
     end;
   end else
     Error(sUnknownClipboardFormat);
+{$ELSE}  // 2002.07.07
+  Error(sGIFToClipboard);  // 2002.07.07
+{$ENDIF}  // 2002.07.07
 end;
-{$ELSE}
-begin
-  Error(sGIFToClipboard);
-end;
-{$ENDIF}
 
 procedure TGIFImage.SaveToClipboardFormat(var AFormat: Word; var AData: THandle;
   var APalette: HPALETTE);
@@ -11998,7 +12271,9 @@ var
   Stream		: TMemoryStream;
   Data			: THandle;
   Buffer		: Pointer;
-begin
+{$ENDIF}  // 2002.07.07
+begin  // 2002.07.07
+{$IFDEF REGISTER_TGIFIMAGE}  // 2002.07.07
   if (Empty) then
     exit;
   // First store a bitmap version on the clipboard...
@@ -12032,12 +12307,10 @@ begin
   finally
     Stream.Free;
   end;
+{$ELSE}  // 2002.07.07
+  Error(sGIFToClipboard);  // 2002.07.07
+{$ENDIF}  // 2002.07.07
 end;
-{$ELSE}
-begin
-  Error(sGIFToClipboard);
-end;
-{$ENDIF}
 
 function TGIFImage.GetColorMap: TGIFColorMap;
 begin
@@ -12087,12 +12360,17 @@ begin
         FPainters.UnLockList;
       end;
 
+{$IFDEF VER14_PLUS}
+// 2002.07.07
+    if (GetCurrentThreadID = MainThreadID) then
+      while CheckSynchronize do {loop};
+{$ELSE}
     // Process Messages to make Synchronize work
     // (Instead of Application.ProcessMessages)
-{$IFDEF VER14_PLUS}  // 2001.07.23
-    Break;  // 2001.07.23
-    Sleep(0); // Yield  // 2001.07.23
-{$ELSE}  // 2001.07.23
+//{$IFDEF VER14_PLUS}  // 2001.07.23
+//    Break;  // 2001.07.23
+//    Sleep(0); // Yield  // 2001.07.23
+//{$ELSE}  // 2001.07.23
     ThreadWindow := FindWindow('TThreadWindow', nil);
     while PeekMessage(Msg, ThreadWindow, CM_DESTROYWINDOW, CM_EXECPROC, PM_REMOVE) do
     begin
@@ -12106,8 +12384,9 @@ begin
         exit;
       end;
     end;
-    Sleep(0); // Yield
 {$ENDIF}  // 2001.07.23
+    Sleep(0); // Yield
+
   until (False);
   FreeBitmap;
 end;
@@ -12159,8 +12438,12 @@ begin
     if (FImages.Count = 1) or // Only one image
       (not (goAnimate in FDrawOptions)) then // Don't animate
     begin
-      FImages[0].Draw(ACanvas, Rect, (goTransparent in FDrawOptions),
-        (goTile in FDrawOptions));
+      // 2004.03.09 ->
+      if (FForceFrame >= 0) and (FForceFrame < FImages.Count) then
+        FImages[FForceFrame].Draw(ACanvas, Rect, (goTransparent in FDrawOptions), (goTile in FDrawOptions))
+      else
+      // 2004.03.09 <-
+        FImages[0].Draw(ACanvas, Rect, (goTransparent in FDrawOptions), (goTile in FDrawOptions));
       exit;
     end else
     if (FBitmap <> nil) and not(goDirectDraw in FDrawOptions) then
@@ -12207,7 +12490,16 @@ begin
 
         if not(goDirectDraw in FDrawOptions) then
         begin
-{$IFNDEF VER14_PLUS}  // 2001.07.23
+{$IFDEF VER14_PLUS}
+// 2002.07.07
+          while (FDrawPainter <> nil) and (not FDrawPainter.Terminated) and
+            (not FDrawPainter.Started) do
+          begin
+            if not CheckSynchronize then
+              Sleep(0); // Yield
+          end;
+{$ELSE}
+//{$IFNDEF VER14_PLUS}  // 2001.07.23
           ThreadWindow := FindWindow('TThreadWindow', nil);
           // Wait for thread to render first frame
           while (FDrawPainter <> nil) and (not FDrawPainter.Terminated) and
@@ -12355,17 +12647,21 @@ begin
       // to terminate, because they are running in the main thread.
       if (Ghosts = 0) then
         exit;
-
+{$IFDEF VER14_PLUS}
+// 2002.07.07
+      if (GetCurrentThreadID = MainThreadID) then
+        while CheckSynchronize do {loop};
+{$ELSE}
       // Process Messages to make TThread.Synchronize work
       // (Instead of Application.ProcessMessages)
-{$IFDEF VER14_PLUS}  // 2001.07.23
-      Exit;  // 2001.07.23
-{$ELSE}  // 2001.07.23
+//{$IFDEF VER14_PLUS}  // 2001.07.23
+//      Exit;  // 2001.07.23
+//{$ELSE}  // 2001.07.23
       ThreadWindow := FindWindow('TThreadWindow', nil);
       if (ThreadWindow = 0) then
       begin
         KillThreads;
-        exit;
+        Exit;
       end;
       while PeekMessage(Msg, ThreadWindow, CM_DESTROYWINDOW, CM_EXECPROC, PM_REMOVE) do
       begin
@@ -12376,11 +12672,11 @@ begin
         end else
         begin
           KillThreads;
-          exit;
+          Exit;
         end;
       end;
-      Sleep(0);
 {$ENDIF}  // 2001.07.23
+      Sleep(0);
     until (False);
   finally
     FreeBitmap;
@@ -12515,7 +12811,14 @@ finalization
 {$IFDEF VER12_PLUS}
   {$IFNDEF VER14_PLUS} // not anymore need for Delphi 6 and up  // 2001.07.23
   if (DummyThread <> nil) then
+// 2006.10.16 ->
+//    DummyThread.Free;
+  begin
+    DummyThread.Resume;
+    DummyThread.WaitFor;
     DummyThread.Free;
+  end;
+// 2006.10.16 <-
   {$ENDIF}  // 2001.07.23
 {$ENDIF}
 end.

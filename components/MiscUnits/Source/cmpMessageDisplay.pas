@@ -123,6 +123,7 @@ type
   public
     constructor Create (AOwner : TMessageDisplay; AObj : TObject; codepage : Integer); override;
     procedure Print; override;
+    procedure Stop; override;
   end;
 
   TXFaceDisplayObjectLink = class (TGraphicDisplayObjectLink)
@@ -196,6 +197,7 @@ type
     function GetText: WideString;
     function GetSelLength: Integer;
     function GetFocusedTextObject: TDisplayObjectLink;
+    procedure PictureChanged(Sender: TObject);
   protected
     //    function CanAutoSize(var NewWidth, NewHeight: Integer): Boolean; override;
     procedure CreateParams(var Params: TCreateParams); override;
@@ -1001,6 +1003,19 @@ begin
   inherited Paint
 end;
 
+procedure TMessageDisplay.PictureChanged(Sender: TObject);
+var
+  I: Integer;
+  Obj: TDisplayObjectLink;
+begin
+  for I := 0 to fObjects.Count - 1 do
+  begin
+    Obj := TDisplayObjectLink(fObjects[i]);
+    if (Sender = Obj.fObj) and (Sender is TGraphic) then
+      Obj.Refresh;
+  end;
+end;
+
 (*----------------------------------------------------------------------*
  | procedure TMessageDisplay.RecalcBounds                               |
  |                                                                      |
@@ -1540,6 +1555,9 @@ constructor TGraphicDisplayObjectLink.Create(AOwner: TMessageDisplay; AObj: TObj
 begin
   inherited;
 
+  if AObj is TGraphic then
+    TGraphic(AObj).OnChange := AOwner.PictureChanged;
+
   fWidth := -1;
   fHeight := -1;
 end;
@@ -1729,6 +1747,13 @@ begin
   gr := Value as TGraphic;
   fObj := gr;
   Refresh
+end;
+
+procedure TGraphicDisplayObjectLink.Stop;
+begin
+  inherited Stop;
+  if fObj is TGraphic then
+    TGraphic(fObj).OnChange := nil;
 end;
 
 { TWinControlObjectLink }

@@ -115,7 +115,7 @@ begin
     skipFirstLine := fIsReply and
                      (fPostingSettings.PostingStyle <> psTop) and
                      ((fPostingSettings.QuoteHeader <> '') or (fPostingSettings.QuoteSalutation <> ''));
-    if not cbCheckSpelling.Checked or (CWSpellChecker1.CheckAndShowModal (skipFirstLine) = mrOK) then
+    if not cbCheckSpelling.Checked or (CWSpellChecker1.CheckAndShowModal(Owner as TCustomForm, skipFirstLine) = mrOK) then
       PostAndClose
     else
       mmoMessage.SetFocus
@@ -329,7 +329,7 @@ begin
   skipFirstLine := fIsReply and
                    (fPostingSettings.PostingStyle <> psTop) and
                    ((fPostingSettings.QuoteHeader <> '') or (fPostingSettings.QuoteSalutation <> ''));
-  CWSpellChecker1.CheckAndShowModal (skipFirstLine);
+  CWSpellChecker1.CheckAndShowModal(Owner as TCustomForm, skipFirstLine);
 end;
 
 procedure TfmePost.mnuPasteQuoteClick(Sender: TObject);
