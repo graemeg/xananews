@@ -3861,7 +3861,7 @@ begin
 
   st := Trim (st);
   if (st = '') or (st = '-- ') then
-    result := DecodeHeader (Subject)
+    result := DecodeSubject(Subject, CodePage)
   else
     result := st
 end;

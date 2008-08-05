@@ -191,8 +191,9 @@ begin
 
   if fIsReply then
   begin
-    Caption := 'Reply to article from ' + ReplyToArticle.FromName + ' - ' + DecodeHeader (ReplyToArticle.Subject);
-    sub := Trim (DecodeHeader (ReplyToArticle.Subject));
+    sub := DecodeSubject(ReplyToArticle.subject, ReplyToArticle.CodePage);
+    Caption := 'Reply to article from ' + ReplyToArticle.FromName + ' - ' + sub;
+    sub := Trim (sub);
 
     fOrigReferences := ReplyToArticle.References;
     fOrigMessageID := ReplyToArticle.MessageId;

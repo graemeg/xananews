@@ -172,8 +172,9 @@ begin
   if fIsReply then
   begin
     groupName := ReplyToArticle.Owner.Name;
-    Caption := 'Reply to article from ' + ReplyToArticle.FromName + ' - ' + StringToGDIString (DecodeHeader (ReplyToArticle.Subject), ReplyToArticle.CodePage);
-    sub := Trim (DecodeHeader (ReplyToArticle.Subject));
+    sub := DecodeSubject(ReplyToArticle.subject, ReplyToArticle.CodePage);
+    Caption := 'Reply to article from ' + ReplyToArticle.FromName + ' - ' + StringToGDIString (sub, ReplyToArticle.CodePage);
+    sub := Trim (sub);
 
     fOrigReferences := ReplyToArticle.References;
     fOrigMessageID := ReplyToArticle.MessageId;

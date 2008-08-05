@@ -198,6 +198,7 @@ procedure LoadRASEntries;
 function HeaderCharset (h : string) : string;
 procedure DecodeFromEMail (const from : string; var fromName, fromEMail : string);
 function DecodeHeader (const header : string; codePage : PInteger = Nil) : widestring;
+function DecodeSubject (const subject: string; codePage: Integer): string;
 function GenerateMessageID (const product, stub, host : string) : string;
 function EncodeHeader (const header : string; codepage : Integer; from : boolean) : string;
 procedure SetTempStatusMessage (const msg : string; pos, max : word);
@@ -948,6 +949,15 @@ begin
   //Not exactly clean, but this parameter seems not to be used anyway.
   if Assigned(CodePage) then
     CodePage^ := CP_UTF_16;
+end;
+
+
+function DecodeSubject(const subject: string; codePage: Integer): string;
+var
+  cp: Integer;
+begin
+  cp := codePage;
+  Result := WideStringToString(DecodeHeader(subject, @cp), codePage);
 end;
 
 var

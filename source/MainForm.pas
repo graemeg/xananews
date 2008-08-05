@@ -3680,7 +3680,7 @@ procedure TfmMain.DisplayArticleBody(article: TArticleBase);
 var
   idx : Integer;
   st : string;
-
+  sub : string;
 begin
   if Article <> fPrevArticle then
   begin
@@ -3703,7 +3703,8 @@ begin
 
     MessageScrollBox1.Msg := article.Msg;
     pnlDetailsBar.Font.Charset := CodePageToCharset (article.CodePage);
-    st := Format ('  Message %d from %s.  %s', [article.ArticleNo, article.FromName, DecodeHeader (article.subject)]);
+    sub := DecodeSubject(article.subject, article.CodePage);
+    st := Format ('  Message %d from %s.  %s', [article.ArticleNo, article.FromName, sub]);
     pnlDetailsBar.Caption := StringReplace (StringToGDIString (st, article.CodePage), '&', '&&', [rfReplaceAll]);
     idx := cbCharset.Items.IndexOf (CodePagetoCharsetName (article.CodePage));
     cbCharset.ItemIndex := idx;
@@ -7289,9 +7290,9 @@ begin
       1 : st := stNumber;
       2 : if not fForensicMode then
             if (isRoot) or (not options.FirstLineAsSubject) then
-              st := DecodeHeader (Article.Subject)
+              st := DecodeSubject(article.Subject, article.CodePage)
             else
-              st  := Article.InterestingMessageLine
+              st := Article.InterestingMessageLine
           else
             st := Article.PostingHost;
       3 : st := Article.FromName;
@@ -11584,9 +11585,9 @@ begin
       1 : st := stNumber;
       2 : if not fForensicMode then
             if (isRoot) or (not options.FirstLineAsSubject) then
-              st := DecodeHeader (Article.Subject)
+              st := DecodeSubject(article.Subject, article.CodePage)
             else
-              st  := Article.InterestingMessageLine
+              st := Article.InterestingMessageLine
           else
             st := Article.PostingHost;
       3 : st := Article.From;
