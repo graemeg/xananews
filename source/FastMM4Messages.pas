@@ -2,7 +2,7 @@
 
 Fast Memory Manager: Messages
 
-Change these strings to translate FastMM into the language of your choice.
+English translation by Pierre le Riche.
 
 }
 
@@ -14,8 +14,7 @@ interface
 
 const
   {The name of the debug info support DLL}
-  DebugInfoLibraryName = 'FastMM_DebugInfo.dll';
-  DebugInfoDllNotAvailableMsg = #13#10#13#10'(The ' + DebugInfoLibraryName + ' library is not available, so no unit/line number debug information can be displayed in the stack traces.)';
+  FullDebugModeLibraryName = 'FastMM_FullDebugMode.dll';
   {Event log strings}
   LogFileExtension = '_MemoryManager_EventLog.txt'#0;
   CRLF = #13#10;
@@ -27,6 +26,7 @@ const
   {Memory dump message}
   MemoryDumpMsg = #13#10#13#10'Current memory dump of 256 bytes starting at pointer address ';
   {Block Error Messages}
+  BlockScanLogHeader = 'Allocated block logged by LogAllocatedBlocksToFile. The size is: ';
   ErrorMsgHeader = 'FastMM has detected an error during a ';
   GetMemMsg = 'GetMem';
   FreeMemMsg = 'FreeMem';
@@ -43,18 +43,12 @@ const
   StackTraceAtAllocMsg = #13#10#13#10'Stack trace of when this block was allocated (return addresses):';
   PreviousObjectClassMsg = #13#10#13#10'The block was previously used for an object of class: ';
   CurrentObjectClassMsg = #13#10#13#10'The block is currently used for an object of class: ';
+  PreviousAllocationGroupMsg = #13#10#13#10'The allocation group was: ';
+  PreviousAllocationNumberMsg = #13#10#13#10'The allocation number was: ';
+  CurrentAllocationGroupMsg = #13#10#13#10'The allocation group is: ';
+  CurrentAllocationNumberMsg = #13#10#13#10'The allocation number is: ';
   StackTraceAtFreeMsg = #13#10#13#10'Stack trace of when the block was previously freed (return addresses):';
-  BlockErrorMsgTitle = 'FastMM: Memory Error Detected';
-  {Virtual Method Called On Freed Object Errors}
-  StandardVirtualMethodNames: array[1 + vmtParent div 4 .. -1] of PChar = (
-    'SafeCallException',
-    'AfterConstruction',
-    'BeforeDestruction',
-    'Dispatch',
-    'DefaultHandler',
-    'NewInstance',
-    'FreeInstance',
-    'Destroy');
+  BlockErrorMsgTitle = 'Memory Error Detected';
   VirtualMethodErrorHeader = 'FastMM has detected an attempt to call a virtual method on a freed object. An access violation will now be raised in order to abort the current operation.';
   InterfaceErrorHeader = 'FastMM has detected an attempt to use an interface of a freed object. An access violation will now be raised in order to abort the current operation.';
   BlockHeaderCorruptedNoHistoryMsg = ' Unfortunately the block header has been corrupted so no history is available.';
@@ -84,35 +78,53 @@ const
   {Leak checking messages}
   LeakLogHeader = 'A memory block has been leaked. The size is: ';
   LeakMessageHeader = 'This application has leaked memory. ';
-  SmallLeakDetail = 'The small block leaks are:'#13#10;
-  LargeLeakDetail = 'The sizes of leaked medium and large blocks are: ';
+  SmallLeakDetail = 'The small block leaks are'
+{$ifdef HideExpectedLeaksRegisteredByPointer}
+    + ' (excluding expected leaks registered by pointer)'
+{$endif}
+    + ':'#13#10;
+  LargeLeakDetail = 'The sizes of leaked medium and large blocks are'
+{$ifdef HideExpectedLeaksRegisteredByPointer}
+    + ' (excluding expected leaks registered by pointer)'
+{$endif}
+    + ': ';
   BytesMessage = ' bytes: ';
-  StringBlockMessage = 'String';
+  AnsiStringBlockMessage = 'AnsiString';
+  UnicodeStringBlockMessage = 'UnicodeString';
   LeakMessageFooter = #13#10
 {$ifndef HideMemoryLeakHintMessage}
-    + #13#10'You may use a tool like MemProof to help you track down the source of these leaks. '
-    + 'Steps to use MemProof:'#13#10'  1) Remove FastMM from the project.'#13#10'  2) Enable TD32 debug info in compiler options.'#13#10
-    + '  3) Build (not compile) the application.'#13#10'  4) Ensure that the MemProof search directories are configured correctly.'#13#10
-    + '  5) Run the application inside MemProof.'#13#10
-    + 'MemProof is freeware and can be downloaded from http://www.automatedqa.com/downloads/memproof.'#13#10#13#10
-    + 'Note: '
+    + #13#10'Note: '
   {$ifdef RequireIDEPresenceForLeakReporting}
     + 'This memory leak check is only performed if Delphi is currently running on the same computer. '
   {$endif}
-  {$ifdef LogMemoryLeakDetailToFile}
+  {$ifdef FullDebugMode}
+    {$ifdef LogMemoryLeakDetailToFile}
     + 'Memory leak detail is logged to a text file in the same folder as this application. '
+    {$else}
+    + 'Enable the "LogMemoryLeakDetailToFile" to obtain a log file containing detail on memory leaks. '
+    {$endif}
+  {$else}
+    + 'To obtain a log file containing detail on memory leaks, enable the "FullDebugMode" and "LogMemoryLeakDetailToFile" conditional defines. '
   {$endif}
-    + 'To disable this check, undefine "EnableMemoryLeakReporting".'#13#10
+    + 'To disable this memory leak check, undefine "EnableMemoryLeakReporting".'#13#10
 {$endif}
     + #0;
-  LeakMessageTitle = 'FastMM: Memory Leak Detected';
+  LeakMessageTitle = 'Memory Leak Detected';
 {$ifdef UseOutputDebugString}
   FastMMInstallMsg = 'FastMM has been installed.';
   FastMMInstallSharedMsg = 'Sharing an existing instance of FastMM.';
   FastMMUninstallMsg = 'FastMM has been uninstalled.';
   FastMMUninstallSharedMsg = 'Stopped sharing an existing instance of FastMM.';
 {$endif}
+{$ifdef DetectMMOperationsAfterUninstall}
+  InvalidOperationTitle = 'MM Operation after uninstall.';
+  InvalidGetMemMsg = 'FastMM has detected a GetMem call after FastMM was uninstalled.';
+  InvalidFreeMemMsg = 'FastMM has detected a FreeMem call after FastMM was uninstalled.';
+  InvalidReallocMemMsg = 'FastMM has detected a ReallocMem call after FastMM was uninstalled.';
+  InvalidAllocMemMsg = 'FastMM has detected an AllocMem call after FastMM was uninstalled.';
+{$endif}
 
 implementation
 
 end.
+
