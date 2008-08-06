@@ -5599,7 +5599,7 @@ end;
 function CheckURI(Cert: TASN1Struct; const AURI: string): Boolean;
 var
   Ext: TX509Extension;
-  I, J, Res: Integer;
+  I, J, K, L, Res: Integer;
   P: PASN1Struct;
   URI: string;
   Found: Boolean;
@@ -5628,17 +5628,30 @@ begin
     if Result and not Found then begin
       Res := ExtractSubject(Cert,Name,False);
       if Res and (E_OK or E_STRING_FORMAT) = Res then begin
-        J := Pos('://',AURI);
-        if J = 0 then
-          J := 1
-        else
-          J := J + 3;
         SL := TStringList.Create;
         try
           SL.Text := Name.commonName.Str;
           for I := 0 to SL.Count - 1 do begin
             URI := SL[I];
-            Found := StrLIComp(PChar(URI),PChar(@AURI[J]),Length(URI)) = 0;
+            J := Pos('://',AURI);
+            if J = 0 then
+              J := 1
+            else
+              J := J + 3;
+            {handle wildchars}
+            K := Pos('*',URI);
+            if K = 0 then
+              K := 1
+            else
+            begin
+              K := K + 2;
+              L := Pos('.',AURI);
+              if L = 0 then
+                K := 1
+              else
+                J := L + 1;
+            end;
+            Found := StrLIComp(PChar(@URI[K]),PChar(@AURI[J]),Length(PChar(@URI[K]))) = 0;
             if Found then Break;
             Result := False;
           end;

@@ -1638,6 +1638,8 @@ function TTLS_HandshakeProtocol.Add(var H: PTLSHandshake;
     end;
   end;
 
+var
+  LH: PTLSHandshake;
 begin
   Result := -1;
   if Assigned(H) and OutOfOrder(H^.msg_type) then begin
@@ -1649,29 +1651,30 @@ begin
       SetLength(FHandshakes,Length(FHandshakes)+1);
       FHandshakes[Length(FHandshakes)-1] := H;
       FPrevHandshake := H^.msg_type;
+      LH := H;
+      H := nil;
     end;
 
-    case H^.msg_type of
-      hello_request:       Result := HandleHelloRequest(H,Len,Response);
-      client_hello:        Result := HandleClientHello(H,Len,Response);
-      server_hello:        Result := HandleServerHello(H,Len,Response);
+    case LH^.msg_type of
+      hello_request:       Result := HandleHelloRequest(LH,Len,Response);
+      client_hello:        Result := HandleClientHello(LH,Len,Response);
+      server_hello:        Result := HandleServerHello(LH,Len,Response);
       certificate:         if FIAmServer then
-                             Result := HandleClientCert(H,Len,Response)
+                             Result := HandleClientCert(LH,Len,Response)
                            else
-                             Result := HandleServerCert(H,Len,Response);
-      server_key_exchange: Result := HandleServerKeyExch(H,Len,Response);
-      certificate_request: Result := HandleServerCertReq(H,Len,Response);
-      server_hello_done:   Result := HandleServerHelloDone(H,Len,Response);
-      client_key_exchange: Result := HandleClientKeyExch(H,Len,Response);
-      certificate_verify:  Result := HandleClientCertVer(H,Len,Response);
+                             Result := HandleServerCert(LH,Len,Response);
+      server_key_exchange: Result := HandleServerKeyExch(LH,Len,Response);
+      certificate_request: Result := HandleServerCertReq(LH,Len,Response);
+      server_hello_done:   Result := HandleServerHelloDone(LH,Len,Response);
+      client_key_exchange: Result := HandleClientKeyExch(LH,Len,Response);
+      certificate_verify:  Result := HandleClientCertVer(LH,Len,Response);
       finished:            if FIAmServer then
-                             Result := HandleClientFinished(H,Len,Response)
+                             Result := HandleClientFinished(LH,Len,Response)
                            else
-                             Result := HandleServerFinished(H,Len,Response);
+                             Result := HandleServerFinished(LH,Len,Response);
     else
       Exit;
     end;
-    H := nil;
   end;
 end;
 
