@@ -158,6 +158,8 @@ var
   sl : TStrings;
   st : string;
   dt : string;
+  from : string;
+  sub : string;
 begin
   obj := Msg.Obj;
   if not Assigned (obj) then Exit;
@@ -175,9 +177,20 @@ begin
     if dt = '' then
       dt := SafeDateTimeToInternetStr (art.Date, True);
 
+    if raw then
+    begin
+      from := art.From;
+      sub  := art.Subject;
+    end
+    else
+    begin
+      from := '"' + art.FromName + '" <' + art.FromEmail + '>';
+      sub  := DecodeSubject(art.Subject, art.CodePage);
+    end;
+
     Result :=
-      headst+'From: ' + art.From + #13#10 +
-      headst+'Subject: ' + art.Subject + #13#10 +
+      headst+'From: ' + from + #13#10 +
+      headst+'Subject: ' + sub + #13#10 +
       headst+'Date: ' + dt + #13#10 +
       headst+'Message-ID: ' + art.MessageId + #13#10;
 

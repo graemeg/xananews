@@ -1028,6 +1028,12 @@ type
     fAutoGetMessages : boolean;
 //    fOldMonitorWindowProc : TWndMethod;
     fDontMarkOnLeave : boolean;
+{$ifdef ConditionalExpressions}
+ {$if CompilerVersion = 18.5}
+    fIsIconized : boolean;
+ {$ifend}
+{$endif}
+
     procedure PopulateSearchBarOpCombo;
 
 //    procedure MonitorWindowProc (var message : TMessage);
@@ -1147,6 +1153,7 @@ type
     procedure WmShowNewsgroupList (var msg : TMessage); message WM_SHOWNEWSGROUPLIST;
     procedure WmApplyChanges (var msg : TMessage); message WM_APPLYCHANGES;
     procedure WmSize (var msg : TMessage); message WM_SIZE;
+    procedure WMSysCommand(var Message: TWMSysCommand); message WM_SYSCOMMAND;
 
     procedure SaveArticleHeaderPositions;
     procedure SaveAttachment (mp : TmvMessagePart; const fileName : string; multipart : boolean);
@@ -9351,6 +9358,44 @@ begin
     fSMPos := 0
   end;
   UpdateStatusBar (fSM, 0, fSmMax, fSmPos);
+end;
+
+procedure TfmMain.WMSysCommand(var Message: TWMSysCommand);
+{$ifdef ConditionalExpressions}
+ {$if CompilerVersion = 18.5}
+var
+  I: Integer;
+ {$ifend}
+{$endif}
+begin
+  inherited;
+{$ifdef ConditionalExpressions}
+ {$if CompilerVersion = 18.5}  {18.5 = D2007 Re-check on later versions}
+  if Application.MainFormOnTaskBar then
+  begin
+    case (Message.CmdType and $FFF0) of
+      SC_MINIMIZE:
+        begin
+          fIsIconized := True;
+          for I := fModelessWindowList.Count - 1 downto 0 do
+            ShowWindow(TCustomForm(fModelessWindowList[I]).Handle, SW_HIDE);
+        end;
+      SC_MAXIMIZE,
+      SC_RESTORE:
+        begin
+          if fIsIconized then
+          begin
+            for I := 0 to fModelessWindowList.Count - 1 do
+              ShowWindow(TCustomForm(fModelessWindowList[I]).Handle, SW_RESTORE);
+            fIsIconized := False;
+          end;
+        end;
+    end;
+  end;
+ {$elseif CompilerVersion > 18.5}
+   {$Message Warn 'Re-check if above fix is still needed on later versions. Also see: http://qc.codegear.com/wc/qcmain.aspx?d=65418'}
+ {$ifend}
+{$endif}
 end;
 
 procedure TfmMain.actViewGroupMultipartExecute(Sender: TObject);

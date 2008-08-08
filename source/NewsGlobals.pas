@@ -196,7 +196,7 @@ function WideROT13 (const st : WideString) : WideString;
 function WideReverseString (const st : WideString) : WideString;
 procedure LoadRASEntries;
 function HeaderCharset (h : string) : string;
-procedure DecodeFromEMail (const from : string; var fromName, fromEMail : string);
+procedure DecodeFromEMail (const from: string; var fromName, fromEMail: string; codePage: Integer = -1);
 function DecodeHeader (const header : string; codePage : PInteger = Nil) : widestring;
 function DecodeSubject (const subject: string; codePage: Integer): string;
 function GenerateMessageID (const product, stub, host : string) : string;
@@ -782,7 +782,7 @@ begin
   end
 end;
 
-procedure DecodeFromEMail (const from : string; var fromName, fromEMail : string);
+procedure DecodeFromEMail (const from: string; var fromName, fromEMail: string; codePage: Integer = -1);
 var
   p : Integer;
 begin
@@ -811,7 +811,11 @@ begin
       fromEmail := '';
     end
   end;
-  fromName := DecodeHeader (fromName);
+
+
+  if codePage = -1  then
+    codePage := CP_ACP;
+  fromName := WideStringToString(DecodeHeader(fromName), CodePage);
 
   if fromName = '' then
     fromName := from;

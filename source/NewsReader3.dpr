@@ -130,17 +130,17 @@ begin
 end;
 
 begin
-  Application.MainFormOnTaskBar := True;
   {$ifdef FastMM}
 //  RegisterExpectedMemoryLeak (TCriticalSection); {In Indy 9}
   {$endif}
   if TfmMain.CheckRunOnce then
   begin
-    ShowSplash;
     Application.Initialize;
+    Application.MainFormOnTaskBar := True;
+    ShowSplash;
     Application.Title := 'XanaNews';
     Application.HelpFile := 'XanaNews.chm';
     Application.CreateForm(TfmMain, fmMain);
-  Application.Run
+    Application.Run
   end
 end.

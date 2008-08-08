@@ -312,7 +312,7 @@ begin
     soDate      : result := DateToByteStr (art.Date);
     soLines     : result := Format ('%8.8d', [art.Lines]);
     soSubject   : result := art.Subject;
-    soAuthor    : DecodeFromEMail (art.From, result, fn);
+    soAuthor    : DecodeFromEMail (art.From, result, fn, art.fCodePage);
   end;
 
   if so <> soDate then

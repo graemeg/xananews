@@ -6050,8 +6050,8 @@ procedure TArticleBase.DecodeFromName;
 begin
   if not fFromNameDecoded then
   begin
-    NewsGlobals.DecodeFromEMail(fFrom, fFromName, fFromEMail);
-    fFromNameDecoded := True
+    NewsGlobals.DecodeFromEMail(fFrom, fFromName, fFromEMail, fCodePage);
+    fFromNameDecoded := (fCodePage <> -1);
   end
 end;
 
@@ -6806,7 +6806,13 @@ end;
 
 procedure TArticleBase.SetCodePage(const Value: Integer);
 begin
-  fCodePage := Value
+  if fCodePage <> Value then
+  begin
+    fCodePage := Value;
+    // When the CodePage has changed the fromName needs to be re-decoded using
+    // the current/actual CodePage settings.
+    fFromNameDecoded := False;
+  end;
 end;
 
 procedure TArticleBase.SetFlag(flag: DWORD; value: boolean);

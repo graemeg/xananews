@@ -173,7 +173,9 @@ begin
   begin
     groupName := ReplyToArticle.Owner.Name;
     sub := DecodeSubject(ReplyToArticle.subject, ReplyToArticle.CodePage);
-    Caption := 'Reply to article from ' + ReplyToArticle.FromName + ' - ' + StringToGDIString (sub, ReplyToArticle.CodePage);
+    Caption := 'Reply to article from ' +
+               StringToGDIString(ReplyToArticle.FromName, ReplyToArticle.CodePage) + ' - ' +
+               StringToGDIString(sub, ReplyToArticle.CodePage);
     sub := Trim (sub);
 
     fOrigReferences := ReplyToArticle.References;
