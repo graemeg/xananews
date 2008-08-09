@@ -5757,7 +5757,7 @@ begin
     Exit;
   end;
 
-  FillChar(Ext,SizeOf(Ext),0);
+  Ext := nil;
   if CheckCriticalExtensions(Cert,Ext) = E_NOT_SUPPORTED then begin
     Status := crcUnsupportedExtension;
     Ext.Free;

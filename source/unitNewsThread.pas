@@ -471,6 +471,7 @@ begin
     fClient.Disconnect;
     WaitFor;
     fUISync.Free;
+    fSSLHandler.TLSServer.Free;
     fSSLHandler.Free;
     fClient.Free;
     fTrigger.Free;

@@ -5167,8 +5167,9 @@ begin
       Result := E_EMPTY;
     Inc(Idx);
   until (Result <> E_OK);
-  DisposeASN1Struct(Ext.extnValue);
-  FillChar(Ext,SizeOf(Ext),0);
+//  DisposeASN1Struct(Ext.extnValue);
+//  FillChar(Ext,SizeOf(Ext),0);
+  FreeAndNil(Ext);
 end;
 
 function ExtractNamedExtension(const Cert: TASN1Struct; OID: string; var Ext: TX509Extension): Integer;
