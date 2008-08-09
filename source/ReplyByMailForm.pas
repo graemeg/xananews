@@ -157,10 +157,9 @@ end;
 
 procedure TfmReplyByMail.CreateParams(var params: TCreateParams);
 begin
-  inherited;
-
-  params.ExStyle := params.ExStyle or WS_EX_APPWINDOW;
-
+  inherited CreateParams(params);
+  params.ExStyle   := params.ExStyle or WS_EX_APPWINDOW;
+  params.WndParent := Application.Handle;
 end;
 
 procedure TfmReplyByMail.SendSMTPMail (settings : TSMTPServerSettings; const st : string; codePage : Integer; AUseOutbasket : boolean);

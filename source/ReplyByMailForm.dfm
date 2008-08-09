@@ -147,6 +147,7 @@ object fmReplyByMail: TfmReplyByMail
     end
     inherited btnAdvanced: TButton
       Left = 688
+      Visible = False
       ExplicitLeft = 688
     end
     inherited btnSpell: TBitBtn

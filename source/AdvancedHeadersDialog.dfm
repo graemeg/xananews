@@ -1,7 +1,6 @@
 object dlgAdvancedHeaders: TdlgAdvancedHeaders
   Left = 373
   Top = 215
-  AutoScroll = False
   Caption = 'Advanced Headers'
   ClientHeight = 270
   ClientWidth = 389
@@ -14,7 +13,7 @@ object dlgAdvancedHeaders: TdlgAdvancedHeaders
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   OldCreateOrder = False
-  Position = poScreenCenter
+  Position = poOwnerFormCenter
   DesignSize = (
     389
     270)
@@ -36,6 +35,7 @@ object dlgAdvancedHeaders: TdlgAdvancedHeaders
     ScrollBars = ssBoth
     TabOrder = 0
     WordWrap = False
+    OnKeyDown = mmoAdvancedHeadersKeyDown
   end
   object btnOK: TButton
     Left = 304

@@ -426,9 +426,9 @@ end;
 
 procedure TdlgSearch.CreateParams(var params: TCreateParams);
 begin
-  inherited;
-
-  params.ExStyle := params.ExStyle or WS_EX_APPWINDOW;
+  inherited CreateParams(params);
+  params.ExStyle   := params.ExStyle or WS_EX_APPWINDOW;
+  params.WndParent := Application.Handle;
 end;
 
 procedure TdlgSearch.FormShow(Sender: TObject);

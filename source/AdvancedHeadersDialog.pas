@@ -12,6 +12,8 @@ type
     btnOK: TButton;
     btnCancel: TButton;
     Label1: TLabel;
+    procedure mmoAdvancedHeadersKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
   private
     { Private declarations }
   public
@@ -24,5 +26,12 @@ var
 implementation
 
 {$R *.dfm}
+
+procedure TdlgAdvancedHeaders.mmoAdvancedHeadersKeyDown(Sender: TObject;
+  var Key: Word; Shift: TShiftState);
+begin
+  if Key = VK_ESCAPE then
+    btnCancel.Click;
+end;
 
 end.

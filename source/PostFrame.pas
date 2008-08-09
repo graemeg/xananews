@@ -399,8 +399,10 @@ procedure TfmePost.btnAttachmentsClick(Sender: TObject);
 var
   dlg : TdlgAttachments;
 begin
-  dlg := TdlgAttachments.Create(nil);
+  dlg := TdlgAttachments.Create(Owner);
   try
+    dlg.PopupParent := Owner as TCustomForm;
+    dlg.PopupMode := pmExplicit;
     dlg.PostFrame := self;
     if dlg.ShowModal = mrOK then
     begin

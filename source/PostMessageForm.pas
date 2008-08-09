@@ -661,8 +661,10 @@ var
   i : Integer;
 
 begin
-  dlg := TdlgAdvancedHeaders.Create (nil);
+  dlg := TdlgAdvancedHeaders.Create(Self);
   try
+    dlg.PopupParent := Self;
+    dlg.PopupMode := pmExplicit;
     MakeHeaderStringList;
     dlg.mmoAdvancedHeaders.Lines.BeginUpdate;
     try
