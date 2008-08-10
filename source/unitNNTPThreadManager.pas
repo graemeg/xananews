@@ -31,6 +31,7 @@ private
   fAllThreadsPaused: boolean;
   fOnNotifyNewGroups: TOnNotifyNewGroups;
   fGetterSync : TCriticalSection;
+  fConnectToSync : TCriticalSection;
   fLocked : boolean;
 
   function LockFindGetter (cls : TTCPGetterClass; settings : TServerSettings) : TTCPGetter;
@@ -43,6 +44,7 @@ private
   function GetActiveGetter(idx: Integer): TTCPGetter;
   function GetActiveGetterCount: Integer;
   function GetNoOutbasketEntries: Integer;
+  function ReadCurrentConnectoid: string;
 
 public
   constructor Create (const ANewsAgent : string);
@@ -83,7 +85,7 @@ public
   procedure ResumeOutbasketEntries;
 
   property Connected : boolean read GetConnected;
-  property CurrentConnectoid : string read fCurrentConnectoid;
+  property CurrentConnectoid : string read ReadCurrentConnectoid;
   property ThreadManagerState [obj : TObject] : TThreadManagerState read GetThreadManagerState;
 
   property StatusBarMessage [account : TServerSettings; group : TSubscribedGroup] : string read GetStatusBarMessage;
@@ -235,7 +237,7 @@ begin
   begin
     fConnecting.Enter;
     try
-                  // If not connected to internet, or connected to another ISP
+      // If not connected to internet, or connected to another ISP
       if (fCurrentConnectoid = '') or ((fCurrentConnectoid <> settings.RASConnection) and (settings.RASConnection <> '')) then
       begin
         if fConnection <> 0 then
@@ -293,6 +295,7 @@ begin
   fGetterList := TObjectList.Create;
   fConnecting := TCriticalSection.Create;
   fGetterSync := TCriticalSection.Create;
+  fConnectToSync := TCriticalSection.Create;
   GetCurrentConnectoid;
   gGetVersionThread := TGetVersionThread.Create
 end;
@@ -319,6 +322,7 @@ begin
   UnlockGetterList;
 
   FreeAndNil (fGetterSync);
+  FreeAndNil(fConnectToSync);
   inherited;
 end;
 
@@ -480,32 +484,37 @@ end;
 
 function TNNTPThreadManager.GetConnected: boolean;
 begin
-  result := fCurrentConnectoid <> ''
+  result := ReadCurrentConnectoid <> ''
 end;
 
 procedure TNNTPThreadManager.GetCurrentConnectoid;
 var
   connectoidFlags : DWORD;
 begin
-  if Assigned (InternetGetConnectedStateEx) then
-  begin
-    fCurrentConnectoid := '';
-    SetLength (fCurrentConnectoid, 256);
-    connectoidFlags := DWORD (@InternetGetConnectedStateEx);
-    if InternetGetConnectedStateEx (connectoidFlags, PChar (fCurrentConnectoid), 256, 0) then
-      if (ConnectoidFlags and INTERNET_CONNECTION_LAN) <> 0 then
-        fCurrentConnectoid := '*'
+  fConnectToSync.Enter;
+  try
+    if Assigned (InternetGetConnectedStateEx) then
+    begin
+      fCurrentConnectoid := '';
+      SetLength (fCurrentConnectoid, 256);
+      connectoidFlags := DWORD (@InternetGetConnectedStateEx);
+      if InternetGetConnectedStateEx (connectoidFlags, PChar (fCurrentConnectoid), 256, 0) then
+        if (ConnectoidFlags and INTERNET_CONNECTION_LAN) <> 0 then
+          fCurrentConnectoid := '*'
+        else
+          fCurrentConnectoid := PChar (fCurrentConnectoid)
       else
-        fCurrentConnectoid := PChar (fCurrentConnectoid)
+        fCurrentConnectoid := ''
+    end
     else
-      fCurrentConnectoid := ''
-  end
-  else
-    if InternetGetConnectedState (@connectoidFlags, 0) then
-      if (ConnectoidFlags and INTERNET_CONNECTION_LAN) <> 0 then
-        fCurrentConnectoid := '*'
-      else
-        fCurrentConnectoid := PChar (fCurrentConnectoid)
+      if InternetGetConnectedState (@connectoidFlags, 0) then
+        if (ConnectoidFlags and INTERNET_CONNECTION_LAN) <> 0 then
+          fCurrentConnectoid := '*'
+        else
+          fCurrentConnectoid := PChar (fCurrentConnectoid)
+  finally
+    fConnectToSync.Leave;
+  end;
 end;
 
 procedure TNNTPThreadManager.GetNewsgroups(account: TNNTPAccount);
@@ -729,9 +738,9 @@ var
   getters : TObjectList;
 begin
   if gAppTerminating then Exit;
-  connectoid := fCurrentConnectoid;
+  connectoid := ReadCurrentConnectoid;
 
-  lanOverride := fCurrentConnectoid = '*';
+  lanOverride := connectoid = '*';
 
   getters := LockGetterList;
   try
@@ -1045,6 +1054,16 @@ begin
   finally
     UnlockGetterList
   end
+end;
+
+function TNNTPThreadManager.ReadCurrentConnectoid: string;
+begin
+  fConnectToSync.Enter;
+  try
+    Result := fCurrentConnectoid;
+  finally
+    fConnectToSync.Leave;
+  end;
 end;
 
 procedure TNNTPThreadManager.ResumeOutbasketEntries;
