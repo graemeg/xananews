@@ -27,7 +27,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, ExtCtrls, ComCtrls, StdCtrls, NewsGlobals, ConTnrs, unitNNTPServices, unitSettings, unitMessages;
+  Dialogs, ExtCtrls, ComCtrls, StdCtrls, NewsGlobals, ConTnrs, unitNNTPServices, unitSettings, unitMessages,
+  cmpPersistentPosition, unitExSettings;
 
 type
   TStatistic = class
@@ -80,6 +81,7 @@ type
     function GetHeader(const name: string): string; override;
     function GetMsg: TmvMessage; override;
   public
+    constructor Create (AOwner : TArticleContainer); override;
     procedure Assign (article : TArticleBase); override;
   end;
 
@@ -109,6 +111,7 @@ type
     Label6: TLabel;
     Label7: TLabel;
     dtpTo: TDateTimePicker;
+    PersistentPosition1: TPersistentPosition;
     procedure FormShow(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure lvNewsreadersData(Sender: TObject; Item: TListItem);
@@ -120,6 +123,10 @@ type
     procedure lvThreadsColumnClick(Sender: TObject; Column: TListColumn);
     procedure btnCopyToClipboardClick(Sender: TObject);
     procedure btnStartClick(Sender: TObject);
+    procedure PersistentPosition1GetSettingsClass(Owner: TObject;
+      var SettingsClass: TExSettingsClass);
+    procedure PersistentPosition1GetSettingsFile(Owner: TObject;
+      var fileName: string);
   private
     fStatistics : TStatistics;
     fStatisticContainer : TStatisticContainer;
@@ -254,7 +261,7 @@ begin
     report.Add ('Top Threads');
     report.Add ('');
     report.Add ('Ranking  Articles  Subject');
-    report.Add ('-------  --------  ----------------------------');
+    report.Add ('-------  --------  ----------------------------------');
 
     for i := 0 to fStatistics.fThreads.Count - 1 do
     begin
@@ -269,7 +276,7 @@ begin
     report.Add ('Top Posters');
     report.Add ('');
     report.Add ('Ranking  Articles  Name');
-    report.Add ('-------  --------  ----------------------------');
+    report.Add ('-------  --------  ----------------------------------');
 
     for i := 0 to fStatistics.fPosters.Count - 1 do
     begin
@@ -282,14 +289,14 @@ begin
 
     report.Add ('Top Newsreaders');
     report.Add ('');
-    report.Add ('Ranking  Articles  Newsreader');
-    report.Add ('-------  --------  ----------------------------');
+    report.Add ('Ranking  Articles  Newsreader                                          Users');
+    report.Add ('-------  --------  --------------------------------------------------  -----');
 
     for i := 0 to fStatistics.fReaders.Count - 1 do
     begin
       stat := TStatistic (fStatistics.fReaders.Objects [i]);
 
-      report.Add (Format ('%7d  %8d  %s', [stat.Ranking, stat.Number, fStatistics.fReaders [i]]));
+      report.Add(Format('%7d  %8d  %-50.50s  %5s', [stat.Ranking, stat.Number, fStatistics.fReaders[i], IntToStr(stat.DataInteger)]));
     end;
 
     Clipboard.AsText := report.Text
@@ -340,7 +347,7 @@ begin
         ed := art.Date
   end;
 
-  dtpFrom.DateTime := sd;
+  dtpFrom.DateTime := Int(sd);
   dtpTo.DateTime := ed;
 end;
 
@@ -474,6 +481,18 @@ begin
   end
 end;
 
+procedure TfmNewsgroupStatistics.PersistentPosition1GetSettingsClass(
+  Owner: TObject; var SettingsClass: TExSettingsClass);
+begin
+  SettingsClass := gExSettingsClass;
+end;
+
+procedure TfmNewsgroupStatistics.PersistentPosition1GetSettingsFile(
+  Owner: TObject; var fileName: string);
+begin
+ fileName := gExSettingsFile
+end;
+
 procedure TfmNewsgroupStatistics.UpdateActions;
 begin
   btnCopyToClipboard.Enabled := Assigned (fStatistics) and not fCalculating;
@@ -534,6 +553,12 @@ begin
     self.fAgent := article.Header ['User-Agent'];
 end;
 
+constructor TStatisticArticle.Create (AOwner : TArticleContainer);
+begin
+  inherited;
+  fCodePage := CP_ACP;
+end;
+
 function TStatisticArticle.GetHeader(const name: string): string;
 begin
   if SameText (name, 'User-Agent') or SameText (name, 'X-NewsReader') then
@@ -561,9 +586,7 @@ begin
   ThreadSortOrder := soDate;
   ThreadOrder := toChronological;
 
-  d := Trunc (endDate);
-  if d <> endDate then
-    endDate := d + 1;
+  endDate := Int(endDate) + 1;
 
   fMessagebaseSize := AGroup.MessagebaseSize;
 
@@ -571,7 +594,7 @@ begin
   begin
     art := AGroup.ArticleBase [i];
     d := art.Date;
-    if (d >= startDate) and (d <= endDate) then
+    if (d >= startDate) and (d < endDate) then
     begin
       nart := TStatisticArticle.Create(self);
       nart.Assign(art);
@@ -770,7 +793,7 @@ begin
 
     stat := TStatistic.Create;
     stat.fNumber := GetThreadHeight (bart);
-    fThreads.AddObject(bart.Subject, stat);
+    fThreads.AddObject(DecodeSubject(bart.Subject, bart.CodePage), stat);
   end;
 
   fThreads.Sorted := False;

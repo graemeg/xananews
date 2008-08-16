@@ -71,6 +71,7 @@ begin
     clbArticles.Items.AddObject(article.Subject, article);
     clbArticles.State [i] := cbChecked;
   end;
+  clbArticles.Sorted := True;
 
   if Articles.Count > 0 then
   begin

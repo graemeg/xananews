@@ -529,12 +529,14 @@ begin
       end;
 
     Result := True;
-  end else if (LastCmdResult.NumericCode = 421) or (LastCmdResult.NumericCode = 422)
-   or (LastCmdResult.NumericCode = 423) or (LastCmdResult.NumericCode = 430) then begin
+  end else if (LastCmdResult.NumericCode = 421) or (LastCmdResult.NumericCode = 422) or
+              (LastCmdResult.NumericCode = 423) or (LastCmdResult.NumericCode = 430) or
+              (LastCmdResult.NumericCode = 503) then begin
     // 421 no next article in this group
     // 422 no previous article in this group
     // 423 no such article number in this group
     // 430 no such article found
+    // 503 program fault - command not performed
     Result := False;
   end else begin
     raise EidResponseError.Create(LastCmdResult.Text [0]);

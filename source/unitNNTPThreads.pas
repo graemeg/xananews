@@ -606,7 +606,10 @@ var
         begin
           LogMessage (gtr.CurrentGroup.Name + ' - Sync ' + IntToStr (gtr.CurrentArticleNo));
           Synchronize (gtr.SaveCurrentArticle)
-        end;
+        end
+        else
+          LogMessage (gtr.CurrentGroup.Name + ' - Get Article '  + IntToStr (gtr.CurrentArticleNo) +
+            ' failed. Server response: '+ NNTP.LastCmdResult.TextCode);
 
         Inc (fCurrentArticleNo)
       end

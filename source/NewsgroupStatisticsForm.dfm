@@ -1,7 +1,6 @@
 object fmNewsgroupStatistics: TfmNewsgroupStatistics
   Left = 258
   Top = 115
-  AutoScroll = False
   Caption = 'Newsgroup Statistics'
   ClientHeight = 342
   ClientWidth = 390
@@ -101,8 +100,8 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
       object lvPosters: TListView
         Left = 0
         Top = 0
-        Width = 478
-        Height = 188
+        Width = 382
+        Height = 108
         Align = alClient
         Columns = <
           item
@@ -136,8 +135,8 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
       object lvNewsreaders: TListView
         Left = 0
         Top = 0
-        Width = 478
-        Height = 188
+        Width = 382
+        Height = 108
         Align = alClient
         Columns = <
           item
@@ -273,8 +272,8 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
     Width = 105
     Height = 21
     Anchors = [akLeft, akBottom]
-    Date = 38078.585294594910000000
-    Time = 38078.585294594910000000
+    Date = 38078.000000000000000000
+    Time = 38078.000000000000000000
     TabOrder = 5
   end
   object dtpTo: TDateTimePicker
@@ -283,8 +282,17 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
     Width = 105
     Height = 21
     Anchors = [akLeft, akBottom]
-    Date = 38078.585294594910000000
-    Time = 38078.585294594910000000
+    Date = 38078.999988425930000000
+    Time = 38078.999988425930000000
     TabOrder = 6
+  end
+  object PersistentPosition1: TPersistentPosition
+    Manufacturer = 'Woozle'
+    Product = 'XanaNews'
+    SubKey = 'Position\Statistics'
+    OnGetSettingsClass = PersistentPosition1GetSettingsClass
+    OnGetSettingsFile = PersistentPosition1GetSettingsFile
+    Left = 184
+    Top = 298
   end
 end

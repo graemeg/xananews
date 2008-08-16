@@ -2384,47 +2384,51 @@ begin
     reg := CreateExSettings;
     reg.Section := 'Accounts';
     reg.GetSectionNames(keyNames);
+
     reg1 := CreateChildSettings (reg);
+    try
+      for i := 0 to fAccounts.Count - 1 do
+      begin
+        account := TNNTPAccount (fAccounts.Objects [i]);
+        accName := FixFileNameString (account.AccountName);
 
-    for i := 0 to fAccounts.Count - 1 do
-    begin
-      account := TNNTPAccount (fAccounts.Objects [i]);
-      accName := FixFileNameString (account.AccountName);
+        reg1.Section := accName;
 
-      reg1.Section := accName;
+        p := keyNames.IndexOf(accName);
+        if p >= 0 then
+          keyNames.Delete (p);
 
-      p := keyNames.IndexOf(accName);
-      if p >= 0 then
-        keyNames.Delete (p);
+        reg1.SetStringValue('Account Name', account.AccountName, accName);
+        reg1.SetIntegerValue('Sort Index', account.fSortIdx, -1);
 
-      reg1.SetStringValue('Account Name', account.AccountName, accName);
-      reg1.SetIntegerValue('Sort Index', account.fSortIdx, -1);
+        reg1.SetStringValue ('Identity', account.NNTPSettings.Identity.Name, NNTPAccounts.Identities.DefaultIdentity.Name);
 
-      reg1.SetStringValue ('Identity', account.NNTPSettings.Identity.Name, NNTPAccounts.Identities.DefaultIdentity.Name);
+        reg1.SetBooleanValue('Mark On Leave',  account.MarkOnLeave, False);
+        reg1.SetBooleanValue('No XNEWS',       account.NoXNews, False);
+        reg1.SetBooleanValue('Pipelining',     account.UsePipelining, True);
+        reg1.SetStringValue('Mail Account Name', account.fMailAccountName, 'MAPI');
+        reg1.SetStringValue('Posting Account Name', account.PostingAccountName, '');
+        reg1.SetBooleanValue('Has New Groups', account.HasNewGroups, False);
+        reg1.SetStringValue('Greeting',       account.Greeting, '');
+        reg1.SetBooleanValue('Secret',         account.Secret, False);
 
-      reg1.SetBooleanValue('Mark On Leave',  account.MarkOnLeave, False);
-      reg1.SetBooleanValue('No XNEWS',       account.NoXNews, False);
-      reg1.SetBooleanValue('Pipelining',     account.UsePipelining, True);
-      reg1.SetStringValue('Mail Account Name', account.fMailAccountName, 'MAPI');
-      reg1.SetStringValue('Posting Account Name', account.PostingAccountName, '');
-      reg1.SetBooleanValue('Has New Groups', account.HasNewGroups, False);
-      reg1.SetStringValue('Greeting',       account.Greeting, '');
-      reg1.SetBooleanValue('Secret',         account.Secret, False);
+        reg1.SetBooleanValue ('Scan Key Phrases',     account.ScanKeyPhrases, False);
 
-      reg1.SetBooleanValue ('Scan Key Phrases',     account.ScanKeyPhrases, False);
+        reg1.DeleteValue('SMTPMail');   // Tidy up registry for existing users
+        reg1.DeleteSection ('SMTP Server');  // Remove later!
 
-      reg1.DeleteValue('SMTPMail');   // Tidy up registry for existing users
-      reg1.DeleteSection ('SMTP Server');  // Remove later!
+        account.FiltersCtnr.SaveFilters(reg1, false);
+        account.DisplayFiltersCtnr.SaveFilters(reg1, true);
+        account.NNTPSettings.WriteSettings(reg1);
+        account.PostingSettings.WriteSettings(reg1);
+        account.DisplaySettings.WriteSettings(reg1);
+        account.NNTPServerSettings.WriteSettings(reg1);
 
-      account.FiltersCtnr.SaveFilters(reg1, false);
-      account.DisplayFiltersCtnr.SaveFilters(reg1, true);
-      account.NNTPSettings.WriteSettings(reg1);
-      account.PostingSettings.WriteSettings(reg1);
-      account.DisplaySettings.WriteSettings(reg1);
-      account.NNTPServerSettings.WriteSettings(reg1);
-
-      if account = saveGroupsForAccount then
-        account.SaveSubscribedGroups(reg1);
+        if account = saveGroupsForAccount then
+          account.SaveSubscribedGroups(reg1);
+      end;
+    finally
+      FreeAndNil (reg1);
     end;
 
     if Assigned (keyNames) then
@@ -2443,7 +2447,6 @@ begin
       reg.Close;
       reg.Section := 'Batches';
       reg.GetSectionNames(keyNames);
-      FreeAndNil (reg1);
       reg1 := CreateChildSettings (reg);
 
       for i := 0 to fBatches.Count - 1 do
@@ -3728,7 +3731,7 @@ end;
 
 
 (*----------------------------------------------------------------------*
- | TArticleBase.GetInterestingMessageLine                                   |
+ | TArticleBase.GetInterestingMessageLine                               |
  |                                                                      |
  | Get the first intersting line of the message, so that the message    |
  | subject doesn't just say 're:something', 'fred wrote:' or contain a  |
@@ -4065,12 +4068,10 @@ end;
 
 procedure TArticle.SetCodePage(const Value: Integer);
 begin
-  inherited;
+  inherited SetCodePage(Value);
 
-  fCodePage := Value;
   if Assigned (fMsg) then
     fMsg.Codepage := Value
-
 end;
 
 procedure TSubscribedGroup.GroupArticles;
