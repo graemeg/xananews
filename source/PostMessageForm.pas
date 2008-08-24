@@ -72,6 +72,7 @@ type
     fInitialText: WideString;
     fGroupName: string;
     fCodePageOverride : Integer;
+    fSubject: string;
 
     procedure MakeHeaderStringList;
     procedure ValidateHeaderStringList;
@@ -97,6 +98,7 @@ type
     property GroupName : string read fGroupName write fGroupName;
     property InitialText : WideString read fInitialText write fInitialText;
     property PosterRequest : TPosterRequest read fPosterRequest write fPosterRequest;
+    property Subject: string read fSubject write fSubject;
     constructor Create (AOwner : TComponent); override;
     destructor Destroy; override;
   end;
@@ -154,7 +156,6 @@ begin
     end
     else
     begin
-      groupName := groupName;
       DefaultPostingSettings := Account.PostingSettings;
       NNTPSettings := Account.NNTPSettings
     end
@@ -213,8 +214,9 @@ begin
   begin
     if fGroupName <> '' then
     begin
-      groupName := fGroupName;
-      cbGroup.Text := groupName;
+      cbGroup.Text := fGroupName;
+      if fSubject <> '' then
+        edSubject.Text := fSubject;
       PostMessage (Handle, WM_SETUP, 0, 0);
     end
     else

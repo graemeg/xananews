@@ -220,6 +220,8 @@ begin
 
   if not Assigned (Request) then
   begin
+    if not fIsReply then
+      fInitialText := InitialText;
     ApplySignature (Identity, fSignatureOverride);
   end
   else

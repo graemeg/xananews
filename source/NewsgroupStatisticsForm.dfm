@@ -1,9 +1,9 @@
 object fmNewsgroupStatistics: TfmNewsgroupStatistics
-  Left = 258
+  Left = 469
   Top = 115
   Caption = 'Newsgroup Statistics'
-  ClientHeight = 342
-  ClientWidth = 390
+  ClientHeight = 422
+  ClientWidth = 445
   Color = clBtnFace
   Constraints.MinHeight = 369
   Constraints.MinWidth = 398
@@ -14,40 +14,54 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
   Font.Style = []
   OldCreateOrder = False
   Position = poMainFormCenter
+  OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
   DesignSize = (
-    390
-    342)
+    445
+    422)
   PixelsPerInch = 96
   TextHeight = 13
   object Bevel1: TBevel
     Left = 0
-    Top = 288
-    Width = 393
+    Top = 368
+    Width = 448
     Height = 3
     Anchors = [akLeft, akRight, akBottom]
     Shape = bsBottomLine
+    ExplicitTop = 288
+    ExplicitWidth = 393
   end
   object Label6: TLabel
-    Left = 16
-    Top = 260
-    Width = 23
+    Left = 12
+    Top = 314
+    Width = 26
     Height = 13
     Anchors = [akLeft, akBottom]
-    Caption = '&From'
+    Caption = '&From:'
+    ExplicitTop = 333
   end
   object Label7: TLabel
-    Left = 168
-    Top = 260
+    Left = 182
+    Top = 314
     Width = 16
     Height = 13
     Anchors = [akLeft, akBottom]
     Caption = 'To:'
+    ExplicitTop = 333
+  end
+  object lblResult: TLabel
+    Left = 12
+    Top = 343
+    Width = 38
+    Height = 13
+    Anchors = [akLeft, akBottom]
+    Caption = '&Results:'
+    ExplicitTop = 362
   end
   object btnClose: TButton
-    Left = 303
-    Top = 303
+    Left = 358
+    Top = 383
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -55,22 +69,25 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
     Caption = 'Close'
     ModalResult = 2
     TabOrder = 0
+    ExplicitTop = 402
   end
   object pcSelect: TPageControl
     Left = 0
     Top = 105
-    Width = 390
-    Height = 136
+    Width = 445
+    Height = 193
     ActivePage = tsThreads
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 1
+    ExplicitHeight = 212
     object tsThreads: TTabSheet
       Caption = 'Threads'
+      ExplicitHeight = 150
       object lvThreads: TListView
         Left = 0
         Top = 0
-        Width = 382
-        Height = 108
+        Width = 437
+        Height = 165
         Align = alClient
         Columns = <
           item
@@ -92,16 +109,21 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
         ViewStyle = vsReport
         OnColumnClick = lvThreadsColumnClick
         OnData = lvThreadsData
+        ExplicitHeight = 150
       end
     end
     object tsPosters: TTabSheet
       Caption = 'Posters'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 172
       object lvPosters: TListView
         Left = 0
         Top = 0
-        Width = 382
-        Height = 108
+        Width = 437
+        Height = 150
         Align = alClient
         Columns = <
           item
@@ -127,16 +149,21 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
         ViewStyle = vsReport
         OnColumnClick = lvPostersColumnClick
         OnData = lvPostersData
+        ExplicitHeight = 172
       end
     end
     object tsNewsreaders: TTabSheet
       Caption = 'Newsreaders'
       ImageIndex = 2
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 172
       object lvNewsreaders: TListView
         Left = 0
         Top = 0
-        Width = 382
-        Height = 108
+        Width = 437
+        Height = 150
         Align = alClient
         Columns = <
           item
@@ -162,13 +189,14 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
         ViewStyle = vsReport
         OnColumnClick = lvNewsreadersColumnClick
         OnData = lvNewsreadersData
+        ExplicitHeight = 172
       end
     end
   end
   object Panel1: TPanel
     Left = 0
     Top = 0
-    Width = 390
+    Width = 445
     Height = 105
     Align = alTop
     BevelInner = bvRaised
@@ -248,43 +276,76 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
   end
   object btnCopyToClipboard: TButton
     Left = 16
-    Top = 304
+    Top = 383
     Width = 113
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = '&Report to Clipboard'
     TabOrder = 3
     OnClick = btnCopyToClipboardClick
+    ExplicitTop = 402
   end
   object btnStart: TButton
-    Left = 304
-    Top = 256
+    Left = 358
+    Top = 310
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '&Start'
-    TabOrder = 4
+    TabOrder = 8
     OnClick = btnStartClick
+    ExplicitTop = 329
   end
   object dtpFrom: TDateTimePicker
-    Left = 48
-    Top = 256
+    Left = 62
+    Top = 310
     Width = 105
     Height = 21
     Anchors = [akLeft, akBottom]
     Date = 38078.000000000000000000
     Time = 38078.000000000000000000
     TabOrder = 5
+    ExplicitTop = 329
   end
   object dtpTo: TDateTimePicker
-    Left = 192
-    Top = 256
+    Left = 206
+    Top = 310
     Width = 105
     Height = 21
     Anchors = [akLeft, akBottom]
     Date = 38078.999988425930000000
     Time = 38078.999988425930000000
     TabOrder = 6
+    ExplicitTop = 329
+  end
+  object btnPostToGroup: TButton
+    Left = 144
+    Top = 383
+    Width = 113
+    Height = 25
+    Anchors = [akLeft, akBottom]
+    Caption = '&Post to Group'
+    TabOrder = 4
+    OnClick = btnPostToGroupClick
+    ExplicitTop = 402
+  end
+  object cbResults: TComboBox
+    Left = 62
+    Top = 339
+    Width = 105
+    Height = 21
+    Anchors = [akLeft, akBottom]
+    ItemHeight = 13
+    TabOrder = 7
+    Text = '[No limit]'
+    OnKeyPress = cbResultsKeyPress
+    Items.Strings = (
+      '10'
+      '20'
+      '50'
+      '100'
+      '[No limit]')
+    ExplicitTop = 358
   end
   object PersistentPosition1: TPersistentPosition
     Manufacturer = 'Woozle'
@@ -292,7 +353,7 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
     SubKey = 'Position\Statistics'
     OnGetSettingsClass = PersistentPosition1GetSettingsClass
     OnGetSettingsFile = PersistentPosition1GetSettingsFile
-    Left = 184
-    Top = 298
+    Left = 362
+    Top = 14
   end
 end
