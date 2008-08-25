@@ -583,6 +583,7 @@ private
   fSecretGroupCount : Integer;
   fPostingAccountName: string;
   fSortIdx: Integer;
+  fSortGroupsByName: Boolean;
 
   procedure LoadSubscribedGroups (rootReg : TExSettings);
   procedure SaveSubscribedGroups (rootReg : TExSettings);
@@ -599,6 +600,7 @@ private
   procedure SetSortIdx(const Value: Integer);
   procedure SortGroups;
   procedure ChangeGroupSortIdx (grp : TSubscribedGroup; idx : Integer);
+  procedure SetSortGroupsByName(const Value: Boolean);
 public
   constructor Create (AOwner : TNNTPAccounts);
   destructor Destroy; override;
@@ -610,6 +612,7 @@ public
   procedure UnsubscribeTo (const groupName : string);
   function FindSubscribedGroup (const groupName : string) : TSubscribedGroup;
   procedure CopySettingsFrom (account : TNNTPAccount);
+  function CreateAccountRegistry (access : DWORD): TExSettings;
 
   property AccountName : string read fAccountName write SetAccountName;
   property NoXNews : boolean read fNoXNews write fNoXNews;
@@ -638,7 +641,7 @@ public
   property PostingAccountName : string read fPostingAccountName write fPostingAccountName;
   property HasNewGroups : boolean read fHasNewGroups write fHasNewGroups;
   property Greeting : string read fGreeting write SetGreeting;
-  function CreateAccountRegistry (access : DWORD): TExSettings;
+  property SortGroupsByName: Boolean read fSortGroupsByName write SetSortGroupsByName;
 end;
 
 TArticleStack = class;
@@ -1782,13 +1785,14 @@ begin
             account.fAccountName := reg1.GetStringValue ('Account Name', keyNames [i]);
             account.fSortIdx := reg1.GetIntegerValue ('Sort Index', i);
             account.NNTPServerSettings.Id := account.fAccountName;
-            Account.MarkOnLeave       := reg1.GetBooleanValue ('Mark On Leave', False);
-            account.fScanKeyPhrases   := reg1.GetBooleanValue ('Scan Key Phrases', account.fScanKeyPhrases);
+            Account.MarkOnLeave       := reg1.GetBooleanValue('Mark On Leave', False);
+            account.fScanKeyPhrases   := reg1.GetBooleanValue('Scan Key Phrases', account.fScanKeyPhrases);
 
-            account.NoXNews       := reg1.GetBooleanValue ('No XNEWS', account.NOXNews);
-            account.UsePipelining := reg1.GetBooleanValue ('Pipelining', account.UsePipelining);
-            account.fGreeting     := reg1.GetStringValue ('Greeting', '');
-            account.fSecret       := reg1.GetBooleanValue('Secret', False);
+            account.NoXNews           := reg1.GetBooleanValue('No XNEWS', account.NOXNews);
+            account.UsePipelining     := reg1.GetBooleanValue('Pipelining', account.UsePipelining);
+            account.fGreeting         := reg1.GetStringValue ('Greeting', '');
+            account.fSecret           := reg1.GetBooleanValue('Secret', False);
+            account.fSortGroupsByName := reg1.GetBooleanValue('SortGroupsByName', False);
 
             account.FiltersCtnr.LoadFilters(reg1, false);
             account.DisplayFiltersCtnr.LoadFilters(reg1, true);
@@ -2411,6 +2415,7 @@ begin
         reg1.SetBooleanValue('Has New Groups', account.HasNewGroups, False);
         reg1.SetStringValue('Greeting',       account.Greeting, '');
         reg1.SetBooleanValue('Secret',         account.Secret, False);
+        reg1.SetBooleanValue('SortGroupsByName', account.SortGroupsByName, False);
 
         reg1.SetBooleanValue ('Scan Key Phrases',     account.ScanKeyPhrases, False);
 
@@ -2535,7 +2540,7 @@ begin
   SortGroups;
 
   for i := 0 to SubscribedGroupCount - 1 do
-    SubscribedGroups [i].fSortIdx := i
+    SubscribedGroups [i].fSortIdx := i;
 end;
 
 procedure TNNTPAccount.CopySettingsFrom(account: TNNTPAccount);
@@ -2925,6 +2930,20 @@ begin
   fOwner.fSecretAccountCount := -1;
 end;
 
+procedure TNNTPAccount.SetSortGroupsByName(const Value: Boolean);
+begin
+  if FSortGroupsByName <> Value then
+  begin
+    SendMessage(Application.MainForm.Handle, WM_GROUPSCHANGING, 0, 0);
+    try
+      FSortGroupsByName := Value;
+      SortGroups;
+    finally
+      SendMessage(Application.MainForm.Handle, WM_GROUPSCHANGED, 0, 0);
+    end;
+  end;
+end;
+
 procedure TNNTPAccount.SetSortIdx(const Value: Integer);
 begin
   Owner.ChangeAccountSortIdx (self, Value);
@@ -2973,13 +2992,13 @@ procedure TNNTPAccount.SortGroups;
 var
   i : Integer;
 begin
-  if (fSubscribedGroups.Count > 0) and (TSubscribedGroup (fSubscribedGroups.Objects [0]).fSortIdx = -1) then
+  if fSortGroupsByName then
     fSubscribedGroups.CustomSort(OldCompareGroups)
   else
     fSubscribedGroups.CustomSort(CompareGroups);
 
   for i := 0 to fSubscribedGroups.Count - 1 do
-    TSubscribedGroup (fSubscribedGroups.Objects [i]).fSortIdx := i
+    TSubscribedGroup(fSubscribedGroups.Objects[i]).fSortIdx := i;
 end;
 
 (*----------------------------------------------------------------------*
@@ -3011,8 +3030,9 @@ begin
     try
       reg.SetIntegerValue ('Last Article', 0)
     finally
-      reg.Free
-    end
+      reg.Free;
+    end;
+    Owner.SaveToRegistry(Self);
   end;
 
   result := TSubscribedGroup (fSubscribedGroups.Objects [idx])
@@ -3052,7 +3072,9 @@ begin
     end;
 
     for idx := 0 to fSubscribedGroups.Count - 1 do
-      TSubscribedGroup (fSubscribedGroups.Objects [idx]).fSortIdx := idx
+      TSubscribedGroup (fSubscribedGroups.Objects [idx]).fSortIdx := idx;
+
+    Owner.SaveToRegistry(Self);
   end
 end;
 
@@ -3558,6 +3580,7 @@ end;
 
 procedure TSubscribedGroup.SetSortIdx(const Value: Integer);
 begin
+  Owner.SortGroupsByName := False;
   Owner.ChangeGroupSortIdx (self, Value);
 end;
 

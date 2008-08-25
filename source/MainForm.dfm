@@ -3760,6 +3760,7 @@ object fmMain: TfmMain
   end
   object pomGroups: TPopupMenu
     Images = ilMain
+    OnPopup = pomGroupsPopup
     Left = 680
     Top = 304
     object pomGroupsGetMessages: TMenuItem
@@ -3833,6 +3834,12 @@ object fmMain: TfmMain
     end
     object PurgeDeletedMessagesNow3: TMenuItem
       Action = actToolsPurgeDeletedMessages
+    end
+    object N55: TMenuItem
+      Caption = '-'
+    end
+    object pomSortGroupsByName: TMenuItem
+      Action = actAccountSortGroupsByName
     end
   end
   object ApplicationEvents1: TApplicationEvents
@@ -4908,6 +4915,12 @@ object fmMain: TfmMain
       Caption = 'Button Captions'
       Checked = True
       OnExecute = actViewToolbarCaptionsExecute
+    end
+    object actAccountSortGroupsByName: TAction
+      Category = 'Account'
+      Caption = 'Sort Groups By Names'
+      Hint = 'Sort the groups of the current account by (nick)name'
+      OnExecute = actAccountSortGroupsByNameExecute
     end
   end
   object mnuMain: TMainMenu

@@ -655,6 +655,9 @@ type
     N54: TMenuItem;
     actViewHideMessagesNotToMe: TAction;
     HideMessagesNotToMe1: TMenuItem;
+    N55: TMenuItem;
+    pomSortGroupsByName: TMenuItem;
+    actAccountSortGroupsByName: TAction;
     procedure PersistentPositionGetSettingsFile(Owner: TObject;
       var fileName: string);
     procedure PersistentPositionGetSettingsClass(Owner: TObject;
@@ -964,6 +967,8 @@ type
     procedure vstSubscribedExpanded(Sender: TBaseVirtualTree;
       Node: PVirtualNode);
     procedure ApplicationEvents1Hint(Sender: TObject);
+    procedure actAccountSortGroupsByNameExecute(Sender: TObject);
+    procedure pomGroupsPopup(Sender: TObject);
   private
     fHeaderSortCol : Integer;
     fURL : string;
@@ -1408,6 +1413,16 @@ begin
   if Assigned (account) then
     ShowNewsgroupList (account, False)
 end;
+
+procedure TfmMain.actAccountSortGroupsByNameExecute(Sender: TObject);
+var
+  account: TNNTPAccount;
+begin
+  account := GetFocusedAccount;
+  if Assigned(account) then
+    account.SortGroupsByName := not account.SortGroupsByName;
+end;
+
 
 procedure TfmMain.actArticleCancelExecute(Sender: TObject);
 (*----------------------------------------------------------------------*
@@ -5917,6 +5932,15 @@ begin
   end
 end;
 
+procedure TfmMain.pomGroupsPopup(Sender: TObject);
+var
+  account: TNNTPAccount;
+begin
+  account := GetFocusedAccount;
+  actAccountSortGroupsByName.Enabled := Assigned(account);
+  actAccountSortGroupsByName.Checked := Assigned(account) and account.SortGroupsByName;
+end;
+
 (*----------------------------------------------------------------------*
  | TfmMain.pomMessagePopup                                              |
  |                                                                      |
@@ -6768,6 +6792,8 @@ begin
   actAccountProperties.Enabled := hasSelAccount;
   actAccountRemove.Enabled := hasSelAccount;
   actAccountAdd.Enabled := True;
+  actAccountSortGroupsByName.Enabled := hasSelAccount;
+  actAccountSortGroupsByName.Checked := hasSelAccount and SelectedAccount.SortGroupsByName;
 
   actNewsgroupGetMessagesDefault.Enabled := hasSelGroup or hasSelAccount;
   actNewsgroupDeleteMessages.Enabled := hasSelGroup or HasSelAccount;
@@ -8402,7 +8428,7 @@ begin
   fNextArticleStack.Clear;
   Reinit_vstSubscribed (False);
   vstSubscribed.ReinitNode (nil, True);
-  vstSubscribed.EndUpdate       // Started in 'WmGroupsChaging'
+  vstSubscribed.EndUpdate       // Started in 'WmGroupsChanging'
 end;
 
 (*----------------------------------------------------------------------*
