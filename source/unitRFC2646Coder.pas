@@ -11,7 +11,7 @@ private
   fInsertSpaceAfterQuote: boolean;
 public
   procedure DecodeBuffer (buf : PChar; bufLen : Integer; ADest : TStream);
-  procedure DecodeToStream (AIn: string; ADest: TStream); override;
+  procedure Decode(ASrcStream: TStream; const ABytes: Integer = -1); override;
 
   // InsertSpaceAfterQuote inserts a space between the last quote character
   // and the first character of the message line - so that it displays
@@ -24,8 +24,8 @@ TRFC2646Encoder = class (TidEncoder)
 private
   fMaxLineLength: Integer;
 public
-  constructor Create (AOwner : TComponent); override;
-  function Encode(ASrcStream: TStream; const ABytes: integer = MaxInt): string; override;
+  procedure InitComponent; override;
+  procedure Encode(ASrcStream: TStream; ADestStream: TStream; const ABytes: Integer = -1); override;
   procedure EncodeStrings (strings : TStrings);
 
   property MaxLineLength : Integer read fMaxLineLength write fMaxLineLength;
@@ -41,10 +41,11 @@ var
   s : string;
 begin
   SetString(s, buf, bufLen);
-  DecodeToStream (s, ADest);
+  DecodeBegin(ADest);
+  Decode (s);
 end;
 
-procedure TRFC2646Decoder.DecodeToStream(AIn: string; ADest: TStream);
+procedure TRFC2646Decoder.Decode(ASrcStream: TStream; const ABytes: Integer = -1);
 var
   sl : TStringList;
   i, l : Integer;
@@ -62,7 +63,7 @@ var
       if l = 0 then Continue;
 
       p := 1;
-      while st [p] = '>' do
+      while (st[p] = '>') and (p < l) do
         Inc (p);
 
       if p > 1 then
@@ -77,7 +78,7 @@ begin
   FillChar (qs [1], 80, '>');
   sl := TStringList.Create;
   try
-    sl.Text := AIn;
+    sl.LoadFromStream(ASrcStream);
     AnalyzeQuotes;  // Count quote markers (into sl.Objects [i]) and
                     // remove them from the text
     i := 0;
@@ -123,7 +124,7 @@ begin
           sl [i] := Copy (qs, 1, Integer (sl.Objects [i])) + ' ' + sl [i]
         else
           sl [i] := Copy (qs, 1, Integer (sl.Objects [i])) + sl [i];
-    sl.SaveToStream(ADest);
+    sl.SaveToStream(FStream);
   finally
     sl.Free
   end
@@ -233,13 +234,12 @@ begin
   st := strings.Text;
 end;
 
-function TRFC2646Encoder.Encode(ASrcStream: TStream;
-  const ABytes: integer): string;
+procedure TRFC2646Encoder.Encode(ASrcStream: TStream; ADestStream: TStream; const ABytes: Integer = -1);
 begin
 
 end;
 
-constructor TRFC2646Encoder.Create(AOwner: TComponent);
+procedure TRFC2646Encoder.InitComponent;
 begin
   inherited;
 

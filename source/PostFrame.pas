@@ -185,10 +185,6 @@ begin
   GetCharsetNames (cbCharset.Items);
   fIsReply := Assigned (ReplyToArticle);
 
-
-  if mmoMessage.FixedFont and (PostingSettings.MaxPostLineLength <> 0) then
-    SendMessage (Parent.Handle, WM_ADJUSTWIDTH,  - mmoMessage.Width + PostingSettings.MaxPostLineLength * mmoMessage.AveCharWidth + GetSystemMetrics (SM_CXVSCROLL), 0);
-
   if fIsReply then
   begin
     sub := DecodeSubject(ReplyToArticle.subject, ReplyToArticle.CodePage);
@@ -236,8 +232,8 @@ begin
     else
       if Request is TEmailerRequest then
       begin
-        att := TEMailerRequest (Request).Attachments;
-        mmoMessage.Text := TEmailerRequest (Request).Msg
+        att := TEMailerRequest(Request).Attachments;
+        mmoMessage.Text := TEmailerRequest(Request).Msg;
       end;
 
     if Assigned (att) then
@@ -524,7 +520,7 @@ begin
   sig := StringReplace (sig, '%DateTime%', DateTimeToStr(Now), [rfReplaceAll, rfIgnoreCase]);
   sig := StringReplace (sig, '%ver%', ProductVersion, [rfReplaceAll, rfIgnoreCase]);
 
-  if sig <> '' then
+  if Trim(sig) <> '' then
   begin
     if (wst <> '') and (Copy (wst, Length (wst) - 1, 2) <> #13#10) then
     begin

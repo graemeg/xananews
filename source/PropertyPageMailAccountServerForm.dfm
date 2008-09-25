@@ -4,6 +4,8 @@ inherited fmPropertyPageMailAccountServer: TfmPropertyPageMailAccountServer
   ClientWidth = 337
   Constraints.MinHeight = 223
   Constraints.MinWidth = 337
+  ExplicitWidth = 345
+  ExplicitHeight = 257
   PixelsPerInch = 96
   TextHeight = 13
   object stServerAccountName: TLabel [0]
@@ -54,14 +56,17 @@ inherited fmPropertyPageMailAccountServer: TfmPropertyPageMailAccountServer
   end
   inherited Panel1: TPanel
     Width = 337
+    ExplicitWidth = 337
     inherited Bevel1: TBevel
       Width = 337
+      ExplicitWidth = 337
     end
     inherited stSectionDetails: TLabel
       Width = 325
       Caption = 
         'This section contains the mail server name and server account se' +
         'ttings'
+      ExplicitWidth = 325
     end
   end
   object edServerAccountName: TEdit
@@ -69,7 +74,7 @@ inherited fmPropertyPageMailAccountServer: TfmPropertyPageMailAccountServer
     Top = 128
     Width = 197
     Height = 21
-    TabOrder = 1
+    TabOrder = 2
     OnChange = edServerNameChange
   end
   object edServerAccountPassword: TEdit
@@ -77,7 +82,7 @@ inherited fmPropertyPageMailAccountServer: TfmPropertyPageMailAccountServer
     Top = 152
     Width = 197
     Height = 21
-    TabOrder = 2
+    TabOrder = 3
     OnChange = edServerAccountPasswordChange
   end
   object edServerName: TEdit
@@ -86,7 +91,7 @@ inherited fmPropertyPageMailAccountServer: TfmPropertyPageMailAccountServer
     Width = 313
     Height = 21
     Anchors = [akLeft, akTop, akRight]
-    TabOrder = 3
+    TabOrder = 1
     OnChange = edServerNameChange
   end
   object edRetypePassword: TEdit

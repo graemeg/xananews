@@ -17,13 +17,6 @@ uses
   IdCoder;
 
 type
-  TIdDecoderQuotedPrintable = class(TIdDecoder)
-  public
-    // If you get an error here about method not found in base class,
-    // you need to change your search path to use Indy9 instead of Indy 10
-    procedure DecodeToStream(AIn: string; ADest: TStream); override;
-  end;
-
   TIdEncoderQuotedPrintable = class(TIdEncoder)
   private
     fMaxLineLen : Integer;
@@ -31,8 +24,8 @@ type
     fLinePostamble: string;
     fLinePreamble: string;
   public
-    constructor Create (AOwner : TComponent); override;
-    function Encode(ASrcStream: TStream; const ABytes: integer = MaxInt): string; override;
+    procedure InitComponent; override;
+    procedure Encode(ASrcStream: TStream; ADestStream: TStream; const ABytes: Integer = -1);override;
     property MaxLineLen : Integer read fMaxLineLen write fMaxLineLen default 71;
     property Atom : boolean read fAtom write fAtom;
     property LinePreamble : string read fLinePreamble write fLinePreamble;
@@ -45,112 +38,15 @@ uses
   IdGlobal,
   SysUtils;
 
-{ TIdDecoderQuotedPrintable }
-
-procedure TIdDecoderQuotedPrintable.DecodeToStream(AIn: string; ADest: TStream);
-var
-  Buffer, Line, Hex : String;
-  i : Integer;
-  b : Byte;
-const
-  Numbers = '01234567890ABCDEF';  {Do not Localize}
-
-  procedure StripEOLChars;
-  var j : Integer;
-  begin
-    for j := 1 to 2 do
-    begin
-      if (Length(Buffer) > 0) and
-         (Pos(Buffer[1],EOL) > 0) then
-      begin
-        Delete(Buffer,1,1);
-      end
-      else
-      begin
-        break;
-      end;
-    end;
-  end;
-  function TrimRightWhiteSpace(const Str : String) : String;
-  var
-    i : integer;
-    LSaveStr : String;
-  begin
-    SetLength(LSaveStr,0);
-    i := Length(Str);
-    while (i > 0) and (Str[i] in [#9,#32]+[#10,#13]) do
-    begin
-      if Str[i] in [#10,#13] then
-      begin
-      Insert(Str[i],LSaveStr,1);
-      end;
-      dec(i);
-    end;
-    result := Copy(Str,1,i) + LSaveStr;
-  end;
-
-begin
-  Line := '';     {Do not Localize}
-  { when decoding a Quoted-Printable body, any trailing
-  white space on a line must be deleted, - RFC 1521}
-  Buffer := TrimRightWhiteSpace(AIn);
-  while Length(Buffer) > 0 do
-  begin
-    Line :=  Line + Fetch(Buffer,'=');  {Do not Localize}
-    // process any following hexidecimal represntation
-    if Length(Buffer) > 0 then
-    begin
-      Hex := '';     {Do not Localize}
-      for i := 0 to 1 do
-      begin
-        If IndyPos(UpperCase(Buffer[1]),Numbers) <> 0 then
-        begin
-          Hex := Hex + Copy(Buffer,1,1);
-          Delete(Buffer,1,1);
-        end
-        else
-        begin
-          break;
-        end;
-      end;
-      if (Length(Hex) > 0) then
-      begin
-        b := StrToInt('$'+Hex);  {Do not Localize}
-        //if =20 + EOL, this is a hard line break after a space
-        if (b = 32) and
-          (Length(Buffer) > 0) and
-          (Pos(Buffer[1],EOL) > 0) then
-        begin
-          Line := Line + Char(b) + EOL;
-          StripEOLChars;
-        end
-        else
-        begin
-          Line := Line + Char(b);
-        end;
-      end
-      else
-      begin
-        //ignore soft line breaks -
-        StripEOLChars;
-      end;
-    end;
-  end;
-  if Length(Line) > 0 then
-  begin
-    ADest.Write(Line[1],Length(Line));
-  end;
-end;
-
 { TIdEncoderQuotedPrintable }
 
-constructor TIdEncoderQuotedPrintable.Create(AOwner: TComponent);
+procedure TIdEncoderQuotedPrintable.InitComponent;
 begin
   inherited;
   fMaxLineLen := 71
 end;
 
-function TIdEncoderQuotedPrintable.Encode(ASrcStream: TStream; const ABytes: integer): string;
+procedure TIdEncoderQuotedPrintable.Encode(ASrcStream: TStream; ADestStream: TStream; const ABytes: Integer = -1);
 //TODO: Change this to be more efficient - dont read the whole data in ahead of time as it may
 // be quite large
 const BUF_SIZE = 8192;

@@ -82,7 +82,6 @@ type
     procedure SaveFollowUp;
     procedure WMSetup (var msg : TMessage); message WM_SETUP;
     procedure WMPostAndClose (var msg : TMessage); message WM_POSTANDCLOSE;
-    procedure WMAdjustWidth (var msg : TMessage); message WM_ADJUSTWIDTH;
     procedure WMSetCodePage (var msg : TMessage); message WM_SETCODEPAGE;
     procedure WMSetIdentity (var msg : TMessage); message WM_SETIDENTITY;
     function CheckCrossPosts(const groups: string): string;
@@ -108,7 +107,9 @@ var
 
 implementation
 
-uses unitNewsreaderOptions, unitNNTPThreadManager, AdvancedHeadersDialog, AttachmentsDialog, unitCharsetMap, clipbrd, unitSearchString, PostToGroupsForm, IdGlobal, CheckCrosspostDialog;
+uses unitNewsreaderOptions, unitNNTPThreadManager, AdvancedHeadersDialog,
+  AttachmentsDialog, unitCharsetMap, clipbrd, unitSearchString, PostToGroupsForm,
+  IdGlobal, CheckCrosspostDialog;
 
 {$R *.dfm}
 
@@ -549,11 +550,6 @@ begin
   end;
   SaveFollowUp;
   Close
-end;
-
-procedure TfmPostMessage.WMAdjustWidth(var msg: TMessage);
-begin
-  width := width + msg.WParam
 end;
 
 procedure TfmPostMessage.WMSetCodePage(var msg: TMessage);

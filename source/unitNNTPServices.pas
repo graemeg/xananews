@@ -416,6 +416,7 @@ public
   function FindArticleNo (cno : Integer) : TArticleBase; virtual;
   function LoadGetArticleCount : Integer;
   procedure LoadArticles; virtual; abstract;
+  procedure CloseMessageFile; virtual;
   procedure OpenMessageFile; virtual;
   property Loaded : boolean read GetLoaded;
   procedure ReSortArticles;
@@ -538,6 +539,7 @@ public
   procedure LeaveGroup(clearMessages : boolean = True); override;          // Save articles, and release memory
   function MarkOnLeave : boolean; override;
   function CreateGroupRegistry (access : DWORD): TExSettings;
+  procedure CloseMessageFile; override;
   procedure OpenMessageFile; override;
   function TSGetLastArticle : Integer;
 
@@ -792,13 +794,13 @@ end;
 // 'Msg' is free-and-niled.  Next time the article is referenced, it's message
 // will be reloaded from disk.
 
-TNNTPMessageCacheController = class (TObjectCache)
+TNNTPMessageCacheController = class(TObjectCache)
 private
-  fAlwaysRemove: boolean;
+  fAlwaysRemove: Boolean;
 protected
-  function CanRemove (Obj : TObject) : boolean; override;
+  function CanRemove(Obj: TObject): Boolean; override;
 public
-  property AlwaysRemove : boolean read fAlwaysRemove write fAlwaysRemove;
+  property AlwaysRemove: Boolean read fAlwaysRemove write fAlwaysRemove;
 end;
 
 //=======================================================================
@@ -821,6 +823,11 @@ public
   property IsEmpty : boolean read GetIsEmpty;
 end;
 
+  TDontUnloadCache = class(TObjectCache)
+  protected
+    procedure Notify(Ptr: Pointer; Action: TListNotification); override;
+  end;
+
 //-----------------------------------------------------------------------
 // Global variables
 
@@ -831,7 +838,7 @@ var
   gBestMessageBaseLocation : string;
   gKeyName : string;                    // Root registry key
   MessageCacheController : TNNTPMessageCacheController;
-  DontUnloadCache : TObjectCache;       // Most recently access groups
+  DontUnloadCache : TDontUnloadCache;   // Most recently access groups
   LSSync : TCriticalSection;            // Sync header file access
                                // nb.  Header file access is always
                                //      done from the main thread *except*
@@ -846,7 +853,8 @@ const
 implementation
 
 uses IdNNTPX, unitArticleHash, unitNewsReaderOptions, unitCharsetMap,
-     unitSavedArticles, unitMailServices, unitNewUserWizard, unitLog, unitCheckVersion, unitNNTPThreadManager, DateUtils;
+     unitSavedArticles, unitMailServices, unitNewUserWizard, unitLog,
+     unitCheckVersion, unitNNTPThreadManager, DateUtils, IdGlobalProtocols;
 
 
 (*----------------------------------------------------------------------*
@@ -1196,14 +1204,15 @@ end;
  *----------------------------------------------------------------------*)
 procedure TNNTPAccounts.Delete(account: TNNTPAccount);
 var
- idx : Integer;
+ idx: Integer;
 begin
   idx := fAccounts.IndexOfObject(account);
   if idx >= 0 then
   begin
+    account.Free;
     fAccounts.Delete(idx);
     for idx := 0 to Count - 1 do
-      Items [idx].fSortIdx := idx
+      Items[idx].fSortIdx := idx
   end
 end;
 
@@ -1882,7 +1891,9 @@ begin
   end;
 
   if Assigned (gGetVersionThread) then
-    gGetVersionThread.Resume
+    gGetVersionThread.Resume ;
+  if Assigned (gNetworkMonitorThread) then
+    gNetworkMonitorThread.Resume;
 end;
 
 (*----------------------------------------------------------------------*
@@ -2135,7 +2146,8 @@ begin
     for j := 0 to acct.SubscribedGroupCount - 1 do
     begin
       grp := acct.SubscribedGroups [j];
-      grp.PurgeArticles (False, False, grp.DisplaySettings.PurgeFolder);
+      grp.PurgeArticles(False, False, grp.DisplaySettings.PurgeFolder);
+      grp.CloseMessageFile;
     end
   end;
 
@@ -2607,6 +2619,8 @@ destructor TNNTPAccount.Destroy;
 var
   i : Integer;
 begin
+  ThreadManager.ClearGettersForAccount(Self);
+  DontUnloadCache.Clear;
   if Assigned (NNTPAccounts) then
   begin
     NNTPAccounts.fLastFoundGroup := Nil;
@@ -2880,12 +2894,24 @@ begin
     if AccountName = '' then
       fAccountName := Value
     else
-      begin
+    begin
+      ThreadManager.ClearGettersForAccount(Self);
+      DontUnloadCache.Clear;
+      SendMessage(Application.MainForm.Handle, WM_GROUPSCHANGING, 0, 0);
+      try
         oldName := fAccountName;
         fAccountName := Value;
-        NNTPAccounts.Rename(self, oldName);
-      end
-    end
+        try
+          NNTPAccounts.Rename(self, oldName);
+        except
+          fAccountName := oldName;
+          raise;
+        end;
+      finally
+        SendMessage(Application.MainForm.Handle, WM_GROUPSCHANGED, 0, 0);
+      end;
+    end;
+  end;
 end;
 
 procedure TNNTPAccount.SetGreeting(const Value: string);
@@ -3173,6 +3199,9 @@ begin
 
   for i := 0 to headers.Count - 1 do
   begin
+    if Headers[I] = '' then
+      Continue;
+
     ParseXOVER (headers [i], articleNo, subject, from, date, MessageID, references, bytes, lines, exd);
     article := TArticle.Create (self);
 
@@ -3210,6 +3239,12 @@ begin
   ReSortArticles;
   NNTPAccounts.PerfCue (880, 'Sorted articles');
   fArticlesLoaded := True;
+end;
+
+procedure TSubscribedGroup.CloseMessageFile;
+begin
+  inherited;
+  FreeAndNil(fMessageFile);
 end;
 
 (*----------------------------------------------------------------------*
@@ -3252,7 +3287,7 @@ begin
   fNNTPSettings.Free;
   fPostingSettings.Free;
   fDisplaySettings.Free;
-  inherited;
+  inherited Destroy;
 end;
 
 function TSubscribedGroup.GetLastArticle: Integer;
@@ -3338,9 +3373,7 @@ procedure TSubscribedGroup.LoadArticles;
 var
   reader : TTextFileReader;
   fileName : string;
-
 begin
-
   OpenMessageFile;
   if not fArticlesLoaded then
   begin
@@ -3371,10 +3404,10 @@ begin
     finally
       LSSync.Leave
     end;
-    if  Options.AutoCrosspostDetect then
-      DontUnloadCache.Capacity := 3
+    if Options.AutoCrosspostDetect then
+      DontUnloadCache.MaxDepth := 3
     else
-      DontUnloadCache.Capacity := 2;
+      DontUnloadCache.MaxDepth := 2;
     DontUnloadCache.Add(self);
     NNTPAccounts.UnloadOldContainers (self);
   end
@@ -3523,7 +3556,7 @@ begin
     finally
       w.Free;
       ms.Free;
-      FreeAndNil (fMessageFile);
+      CloseMessageFile;
 
       ForceRenameFile(newFileName, fileName);
 
@@ -3727,13 +3760,12 @@ destructor TArticle.Destroy;
 begin
   MessageCacheController.AlwaysRemove := True;
   try
-    MessageCacheController.Remove (self);
+    MessageCacheController.Remove(Self);
   finally
     MessageCacheController.AlwaysRemove := False
   end;
-  FreeAndNil (fMsg);
-
-  inherited;
+  FreeAndNil(fMsg);
+  inherited Destroy;
 end;
 
 function TArticle.GetAccount: TNNTPAccount;
@@ -4003,24 +4035,26 @@ begin
   result := GetMsgFromFile
 end;
 
-
 function TArticle.GetPostingHost: string;
 const
   snntp = 'NNTP-Posting-Host';
   sxtrc = 'X-Trace';
+  sphst = 'X-Posting-Host';
 begin
   if ((fFlags and (fgSpamNoPostingHost or fgSpamNoXTrace)) = 0) and (fPostingHost = '') then
   begin
-    fPostingHost := Header [snntp];
+    fPostingHost := Header[snntp];
     if fPostingHost = '' then
     begin
       fFlags := fFlags or fgSpamNoPostingHost;
-      fPostingHost := Header [sxtrc];
+      fPostingHost := Header[sxtrc];
       if fPostingHost = '' then
-        fFlags := fFlags or fgSpamNoXTrace
-    end
+        fFlags := fFlags or fgSpamNoXTrace;
+      if fPostingHost = '' then
+        fPostingHost := Header[sphst];
+    end;
   end;
-  result := fPostingHost
+  result := fPostingHost;
 end;
 
 function TArticle.GetSubscribedGroup: TSubscribedGroup;
@@ -4380,7 +4414,7 @@ begin
       end;
 
       if Assigned (pc) then
-        fgs := StrToCard (pc)
+        fgs := IndyStrToInt (pc)
       else
         fgs := 0;
 
@@ -4450,7 +4484,7 @@ begin
     article.fDate := date;
 
     s := Fetch (exd, #9);
-    article.fFlags := StrToCard (s) and $08ffffff;
+    article.fFlags := IndyStrToInt (s) and $08ffffff;
     if article.IsDeleted then
       article.Owner.fNeedsPurge := True;
 
@@ -4938,6 +4972,10 @@ begin
   end
 end;
 
+procedure TArticleContainer.CloseMessageFile;
+begin
+end;
+
 constructor TArticleContainer.Create(const AName: string; AFiltersParent, ADisplayFiltersParent : TFiltersCtnr);
 begin
   inherited Create (AName);
@@ -4959,11 +4997,11 @@ destructor TArticleContainer.Destroy;
 begin
   fFiltersCtnr.Free;
   fDisplayFiltersCtnr.Free;
-  fMessageFile.Free;
   fThreads.Free;
   fSortBuf.Free;
-
-  inherited;
+  CloseMessageFile;
+  DontUnloadCache.Remove(Self);
+  inherited Destroy;
 end;
 
 procedure TArticleContainer.EndLock;
@@ -6918,36 +6956,37 @@ end;
 
 function TNNTPMessageCacheController.CanRemove(Obj: TObject): boolean;
 var
-  article : TArticleBase;
+  article: TArticleBase;
 begin
   if fAlwaysRemove then
   begin
-    result := True;
-    exit
+    Result := True;
+    Exit;
   end;
-  try
-    if (Obj <> Nil) and (Obj is TArticleBase) then
-    begin
-      article := TArticleBase (Obj);
 
-      result := not Assigned (article.fMsg);
-      if not result then
+  try
+    if (Obj <> nil) and (Obj is TArticleBase) then
+    begin
+      article := TArticleBase(Obj);
+
+      Result := not Assigned(article.fMsg);
+      if not Result then
       begin
                                     // Don't delete if the article's message is being
                                     // downloaded (fMsg exists but fMessageOffset is still $ffffffff(
                                     // or is being displayed.
         if (article.fMessageOffset <> $ffffffff) and not article.fMsg.BeingDisplayed then
         begin
-          result := True;
-          FreeAndNil (article.fMsg)
-        end
-      end
+          Result := True;
+          FreeAndNil(article.fMsg);
+        end;
+      end;
     end
     else
-      result := True
+      Result := True;
   except
-    result := True
-  end
+    Result := True;
+  end;
 end;
 
 { TArticleObjectContainer }
@@ -6963,7 +7002,7 @@ destructor TArticleObjectContainer.Destroy;
 begin
   fArticles.Free;
 
-  inherited;
+  inherited Destroy;
 end;
 
 function TArticleObjectContainer.FindArticleNo(cno: Integer): TArticleBase;
@@ -6974,8 +7013,7 @@ begin
   result := inherited FindArticleNo (cno);
 end;
 
-function TArticleObjectContainer.GetArticleBase(
-  idx: Integer): TArticleBase;
+function TArticleObjectContainer.GetArticleBase(idx: Integer): TArticleBase;
 begin
   if not fArticlesLoaded then
     LoadArticles;
@@ -7281,7 +7319,7 @@ var
   dontFree : boolean;
 begin
   if not fArticlesLoaded then Exit;
-  if DontUnloadCache.IndexOfObject(self) >= 0 then Exit;
+  if DontUnloadCache.IndexOf(Self) >= 0 then Exit;
   if Locked then Exit;
   if fSearching then Exit;
   if fSorting then Exit;
@@ -7543,11 +7581,21 @@ begin
     TNNTPAccount (fAccounts.Objects [idx]).fSortIdx := idx
 end;
 
+{ TDontUnloadCache }
+
+procedure TDontUnloadCache.Notify(Ptr: Pointer; Action: TListNotification);
+begin
+  if not ReOrdering and (TObject(Ptr) is TSubscribedGroup) then
+    if Action = lnDeleted then
+      TSubscribedGroup(Ptr).CloseMessageFile;
+  inherited;
+end;
+
 initialization
   LSSync := TCriticalSection.Create;
-  MessageCacheController := TNNTPMessageCacheController.Create (5, False); // Cache the last 5 message bodies
+  MessageCacheController := TNNTPMessageCacheController.Create(5, False); // Cache the last 5 message bodies
 
-  DontUnloadCache := TObjectCache.Create(3, False);    // Cache the last 3 newsgrops
+  DontUnloadCache := TDontUnloadCache.Create(3, False);    // Cache the last 3 newsgrops
 
   gXanaNewsDir := ExtractFilePath (paramStr (0));
   if gXanaNewsDir [Length (gXanaNewsDir)] = '\' then

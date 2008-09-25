@@ -26,7 +26,7 @@ procedure GotoMessageOnInternet (handle : HWND; url, mid : string);
 
 implementation
 
-uses ShellApi, unitNewsReaderOptions, IdCoderQuotedPrintableX;
+uses ShellApi, unitNewsReaderOptions, XnCoderQuotedPrintable, IdCoder;
 
 {$R *.dfm}
 
@@ -43,7 +43,7 @@ begin
 
   if Pos ('%qid%', url) > 0 then
   begin
-    qid := TidEncoderQuotedPrintable.EncodeString(mid);
+    qid := TXnEncoderQuotedPrintable.EncodeString(mid);
     url := StringReplace (url, '%qid%', qid, [rfReplaceAll]);
   end;
 

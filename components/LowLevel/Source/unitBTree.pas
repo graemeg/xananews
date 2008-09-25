@@ -151,9 +151,9 @@ end;
 //----------------------------------------------------------------
 // Page cache stores TPage objects.  CanRemove is overridden to save
 // a page on disk befor it's removed
-TPageCache = class (TObjectCache)
+TPageCache = class(TObjectCache)
 protected
-  function CanRemove (AObject : TObject) : boolean; override;
+  procedure Notify(Ptr: Pointer; Action: TListNotification); override;
 end;
 
 TRawBTreeForEachProc = procedure (const key : string; param : Integer; var continue : boolean) of object;
@@ -999,8 +999,8 @@ begin
 
   if idx >= 0 then
   begin
-    result := TPage (fPageCache.ObjectAt (idx));
-    fPageCache.BringToFrontObject(idx)
+    result := TPage(fPageCache[idx]);
+    fPageCache.BringToFront(idx)
   end
   else
   begin
@@ -1609,16 +1609,12 @@ end;
 
 { TPageCache }
 
-(*----------------------------------------------------------------------*
- | function TPageCache.CanRemove                                        |
- |                                                                      |
- | CanRemove is called when the cache removes a page from itself.       |
- | Override it to save the page.                                        |
- *----------------------------------------------------------------------*)
-function TPageCache.CanRemove(AObject: TObject): boolean;
+procedure TPageCache.Notify(Ptr: Pointer; Action: TListNotification);
 begin
-  TPage (AObject).Save;
-  result := True
+  if not Reordering and (TObject(Ptr) is TPage) then
+    if Action = lnDeleted then
+      TPage(Ptr).Save;
+  inherited;
 end;
 
 { TRawBTreeIterator }

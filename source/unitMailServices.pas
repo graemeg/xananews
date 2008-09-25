@@ -168,7 +168,7 @@ begin
         account := TMailAccount.Create (self);
         try
           account.Name := keyNames [i];
-
+          account.SetIdentityName(reg1.GetStringValue('Identity', NNTPAccounts.Identities.DefaultIdentity.Name));
           account.fPostingSettings.ReadSettings (reg1);
           account.fServerSettings.ReadSettings (reg1);
           Add (account);

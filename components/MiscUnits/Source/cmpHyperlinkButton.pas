@@ -17,7 +17,6 @@ type
     fLink: string;
     fAutoLink: Boolean;
     fParentObj: IUnknown;
-    fSelectedFont: TFont;
     fSelectedFontColor: TColor;
     fSelectedFontStyles: TFontStyles;
     fSelected : boolean;
@@ -182,7 +181,6 @@ constructor THyperlinkButton.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   ControlStyle := [csClickEvents, csSetCaption, csOpaque, csDoubleClicks, csReplicatable];
-  fSelectedFont := TFont.Create;
 
   Width := 64;
   Height := 16

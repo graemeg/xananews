@@ -204,6 +204,8 @@ end;
 
 TServerSettings = class (TSettings)
 private
+  fConnectTimeout: Integer;
+  fReadTimeout: Integer;
   fRASConnection : string;
   fServerAccountName : string;
   fServerLogonRequired : Integer;
@@ -215,24 +217,28 @@ private
   fServerTimeout: Integer;
   fId: string;
 
+  function GetConnectTimeout: Integer;
   function GetRASConnection: string;
+  function GetReadTimeout: Integer;
   function GetServerAccountName: string;
   function GetServerLogonRequired: boolean;
   function GetServerName: string;
   function GetServerPassword: string;
   function GetServerPort: Integer;
+  function GetServerTimeout: Integer;
   function GetSSLPort: Integer;
   function GetSSLRequired: boolean;
+  procedure SetConnectTimeout(const Value: Integer);
   procedure SetRASConnection(const Value: string);
+  procedure SetReadTimeout(const Value: Integer);
   procedure SetServerAccountName(const Value: string);
   procedure SetServerLogonRequired(const Value: boolean);
   procedure SetServerName(const Value: string);
   procedure SetServerPassword(const Value: string);
   procedure SetServerPort(const Value: Integer);
+  procedure SetServerTimeout(const Value: Integer);
   procedure SetSSLPort(const Value: Integer);
   procedure SetSSLRequired(const Value: boolean);
-  function GetServerTimeout: Integer;
-  procedure SetServerTimeout(const Value: Integer);
 protected
   function GetDefaultSSLPort : Integer; virtual;
 public
@@ -243,15 +249,17 @@ public
   procedure ReadSettings (reg : TExSettings); override;
   procedure WriteSettings (reg : TExSettings); override;
 published
+  property ConnectTimeout: Integer read GetConnectTimeout write SetConnectTimeout;
+  property RASConnection : string read GetRASConnection write SetRASConnection;
+  property ReadTimeout: Integer read GetReadTimeout write SetReadTimeout;
   property ServerName : string read GetServerName write SetServerName;
   property ServerLogonRequired : boolean read GetServerLogonRequired write SetServerLogonRequired;
   property ServerAccountName : string read GetServerAccountName write SetServerAccountName;
   property ServerPassword : string read GetServerPassword write SetServerPassword;
-  property RASConnection : string read GetRASConnection write SetRASConnection;
   property ServerPort : Integer read GetServerPort write SetServerPort;
+  property ServerTimeout : Integer read GetServerTimeout write SetServerTimeout;
   property SSLRequired : boolean read GetSSLRequired write SetSSLRequired;
   property SSLPort : Integer read GetSSLPort write SetSSLPort;
-  property ServerTimeout : Integer read GetServerTimeout write SetServerTimeout;
 end;
 
 TNNTPServerSettings = class (TServerSettings)
@@ -1164,15 +1172,17 @@ begin
   begin
     src := TServerSettings (source);
 
+    fConnectTimeout:= src.fConnectTimeout;
     fRASConnection := src.fRASConnection;
+    fReadTimeout:= src.fReadTimeout;
     fServerAccountName := src.fServerAccountName;
     fServerLogonRequired := src.fServerLogonRequired;
     fServerName := src.fServerName;
     fServerPassword := src.fServerPassword;
     fServerPort := src.fServerPort;
+    fServerTimeout:= src.fServerTimeout;
     fSSLPort := src.fSSLPort;
     fSSLRequired := src.fSSLRequired;
-    fServerTimeout:= src.fServerTimeout;
     fId:= src.fId
   end
   else
@@ -1182,7 +1192,9 @@ end;
 constructor TServerSettings.Create(AParent: TSettings);
 begin
   inherited Create (AParent);
-  fServerTimeout := 60
+  fConnectTimeout := 60;
+  fReadTimeout := 60;
+  fServerTimeout := 60;
 end;
 
 function TServerSettings.Equals (settings : TServerSettings) : boolean;
@@ -1196,6 +1208,11 @@ begin
             (fID = settings.fId);
 end;
 
+function TServerSettings.GetConnectTimeout: Integer;
+begin
+  Result := GetProp(fConnectTimeout, 'ConnectTimeout');
+end;
+
 function TServerSettings.GetDefaultSSLPort: Integer;
 begin
   result := 563;
@@ -1204,6 +1221,11 @@ end;
 function TServerSettings.GetRASConnection: string;
 begin
   result := GetProp (fRASConnection, 'RASConnection');
+end;
+
+function TServerSettings.GetReadTimeout: Integer;
+begin
+  Result := GetProp(fReadTimeout, 'ReadTimeout');
 end;
 
 function TServerSettings.GetServerAccountName: string;
@@ -1248,11 +1270,13 @@ end;
 
 procedure TServerSettings.ReadSettings(reg: TExSettings);
 begin
+  fConnectTimeout := reg.GetIntegerValue('Connect Timeout', 60);
   fRASConnection := reg.GetStringValue ('RAS Connection', '');
+  fReadTimeout := reg.GetIntegerValue('Read Timeout', 60);
   fServerName := reg.GetStringValue('Server Name', '');
+  fServerTimeout := reg.GetIntegerValue('Server Timeout', 60);
   fSSLPort := reg.GetIntegerValue ('SSL Port', GetDefaultSSLPort);
   fSSLRequired := reg.GetIntegerValue('SSL Required', -1);
-  fServerTimeout := reg.GetIntegerValue('Server Timeout', 60);
 
   if reg.HasValue ('Server Account Name') then
   begin
@@ -1264,9 +1288,19 @@ begin
    fServerLogonRequired := -1;
 end;
 
+procedure TServerSettings.SetConnectTimeout(const Value: Integer);
+begin
+  SetProp(fConnectTimeout, 'ConnectTimeout', Value)
+end;
+
 procedure TServerSettings.SetRASConnection(const Value: string);
 begin
   SetProp (fRASConnection, 'RASConnection', Value);
+end;
+
+procedure TServerSettings.SetReadTimeout(const Value: Integer);
+begin
+  SetProp(fReadTimeout, 'ReadTimeout', Value)
 end;
 
 procedure TServerSettings.SetServerAccountName(const Value: string);
@@ -1311,11 +1345,13 @@ end;
 
 procedure TServerSettings.WriteSettings(reg: TExSettings);
 begin
+  reg.SetIntegerValue('Connect Timeout', fConnectTimeout, 60);
   reg.SetStringValue('RAS Connection', fRASConnection, '');
+  reg.SetIntegerValue('Read Timeout', fReadTimeout, 60);
   reg.SetStringValue('Server Name', fServerName, '');
+  reg.SetIntegerValue('Server Timeout', fServerTimeout, 60);
   reg.SetIntegerValue('SSL Port', fSSLPort, 563);
   reg.SetIntegerValue('SSL Required', fSSLRequired, -1);
-  reg.SetIntegerValue('Server Timeout', fServerTimeout, 60);
 
   if fServerLogonRequired = 1 then
   begin

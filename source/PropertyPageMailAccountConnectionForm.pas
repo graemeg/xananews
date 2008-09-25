@@ -9,6 +9,8 @@ uses
 type
   TPropertyPageMailAccountConnectionData = class (TPropertyPageData)
   private
+    fConnectTimeout: Integer;
+    fReadTimeout: Integer;
     fServerTimeout : Integer;
     fSMTPPort : Integer;
     fSSL : boolean;
@@ -35,6 +37,13 @@ type
     edSSLPort: TEdit;
     Label15: TLabel;
     Label1: TLabel;
+    lbReadTimeout: TLabel;
+    edReadTimeout: TEdit;
+    lbConnectTimeout: TLabel;
+    edConnectTimeout: TEdit;
+    Label28: TLabel;
+    Label2: TLabel;
+    Label3: TLabel;
     procedure ControlClick(Sender: TObject);
     procedure ControlChange(Sender: TObject);
     procedure cbRasEntriesChange(Sender: TObject);
@@ -64,6 +73,8 @@ begin
   result := True;
   acct := TMailAccount (Param);
 
+  acct.ServerSettings.ConnectTimeout := fConnectTimeout;
+  acct.ServerSettings.ReadTimeout := fReadTimeout;
   acct.ServerSettings.ServerTimeout := fServerTimeout;
   acct.ServerSettings.ServerPort := fSMTPPort;
   acct.ServerSettings.SSLRequired := fSSL;
@@ -76,6 +87,8 @@ var
   acct : TMailAccount;
 begin
   acct := TMailAccount (Param);
+  fConnectTimeout := acct.ServerSettings.ConnectTimeout;
+  fReadTimeout := acct.ServerSettings.ReadTimeout;
   fServerTimeout := acct.ServerSettings.ServerTimeout;
   fSMTPPort := acct.ServerSettings.ServerPort;
   fSSL := acct.ServerSettings.SSLRequired;
@@ -107,6 +120,8 @@ begin
       idx := i
   end;
 
+  edConnectTimeout.Text := IntToStr(fData.fConnectTimeout);
+  edReadTimeout.Text := IntToStr(fData.fReadTimeout);
   edServerTimeout.Text := IntToStr (fData.fServerTimeout);
   edSMTPPort.Text := IntToStr (fData.fSMTPPort);
   cbSSL.Checked := fData.fSSL;
@@ -135,6 +150,8 @@ procedure TfmPropertyPageMailAccountConnection.UpdateData;
 begin
   if Populating then Exit;
 
+  fData.fConnectTimeout := StrToIntDef(edConnectTimeout.Text, 60);
+  fData.fReadTimeout := StrToIntDef(edReadTimeout.Text, 60);
   fData.fServerTimeout := StrToIntDef (edServerTimeout.Text, 60);
   fData.fSMTPPort := StrToIntDef (edSMTPPort.Text, 25);
   fData.fSSL := cbSSL.Checked;

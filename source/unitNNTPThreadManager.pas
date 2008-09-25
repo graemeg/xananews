@@ -17,7 +17,6 @@ TNNTPThreadManager = class
 private
   fNewsAgent : string;
   fGetterList : TObjectList;
-  fConnecting : TCriticalSection;
   fCurrentConnectoid : string;
   fConnection : Integer;
   fWeConnected : boolean;
@@ -59,13 +58,14 @@ public
   procedure GetArticleBody (account : TNNTPAccount; group : TSubscribedGroup; article : TArticle);
   procedure GetArticleThreadBodies (account : TNNTPAccount; group : TSubscribedGroup; article : TArticle);
   procedure JogThreads;
-  procedure DisconnectAll;
+  procedure DisconnectAll(Done: Boolean);
   procedure PostMessage (account : TNNTPAccount; hdr : TStrings; const msg : string; attachments : TObjectList; ACodepage : Integer; ATextPartStyle : TTextPartStyle);
   procedure SendSMTPMail (articleContainer : TServerAccount;settings : TSMTPServerSettings; const sTo, sCC, sBCC, sSubject, sReplyTo, msg : string; attachments : TObjectList; ACodePage : Integer; AUseOutbasket : boolean);
   property NewsAgent : string read fNewsAgent;
   procedure GetProgressNumbers (settings : TServerSettings; group : TSubscribedGroup; var min, max, pos : Integer);
 
   procedure ClearGetters;
+  procedure ClearGettersForAccount(account: TNNTPAccount);
 //  property GetterCount : Integer read GetGetterCount;
 //  property Getters [idx : Integer] : TTCPGetter read GetGetters;
 
@@ -76,7 +76,7 @@ public
   property ActiveGetters [idx : Integer] : TTCPGetter read GetActiveGetter;
 
   function GettingNewsgroupList (account : TNNTPAccount) : boolean;
-  function GettingArticleList (group : TArticleContainer) : boolean;
+  function GettingArticleList (group : TArticleContainer; Resume: Boolean = False) : boolean;
   function GettingArticle (group : TArticleContainer; article : TArticleBase) : boolean;
 
   function StopArticleDownloads (group : TSubscribedGroup) : boolean;
@@ -106,6 +106,17 @@ public
   property OnNotifyNewGroups : TOnNotifyNewGroups read fOnNotifyNewGroups write fOnNotifyNewGroups;
 end;
 
+  TNetworkMonitorThread = class(TThread)
+  private
+    FOverlap: OVERLAPPED;
+    FHandle: THandle;
+  protected
+    procedure Execute; override;
+  public
+    procedure CancelMonitor;
+    constructor Create;
+  end;
+
 ENNTPThreadManager = class (Exception)
 end;
 
@@ -115,18 +126,25 @@ var
 type
   TfnInternetGetConnectedStateExA = function (var dwFlags : DWORD; lpszConnectionName : PChar; dwNameLen, dwReserved : DWORD) : BOOL; stdcall;
   TfnInternetGetConnectedStateExW = function (var dwFlags : DWORD; lpszConnectionName : PWideChar; dwNameLen, dwReserved : DWORD) : BOOL; stdcall;
+  TNotifyAddrChange = function(Handle: PHandle; overlapped: POVERLAPPED): DWORD; stdcall;
 
 var
-  InternetGetConnectedStateEx : TfnInternetGetConnectedStateExA;
+  InternetGetConnectedStateEx : TfnInternetGetConnectedStateExA = nil;
+  NotifyAddrChange: TNotifyAddrChange = nil;
+  gNetworkMonitorThread : TNetworkMonitorThread = nil;
 
 function InternetTimeToSystemTime (lpszTime : PChar; var pst : SYSTEMTIME; dwReserved : DWORD) : BOOL; stdcall;
 
 implementation
 
-uses WinINet, unitNewsReaderOptions, unitCheckVersion, unitSearchString, unitSavedArticles;
+uses WinINet, unitNewsReaderOptions, unitCheckVersion, unitSearchString, unitSavedArticles, IdWinsock2;
 
 const
   wininetdll = 'wininet.dll';
+  iphlpapilib = 'iphlpapi.dll';
+var
+  hWinINet : THandle;
+  hiphlpapi: THandle;
 
 function InternetTimeToSystemTime; external wininetdll name 'InternetTimeToSystemTimeA';
 
@@ -235,7 +253,7 @@ var
 begin
   if settings.RASConnection <> '~' then
   begin
-    fConnecting.Enter;
+    fConnectToSync.Enter;
     try
       // If not connected to internet, or connected to another ISP
       if (fCurrentConnectoid = '') or ((fCurrentConnectoid <> settings.RASConnection) and (settings.RASConnection <> '')) then
@@ -277,7 +295,7 @@ begin
         end
       end
     finally
-      fConnecting.Leave
+      fConnectToSync.Leave
     end;
     result := fCurrentConnectoid <> '';
   end
@@ -293,11 +311,11 @@ constructor TNNTPThreadManager.Create(const ANewsAgent: string);
 begin
   fNewsAgent := ANewsAgent;
   fGetterList := TObjectList.Create;
-  fConnecting := TCriticalSection.Create;
   fGetterSync := TCriticalSection.Create;
   fConnectToSync := TCriticalSection.Create;
   GetCurrentConnectoid;
-  gGetVersionThread := TGetVersionThread.Create
+  gGetVersionThread := TGetVersionThread.Create;
+  gNetworkMonitorThread := TNetworkMonitorThread.Create;
 end;
 
 destructor TNNTPThreadManager.Destroy;
@@ -308,12 +326,18 @@ begin
   finally
     UnlockGetterList
   end;
-  FreeAndNil (fConnecting);
 
   if Assigned (gGetVersionThread) then
   try
     gGetVersionThread.Terminate;
   except
+  end;
+  if Assigned (gNetworkMonitorThread) then
+  begin
+    gNetworkMonitorThread.Terminate;
+    gNetworkMonitorThread.CancelMonitor;
+    gNetworkMonitorThread.WaitFor;
+    FreeAndNil(gNetworkMonitorThread);
   end;
   if Assigned (Options) and (Options.AutoDisconnectOnIdle or Options.AutoDisconnectOnExit) then
     DoAutoDisconnect;
@@ -321,7 +345,7 @@ begin
   LockGetterList;
   UnlockGetterList;
 
-  FreeAndNil (fGetterSync);
+  FreeAndNil(fGetterSync);
   FreeAndNil(fConnectToSync);
   inherited;
 end;
@@ -684,7 +708,7 @@ begin
 end;
 
 function TNNTPThreadManager.GettingArticleList(
-  group: TArticleContainer): boolean;
+  group: TArticleContainer; Resume: Boolean = False): boolean;
 var
   getter : TArticlesGetter;
   i : Integer;
@@ -704,8 +728,10 @@ begin
 
           if request.Group = group then
           begin
-            result := True;
-            break
+            Result := True;
+            if Resume and (getter.State in [tsDormant, tsPending]) then
+              getter.Resume;
+            break;
           end
         end
       finally
@@ -738,6 +764,7 @@ var
   getters : TObjectList;
 begin
   if gAppTerminating then Exit;
+  GetCurrentConnectoid;
   connectoid := ReadCurrentConnectoid;
 
   lanOverride := connectoid = '*';
@@ -882,7 +909,7 @@ begin
   end
 end;
 
-procedure TNNTPThreadManager.DisconnectAll;
+procedure TNNTPThreadManager.DisconnectAll(Done: Boolean);
 var
   i : Integer;
   getters : TObjectList;
@@ -891,7 +918,7 @@ begin
   try
     for i := 0 to getters.Count- 1 do
     try
-      TTCPGetter (getters [i]).Disconnect;
+      TTCPGetter(getters[i]).Disconnect(Done);
     except
     end
   finally
@@ -917,7 +944,9 @@ begin
   end
 end;
 
-procedure TNNTPThreadManager.SendSMTPMail(articleContainer : TServerAccount; settings : TSMTPServerSettings;const sTo, sCC, sBCC, sSubject, sReplyTo, msg : string; attachments: TObjectList; ACodePage : Integer; AUseOutbasket : boolean);
+procedure TNNTPThreadManager.SendSMTPMail(articleContainer: TServerAccount;
+  settings: TSMTPServerSettings; const sTo, sCC, sBCC, sSubject, sReplyTo, msg: string;
+  attachments: TObjectList; ACodePage: Integer; AUseOutbasket: boolean);
 var
   getter : TEMailer;
 begin
@@ -964,9 +993,6 @@ begin
     UnlockGetterList
   end
 end;
-
-var
-  hWinINet : THandle;
 
 function TNNTPThreadManager.GetActiveGetter(idx: Integer): TTCPGetter;
 var
@@ -1049,8 +1075,8 @@ begin
           emailer := TEMailer (getter);
           if emailer.OrigUseOutbasket and (emailer.Messages.Count > 0) then
             Inc (result)
-        end
-    end
+        end;
+    end;
   finally
     UnlockGetterList
   end
@@ -1091,8 +1117,8 @@ begin
           emailer := TEMailer (getter);
           if emailer.OrigUseOutbasket and (emailer.Messages.Count > 0) then
             emailer.ResumeOutbasket
-        end
-    end
+        end;
+    end;
   finally
     UnlockGetterList
   end
@@ -1106,6 +1132,28 @@ begin
   finally
     UnlockGetterList
   end
+end;
+
+procedure TNNTPThreadManager.ClearGettersForAccount(account: TNNTPAccount);
+var
+  I: Integer;
+  getter: TTCPGetter;
+begin
+  LockGetterList;
+  try
+    for I := fGetterList.Count - 1 downto 0 do
+    begin
+      getter := TTCPGetter(fGetterList[I]);
+      if getter is TNewsGetter then
+        if TNewsGetter(getter).Account = account then
+        begin
+          getter.Disconnect(True);
+          fGetterList.Delete(I);
+        end;
+    end;
+  finally
+    UnlockGetterList;
+  end;
 end;
 
 function TNNTPThreadManager.LockGetterList: TObjectList;
@@ -1227,13 +1275,42 @@ begin
   end
 end;
 
+{ TNetworkMonitor }
+
+constructor TNetworkMonitorThread.Create;
+begin
+  inherited Create(True);
+  FOverlap.hEvent := WSACreateEvent;
+end;
+
+procedure TNetworkMonitorThread.CancelMonitor;
+begin
+  SetEvent(FOverlap.hEvent);
+  inherited;
+end;
+
+procedure TNetworkMonitorThread.Execute;
+begin
+  while not Terminated do
+  begin
+    // this blocks until an IP change occurs
+    NotifyAddrChange(@FHandle, @FOverlap);
+    if WaitForSingleObject(FOverlap.hEvent, INFINITE) = WAIT_OBJECT_0 then
+      ThreadManager.JogThreads;
+  end;
+end;
+
 initialization
   hWinINet := LoadLibrary (wininetdll);
   if hWinINet <> 0 then
-    InternetGetConnectedStateEx := GetProcAddress (hWinINet, 'InternetGetConnectedStateExA')
-  else
-    InternetGetConnectedStateEx := Nil;
+    InternetGetConnectedStateEx := GetProcAddress (hWinINet, 'InternetGetConnectedStateExA');
+  hiphlpapi := LoadLibrary (iphlpapilib);
+  if hiphlpapi <> 0 then
+    NotifyAddrChange := GetProcAddress (hiphlpapi, 'NotifyAddrChange');
+  InitializeWinSock;
 finalization
   if hWinINet <> 0 then
     FreeLibrary (hWinINet);
+  if hWinINet <> 0 then
+    FreeLibrary (hiphlpapi);
 end.

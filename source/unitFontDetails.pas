@@ -162,7 +162,7 @@ begin
       FillChar (lf, sizeof (lf), 0);
       lf.lfCharSet := DEFAULT_CHARSET;
       lstrcpyn (lf.lfFaceName, PChar (details.fName), sizeof (lf.lfFaceName));
-      EnumFontFamiliesEx (param, lf, @EnumFontSizesProc, Integer (details), 0);
+      EnumFontFamiliesEx(HDC(param), lf, @EnumFontSizesProc, LongInt(details), 0);
       details.fSizes.Sort(CompareSizes);
     end
   end
@@ -193,7 +193,7 @@ begin
     FillChar (lf, sizeof (lf), 0);
     lf.lfCharSet := DEFAULT_CHARSET;
 
-    EnumFontFamiliesEx (dc, lf, @EnumFontFamiliesProc, dc, 0)
+    EnumFontFamiliesEx(dc, lf, @EnumFontFamiliesProc, LongInt(dc), 0)
   finally
     ReleaseDC (0, dc)
   end;

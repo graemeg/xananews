@@ -1,7 +1,6 @@
 object dlgBatch: TdlgBatch
   Left = 227
   Top = 194
-  AutoScroll = False
   Caption = 'Batch Properties'
   ClientHeight = 434
   ClientWidth = 741
@@ -61,9 +60,7 @@ object dlgBatch: TdlgBatch
       end
       item
         Caption = 'Action'
-        Width = -2
-        WidthType = (
-          -2)
+        Width = 352
       end>
     HideSelection = False
     MultiSelect = True

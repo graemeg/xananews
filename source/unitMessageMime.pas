@@ -13,7 +13,7 @@
  | the License for the specific language governing rights and           |
  | limitations under the License.                                       |
  |                                                                      |
- | Copyright © Colin Wilson 2002  All Rights Reserved
+ | Copyright © Colin Wilson 2002  All Rights Reserved                   |
  |                                                                      |
  | Version  Date        By    Description                               |
  | -------  ----------  ----  ------------------------------------------|
@@ -24,185 +24,159 @@ unit unitMessageMime;
 
 interface
 
-uses Windows, Classes, SysUtils, graphics, unitMessages;
+uses
+  Windows, Classes, SysUtils, Graphics, unitMessages;
 
 type
+  TmvMimeMessagePart = class(TmvMessagePart)
+  private
+    fHeaderDecoded: Boolean;
+    fHeader: TStringList;
+    fImageClass: string;
+    fMIMEHeaderStrings: TStrings;
+    fForced: Boolean;
+    fBody: TStrings;
+    fGotBody: Boolean;
+    fMIMEHeader: TMIMEHeader;
+    fMultipartHeader: TMIMEHeader;
+    procedure DecodeHeader;
+    function GetMimeHeader: TMimeHeader;
+  protected
+    class function IsBoundary(const s: string; MIMEHeader: TMIMEHeader): Boolean; override;
+    function IsBoundaryEnd(const st: string): Boolean; override;
+    function ProcessHeaderLine(const st: string): Boolean; override;
+    function GetGraphic: TGraphic; override;
+    function GetBody: TStrings; override;
+    function GetFileName: string; override;
+    function GetDecodeType: TDecodeType; override;
+    procedure InitMultipart(multipartHeader: TMIMEHeader); override;
+    function MatchesCID(const cid: string): Boolean; override;
+    function GetMIMEContentType: string; override;
+    function GetIsHTMLMultipart: Boolean; override;
+  public
+    constructor Create(AOwner: TCollection); override;
+    destructor Destroy; override;
+    procedure GetData(s: TStream); override;
+    property Header: TStringList read fHeader;
+    property ImageClass: string read fImageClass;
+    procedure InitForcedMessagePart(AMIMEHeader: TMIMEHEader);
+    property MimeHeader: TMimeHeader read GetMimeHeader;
+    property MultipartHeader: TMimeHeader read fMultipartHeader;
+  end;
 
-TmvMimeMessagePart = class (TmvMessagePart)
-private
-  fHeaderDecoded : boolean;
-  fHeader : TStringList;
-  fImageClass : string;
-  fMIMEHeaderStrings : TStrings;
-  fForced : boolean;
-  fBody : TStrings;
-  fGotBody : boolean;
-  fMIMEHeader : TMIMEHeader;
-  fMultipartHeader : TMIMEHeader;
-  procedure DecodeHeader;
-  function GetMimeHeader: TMimeHeader;
-
-protected
-  class function IsBoundary (const s : string; MIMEHeader : TMIMEHeader) : boolean; override;
-  function IsBoundaryEnd (const st : string) : boolean; override;
-  function ProcessHeaderLine (const st : string) : boolean; override;
-  function GetGraphic: TGraphic; override;
-  function GetBody : TStrings; override;
-  function GetFileName : string; override;
-  function GetDecodeType : TDecodeType; override;
-  procedure InitMultipart (multipartHeader : TMIMEHeader); override;
-  function MatchesCID (const cid : string) : boolean; override;
-  function GetMIMEContentType : string; override;
-  function GetIsHTMLMultipart: boolean; override;
-public
-  constructor Create (AOwner : TCollection); override;
-  destructor Destroy; override;
-  procedure GetData (s : TStream); override;
-  property Header : TStringList read fHeader;
-  property ImageClass : string read fImageClass;
-  procedure InitForcedMessagePart (AMIMEHeader : TMIMEHEader);
-  property MimeHeader : TMimeHeader read GetMimeHeader;
-  property MultipartHeader : TMimeHeader read fMultipartHeader;
-end;
-
-function GetMimeGraphicClass (const imageClass : string) : TGraphicClass;
-procedure DecodeFormatFlowed (const ins : TStream; outs : TStrings);
+function GetMimeGraphicClass(const imageClass: string): TGraphicClass;
+procedure DecodeFormatFlowed(const ins: TStream; outs: TStrings);
 
 implementation
 
-uses GIFImage, Jpeg, pngImage, NewsGlobals, idCoderUUE, idCoder, idCoderMIME, unitStreamTextReader, unitRFC2646Coder;
+uses
+  GIFImage, Jpeg, pngImage, NewsGlobals, idCoderUUE, idCoder, idCoderMIME,
+  unitStreamTextReader, unitRFC2646Coder, XnCoderUUE;
 
-
-(*----------------------------------------------------------------------*
- | function GetMimeGraphicClass                                         |
- |                                                                      |
- | Get the graphic class needed to display a MIME content subtype       |
- |                                                                      |
- | Parameters:                                                          |
- |   const imageClass : string          The MIMD Content subtype        |
- |                                                                      |
- | The function returns the graphic class                               |
- *----------------------------------------------------------------------*)
-
-function GetMimeGraphicClass (const imageClass : string) : TGraphicClass;
+function GetMimeGraphicClass(const imageClass: string): TGraphicClass;
 begin
-  result := Nil;
-  if CompareText (imageClass, 'jpeg') = 0 then
-    result := TJPegImage
+  // Get the graphic class needed to display a MIME content subtype       
+  Result := nil;
+  if CompareText(imageClass, 'jpeg') = 0 then
+    Result := TJPegImage
   else
-    if CompareText (imageClass, 'gif') = 0 then
-      result := TGIFImage
+    if CompareText(imageClass, 'gif') = 0 then
+      Result := TGIFImage
     else
-      if CompareText (imageClass, 'bmp') = 0 then
-        result := TBitmap
+      if CompareText(imageClass, 'bmp') = 0 then
+        Result := TBitmap
       else
-        if CompareText (imageClass, 'png') = 0 then
-          result := TPngObject
+        if CompareText(imageClass, 'png') = 0 then
+          Result := TPngObject;
 end;
 
-(*----------------------------------------------------------------------*
- | procedure DecodeQuotedPrintable                                      |
- |                                                                      |
- | Decode a 'quoted-printable' stream to a string list                  |
- |                                                                      |
- | Parameters:                                                          |
- |   const ins : TStream        The stream to decode                    |
- |   outs : TStrings            The stringlist to populate              |
- *----------------------------------------------------------------------*)
-procedure DecodeQuotedPrintable (const ins : TStream; outs : TStrings);
+procedure DecodeQuotedPrintable(const ins: TStream; outs: TStrings);
 var
-  ch, ch1, ch2 : char;
-  st : string;
-  s : TStringStream;
+  ch, ch1, ch2: Char;
+  st: string;
+  s: TStringStream;
 begin
-  s := TStringStream.Create (st);
+  // Decode a 'quoted-printable' stream to a string list                  
+  s := TStringStream.Create(st);
   try
-    while ins.Read(ch, sizeof (ch)) = sizeof (ch) do
+    while ins.Read(ch, SizeOf(ch)) = SizeOf(ch) do
     begin
       if ch = '=' then
       begin
-        ins.Read(ch1, sizeof (ch1));
-        ins.Read(ch2, sizeof (ch2));
+        ins.Read(ch1, SizeOf(ch1));
+        ins.Read(ch2, SizeOf(ch2));
 
         // Line ending with =CRLF is a soft carriage return.  Strip it out
-        if (ch1 in [#13,#10]) then
+        if (ch1 in [#13, #10]) then
           Continue;
 
         // '=' means that the next two characters are hex digits for the
         // character.
-        ch := Char (StrToIntDef ('$'+ch1+ch2, 0));
+        ch := Char(StrToIntDef('$' + ch1 + ch2, 0));
 
         if ch = #0 then
           Continue;
       end;
-      s.Write(ch, sizeof (ch))
+      s.Write(ch, SizeOf(ch));
     end;
 
-    outs.Text := s.DataString
+    outs.Text := s.DataString;
   finally
-    s.Free
-  end
+    s.Free;
+  end;
 end;
 
-(*----------------------------------------------------------------------*
- | procedure DecodeFormatFlowed                                         |
- |                                                                      |
- | Decode a 'format flowed' stream to a string list - See RFC 2646      |
- |                                                                      |
- | Second stab at this!                                                 |
- |                                                                      |
- | Parameters:                                                          |
- |   const ins : TStream        The stream to decode                    |
- |   outs : TStrings            The stringlist to populate              |
- *----------------------------------------------------------------------*)
-procedure DecodeFormatFlowed (const ins : TStream; outs : TStrings);
+procedure DecodeFormatFlowed(const ins: TStream; outs: TStrings);
 var
-  coder : TRFC2646Decoder;
-  s : TStringStream;
-  inst, st : string;
+  coder: TRFC2646Decoder;
+  s: TStringStream;
+  inst, st: string;
 begin
-  coder := Nil;
+  // Decode a 'format flowed' stream to a string list - See RFC 2646      
+  coder := nil;
   s := TStringStream.Create(st);
   try
     coder := TRFC2646Decoder.Create(nil);
     coder.InsertSpaceAfterQuote := False;
 
     if ins is TMemoryStream then
-      coder.DecodeBuffer(TMemoryStream (ins).Memory, ins.Size, s)
+      coder.DecodeBuffer(TMemoryStream(ins).Memory, ins.Size, s)
     else
     begin
-      SetLength (inst, ins.Size);
-      ins.Read(inst [1], ins.Size);
-      coder.DecodeToStream(inst, s)
+      SetLength(inst, ins.Size);
+      ins.Read(inst[1], ins.Size);
+      coder.DecodeBegin(s);
+      coder.Decode(inst);
     end;
 
-    outs.Text := s.DataString
+    outs.Text := s.DataString;
   finally
     coder.Free;
-    s.Free
-  end
+    s.Free;
+  end;
 end;
 
-procedure DecodeBase64 (const ins : TStream; outs : TStrings);
+procedure DecodeBase64(const ins: TStream; outs: TStrings);
 var
-  decoder : TidDecoder;
-  str : TStreamTextReader;
-  s : TMemoryStream;
-  st : string;
+  decoder: TidDecoder;
+  str: TStreamTextReader;
+  s: TMemoryStream;
+  st: string;
 begin
-  str := Nil;
-  s := Nil;
+  str := nil;
+  s := nil;
   decoder := TidDecoderMIME.Create(nil);
   try
-    ins.Seek (0, soFromBeginning);
+    ins.Seek(0, soFromBeginning);
     str := TStreamTextReader.Create(ins);
     s := TMemoryStream.Create;
     try
+      decoder.DecodeBegin(s);
       while str.ReadLn(st) do
       begin
-        if (Length (st) mod 4) <> 0 then
-          st := Copy (st, 1, (Length (st) div 4) * 4);
-        decoder.DecodeToStream(st, s)
+        if (Length(st) mod 4) <> 0 then
+          st := Copy(st, 1, (Length(st) div 4) * 4);
+        decoder.Decode(st);
       end;
     except
     end;
@@ -212,8 +186,8 @@ begin
   finally
     decoder.Free;
     str.Free;
-    s.Free
-  end
+    s.Free;
+  end;
 end;
 
 { TmvMimeMessagePart }
@@ -221,17 +195,17 @@ end;
 constructor TmvMimeMessagePart.Create(AOwner: TCollection);
 begin
   inherited;
-  fInLine := False
+  fInLine := False;
 end;
 
 procedure TmvMimeMessagePart.DecodeHeader;
 begin
-  if not fHeaderDecoded and Assigned (fMIMEHeaderStrings) then
+  if not fHeaderDecoded and Assigned(fMIMEHeaderStrings) then
   begin
-    FixHeaders (fMIMEHeaderStrings);
+    FixHeaders(fMIMEHeaderStrings);
     fMIMEHeader := TMimeHeader.CreateFromHeaderStrings(fMIMEHeaderStrings, True)
   end;
-  fHeaderDecoded := True
+  fHeaderDecoded := True;
 end;
 
 destructor TmvMimeMessagePart.Destroy;
@@ -250,59 +224,59 @@ begin
   begin
     DecodeHeader;
     if fHeaderDecoded then
-      if not Assigned (fMIMEHeader) or (CompareText (fMIMEHeader.ContentType_Type, 'text') = 0) then
+      if not Assigned(fMIMEHeader) or (CompareText(fMIMEHeader.ContentType_Type, 'text') = 0) then
       begin
-        if not Assigned (fBody) then
+        if not Assigned(fBody) then
           fBody := TStringList.Create;
 
-        if fData = Nil then
+        if fData = nil then
         begin
-          result := fBody;
+          Result := fBody;
           Exit;
         end;
 
         try
           fData.Seek(0, soFromBeginning);
-          if Assigned (fMIMEHeader) then
+          if Assigned(fMIMEHeader) then
           begin
-            if CompareText (fMIMEHeader.ContentTransferEncoding, 'Quoted-Printable') = 0 then
-              DecodeQuotedPrintable (fData, fBody)
+            if CompareText(fMIMEHeader.ContentTransferEncoding, 'Quoted-Printable') = 0 then
+              DecodeQuotedPrintable(fData, fBody)
             else
-              if CompareText (fMIMEHeader.ContentTransferEncoding, 'base64') = 0 then
-                DecodeBase64 (fData, fBody)
+              if CompareText(fMIMEHeader.ContentTransferEncoding, 'base64') = 0 then
+                DecodeBase64(fData, fBody)
               else
-                if Assigned (fMimeHeader.ContentType_Attributes) and (CompareText (MimeHeader.ContentType_Attributes.Values ['format'], 'flowed') = 0) then
-                  DecodeFormatFlowed (fData, fBody)
+                if Assigned(fMimeHeader.ContentType_Attributes) and (CompareText(MimeHeader.ContentType_Attributes.Values['format'], 'flowed') = 0) then
+                  DecodeFormatFlowed(fData, fBody)
                 else
                   fBody.LoadFromStream(fData);
 
-            if (CompareText (fMIMEHeader.ContentType_Subtype, 'html') = 0) and (fBody.Count > 0) then
-              if Pos ('<HTML', UpperCase (fBody.Text)) = 0 then
+            if (CompareText(fMIMEHeader.ContentType_Subtype, 'html') = 0) and (fBody.Count > 0) then
+              if Pos('<HTML', UpperCase(fBody.Text)) = 0 then
               begin
-                fBody.Strings [0] := '<HTML>' + fBody.Strings [0];
-                fBody.Strings [fBody.Count - 1] := fBody.Strings [fBody.Count - 1] + '</HTML> '
-              end
+                fBody.Strings[0] := '<HTML>' + fBody.Strings[0];
+                fBody.Strings[fBody.Count - 1] := fBody.Strings[fBody.Count - 1] + '</HTML> ';
+              end;
           end
           else
-            fBody.LoadFromStream(fData)
+            fBody.LoadFromStream(fData);
         finally
-          fData.Seek(0, soFromEnd)
-        end
+          fData.Seek(0, soFromEnd);
+        end;
       end;
-    fGotBody := Complete
+    fGotBody := Complete;
   end;
-  result := fBody;
+  Result := fBody;
 end;
 
 procedure TmvMimeMessagePart.GetData(s: TStream);
 var
-  decoder : TidDecoder;
-  st : string;
-  str : TStreamTextReader;
+  decoder: TidDecoder;
+  st: string;
+  str: TStreamTextReader;
 begin
   DecodeHeader;
 
-  if not Assigned (fData) then
+  if not Assigned(fData) then
     Exit;
 
   if fHeaderDecoded then
@@ -311,153 +285,151 @@ begin
     s.Size := 0;
     if DecodeType <> ttText then
     begin
-      decoder := Nil;
+      decoder := nil;
       case DecodeType of
-        ttUUEncode : decoder := TidDecoderUUE.Create(nil);
-        ttBase64   : decoder := TidDecoderMIME.Create(nil);
+        ttUUEncode: decoder := TXnDecoderUUE.Create(nil);
+        ttBase64  : decoder := TidDecoderMIME.Create(nil);
       end;
 
-      str := Nil;
-      if Assigned (decoder) then
+      str := nil;
+      if Assigned(decoder) then
       try
-        fData.Seek (0, soFromBeginning);
+        fData.Seek(0, soFromBeginning);
         str := TStreamTextReader.Create(fData);
         try
+          decoder.DecodeBegin(s);
           while str.ReadLn(st) do
-            decoder.DecodeToStream(st, s);
+            decoder.Decode(st);
         except
         end
       finally
         decoder.Free;
-        str.Free
-      end
+        str.Free;
+      end;
     end
     else
-      s.CopyFrom(fData, fData.Size)
+      s.CopyFrom(fData, fData.Size);
   end;
-  fData.Seek (0, soFromEnd);
+  fData.Seek(0, soFromEnd);
 end;
 
 function TmvMimeMessagePart.GetDecodeType: TDecodeType;
 begin
-  result := ttText;
-  if Assigned (fMIMEHeader) then
-    result := fMIMEHeader.DecodeType
+  Result := ttText;
+  if Assigned(fMIMEHeader) then
+    Result := fMIMEHeader.DecodeType;
 end;
 
 function TmvMimeMessagePart.GetFileName: string;
 begin
-  result := '';
-  if Assigned (fMIMEHeader) then
-    result := fMIMEHeader.FileName;
+  Result := '';
+  if Assigned(fMIMEHeader) then
+    Result := fMIMEHeader.FileName;
 end;
 
 function TmvMimeMessagePart.GetGraphic: TGraphic;
 var
-  gc : TGraphicClass;
-  ext : string;
+  gc: TGraphicClass;
+  ext: string;
 begin
   if not fGotGraphic then
   begin
     DecodeHeader;
     if fHeaderDecoded then
     begin
-      gc := Nil;
-      if Assigned (fMIMEHeader) and (CompareText (fMIMEHeader.ContentType_Type, 'Image') = 0) and (fMIMEHeader.ContentType_Subtype <> '') then
-      begin
-        if not Assigned (fGraphic) then
+      gc := nil;
+      if Assigned(fMIMEHeader) and (CompareText(fMIMEHeader.ContentType_Type, 'Image') = 0) and (fMIMEHeader.ContentType_Subtype <> '') then
+        if not Assigned(fGraphic) then
         begin
-          gc := GetMimeGraphicClass (fMIMEHeader.ContentType_Subtype);
-          if not Assigned (gc) then
+          gc := GetMimeGraphicClass(fMIMEHeader.ContentType_Subtype);
+          if not Assigned(gc) then
           begin
-            ext := ExtractFileExt (FileName);
-            gc := GetGraphicClass (ext)
-          end
-        end
-      end;
-      DecodeGraphic (gc)
-
-    end
+            ext := ExtractFileExt(FileName);
+            gc := GetGraphicClass(ext);
+          end;
+        end;
+      DecodeGraphic(gc);
+    end;
   end;
-  result := fGraphic
+  Result := fGraphic;
 end;
 
-function TmvMimeMessagePart.GetIsHTMLMultipart: boolean;
+function TmvMimeMessagePart.GetIsHTMLMultipart: Boolean;
 begin
-  result := CompareText (MIMEContentType, 'text/html') = 0
+  Result := CompareText(MIMEContentType, 'text/html') = 0;
 end;
 
 function TmvMimeMessagePart.GetMIMEContentType: string;
 var
-  hdr : TMimeHeader;
+  hdr: TMimeHeader;
 begin
   hdr := GetMimeHeader;
-  if Assigned (hdr) then
-    result := hdr.ContentType_Type + '/' + hdr.ContentType_Subtype
+  if Assigned(hdr) then
+    Result := hdr.ContentType_Type + '/' + hdr.ContentType_Subtype
   else
-    result := ''
+    Result := ''
 end;
 
 function TmvMimeMessagePart.GetMimeHeader: TMimeHeader;
 begin
   DecodeHeader;
-  result := fMIMEHeader
+  Result := fMIMEHeader;
 end;
 
-procedure TmvMimeMessagePart.InitForcedMessagePart(AMIMEHeader : TMIMEHEader);
+procedure TmvMimeMessagePart.InitForcedMessagePart(AMIMEHeader: TMIMEHEader);
 begin
   fMIMEHeader := TMIMEHeader.Create;
-  fMIMEHeader.Assign (AMIMEHeader);
+  fMIMEHeader.Assign(AMIMEHeader);
   fHeaderDecoded := True;
-  fForced := True
+  fForced := True;
 end;
 
-procedure TmvMimeMessagePart.InitMultipart (multipartHeader : TMIMEHeader);
+procedure TmvMimeMessagePart.InitMultipart(multipartHeader: TMIMEHeader);
 begin
   fMultipartHeader := multipartHeader;
 end;
 
-class function TmvMimeMessagePart.IsBoundary(const s: string; MIMEHeader : TMIMEHeader): boolean;
+class function TmvMimeMessagePart.IsBoundary(const s: string; MIMEHeader: TMIMEHeader): Boolean;
 begin
-  result := False;
-  if Assigned (MIMEHeader) and (Length (s) > 2) and (s [1] = '-') and (s [2] = '-') then
-    result := CompareText (Trim (s), '--' + MIMEHeader.MultipartBoundary) = 0
+  Result := False;
+  if Assigned(MIMEHeader) and (Length(s) > 2) and (s[1] = '-') and (s[2] = '-') then
+    Result := CompareText(Trim(s), '--' + MIMEHeader.MultipartBoundary) = 0;
 end;
 
-function TmvMimeMessagePart.IsBoundaryEnd(const st: string): boolean;
+function TmvMimeMessagePart.IsBoundaryEnd(const st: string): Boolean;
 begin
   if fForced and (MIMEHeader.DecodeType <> ttText) and (MIMEHeader.DecodeType <> ttQuotedPrintable) then
-    result := st = ''
+    Result := st = ''
   else
   begin
-    result := False;
-    if Assigned (fMultipartHeader) then
-      result := CompareText (Trim (st), '--' + fMultipartHeader.MultipartBoundary + '--') = 0;
-  end
+    Result := False;
+    if Assigned(fMultipartHeader) then
+      Result := CompareText(Trim(st), '--' + fMultipartHeader.MultipartBoundary + '--') = 0;
+  end;
 end;
 
-function TmvMimeMessagePart.MatchesCID(const cid: string): boolean;
+function TmvMimeMessagePart.MatchesCID(const cid: string): Boolean;
 begin
   DecodeHeader;
-  if fHeaderDecoded and Assigned (fMIMEHeader) then
-    result := CompareText (fMIMEHeader.ContentID, cid) = 0
+  if fHeaderDecoded and Assigned(fMIMEHeader) then
+    Result := CompareText(fMIMEHeader.ContentID, cid) = 0
   else
-    result := False
+    Result := False;
 end;
 
-function TmvMimeMessagePart.ProcessHeaderLine(const st: string) : boolean;
+function TmvMimeMessagePart.ProcessHeaderLine(const st: string): Boolean;
 begin
   if st = '' then
-    result := False
+    Result := False
   else
   begin
-    result := True;
-    if not Assigned (fMIMEHeaderStrings) then
+    Result := True;
+    if not Assigned(fMIMEHeaderStrings) then
       fMIMEHeaderStrings := TStringList.Create;
     fMIMEHeaderStrings.Add(st);
-  end
+  end;
 end;
 
 initialization
-  RegisterMessagePart (TmvMimeMessagePart);
+  RegisterMessagePart(TmvMimeMessagePart);
 end.

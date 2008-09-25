@@ -2,7 +2,7 @@
  | unitNewsThread                                                       |
  |                                                                      |
  | TNewsThread base class                                               |
- | TTCPGetter classes.                                                 |
+ | TTCPGetter classes.                                                  |
  |                                                                      |
  | Version  Date        By    Description                               |
  | -------  ----------  ----  ------------------------------------------|
@@ -13,10 +13,23 @@ unit unitNewsThread;
 
 interface
 
-uses Windows, Classes, Graphics, SysUtils, unitNNTPServices, unitMailServices, SyncObjs, IdTCPClient, ConTnrs, IdSSLOpenSSL, unitSettings, unitIdentities, IdMessage, NewsGlobals, SsTLSIdIOHandler; 
+uses Windows, Classes, Graphics, SysUtils, unitNNTPServices, unitMailServices,
+  SyncObjs, IdTCPClient, ConTnrs, unitSettings, unitIdentities,
+  IdMessage, NewsGlobals, IdNNTPX
+{$IFDEF USEOPENSTRSEC}
+, SsTLSIdIOHandler
+{$ELSE}
+, IdSSLOpenSSL
+{$ENDIF}
+  ;
 
 type
-TNNTPThreadState = (tsDormant, tsPending, tsBusy, tsDone);
+  TNNTPThreadState = (
+    tsDormant, // Thread has nothing to do just sits and waits, might disconnect (Invisible or Green smudge).
+    tsPending, // Has a job to do waiting for the thread to resume               (Red)
+    tsBusy,    //                                                                (Green)
+    tsDone     // Just finished it's job, processing data, (next is tsDormat)    (Wisp image)
+  );
 
 TTCPGetter = class;
 
@@ -28,14 +41,18 @@ private
   fTrigger : TEvent;
   fState : TNNTPThreadState;
   fGetter : TTCPGetter;
+{$IFNDEF USEOPENSTRSEC}
+  fSSLHandler: TIdSSLIOHandlerSocketOpenSSL;
+{$ELSE}
   fSSLHandler: TSsTLSIdIOHandlerSocket;
+{$ENDIF}
   fUISync : TCriticalSection;
   function GetLastResponse: string;
 
 protected
   fSettings : TServerSettings;
   fLastError : string;
-  fClient : TidTCPClient;
+  fClient : TIdTCPClientCustom;
 
   procedure DoWork; virtual; abstract;
   procedure NotifyError;
@@ -50,10 +67,14 @@ public
 
   property Trigger : TEvent read fTrigger;
   property State : TNNTPThreadState read fState write fState;
-  property Client : TidTCPClient read fClient;
+  property Client : TIdTCPClientCustom read fClient;
   property LastResponse : string read GetLastResponse;
   property Getter : TTCPGetter read fGetter;
+{$IFNDEF USEOPENSTRSEC}
+  property SSLHandler : TIdSSLIOHandlerSocketOpenSSL read fSSLHandler;
+{$ELSE}
   property SSLHandler : TSsTLSIdIOHandlerSocket read fSSLHandler;
+{$ENDIF}
 end;
 
 TTCPThreadClass = class of TTCPThread;
@@ -77,14 +98,14 @@ protected
   constructor Create (cls : TTCPThreadClass; ASettings : TServerSettings);
   function GetIsDoing(obj : TObject) : boolean; virtual;
   function GetGroup(idx: Integer): TServerAccount; virtual;
-  property Terminating : boolean read fTerminating;
 public
-  destructor Destroy; override;
+  procedure BeforeDestruction; override;
 
-  procedure Disconnect;
+  procedure Disconnect(Done: Boolean = False);
   function Connected : boolean;
   procedure Resume; virtual;
   property Paused : boolean read fPaused write SetPaused;
+  property Terminating: boolean read fTerminating;
 
 
   // After the threads DoWork has finished:
@@ -358,6 +379,7 @@ private
   fSubject: string;
   fArticleContainer : TServerAccount;
   fReplyTo: string;
+    function GetMailAccount: TMailAccount;
 public
   constructor Create (AArticleContainer : TServerAccount; AOwner : TEMailer; const ATo, ACC, ABCC, ASubject, AReplyTo, AMsg  : string; attachments : TObjectList; ACodePage : Integer);
   destructor Destroy; override;
@@ -373,6 +395,7 @@ public
   property Attachments : TObjectList read fAttachments write fAttachments;
   property CodePage : Integer read fCodePage write fCodePage;
   property ArticleContainer : TServerAccount read fArticleContainer;
+  property MailAccount: TMailAccount read GetMailAccount;
 end;
 
 TEMailer = class (TTCPGetter)
@@ -409,9 +432,8 @@ end;
 implementation
 
 uses unitNNTPThreadManager, unitNewsReaderOptions, unitNNTPThreads,
-     idCoder, idCoderUUE, idCoderMIME, unitCharsetMap, unitSearchString,
-     IdSMTP, idHeaderList, unitLog, unitRFC2646Coder, TLSInternalServer,
-     StreamSecII;
+     idCoder, idCoderMIME, unitCharsetMap, unitSearchString,
+     IdSMTP, idHeaderList, unitLog, unitRFC2646Coder, XnCoderUUE;
 
 { TTCPThread }
 
@@ -426,15 +448,22 @@ uses unitNNTPThreadManager, unitNewsReaderOptions, unitNNTPThreads,
  |   ANNTPAccount: TNNTPAccount         The account to work on.         |
  *----------------------------------------------------------------------*)
 constructor TTCPThread.Create(AGetter : TTCPGetter; ASettings : TServerSettings);
+{$IFDEF USEOPENSTRSEC}
 var
   trustedCAStream: TResourceStream;
   intermediateCAStream: TResourceStream;
+{$ENDIF}
 begin
   inherited Create (True);      // Create suspended.
   fUISync := TCriticalSection.Create;
   fGetter := AGetter;
   fSettings := ASettings;
   fTrigger := TEvent.Create(Nil, False, False, '');
+{$IFNDEF USEOPENSTRSEC}
+  fSSLHandler := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+  fSSLHandler.SSLOptions.Mode := sslmClient;
+  fSSLHandler.SSLOptions.Method := sslvSSLv23;
+{$ELSE}
   fSSLHandler := TSsTLSIdIOHandlerSocket.Create(nil);
   fSSLHandler.TLSServer := TTLSInternalServer.Create(nil);
   fSSLHandler.TLSServer.ClientOrServer := cosClientSide;
@@ -454,6 +483,7 @@ begin
   finally
     intermediateCAStream.Free;
   end;
+{$ENDIF}
 
   Resume;
 end;
@@ -471,7 +501,9 @@ begin
     fClient.Disconnect;
     WaitFor;
     fUISync.Free;
+    {$IFDEF USEOPENSTRSEC}
     fSSLHandler.TLSServer.Free;
+    {$ENDIF}
     fSSLHandler.Free;
     fClient.Free;
     fTrigger.Free;
@@ -496,15 +528,6 @@ begin
     Result := '';
 end;
 
-(*----------------------------------------------------------------------*
- | TTCPThread.NotifyError                                              |
- |                                                                      |
- | Called within the context of the main thread when an exception       |
- | occurs in the NNTP or HTTP client                                    |
- |                                                                      |
- | Parameters:                                                          |
- |   None.       The error details are in fLastError                    |
- *----------------------------------------------------------------------*)
 procedure TTCPThread.GetProgressNumbers(group : TServerAccount; var min, max, pos: Integer);
 begin
   min := 0;
@@ -517,6 +540,15 @@ begin
   fUISync.Enter;
 end;
 
+(*----------------------------------------------------------------------*
+ | TTCPThread.NotifyError                                               |
+ |                                                                      |
+ | Called within the context of the main thread when an exception       |
+ | occurs in the NNTP or HTTP client                                    |
+ |                                                                      |
+ | Parameters:                                                          |
+ |   None.       The error details are in fLastError                    |
+ *----------------------------------------------------------------------*)
 procedure TTCPThread.NotifyError;
 begin
   if Assigned (ThreadManager.OnNotifyError) then
@@ -526,32 +558,41 @@ end;
 
 { TTCPGetter }
 
-(*----------------------------------------------------------------------*
- | TTCPGetter.ClearWork                                                |
- |                                                                      |
- | Called both before and after doing the work to reset/clear temporary |
- | data.                                                                |
- *----------------------------------------------------------------------*)
+procedure TTCPGetter.BeforeDestruction;
+begin
+  fThread.Free;
+  inherited;
+end;
+
 procedure TTCPGetter.Clear;
 begin
 // stub
 end;
 
+(*----------------------------------------------------------------------*
+ | TTCPGetter.ClearWork                                                 |
+ |                                                                      |
+ | Called both before and after doing the work to reset/clear temporary |
+ | data.                                                                |
+ *----------------------------------------------------------------------*)
 procedure TTCPGetter.ClearWork;
 begin
 end; // Stub
 
-(*----------------------------------------------------------------------*
- | TTCPGetter.Create                                                   |
- |                                                                      |
- | Protected constructor for TTCPGetter.  Create worker thread of the  |
- | correct class.                                                       |
- *----------------------------------------------------------------------*)
 function TTCPGetter.Connected: boolean;
 begin
-  result := fThread.Client.Connected
+  if (GetCurrentThreadId <> fThread.ThreadID) and (fThread.Client is TIdNNTPX) then
+    Result := TIdNNTPX(fThread.Client).IsConnected
+  else
+    Result := fThread.Client.Connected;
 end;
 
+(*----------------------------------------------------------------------*
+ | TTCPGetter.Create                                                    |
+ |                                                                      |
+ | Protected constructor for TTCPGetter.  Create worker thread of the   |
+ | correct class.                                                       |
+ *----------------------------------------------------------------------*)
 constructor TTCPGetter.Create(cls: TTCPThreadClass; ASettings : TServerSettings);
 begin
   fThread := cls.Create(Self, ASettings);
@@ -563,41 +604,22 @@ begin
 end;
 
 (*----------------------------------------------------------------------*
- | TTCPGetter.Destroy                                                  |
- |                                                                      |
- | Destructor for TTCPGetter.  Destroy the worker thread.              |
- *----------------------------------------------------------------------*)
-destructor TTCPGetter.Destroy;
-begin
-  fThread.Free;
-
-  inherited;
-end;
-
-(*----------------------------------------------------------------------*
  | TTCPGetter.Disconnect                                               |
  |                                                                      |
  | Disconnect the TCP connection in the worker thread.  If it's busy    |
  | this will probably cause an exception, which is handled by the       |
  | worker thread.                                                       |
  *----------------------------------------------------------------------*)
-procedure TTCPGetter.Disconnect;
+procedure TTCPGetter.Disconnect(Done: Boolean = False);
 begin
-  fTerminating := True;
+  if Done then
+    fTerminating := True;
   fThread.Client.Disconnect;
 end;
 
-(*----------------------------------------------------------------------*
- | TTCPGetter.GetOutstandingRequestCount                               |
- |                                                                      |
- | Stub get method for the OutstandingRequestCount property.  This is   |
- | overridden by descendant classes.                                    |
- |                                                                      |
- | The function returns the Integer OutstandingRequestCount             |
- *----------------------------------------------------------------------*)
 function TTCPGetter.GetGetterRootText: WideString;
 begin
-  Result := ''; // stub
+  Result := 'Unknown';
 end;
 
 function TTCPGetter.GetGroup(idx: Integer): TServerAccount;
@@ -610,6 +632,14 @@ begin
   result := False
 end;
 
+(*----------------------------------------------------------------------*
+ | TTCPGetter.GetOutstandingRequestCount                                |
+ |                                                                      |
+ | Stub get method for the OutstandingRequestCount property.  This is   |
+ | overridden by descendant classes.                                    |
+ |                                                                      |
+ | The function returns the Integer OutstandingRequestCount             |
+ *----------------------------------------------------------------------*)
 function TTCPGetter.GetOutstandingRequestCount: Integer;
 begin
   Result := 0;
@@ -631,14 +661,6 @@ begin
   Result := '' // Stub
 end;
 
-(*----------------------------------------------------------------------*
- | TTCPGetter.GetState                                                 |
- |                                                                      |
- | Return the worker thread state - dormant, pending, busy, etc.        |
- |                                                                      |
- |                                                                      |
- | The function returns the TNNTPThreadState                            |
- *----------------------------------------------------------------------*)
 procedure TTCPGetter.GetProgressNumbers(group : TServerAccount; var min, max, pos: Integer);
 begin
   fThread.GetProgressNumbers (group, min, max, pos);
@@ -649,6 +671,14 @@ begin
   result := fThread.fSettings
 end;
 
+(*----------------------------------------------------------------------*
+ | TTCPGetter.GetState                                                  |
+ |                                                                      |
+ | Return the worker thread state - dormant, pending, busy, etc.        |
+ |                                                                      |
+ |                                                                      |
+ | The function returns the TNNTPThreadState                            |
+ *----------------------------------------------------------------------*)
 function TTCPGetter.GetState: TNNTPThreadState;
 begin
   Result := fThread.State
@@ -679,7 +709,7 @@ begin
     tsBusy    : if ThreadManager.CurrentConnectoid = '~' then
                   result := Format (rstDialling, [Settings.RASConnection])
                 else
-                  if fThread.Client.Connected then
+                  if Connected then
                     result := Format (rstConnectedTo, [Settings.ServerName])
                   else
                     result := Format (rstConnectingTo, [Settings.ServerName]);
@@ -708,11 +738,6 @@ begin
     fThread.Trigger.SetEvent
 end;
 
-(*----------------------------------------------------------------------*
- | TTCPGetter.SetState                                                 |
- |                                                                      |
- | Set the worker thread's state.                                       |
- *----------------------------------------------------------------------*)
 procedure TTCPGetter.SetPaused(const Value: boolean);
 begin
   if value <> fPaused then
@@ -722,10 +747,7 @@ begin
       Resume
     else
     repeat
-      try
-        Disconnect
-      except
-      end;
+      Disconnect;
 
       if State = tsBusy then
       begin
@@ -736,6 +758,11 @@ begin
   end
 end;
 
+(*----------------------------------------------------------------------*
+ | TTCPGetter.SetState                                                  |
+ |                                                                      |
+ | Set the worker thread's state.                                       |
+ *----------------------------------------------------------------------*)
 procedure TTCPGetter.SetState(const Value: TNNTPThreadState);
 begin
   fThread.State := Value
@@ -790,17 +817,20 @@ begin
   inherited;
 end;
 
+function TNewsgroupGetter.GetGetterRootText: WideString;
+begin
+  if Assigned(Account) then
+    Result := rstGetNewsgroupsFor + Account.AccountName
+  else
+    Result := inherited GetGetterRootText;
+end;
+
 (*----------------------------------------------------------------------*
  | TNewsgroupGetter.GetOutstandingRequestText                           |
  |                                                                      |
  | A Newsgroup Getter can only contain one outstanding request.  Return |
  | the name of the account for which the list is being retrieved.       |
  *----------------------------------------------------------------------*)
-function TNewsgroupGetter.GetGetterRootText: WideString;
-begin
-  result := rstGetNewsgroupsFor + Account.AccountName
-end;
-
 function TNewsgroupGetter.GetOutstandingRequestText(idx: Integer): WideString;
 begin
   try
@@ -817,7 +847,7 @@ end;
 function TNewsgroupGetter.GetStatusBarMessage(
   group: TServerAccount): WideString;
 begin
-  if fThread.Client.Connected then
+  if Connected then
     Result := rstGettingNewsgroupsFor + Account.AccountName
   else
     Result := inherited GetStatusBarMessage (group);
@@ -869,12 +899,6 @@ begin
   end
 end;
 
-(*----------------------------------------------------------------------*
- | TArticlesGetter.ClearWork                                            |
- |                                                                      |
- | Called before and after work is done.  Clear the list of articles    |
- | and temporary string lists                                           |
- *----------------------------------------------------------------------*)
 procedure TArticlesGetter.Clear;
 begin
   if state <> tsBusy then
@@ -890,6 +914,12 @@ begin
   end
 end;
 
+(*----------------------------------------------------------------------*
+ | TArticlesGetter.ClearWork                                            |
+ |                                                                      |
+ | Called before and after work is done.  Clear the list of articles    |
+ | and temporary string lists                                           |
+ *----------------------------------------------------------------------*)
 procedure TArticlesGetter.ClearWork;
 begin
   fArticles.Clear;
@@ -910,11 +940,6 @@ begin
   fArticles := TStringList.Create;      // Temporary string list containg article XOVER headers.
 end;
 
-(*----------------------------------------------------------------------*
- | TArticlesGetter.Destroy                                              |
- |                                                                      |
- | Destructor for TArticlesGetter                                       |
- *----------------------------------------------------------------------*)
 procedure TArticlesGetter.DeleteRequest(idx: Integer);
 begin
   if (State <> tsBusy) or (idx > 0) then
@@ -934,6 +959,11 @@ begin
   end
 end;
 
+(*----------------------------------------------------------------------*
+ | TArticlesGetter.Destroy                                              |
+ |                                                                      |
+ | Destructor for TArticlesGetter                                       |
+ *----------------------------------------------------------------------*)
 destructor TArticlesGetter.Destroy;
 begin
   fHeader.Free;
@@ -943,14 +973,12 @@ begin
   inherited;
 end;
 
-(*----------------------------------------------------------------------*
- | TArticlesGetter.GetOutstandingRequestCount                           |
- |                                                                      |
- | Get number of outstanding requests for this server's articles getter |
- *----------------------------------------------------------------------*)
 function TArticlesGetter.GetGetterRootText: WideString;
 begin
-  result := rstGetArticleListFor + account.AccountName
+  if Assigned(Account) then
+    Result := rstGetArticleListFor + account.AccountName
+  else
+    Result := inherited GetGetterRootText;
 end;
 
 function TArticlesGetter.GetGroup(idx: Integer): TServerAccount;
@@ -992,6 +1020,11 @@ begin
   end
 end;
 
+(*----------------------------------------------------------------------*
+ | TArticlesGetter.GetOutstandingRequestCount                           |
+ |                                                                      |
+ | Get number of outstanding requests for this server's articles getter |
+ *----------------------------------------------------------------------*)
 function TArticlesGetter.GetOutstandingRequestCount: Integer;
 begin
   Result := Count
@@ -1033,7 +1066,7 @@ begin
   result := inherited GetStatusBarMessage (group);
   gp := group as TArticleContainer;
 
-  if fThread.Client.Connected then
+  if Connected then
   begin
     LockList;
     try
@@ -1130,7 +1163,6 @@ end;
  |                                                                      |
  | Add article to list of outstanding requests.                         |
  *----------------------------------------------------------------------*)
-
 procedure TArticleGetter.AddArticleToList(group: TSubscribedGroup;
   article: TArticle; needsFullRefresh : boolean);
 var
@@ -1243,14 +1275,12 @@ begin
   CurrentArticle.RemoveMessage;
 end;
 
-(*----------------------------------------------------------------------*
- | TArticleGetter.GetOutstandingRequestCount                            |
- |                                                                      |
- | Return the number of message bodies lined up for retrieval           |
- *----------------------------------------------------------------------*)
 function TArticleGetter.GetGetterRootText: WideString;
 begin
-  result := rstGetArticleBodyFrom + account.AccountName
+  if Assigned(Account) then
+    Result := rstGetArticleBodyFrom + account.AccountName
+  else
+    Result := inherited GetGetterRootText;
 end;
 
 function TArticleGetter.GetGroup(idx: Integer): TServerAccount;
@@ -1289,6 +1319,11 @@ begin
   end
 end;
 
+(*----------------------------------------------------------------------*
+ | TArticleGetter.GetOutstandingRequestCount                            |
+ |                                                                      |
+ | Return the number of message bodies lined up for retrieval           |
+ *----------------------------------------------------------------------*)
 function TArticleGetter.GetOutstandingRequestCount: Integer;
 begin
   Result := Count
@@ -1332,7 +1367,7 @@ begin
   result := inherited GetStatusBarMessage (group);
   gp := group as TArticleContainer;
 
-  if fThread.Client.Connected then
+  if Connected then
   begin
     an := Nil;
 
@@ -1498,22 +1533,25 @@ var
   encoder : TidEncoder;
   s, contentType : string;
 
-  function GetMIMEContentType (const fileName : string) : string;
+  function GetMIMEContentType(const fileName: string): string;
   var
-    ext : string;
+    ext: string;
   begin
-    ext := UpperCase (ExtractFileExt (fileName));
+    ext := UpperCase(ExtractFileExt(fileName));
 
     if ext = '.JPG' then
-      result := 'Image/JPEG'
+      Result := 'Image/JPEG'
     else
       if ext = '.GIF' then
-        result := 'Image/GIF'
+        Result := 'Image/GIF'
       else
         if ext = '.TIF' then
-          result := 'Image/TIFF'
+          Result := 'Image/TIFF'
         else
-          result := 'Application/Octet-Stream'
+          if ext = '.PNG' then
+            Result := 'Image/PNG'
+          else
+            Result := 'Application/Octet-Stream'
   end;
 
   function FixFileName (const fileName : string) : string;
@@ -1578,7 +1616,7 @@ begin
         begin
           msg.Add ('');
           msg.Add ('begin 444 ' + FixFileName (attachment.FileName));
-          encoder := TidEncoderUUE.Create(nil);
+          encoder := TXnEncoderUUE.Create(nil);
           chunkLen := 45;
         end;
 
@@ -1622,6 +1660,38 @@ var
   i : Integer;
   bt8 : boolean;
 
+  function EncodeFace(S: string): string;
+  const
+    SPACES: set of Char = [' ', #9, #10, #13, '''', '"'];    {Do not Localize}
+    MaxEncLen = 75;
+  var
+    I, L, Q: Integer;
+  begin
+    Result := 'Face= ';
+    I := 6;
+    Q := 6;
+    L := Length(S);
+
+    // Skip spaces at the beginning of the original Face data.
+    while (I <= L) and (S[I] in Spaces) do
+      Inc(I);
+
+    while I < L do
+    begin
+      Result := Result + S[I];
+      Inc(I);
+      Result := Result + S[I];
+      Inc(I);
+      if Q >= 76 then
+      begin
+        Q := 2;
+        Result := Result + #13#10#9;
+      end
+      else
+        Inc(Q, 2);
+    end;
+  end;
+
   function GenerateMultipartBoundary : string;
   begin
     result := 'Xananews.1.2.3';
@@ -1644,16 +1714,18 @@ begin
         for i := 0 to self.hdr.Count - 1 do
         begin
           s := self.Hdr [i];
-          if Pos ('X-Face', s) = 1 then
-            hdr.Add(s)
+          if Pos('Face', s) = 1 then
+            hdr.Add(EncodeFace(s))
           else
-          begin
-            s1 := SplitString ('=', s);
-            if Pos ('Newsgroups', s1) = 1 then
-              hdr.Add (s1 + '=' + s)
+            if Pos ('X-Face', s) = 1 then
+              hdr.Add(s)
             else
-              hdr.Add (s1 + '=' + EncodeHeader (s, CodePage, Pos ('From', s1) = 1));
-
+            begin
+              s1 := SplitString ('=', s);
+              if Pos ('Newsgroups', s1) = 1 then
+                hdr.Add (s1 + '=' + s)
+              else
+                hdr.Add (s1 + '=' + EncodeHeader (s, CodePage, Pos ('From', s1) = 1));
           end
         end
       else
@@ -1805,7 +1877,7 @@ var
 begin
   result := inherited GetStatusBarMessage (group);
 
-  if fThread.Client.Connected then
+  if Connected then
   begin
     s := '';
     LockList;
@@ -1938,6 +2010,7 @@ function TAttachment.GetPathName: string;
 begin
   result := fDirectory + fFileName;
 end;
+
 
 { TEMailer }
 
@@ -2086,6 +2159,16 @@ begin
   fAttachments.Free;
 
   inherited;
+end;
+
+function TEMailerRequest.GetMailAccount: TMailAccount;
+begin
+  Result := nil;
+  if ArticleContainer is TSubscribedGroup then
+    Result := MailAccounts.FindMailAccount(TSubscribedGroup(ArticleContainer).Owner.MailAccountName)
+  else
+    if ArticleContainer is TMailAccount then
+      Result := TMailAccount(ArticleContainer);
 end;
 
 { TNewsGetter }

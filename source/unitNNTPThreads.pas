@@ -22,7 +22,9 @@ unit unitNNTPThreads;
 
 interface
 
-uses Windows, Classes, SysUtils, Forms, syncobjs, IdNNTPX, ConTnrs, WinINet, unitNNTPServices,IdTCPClient, unitNewsThread, IdSSLOpenSSL, IdSMTP, IdMessage, unitSettings;
+uses Windows, Classes, SysUtils, Forms, syncobjs, IdNNTPX, ConTnrs, WinINet,
+  unitNNTPServices,IdTCPClient, unitNewsThread, IdSSLOpenSSL, IdSMTP, IdMessage,
+  unitSettings;
 
 type
 //---------------------------------------------------
@@ -109,7 +111,9 @@ end;
 
 implementation
 
-uses IdException, unitNNTPThreadManager, unitNewsReaderOptions, unitMessages, unitCharsetMap, unitMailServices, unitLog, NewsGlobals, IdGlobal;
+uses IdException, unitNNTPThreadManager, unitNewsReaderOptions, unitMessages,
+  unitCharsetMap, unitMailServices, unitLog, NewsGlobals, IdGlobal, IdReplyRFC,
+  IdStack, IdGlobalProtocols, IdExceptionCore, IdAttachmentFile;
 
 { TNNTPThread }
 
@@ -163,13 +167,13 @@ end;
 constructor TNNTPThread.Create(AGetter : TTCPGetter; ASettings : TServerSettings);
 begin
   inherited Create (AGetter, ASettings);
-  fClient := TidNNTPX.Create (Nil);
-  TidNNTPX (fClient).ReadLnDelay := gReadLnDelay;
+  fClient := TidNNTPX.Create(nil);
+//  TidNNTPX (fClient).ReadLnDelay := gReadLnDelay;
 end;
 
 destructor TNNTPThread.Destroy;
 begin
-  NNTP.IOHandler := nil;
+//  NNTP.IOHandler := nil;
   inherited;
 end;
 
@@ -187,11 +191,11 @@ end;
  *----------------------------------------------------------------------*)
 procedure TNNTPThread.Execute;
 var
-  st : string;
-  oldLogFlag : boolean;
-  timeout, tm : DWORD;
+  st: string;
+  timeout, tm: DWORD;
+  ServerFault: Boolean;
 begin
-  if Assigned (NNTPAccount) then
+  if Assigned(NNTPAccount) then
   begin
     st := 'NNTP Getter Thread for ' + NNTPAccount.AccountName;
     timeout := NNTPAccount.NNTPServerSettings.ServerTimeout
@@ -202,9 +206,9 @@ begin
     st := 'NNTP Getter Thread for ???';
   end;
 
-  SendMessage (Application.MainForm.Handle, WM_NAMETHREAD, ThreadID, Integer (PChar (st)));
+  SendMessage(Application.MainForm.Handle, WM_NAMETHREAD, ThreadID, Integer(PChar(st)));
   while not Terminated do
-  try
+  begin
     if (State = tsDormant) and NNTP.Connected then
       if timeout = 0 then
         tm := INFINITE
@@ -215,8 +219,11 @@ begin
     if Trigger.WaitFor(tm) = wrTimeout then
     begin
       NNTP.Disconnect;
-      continue
+      Continue;
     end;
+
+    if Getter.Terminating then
+      Exit;
 
     State := tsBusy;
 
@@ -224,11 +231,13 @@ begin
     try
       if not NNTP.Connected then     // Connect!
       begin
-        if ThreadManager.ConnectToInternet (ServerSettings) then
+        if ThreadManager.ConnectToInternet(ServerSettings) then
         begin
           NNTP.Host := ServerSettings.ServerName;
           NNTP.UserName := ServerSettings.ServerAccountName;
           NNTP.Password := ServerSettings.ServerPassword;
+          NNTP.ConnectTimeout := 1000 * ServerSettings.ConnectTimeout;
+          NNTP.ReadTimeout := 1000 * ServerSettings.ReadTimeout;
           if ServerSettings.SSLrequired then
           begin
             NNTP.IOHandler := SSLHandler;
@@ -241,7 +250,7 @@ begin
           NNTP.NewsAgent := ThreadManager.NewsAgent;
           NNTP.Connect;
           fGreet := NNTP.Greeting.Text.Text;
-          Synchronize (SetGreeting);
+          Synchronize(SetGreeting);
           if ServerSettings.AlwaysAuthenticate then
             NNTP.Authenticate;
         end
@@ -256,53 +265,47 @@ begin
         DoWork;
         State := tsDone;
         Getter.WorkDone;
-        Synchronize (Getter.NotifyUI);
+        Synchronize(Getter.NotifyUI);
         Getter.ClearWork
       end;
 
-      State := tsDormant;
+      if (Getter is TMultiNewsGetter) and (TMultiNewsGetter(Getter).Count > 0) then
+        State := tsPending
+      else
+        State := tsDormant;
+
       if not gAppTerminating then
-        Synchronize (ThreadManager.JogThreads);
+        Synchronize(ThreadManager.JogThreads);
     except
-      on e : Exception do
+      on E: Exception do
       begin
-        fLastError := e.Message;
+        fLastError := E.Message;
         State := tsPending;
 
+        st := 'Error in thread "' + Getter.GetterRootText + '" - ' + fLastError;
         try
-          st := 'Error in thread "' + Getter.GetterRootText + '" - ' + fLastError
+          LogMessage(st, True);
         except
-          st := 'Error in rogue getter - ' + fLastError
         end;
 
-        oldLogFlag := gLogFlag;
-        gLogFlag := True;
-        try
+        if not gAppTerminating then
+          Synchronize(NotifyError);
+
+        // When the exception was caused by a server fault no need to
+        // notify the peer, just close the IOHandler.  Notifying the peer
+        // would just reraise the same exception and the thread would die.
+        ServerFault := NNTP.IsServerException(E);
+        NNTP.Disconnect(not ServerFault);
+
+        if not gAppTerminating then
           try
-            LogMessage (st);
+            ThreadManager.GetCurrentConnectoid;
           except
-          end
-        finally
-          gLogFlag := oldLogFlag
-        end;
-
-        if not gAppTerminating then
-          Synchronize (NotifyError);
+          end;
 
         try
-          NNTP.DisconnectSocket;
-        except
-        end;
-
-        if not gAppTerminating then
-        try
-          ThreadManager.GetCurrentConnectoid
-        except
-        end;
-
-        try
-          if Getter is TMultiNewsGetter and (TMultiNewsGetter (Getter).Count = 0) then
-            State := tsDone
+          if Getter is TMultiNewsGetter and (TMultiNewsGetter(Getter).Count = 0) then
+            State := tsDormant
           else
             State := tsPending;
         except
@@ -311,28 +314,25 @@ begin
 
         if not gAppTerminating then
         begin
-          if e is EIdConnClosedGracefully then
-            Synchronize (ThreadManager.JogThreads);
+          if E is EIdConnClosedGracefully then
+            Synchronize(ThreadManager.JogThreads);
 
-          if e is EIdProtocolReplyError then
-            if (EIdProtocolReplyError (e).ReplyErrorCode = 503) or (EIdProtocolReplyError (e).ReplyErrorCode = 400) then
-                                                                        // Retry immediately with
-                                                                        // 503 & 400 errors - otherwise wait
-                                                                        // for the user to retrigger
-                                                                        // nb.  503 = Server Fault
-                                                                        //      400 = Server disconnected (eg. timeout)
-                Synchronize (ThreadManager.JogThreads);
-
-          if e is EidSocketError then
-            if (EidSocketError (e).LastError = 0) or (EidSocketError (e).LastError = 10054) then
-              Synchronize (ThreadManager.JogThreads)
+          // Retry "immediately" with 400 & 503 & 10054 errors or ReadTimeout,
+          // otherwise wait for the user to retrigger.
+          // nb.  400 = Server disconnected (eg. timeout)    (=EIdReplyRFCError)
+          //      503 = Server Fault                         (=EIdReplyRFCError)
+          //    10054 = Connection reset by peer             (=EIdSocketError)
+          if ServerFault or (E is EIdReadTimeout) then
+          begin
+            Sleep(250);
+            Synchronize(ThreadManager.JogThreads);
+          end;
         end;
 
-        if not (e is EIdException) then
+        if not (E is EIdException) then
           fLastError := '';
       end
     end
-  except
   end
 end;
 
@@ -359,12 +359,6 @@ begin
 end;
 
 { TNNTPArticlesThread }
-
-(*----------------------------------------------------------------------*
- | TNNTPArticlesThread.DoWork                                           |
- |                                                                      |
- | Get article range.  Headers only or headers & bodies.                |
- *----------------------------------------------------------------------*)
 
 procedure TNNTPArticlesThread.DoPipeLineCommandCancelEvent(
   cmd: TPipelineCommand; startCalled : boolean);
@@ -420,6 +414,11 @@ begin
   body := gtr.Body
 end;
 
+(*----------------------------------------------------------------------*
+ | TNNTPArticlesThread.DoWork                                           |
+ |                                                                      |
+ | Get article range.  Headers only or headers & bodies.                |
+ *----------------------------------------------------------------------*)
 procedure TNNTPArticlesThread.DoWork;
 var
   XOverFMT : TStringList;
@@ -440,8 +439,8 @@ var
         try
           NNTP.GetOverviewFMT(result);
         except
-          on e : EIdProtocolReplyError do
-            case e.ReplyErrorCode of
+          on e : EIdReplyRFCError do
+            case e.ErrorCode of
               500, 501 :;                 // overview.fmt not supported.  Not an
                                           // error - just a lousy news server.  We'll
                                           // have to get headers one by one.
@@ -460,6 +459,7 @@ var
 
     result := NNTPAccount.XOverFMT;
   end;
+
   function GetFirstArticleNoSince (date : TDateTime) : Integer;
   var
     nearest : Integer;
@@ -592,7 +592,6 @@ var
   procedure GetArticles (fromArticle, dest : Integer);
   var
     msgNo : Integer;
-
   begin
     LogMessage (gtr.CurrentGroup.Name + ' Get ' + IntToStr (fromArticle) + '-' + IntToStr (dest));
     try
@@ -609,7 +608,7 @@ var
         end
         else
           LogMessage (gtr.CurrentGroup.Name + ' - Get Article '  + IntToStr (gtr.CurrentArticleNo) +
-            ' failed. Server response: '+ NNTP.LastCmdResult.TextCode);
+            ' failed. Server response: '+ NNTP.LastCmdResult.Code);
 
         Inc (fCurrentArticleNo)
       end
@@ -817,6 +816,30 @@ begin
   end
 end;
 
+procedure TNNTPArticlesThread.GetProgressNumbers(group : TServerAccount; var min, max,
+  pos: Integer);
+begin
+  min := 0;
+  UILock;
+  try
+    if Assigned (fCurrentGetter) and ((group = nil) or (fCurrentGetter.CurrentGroup = group)) then
+    begin
+      max := fExpectedArticles;
+      if fIsXOver then
+        pos := fCurrentGetter.Articles.Count
+      else
+        pos := fCurrentArticleNo
+    end
+    else
+    begin
+      max := 0;
+      pos := 0
+    end
+  finally
+    UIUnlock
+  end
+end;
+
 { TNNTPArticleThread }
 
 procedure TNNTPArticleThread.DoPipeLineCommandCancelEvent(
@@ -944,8 +967,6 @@ var
   gtr : TArticleGetter;
   article : TArticle;
   group : TSubscribedGroup;
-
-
 begin
   gtr := TArticleGetter (getter);
   gtr.CurrentGroup := nil;
@@ -1204,43 +1225,41 @@ var
   end;
 
 begin
+  post := nil;
   gtr := TPoster (getter);
-  requests := gtr.LockList;
-  post := Nil;
   ok := False;
+  requests := gtr.LockList;
   try
     while requests.Count > 0 do
     try
+      ok := False;
+      post := TPosterRequest (requests [0]);
+      post.CreateEncodedHeader(hdr, hdrCreated, multipartBoundary);
       try
+        post.CreateEncodedMessage(msg, multipartBoundary);
         try
-          ok := False;
-          post := TPosterRequest (requests [0]);
-          post.CreateEncodedHeader(hdr, hdrCreated, multipartBoundary);
-          maxLines := gtr.Account.PostingSettings.MaxPostLines;
-          post.CreateEncodedMessage(msg, multipartBoundary);
           post.AddAttachments (msg, multipartBoundary);
+          maxLines := gtr.Account.PostingSettings.MaxPostLines;
+          if (msg.Count > maxLines) and (maxLines >= 100) then
+            PostSplitMessage
+          else
+            NNTP.Send (hdr, msg);
+          ok := True
         finally
-          gtr.UnlockList
+          msg.Free;
         end;
-
-        if (msg.Count > maxLines) and (maxLines >= 100) then
-          PostSplitMessage
-        else
-          NNTP.Send (hdr, msg);
-        ok := True
       finally
-        msg.Free;
-
         if hdrCreated then
           hdr.Free;
-      end
+      end;
     finally
-      requests := gtr.LockList;
       if (requests.Count > 0) and (post = requests [0]) and ok then
-        requests.Delete(0);
+        requests.Delete(0)
+      else
+        LogMessage(Format('Failed posting %s. Count: %d. OK: %s', [post.Subject, requests.Count, BoolToStr(ok, True)]), True);
     end
   finally
-    gtr.UnlockList
+    gtr.UnlockList;
   end
 end;
 
@@ -1261,16 +1280,34 @@ end;
 procedure TSMTPThread.Execute;
 var
   st : string;
+  timeout, tm: DWORD;
 begin
-  if Assigned (settings) then
-    st := 'SMTP mail Getter Thread for ' + Settings.ServerName
+  if Assigned(Settings) then
+  begin
+    st := 'SMTP mail Getter Thread for ' + Settings.ServerName;
+    timeout := Settings.ServerTimeout;
+  end
   else
+  begin
     st := 'SMTP mail Getter Thread for ???';
+    timeout := 0;
+  end;
 
   SendMessage (Application.MainForm.Handle, WM_NAMETHREAD, ThreadID, Integer (PChar (st)));
   while not Terminated do
   begin
-    Trigger.WaitFor(INFINITE);
+    if (State = tsDormant) and SMTP.Connected then
+      if timeout = 0 then
+        tm := INFINITE
+      else
+        tm := timeout * 1000
+    else
+      tm := INFINITE;
+    if Trigger.WaitFor(tm) = wrTimeout then
+    begin
+      SMTP.Disconnect;
+      Continue;
+    end;
 
     State := tsBusy;
 
@@ -1279,15 +1316,21 @@ begin
       try
         if not SMTP.Connected then     // Connect!
         begin
-          if ThreadManager.ConnectToInternet (Settings) then
+          if ThreadManager.ConnectToInternet(Settings) then
           begin
             SMTP.Host := Settings.ServerName;
             SMTP.Username := Settings.ServerAccountName;
             SMTP.Password := Settings.ServerPassword;
-            if (Settings.ServerAccountName <> '') or (settings.ServerPassword <> '') then
-              SMTP.AuthenticationType := atLogin;
+            SMTP.ConnectTimeout := 1000 * Settings.ConnectTimeout;
+            SMTP.ReadTimeout := 1000 * Settings.ReadTimeout;
+            if (Settings.ServerAccountName <> '') or (Settings.ServerPassword <> '') then
+              SMTP.AuthType := satDefault;
             if Settings.SSLrequired then
             begin
+{$IFNDEF USEOPENSTRSEC}
+              SSLHandler.SSLOptions.Method := sslvTLSv1;
+              SSLHandler.PassThrough := True;
+{$ENDIF}
               SMTP.IOHandler := SSLHandler;
               SMTP.Port := Settings.SSLPort;
             end
@@ -1296,9 +1339,12 @@ begin
             SMTP.Connect;
             if Settings.SSLRequired then
             begin
+{$IFNDEF USEOPENSTRSEC}
+              SSLHandler.PassThrough := False;
+{$ENDIF}
               SMTP.SendCmd('STARTTLS', 220);
             end;
-            if (SMTP.AuthenticationType <> atNone) then
+            if (SMTP.AuthType <> satNone) then
               SMTP.Authenticate;
           end
         end;
@@ -1330,10 +1376,10 @@ begin
           end;
           State := tsPending;
 
-          if e is EIdProtocolReplyError then
-            if EIdProtocolReplyError (e).ReplyErrorCode = 503 then      // Retry immediately with
-                                                                        // 503 errors - otherwise wait
-                                                                        // for the user to retrigger
+          if e is EIdReplyRFCError then
+            if EIdReplyRFCError(e).ErrorCode = 503 then      // Retry immediately with
+                                                             // 503 errors - otherwise wait
+                                                             // for the user to retrigger
               if not gAppTerminating then
                 Synchronize (ThreadManager.JogThreads);
 
@@ -1371,7 +1417,7 @@ var
   ok : boolean;
   i : Integer;
   att : TAttachment;
-
+  account: TMailAccount;
 begin
   gtr := TEmailer (getter);
   while gtr.Messages.Count > 0 do
@@ -1389,30 +1435,42 @@ begin
 
       msg.Subject := request.MSubject;
 
-      msg.From.Address := request.ArticleContainer.Identity.EMailAddress;
-      msg.From.Name := request.ArticleContainer.Identity.UserName;
-
-      if request.ArticleContainer.Identity.EMailAddress <> request.ArticleContainer.Identity.ReplyAddress then
-        with msg.ReplyTo.Add do
-        begin
-          Name := request.ArticleContainer.Identity.UserName;
-          Address := request.ArticleContainer.Identity.ReplyAddress
-        end;
+      account := request.MailAccount;
+      if Assigned(account) then
+      begin
+        msg.From.Address := account.Identity.EMailAddress;
+        msg.From.Name := account.Identity.UserName;
+        if account.Identity.ReplyAddress <> '' then
+          if msg.From.Address <> account.Identity.ReplyAddress then
+            with msg.ReplyTo.Add do
+            begin
+              Name := account.Identity.UserName;
+              Address := account.Identity.ReplyAddress;
+            end;
+      end
+      else
+      begin
+        msg.From.Address := request.ArticleContainer.Identity.EMailAddress;
+        msg.From.Name := request.ArticleContainer.Identity.UserName;
+        if request.ArticleContainer.Identity.ReplyAddress <> '' then
+          if msg.From.Address <> request.ArticleContainer.Identity.ReplyAddress then
+            with msg.ReplyTo.Add do
+            begin
+              Name := request.ArticleContainer.Identity.UserName;
+              Address := request.ArticleContainer.Identity.ReplyAddress;
+            end;
+      end;
 
       msg.Body.Text := request.Msg;
 
       if request.CodePage <> CP_USASCII then
-      begin
-        msg.ContentType := 'text/plain';
-        msg.CharSet := CodePageToMIMECharsetName (request.CodePage)
-      end;
+        msg.CharSet := CodePageToMIMECharsetName(request.CodePage);
 
-      if request.Attachments.Count > 0 then
-        for i := 0 to request.Attachments.Count - 1 do
-        begin
-          att := TAttachment (request.Attachments [i]);
-          TidAttachment.Create(msg.MessageParts, att.Directory + att.FileName);
-        end;
+      for I := 0 to request.Attachments.Count - 1 do
+      begin
+        att := TAttachment(request.Attachments[I]);
+        TidAttachmentFile.Create(msg.MessageParts, att.PathName);
+      end;
 
       msg.MsgId := GenerateMessageID ('XN', '', SMTP.Host);
       msg.ExtraHeaders.Values ['Message-Id'] := msg.MsgId;
@@ -1431,30 +1489,6 @@ begin
       if ok then
         gtr.Messages.Delete (0);
     end
-  end
-end;
-
-procedure TNNTPArticlesThread.GetProgressNumbers(group : TServerAccount; var min, max,
-  pos: Integer);
-begin
-  min := 0;
-  UILock;
-  try
-    if Assigned (fCurrentGetter) and ((group = nil) or (fCurrentGetter.CurrentGroup = group)) then
-    begin
-      max := fExpectedArticles;
-      if fIsXOver then
-        pos := fCurrentGetter.Articles.Count
-      else
-        pos := fCurrentArticleNo
-    end
-    else
-    begin
-      max := 0;
-      pos := 0
-    end
-  finally
-    UIUnlock
   end
 end;
 

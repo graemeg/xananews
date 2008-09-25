@@ -6,6 +6,8 @@ object fmPropertyPage: TfmPropertyPage
   ClientHeight = 316
   ClientWidth = 373
   Color = clBtnFace
+  Constraints.MinHeight = 64
+  Constraints.MinWidth = 64
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11

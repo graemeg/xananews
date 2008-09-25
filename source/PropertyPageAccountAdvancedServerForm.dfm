@@ -1,18 +1,22 @@
 inherited fmPropertyPageAccountAdvancedServer: TfmPropertyPageAccountAdvancedServer
-  Left = 411
-  Top = 213
+  Left = 628
+  Top = 212
   HelpType = htKeyword
   HelpKeyword = 'AccountDiallupConnection'
   Caption = 'Diallup & Connection'
-  ClientHeight = 369
+  ClientHeight = 406
   ClientWidth = 350
-  Constraints.MinHeight = 369
+  Constraints.MinHeight = 440
   Constraints.MinWidth = 350
+  ExplicitLeft = 628
+  ExplicitTop = 212
+  ExplicitWidth = 358
+  ExplicitHeight = 440
   PixelsPerInch = 96
   TextHeight = 13
   object Label13: TLabel [0]
     Left = 12
-    Top = 148
+    Top = 196
     Width = 58
     Height = 13
     Caption = 'Idle Timeout'
@@ -20,14 +24,14 @@ inherited fmPropertyPageAccountAdvancedServer: TfmPropertyPageAccountAdvancedSer
   end
   object Label28: TLabel [1]
     Left = 172
-    Top = 148
+    Top = 196
     Width = 40
     Height = 13
     Caption = 'seconds'
   end
   object Label12: TLabel [2]
     Left = 12
-    Top = 172
+    Top = 220
     Width = 52
     Height = 13
     Caption = 'NNTP Port'
@@ -35,7 +39,7 @@ inherited fmPropertyPageAccountAdvancedServer: TfmPropertyPageAccountAdvancedSer
   end
   object Label15: TLabel [3]
     Left = 28
-    Top = 274
+    Top = 322
     Width = 42
     Height = 13
     Caption = 'SSL Port'
@@ -43,21 +47,21 @@ inherited fmPropertyPageAccountAdvancedServer: TfmPropertyPageAccountAdvancedSer
   end
   object Label3: TLabel [4]
     Left = 28
-    Top = 330
+    Top = 378
     Width = 94
     Height = 13
     Caption = 'Pipeline Chunk Size'
   end
   object Label1: TLabel [5]
     Left = 176
-    Top = 330
+    Top = 378
     Width = 25
     Height = 13
     Caption = 'bytes'
   end
   object Bevel6: TBevel [6]
     Left = -5
-    Top = 240
+    Top = 288
     Width = 354
     Height = 3
     Anchors = [akLeft, akTop, akRight]
@@ -65,7 +69,7 @@ inherited fmPropertyPageAccountAdvancedServer: TfmPropertyPageAccountAdvancedSer
   end
   object Bevel2: TBevel [7]
     Left = -5
-    Top = 296
+    Top = 344
     Width = 354
     Height = 3
     Anchors = [akLeft, akTop, akRight]
@@ -81,97 +85,130 @@ inherited fmPropertyPageAccountAdvancedServer: TfmPropertyPageAccountAdvancedSer
   end
   object Label2: TLabel [9]
     Left = 12
-    Top = 218
+    Top = 266
     Width = 106
     Height = 13
     Caption = 'Maximum Connections'
   end
   object Label4: TLabel [10]
     Left = 192
-    Top = 218
+    Top = 266
     Width = 59
     Height = 13
     Caption = '0 = unlimited'
   end
+  object lbConnectTimeout: TLabel [11]
+    Left = 12
+    Top = 148
+    Width = 81
+    Height = 13
+    Caption = 'Connect Timeout'
+    Transparent = True
+  end
+  object Label6: TLabel [12]
+    Left = 172
+    Top = 148
+    Width = 40
+    Height = 13
+    Caption = 'seconds'
+  end
+  object lbReadTimeout: TLabel [13]
+    Left = 12
+    Top = 172
+    Width = 67
+    Height = 13
+    Caption = 'Read Timeout'
+    Transparent = True
+  end
+  object Label8: TLabel [14]
+    Left = 172
+    Top = 172
+    Width = 40
+    Height = 13
+    Caption = 'seconds'
+  end
   inherited Panel1: TPanel
     Width = 350
+    ExplicitWidth = 350
     inherited Bevel1: TBevel
       Width = 350
+      ExplicitWidth = 350
     end
     inherited stSectionDetails: TLabel
       Width = 338
       Caption = 
         'Controls how XanaNews connects to the Internet and interacts wit' +
         'h the server'
+      ExplicitWidth = 338
     end
   end
   object edServerTimeout: TEdit
     Left = 136
-    Top = 144
+    Top = 193
     Width = 29
     Height = 21
-    TabOrder = 1
+    TabOrder = 3
     Text = '60'
     OnChange = ControlChange
   end
   object cbUseXOVER: TCheckBox
     Left = 11
-    Top = 195
+    Top = 243
     Width = 138
     Height = 17
     Alignment = taLeftJustify
     Caption = 'Use XOVER'
     Checked = True
     State = cbChecked
-    TabOrder = 3
+    TabOrder = 5
     OnClick = ControlClick
   end
   object cbUsePipelining: TCheckBox
     Left = 11
-    Top = 307
+    Top = 355
     Width = 138
     Height = 17
     Alignment = taLeftJustify
     Caption = 'Use Pipelining'
     Checked = True
     State = cbChecked
-    TabOrder = 6
+    TabOrder = 8
     OnClick = ControlClick
   end
   object edNNTPPort: TEdit
     Left = 136
-    Top = 171
-    Width = 30
+    Top = 217
+    Width = 32
     Height = 21
-    TabOrder = 2
+    TabOrder = 4
     Text = '119'
     OnChange = ControlChange
   end
   object cbSSL: TCheckBox
     Left = 10
-    Top = 248
+    Top = 296
     Width = 138
     Height = 17
     Alignment = taLeftJustify
     Caption = 'SSL Required'
-    TabOrder = 4
+    TabOrder = 6
     OnClick = ControlClick
   end
   object edSSLPort: TEdit
     Left = 136
-    Top = 270
+    Top = 318
     Width = 32
     Height = 21
-    TabOrder = 5
+    TabOrder = 7
     Text = '563'
     OnChange = ControlChange
   end
   object edPipelineSize: TEdit
     Left = 136
-    Top = 328
+    Top = 376
     Width = 37
     Height = 21
-    TabOrder = 7
+    TabOrder = 9
     Text = '1024'
     OnChange = ControlChange
   end
@@ -181,7 +218,7 @@ inherited fmPropertyPageAccountAdvancedServer: TfmPropertyPageAccountAdvancedSer
     Width = 185
     Height = 17
     Caption = 'Dial default Internet connection'
-    TabOrder = 8
+    TabOrder = 10
     OnClick = ControlClick
   end
   object rbDontDial: TRadioButton
@@ -190,7 +227,7 @@ inherited fmPropertyPageAccountAdvancedServer: TfmPropertyPageAccountAdvancedSer
     Width = 113
     Height = 17
     Caption = 'Don'#39't dial'
-    TabOrder = 9
+    TabOrder = 11
     OnClick = ControlClick
   end
   object rbAlwaysDial: TRadioButton
@@ -199,7 +236,7 @@ inherited fmPropertyPageAccountAdvancedServer: TfmPropertyPageAccountAdvancedSer
     Width = 81
     Height = 17
     Caption = 'Always dial'
-    TabOrder = 10
+    TabOrder = 12
     OnClick = ControlClick
   end
   object cbRasEntries: TComboBox
@@ -209,27 +246,45 @@ inherited fmPropertyPageAccountAdvancedServer: TfmPropertyPageAccountAdvancedSer
     Height = 21
     Style = csDropDownList
     Anchors = [akLeft, akTop, akRight]
-    ItemHeight = 0
-    TabOrder = 11
+    ItemHeight = 13
+    TabOrder = 13
     OnChange = cbRasEntriesChange
   end
   object edMaxConnections: TEdit
     Left = 136
-    Top = 216
+    Top = 264
     Width = 33
     Height = 21
-    TabOrder = 12
+    TabOrder = 14
     Text = '4'
     OnChange = ControlChange
   end
   object udMaxConnections: TUpDown
     Left = 169
-    Top = 216
+    Top = 264
     Width = 15
     Height = 21
     Associate = edMaxConnections
     Max = 256
     Position = 4
-    TabOrder = 13
+    TabOrder = 15
+  end
+  object edConnectTimeout: TEdit
+    Left = 136
+    Top = 145
+    Width = 29
+    Height = 21
+    TabOrder = 1
+    Text = '60'
+    OnChange = ControlChange
+  end
+  object edReadTimeout: TEdit
+    Left = 136
+    Top = 169
+    Width = 29
+    Height = 21
+    TabOrder = 2
+    Text = '60'
+    OnChange = ControlChange
   end
 end

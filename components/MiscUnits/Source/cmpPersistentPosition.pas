@@ -434,8 +434,13 @@ end;
 procedure TPersistentPosition.OwnerWindowMethod(var msg: TMessage);
 begin
   case Msg.Msg of
-    WM_MOVE    : if not fMoved then
-                   MoveToPosition;
+    CM_SHOWINGCHANGED:
+    begin
+      fOldOwnerWindowMethod(msg);
+      if not fMoved then
+        MoveToPosition;
+      Exit;
+    end;
     WM_DESTROY : if csDestroying in ComponentState then
                    SavePosition;
   end;

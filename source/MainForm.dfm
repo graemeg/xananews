@@ -1,12 +1,12 @@
 object fmMain: TfmMain
-  Left = 124
-  Top = 129
+  Left = 93
+  Top = 117
   HelpType = htKeyword
   HelpKeyword = 'Workspace'
   ActiveControl = vstSubscribed
   Caption = 'fmMain'
   ClientHeight = 512
-  ClientWidth = 801
+  ClientWidth = 809
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -27,7 +27,7 @@ object fmMain: TfmMain
   object StatusBar: TStatusBar
     Left = 0
     Top = 490
-    Width = 801
+    Width = 809
     Height = 22
     AutoHint = True
     Font.Charset = ANSI_CHARSET
@@ -51,6 +51,7 @@ object fmMain: TfmMain
     OnClick = StatusBarClick
     OnMouseMove = StatusBarMouseMove
     OnDrawPanel = StatusBarDrawPanel
+    ExplicitWidth = 967
   end
   object pnlRight: TPanel
     Left = 294
@@ -90,7 +91,7 @@ object fmMain: TfmMain
         object pnlDetailsBar: TPanel
           Left = 0
           Top = 0
-          Width = 296
+          Width = 272
           Height = 25
           Align = alClient
           Alignment = taLeftJustify
@@ -99,23 +100,28 @@ object fmMain: TfmMain
           TabOrder = 0
         end
         object pnlCharset: TPanel
-          Left = 296
+          Left = 272
           Top = 0
-          Width = 185
+          Width = 209
           Height = 25
           Align = alRight
           Alignment = taLeftJustify
           BevelOuter = bvNone
           TabOrder = 1
+          DesignSize = (
+            209
+            25)
           object spFixedFont: TSpeedButton
-            Left = 4
+            Left = 2
             Top = 2
             Width = 23
             Height = 21
             Hint = 'Force the Message Pane to use a fixed pitch font'
             AllowAllUp = True
+            Anchors = [akTop, akRight]
             GroupIndex = 1
             Caption = 'F'
+            Flat = True
             Font.Charset = ANSI_CHARSET
             Font.Color = clWindowText
             Font.Height = -13
@@ -124,14 +130,76 @@ object fmMain: TfmMain
             ParentFont = False
             ParentShowHint = False
             ShowHint = True
+            Visible = False
             OnClick = spFixedFontClick
+            ExplicitLeft = 4
+          end
+          object spGoToWebForum: TSpeedButton
+            Left = 28
+            Top = 2
+            Width = 23
+            Height = 21
+            Hint = 'Look up this message on the web forum'
+            AllowAllUp = True
+            Anchors = [akTop, akRight]
+            Flat = True
+            Font.Charset = ANSI_CHARSET
+            Font.Color = clWindowText
+            Font.Height = -13
+            Font.Name = 'Times New Roman'
+            Font.Style = [fsBold]
+            Glyph.Data = {
+              36040000424D3604000000000000360000002800000010000000100000000100
+              2000000000000004000000000000000000000000000000000000FF00FF00FF00
+              FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00
+              FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00
+              FF00FF00FF00FF00FF00FF00FF00FF00FF00C6C6C600C6C6C600C6C6C600C6C6
+              C600C6C6C600C6C6C600C6C6C600FF00FF00FF00FF00FF00FF00FF00FF00FF00
+              FF00FF00FF00FF00FF00FF00FF00840000008400000084000000840000008400
+              0000C6C6C600C6C6C600C6C6C600C6C6C600FF00FF00FF00FF00FF00FF00FF00
+              FF00FF00FF008400000084000000840000008400000084000000840000008400
+              00008400000084000000C6C6C600C6C6C600C6C6C600FF00FF00FF00FF00FF00
+              FF00840000008400000084000000840000000084840084000000840000008400
+              0000840000008400000084000000C6C6C600C6C6C600FF00FF00FF00FF00FF00
+              FF00840000008400000084000000840000000084840084000000FF0000008400
+              0000840000008400000084000000C6C6C600C6C6C600FF00FF00FF00FF008400
+              0000840000008400000084000000008484000084840000848400FF000000FF00
+              000084000000FF0000008400000000848400C6C6C600FF00FF00FF00FF008400
+              0000840000008400000084000000008484000084840000848400FF000000FF00
+              0000FF000000FF0000008400000000848400C6C6C600FF00FF00FF00FF008400
+              00008400000084000000840000000084840000848400FF000000FF000000FF00
+              0000FF000000008484000084840000848400C6C6C600FF00FF00FF00FF008400
+              000084000000840000008400000000848400FF000000FF000000FF000000FF00
+              0000FF000000008484000084840000848400C6C6C600FF00FF00FF00FF00FF00
+              FF00840000008400000084000000008484000084840000848400FF000000FF00
+              0000FF000000FF00000084000000C6C6C600FF00FF00FF00FF00FF00FF00FF00
+              FF00840000008400000000848400008484000084840000848400FF000000FF00
+              0000FF0000000084840084000000FF00FF00FF00FF00FF00FF00FF00FF00FF00
+              FF00FF00FF00840000000084840000848400008484000084840000848400FF00
+              00008400000000848400FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00
+              FF00FF00FF00FF00FF00FF00FF00840000000084840084000000840000008400
+              0000FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00
+              FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00
+              FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00
+              FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00
+              FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00FF00}
+            Layout = blGlyphTop
+            Margin = 2
+            ParentFont = False
+            ParentShowHint = False
+            ShowHint = True
+            Spacing = 0
+            Visible = False
+            OnClick = spGoToWebForumClick
+            ExplicitLeft = 30
           end
           object cbCharset: TComboBox
-            Left = 30
+            Left = 54
             Top = 2
             Width = 147
             Height = 21
             Style = csDropDownList
+            Anchors = [akTop, akRight]
             ItemHeight = 13
             TabOrder = 0
             OnChange = cbCharsetChange
@@ -208,7 +276,6 @@ object fmMain: TfmMain
         OnHeaderMouseUp = vstArticlesHeaderMouseUp
         OnInitChildren = vstArticlesInitChildren
         OnInitNode = vstArticlesInitNode
-        OnKeyDown = vstArticlesKeyDown
         OnMouseDown = vstArticlesMouseDown
         OnResize = vstArticlesResize
         Columns = <
@@ -502,7 +569,7 @@ object fmMain: TfmMain
         DesignSize = (
           273
           20)
-        object SpeedButton1: TSpeedButton
+        object spPauseRequests: TSpeedButton
           Left = 254
           Top = 2
           Width = 16
@@ -522,7 +589,7 @@ object fmMain: TfmMain
             0000333333333333000033333333333300003333333333330000}
           ParentShowHint = False
           ShowHint = True
-          OnClick = SpeedButton1Click
+          OnClick = spPauseRequestsClick
         end
       end
     end
@@ -553,7 +620,7 @@ object fmMain: TfmMain
     OnDockDrop = SplitterPanel1DockDrop
   end
   object SplitterPanel2: TSplitterPanel
-    Left = 797
+    Left = 805
     Top = 119
     Width = 4
     Height = 371
@@ -567,11 +634,12 @@ object fmMain: TfmMain
     SplitterWidth = 6
     TabOrder = 5
     OnDockDrop = SplitterPanel1DockDrop
+    ExplicitLeft = 963
   end
   object SplitterPanel3: TSplitterPanel
     Left = 0
     Top = 113
-    Width = 801
+    Width = 809
     Height = 6
     Align = alTop
     AutoSize = True
@@ -582,11 +650,12 @@ object fmMain: TfmMain
     SplitterWidth = 6
     TabOrder = 6
     OnDockDrop = SplitterPanel3DockDrop
+    ExplicitWidth = 967
   end
   object cbMain: TExCoolBar
     Left = 0
     Top = 0
-    Width = 801
+    Width = 809
     Height = 113
     AutoSize = True
     Bands = <
@@ -594,29 +663,30 @@ object fmMain: TfmMain
         Control = tbMenu
         ImageIndex = -1
         MinHeight = 21
-        Width = 801
+        Width = 809
       end
       item
         Control = tbMain
         ImageIndex = -1
         MinHeight = 36
-        Width = 801
+        Width = 809
       end
       item
         Control = pnlSearchBar
         ImageIndex = -1
-        Width = 801
+        Width = 809
       end
       item
         Control = pnlBatchBar
         ImageIndex = -1
-        Width = 801
+        Width = 809
       end>
     EdgeBorders = []
+    ExplicitWidth = 967
     object pnlBatchBar: TPanel
-      Left = 9
+      Left = 10
       Top = 88
-      Width = 788
+      Width = 795
       Height = 25
       Alignment = taLeftJustify
       BevelOuter = bvNone
@@ -652,13 +722,13 @@ object fmMain: TfmMain
       end
     end
     object tbMain: TToolBar
-      Left = 9
+      Left = 10
       Top = 23
-      Width = 788
+      Width = 795
       Height = 36
       AutoSize = True
       ButtonHeight = 36
-      ButtonWidth = 81
+      ButtonWidth = 75
       Caption = 'tbMain'
       DisabledImages = ilDisabled
       Images = ilMain
@@ -674,7 +744,7 @@ object fmMain: TfmMain
         Action = actToolsReconnect
       end
       object ToolButton10: TToolButton
-        Left = 81
+        Left = 75
         Top = 0
         Width = 8
         Caption = 'ToolButton10'
@@ -682,13 +752,13 @@ object fmMain: TfmMain
         Style = tbsSeparator
       end
       object ToolButton11: TToolButton
-        Left = 89
+        Left = 83
         Top = 0
         Action = actNewsgroupGetMessages
         Caption = '&Get Messages'
       end
       object ToolButton23: TToolButton
-        Left = 170
+        Left = 158
         Top = 0
         Width = 8
         Caption = 'ToolButton23'
@@ -696,19 +766,19 @@ object fmMain: TfmMain
         Style = tbsSeparator
       end
       object ToolButton21: TToolButton
-        Left = 178
+        Left = 166
         Top = 0
         Action = actArticleGotoPrevious
         Caption = 'Previous'
       end
       object ToolButton22: TToolButton
-        Left = 259
+        Left = 241
         Top = 0
         Action = actArticleGoToNext
         Caption = 'Next'
       end
       object ToolButton12: TToolButton
-        Left = 340
+        Left = 316
         Top = 0
         Width = 8
         Caption = 'ToolButton12'
@@ -716,26 +786,26 @@ object fmMain: TfmMain
         Style = tbsSeparator
       end
       object ToolButton13: TToolButton
-        Left = 348
+        Left = 324
         Top = 0
         Action = actArticlePostNewMessage
         Caption = '&Post New'
       end
       object ToolButton14: TToolButton
-        Left = 429
+        Left = 399
         Top = 0
         Action = actArticleReplyToMessage
         Caption = '&Post Reply'
       end
       object ToolButton20: TToolButton
-        Left = 510
+        Left = 474
         Top = 0
         Action = actArticleReplyByMail
         Caption = 'Mail Reply'
         Enabled = False
       end
       object ToolButton15: TToolButton
-        Left = 591
+        Left = 549
         Top = 0
         Width = 8
         Caption = 'ToolButton15'
@@ -743,25 +813,25 @@ object fmMain: TfmMain
         Style = tbsSeparator
       end
       object ToolButton16: TToolButton
-        Left = 599
+        Left = 557
         Top = 0
         Action = actSearchFindInMessage
         Caption = '&Find'
       end
       object ToolButton17: TToolButton
-        Left = 680
+        Left = 632
         Top = 0
         Action = actSearchSearchMessages
         Caption = '&Search'
       end
       object ToolButton2: TToolButton
-        Left = 761
+        Left = 707
         Top = 0
         Action = actFilePrint
         Caption = '&Print'
       end
       object ToolButton18: TToolButton
-        Left = 842
+        Left = 782
         Top = 0
         Width = 8
         Caption = 'ToolButton18'
@@ -769,13 +839,13 @@ object fmMain: TfmMain
         Style = tbsSeparator
       end
       object ToolButton24: TToolButton
-        Left = 850
+        Left = 790
         Top = 0
         Action = actGetEverything
         Caption = 'Quick Get'
       end
       object ToolButton25: TToolButton
-        Left = 931
+        Left = 865
         Top = 0
         Width = 8
         Caption = 'ToolButton25'
@@ -783,20 +853,20 @@ object fmMain: TfmMain
         Style = tbsSeparator
       end
       object ToolButton19: TToolButton
-        Left = 939
+        Left = 873
         Top = 0
         Action = actMessageAddToBozoBin
         Caption = 'Bozo Author'
       end
     end
     object tbMenu: TToolBar
-      Left = 9
+      Left = 10
       Top = 0
-      Width = 788
+      Width = 795
       Height = 21
       AutoSize = True
       ButtonHeight = 21
-      ButtonWidth = 67
+      ButtonWidth = 61
       Caption = 'tbMenu'
       Indent = 2
       ShowCaptions = True
@@ -885,9 +955,9 @@ object fmMain: TfmMain
       end
     end
     object pnlSearchBar: TPanel
-      Left = 9
+      Left = 10
       Top = 61
-      Width = 788
+      Width = 795
       Height = 25
       Alignment = taLeftJustify
       BevelOuter = bvNone

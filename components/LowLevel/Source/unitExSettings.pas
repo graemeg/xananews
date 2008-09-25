@@ -542,76 +542,70 @@ end;
 
 procedure TExSettings.ExportToRegStream(const section: string; stream: TStream;
   excludeSections: TStrings);
-
 var
-  s : TTextStreamWriter;
-  rootKeyName : string;
-  rs : string;
+  s: TTextStreamWriter;
+  rootKeyName: string;
+  rs: string;
 
-  procedure Exp (sctn : string);
+  procedure Exp(sctn: string);
   var
-    sl : TStrings;
-    i : Integer;
-    sn : string;
+    sl: TStrings;
+    i: Integer;
+    sn: string;
   begin
-    SetSection (sctn);
+    SetSection(sctn);
 
     if sctn = '' then
       sn := rs
     else
       sn := rs + '\' + sctn;
 
-    s.WriteLn ('');
-    s.WriteLn(Format ('[%s\%s]', [rootKeyName, sn]));
+    s.WriteLn('');
+    s.WriteLn(Format('[%s\%s]', [rootKeyName, sn]));
 
     sl := TStringList.Create;
     try
-      GetValueNames (sl);
-
+      GetValueNames(sl);
       for i := 0 to sl.Count - 1 do
-        s.WriteLn(GetExportValue (sl [i]));
+        s.WriteLn(GetExportValue(sl[i]));
 
-      GetSectionNames (sl);
-
+      GetSectionNames(sl);
       for i := 0 to sl.Count - 1 do
       begin
-
-        if sctn = '' then
-          sn := sl [i]
-        else
-          sn := sctn + '\' + sl [i];
-
-        if (ExcludeSections = Nil) or (ExcludeSections.IndexOf (sn) = -1) then
-          Exp (sn)
-        else
-          Windows.Beep (440, 10)
-
-      end
+        sn := sl[i];
+        if (ExcludeSections = nil) or (ExcludeSections.IndexOf(sn) = -1) then
+        begin
+          if sctn <> '' then
+            sn := sctn + '\' + sn;
+          Exp(sn);
+        end;
+//        else
+//          Windows.Beep(440, 10)
+      end;
     finally
-      sl.Free
-    end
+      sl.Free;
+    end;
   end;
 
 begin
-  if CheckIsOpen (true, false) = woOpen then
+  if CheckIsOpen(True, False) = woOpen then
   begin
     if SettingsType = stUser then
       rootKeyName := 'HKEY_CURRENT_USER'
     else
       rootKeyName := 'HKEY_LOCAL_MACHINE';
 
-    rs := GetRegStub(section);
+    rs := GetRegStub('');
 
     s := TTextStreamWriter.Create(stream);
 
     try
       s.WriteLn('REGEDIT4');
-      Exp ('');
-
+      Exp(section);
     finally
-      s.Free
-    end
-  end
+      s.Free;
+    end;
+  end;
 end;
 
 (*----------------------------------------------------------------------*

@@ -29,8 +29,9 @@ unit NewsGlobals;
 
 interface
 
-uses Windows, Messages, Classes, SysUtils, Forms, Ras, StrUtils, ActnList, ConTnrs, Dialogs, SyncObjs,
-     unitExSettings, unitExRegSettings, unitExXMLSettings;
+uses
+  Windows, Messages, Classes, SysUtils, Forms, Ras, StrUtils, ActnList, ConTnrs, Dialogs, SyncObjs,
+  unitExSettings, unitExRegSettings, unitExXMLSettings;
 
 const
   WM_SETUP = WM_APP + $400;
@@ -48,7 +49,6 @@ const
   WM_STATUS = WM_APP + $410;
 
   WM_POSTANDCLOSE = WM_APP + $420; // Posting window messages
-  WM_ADJUSTWIDTH = WM_APP + $421;
   WM_SETCODEPAGE = WM_APP + $422;
   WM_RETRYSETMSG = WM_APP + $423;
   WM_SPECIALKEY = WM_APP + $424;
@@ -66,18 +66,18 @@ type
   TActionDefault = class
   private
     fAction: TCustomAction;
-    fShortcut : TShortcut;
+    fShortcut: TShortcut;
   public
-    constructor Create (AAction : TCustomAction);
-    property Action : TCustomAction read fAction;
-    property Shortcut : TShortcut read fShortcut;
+    constructor Create(AAction: TCustomAction);
+    property Action: TCustomAction read fAction;
+    property Shortcut: TShortcut read fShortcut;
   end;
 
   TBozoAction = (baIgnore, baMarkAsRead, baIgnoreThread, baMarkAsReadThread, baDontDownload);
 
 var
-  gDefaultActions : TObjectList = Nil;
-  gReadLnDelay : Integer = 0;
+  gDefaultActions: TObjectList = nil;
+  gReadLnDelay: Integer = 0;
 
 resourcestring
   rstConfirmMakeDormant = 'Making a group dormant removes it from all batches and sets its default actions to ''do nothing'''#13#10#13#10'Are you sure you want to make %s dormant?';
@@ -164,68 +164,68 @@ resourcestring
   rstStandardHelp1 = 'Colour and Font Settings for the %s';
 
 type
-
-TThreadOrder = (toThreaded, toChronological);
-TThreadSortOrder = (soDate, soSubject, soAuthor, soLines, soMessageNo, soPostingHost, soNewestMessage);
-TThreadSortDirection = (sdAscending, sdDescending);
-PObject = ^TObject;
+  TThreadOrder = (toThreaded, toChronological);
+  TThreadSortOrder = (soDate, soSubject, soAuthor, soLines, soMessageNo, soPostingHost, soNewestMessage);
+  TThreadSortDirection = (sdAscending, sdDescending);
+  PObject = ^TObject;
 
 var
-  RasEntries : array of TRasEntryName;
-  gLatestVersion : string = '~';
-  gDeserveMedals : string = '~';
-  NewVersion : string = '~';
-  gAppTerminating : boolean = False;
-  gLogFlag : boolean = False;
-  gAudiblePerformanceCues : boolean = False;
-  gProductVersion : string = '';
-  gExSettingsClass : TExSettingsClass = TExRegSettings;
-  gExSettingsFile : string = '';
+  RasEntries: array of TRasEntryName;
+  gLatestVersion: string = '~';
+  gDeserveMedals: string = '~';
+  NewVersion: string = '~';
+  gAppTerminating: Boolean = False;
+  gLogFlag: Boolean = False;
+  gAudiblePerformanceCues: Boolean = False;
+  gProductVersion: string = '';
+  gExSettingsClass: TExSettingsClass = TExRegSettings;
+  gExSettingsFile: string = '';
 
-procedure FixHeaders (hdrs : TStrings);
-function ProductVersion : string;
-procedure UseXMLSettings (const fn : string);
+procedure FixHeaders(hdrs: TStrings);
+function ProductVersion: string;
+procedure UseXMLSettings(const fn: string);
 
-
-procedure WrapStrings (m : TStrings; maxLen : Integer; textPartStyle : TTextPartStyle; nest, strictSigSep : boolean);
-procedure FixQuotes (s : TStrings; wrap : boolean; maxLineLen : Integer; const quoteLineMarker : string; trimSig, strictSigSep : boolean);
-procedure PurgeDirectory (const dirName : string);
-function ShortGroupName (const groupName : string) : string;
-function FairlyShortGroupName (const groupName : string) : string;
-function WideROT13 (const st : WideString) : WideString;
-function WideReverseString (const st : WideString) : WideString;
+procedure WrapStrings(m: TStrings; maxLen: Integer; textPartStyle: TTextPartStyle; nest, strictSigSep: Boolean);
+procedure FixQuotes(s: TStrings; wrap: Boolean; maxLineLen: Integer; const quoteLineMarker: string; trimSig, strictSigSep: Boolean);
+procedure PurgeDirectory(const dirName: string);
+function ShortGroupName(const groupName: string): string;
+function FairlyShortGroupName(const groupName: string): string;
+function WideROT13(const st: WideString): WideString;
+function WideReverseString(const st: WideString): WideString;
 procedure LoadRASEntries;
-function HeaderCharset (h : string) : string;
-procedure DecodeFromEMail (const from: string; var fromName, fromEMail: string; codePage: Integer = -1);
-function DecodeHeader (const header : string; codePage : PInteger = Nil) : widestring;
-function DecodeSubject (const subject: string; codePage: Integer): string;
-function GenerateMessageID (const product, stub, host : string) : string;
-function EncodeHeader (const header : string; codepage : Integer; from : boolean) : string;
-procedure SetTempStatusMessage (const msg : string; pos, max : word);
-function SafeDateTimeToInternetStr(const Value: TDateTime; const AIsGMT : Boolean = False) : String;
-function ComputerName : string;
+function HeaderCharset(h: string): string;
+procedure DecodeFromEMail(const from: string; var fromName, fromEMail: string; codePage: Integer = -1);
+function DecodeHeader(const header: string; codePage: PInteger = nil): widestring;
+function DecodeSubject(const subject: string; codePage: Integer): string;
+function GenerateMessageID(const product, stub, host: string): string;
+function EncodeHeader(const header: string; codepage: Integer; from: Boolean): string;
+procedure SetTempStatusMessage(const msg: string; pos, max: word);
+function SafeDateTimeToInternetStr(const Value: TDateTime; const AIsGMT: Boolean = False): string;
+function ComputerName: string;
 procedure ClearSynchronizedMethods;
-function FixFileNameString (const st : string) : string;
-procedure SetLatestVersion (const v : string);
-procedure SetDeserveMedals (const v : string);
-function GetLatestVersion : string;
-function GetDeserveMedals : string;
+function FixFileNameString(const st: string): string;
+procedure SetLatestVersion(const v: string);
+procedure SetDeserveMedals(const v: string);
+function GetLatestVersion: string;
+function GetDeserveMedals: string;
 function ShortName(const Name: string): string;
-function HTMLClipboardFormat : Integer;
-function ForeName (const name : string) : string;
-procedure AdjustFormConstraints (form : TForm);
-//function AdjustForLargeFonts (x : Integer) : Integer;
-function CreateExSettings (cls : TExSettingsClass = Nil) : TExSettings;
-function CreateChildSettings (parent : TExSettings; const section : string = '') : TExSettings;
+function HTMLClipboardFormat: Integer;
+function ForeName(const name: string): string;
+procedure AdjustFormConstraints(form: TForm);
+//function AdjustForLargeFonts(x: Integer): Integer;
+function CreateExSettings(cls: TExSettingsClass = nil): TExSettings;
+function CreateChildSettings(parent: TExSettings; const section: string = ''): TExSettings;
 
 
 implementation
 
-uses unitSearchString, idCoder, idCoderMIME, idCoderQuotedPrintableX, unitCharsetMap, IdGlobal, unitExFileSettings;
+uses
+  unitSearchString, idCoder, idCoderMIME, idCoderQuotedPrintable, unitCharsetMap,
+  IdGlobal, unitExFileSettings, XnCoderQuotedPrintable;
 
 var
-  gLatestVersionSync : TCriticalSection = Nil;
-  gHTMLClipboardFormat : Integer = 0;
+  gLatestVersionSync: TCriticalSection = nil;
+  gHTMLClipboardFormat: Integer = 0;
 
 (*----------------------------------------------------------------------*
  | FixHeaders                                                           |
@@ -237,54 +237,54 @@ var
  | This function.                                                       |
  |                                                                      |
  |   Replaces tabs with spaces.  Tabs are legal, but unusual.           |
- |   Replaces CR & LF with spaces.   They're legal but unusual.         |
+ |   Replaces CR & LF with spaces.  They're legal but unusual.          |
  |   Merges split lines.                                                |
  |   Replaces runs of whitespace with a single space character          |
  |   RFC 850 says that 'references' should be <id>blank<id> - but       |
  |   people sometimes leave out the blank.                              |
  |                                                                      |
  | Parameters:                                                          |
- |   hdrs : TStrings                                                    |
+ |   hdrs: TStrings                                                     |
  |                                                                      |
  | The function returns None                                            |
  |                                                                      |
  | ** TODO - Any text within brackets (including the brackets) is a     |
  |           comment.  Remove this                                      |
  *----------------------------------------------------------------------*)
-procedure FixHeaders (hdrs : TStrings);
+procedure FixHeaders(hdrs: TStrings);
 var
-  i, j, p : Integer;
-  s, s1 : string;
-  ch, lastch : char;
-  inQuote : Boolean;
+  i, j, p: Integer;
+  s, s1: string;
+  ch, lastch: Char;
+  inQuote: Boolean;
 begin
   i := 1;
-  while i < hdrs.Count  do // Merge split lines.
+  while i < hdrs.Count do  // Merge split lines.
   begin
-    s := hdrs [i];
+    s := hdrs[i];
                            // If a line starts with whitespace then
                            // append it to the previous line.
-    if (Length (s) = 0) or (s [1] in [' ', #9]) then
+    if (Length(s) = 0) or (s[1] in [' ', #9]) then
     begin
-      hdrs [i - 1] := hdrs [i - 1] + Trim (s);
+      hdrs[i - 1] := hdrs[i - 1] + Trim(s);
       hdrs.Delete(i);
     end
     else
-      Inc (i)
+      Inc(i);
   end;
 
   for i := 0 to hdrs.Count - 1 do
   begin
-    s := hdrs [i];
+    s := hdrs[i];
 
-    SetLength (s1, Length (s));
+    SetLength(s1, Length(s));
     inQuote := False;
     lastch := #0;
     p := 1;
 
-    for j := 1 to Length (s) do
+    for j := 1 to Length(s) do
     begin
-      ch := s [j];
+      ch := s[j];
 
       if ch in [#9, #10, #13] then      // Replace these with spaces
         ch := ' ';
@@ -298,74 +298,73 @@ begin
                                         // in quotes.
       if inQuote or (lastch <> ' ') then
       begin
-        s1 [p] := ch;
-        Inc (p)
+        s1[p] := ch;
+        Inc(p);
       end;
 
-      lastch := ch
+      lastch := ch;
     end;
 
-    SetLength (s1, p - 1);
-    if SameText (Copy (s1, 1, 11), 'References:') then
-      s1 := StringReplace (s1, '><', '> <', [rfReplaceAll]);  // Fix dodgy references
-    hdrs [i] := Trim (s1)
-  end
+    SetLength(s1, p - 1);
+    if SameText(Copy(s1, 1, 11), 'References:') then
+      s1 := StringReplace(s1, '><', '> <', [rfReplaceAll]); // Fix dodgy references
+    hdrs[i] := Trim(s1);
+  end;
 end;
 
-(*----------------------------------------------------------------------*
- | function ProductVersion : string                                     |
- |                                                                      |
- | Returns the product version - eg. 1.12.1.9                           |
- *----------------------------------------------------------------------*)
-function ProductVersion : string;
+function ProductVersion: string;
 var
-  size, zero : DWORD;
+  size, zero: DWORD;
   buffer, pBuffer: pointer;
-  info : PVSFixedFileInfo;
+  info: PVSFixedFileInfo;
 begin
   if gProductVersion <> '' then
   begin
     Result := gProductVersion;
     Exit;
   end;
-  result := '';         // Get it from the versioninfo resource
-  size := GetFileVersionInfoSize (PChar (ParamStr (0)), zero);
+
+  Result := '';         // Get it from the versioninfo resource
+  size := GetFileVersionInfoSize(PChar(ParamStr(0)), zero);
   if size > 0 then
   begin
-    GetMem (buffer, size);
+    GetMem(buffer, size);
     try
-      if not GetFileVersionInfo (PChar (paramStr (0)), zero, size, buffer) then
+      if not GetFileVersionInfo(PChar(paramStr(0)), zero, size, buffer) then
         RaiseLastOSError;
 
-      if not VerQueryValue (buffer, '\', pBuffer, size) then
+      if not VerQueryValue(buffer, '\', pBuffer, size) then
         RaiseLastOSError;
 
-      info := PVSFixedFileInfo (pBuffer);
+      info := PVSFixedFileInfo(pBuffer);
 
-      result := Format ('%d.%d.%d.%d', [HiWord (info^.dwProductVersionMS), LoWord (info^.dwProductVersionMS), HiWord (info^.dwProductVersionLS), LoWord (info^.dwProductVersionLS)])
+      Result := Format('%d.%d.%d.%d', [HiWord(info^.dwProductVersionMS),
+                                       LoWord(info^.dwProductVersionMS),
+                                       HiWord(info^.dwProductVersionLS),
+                                       LoWord(info^.dwProductVersionLS)]);
     finally
-      FreeMem (buffer)
-    end
+      FreeMem(buffer);
+    end;
   end;
-  gProductVersion := result
+  gProductVersion := Result;
 end;
 
-function IsSigSep (st : string; strct, quoted : boolean) : boolean;
+function IsSigSep(st: string; strct, quoted: Boolean): Boolean;
 begin
-  result := False;
-  if Length (st) >= 2 then
+  Result := False;
+  if Length(st) >= 2 then
     if quoted then
     begin
-      if (st [1] = '>') or (st [1] = '|') then
+      if (st[1] = '>') or (st[1] = '|') then
       begin
-        Delete (st, 1, 1);
-        if st [1] = ' ' then
-          Delete (st, 1, 1);
-        result := IsSigSep (st, strct, false)
-      end
+        Delete(st, 1, 1);
+        if st[1] = ' ' then
+          Delete(st, 1, 1);
+        Result := IsSigSep(st, strct, false);
+      end;
     end
     else
-      result := (st = '-- ') or ((not strct) and (st = '--'))
+      Result := (st = '-- ') or (not strct and (st = '--'));
 end;
 
 (*----------------------------------------------------------------------*
@@ -375,22 +374,22 @@ end;
  | length.                                                              |
  |                                                                      |
  | Parameters:                                                          |
- |   m : TStrings               // The strings to wrap                  |
- |   maxLen : Integer;          // The maximum length                   |
- |   quotedPrintable : boolean; // If the flag is set, convert the      |
+ |   m: TStrings                // The strings to wrap                  |
+ |   maxLen: Integer;           // The maximum length                   |
+ |   quotedPrintable: Boolean;  // If the flag is set, convert the      |
  |                              // strings to 'quoted printable' format |
- |   nest : boolean             // nest quoted text.  The quote level   |
+ |   nest: Boolean              // nest quoted text.  The quote level   |
  |                              // for each line must be in Objects [i] |
  |                                                                      |
- | The function returns None
+ | The function returns None                                            |
  *----------------------------------------------------------------------*)
-procedure WrapStrings (m : TStrings; maxLen : Integer; TextPartStyle : TTextPartStyle; nest, strictSigSep : boolean);
+procedure WrapStrings(m: TStrings; maxLen: Integer; TextPartStyle: TTextPartStyle; nest, strictSigSep: Boolean);
 var
-  holdQuotedPrintable : boolean;
-  i, len, p, ml : Integer;
-  s1, s2 : string;
-  ch : char;
-  encoder : TidEncoderQuotedPrintable;
+  holdQuotedPrintable: Boolean;
+  i, len, p, ml: Integer;
+  s1, s2: string;
+  ch: char;
+  encoder: TXnEncoderQuotedPrintable;
 
   function IsURL(const S1: string): Boolean;
   begin
@@ -401,160 +400,156 @@ begin
   holdQuotedPrintable := False;
   i := 0;
   ml := maxLen;
-  encoder := Nil;
+  encoder := nil;
   try
     while i < m.Count do
     begin
-      s1 := m [i];
+      s1 := m[i];
       if TextPartStyle = tpFlowed then
       begin
         if s1 <> '-- ' then
-          s1 := TrimRight (s1);
-        m [i] := s1
+          s1 := TrimRight(s1);
+        m[i] := s1;
       end;
 
       if nest then
       begin
-        ml := maxLen - 2 * (Integer (m.Objects [i]) + 1);
+        ml := maxLen - 2 * (Integer(m.Objects[i]) + 1);
         if ml <= 0 then
         begin
-          Inc (i);
-          continue
-        end
+          Inc(i);
+          Continue;
+        end;
       end;
 
       // Replace all equal symbols with '=3D' if quoted-printable
       if not holdQuotedPrintable and (TextPartStyle = tpQuotedPrintable) then
       begin
         if encoder = nil then
-        begin
-          encoder := TidEncoderQuotedPrintable.Create(nil);
-          encoder.MaxLineLen := MaxInt
-        end;
+          encoder := TXnEncoderQuotedPrintable.Create(nil);
         s1 := encoder.Encode(s1);
-//        s1 := StringReplace (s1, '=', '=3D', [rfReplaceAll]);
-        m [i] := s1
+        m[i] := s1;
       end;
 
-      len := Length (s1);
+      len := Length(s1);
 
       holdQuotedPrintable := False;
-      if (len >ml) and not IsURL(s1) then
+      if (len > ml) and not IsURL(s1) then
       begin
         p := ml;
-        while (p > 0) and not (s1 [p] in [#9, ' ']) do
-          Dec (p);
+        while (p > 0) and not (s1[p] in [#9, ' ']) do
+          Dec(p);
 
         if p = 0 then
           if TextPartStyle = tpFlowed then
           begin
-            Inc (i);
-            continue
+            Inc(i);
+            Continue;
           end
           else
             p := ml;
 
-        s2 := Copy (s1, 1, p);
+        s2 := Copy(s1, 1, p);
         if TextPartStyle = tpQuotedPrintable then
           s2 := s2 + '='
         else
           if TextPartStyle = tpFlowed then
           begin
-            if s2 [Length (s2)] <> ' ' then
-              s2 := s2 + ' '
+            if s2[Length(s2)] <> ' ' then
+              s2 := s2 + ' ';
           end
           else
-            s2 := TrimRight (s2);
-        m [i] := s2;
+            s2 := TrimRight(s2);
+        m[i] := s2;
 
-        if not nest or (i + 1 = m.Count) or (m [i + 1] = '') or IsSigSep (m [i + 1], strictSigSep, false) or (m.Objects [i] <> m.Objects [i + 1]) then
+        if not nest or (i + 1 = m.Count) or (m[i + 1] = '') or
+           IsSigSep(m[i + 1], strictSigSep, False) or
+           (m.Objects[i] <> m.Objects[i + 1]) then
         begin
-          s2 := Copy (s1, p + 1, MaxInt);
+          s2 := Copy(s1, p + 1, MaxInt);
           if textPartStyle <> tpQuotedPrintable then
-            s2 := Trim (s2);
-          m.InsertObject(i + 1, s2, m.Objects [i])
+            s2 := Trim(s2);
+          m.InsertObject(i + 1, s2, m.Objects[i]);
         end
         else
         begin
-          s1 := Trim (Copy (s1, p + 1, MaxInt));
+          s1 := Trim(Copy(s1, p + 1, MaxInt));
           if s1 <> '' then
           begin
-            ch := s1 [Length (s1)];
+            ch := s1[Length(s1)];
 
             if ch in ['.', '?', '!', ':'] then
               s1 := s1 + ' ';
 
-            s2 := m [i + 1];
+            s2 := m[i + 1];
             if (textPartStyle = tpQuotedPrintable) then
             begin
               if encoder = nil then
-              begin
-                encoder := TidEncoderQuotedPrintable.Create(nil);
-                encoder.MaxLineLen := MaxInt
-              end;
-              s2 := encoder.Encode (s2)
+                encoder := TXnEncoderQuotedPrintable.Create(nil);
+              s2 := encoder.Encode(s2);
             end;
 
-            m [i + 1] := s1 + ' ' + s2
-          end
+            m[i + 1] := s1 + ' ' + s2;
+          end;
         end;
         holdQuotedPrintable := True;
       end;
-      Inc (i)
-    end
+      Inc(i);
+    end;
   finally
-    encoder.Free
-  end
+    encoder.Free;
+  end;
 end;
 
-procedure FixQuotes (s : TStrings; wrap : boolean; maxLineLen : Integer; const quoteLineMarker : string; trimSig, strictSigSep : boolean);
+procedure FixQuotes(s: TStrings; wrap: Boolean; maxLineLen: Integer;
+  const quoteLineMarker: string; trimSig, strictSigSep: Boolean);
 var
-  i, p : Integer;
-  sigLine : Integer;
-  st : string;
+  i, p: Integer;
+  sigLine: Integer;
+  st: string;
 begin
   for i := 0 to s.Count - 1 do
   begin
     repeat
       st := quoteLineMarker;
-      p := Pos (st, s [i]);
+      p := Pos(st, s[i]);
       if p = 0 then
       begin
         st := '>';
-        p := Pos (st, s [i]);
+        p := Pos(st, s[i]);
         if p = 0 then
         begin
           st := '|';
-          p := Pos (st, s [i])
-        end
+          p := Pos(st, s[i]);
+        end;
       end;
       if p = 1 then
       begin
-        s.Objects [i] := TObject (Integer (s.Objects [i]) + 1);
-        s [i] := Copy (s [i], Length (st) + 1, maxInt);
-      end
-    until p <> 1
+        s.Objects[i] := TObject(Integer(s.Objects[i]) + 1);
+        s[i] := Copy(s[i], Length(st) + 1, maxInt);
+      end;
+    until p <> 1;
   end;
 
   if wrap then
-    WrapStrings (s, maxLineLen, tpNNTP, True, strictSigSep);
+    WrapStrings(s, maxLineLen, tpNNTP, True, strictSigSep);
 
   if quoteLineMarker <> '' then
   begin
     for i := 0 to s.Count - 1 do
-      for p := 0 to Integer (s.Objects [i]) do
-        s [i] := quoteLineMarker + s [i];
+      for p := 0 to Integer(s.Objects[i]) do
+        s[i] := quoteLineMarker + s[i];
 
-    s.Insert (0, '')
+    s.Insert(0, '');
   end;
 
   sigLine := -1;
   if trimSig then
     for i := 0 to s.Count - 1 do
-      if IsSigSep (s [i], strictSigSep, true) then
+      if IsSigSep(s[i], strictSigSep, true) then
       begin
         sigLine := i;
-        break
+        Break;
       end;
 
   if sigLine >= 0 then
@@ -562,265 +557,245 @@ begin
       s.Delete(sigLine);
 
   while s.Count > 0 do
-    if s [s.Count - 1] = quoteLineMarker then
-      s.Delete (s.Count - 1)
+    if s[s.Count - 1] = quoteLineMarker then
+      s.Delete(s.Count - 1)
     else
-      Break
+      Break;
 end;
 
-(*----------------------------------------------------------------------*
- | procedure PurgeDirectory                                             |
- |                                                                      |
- | Delete a directory and it's sub-directories.                         |
- |                                                                      |
- | Parameters:                                                          |
- |                                                                      |
- |   const dirName : string     The directory to purge.                 |
- *----------------------------------------------------------------------*)
-procedure PurgeDirectory (const dirName : string);
+procedure PurgeDirectory(const dirName: string);
 var
-  f : TSearchRec;
-  st : string;
-  err : Integer;
+  f: TSearchRec;
+  st: string;
+  err: Integer;
 begin
+  // Delete a directory and it's sub-directories.
   st := dirName;
-  UniqueString (st);
-  if FindFirst (st + '\' + '*.*', faAnyFile, f) = 0 then
+  UniqueString(st);
+  if FindFirst(st + '\' + '*.*', faAnyFile, f) = 0 then
   try
     repeat
       if (f.Attr and (faReadOnly or faSysFile or faHidden)) <> 0 then
-        FileSetAttr (st + '\' + f.Name, f.Attr and not (faReadOnly or faSysFile or faHidden));
+        FileSetAttr(st + '\' + f.Name, f.Attr and not (faReadOnly or faSysFile or faHidden));
 
       if (f.Attr and faDirectory) <> 0 then
       begin
         if (f.Name <> '.') and (f.name <> '..') then
-          PurgeDirectory (st + '\' + f.Name)
+          PurgeDirectory(st + '\' + f.Name)
       end
       else
-        if not DeleteFile (st + '\' + f.Name) then
-          RaiseLastOSError
-    until FindNext (f) <> 0;
+        if not DeleteFile(st + '\' + f.Name) then
+          RaiseLastOSError;
+    until FindNext(f) <> 0;
   finally
-    FindClose (f)
+    FindClose(f);
   end;
-  if not RemoveDir (st) then
+
+  if not RemoveDir(st) then
   begin
     err := GetLastError;
     if (err <> ERROR_FILE_NOT_FOUND) and (err <> ERROR_PATH_NOT_FOUND) then
-      RaiseLastOSError
-  end
+      RaiseLastOSError;
+  end;
 end;
 
-function ShortGroupName (const groupName : string) : string;
+function ShortGroupName(const groupName: string): string;
 var
-  c : Integer;
+  c: Integer;
 begin
-  c := Length (groupName);
+  c := Length(groupName);
 
-  while (c > 0) and (groupName [c] <> '.') do
-    Dec (c);
+  while (c > 0) and (groupName[c] <> '.') do
+    Dec(c);
 
   if c = 0 then
-    result := groupName
+    Result := groupName
   else
-    result := Copy (groupName, c, MaxInt);
+    Result := Copy(groupName, c, MaxInt);
 
   while c > 0 do
   begin
     repeat
-      Dec (c)
-    until (c = 0) or (groupName [c] = '.');
+      Dec(c);
+    until (c = 0) or (groupName[c] = '.');
 
     if c = 0 then
-      result := groupName [c + 1] + result
+      Result := groupName[c + 1] + Result
     else
-      result := Copy (groupName, c, 2) + result
-  end
+      Result := Copy(groupName, c, 2) + Result;
+  end;
 end;
 
-function FairlyShortGroupName (const groupName : string) : string;
+function FairlyShortGroupName(const groupName: string): string;
 var
-  c : Integer;
+  c: Integer;
 begin
-  c := Length (groupName);
+  c := Length(groupName);
 
-  while (c > 0) and (groupName [c] <> '.') do
-    Dec (c);
+  while (c > 0) and (groupName[c] <> '.') do
+    Dec(c);
 
   if c = 0 then
-    result := groupName
+    Result := groupName
   else
-    result := ShortGroupName (Copy (groupName, 1, c - 1)) + Copy (groupName, c, MaxInt)
+    Result := ShortGroupName(Copy(groupName, 1, c - 1)) + Copy(groupName, c, MaxInt);
 end;
 
 
-(*----------------------------------------------------------------------*
- | function ROT13                                                       |
- |                                                                      |
- | Return a ROT-13 en/decryption of a string.  Call it again to         |
- | de/encode the string.                                                |
- *----------------------------------------------------------------------*)
-function WideROT13 (const st : WideString) : WideString;
+function WideROT13(const st: WideString): WideString;
 var
-  i, l : Integer;
-  ch : WideChar;
+  i, l: Integer;
+  ch: WideChar;
 begin
-  l := Length (st);
-  SetLength (result, l);
+  // Return a ROT-13 en/decryption of a string.  Call it again to de/encode the string.
+  l := Length(st);
+  SetLength(Result, l);
 
   for i := 1 to l do
   begin
-    ch := st [i];
+    ch := st[i];
     if ((ch >= 'A') and (ch <= 'M')) or ((ch >= 'a') and (ch <= 'm')) then
-      ch := WideChar (Ord (ch) + 13)
+      ch := WideChar(Ord(ch) + 13)
     else
       if ((ch >= 'N') and (ch <= 'Z')) or ((ch >= 'n') and (ch <= 'z')) then
-        ch := WideChar (Ord (ch) - 13);
-    result [i] := ch
-  end
+        ch := WideChar(Ord(ch) - 13);
+    Result[i] := ch;
+  end;
 end;
 
-function WideReverseString (const st : WideString) : WideString;
+function WideReverseString(const st: WideString): WideString;
 var
-  i, l : Integer;
+  i, l: Integer;
 begin
-  l := Length (st);
-  SetLength (result, l);
+  l := Length(st);
+  SetLength(Result, l);
   for i := 1 to l do
-    result [i] := st [l - i + 1]
+    Result[i] := st[l - i + 1];
 end;
 
-(*----------------------------------------------------------------------*
- | procedure LoadRASEntries                                             |
- |                                                                      |
- | Populate the RAS Entries array with available diallup connections    |
- *----------------------------------------------------------------------*)
 procedure LoadRASEntries;
 var
-  ce, cb, rv : DWORD;
-
+  ce, cb, rv: DWORD;
 begin
+  // Populate the RAS Entries array with available diallup connections
   try
     if InitRASLibrary then
     try
       ce := 10;
       repeat
-        SetLength (RasEntries, ce);
-        cb := ce * SizeOf (TRasEntryName);
-        FillChar (RasEntries [0], cb, 0);
-        RasEntries [0].dwSize := sizeof (TRasEntryName);
-        rv := RasEnumEntries (nil, nil, @RasEntries [0], cb, ce);
+        SetLength(RasEntries, ce);
+        cb := ce * SizeOf(TRasEntryName);
+        FillChar(RasEntries[0], cb, 0);
+        RasEntries[0].dwSize := SizeOf(TRasEntryName);
+        rv := RasEnumEntries(nil, nil, @RasEntries[0], cb, ce);
 
         case rv of
-          0 : SetLength (RasEntries, ce);
-          ERROR_BUFFER_TOO_SMALL :;
-          else
-          begin
-            SetLength (RasEntries, 0);
-            SetLastError (rv);
-            RaiseLastOSError
-          end
-        end
-      until rv <> ERROR_BUFFER_TOO_SMALL
+          0: SetLength(RasEntries, ce);
+          ERROR_BUFFER_TOO_SMALL:;
+        else
+          SetLength(RasEntries, 0);
+          SetLastError(rv);
+          RaiseLastOSError;
+        end;
+      until rv <> ERROR_BUFFER_TOO_SMALL;
     finally
-      FreeRASLibrary
+      FreeRASLibrary;
     end
     else
-      SetLength (RasEntries, 0);
+      SetLength(RasEntries, 0);
   except
-    SetLength (RasEntries, 0);
-  end
+    SetLength(RasEntries, 0);
+  end;
 end;
 
-function HeaderCharset (h : string) : string;
+function HeaderCharset(h: string): string;
 var
-  p : Integer;
+  p: Integer;
 begin
-  p := Pos ('=?', h);
+  p := Pos('=?', h);
   if p > 0 then
   begin
-    h := Copy (h, p+2, MaxInt);
-    result := ExtractString ('?', h)
+    h := Copy(h, p + 2, MaxInt);
+    Result := ExtractString('?', h);
   end
   else
-    result := ''
+    Result := ''
 end;
 
-function DequotedCString (const st : string) : string;
+function DequotedCString(const st: string): string;
 var
-  i, l : Integer;
+  i, l: Integer;
 begin
-  result := st;
-  l := Length (result);
-  if (l > 0) and (st [1] = '"') then
+  Result := st;
+  l := Length(Result);
+  if (l > 0) and (st[1] = '"') then
   begin
-    Delete (result, 1, 1);
-    Dec (l)
+    Delete(Result, 1, 1);
+    Dec(l);
   end;
 
-  if (l > 0) and (result [l] = '"') then
+  if (l > 0) and (Result[l] = '"') then
   begin
-    Delete (result, l, 1);
-    Dec (l)
+    Delete(Result, l, 1);
+    Dec(l);
   end;
 
   i := 0;
   while i < l do
   begin
-    Inc (i);
-
-    case result [i] of
-      '\' : begin
-              Delete (result, i, 1);
-              Dec (l);
-              case result [i] of
-                't' : result [i] := #9;
-                'r', 'n' : result [i] := ' '
-              end
-            end;
-    end
-  end
+    Inc(i);
+    if Result[i] = '\' then
+    begin
+      Delete(Result, i, 1);
+      Dec(l);
+      if i <= l then
+        case Result[i] of
+          't': Result[i] := #9;
+          'r', 'n': Result[i] := ' ';
+        end;
+    end;
+  end;
 end;
 
-procedure DecodeFromEMail (const from: string; var fromName, fromEMail: string; codePage: Integer = -1);
+procedure DecodeFromEMail(const from: string; var fromName, fromEMail: string; codePage: Integer = -1);
 var
-  p : Integer;
+  p: Integer;
 begin
-  p := Pos ('<', from);
+  p := Pos('<', from);
 
   if p > 0 then
   begin
     fromEmail := from;
-    fromName := DequotedCString (SplitString ('<', fromEmail));
-    if (Length (fromEmail) > 0) and (fromEmail [Length (fromEmail)] = '>') then
-      Delete (fromEmail, Length (fromEmail), 1)
+    fromName := DequotedCString(SplitString('<', fromEmail));
+    if (Length(fromEmail) > 0) and (fromEmail[Length(fromEmail)] = '>') then
+      Delete(fromEmail, Length(fromEmail), 1);
   end
   else
   begin
-    p := Pos ('(', from);
+    p := Pos('(', from);
     if p > 0 then
     begin
       fromName := from;
-      fromEmail := SplitString ('(', fromName);
-      if (Length (fromName) > 0) and (fromName [Length (fromName)] = ')') then
-        Delete (fromName, Length (fromName), 1);
+      fromEmail := SplitString('(', fromName);
+      if (Length(fromName) > 0) and (fromName[Length(fromName)] = ')') then
+        Delete(fromName, Length(fromName), 1);
     end
     else
     begin
       fromName := from;
       fromEmail := '';
-    end
+    end;
   end;
 
 
-  if codePage = -1  then
+  if codePage = -1 then
     codePage := CP_ACP;
   fromName := WideStringToString(DecodeHeader(fromName), CodePage);
 
   if fromName = '' then
     fromName := from;
 
-//  fromName := Trim (StringReplace (fromName, '\', '', [rfReplaceAll]));
+//  fromName := Trim(StringReplace(fromName, '\', '', [rfReplaceAll]));
 end;
 
 { TActionDefault }
@@ -828,133 +803,146 @@ end;
 constructor TActionDefault.Create(AAction: TCustomAction);
 begin
   fAction := AAction;
-  fShortcut := AAction.ShortCut
+  fShortcut := AAction.ShortCut;
 end;
 
 var
-  gDecoderMIME : TidDecoderMIME = Nil;
-  gDecoderQuotedPrintable : TidDecoderQuotedPrintable = Nil;
+  gDecoderMIME: TidDecoderMIME = nil;
+  gDecoderQuotedPrintable: TIdDecoderQuotedPrintable = nil;
 
-//Searches Data for an RFC-1522 chunk, starting at cFrom.
-//If a chunk is found, cFrom and cTo contain positions of the first
-//and last character, respectively.
-function FindChunk(const Data: string; var cFrom, cTo: integer): boolean;
+// Searches Data for an RFC-1522 chunk, starting at cFrom.
+// If a chunk is found, cFrom and cTo contain positions of the first
+// and last character, respectively.
+function FindChunk(const Data: string; var cFrom, cTo: integer): Boolean;
 const
- ChunkChars = ['A'..'Z'] + ['a'..'z'] + ['0'..'9'] + ['=', '?', '-', '_'];
+  ChunkChars = ['A'..'Z'] + ['a'..'z'] + ['0'..'9'] + ['=', '?', '-', '_'];
 var
- State: byte;
- i: integer;
+  State: Byte;
+  i: Integer;
 begin
-  Result:=false;
-  i:=cFrom;
-  State:=0;
-  while i<=Length(Data) do begin
+  Result := False;
+  i := cFrom;
+  State := 0;
+  while i <= Length(Data) do
+  begin
     case State of
-      0: if Data[i]='=' then begin
-           State:=1;
-           cFrom:=i;
+      0: if Data[i] = '=' then
+         begin
+           State := 1;
+           cFrom := i;
          end;
-      1: if Data[i]='?' then
-           State:=2
+      1: if Data[i] = '?' then
+           State := 2
          else
-           State:=0;
+           State := 0;
       2,3,4:
-         //FIX: Some clients actually include spaces in chunks.
-         if (State<>4) and not (Data[i] in ChunkChars) then
-           State:=0
-         else if Data[i]='?' then
-           inc(State);
-      5: if Data[i]='=' then begin
-           cTo:=i;
-           Result:=true;
-           EXIT;
-         end else if Data[i]<>'?' then
-           State:=4;
+         // Fix: Some clients actually include spaces in chunks.
+         if (State <> 4) and not (Data[i] in ChunkChars) then
+           State := 0
+         else
+           if Data[i] = '?' then
+             Inc(State);
+      5: if Data[i] = '=' then
+         begin
+           cTo := i;
+           Result := True;
+           Exit;
+         end
+         else
+           if Data[i] <> '?' then
+           State := 4;
     end;
-    inc(i);
+    Inc(i);
   end;
 end;
 
 procedure ControlsToSpaces(var Str: widestring);
-var x: integer;
+var
+  x: Integer;
 begin
-  for x:=1 to Length(Str) do
-    if Ord(Str[x])<32 then Str[x]:=' ';
+  for x := 1 to Length(Str) do
+    if Ord(Str[x]) < 32 then
+      Str[x] := ' ';
 end;
 
-//Decodes a RFC-1522 chunk into widestring.
-//Expects a single, pre-stripped chunk as input ('ISO-8859-1?q?data')
+// Decodes a RFC-1522 chunk into widestring.
+// Expects a single, pre-stripped chunk as input ('ISO-8859-1?q?data')
 function DecodeChunk(Input: string): Widestring;
 var
   cp, data: string;
-  enc: char;
-  x, cpnum: integer;
-  AttachSpace: boolean;
+  enc: Char;
+  x, cpnum: Integer;
+  AttachSpace: Boolean;
 begin
-  Result:='';
-  x:=Pos('?', Input);
-  //Checks for encoding byte, '?', and at least one byte of data.
-  if Length(Input) < x+3 then EXIT;
-  //Encoding should be exactly one character
-  if Input[x+2] <> '?' then EXIT;
+  Result := '';
+  x := Pos('?', Input);
+  // Checks for encoding byte, '?', and at least one byte of data.
+  if Length(Input) < x+3 then
+    Exit;
 
-  cp:=LowerCase(Copy(Input, 1, x-1));
-  cpnum:=MIMECharsetNameToCodePage(cp);
-  enc:=Input[x+1];
-  data:=Copy(Input, x+3, maxint);
+  // Encoding should be exactly one character
+  if Input[x + 2] <> '?' then
+    Exit;
+
+  cp := LowerCase(Copy(Input, 1, x - 1));
+  cpnum := MIMECharsetNameToCodePage(cp);
+  enc := Input[x + 1];
+  data := Copy(Input, x + 3, maxint);
 
   if enc in ['b', 'B'] then begin
-    with TidDecoderMIME.Create(nil) do begin
-      data:=DecodeString(data);
+    with TidDecoderMIME.Create(nil) do
+    begin
+      data := DecodeString(data);
       Free;
     end;
   end
-  else begin
-    //TidDecoderQuotedPrintable does not deal with underscore encoded spaces
-    data:=StringReplace(data, '_', ' ', [rfReplaceAll]);
-    AttachSpace:=data[Length(data)]=' ';
-    with TidDecoderQuotedPrintable.Create(nil) do begin
-      data:=DecodeString(data);
+  else
+  begin
+    // TidDecoderQuotedPrintable does not deal with underscore encoded spaces
+    data := StringReplace(data, '_', ' ', [rfReplaceAll]);
+    AttachSpace := data[Length(data)] = ' ';
+    with TidDecoderQuotedPrintable.Create(nil) do
+    begin
+      data := DecodeString(data);
       Free;
     end;
-    //Unfortunately, the Decoder will also trim trailing spaces
-    if AttachSpace then data:=data+' ';
+    // Unfortunately, the Decoder will also trim trailing spaces
+    if AttachSpace then
+      data := data + ' ';
   end;
 
-  //Convert character data to widestring
+  // Convert character data to widestring
   setlength(Result, Length(data));
-  x:=MultiByteToWideChar(cpnum, 0, @data[1], Length(data),
-      @Result[1], Length(Result));
-  setlength(Result, x);
+  x := MultiByteToWideChar(cpnum, 0, @data[1], Length(data), @Result[1], Length(Result));
+  SetLength(Result, x);
 end;
 
-function DecodeHeader(const header: string; codePage : PInteger = Nil) : widestring;
-const CP_UTF_16 = 1200;
+function DecodeHeader(const header: string; codePage: PInteger = nil): widestring;
+const
+  CP_UTF_16 = 1200;
 var
- chkStart, chkEnd, lastChkEnd: integer;
+  chkStart, chkEnd, lastChkEnd: Integer;
 begin
   Result := '';
   lastChkEnd := 0;
   chkStart := 1;
-  while FindChunk(Header, chkStart, chkEnd) do begin
+  while FindChunk(Header, chkStart, chkEnd) do
+  begin
     Result := Result +
-              Copy(Header, lastChkEnd+1, chkStart-lastChkEnd-1) +
-              DecodeChunk(Copy(Header, chkStart+2, chkEnd-chkStart-3));
+      Copy(Header, lastChkEnd + 1, chkStart - lastChkEnd - 1) +
+      DecodeChunk(Copy(Header, chkStart + 2, chkEnd - chkStart - 3));
     lastChkEnd := chkEnd;
-    chkStart := chkEnd+1;
-    //If a chunk is followed by ' =?', ignore it
-    if (Length(Header)>chkStart+8) and
-       (Header[chkStart] in [' ', #8]) and
-       (Header[chkStart+1]='=') and
-       (Header[chkStart+2]='?')
-    then inc(lastChkEnd);
+    chkStart := chkEnd + 1;
+    // If a chunk is followed by ' =?', ignore it
+    if (Length(Header) > chkStart + 8) and (Header[chkStart] in [' ', #8]) and
+       (Header[chkStart+1] = '=') and (Header[chkStart+2] = '?') then
+      Inc(lastChkEnd);
   end;
-  Result := Result + Copy(Header, lastChkEnd+1, MaxInt);
-  //Not exactly clean, but this parameter seems not to be used anyway.
+  Result := Result + Copy(Header, lastChkEnd + 1, MaxInt);
+  // Not exactly clean, but this parameter seems not to be used anyway.
   if Assigned(CodePage) then
     CodePage^ := CP_UTF_16;
 end;
-
 
 function DecodeSubject(const subject: string; codePage: Integer): string;
 var
@@ -965,59 +953,58 @@ begin
 end;
 
 var
-  gmi : Integer = 0;
+  gmi: Integer = 0;
 
-function GenerateMessageID (const product, stub, host : string) : string;
+function GenerateMessageID(const product, stub, host: string): string;
 var
-  st, hs : string;
+  st, hs: string;
 
-function Enc36 (i : Integer; padLen : Integer = 7) : string;
-var
-  i1 : Integer;
-begin
-  result := '';
-  while i > 0 do
+  function Enc36(i: Integer; padLen: Integer = 7): string;
+  var
+    i1: Integer;
   begin
-    i1 := i mod 36;
-    i := i div 36;
-    if i1 < 10 then
-      result := Char (Ord ('0') + i1) + result
-    else
-      result := Char (Ord ('a') + i1 - 10) + result
+    Result := '';
+    while i > 0 do
+    begin
+      i1 := i mod 36;
+      i := i div 36;
+      if i1 < 10 then
+        Result := Char(Ord('0') + i1) + Result
+      else
+        Result := Char(Ord('a') + i1 - 10) + Result;
+    end;
+
+    while Length(Result) < padLen do
+      Result := '0' + Result;
   end;
 
-  while Length (result) < padLen do
-    result := '0' + result
-end;
-
 begin
-  st := product + Enc36 (DateTimeToFileDate (now)) + Enc36 (GetTickCount, 4) + Enc36(gmi, 3) + stub;
-  Inc (gmi);
-  if gmi >= 36*36*36 then
+  st := product + Enc36(DateTimeToFileDate(now)) + Enc36(GetTickCount, 4) + Enc36(gmi, 3) + stub;
+  Inc(gmi);
+  if gmi >= 36 * 36 * 36 then
     gmi := 0;
-  if SameText (host, 'LocalHost') then
+  if SameText(host, 'LocalHost') then
     hs := 'xananews'
   else
     hs := host;
-  result := '<' + st + '@' + hs + '>';
+  Result := '<' + st + '@' + hs + '>';
 end;
 
 const
-  base64_tbl: array [0..63] of Char = (
-    'A','B','C','D','E','F','G','H',     {Do not Localize}
+  base64_tbl: array[0..63] of Char = (
+    'A','B','C','D','E','F','G','H',      {Do not Localize}
     'I','J','K','L','M','N','O','P',      {Do not Localize}
     'Q','R','S','T','U','V','W','X',      {Do not Localize}
     'Y','Z','a','b','c','d','e','f',      {Do not Localize}
     'g','h','i','j','k','l','m','n',      {Do not Localize}
-    'o','p','q','r','s','t','u','v',       {Do not Localize}
-    'w','x','y','z','0','1','2','3',       {Do not Localize}
-    '4','5','6','7','8','9','+','/');      {Do not Localize}
+    'o','p','q','r','s','t','u','v',      {Do not Localize}
+    'w','x','y','z','0','1','2','3',      {Do not Localize}
+    '4','5','6','7','8','9','+','/');     {Do not Localize}
 
-function EncodeHeader1(const Header: string; specials : CSET; HeaderEncoding: Char;
+function EncodeHeader1(const Header: string; specials: CSET; HeaderEncoding: Char;
   TransferHeader: TTransfer; MimeCharSet: string): string;
 const
   SPACES: set of Char = [' ', #9, #10, #13, '''', '"'];    {Do not Localize}
-
 var
   S, T: string;
   L, P, Q, R: Integer;
@@ -1026,7 +1013,7 @@ var
   NeedEncode: Boolean;
   csNeedEncode, csReqQuote: CSET;
   BeginEncode, EndEncode: string;
-  ch : char;
+  ch: char;
 
   procedure EncodeWord(P: Integer);
   const
@@ -1042,14 +1029,12 @@ var
     InEncode := 0;
     EncLen := Length(BeginEncode) + 2;
 
-    if headerEncoding = 'Q' then  { quoted-printable }   {Do not Localize}
+    if headerEncoding = 'Q' then {quoted-printable} {Do not Localize}
     begin
       while Q < P do
       begin
         if not (S[Q] in csReqQuote) then
-        begin
           Enc1 := S[Q]
-        end
         else
         begin
           if S[Q] = ' ' then  {Do not Localize}
@@ -1079,21 +1064,20 @@ var
 
         B0 := Ord(S[Q]);
         case P - Q of
-        1: T := T + base64_tbl[B0 SHR 2] + base64_tbl[B0 AND $03 SHL 4] + '==';  {Do not Localize}
-        2:
-          begin
-            B1 := Ord(S[Q + 1]);
-            T := T             + base64_tbl[B0 SHR 2] +
-              base64_tbl[B0 AND $03 SHL 4 + B1 SHR 4] +
-              base64_tbl[B1 AND $0F SHL 2] + '=';  {Do not Localize}
-          end;
+          1: T := T + base64_tbl[B0 shr 2] + base64_tbl[B0 and $03 shl 4] + '=='; {Do not Localize}
+          2: begin
+               B1 := Ord(S[Q + 1]);
+               T := T + base64_tbl[B0 shr 2] +
+                    base64_tbl[B0 and $03 shl 4 + B1 shr 4] +
+                    base64_tbl[B1 and $0F shl 2] + '=';  {Do not Localize}
+             end;
         else
           B1 := Ord(S[Q + 1]);
           B2 := Ord(S[Q + 2]);
-          T := T + base64_tbl[B0 SHR 2] +
-            base64_tbl[B0 AND $03 SHL 4 + B1 SHR 4] +
-            base64_tbl[B1 AND $0F SHL 2 + B2 SHR 6] +
-            base64_tbl[B2 AND $3F];
+          T := T + base64_tbl[B0 shr 2] +
+            base64_tbl[B0 and $03 shl 4 + B1 shr 4] +
+            base64_tbl[B1 and $0F shl 2 + B2 shr 6] +
+            base64_tbl[B2 and $3F];
         end;
         INC(EncLen, 4);
         INC(Q, 3);
@@ -1104,41 +1088,42 @@ var
 
 begin
   S := Header;
-  headerEncoding := UpCase (headerEncoding);
+  headerEncoding := UpCase(headerEncoding);
 
   {Suggested by Andrew P.Rybin for easy 8bit support}
-  if HeaderEncoding='8' then begin //UpCase('8')='8'     {Do not Localize}
-      Result:=S;
-      EXIT;
-  end;//if
+  if HeaderEncoding = '8' then
+  begin
+    Result := S;
+    Exit;
+  end;
   csNeedEncode := [#0..#31, #127..#255] + specials;
-  csReqQuote := csNeedEncode + ['?', '=', '_', ' '];   {Do not Localize}
-  BeginEncode := '=?' + MimeCharSet + '?' + HeaderEncoding + '?';    {Do not Localize}
-  EndEncode := '?=';  {Do not Localize}
+  csReqQuote := csNeedEncode + ['?', '=', '_', ' ']; {Do not Localize}
+  BeginEncode := '=?' + MimeCharSet + '?' + HeaderEncoding + '?'; {Do not Localize}
+  EndEncode := '?='; {Do not Localize}
 
   L := Length(S);
   P := 1;
-  T := '';  {Do not Localize}
+  T := ''; {Do not Localize}
   InEncode := 0;
   while P <= L do
   begin
     Q := P;
     while (P <= L) and (S[P] in SPACES) do
-      INC(P);
+      Inc(P);
     R := P;
     NeedEncode := False;
 
     // Find start of first word that needs encoding (in 'R')
     while (P <= L) do
     begin
-      ch := s [P];
+      ch := s[P];
       if ch in SPACES then
         if (ch <> ' ') or not NeedEncode or (headerEncoding <> 'Q') then
-          break;
+          Break;
 
       if ch in csNeedEncode then
         NeedEncode := True;
-      INC(P);
+      Inc(P);
     end;
 
     if NeedEncode then
@@ -1162,264 +1147,250 @@ begin
   Result := T;
 end;
 
-function EncodeHeader (const header : string; codePage : Integer; from : boolean) : string;
+function EncodeHeader(const header: string; codePage: Integer; from: Boolean): string;
 var
-  s1 : string;
-  i : Integer;
-  ansi : boolean;
-  coder : TidEncoderQuotedPrintable;
+  s1: string;
+  i: Integer;
+  ansi: Boolean;
+  coder: TXnEncoderQuotedPrintable;
 begin
   ansi := True;
   if from then
   begin
-    if header [1] <> '"' then
-      Raise Exception.Create ('Invalid from');
+    if header[1] <> '"' then
+      raise Exception.Create('Invalid from');
 
     i := 2;
     s1 := '';
-    while (header [i] <> '"') and (i < Length (header)) do
+    while (header[i] <> '"') and (i < Length(header)) do
     begin
-      s1 := s1 + header [i];
-      if not (header [i] in [' '..'~', #9, #10, #13]) then
+      s1 := s1 + header[i];
+      if not (header[i] in [' '..'~', #9, #10, #13]) then
         ansi := False;
-      Inc (i)
-    end
+      Inc(i);
+    end;
   end
   else
   begin
     i := 1;
-    while i < Length (header) do
-      if not (header [i] in [' '..'~', #9, #10, #13]) then
+    while i < Length(header) do
+      if not (header[i] in [' '..'~', #9, #10, #13]) then
       begin
         ansi := false;
-        break
+        Break;
       end
       else
-        Inc (i)
+        Inc(i);
   end;
 
   if ansi or not from then
-    result := EncodeHeader1 (header, [], 'Q', bit7, CodePageToMIMECharsetName (CodePage))
+    Result := EncodeHeader1(header, [], 'Q', bit7, CodePageToMIMECharsetName(CodePage))
   else
   begin
-    coder := TidEncoderQuotedPrintable.Create(nil);
+    coder := TXnEncoderQuotedPrintable.Create(nil);
     try
-      coder.Atom := True;
-      coder.LinePreamble := '=?' + CodePageToMIMECharsetName (CodePage) + '?Q?';
-      coder.LinePostamble := '?=';
-      (*
-      coder.MaxLineLen := 75 - Length (coder.LinePreamble) - Length (coder.LinePostamble);
-      result := coder.Encode (s1) + #13#10 + Trim (Copy (header,  i + 2, MaxInt))
-      *)
-      coder.MaxLineLen := MaxInt;
-      result := coder.Encode(s1) + ' ' + Trim (Copy (header,  i + 2, MaxInt))
-
+      Result := '=?' + CodePageToMIMECharsetName(CodePage) + '?Q?' + coder.Encode(s1) + '?= ' +
+        Trim(Copy(header, i + 2, MaxInt));
     finally
-      coder.Free
-    end
-  end
+      coder.Free;
+    end;
+  end;
 end;
 
-procedure SetTempStatusMessage (const msg : string; pos, max : word);
+procedure SetTempStatusMessage(const msg: string; pos, max: word);
 begin
   if (csDestroying in Application.MainForm.ComponentState) then Exit;
-  SendMessage (Application.MainForm.Handle, WM_STATUS, Integer (PChar (msg)), MakeLParam (pos, max))
+  SendMessage(Application.MainForm.Handle, WM_STATUS, Integer(PChar(msg)), MakeLParam(pos, max));
 end;
 
-function SafeDateTimeToInternetStr(const Value: TDateTime; const AIsGMT : Boolean = False) : String;
+function SafeDateTimeToInternetStr(const Value: TDateTime; const AIsGMT: Boolean = False): string;
 begin
   try
-    Result := DateTimeToInternetStr (Value, AIsGMT)
+    Result := DateTimeToInternetStr(Value, AIsGMT);
   except
-    result := 'Fri 17 Nov 1961 08:00:00 GMT'
-  end
+    Result := 'Fri 17 Nov 1961 08:00:00 GMT';
+  end;
 end;
 
 var
-  gComputerName : string = '';
-function ComputerName : string;
+  gComputerName: string = '';
+
+function ComputerName: string;
 var
-  len : DWORD;
+  len: DWORD;
 begin
   if gComputerName = '' then
   begin
     len := MAX_COMPUTERNAME_LENGTH + 1;
-    SetLength (gComputerName, len);
-    GetComputerName (PChar (gComputerName), len);
-    SetLength (gComputerName, len)
+    SetLength(gComputerName, len);
+    GetComputerName(PChar(gComputerName), len);
+    SetLength(gComputerName, len)
   end;
-  result := gComputerName
+  Result := gComputerName;
 end;
 
 procedure ClearSynchronizedMethods;
 var
-  retries : Integer;
+  retries: Integer;
 begin
   retries := 0;
   while retries < 1000 do
   begin
-    Sleep (10);
+    Sleep(10);
     if not CheckSynchronize then
-      Break
-  end
+      Break;
+  end;
 end;
 
-(*----------------------------------------------------------------------*
- | function FixFileNameString                                           |
- |                                                                      |
- | Remove not-allowed characters from a string is too be used in a      |
- | filename                                                             |
- |                                                                      |
- | Parameters:                                                          |
- |   const st : string                  The string to fix               |
- |                                                                      |
- | The function returns the fixed string                                |
- *----------------------------------------------------------------------*)
-function FixFileNameString (const st : string) : string;
+function FixFileNameString(const st: string): string;
 begin
-  result := StringReplace (st, '/', '_', [rfReplaceAll]);
-  result := StringReplace (result, ':', '_', [rfReplaceAll]);
-  result := StringReplace (result, '\', '_', [rfReplaceAll]);
+  // Remove not-allowed characters from a string when it is used for a filename.
+  Result := StringReplace(st, '/', '_', [rfReplaceAll]);
+  Result := StringReplace(Result, ':', '_', [rfReplaceAll]);
+  Result := StringReplace(Result, '\', '_', [rfReplaceAll]);
 end;
 
-procedure SetLatestVersion (const v : string);
+procedure SetLatestVersion(const v: string);
 begin
-  if not Assigned (gLatestVersionSync) then
+  if not Assigned(gLatestVersionSync) then
     gLatestVersionSync := TCriticalSection.Create;
 
   gLatestVersionSync.Enter;
   try
     gLatestVersion := v;
   finally
-    gLatestVersionSync.Leave
-  end
+    gLatestVersionSync.Leave;
+  end;
 end;
 
-procedure SetDeserveMedals (const v : string);
+procedure SetDeserveMedals(const v: string);
 begin
-  if not Assigned (gLatestVersionSync) then
+  if not Assigned(gLatestVersionSync) then
     gLatestVersionSync := TCriticalSection.Create;
 
   gLatestVersionSync.Enter;
   try
     gDeserveMedals := v;
   finally
-    gLatestVersionSync.Leave
-  end
+    gLatestVersionSync.Leave;
+  end;
 end;
 
-function GetLatestVersion : string;
+function GetLatestVersion: string;
 begin
-  if not Assigned (gLatestVersionSync) then
+  if not Assigned(gLatestVersionSync) then
     gLatestVersionSync := TCriticalSection.Create;
 
   gLatestVersionSync.Enter;
   try
-    result := gLatestVersion
+    Result := gLatestVersion;
   finally
-    gLatestVersionSync.Leave
-  end
+    gLatestVersionSync.Leave;
+  end;
 end;
 
-function GetDeserveMedals : string;
+function GetDeserveMedals: string;
 begin
-  if not Assigned (gLatestVersionSync) then
+  if not Assigned(gLatestVersionSync) then
     gLatestVersionSync := TCriticalSection.Create;
 
   gLatestVersionSync.Enter;
   try
-    result := gDeserveMedals
+    Result := gDeserveMedals;
   finally
-    gLatestVersionSync.Leave
-  end
+    gLatestVersionSync.Leave;
+  end;
 end;
 
 // QEC-20040503-11:11  Added ShortName() function.
 function ShortName(const Name: string): string;
 type
-    CharSetType = set of AnsiChar;
-var I: integer;
-    BreakChars : CharSetType;
-    WorkStr    : string;
+  CharSetType = set of AnsiChar;
+var
+  I: integer;
+  BreakChars: CharSetType;
+  WorkStr: string;
 begin
-BreakChars := [' ','.',',','@','/',';',':','<','>','[',']','\','|','{','}','*',
-               '''','=','+','-','_','(',')','&','^','%','$','#','!','`','~'];
-WorkStr    := Name;
-for I := 1 to length(WorkStr) do
+  BreakChars := [' ','.',',','@','/',';',':','<','>','[',']','\','|','{','}','*',
+                 '''','=','+','-','_','(',')','&','^','%','$','#','!','`','~'];
+  WorkStr := Name;
+  for I := 1 to Length(WorkStr) do
+  begin
+    if WorkStr[I] = '"' then
     begin
-    if (WorkStr[I] = '"') then
-       begin
-       WorkStr[I] := ' ';
-       continue;
-       end;
-    if (WorkStr[I] in BreakChars) then
-       begin
-       Result := trim(leftStr(WorkStr, I - 1));
-       break;
-       end;
+      WorkStr[I] := ' ';
+      Continue;
+    end;
+    if WorkStr[I] in BreakChars then
+    begin
+      Result := Trim(LeftStr(WorkStr, I - 1));
+      Break;
+    end;
     Result := Name;
+  end;
+end;
+
+function HTMLClipboardFormat: Integer;
+begin
+  if gHTMLClipboardFormat = 0 then
+    gHTMLClipboardFormat := RegisterClipboardFormat('HTML Format');
+  Result := gHTMLClipboardFormat;
+end;
+
+function ForeName(const name: string): string;
+begin
+  Result := ShortName(name);
+end;
+
+function AdjustForLargeFonts(x: Integer): Integer;
+begin
+  Result := (x * Screen.PixelsPerInch) div 96;
+end;
+
+procedure AdjustFormConstraints(form: TForm);
+begin
+  if form.Scaled then
+    with form.Constraints do
+    begin
+      MinWidth := AdjustForLargeFonts(MinWidth);
+      MinHeight := AdjustForLargeFonts(MinHeight);
+      MaxWidth := AdjustForLargeFonts(MaxWidth);
+      MaxHeight := AdjustForLargeFonts(MaxHeight);
     end;
 end;
 
-function HTMLClipboardFormat : Integer;
+function CreateExSettings(cls: TExSettingsClass): TExSettings;
 begin
- if gHTMLClipboardFormat = 0 then
-   gHTMLClipboardFormat := RegisterClipboardFormat ('HTML Format');
- result := gHTMLClipboardFormat;
-end;
-
-function ForeName (const name : string) : string;
-begin
-  result := ShortName (name)
-end;
-
-function AdjustForLargeFonts (x : Integer) : Integer;
-begin
-  result := (x * Screen.PixelsPerInch) div 96
-end;
-
-procedure AdjustFormConstraints (form : TForm);
-begin
-  if form.Scaled then with form.Constraints do
-  begin
-    MinWidth := AdjustForLargeFonts (MinWidth);
-    MinHeight := AdjustForLargeFonts (MinHeight);
-    MaxWidth := AdjustForLargeFonts (MaxWidth);
-    MaxHeight := AdjustForLargeFonts (MaxHeight)
-  end
-end;
-
-function CreateExSettings (cls : TExSettingsClass) : TExSettings;
-begin
-  if cls = Nil then
+  if cls = nil then
     cls := gExSettingsClass;
 
-  result := cls.Create('Woozle', 'XanaNews');
+  Result := cls.Create('Woozle', 'XanaNews');
 
-  if result is TExfileSettings then
-    TExFileSettings (result).CustomPath := gExSettingsFile;
+  if Result is TExfileSettings then
+    TExFileSettings(Result).CustomPath := gExSettingsFile;
 end;
 
-function CreateChildSettings (parent : TExSettings; const section : string = '') : TExSettings;
+function CreateChildSettings(parent: TExSettings; const section: string = ''): TExSettings;
 var
   tp: TExSettingsClass;
 begin
-  tp := TExSettingsClass (parent.ClassType);
-  result := tp.CreateChild(parent, section);
+  tp := TExSettingsClass(parent.ClassType);
+  Result := tp.CreateChild(parent, section);
 end;
 
-procedure UseXMLSettings (const fn : string);
+procedure UseXMLSettings(const fn: string);
 begin
   gExSettingsClass := TExXMLSettings;
   gExSettingsFile := fn;
   if gExSettingsFile <> '' then
-    Delete (gExSettingsFile, 1, 1);
+    Delete(gExSettingsFile, 1, 1);
   gExSettingsFile := ExpandFileName(gExSettingsFile);
 end;
 
 initialization
+
 finalization
-  FreeAndNil (gDecoderMIME);
-  FreeAndNil (gDecoderQuotedPrintable);
-  FreeAndNil (gLatestVersionSync);
+  FreeAndNil(gDecoderMIME);
+  FreeAndNil(gDecoderQuotedPrintable);
+  FreeAndNil(gLatestVersionSync);
 end.

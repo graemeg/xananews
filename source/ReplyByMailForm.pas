@@ -27,7 +27,6 @@ type
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormShow(Sender: TObject);
     procedure WMPostAndClose (var msg : TMessage); message WM_POSTANDCLOSE;
-    procedure WMAdjustWidth (var msg : TMessage); message WM_ADJUSTWIDTH;
     procedure WMSetCodePage (var msg : TMessage); message WM_SETCODEPAGE;
     procedure WmSetup (var msg : TMessage); message WM_SETUP;
     procedure FormKeyDown(Sender: TObject; var Key: Word;
@@ -184,7 +183,9 @@ begin
     EMailerRequest.Attachments := fAttachments;
   end
   else
-    ThreadManager.SendSMTPMail (ArticleContainer, settings, edTo.Text, edCC.Text, edBCC.Text, edSubject.Text, replyTo, st, fAttachments, codePage, AUseOutbasket);
+    ThreadManager.SendSMTPMail(ArticleContainer, settings,
+      edTo.Text, edCC.Text, edBCC.Text, edSubject.Text, replyTo, st,
+      fAttachments, codePage, AUseOutbasket);
 
   fAttachments := Nil;  // The EMailerRequest now owns the attachments - so make
                         // sure we don't free them here.
@@ -194,6 +195,7 @@ procedure TfmReplyByMail.WMPostAndClose(var msg: TMessage);
 var
   rv : HRESULT;
   mmsg : TMAPIMessage;
+  attach : array of TMapiFileDesc;
   recips : array of TMapiRecipDesc;
   st, raddr : string;
   taskWindows : pointer;
@@ -204,6 +206,7 @@ var
   codePage : Integer;
   toName, toEMail : string;
   mailAccount : TMailAccount;
+  I: Integer;
 begin
   st := PChar (msg.WParam);
   codePage := msg.LParam;
@@ -252,6 +255,16 @@ begin
     raddr := 'SMTP:' + toEMail;
     recips [0].lpszAddress := PChar (raddr);
 
+    SetLength(attach, fAttachments.Count);
+    FillChar(attach[0], fAttachments.Count * SizeOf(TMapiFileDesc), 0);
+    mmsg.lpFiles := @attach[0];
+    mmsg.nFileCount := fAttachments.Count;
+    for I := 0 to fAttachments.Count - 1 do
+    begin
+      attach[I].nPosition := $FFFFFFFF;
+      attach[I].lpszPathName := PChar(TAttachment(fAttachments[I]).PathName);
+    end;
+
     ActiveWindow := GetActiveWindow;
     FocusState := SaveFocusState;
     oldCursor := Screen.Cursor;
@@ -287,11 +300,6 @@ end;
 procedure TfmReplyByMail.FormResize(Sender: TObject);
 begin
   fmePost1.DoResize
-end;
-
-procedure TfmReplyByMail.WMAdjustWidth(var msg: TMessage);
-begin
-  width := width + msg.WParam
 end;
 
 procedure TfmReplyByMail.WMSetCodePage(var msg: TMessage);

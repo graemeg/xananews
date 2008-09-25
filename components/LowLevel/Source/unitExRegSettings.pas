@@ -242,23 +242,27 @@ begin
             st := st + 'hex:'
           else
             st := st + format ('hex(%d):', [tp]);
-          GetMem (data, dataLen);
-          RegQueryValueEx (fCurrentReg.CurrentKey, PChar (valueName), Nil, @tp, data, @dataLen);
-          for j := 0 to dataLen - 1 do
-          begin
-            st1 := LowerCase (format ('%02.2x', [Byte (PChar (data) [j])]));
-            if j < dataLen - 1 then
-              st1 := st1 + ',';
-
-            if Length (st) + Length (st1) >= 77 then
+          GetMem(data, dataLen);
+          try
+            RegQueryValueEx (fCurrentReg.CurrentKey, PChar (valueName), Nil, @tp, data, @dataLen);
+            for j := 0 to dataLen - 1 do
             begin
-              result := result + st + st1 + '\' + #13#10;
-              st := '  ';
-            end
-            else
-              st := st + st1;
-          end
-        end
+              st1 := LowerCase(Format('%02.2x', [Byte(PChar(data)[j])]));
+              if j < dataLen - 1 then
+                st1 := st1 + ',';
+
+              if Length (st) + Length (st1) >= 77 then
+              begin
+                result := result + st + st1 + '\' + #13#10;
+                st := '  ';
+              end
+              else
+                st := st + st1;
+            end;
+          finally
+            FreeMem(data);
+          end;
+        end;
       end;
 
       result := result + st;

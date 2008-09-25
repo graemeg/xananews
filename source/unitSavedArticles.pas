@@ -41,17 +41,16 @@ TFolderArticle = class;
 
 //----------------------------------------------------------------------------
 // Cache the most recently access articles in a group - to improve performance
-TFolderArticleCache = class (TObjectCache)
-private
-  fCurrentArticle : TFolderArticle;
-  fCurrentIdx : Integer;
-
-  procedure CheckArticle (obj : TObject; idx, param : Integer; var continue : boolean);
-protected
-  function CanRemove (Obj : TObject) : boolean; override;
-public
-  function FindArticle (idx : Integer) : TFolderArticle;
-end;
+  TFolderArticleCache = class(TObjectCache)
+  private
+    fCurrentArticle: TFolderArticle;
+    fCurrentIdx: Integer;
+    procedure CheckArticleProc(obj: TObject; idx, param: Integer; var continue: Boolean);
+  protected
+    function CanRemove(Obj: TObject): Boolean; override;
+  public
+    function FindArticle(idx: Integer): TFolderArticle;
+  end;
 
 //----------------------------------------------------------------------------
 // A folder containing TFolderArticle s
@@ -157,12 +156,11 @@ end;
 //
 // This keeps resources to a minimum, but still allows eg. copying from one
 // folder to another - where you need two folders to be open.
-TActiveFolderCache = class (TObjectCache)
-protected
-  function CanRemove (AObject : TObject) : boolean; override;
-public
-  procedure Add (AObject : TObject); override;
-end;
+  TActiveFolderCache = class(TObjectCache)
+  protected
+    procedure Notify(Ptr: Pointer; Action: TListNotification); override;
+    function CanRemove(AObject: TObject): Boolean; override;
+  end;
 
 //----------------------------------------------------------------------
 // Container for the article folders.
@@ -209,7 +207,8 @@ procedure InitializeFolders (rootReg : TExSettings);
 
 implementation
 
-uses unitStreamTextReader, unitSearchString, unitMailServices, idGlobal, unitCharsetMap;
+uses unitStreamTextReader, unitSearchString, unitMailServices, idGlobal,
+  unitCharsetMap, IdGlobalProtocols;
 
 (*----------------------------------------------------------------------*
  | procedure InitializeFolders                                          |
@@ -355,7 +354,7 @@ begin
     DeleteFile (FileName);
 
                                         // Create the cache
-  fFolderArticleCache := TFolderArticleCache.Create (21, True);
+  fFolderArticleCache := TFolderArticleCache.Create(21, True);
 
                                         // File already exists?
   if FileExists (FileName) then
@@ -520,16 +519,16 @@ end;
  *----------------------------------------------------------------------*)
 procedure TArticleFolder.Clear;
 begin
-  if Assigned (fFolderArticleCache) then        // Get rid of any cached articled
+  if Assigned(fFolderArticleCache) then         // Get rid of any cached articled
     fFolderArticleCache.Clear;
   fDeletedArticles.Clear;                       // Get rid of any deleted articles
 
        // Deactivate the folder if it's active by forcing it out of the cache
-  gArticleFolders.fActiveFolderCache.Remove(self);
+  gArticleFolders.fActiveFolderCache.Remove(Self);
   fArticleCount := -1;
-  DeleteFile (SecIndexfileName);
-  DeleteFile (IndexFileName);                   // Delete the files.
-  DeleteFile (FileName)
+  DeleteFile(SecIndexfileName);
+  DeleteFile(IndexFileName);                    // Delete the files.
+  DeleteFile(FileName);
 end;
 
 (*----------------------------------------------------------------------*
@@ -579,10 +578,10 @@ end;
 procedure TArticleFolder.Deactivate;
 begin
   MessageCacheController.Clear;
-  FreeAndNil (fFolderArticleCache);     // Remove it's cached articles
-  FreeAndNil (fIndex);                  // Unload the primary key
-  FreeAndNil (fFileStream);             // Release the file
-  FreeAndNil (fSecondaryIndex);         // Unload the secondary key
+  FreeAndNil(fFolderArticleCache);     // Remove it's cached articles
+  FreeAndNil(fIndex);                  // Unload the primary key
+  FreeAndNil(fFileStream);             // Release the file
+  FreeAndNil(fSecondaryIndex);         // Unload the secondary key
 
   // nb.  Don't clear the 'Deleted Articles' list.
 end;
@@ -594,10 +593,10 @@ destructor TArticleFolder.Destroy;
 begin
         // The folder may or may not be active.  If it *is*, deactivate it by
         // forcing it out of the cache.
-  if Assigned (gArticleFolders) then
-    gArticleFolders.fActiveFolderCache.Remove(self);
+  if Assigned(gArticleFolders) then
+    gArticleFolders.fActiveFolderCache.Remove(Self);
   fDeletedArticles.Free;
-  inherited;
+  inherited Destroy;
 end;
 
 (*----------------------------------------------------------------------*
@@ -756,8 +755,8 @@ begin
     begin
       if fDeletedArticles.IndexOf(key) >= 0 then
         res.fFlags := res.fFlags or fgDeleted;
-      fFolderArticleCache.Add(res)
-    end
+      fFolderArticleCache.Add(res);
+    end;
   end;
 
   result := res
@@ -820,8 +819,8 @@ end;
  *----------------------------------------------------------------------*)
 procedure TArticleFolder.LoadArticles;
 begin
-  if (gArticleFolders.fActiveFolderCache.Count = 0) or (gArticleFolders.fActiveFolderCache.ObjectAt(0) <> self) then
-    gArticleFolders.fActiveFolderCache.Add(self);
+  if (gArticleFolders.fActiveFolderCache.Count = 0) or (gArticleFolders.fActiveFolderCache[0] <> self) then
+    gArticleFolders.fActiveFolderCache.Add(Self);
 end;
 
 (*----------------------------------------------------------------------*
@@ -1135,20 +1134,20 @@ end;
  *----------------------------------------------------------------------*)
 procedure TArticleFolder.Reindex;
 begin
-  if Assigned (fFolderArticleCache) then
+  if Assigned(fFolderArticleCache) then
     fFolderArticleCache.Clear;
   fDeletedArticles.Clear;
-  gArticleFolders.fActiveFolderCache.Remove(self);
+  gArticleFolders.fActiveFolderCache.Remove(Self);
   fArticleCount := -1;
   FixDots;
-  DeleteFile (IndexFileName);
+  DeleteFile(IndexFileName);
 end;
 
 procedure TArticleFolder.RawSortArticles;
 begin
   if fCurrentThreadSortOrder <> fThreadSortOrder then
   begin
-    if Assigned (fFolderArticleCache) then
+    if Assigned(fFolderArticleCache) then
       fFolderArticleCache.Clear;
     if fThreadSortOrder = soMessageNo then
     begin
@@ -1162,7 +1161,7 @@ begin
   end
   else
     if fCurrentThreadSortDirection <> fThreadSortDirection then
-      fFolderArticleCache.Clear
+      fFolderArticleCache.Clear;
 end;
 
 procedure TArticleFolder.SortArticles;
@@ -1297,10 +1296,10 @@ end;
 
 procedure TArticleFolders.Tidy;
 var
-  i : Integer;
+  I: Integer;
 begin
-  for i := 0 to Count - 1 do
-    Folder [i].RemoveDeletedMessages;
+  for I := 0 to Count - 1 do
+    Folder[I].RemoveDeletedMessages;
   fActiveFolderCache.Clear;
 end;
 
@@ -1384,21 +1383,21 @@ begin
         Dec (fArticleCount);
       end
     end;
-    gArticleFolders.fActiveFolderCache.Remove(self);
+    gArticleFolders.fActiveFolderCache.Remove(Self);
     fArticleCount := -1;
     Deactivate;
-    DeleteFile (SecIndexFileName);
+    DeleteFile(SecIndexFileName);
   end
 end;
 
 function TArticleFolder.SequentialReadArticle: TFolderArticle;
 begin
   LoadArticles;
-  result := RawLoadArticleHeader (fSequentialIdx, fSequentialPos);
-  if Assigned (result) then
+  Result := RawLoadArticleHeader(fSequentialIdx, fSequentialPos);
+  if Assigned(Result) then
   begin
-    fFolderArticleCache.Add(result);
-    Inc (fSequentialIdx)
+    fFolderArticleCache.Add(Result);
+    Inc(fSequentialIdx);
   end
 end;
 
@@ -1432,18 +1431,19 @@ end;
 
 { TActiveFolderCache }
 
-procedure TActiveFolderCache.Add(AObject: TObject);
-begin
-  inherited;
-
-  TArticleFolder (AObject).Activate;
-end;
-
 function TActiveFolderCache.CanRemove(AObject: TObject): boolean;
 begin
-  result := not TArticleFolder (AObject).fIndexing;
-  if result then
-    TArticleFolder (AObject).Deactivate;
+  Result := not TArticleFolder(AObject).fIndexing;
+end;
+
+procedure TActiveFolderCache.Notify(Ptr: Pointer; Action: TListNotification);
+begin
+  if not ReOrdering and (TObject(Ptr) is TArticleFolder) then
+    case Action of
+      lnAdded: TArticleFolder(Ptr).Activate;
+      lnDeleted: TArticleFolder(Ptr).Deactivate;
+    end;
+  inherited Notify(Ptr, Action);
 end;
 
 { TFolderArticle }
@@ -1452,15 +1452,13 @@ destructor TFolderArticle.Destroy;
 begin
   MessageCacheController.AlwaysRemove := True;
   try
-  	MessageCacheController.Remove(self);
+    MessageCacheController.Remove(Self);
   finally
-    MessageCacheController.AlwaysRemove :=False
+    MessageCacheController.AlwaysRemove := False
   end;
   fExtraHeaders.Free;
-  if Assigned (fMsg) then
-    FreeAndNil (fMsg);
-
-  inherited;
+  FreeAndNil(fMsg);
+  inherited Destroy;
 end;
 
 function TFolderArticle.GetCodePage: Integer;
@@ -1518,7 +1516,7 @@ begin
 
       fSeenMessage := True;
       fCodePage := Msg.Codepage;
-      MessageCacheController.Add(self);
+      MessageCacheController.Add(Self);
     finally
       reader.Free
     end
@@ -1599,58 +1597,55 @@ end;
 
 function TFolderArticleCache.CanRemove(Obj: TObject): boolean;
 var
-  article : TFolderArticle;
+  article: TFolderArticle;
 begin
-  result := True;
+  Result := True;
 
   if Obj is TFolderArticle then
   begin
-    article := TFolderArticle (Obj);
+    article := TFolderArticle(Obj);
 
     if article.MsgValid then
       if Article.Msg.BeingDisplayed then
-        result := False
-  end
+        Result := False;
+  end;
 end;
 
-procedure TFolderArticleCache.CheckArticle(obj: TObject; idx,
-  param: Integer; var continue: boolean);
+procedure TFolderArticleCache.CheckArticleProc(obj: TObject; idx,
+  param: Integer; var continue: Boolean);
 begin
-  if TFolderArticle (obj).fIdx = param then
+  if TFolderArticle(obj).fIdx = param then
   begin
-    fCurrentArticle := TFolderArticle (obj);
+    fCurrentArticle := TFolderArticle(obj);
     fCurrentIDX := idx;
-    continue := False
-  end
+    continue := False;
+  end;
 end;
 
 function TFolderArticleCache.FindArticle(idx: Integer): TFolderArticle;
 begin
-  result := Nil;
+  Result := nil;
   fCurrentIdx := -1;
-  ForEach (CheckArticle, idx);
+  ForEach(CheckArticleProc, idx);
   if fCurrentIdx <> -1 then
   begin
-    BringToFrontObject (fCurrentIdx);
-    result := fCurrentArticle
-  end
+    BringToFront(fCurrentIdx);
+    Result := fCurrentArticle;
+  end;
 end;
 
 procedure TArticleFolder.SetName(const Value: string);
 begin
-  if Assigned (gArticleFolders) then
-    gArticleFolders.fActiveFolderCache.Remove(self);
-
+  if Assigned(gArticleFolders) then
+    gArticleFolders.fActiveFolderCache.Remove(Self);
 
   if not RenameFile (gMessageBaseRoot + '\Archive\' + Name, gMessageBaseRoot + '\Archive\' + Value) then
     RaiseLastOSError;
   fFileName := '';
   inherited
-
 end;
 
 { TSentMessages }
-
 
 procedure TSentMessages.AddMessage(Account: TNNTPAccount;
   header: TStrings; const msg: string; attachments: TObjectList;

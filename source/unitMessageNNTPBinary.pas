@@ -12,137 +12,113 @@ unit unitMessageNNTPBinary;
 
 interface
 
-uses Windows, Classes, SysUtils, unitMessages, graphics;
+uses
+  Windows, Classes, SysUtils, unitMessages, Graphics;
 
 type
-
-//---------------------------------------------------------------------
-// TmvNNTPBinary
-
-TmvNNTPBinary = class (TmvMessagePart)
-private
-  fFileName : string;
-protected
-  class function IsBoundary (const st : string; MIMEHeader : TMIMEHeader) : boolean; override;
-  function IsBoundaryEnd (const st : string) : boolean; override;
-  function ProcessHeaderLine (const st : string) : boolean; override;
-  function GetGraphic: TGraphic; override;
-  function GetFileName : string; override;
-  function GetDecodeType : TDecodeType; override;
-public
-  procedure GetData (s : TStream); override;
-  destructor Destroy; override;
-end;
+  TmvNNTPBinary = class(TmvMessagePart)
+  private
+    fFileName: string;
+  protected
+    class function IsBoundary(const st: string; MIMEHeader: TMIMEHeader): Boolean; override;
+    function IsBoundaryEnd(const st: string): Boolean; override;
+    function ProcessHeaderLine(const st: string): Boolean; override;
+    function GetGraphic: TGraphic; override;
+    function GetFileName: string; override;
+    function GetDecodeType: TDecodeType; override;
+  public
+    procedure GetData(s: TStream); override;
+  end;
 
 implementation
 
-uses NewsGlobals, idCoder, idCoderUUE, unitStreamTextReader;
+uses
+  NewsGlobals, idCoder, XnCoderUUE, unitStreamTextReader;
 
 { TmvNNTPBinary }
 
-(*----------------------------------------------------------------------*
- | TmvNNTPBinary.GetData                                                |
- |                                                                      |
- | Clear and fill the stream with decoded data.                         |
- |                                                                      |
- | nb - *must* leave fData at end of stream.                            |
- |                                                                      |
- | Parameters:                                                          |
- |   s : TStream        The stream to fill.                             |
- *----------------------------------------------------------------------*)
-
-destructor TmvNNTPBinary.Destroy;
-begin
-  inherited;
-end;
-
 procedure TmvNNTPBinary.GetData(s: TStream);
 var
-  decoder : TidDecoder;
-  str : TStreamTextReader;
-  sz : Integer;
-  st : string;
+  decoder: TidDecoder;
+  str: TStreamTextReader;
+  sz: Integer;
+  st: string;
 begin
+  // Clear and fill the stream with decoded data.
+  // nb - *must* leave fData at end of stream.
   sz := fData.Size;
   if sz > 0 then
   begin
-    str := Nil;
-    decoder := TidDecoderUUE.Create(nil);
+    str := nil;
+    decoder := TXnDecoderUUE.Create(nil);
     try
-      fData.Seek (0, soFromBeginning);
+      fData.Seek(0, soFromBeginning);
       str := TStreamTextReader.Create(fData);
+      decoder.DecodeBegin(s);
       while str.ReadLn(st) do
-        decoder.DecodeToStream(st, s);
-      fData.Seek (0, soFromEnd);
+        decoder.Decode(st);
+      fData.Seek(0, soFromEnd);
     finally
       decoder.Free;
-      str.Free
-    end
-  end
+      str.Free;
+    end;
+  end;
 end;
 
-(*----------------------------------------------------------------------*
- | TmvNNTPBinary.GetGraphic                                             |
- |                                                                      |
- | Get the graphic                                                      |
- |                                                                      |
- | The function returns the graphic representation of the decoded data  |
- *----------------------------------------------------------------------*)
 function TmvNNTPBinary.GetDecodeType: TDecodeType;
 begin
-  result := ttUUEncode;
-
+  Result := ttUUEncode;
 end;
 
 function TmvNNTPBinary.GetFileName: string;
 begin
-  result := fFileName
+  Result := fFileName
 end;
 
 function TmvNNTPBinary.GetGraphic: TGraphic;
 var
-  ext : string;
-  gc : TGraphicClass;
+  ext: string;
+  gc: TGraphicClass;
 begin
   if not fGotGraphic then
   begin
-    if not Assigned (fGraphic) then
+    if not Assigned(fGraphic) then
     begin
-      ext := ExtractFileExt (FileName);
-      gc := GetGraphicClass (ext)
+      ext := ExtractFileExt(FileName);
+      gc := GetGraphicClass(ext);
     end
     else
       gc := nil;
 
-    DecodeGraphic (gc);
+    DecodeGraphic(gc);
   end;
-  Result := fGraphic
+  Result := fGraphic;
 end;
 
-class function TmvNNTPBinary.IsBoundary(const st: string; MIMEHeader : TMIMEHeader): boolean;
+class function TmvNNTPBinary.IsBoundary(const st: string; MIMEHeader: TMIMEHeader): Boolean;
 begin
-  result := (Length (st) > 9) and
-            (CompareText (Copy (st, 1, 6), 'begin ') = 0) and
-            (st [7] in ['0'..'9']) and (st [8] in ['0'..'9']) and (st [9] in ['0'..'9']);
+  Result := (Length(st) > 9) and
+    (CompareText(Copy(st, 1, 6), 'begin ') = 0) and
+    (st[7] in ['0'..'9']) and (st[8] in ['0'..'9']) and (st[9] in ['0'..'9']);
 end;
 
-function TmvNNTPBinary.IsBoundaryEnd(const st: string): boolean;
+function TmvNNTPBinary.IsBoundaryEnd(const st: string): Boolean;
 begin
-  result := CompareText (Copy (st, 1, 3), 'end') = 0;
+  Result := CompareText(Copy(st, 1, 3), 'end') = 0;
 end;
 
-function TmvNNTPBinary.ProcessHeaderLine(const st: string) : boolean;
+function TmvNNTPBinary.ProcessHeaderLine(const st: string): Boolean;
 var
-  p : Integer;
-  s : string;
+  p: Integer;
+  s: string;
 begin
-  p := Pos (' ', st);
+  p := Pos(' ', st);
   if p > 0 then
   begin
-    s := Copy (st, p + 1, MaxInt);
-    p := Pos (' ', s);
+    s := Copy(st, p + 1, MaxInt);
+    p := Pos(' ', s);
     if p > 0 then
-      s := Copy (s, p + 1, MaxInt)
+      s := Copy(s, p + 1, MaxInt)
     else
       s := ''
   end
@@ -150,9 +126,9 @@ begin
     s := '';
 
   fFileName := s;
-  result := False
+  Result := False;
 end;
 
 initialization
-  RegisterMessagePart (TmvNNTPBinary);
+  RegisterMessagePart(TmvNNTPBinary);
 end.

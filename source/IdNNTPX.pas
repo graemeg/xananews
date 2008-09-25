@@ -2,7 +2,7 @@ unit IdNNTPX;
 
 interface
 
-uses Windows, Classes, SysUtils, IdTCPClient, IdGlobal, IdException, IdAssignedNumbers, IdIOHandlerSocket, ConTnrs;
+uses Windows, Classes, SysUtils, IdTCPClient, IdGlobal, IdException, IdAssignedNumbers, IdIOHandlerSocket, ConTnrs, IdReplyRFC;
 
 type
   TModeType = (mtStream, mtIHAVE, mtReader);
@@ -64,7 +64,8 @@ private
   FPipelineCommandEndEvent: TPipelineCommandEvent;
   FPipelineCommandStartEvent: TPipelineCommandStartEvent;
   FPipelineCommandAbortEvent: TPipelineCommandAbortEvent;
-  fReadLnDelay: Integer;
+  FIsConnected: Boolean;
+//  fReadLnDelay: Integer;
   function ConvertDateTimeDist(ADate: TDateTime; AGMT: boolean; const ADistributions: string): string;
   function Get(const ACmd: string; const AMsgNo: Cardinal; const AMsgID: string; AHdr : TStrings; ABody : TStream): Boolean;
   function ReceiveHeader(AMsg: TStrings; const ADelim: string = ''): boolean;
@@ -75,18 +76,22 @@ private
   procedure AddPipelineGetCommand (AArticleNo : Cardinal; const AMsgID : string; ACommand : TGetMessageCommand; AParam : Integer);
   procedure AddPipelineGroupCommand (const AGroupName : string; AParam : Integer);
   procedure ProcessPipeline;
-  procedure GetInternalResponse;
+protected
+  procedure DoOnConnected; override;
+  procedure DoOnDisconnected; override;
 public
-  constructor Create(AOwner: TComponent); override;
+  procedure InitComponent; override;
   destructor Destroy; override;
-  procedure Connect(const ATimeout: Integer = IdTimeoutDefault); override;
-  procedure Disconnect; override;
+  procedure Connect; override;
+  procedure DisconnectNotifyPeer; override;
+  function Connected: Boolean; override;
+  procedure Disconnect(ANotifyPeer: Boolean); override;
   function GetBody(const AMsgNo: Cardinal; const AMsgID: string; AMsg: TStream): Boolean;
   function GetHeader(const AMsgNo: Cardinal; const AMsgID: string; AMsg: TStrings): Boolean;
   function GetArticle(const AMsgNo: Cardinal; const AMsgID: string; AHdr : TStrings; ABody: TStream): Boolean;
 
-  function ReadLn(ATerminator: string = LF;
-      const ATimeout: Integer = IdTimeoutDefault; AMaxLineLength: Integer = -1): string; override;
+//  function ReadLn(ATerminator: string = LF;
+//      const ATimeout: Integer = IdTimeoutDefault; AMaxLineLength: Integer = -1): string; override;
 
   procedure BeginPipeline;
   procedure PipelineGetArticle (AMsgNo: Cardinal; const AMsgId : string; AParam : Integer);
@@ -101,11 +106,12 @@ public
   procedure GetOverviewFMT(var AResponse: TStringList);
   function SelectArticle(const AMsgNo: Cardinal): Boolean;
   procedure SelectGroup(const AGroup: string);
-  function SendCmd(const AOut: string; const AResponse: Array of SmallInt): SmallInt; override;
-  function GetResponse(const AAllowedResponses: array of SmallInt): SmallInt; override;
+  function SendCmd(AOut: string; const AResponse: array of SmallInt): SmallInt; override;
   procedure SendXOVER(const AParam: string; AResponse: TStrings);
   procedure Send (header, msg : TStrings);
   procedure Authenticate;
+
+  function IsServerException(E: Exception): Boolean;
 
   property MsgID: string read fsMsgID;
   property MsgNo: Cardinal read FlMsgNo;
@@ -115,7 +121,8 @@ public
   property ModeResult: TModeSetResult read fModeResult write SetModeResult;
   property MsgCount: Cardinal read flMsgCount write flMsgCount;
   property PipelineSize : Integer read fPipelineSize write fPipelineSize;
-  property ReadLnDelay : Integer read fReadLnDelay write fReadLnDelay;
+  property IsConnected: Boolean read FIsConnected;
+//  property ReadLnDelay : Integer read fReadLnDelay write fReadLnDelay;
 published
   property NewsAgent: string read FNewsAgent write FNewsAgent;
   property Mode : TModeType read fModeType write SetModeType default mtReader;
@@ -143,7 +150,7 @@ published
 
 end;
 
-EIdNNTPConnectionRefused = class (EIdProtocolReplyError);
+EIdNNTPConnectionRefused = class (EIdReplyRFCError);
 
 Procedure ParseXOVER(const Aline : String; var AArticleIndex : Cardinal;
   var ASubject,
@@ -160,12 +167,13 @@ procedure ParseNewsGroup(ALine : String; var ANewsGroup : String;
 
 implementation
 
-uses IdResourceStrings, IdComponent, NewsGlobals, unitSearchString, unitLog;
+uses IdResourceStrings, IdComponent, NewsGlobals, unitSearchString, unitLog, IdGlobalProtocols,
+  IdResourceStringsProtocols, IdStack;
 
 var
   lastGoodDate : TDateTime = 0;
 
-Procedure ParseXOVER(const Aline : String; var AArticleIndex : Cardinal;
+procedure ParseXOVER(const Aline : String; var AArticleIndex : Cardinal;
   var ASubject,
       AFrom : String;
   var ADate : TDateTime;
@@ -187,14 +195,9 @@ Procedure ParseXOVER(const Aline : String; var AArticleIndex : Cardinal;
         Inc(Result);
       end;
 
-      if Result^ = #0 then
+      SetString(S, P, Result - P);
+      if Result^ <> #0 then
       begin
-        S := '';
-        Result := nil;
-      end
-      else
-      begin
-        SetString(S, P, Result - P);
         Inc(Result);
         {Strip backspace and tab junk sequences which occur after a tab separator so they don't throw off any code}
         if (Result^ = #8) and (Result[1] = #9) then
@@ -216,7 +219,7 @@ begin
   P := PChar(Aline);
 
   {Article Index}
-  AArticleIndex := StrToCard ( NextItemStr(P) );
+  AArticleIndex := IndyStrToInt ( NextItemStr(P) );
   {Subject}
   P := NextItem(P, ASubject);
   {From}
@@ -233,9 +236,9 @@ begin
   {References}
   P := NextItem(P, AReferences);
   {Byte Count}
-  AByteCount := StrToCard( NextItemStr(P) );
+  AByteCount := IndyStrToInt(NextItemStr(P), 0);
   {Line Count}
-  ALineCount := StrToCard( NextItemStr(P) );
+  ALineCount := IndyStrToInt(NextItemStr(P), 0);
   {Extra data}
   AExtraData := P;
   if (AExtraData <> '') and (Pos(#9#8#9, AExtraData) > 0) then
@@ -257,8 +260,8 @@ begin
     end
     else
       ANewsgroup := Fetch(ALine, ' ');
-    AHi := StrToCard(Fetch(Aline, ' '));
-    ALo := StrToCard(Fetch(ALine, ' '));
+    AHi := IndyStrToInt(Fetch(Aline, ' '));
+    ALo := IndyStrToInt(Fetch(ALine, ' '));
     AStatus := (Fetch (ALine, ' '));
 
     if LowerCase (Trim (ALine)) = '*' then
@@ -276,7 +279,7 @@ begin
     inherited SendCmd('AuthInfo Pass ' + Password, [281]);
 end;
 
-procedure TidNNTPX.Connect(const ATimeout: Integer);
+procedure TidNNTPX.Connect;
 begin
   inherited;
   if IOHandler is TidIOHandlerSocket then
@@ -297,7 +300,7 @@ begin
       // the connection but just in case ....
       // Kudzu: Changed this to an exception, otherwise it produces non-standard usage by the
       // users code
-      502: raise EIdNNTPConnectionRefused.CreateError(502,RSNNTPConnectionRefused);
+      502: raise EIdNNTPConnectionRefused.CreateError(502, RSNNTPConnectionRefused);
     end;
     // here we call Setmode on the value stored in mode to make sure we can
     // use the mode we have selected
@@ -327,24 +330,85 @@ begin
   end;
 end;
 
-constructor TidNNTPX.Create(AOwner: TComponent);
+function TidNNTPX.Connected: Boolean;
 begin
-  inherited Create(AOwner);
+  try
+    Result := inherited Connected;
+  except
+    on E: Exception do
+      if (E is EIdConnClosedGracefully) or
+         ((E is EIdSocketError) and (EIdSocketError(E).LastError = 10054)) then
+        Result := False
+      else
+        raise;
+  end;
+end;
+
+procedure TidNNTPX.InitComponent;
+begin
+  inherited;
   Mode := mtReader;
   Port := IdPORT_NNTP;
   SetMode := True;
-  MaxLineLength := 32768;
+//  MaxLineLength := 32768;
   PipelineSize := 1024;
 end;
 
-procedure TidNNTPX.Disconnect;
+function TidNNTPX.IsServerException(E: Exception): Boolean;
+begin
+  Result := E is EIdConnClosedGracefully;
+
+  if not Result and (e is EIdReplyRFCError) then
+    Result := (EIdReplyRFCError(e).ErrorCode = 400) or (EIdReplyRFCError(e).ErrorCode = 503);
+
+  if not Result and (e is EIdSocketError) then
+    Result := (EIdSocketError(e).LastError = 0) or (EIdSocketError(e).LastError = 10054) or (EIdSocketError(e).LastError = 10057);
+end;
+
+procedure TidNNTPX.Disconnect(ANotifyPeer: Boolean);
 begin
   try
-    if Connected then
-      WriteLn('Quit');
-  finally
-    inherited;
+    inherited Disconnect(ANotifyPeer);
+    if Assigned(IOHandler) then
+      IOHandler.InputBuffer.Clear;
+  except
+    on E: Exception do
+    begin
+      if not IsServerException(E) then
+        raise;
+    end;
   end;
+  Assert(not Connected);
+end;
+
+procedure TidNNTPX.DisconnectNotifyPeer;
+begin
+  try
+    try
+      if Connected then
+        IOHandler.WriteLn('Quit');
+    except
+    on E: Exception do
+      begin
+        if not IsServerException(E) then
+          raise;
+      end;
+    end;
+  finally
+    inherited DisconnectNotifyPeer;
+  end;
+end;
+
+procedure TidNNTPX.DoOnConnected;
+begin
+  FIsConnected := True;
+  inherited;
+end;
+
+procedure TidNNTPX.DoOnDisConnected;
+begin
+  FIsConnected := False;
+  inherited;
 end;
 
 function TidNNTPX.Get(const ACmd: string; const AMsgNo: Cardinal;
@@ -370,7 +434,7 @@ begin
         LContinue := True;
 
       if LContinue and (LastCmdResult.NumericCode in [220, 222]) then
-        Capture (ABody, '.')
+        IOHandler.Capture (ABody, '.')
     end
   end
 end;
@@ -396,13 +460,13 @@ end;
 procedure TidNNTPX.GetNewsgroupList(AList: TStrings);
 begin
   SendCmd('List', 215);
-  Capture(AList);
+  IOHandler.Capture(AList);
 end;
 
 procedure TidNNTPX.GetOverviewFMT(var AResponse: TStringList);
 begin
   SendCmd('list overview.fmt', 215);
-  Capture(AResponse);
+  IOHandler.Capture(AResponse);
 end;
 
 function TidNNTPX.ReceiveHeader(AMsg: TStrings;
@@ -414,7 +478,7 @@ begin
   BeginWork(wmRead);
   try
     repeat
-      NewLine := ReadLn;
+      NewLine := IOHandler.ReadLn;
       if NewLine = ADelim then begin
         break;
       end else if Copy(NewLine, 1, 2) = '..' then
@@ -446,9 +510,9 @@ var
 begin
   SendCmd('Group ' + AGroup, [211]);
   s := LastCmdResult.Text [0];
-  FlMsgCount := StrToCard(Fetch(s));
-  FlMsgLow := StrToCard(Fetch(s));
-  FlMsgHigh := StrToCard(Fetch(s));
+  FlMsgCount := IndyStrToInt(Fetch(s));
+  FlMsgLow := IndyStrToInt(Fetch(s));
+  FlMsgHigh := IndyStrToInt(Fetch(s));
 end;
 
 procedure TidNNTPX.Send(header, msg: TStrings);
@@ -461,27 +525,26 @@ begin
   try
     for i := 0 to header.Count - 1 do
     begin
-      name := header.Names [i];
-      val := header.Values [name];
+      name := header.Names[i];
+      val := header.ValueFromIndex[i];
       if name <> '' then
-        WriteLn (name + ': ' + val);
+        IOHandler.WriteLn(name + ': ' + val);
     end;
 
-    WriteLn;
+    IOHandler.WriteLn;
 
     for i := 0 to msg.Count - 1 do
       if Copy (msg [i], 1, 1) = '.' then
-        WriteLn ('.' + msg [i])
+        IOHandler.WriteLn('.' + msg[i])
       else
-        WriteLn (msg [i]);
+        IOHandler.WriteLn(msg[i]);
   finally
-    EndWork (wmWrite)
+    EndWork(wmWrite);
   end;
   SendCmd('.', 240);
 end;
 
-function TidNNTPX.SendCmd(const AOut: string;
-  const AResponse: array of SmallInt): SmallInt;
+function TidNNTPX.SendCmd(AOut: string; const AResponse: array of SmallInt): SmallInt;
 begin
   // NOTE: Responses must be passed as arrays so that the proper inherited SendCmd is called
   // and a stack overflow is not caused.
@@ -500,7 +563,7 @@ end;
 procedure TidNNTPX.SendXOVER(const AParam: string; AResponse: TStrings);
 begin
   SendCmd('xover ' + AParam, 224);
-  Capture(AResponse);
+  IOHandler.Capture(AResponse);
 end;
 
 function TidNNTPX.SetArticle(const ACmd: string; const AMsgNo: Cardinal;
@@ -517,15 +580,15 @@ begin
 
   if LastCmdResult.NumericCode in [220, 221, 222, 223] then begin
     if AMsgID = '' then begin
-      s := LastCmdResult.Text [0];
-      flMsgNo := StrToCard(Fetch(s, ' '));
+      s := Trim(LastCmdResult.Text[0]);
+      flMsgNo := IndyStrToInt(Fetch(s, ' '));
       fsMsgID := s;
     end
     else
       if AMsgNo < 1 then
       begin
-        s := LastCmdResult.Text [0];
-        flMsgNo := StrToCard(Fetch(s, ' '))
+        s := Trim(LastCmdResult.Text[0]);
+        flMsgNo := IndyStrToInt(Fetch(s, ' '))
       end;
 
     Result := True;
@@ -539,7 +602,7 @@ begin
     // 503 program fault - command not performed
     Result := False;
   end else begin
-    raise EidResponseError.Create(LastCmdResult.Text [0]);
+    raise EIdReplyRFCError.Create(LastCmdResult.Text [0]);
   end;
 end;
 
@@ -562,7 +625,7 @@ procedure TIdNNTPX.GetNewGroupsList(const ADate: TDateTime; const AGMT: boolean;
  const ADistributions: string; AList : TStrings);
 begin
   SendCmd ('NEWGROUPS ' + ConvertDateTimeDist (ADate, AGMT, ADistributions), 231);
-  Capture (AList);
+  IOHandler.Capture (AList);
 end;
 
 
@@ -721,7 +784,7 @@ procedure TidNNTPX.ProcessPipeline;
     end;
 
   begin
-    Write (cmd);      // Send the buffer of commands.
+    IOHandler.Write (cmd);      // Send the buffer of commands.
 
                         // Must get a reply for each one
     while startIdx <= endIdx do
@@ -729,11 +792,11 @@ procedure TidNNTPX.ProcessPipeline;
       pipelineCommand := TPipeLineCommand (fPipeLine [startIdx]);
 
       repeat
-        str := ReadLn; //Wait (20);        // Get the reply
+        str := IOHandler.ReadLn; //Wait (20);        // Get the reply
         if not ValidResponse (str) then
         begin
           repeat
-            str := ReadLn
+            str := IOHandler.ReadLn
           until str = '.';
 
           str := '';
@@ -823,14 +886,14 @@ procedure TidNNTPX.ProcessPipeline;
 
         if respOK then                        // We *must* get the response text
         case pipelineCommand.Command of
-          gmBody : Capture (body, '.');       // nb. Capture works if body is nil -
+          gmBody : IOHandler.Capture (body, '.');       // nb. Capture works if body is nil -
                                               // it just discards the result which
                                               // is what we want.
 
           gmHeader :
             ReceiveHeader (header, '.');
           gmArticle : if ReceiveHeader (header, '') then
-                        Capture (body, '.')
+                        IOHandler.Capture (body, '.')
         end
         else
           if not seCalled and Assigned (PipelineCommandAbortEvent) then
@@ -874,46 +937,14 @@ begin
   end
 end;
 
-function TidNNTPX.GetResponse(
-  const AAllowedResponses: array of SmallInt): SmallInt;
-begin
-  GetInternalResponse;
-  Result := CheckResponse(LastCmdResult.NumericCode, AAllowedResponses);
-end;
 
-procedure TidNNTPX.GetInternalResponse;
-var
-  LLine: string;
-  LResponse: TStringList;
-  LTerm: string;
-begin
-  LResponse := TStringList.Create; try
-    repeat
-      LLine := ReadLnWait;
-    until LLine <> '';
-
-    LResponse.Add(LLine);
-    if Length(LLine) > 3 then begin
-      if LLine[4] = '-' then begin // Multi line response coming
-        LTerm := Copy(LLine, 1, 3) + ' ';
-        {We keep reading lines until we encounter either a line such as "250" or "250 Read"}
-        repeat
-          LLine := ReadLnWait;
-          LResponse.Add(LLine);
-        until (Length(LLine) < 4) or (AnsiSameText(Copy(LLine, 1, 4), LTerm));
-      end;
-    end;
-    FLastCmdResult.ParseResponse(LResponse);
-  finally FreeAndNil(LResponse); end;
-end;
-
-function TidNNTPX.ReadLn(ATerminator: string; const ATimeout: Integer;
-  AMaxLineLength: Integer): string;
-begin
-  result := inherited ReadLn (ATerminator, ATimeout, AMaxLineLength);
-  if fReadLnDelay <> 0 then
-    Sleep (fReadLnDelay);
-end;
+//function TidNNTPX.ReadLn(ATerminator: string; const ATimeout: Integer;
+//  AMaxLineLength: Integer): string;
+//begin
+//  result := inherited ReadLn (ATerminator, ATimeout, AMaxLineLength);
+//  if fReadLnDelay <> 0 then
+//    Sleep (fReadLnDelay);
+//end;
 
 { TPipeLineCommand }
 

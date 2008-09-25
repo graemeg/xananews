@@ -253,11 +253,11 @@ begin
     if lvNMhdr^.hdr.code = LVN_ITEMCHANGED then
       if lvNMHdr^.uChanged = LVIF_STATE then
       begin
-        oldStateImgIdx := ((lvNMHdr^.uOldState and LVIS_STATEIMAGEMASK) shr 12) - 1;
-        newStateImgIdx := ((lvNMHdr^.uNewState and LVIS_STATEIMAGEMASK) shr 12) - 1;
+        oldStateImgIdx := ((lvNMHdr^.uOldState and LVIS_STATEIMAGEMASK) shr 12);
+        newStateImgIdx := ((lvNMHdr^.uNewState and LVIS_STATEIMAGEMASK) shr 12);
 
-        if (oldStateImgIdx <> newStateImgIdx) and (oldStateImgIdx <> -1) and (newStateImgIdx <> -1) then
-          DoCheckChange (lvActions.Items [lvNMHdr^.iItem], newStateImgIdx = 1);
+        if (oldStateImgIdx <> newStateImgIdx) and (oldStateImgIdx <> 0) and (newStateImgIdx <> 0) then
+          DoCheckChange (lvActions.Items [lvNMHdr^.iItem], newStateImgIdx = 2);
       end
   end
 end;

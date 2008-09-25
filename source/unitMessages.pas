@@ -1,5 +1,5 @@
 (*======================================================================*
- | unitMessages unit for NewsReader3
+ | unitMessages unit for NewsReader3                                    |
  |                                                                      |
  | Internet message classes                                             |
  |                                                                      |
@@ -23,7 +23,7 @@
  | the License for the specific language governing rights and           |
  | limitations under the License.                                       |
  |                                                                      |
- | Copyright © Colin Wilson 2002  All Rights Reserved
+ | Copyright © Colin Wilson 2002  All Rights Reserved                   |
  |                                                                      |
  | Version  Date        By    Description                               |
  | -------  ----------  ----  ------------------------------------------|
@@ -34,371 +34,312 @@ unit unitMessages;
 
 interface
 
-uses Windows, Classes, SysUtils, ConTnrs, Graphics, forms, SyncObjs, ShellAPI, StrUtils;
+uses
+  Windows, Classes, SysUtils, ConTnrs, Graphics, forms, SyncObjs, ShellAPI, StrUtils;
 
 type
+  TmvMessagePart = class;
+  TmvMessagePartClass = class of TmvMessagePart;
+  TDecodeType = (ttText, ttBase64, ttUUEncode, ttYEnc, ttQuotedPrintable);
 
-TmvMessagePart = class;
-TmvMessagePartClass = class of TmvMessagePart;
-TDecodeType = (ttText, ttBase64, ttUUEncode, ttYEnc, ttQuotedPrintable);
+  TmvMessageParts = class(TOwnedCollection)
+  private
+    function GetItems(idx: Integer): TmvMessagePart;
+  public
+    property Items[idx: Integer]: TmvMessagePart read GetItems; default;
+  end;
 
-//------------------------------------------------------------------------
-// TmvMessageParts
-//
-TmvMessageParts = class (TOwnedCollection)
-private
-  function GetItems(idx: Integer): TmvMessagePart;
-public
-  property Items [idx : Integer] : TmvMessagePart read GetItems; default;
-end;
+  TThreadsafeMemoryStream = class(TMemoryStream)
+  private
+    fCriticalSection: TCriticalSection;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    function Write(const Buffer; Count: Longint): Longint; override;
+    procedure Lock;
+    procedure Unlock;
+  end;
 
-//------------------------------------------------------------------------
-// TThreadsafeMemoryStream
-//
-TThreadsafeMemoryStream = class (TMemoryStream)
-private
-  fCriticalSection : TCriticalSection;
-public
-  constructor Create;
-  destructor Destroy; override;
-  function Write(const Buffer; Count: Longint): Longint; override;
-  procedure Lock;
-  procedure Unlock;
-end;
+  TMimeHeader = class
+  private
+    fContentTypeSubtype: string;
+    fContentTypeType: string;
+    fContentTransferEncoding: string;
+    fContentID: string;
+    fContentDescription: string;
+    fContentTypeAttributes: TStringList;
+    fContentDisposition: string;
+    fContentDispositionAttributes: TStringList;
+    function GetImageType: string;
+    function GetDecodeType: TDecodeType;
+    function GetFileName: string;
+    function GetIsMultipart: Boolean;
+    function GetMultipartBoundary: string;
+  public
+    class function CreateFromHeaderStrings(AHeader: TStrings; forceMIME: Boolean): TMimeHeader;
+    destructor Destroy; override;
 
-TMimeHeader = class
-private
-  fContentTypeSubtype: string;
-  fContentTypeType: string;
-  fContentTransferEncoding: string;
-  fContentID: string;
-  fContentDescription: string;
-  fContentTypeAttributes: TStringList;
-  fContentDisposition: string;
-  fContentDispositionAttributes: TStringList;
-  function GetImageType: string;
-  function GetDecodeType: TDecodeType;
-  function GetFileName: string;
-  function GetIsMultipart: boolean;
-  function GetMultipartBoundary : string;
-public
-  class function CreateFromHeaderStrings (AHeader : TStrings; forceMIME : boolean) : TMimeHeader;
-  destructor Destroy; override;
+    procedure Assign(const AHeader: TMimeHeader);
+    procedure HandleXRFC2646(const st: string);
 
-  procedure Assign (const AHeader : TMimeHeader);
-  procedure HandleXRFC2646 (const st : string);
+    property ContentType_Type: string read fContentTypeType;
+    property ContentType_Subtype: string read fContentTypeSubtype;
+    property ContentType_Attributes: TStringList read fContentTypeAttributes;
+    property ContentTransferEncoding: string read fContentTransferEncoding;
+    property ContentID: string read fContentID;
+    property ContentDescription: string read fContentDescription;
+    property ContentDisposition: string read fContentDisposition;
+    property ContentDispositionAttributes: TStringList read fContentDispositionAttributes;
 
-  property ContentType_Type : string read fContentTypeType;
-  property ContentType_Subtype : string read fContentTypeSubtype;
-  property ContentType_Attributes : TStringList read fContentTypeAttributes;
-  property ContentTransferEncoding : string read fContentTransferEncoding;
-  property ContentID : string read fContentID;
-  property ContentDescription : string read fContentDescription;
-  property ContentDisposition : string read fContentDisposition;
-  property ContentDispositionAttributes : TStringList read fContentDispositionAttributes;
+    property ImageType: string read GetImageType;
+    property DecodeType: TDecodeType read GetDecodeType;
+    property FileName: string read GetFileName;
+    property IsMultipart: Boolean read GetIsMultipart;
+    property MultipartBoundary: string read GetMultipartBoundary;
+  end;
 
-  property ImageType : string read GetImageType;
-  property DecodeType : TDecodeType read GetDecodeType;
-  property FileName : string read GetFileName;
-  property IsMultipart : boolean read GetIsMultipart;
-  property MultipartBoundary : string read GetMultipartBoundary;
-end;
+  TmvMessage = class(TPersistent)
+  private
+    fDefaultCodePage: Integer;
+    fAlternateHTML: Boolean;
+    fAlternateMessagePartCount: Integer;
+    fTruncateFrom: WideString;
+    fStrictSigSeparator: Boolean;
+    function GetMIMEHeader: TMIMEHeader;
+    function GetCodePage: Integer;
+    function GetTextPart: TStrings;
+    function GetXFace: TBitmap;
+    procedure SetCodePage(const Value: Integer);
+    function GetAlternateMessagePart(idx: Integer): TmvMessagePart;
+    function GetAlternateMessagePartCount: Integer;
+  private
+    fData: TThreadsafeMemoryStream;
+    fBody: TStrings;
+    fHeader: TStrings;
+    fXFace: TBitmap;
+    fMessageParts: TmvMessageParts;
+    fUpdating: Boolean;
+    fDecodePos: Integer;
+    fDecodeSize: Integer;
+    fCurrentMessagePart: TmvMessagePart;
+    fBeingDisplayed: Boolean;
+    fObject: TObject;
+    fRawMode: Boolean;
+    fPartialMessage: Boolean;
+    fGotXFace: Boolean;
+    fMIMEHeader: TMIMEHeader;
+    fMPStack: TStack;
+    fCS: TCriticalSection;
+    fCurrentLine: Integer;
+    fCodePage: Integer;
+    procedure SetHeader(const Value: TStrings);
+    procedure Decode;
+    procedure PartialDecode;
+    function GetBody: TStrings;
+    function GetMessageParts: TmvMessageParts;
+    function GetDormant: Boolean;
+    procedure SetDormant(const Value: Boolean);
+    procedure SetRawMode(const Value: Boolean);
 
-//------------------------------------------------------------------------
-// TmvMessage
-//
-TmvMessage = class (TPersistent)
-private
-  fDefaultCodePage: Integer;
-  fAlternateHTML: boolean;
-  fAlternateMessagePartCount : Integer;
-  fTruncateFrom: WideString;
-  fStrictSigSeparator: boolean;
-  function GetMIMEHeader: TMIMEHeader;
-  function GetCodePage: Integer;
-  function GetTextPart: TStrings;
-  function GetXFace: TBitmap;
-  procedure SetCodePage(const Value: Integer);
-  function GetAlternateMessagePart(idx: Integer): TmvMessagePart;
-  function GetAlternateMessagePartCount: Integer;
-private
-  fData : TThreadsafeMemoryStream;
-  fBody : TStrings;
-  fHeader : TStrings;
-  fXFace : TBitmap;
-  fMessageParts : TmvMessageParts;
-  fUpdating : boolean;
-  fDecodePos : Integer;
-  fDecodeSize : Integer;
-  fCurrentMessagePart : TmvMessagePart;
-  fBeingDisplayed: boolean;
-  fObject : TObject;
-  fRawMode: boolean;
-  fPartialMessage: boolean;
-  fGotXFace : boolean;
-  fMIMEHeader : TMIMEHeader;
-  fMPStack : TStack;
-  fCS : TCriticalSection;
-  fCurrentLine : Integer;
-  fCodePage : Integer;
-  procedure SetHeader(const Value: TStrings);
-  procedure Decode;
-  procedure PartialDecode;
-  function GetBody: TStrings;
-  function GetMessageParts: TmvMessageParts;
-  function GetDormant: boolean;
-  procedure SetDormant(const Value: boolean);
-  procedure SetRawMode(const Value: boolean);
+  protected
+    function GetLine(var st: string): Boolean;
+    function TryCreateMessagePart(const st: string; hdr: TMimeHeader): TmvMessagePart;
+  public
+    constructor Create(AObject: TObject);
+    destructor Destroy; override;
+    property MIMEHeader: TMIMEHeader read GetMIMEHeader;
+    procedure DoOnProgress(Sender: TObject; Stage: TProgressStage; PercentDone: Byte; RedrawNow: Boolean; const R: TRect; const Msg: string);
 
-protected
-  function GetLine (var st : string) : boolean;
-  function TryCreateMessagePart (const st : string; hdr : TMimeHeader) : TmvMessagePart;
-public
-  constructor Create (AObject : TObject);
-  destructor Destroy; override;
-  property MIMEHeader : TMIMEHeader read GetMIMEHeader;
-  procedure DoOnProgress (Sender: TObject; Stage: TProgressStage; PercentDone: Byte; RedrawNow: Boolean; const R: TRect; const Msg: string);
+    function IdentifyMessagePartBoundary(const st: string; hdr: TMimeHeader): TmvMessagePartClass;
 
-  function IdentifyMessagePartBoundary (const st : string; hdr : TMimeHeader) : TmvMessagePartClass;
+    procedure Clear;
+    procedure AddData(data: TStream);
 
-  procedure Clear;
-  procedure AddData (data : TStream);
-//  procedure LoadDataFromStream (strm : TStream; len : Integer);
+    procedure BeginUpdate;
+    procedure EndUpdate;
 
-  procedure BeginUpdate;
-  procedure EndUpdate;
+    procedure Lock;
+    procedure Unlock;
 
-  procedure Lock;
-  procedure Unlock;
+    function FindMessagePartFromCID(const cid: string): TmvMessagePart;
 
-  function FindMessagePartFromCID (const cid : string) : TmvMessagePart;
+    property Updating: Boolean read fUpdating;
 
-  property Updating : boolean read fUpdating;
+    property RawData: TThreadsafeMemoryStream read fData;
+    property Header: TStrings read fHeader write SetHeader;
+    property Codepage: Integer read GetCodePage write SetCodePage;
 
-  property RawData : TThreadsafeMemoryStream read fData;
-  property Header : TStrings read fHeader write SetHeader;
-  property Codepage : Integer read GetCodePage write SetCodePage;
+    property Body: TStrings read GetBody;
+    property XFace: TBitmap read GetXFace;
+    property TextPart: TStrings read GetTextPart;
+    procedure DecodeBody(f1: TStream; decodeType: TDecodeType);
+    property MessageParts: TmvMessageParts read GetMessageParts;
+    property Dormant: Boolean read GetDormant write SetDormant;
+    property BeingDisplayed: Boolean read fBeingDisplayed write fBeingDisplayed;
+    property Obj: TObject read fObject;
+    property RawMode: Boolean read fRawMode write SetRawMode;
+    property PartialMessage: Boolean read fPartialMessage write fPartialMessage;
+    property DefaultCodePage: Integer read fDefaultCodePage write fDefaultCodePage;
 
-  property Body : TStrings read GetBody;
-  property XFace : TBitmap read GetXFace;
-  property TextPart : TStrings read GetTextPart;
-  procedure DecodeBody (f1 :TStream; decodeType : TDecodeType);
-  property MessageParts : TmvMessageParts read GetMessageParts;
-  property Dormant : boolean read GetDormant write SetDormant;
-  property BeingDisplayed : boolean read fBeingDisplayed write fBeingDisplayed;
-  property Obj : TObject read fObject;
-  property RawMode : boolean read fRawMode write SetRawMode;
-  property PartialMessage : boolean read fPartialMessage write fPartialMessage;
-  property DefaultCodePage : Integer read fDefaultCodePage write fDefaultCodePage;
+    property AlternateHTML: Boolean read fAlternateHTML write fAlternateHTML;
+    property AlternateMessagePartCount: Integer read GetAlternateMessagePartCount;
+    property AlternateMessagePart[idx: Integer]: TmvMessagePart read GetAlternateMessagePart;
+    property TruncateFrom: WideString read fTruncateFrom write fTruncateFrom;
+    property StrictSigSeparator: Boolean read fStrictSigSeparator write fStrictSigSeparator;
+  end;
 
-  property AlternateHTML : boolean read fAlternateHTML write fAlternateHTML;
-  property AlternateMessagePartCount : Integer read GetAlternateMessagePartCount;
-  property AlternateMessagePart [idx : Integer] : TmvMessagePart read GetAlternateMessagePart;
-  property TruncateFrom : WideString read fTruncateFrom write fTruncateFrom;
-  property StrictSigSeparator : boolean read fStrictSigSeparator write fStrictSigSeparator;
-end;
 
-//------------------------------------------------------------------------
-// TmvMessagePart
-//
+  TAddLine = (alOK, alEndOfMP, alNextMP, alMultipart);
 
-TAddLine = (alOK, alEndOfMP, alNextMP, alMultipart);
+  TmvMessagePart = class(TCollectionItem)
+  private
+    fOwner: TmvMessage;
+    fHasRawData: Boolean;
+    fParentMessagePart: TmvMessagePart;
+    function GetPercentDecoded: Integer;
+  protected
+    fData: TMemoryStream;
+    fGraphic: TGraphic;
+    fFileName: string;
+    fInline: Boolean;
+    fComplete: Boolean;
+    fGotGraphic: Boolean;
+    fDecodeType: TDecodeType;
+    fStartLine: Integer;
+    fOverridePercent: Boolean;
 
-TmvMessagePart = class (TCollectionItem)
-private
-  fOwner: TmvMessage;
-  fHasRawData : Boolean;
-  fParentMessagePart : TmvMessagePart;
-  function GetPercentDecoded: Integer;
-protected
-  fData : TMemoryStream;
-  fGraphic : TGraphic;
-  fFileName : string;
-  fInline : boolean;
-  fComplete : boolean;
-  fGotGraphic : Boolean;
-  fDecodeType : TDecodeType;
-  fStartLine : Integer;
-  fOverridePercent : boolean;
+    class function IsBoundary(const st: string; MIMEHeader: TMIMEHeader): Boolean; virtual;
+    function IsBoundaryEnd(const st: string): Boolean; virtual;
+    function ProcessHeaderLine(const st: string): Boolean; virtual; // Return False when header is complete
+    function AddLine(const st: string): TAddLine; virtual;
+    function GetGraphic: TGraphic; virtual;
+    function GetBody: TStrings; virtual;
+    procedure DecodeGraphic(gc: TGraphicClass);
+    procedure InitMultipart(multipartHeader: TMIMEHeader); virtual;
+    function GetDecodeType: TDecodeType; virtual;
+    function GetFileName: string; virtual;
+    function MatchesCID(const cid: string): Boolean; virtual;
+    function GetMIMEContentType: string; virtual;
+    function GetIsHTMLMultipart: Boolean; virtual;
+  public
+    constructor Create(AOwner: TCollection); override;
+    destructor Destroy; override;
+    property Owner: TmvMessage read fOwner;
+    procedure GetData(s: TStream); virtual;
+    property Graphic: TGraphic read GetGraphic;
+    property Body: TStrings read GetBody;
+    property FileName: string read GetFileName;
+    property Complete: Boolean read fComplete;
+    property HasRawData: Boolean read fHasRawData;
+    property DecodeType: TDecodeType read GetDecodeType;
+    property PercentDecoded: Integer read GetPercentDecoded;
+    property MIMEContentType: string read GetMIMEContentType;
+    property IsHTMLMultipart: Boolean read GetIsHTMLMultipart;
+  end;
 
-  class function IsBoundary (const st : string; MIMEHeader : TMIMEHeader) : boolean; virtual;
-  function IsBoundaryEnd (const st : string) : boolean; virtual;
-  function ProcessHeaderLine (const st : string) : boolean; virtual;  // Return False when header is complete
-  function AddLine (const st : string) : TAddLine; virtual;
-  function GetGraphic: TGraphic; virtual;
-  function GetBody : TStrings; virtual;
-  procedure DecodeGraphic (gc : TGraphicClass);
-  procedure InitMultipart (multipartHeader : TMIMEHeader); virtual;
-  function GetDecodeType: TDecodeType; virtual;
-  function GetFileName: string; virtual;
-  function MatchesCID (const cid : string) : boolean; virtual;
-  function GetMIMEContentType : string; virtual;
-  function GetIsHTMLMultipart: boolean; virtual;
-public
-  constructor Create (AOwner : TCollection); override;
-  destructor Destroy; override;
-  property Owner : TmvMessage read fOwner;
-  procedure GetData (s : TStream); virtual;
-  property Graphic : TGraphic read GetGraphic;
-  property Body : TStrings read GetBody;
-  property FileName : string read GetFileName;
-  property Complete : boolean read fComplete;
-  property HasRawData : Boolean read fHasRawData;
-  property DecodeType : TDecodeType read GetDecodeType;
-  property PercentDecoded : Integer read GetPercentDecoded;
-  property MIMEContentType : string read GetMIMEContentType;
-  property IsHTMLMultipart : boolean read GetIsHTMLMultipart;
-end;
+  TmvTextMessagePart = class(TmvMessagePart)
+  private
+    fBody: TStrings;
+  protected
+    function ProcessHeaderLine(const st: string): Boolean; override;
+    function GetBody: TStrings; override;
+  public
+    constructor Create(AOwner: TCollection); override;
+    destructor Destroy; override;
+  end;
 
-//------------------------------------------------------------------------
-// TmvTextMessagePart
-//
-TmvTextMessagePart = class (TmvMessagePart)
-private
-  fBody : TStrings;
-protected
-  function ProcessHeaderLine (const st : string) : boolean; override;
-  function GetBody : TStrings; override;
-public
-  constructor Create (AOwner : TCollection); override;
-  destructor Destroy; override;
-end;
-
-//------------------------------------------------------------------------
-// TmvBodyContinuationMessagePart
-//
-TmvBodyContinuationMessagePart = class (TmvTextMessagePart)
-end;
+  TmvBodyContinuationMessagePart = class(TmvTextMessagePart)
+  end;
 
 
 var
-  gCurrentMessage : TmvMessage;
+  gCurrentMessage: TmvMessage;
 
-procedure RegisterMessagePart (cls : TmvMessagePartClass);
-function GetGraphicClass (ext : string) : TGraphicClass;
+procedure RegisterMessagePart(cls: TmvMessagePartClass);
+function GetGraphicClass(ext: string): TGraphicClass;
 
 implementation
 
-uses GIFImage, Jpeg, PngImage, unitMessageMime, NewsGlobals, idCoder, idCoderUUE, idCoderMIME, unitCharsetMap, XFace, unitNNTPServices, unitSearchString;
+uses
+  GIFImage, Jpeg, PngImage, unitMessageMime, NewsGlobals, idCoder, idCoderUUE,
+  idCoderMIME, unitCharsetMap, XFace, unitNNTPServices, unitSearchString, XnCoderUUE;
 
 var
-  registeredMessageParts : array of TmvMessagePartClass;
-  registeredMessagePartCount : Integer = 0;
+  registeredMessageParts: array of TmvMessagePartClass;
+  registeredMessagePartCount: Integer = 0;
 
-(*----------------------------------------------------------------------*
- | procedure RegisterMessagePart                                        |
- |                                                                      |
- | Register a message part decoder for additional decoding - see        |
- | unitMessageNNTPBinary and unitMessageMime                            |
- |                                                                      |
- | Parameters:                                                          |
- |   cls : TmvMessagePartClass  The class to register.                  |
- *----------------------------------------------------------------------*)
-procedure RegisterMessagePart (cls : TmvMessagePartClass);
+procedure RegisterMessagePart(cls: TmvMessagePartClass);
 var
-  found : boolean;
-  i : Integer;
+  found: Boolean;
+  i: Integer;
 begin
+  // Register a message part decoder for additional decoding - see
+  // unitMessageNNTPBinary and unitMessageMime                            
   found := False;
                                 // Is it already registered?
   for i := 0 to registeredMessagePartCount - 1 do
-    if registeredMessageParts [i] = cls then
+    if registeredMessageParts[i] = cls then
     begin
       found := True;
-      break
+      Break;
     end;
 
   if not found then             // Add it to the array of message classes
   begin
-    if Length (registeredMessageParts) = registeredMessagePartCount then
-      SetLength (registeredMessageParts, Length (registeredMessageParts) + 10);
+    if Length(registeredMessageParts) = registeredMessagePartCount then
+      SetLength(registeredMessageParts, Length(registeredMessageParts) + 10);
 
-    registeredMessageParts [registeredMessagePartCount] := cls;
+    registeredMessageParts[registeredMessagePartCount] := cls;
 
-    Inc (registeredMessagePartCount)
-  end
+    Inc(registeredMessagePartCount);
+  end;
 end;
 
-(*----------------------------------------------------------------------*
- | function GetGraphicClass                                             |
- |                                                                      |
- | Get a graphic class for a file extension.  This *should* be in       |
- | graphics.pas                                                         |
- |                                                                      |
- | Parameters:                                                          |
- |   ext : string               The extension                           |
- |                                                                      |
- | The function returns the graphics class that supports the extension  |
- *----------------------------------------------------------------------*)
-function GetGraphicClass (ext : string) : TGraphicClass;
+function GetGraphicClass(ext: string): TGraphicClass;
 begin
-  result := Nil;
+  Result := nil;
   if ext <> '' then
   begin
-    ext := UpperCase (ext);
-    if ext [1] = '.' then
-      ext := Copy (ext, 2, MaxInt);
+    ext := UpperCase(ext);
+    if ext[1] = '.' then
+      ext := Copy(ext, 2, MaxInt);
 
     if ext = 'BMP' then
-      result := TBitmap
+      Result := TBitmap
     else
       if (ext = 'JPG') or (ext = 'JPEG') then
-        result := TJPEGImage
+        Result := TJPEGImage
       else
         if (ext = 'GIF') then
-          result := TGIFImage
+          Result := TGIFImage
         else
           if (ext = 'PNG') then
-            result := TPngObject;
-  end
+            Result := TPngObject;
+  end;
 end;
 
 { TmvMessage }
 
-(*----------------------------------------------------------------------*
- | procedure TmvMessage.AddData                                         |
- |                                                                      |
- | Add data to a message                                                |
- |                                                                      |
- | Parameters:                                                          |
- |   data : TStream             The data to add                         |
- *----------------------------------------------------------------------*)
-procedure TmvMessage.AddData(data : TStream);
+procedure TmvMessage.AddData(data: TStream);
 begin
   fData.Seek(0, soFromEnd);
   fData.CopyFrom(data, 0);
 end;
 
-(*----------------------------------------------------------------------*
- | procedure TmvMessage.BeginUpdate                                     |
- |                                                                      |
- | Prevent added data from being decoded until the next EndUpdate or    |
- | PartialDecode                                                        |
- *----------------------------------------------------------------------*)
 procedure TmvMessage.BeginUpdate;
 begin
   fDecodePos := 0;
   fUpdating := True;
 end;
 
-(*----------------------------------------------------------------------*
- | procedure TmvMessage.Clear                                           |
- |                                                                      |
- | Clear the message and all message parts                              |
- *----------------------------------------------------------------------*)
 procedure TmvMessage.Clear;
 begin
   fHeader.Clear;
   fData.Size := 0;
-  Decode
+  Decode;
 end;
 
-(*----------------------------------------------------------------------*
- | constructor TmvMessage.Create                                        |
- |                                                                      |
- | Constructor for TMessage                                             |
- *----------------------------------------------------------------------*)
-constructor TmvMessage.Create (AObject : TObject);
+constructor TmvMessage.Create(AObject: TObject);
 begin
   inherited Create;
   fDefaultCodePage := CP_USASCII;
@@ -408,57 +349,48 @@ begin
   fData := TThreadsafeMemoryStream.Create;
   fBody := TStringList.Create;
   fHeader := TStringList.Create;
-  fMessageParts := TmvMessageParts.Create (self, TmvMessagePart);
+  fMessageParts := TmvMessageParts.Create(Self, TmvMessagePart);
   fAlternateHTML := True;
   fAlternateMessagePartCount := -1;
 end;
 
-(*----------------------------------------------------------------------*
- | procedure TmvMessage.Decode                                          |
- |                                                                      |
- | Decode the message.  Only called when the complete message has been  |
- | downloaded.  Called by GetBody and GetMessageParts                   |
- *----------------------------------------------------------------------*)
 procedure TmvMessage.Decode;
 var
-  i : Integer;
+  i: Integer;
 begin
+  // Decode the message.  Only called when the complete message has been
+  // downloaded.  Called by GetBody and GetMessageParts.
   if not fUpdating then
   begin
     fDecodePos := 0;
     PartialDecode;
 
     for i := 0 to fMessageParts.Count - 1 do
-      fMessageParts [i].fComplete := True
-  end
+      fMessageParts[i].fComplete := True;
+  end;
 end;
 
 procedure TmvMessage.DecodeBody(f1: TStream; decodeType: TDecodeType);
 var
-  decoder : TidDecoder;
-  i : Integer;
-
+  decoder: TidDecoder;
+  i: Integer;
 begin
-  decoder := Nil;
+  decoder := nil;
   case decodeType of
-    ttUUEncode : decoder := TidDecoderUUE.Create(nil);
-    ttBase64   : decoder := TidDecoderMIME.Create(nil)
+    ttUUEncode: decoder := TXnDecoderUUE.Create(nil);
+    ttBase64  : decoder := TidDecoderMIME.Create(nil)
   end;
 
-  if Assigned (decoder) then
+  if Assigned(decoder) then
   try
+    decoder.DecodeBegin(f1);
     for i := 0 to Body.Count - 1 do
-      decoder.DecodeToStream(Body [i], f1);
+      decoder.Decode(Body[i]);
   finally
     decoder.Free;
-  end
+  end;
 end;
 
-(*----------------------------------------------------------------------*
- | destructor TmvMessage.Destroy                                        |
- |                                                                      |
- | Destructor for TmvMessage                                            |
- *----------------------------------------------------------------------*)
 destructor TmvMessage.Destroy;
 begin
   fMIMEHeader.Free;
@@ -469,65 +401,48 @@ begin
   fMPStack.Free;
   fCS.Free;
   fXFace.Free;
-
-  inherited
+  inherited Destroy;
 end;
 
-(*----------------------------------------------------------------------*
- | procedure TmvMessage.EndUpdate                                       |
- |                                                                      |
- | Finish adding data to the message.  Decode what we've got.           |
- *----------------------------------------------------------------------*)
 procedure TmvMessage.DoOnProgress(Sender: TObject; Stage: TProgressStage;
   PercentDone: Byte; RedrawNow: Boolean; const R: TRect;
   const Msg: string);
 begin
-//  fmMain.StatusBar.Panels [0].Text := IntToStr (PercentDone);
+//  fmMain.StatusBar.Panels[0].Text := IntToStr (PercentDone);
 end;
 
 procedure TmvMessage.EndUpdate;
 var
-  i : Integer;
+  i: Integer;
 begin
   fUpdating := False;
-//  Decode
   PartialDecode;
   fCodePage := -1;
   for i := 0 to fMessageParts.Count - 1 do
-    fMessageParts [i].fComplete := True
+    fMessageParts[i].fComplete := True;
 end;
 
-(*----------------------------------------------------------------------*
- | function TmvMessage.GetBody                                          |
- |                                                                      |
- | Get the message body                                                 |
- |                                                                      |
- | The function returns the message body                                |
- *----------------------------------------------------------------------*)
-function TmvMessage.FindMessagePartFromCID(
-  const cid: string): TmvMessagePart;
+function TmvMessage.FindMessagePartFromCID(const cid: string): TmvMessagePart;
 var
-  i : Integer;
+  i: Integer;
 begin
-  result := Nil;
+  Result := nil;
   for i := 0 to MessageParts.Count - 1 do
-  begin
-    if MessageParts [i].MatchesCID(cid) then
+    if MessageParts[i].MatchesCID(cid) then
     begin
-      result := MessageParts [i];
-      break
-    end
-  end
+      Result := MessageParts[i];
+      Break;
+    end;
 end;
 
 function TmvMessage.GetAlternateMessagePart(idx: Integer): TmvMessagePart;
 begin
-  result := MessageParts [idx]
+  Result := MessageParts[idx];
 end;
 
 function TmvMessage.GetAlternateMessagePartCount: Integer;
 begin
-  result := MessageParts.Count
+  Result := MessageParts.Count;
 end;
 
 function TmvMessage.GetBody: TStrings;
@@ -536,26 +451,13 @@ begin
     PartialDecode
   else
     Decode;
-
-  result := fBody;
+  Result := fBody;
 end;
 
-{*----------------------------------------------------------------------*
- | function TmvMessage.GetCodePage                                      |
- |                                                                      |
- | Calculate the message's codepage.                                    |
- |
- |
- |                                                                      |
- | Parameters:                                                          |
- |   None
- |                                                                      |
- | The function returns Integer
- *----------------------------------------------------------------------*}
 function TmvMessage.GetCodePage: Integer;
 var
-  s, ext : string;
-  art : TArticle;
+  s, ext: string;
+  art: TArticle;
 begin
   if fCodePage = -1 then
   begin
@@ -564,83 +466,74 @@ begin
     else
       Decode;
 
-    if Assigned (MimeHeader) and Assigned (MimeHeader.ContentType_Attributes) then
+    if Assigned(MimeHeader) and Assigned(MimeHeader.ContentType_Attributes) then
     begin
-      s := MimeHeader.ContentType_Attributes.Values ['charset'];
+      s := MimeHeader.ContentType_Attributes.Values['charset'];
       if s = '' then
       begin
         if fUpdating then
         begin
           fCodePage := -1;
-          result := CP_USASCII;
-          exit
+          Result := CP_USASCII;
+          Exit;
         end
         else
-          fCodePage := fDefaultCodePage
+          fCodePage := fDefaultCodePage;
       end
       else
-        fCodePage := MIMECharsetNameToCodePage (s)
+        fCodePage := MIMECharsetNameToCodePage(s);
     end
     else
     begin
       fCodePage := -1;
-      art := TArticle (Obj);
-      if Assigned (art) and (Length (art.FromName) > 0) then
-        if art.FromName [1] > #127 then
+      art := TArticle(Obj);
+      if Assigned(art) and (Length(art.FromName) > 0) then
+        if art.FromName[1] > #127 then
         begin
-          ext := ExtractFileExt (art.FromEmail);
-          fCodePage := URLSuffixToCodePage (ext)
+          ext := ExtractFileExt(art.FromEmail);
+          fCodePage := URLSuffixToCodePage(ext);
         end;
 
       if fCodePage = -1 then
         if fObject is TArticleBase then
-          fCodePage := TArticleBase (fObject).fCodePage // nb - must be fCodePage!
+          fCodePage := TArticleBase(fObject).fCodePage // nb - must be fCodePage!
         else
-          fCodePage := MIMECharsetNameToCodePage ('');
+          fCodePage := MIMECharsetNameToCodePage('');
 
       if fCodePage = -1 then
         if fUpdating then
         begin
-          result := CP_USASCII;
-          Exit
+          Result := CP_USASCII;
+          Exit;
         end
         else
           fCodePage := fDefaultCodePage;
-    end
+    end;
   end;
 
-  result := fCodePage
+  Result := fCodePage;
 end;
 
-function TmvMessage.GetDormant: boolean;
+function TmvMessage.GetDormant: Boolean;
 begin
-  result := (fDecodePos = 0) and (fDecodeSize = 0);
+  Result := (fDecodePos = 0) and (fDecodeSize = 0);
 end;
 
-
-(*----------------------------------------------------------------------*
- | function TmvMessage.GetLine : boolean                                |
- |                                                                      |
- | Get a line of the message text.  This is threadsafe so we can add    |
- | data to the message while decoding what we've got so far.            |
- |                                                                      |
- | Parameters:                                                          |
- |   var st : string    The string to get                               |
- |                                                                      |
- | The function returns true if we got a complete line of text          |
- *----------------------------------------------------------------------*)
-function TmvMessage.GetLine(var st: string): boolean;
+function TmvMessage.GetLine(var st: string): Boolean;
 var
-  pch, pch1 : PChar;
-  p, l : Integer;
+  pch, pch1: PChar;
+  p, l: Integer;
 begin
+  // Get a line of the message text.  This is threadsafe so we can add
+  // data to the message while decoding what we've got so far.
+  // The function returns true if we got a complete line of text
   try
     pch := fData.Memory;
     l := fData.Size;
     p := fDecodePos;
 
-    Dec (l, p);
-    Inc (pch, p);
+    Dec(l, p);
+    Inc(pch, p);
 
     if l > 0 then    // Kind of like StrScan with a Length parameter!
     asm
@@ -656,85 +549,78 @@ begin
           mov     pch1, eax
     end
     else
-      pch1 := Nil;
+      pch1 := nil;
 
-    if pch1 <> Nil then
+    if pch1 <> nil then
     begin
-      l := Integer (pch1) - Integer (pch);
-      Inc (fDecodePos, l+1);
-      Dec (pch1);
+      l := Integer(pch1) - Integer(pch);
+      Inc(fDecodePos, l + 1);
+      Dec(pch1);
       while (l > 0) and (pch1^ = #13) do
       begin
-        Dec (l);
-        Dec (pch1);
+        Dec(l);
+        Dec(pch1);
       end;
 
-      SetLength (st, l);
-      Move (pch^, st [1], l);
-      result := True
+      SetLength(st, l);
+      if l > 0 then
+        Move(pch^, st[1], l);
+      Result := True;
     end
     else
-      result := False;
+      Result := False;
   except
     st := '';
-    Sleep (100);
-    result := False
-  end
+    Sleep(100);
+    Result := False;
+  end;
 end;
 
-(*----------------------------------------------------------------------*
- | function TmvMessage.GetMessageParts : TmvMessageParts                |
- |                                                                      |
- | Get the message parts                                                |
- |                                                                      |
- | The function returns the message parts                               |
- *----------------------------------------------------------------------*)
 function TmvMessage.GetMessageParts: TmvMessageParts;
 begin
   if fUpdating then
     PartialDecode
   else
     Decode;
-
-  result := fMessageParts;
+  Result := fMessageParts;
 end;
 
 function TmvMessage.GetMIMEHeader: TMIMEHeader;
 begin
-  if Assigned (fMPStack) and (fMPStack.Count > 0) then
-    result := fMPStack.Peek
+  if Assigned(fMPStack) and (fMPStack.Count > 0) then
+    Result := fMPStack.Peek
   else
-    result := fMIMEHeader
+    Result := fMIMEHeader;
 end;
 
 function TmvMessage.GetTextPart: TStrings;
 var
-  i : Integer;
+  i: Integer;
 begin
-  if (Body.Count > 0) and not (Assigned (MIMEHeader) and MIMEHeader.IsMultipart) then
-    result := Body
+  if (Body.Count > 0) and not (Assigned(MIMEHeader) and MIMEHeader.IsMultipart) then
+    Result := Body
   else
   begin
-    result := Nil;
+    Result := nil;
     i := 0;
 
-    while (result = Nil) and (i < MessageParts.Count) do
+    while (Result = nil) and (i < MessageParts.Count) do
     begin
-      if Assigned (MessageParts [i].Body) and  (MessageParts [i].Body.Count > 0) then
-        result := MessageParts [i].Body;
-      Inc (i)
-    end
-  end
+      if Assigned(MessageParts[i].Body) and (MessageParts[i].Body.Count > 0) then
+        Result := MessageParts[i].Body;
+      Inc(i);
+    end;
+  end;
 end;
 
 function TmvMessage.GetXFace: TBitmap;
 var
-  i : Integer;
+  i: Integer;
   s: string;
-  face : boolean;
-  faceDecoder : TIdDecoderMIME;
-  facePngStrm : TStream;
-  png : TPngObject;
+  face: Boolean;
+  faceDecoder: TIdDecoderMIME;
+  facePngStrm: TStream;
+  png: TPngObject;
 begin
   if not fGotXFace then
   begin
@@ -743,23 +629,23 @@ begin
     face := False;
     for i := 0 to header.Count - 1 do
     begin
-      s := header [i];
-      if CompareText (SplitString (':', s), 'Face') = 0 then
+      s := header[i];
+      if CompareText(SplitString(':', s), 'Face') = 0 then
       try
-        facePngStrm := Nil;
-        png := Nil;
+        facePngStrm := nil;
+        png := nil;
         faceDecoder := TIdDecoderMIME.Create(nil);
         try
           facePngStrm := TMemoryStream.Create;
           png := TPngObject.Create;
-          faceDecoder.DecodeToStream(s, facePngStrm);
+          faceDecoder.DecodeBegin(facePngStrm);
+          faceDecoder.Decode(s);
           facePngStrm.Seek(0, soFromBeginning);
           png.LoadFromStream(facePngStrm);
           fxFace := TBitmap.Create;
           fxFace.Width := png.Width;
           fxFace.Height := png.Height;
           fxFace.Canvas.Draw(0, 0, png);
-
         finally
           faceDecoder.Free;
           facePngStrm.Free;
@@ -767,50 +653,48 @@ begin
         end;
         face := True;
       except
-        FreeAndNil (fXFace);
-      end
+        FreeAndNil(fXFace);
+      end;
     end;
 
     if not face then
       for i := 0 to header.Count - 1 do
       begin
-        s := header [i];
-        if CompareText (SplitString (':', s), 'X-Face') = 0 then
+        s := header[i];
+        if CompareText(SplitString(':', s), 'X-Face') = 0 then
         begin
           fXFace := TBitmap.Create;
           try
             xFace.Width := 48;
             xFace.Height := 48;
             xFace.PixelFormat := pf1Bit;
-            if XFaceToBitmap (s, fXFace) < 0 then
-              FreeAndNil (fXFace)
+            if XFaceToBitmap(s, fXFace) < 0 then
+              FreeAndNil(fXFace);
           except
-            FreeAndNil (fXFace)
+            FreeAndNil(fXFace);
           end;
-          break;
-        end
-      end
+          Break;
+        end;
+      end;
   end;
-
-  result := fXFace;
-
+  Result := fXFace;
 end;
 
-function TmvMessage.IdentifyMessagePartBoundary(const st: string; hdr : TMimeHeader): TmvMessagePartClass;
+function TmvMessage.IdentifyMessagePartBoundary(const st: string; hdr: TMimeHeader): TmvMessagePartClass;
 var
-  i : Integer;
-  cls : TmvMessagePartClass;
+  i: Integer;
+  cls: TmvMessagePartClass;
 begin
-  result := Nil;
+  Result := nil;
   for i := 0 to RegisteredMessagePartCount - 1 do
   begin
-    cls := RegisteredMessageParts [i];
+    cls := RegisteredMessageParts[i];
     if cls.IsBoundary(st, hdr) then
     begin
-      result := cls;
-      break
-    end
-  end
+      Result := cls;
+      Break;
+    end;
+  end;
 end;
 
 procedure TmvMessage.Lock;
@@ -818,72 +702,66 @@ begin
   fCS.Enter;
 end;
 
-(*----------------------------------------------------------------------*
- | procedure TmvMessage.PartialDecode                                   |
- |                                                                      |
- | Decode what we've got                                                |
- *----------------------------------------------------------------------*)
 procedure TmvMessage.PartialDecode;
 var
-  st : string;
-  mp : TmvMessagePart;
-  hdr : TMimeHeader;
+  st: string;
+  mp: TmvMessagePart;
+  hdr: TMimeHeader;
 
-  procedure AddMessagePartLine (const st : string);
+  procedure AddMessagePartLine(const st: string);
   var
-    prevMessagePart : TmvMessagePart;
-    pmp : TmvMIMEMessagePart;
+    prevMessagePart: TmvMessagePart;
+    pmp: TmvMIMEMessagePart;
   begin
     case fCurrentMessagePart.AddLine(st) of
-      alEndOfMP :                     // End of message part detected
+      alEndOfMP:                     // End of message part detected
         begin
-          if Assigned (fMPStack) and (fMPStack.Count > 0) then
+          if Assigned(fMPStack) and (fMPStack.Count > 0) then
             fMPStack.Pop;
           fCurrentMessagePart.fComplete := True;
-          fCurrentMessagePart := Nil
+          fCurrentMessagePart := nil;
         end;
 
-      alNextMP :
+      alNextMP:
         begin
           prevMessagePart := fCurrentMessagePart;
           if prevMessagePart is TmvMIMEMessagePart then
           begin
-            pmp := TmvMIMEMessagePart (prevMessagePart);
+            pmp := TmvMIMEMessagePart(prevMessagePart);
             hdr := pmp.MultipartHeader;
-            if Assigned (pmp.MIMEHeader) then
-              pmp.MimeHeader.FileName
+            if Assigned(pmp.MIMEHeader) then
+              pmp.MimeHeader.FileName;
           end
           else
             hdr := MIMEHeader;
           fCurrentMessagePart.fComplete := True;
-          fCurrentMessagePart := Nil;
-          mp := TryCreateMessagePart (st, hdr);
-          if Assigned (mp) then
+          fCurrentMessagePart := nil;
+          mp := TryCreateMessagePart(st, hdr);
+          if Assigned(mp) then
           begin
             fCurrentMessagePart := mp;
-            if Assigned (Hdr) then
-              fCurrentMessagePart.InitMultipart (Hdr)
+            if Assigned(Hdr) then
+              fCurrentMessagePart.InitMultipart(Hdr)
             else
               if not fCurrentMessagePart.ProcessHeaderLine(st) then
-
                                         // If this is the first and only header
                                         // line for the message part, create the
                                         // data area straight away - eg. begin 644
-
-                if not Assigned (fCurrentMessagePart.fData) then
+                if not Assigned(fCurrentMessagePart.fData) then
                   fCurrentMessagePart.fData := TMemoryStream.Create;
 
-            fCurrentMessagePart.fParentMessagePart := prevMessagePart.fParentMessagePart
-          end
+            fCurrentMessagePart.fParentMessagePart := prevMessagePart.fParentMessagePart;
+          end;
         end;
-      alMultipart :
+
+      alMultipart:
         begin
-          if not Assigned (fMPStack) then
+          if not Assigned(fMPStack) then
             fMPStack := TStack.Create;
-          fMPStack.Push(TmvMimeMessagePart (fCurrentMessagePart).MimeHeader);
-          fCurrentMessagePart := Nil;
-        end
-    end
+          fMPStack.Push(TmvMimeMessagePart(fCurrentMessagePart).MimeHeader);
+          fCurrentMessagePart := nil;
+        end;
+    end;
   end;
 
 begin
@@ -899,57 +777,50 @@ begin
       begin
         fBody.Clear;
         fMessageParts.Clear;
-        fCurrentMessagePart := Nil;
-        FreeAndNil (fMIMEHeader);
-        FreeAndNil (fMPStack);
+        fCurrentMessagePart := nil;
+        FreeAndNil(fMIMEHeader);
+        FreeAndNil(fMPStack);
         fCurrentLine := 0;
         if not fRawMode then
           fMIMEHeader := TMIMEHeader.CreateFromHeaderStrings(header, False);
-
       end;
 
-      while GetLine (st) do                 // For each line...
+      while GetLine(st) do                  // For each line...
       begin
-        Inc (fCurrentLine);
-
-                                            // Add it to current message part if we're
-                                            // in one
-        if fCurrentMessagePart <> Nil then
-          AddMessagePartLine (st)
+        Inc(fCurrentLine);                  // Add it to current message part if we're in one
+        if fCurrentMessagePart <> nil then
+          AddMessagePartLine(st)
         else
-
         begin                               // Not currently in a message part
-
-          if Assigned (MIMEHeader) and not MIMEHeader.IsMultipart then
+          if Assigned(MIMEHeader) and not MIMEHeader.IsMultipart then
           begin
             mp := TmvMimeMessagePart.Create(fMessageParts);
-            mp.fOwner := self;
+            mp.fOwner := Self;
             mp.fHasRawData := PartialMessage;
-            TmvMimeMessagePart (mp).InitForcedMessagePart(MIMEHeader);
+            TmvMimeMessagePart(mp).InitForcedMessagePart(MIMEHeader);
             fCurrentMessagePart := mp;
             fCurrentMessagePart.fFileName := MimeHeader.FileName;
             fCurrentMessagePart.fData := TMemoryStream.Create;
-            AddMessagePartLine (st)
+            AddMessagePartLine(st);
           end
           else
           begin
             if fRawMode then
-              mp := Nil
+              mp := nil
             else
-              mp := TryCreateMessagePart (st, MIMEHeader);
+              mp := TryCreateMessagePart(st, MIMEHeader);
                                               // Create a message part if we're at a
                                               // start boundary.
 
-            if mp = Nil then                  // Not at a start boundary
-
+            if mp = nil then                  // Not at a start boundary
               if fMessageParts.Count > 0 then // If we've already had message parts, we need
                                               // to stick the line in a 'body continuation'
                                               // message part
               begin
-                mp := fMessageParts [fMessageParts.Count - 1];
+                mp := fMessageParts[fMessageParts.Count - 1];
                 if not (mp is TmvBodyContinuationMessagePart) then
-                  mp := TmvBodyContinuationMessagePart.Create (fMessageParts);
-                mp.AddLine (st)
+                  mp := TmvBodyContinuationMessagePart.Create(fMessageParts);
+                mp.AddLine(st);
               end
               else
                 fBody.Add(st)                 // No message parts yet - just add the line
@@ -958,38 +829,36 @@ begin
             begin                             // We created a new message part!
               mp.fHasRawData := PartialMessage;
               fCurrentMessagePart := mp;
-              if Assigned (MimeHeader) and (MimeHeader.IsMultipart) then
-                fCurrentMessagePart.InitMultipart (MIMEHeader)
+              if Assigned(MimeHeader) and (MimeHeader.IsMultipart) then
+                fCurrentMessagePart.InitMultipart(MIMEHeader)
               else
                 if not fCurrentMessagePart.ProcessHeaderLine(st) then
-
                                               // If this is the first and only header
                                               // line for the message part, create the
                                               // data area straight away - eg. begin 644
-
-                  if not Assigned (fCurrentMessagePart.fData) then
-                    fCurrentMessagePart.fData := TMemoryStream.Create
-            end
-          end
-        end
-      end
+                  if not Assigned(fCurrentMessagePart.fData) then
+                    fCurrentMessagePart.fData := TMemoryStream.Create;
+            end;
+          end;
+        end;
+      end;
     except  // 'GetLine' may occasionally throw an AV if the currently loading message
             // is being displayed.
-      fDecodePos := 0
-    end
+      fDecodePos := 0;
+    end;
   finally
-    Unlock
-  end
+    Unlock;
+  end;
 end;
 
 procedure TmvMessage.SetCodePage(const Value: Integer);
 begin
-  fCodePage := Value
+  fCodePage := Value;
 end;
 
-procedure TmvMessage.SetDormant(const Value: boolean);
+procedure TmvMessage.SetDormant(const Value: Boolean);
 var
-  updating : boolean;
+  updating: Boolean;
 begin
   if Value <> Dormant then
     if Value then
@@ -998,182 +867,145 @@ begin
       fDecodePos := 0;
       fBody.Clear;
       fMessageParts.Clear;
-      fCurrentMessagePart := Nil
+      fCurrentMessagePart := nil;
     end
     else
     begin
       updating := fUpdating;
       EndUpdate;
-      fUpdating := updating
-    end
+      fUpdating := updating;
+    end;
 end;
 
-(*----------------------------------------------------------------------*
- | procedure TmvMessage.SetHeader                                       |
- |                                                                      |
- | Parameters:                                                          |
- |   const value : TStrings                                             |
- *----------------------------------------------------------------------*)
 procedure TmvMessage.SetHeader(const Value: TStrings);
 begin
-  fHeader.Assign (Value);
+  fHeader.Assign(Value);
 end;
 
-(*----------------------------------------------------------------------*
- | function TmvMessage.TryCreateMessagePart : TmvMessagePart            |
- |                                                                      |
- | If the string is a start boundary string for a message part type     |
- | create a message part for the required type.  Otherwise return Nil   |
- |                                                                      |
- | Parameters:                                                          |
- |   const st : string          The potential boundary string           |
- |                                                                      |
- | The function returns a newly created message part if st is a         |
- | boundary string                                                      |
- *----------------------------------------------------------------------*)
-procedure TmvMessage.SetRawMode(const Value: boolean);
+procedure TmvMessage.SetRawMode(const Value: Boolean);
 begin
   if fRawMode <> Value then
   begin
     fRawMode := Value;
     fDecodeSize := 0;
     fDecodePos := 0;
-  end
+  end;
 end;
 
-function TmvMessage.TryCreateMessagePart(const st: string; hdr : TMimeHeader): TmvMessagePart;
+function TmvMessage.TryCreateMessagePart(const st: string; hdr: TMimeHeader): TmvMessagePart;
 var
-  cls : TmvMessagePartClass;
+  cls: TmvMessagePartClass;
 begin
-  result := Nil;
+  // If the string is a start boundary string for a message part type
+  // create a message part for the required type.  Otherwise return Nil   
+  Result := nil;
 
-  cls := IdentifyMessagePartBoundary (st, hdr);
-  if Assigned (cls) then
+  cls := IdentifyMessagePartBoundary(st, hdr);
+  if Assigned(cls) then
   begin
-    result := cls.Create(fMessageParts);
-    result.fOwner := self;
-    result.fStartLine := fCurrentLine
-  end
+    Result := cls.Create(fMessageParts);
+    Result.fOwner := Self;
+    Result.fStartLine := fCurrentLine;
+  end;
 end;
 
 { TmvMessagePart }
 
-(*----------------------------------------------------------------------*
- | function TmvMessagePart.AddLine : boolean                            |
- |                                                                      |
- | Add a line to a message part                                         |
- |                                                                      |
- | Parameters:                                                          |
- |   const st : string          The line to add.                        |
- |                                                                      |
- | The function returns 'st' was the end boundary for the message part  |
- *----------------------------------------------------------------------*)
 function TmvMessagePart.AddLine(const st: string): TAddLine;
 var
-  s : string;
-  mp : TmvMIMEMessagePart;
-  mpHeader : TMimeHeader;
+  s: string;
+  mp: TmvMIMEMessagePart;
+  mpHeader: TMimeHeader;
 begin
-  if IsBoundaryEnd (st) then
+  if IsBoundaryEnd(st) then
   begin
-    result := alEndOfMP;
-    fComplete := True
+    Result := alEndOfMP;
+    fComplete := True;
   end
   else
   begin
-    result := alOK;
-    if self is TmvMimeMessagePart then
+    Result := alOK;
+    if Self is TmvMimeMessagePart then
     begin
-      mp := TmvMimeMessagePart (self);
-      mpHeader := mp.MultipartHeader
+      mp := TmvMimeMessagePart(Self);
+      mpHeader := mp.MultipartHeader;
     end
     else
     begin
-      mp := Nil;
-      mpHeader := Nil
+      mp := nil;
+      mpHeader := nil;
     end;
 
-
-    if Assigned (fData) then    // Is it in the message body ?
+    if Assigned(fData) then    // Is it in the message body ?
     begin
-      if IsBoundary (st, mpHeader) then
+      if IsBoundary(st, mpHeader) then
       begin
-        result := alNextMP;
-        exit
+        Result := alNextMP;
+        Exit;
       end;
 
-      if (self is TmvMimeMessagePart) and not Assigned (mpHeader) then
-        if owner.IdentifyMessagePartBoundary(st, nil) <> Nil then
+      if (Self is TmvMimeMessagePart) and not Assigned(mpHeader) then
+        if owner.IdentifyMessagePartBoundary(st, nil) <> nil then
         begin
-          result := alNextMP;
-          exit
+          Result := alNextMP;
+          Exit;
         end;
 
       s := st + #13#10;
-      fData.Write(s [1], Length (s))
+      fData.Write(s[1], Length(s));
     end
     else                        // We're still in the header
-
-      if not ProcessHeaderLine (st) then
+      if not ProcessHeaderLine(st) then
       begin
-        if Assigned (mp) then
+        if Assigned(mp) then
           mpHeader := mp.MimeHeader;
 
-        if Assigned (mpHeader) and mpHeader.IsMultipart then
-          result := alMultipart
+        if Assigned(mpHeader) and mpHeader.IsMultipart then
+          Result := alMultipart
         else
-          if not Assigned (fData) then
-            fData := TMemoryStream.Create
-      end
-  end
+          if not Assigned(fData) then
+            fData := TMemoryStream.Create;
+      end;
+  end;
 end;
 
-(*----------------------------------------------------------------------*
- | constructor TmvMessagePart.Create                                    |
- |                                                                      |
- | Constructor for TmvMessagePart                                       |
- |                                                                      |
- | Parameters:                                                          |
- |   AOwner : TCollection       The owning TmvMessageParts collection   |
- *----------------------------------------------------------------------*)
 constructor TmvMessagePart.Create(AOwner: TCollection);
 begin
-  inherited;
+  inherited Create(AOwner);
   fInLine := True;
 end;
 
-procedure TmvMessagePart.DecodeGraphic (gc : TGraphicClass);
+procedure TmvMessagePart.DecodeGraphic(gc: TGraphicClass);
 type
   bmf = record
-    f : TBitmapFileHeader;
-    i : TBitmapInfoHeader;
+    f: TBitmapFileHeader;
+    i: TBitmapInfoHeader;
   end;
   pbmf = ^bmf;
 var
-  DecodedData : TMemoryStream;
-  bmp : TBitmap;
-  icon : HICON;
-  ext : string;
-  shfi : TSHFileInfo;
-  i : Integer;
-  x : DWORD;
-  jpg : TJPegImage;
-  p : pbmf;
-  sz : DWORD;
-
+  DecodedData: TMemoryStream;
+  bmp: TBitmap;
+  icon: HICON;
+  ext: string;
+  shfi: TSHFileInfo;
+  i: Integer;
+  x: DWORD;
+  jpg: TJPegImage;
+  p: pbmf;
+  sz: DWORD;
 begin
   if not fGotGraphic then
   begin
-    if not Assigned (fGraphic) then
+    if not Assigned(fGraphic) then
     begin
       if not fHasRawData then
-        if not Assigned (gc) then
+        if not Assigned(gc) then
         begin
-          ext := ExtractFileExt (FileName);
-          gc := GetGraphicClass (ext)
+          ext := ExtractFileExt(FileName);
+          gc := GetGraphicClass(ext);
         end;
 
-      if Assigned (gc) and not fHasRawData then
+      if Assigned(gc) and not fHasRawData then
       begin
         fGraphic := gc.Create;
         fGraphic.OnProgress := Owner.DoOnProgress;
@@ -1184,12 +1016,12 @@ begin
         bmp := TBitmap.Create;
         bmp.Width := 32;
         if bmp.Canvas.TextWidth(FileName) + 20 > bmp.Width then
-          bmp.Width := bmp.Canvas.TextWidth (FileName) + 20;
+          bmp.Width := bmp.Canvas.TextWidth(FileName) + 20;
         bmp.Height := 30 + 20 + 32;
-        bmp.Canvas.TextRect(RECT (0, 0, bmp.Width, bmp.Height), 10, bmp.Height - 30, FileName);
+        bmp.Canvas.TextRect(Rect(0, 0, bmp.Width, bmp.Height), 10, bmp.Height - 30, FileName);
 
-        ZeroMemory (@shfi, SizeOf (shfi));
-        SHGetFileInfo(PChar (FileName),
+        ZeroMemory(@shfi, SizeOf(shfi));
+        SHGetFileInfo(PChar(FileName),
           FILE_ATTRIBUTE_NORMAL,
           shfi, sizeof(shfi),
           SHGFI_ICON or SHGFI_USEFILEATTRIBUTES);
@@ -1198,40 +1030,39 @@ begin
 
         if icon <> 0 then
         begin
-          DrawIcon (bmp.Canvas.Handle, (bmp.Canvas.TextWidth (FileName) + 20 - 32) div 2 , 10, icon);
-          DestroyIcon (icon);
+          DrawIcon(bmp.Canvas.Handle, (bmp.Canvas.TextWidth(FileName) + 20 - 32) div 2, 10, icon);
+          DestroyIcon(icon);
         end;
-        fGraphic := bmp
-      end
+        fGraphic := bmp;
+      end;
     end;
 
-    if Assigned (fGraphic) and not fHasRawData then
+    if Assigned(fGraphic) and not fHasRawData then
     begin
       DecodedData := TMemoryStream.Create;
       try
-        GetData (DecodedData);
+        GetData(DecodedData);
 
         DecodedData.Seek(0, soFromBeginning);
 
-// Some people posts JPEG images with preliminary data before the JPEG header
-// Try to salvage something, though you may end up with just a thumbnail.
-
+        // Some people posts JPEG images with preliminary data before the JPEG header
+        // Try to salvage something, though you may end up with just a thumbnail.
         if fGraphic is TJPEGImage then
         begin
           i := 0;
           while i < DecodedData.Size do
           begin
-            x := PDWORD (PChar (DecodedData.Memory) + i)^;
-            if x = $e0ffd8ff then
+            x := PDWORD(PChar(DecodedData.Memory) + i)^;
+            if x = $E0FFD8FF then
             begin
-              DecodedData.Seek (i, soFromBeginning);
-              break
+              DecodedData.Seek(i, soFromBeginning);
+              Break;
             end
             else
-              Inc (i)
+              Inc(i);
           end;
 
-          jpg := TJPegImage (fGraphic);
+          jpg := TJPegImage(fGraphic);
           if not Complete then
             if jpg.ProgressiveEncoding then
               fOverridePercent := True;
@@ -1240,307 +1071,201 @@ begin
           if Complete then
             jpg.Performance := jpBestQuality
           else
-            jpg.Performance := jpBestSpeed
+            jpg.Performance := jpBestSpeed;
         end;
 
         try
           if fGraphic is TBitmap then
           begin
-            p := pbmf (DecodedData.Memory);
+            p := pbmf(DecodedData.Memory);
             sz := p^.i.biWidth * p^.i.biHeight * p^.i.biBitCount div 8;
             if sz < P^.i.biSizeImage then
               p^.i.biSizeImage := 0;
-          end
+          end;
         except
         end;
 
         try
-          fGraphic.LoadFromStream (DecodedData)
+          fGraphic.LoadFromStream(DecodedData);
         except
-        end
+        end;
       finally
-        DecodedData.Free
-      end
+        DecodedData.Free;
+      end;
     end;
-
-    fGotGraphic := Complete
-  end
+    fGotGraphic := Complete;
+  end;
 end;
 
-(*----------------------------------------------------------------------*
- | destructor TmvMessagePart.Destroy                                    |
- |                                                                      |
- | Destructor for TmvMessagePart                                        |
- *----------------------------------------------------------------------*)
 destructor TmvMessagePart.Destroy;
 begin
   fData.Free;
   fGraphic.Free;
-
-  inherited;
+  inherited Destroy;
 end;
 
-(*----------------------------------------------------------------------*
- | function TmvMessagePart.GetBody : TStrings                           |
- |                                                                      |
- | Get the message part body.  This may be overridden to get a text     |
- | body.  Othewise return Nil to trigger the display of the graphic     |
- *----------------------------------------------------------------------*)
 function TmvMessagePart.GetBody: TStrings;
 begin
-  result := Nil
+  Result := nil;
 end;
 
-(*----------------------------------------------------------------------*
- | procedure TmvMessagePart.GetData                                     |
- |                                                                      |
- | Get decoded data for attachments.  nb  This may well be overriden    |
- | to decode the data, etc.                                             |
- |                                                                      |
- | Parameters:                                                          |
- |   s : TStream        The stream to fill with the data                |
- *----------------------------------------------------------------------*)
 procedure TmvMessagePart.GetData(s: TStream);
 begin
-  if Assigned (fData) then
-    s.CopyFrom(fData, 0)
+  if Assigned(fData) then
+    s.CopyFrom(fData, 0);
 end;
 
-(*----------------------------------------------------------------------*
- | function TmvMessagePart.GetGraphic : TGraphic                        |
- |                                                                      |
- | Get a graphic representation of the data.  If this is not overridden |
- | return an Icon placeholder for display                               |
- |                                                                      |
- | The function returns the icon placeholder                            |
- *----------------------------------------------------------------------*)
 function TmvMessagePart.GetDecodeType: TDecodeType;
 begin
-  result := fDecodeType;
+  Result := fDecodeType;
 end;
 
 function TmvMessagePart.GetFileName: string;
 begin
-  result := StringReplace (fFileName, ':', '_', [rfReplaceAll]);
-  result := StringReplace (result, '\', '_', [rfReplaceAll]);
-  result := StringReplace (result, '/', '_', [rfReplaceAll]);
+  Result := StringReplace(fFileName, ':', '_', [rfReplaceAll]);
+  Result := StringReplace(Result, '\', '_', [rfReplaceAll]);
+  Result := StringReplace(Result, '/', '_', [rfReplaceAll]);
 end;
 
 function TmvMessagePart.GetGraphic: TGraphic;
 begin
-  result := Application.Icon
+  Result := Application.Icon;
 end;
 
-function TmvMessagePart.GetIsHTMLMultipart: boolean;
+function TmvMessagePart.GetIsHTMLMultipart: Boolean;
 begin
-  result := False
+  Result := False;
 end;
 
 function TmvMessagePart.GetMIMEContentType: string;
 begin
-  result := '';
+  Result := '';
 end;
 
 function TmvMessagePart.GetPercentDecoded: Integer;
 var
-  article : TArticle;
+  article: TArticle;
 begin
   try
     if Complete or fOverridePercent then
-      result := 100
+      Result := 100
     else
     begin
-      if Assigned (Owner) then
-        article := TArticle (Owner.Obj)
+      if Assigned(Owner) then
+        article := TArticle(Owner.Obj)
       else
-        article := Nil;
-      if Assigned (article) and (article.Lines > 0) then
+        article := nil;
+      if Assigned(article) and (article.Lines > 0) then
       begin
-        result := ((Owner.fCurrentLine - fStartLine) * 100) div article.Lines - 15;
-        if result < 0 then
-          result := 0
+        Result := ((Owner.fCurrentLine - fStartLine) * 100) div article.Lines - 15;
+        if Result < 0 then
+          Result := 0
       end
       else
-        result := 0
-    end
+        Result := 0;
+    end;
   except
-    result := 0
-  end
+    Result := 0;
+  end;
 end;
 
-procedure TmvMessagePart.InitMultipart (multipartHeader : TMIMEHeader);
+procedure TmvMessagePart.InitMultipart(multipartHeader: TMIMEHeader);
 begin
-// stub
+  // Stub
 end;
 
-(*----------------------------------------------------------------------*
- | class function TmvMessagePart.IsBoundary : boolean                   |
- |                                                                      |
- | Stub function                                                        |
- *----------------------------------------------------------------------*)
-class function TmvMessagePart.IsBoundary(const st: string; MIMEHeader : TMIMEHeader): boolean;
+class function TmvMessagePart.IsBoundary(const st: string; MIMEHeader: TMIMEHeader): Boolean;
 begin
-  result := false;
+  Result := False;
 end;
 
-(*----------------------------------------------------------------------*
- | function TmvMessagePart.IsBoundaryEnd : boolean                      |
- |                                                                      |
- | Stub function                                                        |
- *----------------------------------------------------------------------*)
-function TmvMessagePart.IsBoundaryEnd(const st: string): boolean;
+function TmvMessagePart.IsBoundaryEnd(const st: string): Boolean;
 begin
-  result := False
+  Result := False;
 end;
 
-(*----------------------------------------------------------------------*
- | TmvMessagePart.ProcessHeaderLine                                     |
- |                                                                      |
- | Process a header line.  Sub.  Returns true, indicating we'e still in |
- | the header.                                                          |
- *----------------------------------------------------------------------*)
-function TmvMessagePart.MatchesCID(const cid: string): boolean;
+function TmvMessagePart.MatchesCID(const cid: string): Boolean;
 begin
-  result := False
+  Result := False;
 end;
 
-function TmvMessagePart.ProcessHeaderLine(const st: string) : boolean;
+function TmvMessagePart.ProcessHeaderLine(const st: string): Boolean;
 begin
-  result := True
+  Result := True;
 end;
 
 { TmvMessageParts }
 
-(*----------------------------------------------------------------------*
- | TmvMessageParts.GetItems                                             |
- |                                                                      |
- | Return the specified message part                                    |
- *----------------------------------------------------------------------*)
 function TmvMessageParts.GetItems(idx: Integer): TmvMessagePart;
 begin
-  result := TmvMessagePart (inherited Items [idx])
+  Result := TmvMessagePart(inherited Items[idx]);
 end;
 
 
 { TThreadsafeMemoryStream }
 
-(*----------------------------------------------------------------------*
- | TThreadsafeMemoryStream.Create                                       |
- |                                                                      |
- | Constructor for TThreadsafeMemoryStream                              |
- *----------------------------------------------------------------------*)
 constructor TThreadsafeMemoryStream.Create;
 begin
-  inherited;
+  inherited Create;
   fCriticalSection := TCriticalSection.Create;
 end;
 
-(*----------------------------------------------------------------------*
- | TThreadsafeMemoryStream.Destroy                                      |
- |                                                                      |
- | Destructor for TThreadsafeMemoryStream                               |
- *----------------------------------------------------------------------*)
 destructor TThreadsafeMemoryStream.Destroy;
 begin
   fCriticalSection.Free;
-  inherited;
+  inherited Destroy;
 end;
 
-(*----------------------------------------------------------------------*
- | procedure TThreadsafeMemoryStream.Lock                               |
- |                                                                      |
- | Lock the memory stream.  No one else can write to it                 |
- *----------------------------------------------------------------------*)
 procedure TThreadsafeMemoryStream.Lock;
 begin
-  fCriticalSection.Enter
+  fCriticalSection.Enter;
 end;
 
-(*----------------------------------------------------------------------*
- | procedure TThreadsafeMemoryStream.UnLock                             |
- |                                                                      |
- | UnLock the memory stream.  People can write to it again              |
- *----------------------------------------------------------------------*)
 procedure TThreadsafeMemoryStream.Unlock;
 begin
-  fCriticalSection.Leave
+  fCriticalSection.Leave;
 end;
 
-(*----------------------------------------------------------------------*
- | function TThreadsafeMemoryStream.Write                               |
- |                                                                      |
- | Override the default 'write' method to lock/unlock.  Prevents        |
- | other threads from reading/writing while this thread is writing      |
- *----------------------------------------------------------------------*)
-function TThreadsafeMemoryStream.Write(const Buffer;
-  Count: Integer): Longint;
+function TThreadsafeMemoryStream.Write(const Buffer; Count: Integer): Longint;
 begin
+  // Override the default 'write' method to lock/unlock.  Prevents
+  // other threads from reading/writing while this thread is writing
   Lock;
   try
-    result := inherited Write (buffer, count)
+    Result := inherited Write(buffer, count)
   finally
-    Unlock
-  end
+    Unlock;
+  end;
 end;
 
 { TmvTextMessagePart }
 
-
-(*----------------------------------------------------------------------*
- | constructor TmvTextMessagePart.Create                                |
- |                                                                      |
- | Constructor for TmvTextMessgePart                                    |
- |                                                                      |
- | Parameters:                                                          |
- |   AOwner : TCollection                                               |
- *----------------------------------------------------------------------*)
 constructor TmvTextMessagePart.Create(AOwner: TCollection);
 begin
-  inherited;
-
+  inherited Create(AOwner);
   fBody := TStringList.Create;
 end;
 
-(*----------------------------------------------------------------------*
- | destructor TmvTextMessagePart.Destroy                                |
- |                                                                      |
- | Destructor for TmvTextMessagePart                                    |
- *----------------------------------------------------------------------*)
 destructor TmvTextMessagePart.Destroy;
 begin
   fBody.Free;
-
-  inherited;
+  inherited Destroy;
 end;
 
-(*----------------------------------------------------------------------*
- | function TmvTextMessagePart.GetBody : TStrings                       |
- |                                                                      |
- | GetBody returns the text body strings                                |
- *----------------------------------------------------------------------*)
 function TmvTextMessagePart.GetBody: TStrings;
 begin
-  result := fBody
+  Result := fBody;
 end;
 
-(*----------------------------------------------------------------------*
- | function TmvTextMessagePart.ProcessHeaderLine                        |
- |                                                                      |
- | There's no 'header/data' concept in non-mime text message parts so   |
- | this is a special case.  Stay in the header, but add each line to    |
- | the body.                                                            |
- |                                                                      |
- | Parameters:                                                          |
- |   const st : string          The line to add                         |
- |                                                                      |
- | The function returns true to stay in the header                      |
- *----------------------------------------------------------------------*)
-function TmvTextMessagePart.ProcessHeaderLine(const st: string): boolean;
+function TmvTextMessagePart.ProcessHeaderLine(const st: string): Boolean;
 begin
-  if not Assigned (fBody) then
+  // There's no 'header/data' concept in non-mime text message parts so
+  // this is a special case.  Stay in the header, but add each line to
+  // the body.
+  if not Assigned(fBody) then
     fBody := TStringList.Create;
   fBody.Add(st);
-  result := True
+  Result := True;
 end;
 
 { TMimeHeader }
@@ -1554,114 +1279,112 @@ begin
   fContentDescription := AHeader.fContentDescription;
   fContentDisposition := AHeader.fContentDisposition;
 
-  if Assigned (Aheader.fContentTypeAttributes) then
+  if Assigned(Aheader.fContentTypeAttributes) then
   begin
-    if not Assigned (fContentTypeAttributes) then
+    if not Assigned(fContentTypeAttributes) then
       fContentTypeAttributes := TStringList.Create;
-    fContentTypeAttributes.Assign(AHeader.fContentTypeAttributes)
+    fContentTypeAttributes.Assign(AHeader.fContentTypeAttributes);
   end
   else
-    FreeAndNil (fContentTypeAttributes);
+    FreeAndNil(fContentTypeAttributes);
 
-  if Assigned (Aheader.fcontentDispositionAttributes) then
+  if Assigned(Aheader.fcontentDispositionAttributes) then
   begin
-    if not Assigned (fcontentDispositionAttributes) then
+    if not Assigned(fcontentDispositionAttributes) then
       fcontentDispositionAttributes := TStringList.Create;
-    fcontentDispositionAttributes.Assign(AHeader.fcontentDispositionAttributes)
+    fcontentDispositionAttributes.Assign(AHeader.fcontentDispositionAttributes);
   end
   else
-    FreeAndNil (fcontentDispositionAttributes);
+    FreeAndNil(fcontentDispositionAttributes);
 end;
 
-class function TMimeHeader.CreateFromHeaderStrings (AHeader: TStrings; forceMIME : boolean) : TMIMEHeader;
+class function TMimeHeader.CreateFromHeaderStrings(AHeader: TStrings; forceMIME: Boolean): TMIMEHeader;
 var
-  i : Integer;
-  s1, st : string;
-  mimeHeader : TMimeHeader;
-  gotVersion : boolean;
-  gotContentType : boolean;
+  i: Integer;
+  s1, st: string;
+  mimeHeader: TMimeHeader;
+  gotVersion: Boolean;
+  gotContentType: Boolean;
 
-  procedure ParseMIMEVersion (var st : string);
+  procedure ParseMIMEVersion(var st: string);
   begin
-    if SplitString (';', st) = '1.0' then
+    if SplitString(';', st) = '1.0' then
     begin
       gotVersion := True;
-      if not Assigned (mimeHeader) then
-        mimeHeader := TMimeHeader.Create
-    end
+      if not Assigned(mimeHeader) then
+        mimeHeader := TMimeHeader.Create;
+    end;
   end;
 
-  procedure ParseContentType (var st : string);
+  procedure ParseContentType(var st: string);
   var
-    s1, attribName : string;
+    s1, attribName: string;
   begin
     gotContentType := True;
-    if Pos ('/', st) > 0 then
+    if Pos('/', st) > 0 then
     begin
-      mimeHeader.fContentTypeType := SplitString ('/', st);
-      mimeHeader.fContentTypeSubtype := SplitString (';', st)
+      mimeHeader.fContentTypeType := SplitString('/', st);
+      mimeHeader.fContentTypeSubtype := SplitString(';', st);
     end
     else
-      mimeHeader.fContentTypeType := SplitString (';', st);
+      mimeHeader.fContentTypeType := SplitString(';', st);
 
     while st <> '' do
     begin
-      s1 := SplitString (';', st);
-      attribName := SplitString ('=', s1);
+      s1 := SplitString(';', st);
+      attribName := SplitString('=', s1);
 
       if s1 <> '' then
       begin
-        if not Assigned (mimeHeader.fContentTypeAttributes) then
+        if not Assigned(mimeHeader.fContentTypeAttributes) then
         begin
           mimeHeader.fContentTypeAttributes := TStringList.Create;
-          mimeHeader.fContentTypeAttributes.CaseSensitive := False
+          mimeHeader.fContentTypeAttributes.CaseSensitive := False;
         end;
-
-        mimeHeader.fContentTypeAttributes.Add(attribName + '=' + AnsiDequotedStr (s1, '"'))
-      end
-    end
+        mimeHeader.fContentTypeAttributes.Add(attribName + '=' + AnsiDequotedStr(s1, '"'));
+      end;
+    end;
   end;
 
-  procedure ParseContentTransferEncoding (var st : string);
+  procedure ParseContentTransferEncoding(var st: string);
   begin
-    mimeHeader.fContentTransferEncoding := SplitString (';', st);
+    mimeHeader.fContentTransferEncoding := SplitString(';', st);
   end;
 
-  procedure ParseContentID (var st : string);
+  procedure ParseContentID(var st: string);
   begin
-    mimeHeader.fContentID := SplitString (';', st);
+    mimeHeader.fContentID := SplitString(';', st);
   end;
 
-  procedure ParseContentDescription (var st : string);
+  procedure ParseContentDescription(var st: string);
   begin
-    mimeHeader.fContentDescription := SplitString (';', st)
+    mimeHeader.fContentDescription := SplitString(';', st);
   end;
 
-  procedure ParseContentDisposition (var st : string);
+  procedure ParseContentDisposition(var st: string);
   var
-    s1, attribName : string;
+    s1, attribName: string;
   begin
-    mimeHeader.fContentDisposition := SplitString ('/', st);
+    mimeHeader.fContentDisposition := SplitString('/', st);
 
     while st <> '' do
     begin
-      s1 := SplitString (';', st);
-      attribName := SplitString ('=', s1);
+      s1 := SplitString(';', st);
+      attribName := SplitString('=', s1);
 
       if s1 <> '' then
       begin
-        if not Assigned (mimeHeader.fContentDispositionAttributes) then
+        if not Assigned(mimeHeader.fContentDispositionAttributes) then
         begin
           mimeHeader.fContentDispositionAttributes := TStringList.Create;
-          mimeHeader.fContentDispositionAttributes.CaseSensitive := False
+          mimeHeader.fContentDispositionAttributes.CaseSensitive := False;
         end;
-
-        mimeHeader.fContentDispositionAttributes.Add(attribName + '=' + AnsiDequotedStr (s1, '"'))
-      end
-    end
+        mimeHeader.fContentDispositionAttributes.Add(attribName + '=' + AnsiDequotedStr(s1, '"'));
+      end;
+    end;
   end;
 
-  procedure ParseAdditionalMIMEHeader (var st, s1 : string);
+  procedure ParseAdditionalMIMEHeader(var st, s1: string);
   begin
   end;
 
@@ -1670,67 +1393,67 @@ begin
   if forceMime then
   begin
     gotVersion := True;
-    mimeHeader := TMimeHeader.Create
+    mimeHeader := TMimeHeader.Create;
   end
   else
   begin
     gotVersion := False;
-    mimeHeader := Nil
+    mimeHeader := nil;
   end;
 
-  for i := 0 to AHeader.Count  - 1 do
+  for i := 0 to AHeader.Count - 1 do
   begin
-    st := AHeader [i];
+    st := AHeader[i];
 
-    s1 := SplitString (':', st);
+    s1 := SplitString(':', st);
 
-    if not Assigned (mimeHeader) and (CompareMem (PChar (s1), PChar ('Content-'), 8) or SameText (s1, 'X-RFC2646')) then
-      if not Assigned (mimeHeader) then
+    if not Assigned(mimeHeader) and (CompareMem(PChar(s1), PChar('Content-'), 8) or SameText(s1, 'X-RFC2646')) then
+      if not Assigned(mimeHeader) then
         mimeHeader := TMimeHeader.Create;
 
-    if CompareText (s1, 'MIME-Version') = 0 then
-      ParseMIMEVersion (st)
+    if CompareText(s1, 'MIME-Version') = 0 then
+      ParseMIMEVersion(st)
     else
-      if SameText (s1, 'X-RFC2646') then
+      if SameText(s1, 'X-RFC2646') then
       begin
-        mimeHeader.HandleXRFC2646 (st);
-        gotVersion := True
+        mimeHeader.HandleXRFC2646(st);
+        gotVersion := True;
       end
       else
-      if Assigned (MIMEHeader) and (CompareText (SplitString ('-', s1), 'Content') = 0) then
-        if CompareText (s1, 'Type') = 0 then
-          ParseContentType (st)
-        else
-          if CompareText (s1, 'Transfer-Encoding') = 0 then
-            ParseContentTransferEncoding (st)
+        if Assigned(MIMEHeader) and (CompareText(SplitString('-', s1), 'Content') = 0) then
+          if CompareText(s1, 'Type') = 0 then
+            ParseContentType(st)
           else
-            if CompareText (s1, 'ID') = 0 then
-              ParseContentID (st)
+            if CompareText(s1, 'Transfer-Encoding') = 0 then
+              ParseContentTransferEncoding(st)
             else
-              if CompareText (s1, 'Description') = 0 then
-                ParseContentDescription (st)
+              if CompareText(s1, 'ID') = 0 then
+                ParseContentID(st)
               else
-                if CompareText (s1, 'Disposition') = 0 then
-                  ParseContentDisposition (st)
+                if CompareText(s1, 'Description') = 0 then
+                  ParseContentDescription(st)
                 else
-                  ParseAdditionalMIMEHeader (s1, st)
+                  if CompareText(s1, 'Disposition') = 0 then
+                    ParseContentDisposition(st)
+                  else
+                    ParseAdditionalMIMEHeader(s1, st);
   end;
 
-  if Assigned (mimeHeader) then
+  if Assigned(mimeHeader) then
   begin
     if mimeHeader.fContentTypeType = '' then
     begin
       mimeHeader.fContentTypeType := 'text';
-      mimeHeader.fContentTypeSubType := 'plain'
-    end
+      mimeHeader.fContentTypeSubType := 'plain';
+    end;
   end;
 
   if gotVersion or gotContentType then
-    result := mimeHeader
+    Result := mimeHeader
   else
   begin
     mimeHeader.Free;
-    result := Nil
+    Result := nil;
   end
 end;
 
@@ -1738,110 +1461,108 @@ destructor TMimeHeader.Destroy;
 begin
   fContentTypeAttributes.Free;
   fContentDispositionAttributes.Free;
-
-  inherited;
+  inherited Destroy;
 end;
 
 function TMimeHeader.GetDecodeType: TDecodeType;
 begin
-  result := ttText;
+  Result := ttText;
 
-  if CompareText (ContentTransferEncoding, 'Base64') = 0 then
-    result := ttBase64
+  if CompareText(ContentTransferEncoding, 'Base64') = 0 then
+    Result := ttBase64
   else
-    if (CompareText (ContentTransferEncoding, 'UUENCODE') = 0) or (CompareText (ContentTransferEncoding, 'x-uuencode') = 0) then
-      result := ttUUEncode
+    if (CompareText(ContentTransferEncoding, 'UUENCODE') = 0) or (CompareText(ContentTransferEncoding, 'x-uuencode') = 0) then
+      Result := ttUUEncode
     else
-      if CompareText (ContentTransferEncoding, 'quoted-printable') = 0 then
-        result := ttQuotedPrintable
+      if CompareText(ContentTransferEncoding, 'quoted-printable') = 0 then
+        Result := ttQuotedPrintable;
 end;
 
 function TMimeHeader.GetFileName: string;
 begin
-  result := '';
-  if Assigned (fContentDispositionAttributes) then
-    result := ExtractFileName (fContentDispositionAttributes.Values ['filename']);
+  Result := '';
+  if Assigned(fContentDispositionAttributes) then
+    Result := ExtractFileName(fContentDispositionAttributes.Values['filename']);
 
-  if result = '' then
-    if Assigned (fContentTypeAttributes) then
-      result := ExtractFileName (fContentTypeAttributes.Values ['filename']);
+  if Result = '' then
+    if Assigned(fContentTypeAttributes) then
+      Result := ExtractFileName(fContentTypeAttributes.Values['filename']);
 
-  if result = '' then
-    if Assigned (fContentTypeAttributes) then
-      result := ExtractFileName (fContentTypeAttributes.Values ['name']);
+  if Result = '' then
+    if Assigned(fContentTypeAttributes) then
+      Result := ExtractFileName(fContentTypeAttributes.Values['name']);
 
-  if result = '' then
-    if CompareText (ContentType_Type, 'Message') = 0 then
-      result := '*.eml';
+  if Result = '' then
+    if CompareText(ContentType_Type, 'Message') = 0 then
+      Result := '*.eml';
 
-  if result = '' then
-    if CompareText (ContentType_Type, 'audio') = 0 then
-      result := '*.wav';
+  if Result = '' then
+    if CompareText(ContentType_Type, 'audio') = 0 then
+      Result := '*.wav';
 
-  if result = '' then
-    if CompareText (ContentType_Type, 'Image') = 0 then
+  if Result = '' then
+    if CompareText(ContentType_Type, 'Image') = 0 then
       if ContentType_Subtype <> '' then
-        result := '*.' + ContentType_SubType;
+        Result := '*.' + ContentType_SubType;
 
-  if (result <> '') and (result [1] = '*') then
+  if (Result <> '') and (Result[1] = '*') then
     if ContentDescription <> '' then
-      result := ContentDescription + Copy (result, 2, MaxInt)
+      Result := ContentDescription + Copy(Result, 2, MaxInt)
     else
-      result := 'inline' + Copy (result, 2, maxInt);
+      Result := 'inline' + Copy(Result, 2, maxInt);
 
-  if result = '' then
-    result := ContentDescription;
+  if Result = '' then
+    Result := ContentDescription;
 
-  if result = '' then
+  if Result = '' then
   begin
-    result := ContentType_Type;
+    Result := ContentType_Type;
     if ContentType_SubType <> '' then
-      result := Result + '/' + ContentType_SubType
-  end
+      Result := Result + '/' + ContentType_SubType;
+  end;
 end;
 
 function TMimeHeader.GetImageType: string;
 begin
-  if CompareText (ContentType_Type, 'image') = 0 then
-    result := ContentType_Subtype
+  if CompareText(ContentType_Type, 'image') = 0 then
+    Result := ContentType_Subtype
   else
-    result := ''
+    Result := ''
 end;
 
-function TMimeHeader.GetIsMultipart: boolean;
+function TMimeHeader.GetIsMultipart: Boolean;
 begin
-  result := CompareText (ContentType_Type, 'Multipart') = 0
-
+  Result := CompareText(ContentType_Type, 'Multipart') = 0;
 end;
 
-function TMimeHeader.GetMultipartBoundary : string;
+function TMimeHeader.GetMultipartBoundary: string;
 begin
-  if Assigned (fContentTypeAttributes) then
-    result := fContentTypeAttributes.Values ['boundary']
+  if Assigned(fContentTypeAttributes) then
+    Result := fContentTypeAttributes.Values['boundary']
   else
-    result := '';
+    Result := '';
 end;
 
 procedure TmvMessage.Unlock;
 begin
-  fCS.Leave
+  fCS.Leave;
 end;
 
 procedure TMimeHeader.HandleXRFC2646(const st: string);
 var
-  s, s1 : String;
+  s, s1: string;
 begin
   s := st;
-  s1 := SplitString (';', s);
-  s := SplitString ('=', s1);
+  s1 := SplitString(';', s);
+  s := SplitString('=', s1);
 
-  if SameText (s, 'format') and (s1 <> '') then
+  if SameText(s, 'format') and (s1 <> '') then
   begin
-    if not Assigned (fContentTypeAttributes) then
+    if not Assigned(fContentTypeAttributes) then
       fContentTypeAttributes := TStringList.Create;
 
-    fContentTypeAttributes.Values ['Format'] := s1;
-  end
+    fContentTypeAttributes.Values['Format'] := s1;
+  end;
 end;
 
 end.

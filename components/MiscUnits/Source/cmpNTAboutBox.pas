@@ -178,19 +178,22 @@ begin
   size := GetFileVersionInfoSize (PChar (Application.ExeName), zero);
   if size > 0 then
   begin
-    GetMem (buffer, size);
-    if not GetFileVersionInfo (PChar (Application.ExeName), zero, size, buffer) then
-      RaiseLastOSError;
+    GetMem(buffer, size);
+    try
+      if not GetFileVersionInfo (PChar (Application.ExeName), zero, size, buffer) then
+        RaiseLastOSError;
 
-    if not VerQueryValue (buffer, '\', pBuffer, size) then
-      RaiseLastOSError;
+      if not VerQueryValue (buffer, '\', pBuffer, size) then
+        RaiseLastOSError;
 
-    info := PVSFixedFileInfo (pBuffer);
+      info := PVSFixedFileInfo (pBuffer);
 
-    TabSheet1.Caption := 'About ' + st;
+      TabSheet1.Caption := 'About ' + st;
 
-    st := st + Format (' Version %d.%d.%d.%d', [HiWord (info^.dwProductVersionMS), LoWord (info^.dwProductVersionMS), HiWord (info^.dwProductVersionLS), LoWord (info^.dwProductVersionLS)]);
-    st := st + ' - Unnoficial Release';
+      st := st + Format (' Version %d.%d.%d.%d', [HiWord (info^.dwProductVersionMS), LoWord (info^.dwProductVersionMS), HiWord (info^.dwProductVersionLS), LoWord (info^.dwProductVersionLS)]);
+    finally
+      FreeMem(buffer);
+    end;
   end;
 
   if fThanksTo = '' then

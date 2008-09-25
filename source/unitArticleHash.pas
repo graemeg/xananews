@@ -365,6 +365,7 @@ begin
   result := result mod hashSize
 end;*)
 
+{$R-,Q-}
 function HashOf(const Key : string) : Cardinal;
 {Note: this hash function is described in "The C Programming Language"
        by Brian Kernighan and Donald Ritchie, Prentice Hall}
@@ -373,7 +374,7 @@ var
 begin
   Result := 0;
   for i := 1 to length(Key) do begin
-    Result := (Result * 31) + ord(Key[i]);
+    Result := (Result * 31) + Ord(Key[i]);
   end;
   Result := Result mod hashSize
 end;

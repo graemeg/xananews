@@ -78,21 +78,21 @@ object dlgMoveMessagebase: TdlgMoveMessagebase
       97)
     object edNewLocation: TEdit
       Left = 8
-      Top = 64
+      Top = 66
       Width = 320
       Height = 21
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 0
     end
-    object Button1: TButton
+    object btnSelectFolder: TButton
       Left = 335
-      Top = 61
+      Top = 64
       Width = 27
       Height = 25
       Anchors = [akTop, akRight]
       Caption = '...'
       TabOrder = 1
-      OnClick = Button1Click
+      OnClick = btnSelectFolderClick
     end
     object rbDefaultLocation: TRadioButton
       Left = 8
@@ -137,6 +137,7 @@ object dlgMoveMessagebase: TdlgMoveMessagebase
       Top = 8
       Width = 257
       Height = 13
+      Anchors = [akLeft, akTop, akRight]
       AutoSize = False
     end
     object ProgressBar1: TProgressBar
@@ -153,13 +154,21 @@ object dlgMoveMessagebase: TdlgMoveMessagebase
     Leeway = 1048576
     CopyMode = cmMove
     OnStartAnalysis = FileCopier1StartAnalysis
-    OnEndAnalysis = FileCopier1EndAnalysis
     OnStartCopy = FileCopier1StartCopy
     OnEndCopy = FileCopier1EndCopy
     OnStartCopyFile = FileCopier1StartCopyFile
     OnEndCopyFile = FileCopier1EndCopyFile
     OnException = FileCopier1Exception
     Left = 8
+    Top = 344
+  end
+  object PersistentPosition1: TPersistentPosition
+    Manufacturer = 'Woozle'
+    Product = 'XanaNews'
+    SubKey = 'Position\MoveMessagebase'
+    OnGetSettingsClass = PersistentPosition1GetSettingsClass
+    OnGetSettingsFile = PersistentPosition1GetSettingsFile
+    Left = 48
     Top = 344
   end
 end

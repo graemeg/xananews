@@ -9,6 +9,8 @@ uses
 type
   TPropertyPageAccountAdvancedServerData = class (TPropertyPageData)
   private
+    fConnectTimeout: Integer;
+    fReadTimeout: Integer;
     fServerTimeout : Integer;
     fUseXOver : boolean;
     fUsePipelining : boolean;
@@ -49,6 +51,12 @@ type
     edMaxConnections: TEdit;
     udMaxConnections: TUpDown;
     Label4: TLabel;
+    lbConnectTimeout: TLabel;
+    Label6: TLabel;
+    edConnectTimeout: TEdit;
+    lbReadTimeout: TLabel;
+    Label8: TLabel;
+    edReadTimeout: TEdit;
     procedure ControlClick(Sender: TObject);
     procedure ControlChange(Sender: TObject);
     procedure cbRasEntriesChange(Sender: TObject);
@@ -93,6 +101,8 @@ begin
       idx := i
   end;
 
+  edConnectTimeout.Text := IntToStr(fData.fConnectTimeout);
+  edReadTimeout.Text := IntToStr(fData.fReadTimeout);
   edServerTimeout.Text := IntToStr (fData.fServerTimeout);
   cbUseXOVER.Checked := fData.fUseXOver;
   edNNTPPort.Text := IntToStr (fData.fNNTPPort);
@@ -132,7 +142,9 @@ begin
     else
       fData.fRASConnection := cbRasEntries.Text;
 
-  fData.fServerTimeout := StrToIntDef (edServerTimeout.Text, 2000);
+  fData.fConnectTimeout := StrToIntDef(edConnectTimeout.Text, 60);
+  fData.fReadTimeout := StrToIntDef(edReadTimeout.Text, 60);
+  fData.fServerTimeout := StrToIntDef (edServerTimeout.Text, 60);
   fData.fUseXOver := cbUseXOver.Checked;
   fData.fUsePipelining := cbUsePipelining.Checked;
   fData.fNNTPPort := StrToIntDef (edNNTPPort.Text, 119);
@@ -152,6 +164,8 @@ begin
   account := TNNTPAccount (Param);
 
   account.NNTPServerSettings.RASConnection := fRASConnection;
+  account.NNTPServerSettings.ConnectTimeout := fConnectTimeout;
+  account.NNTPServerSettings.ReadTimeout := fReadTimeout;
   account.NNTPServerSettings.ServerTimeout := fServerTimeout;
   account.NoXNews := not fUseXOver;
   account.UsePipelining := fUsePipelining;
@@ -169,6 +183,8 @@ begin
   account := TNNTPAccount (Param);
 
   fRASConnection := account.NNTPServerSettings.RASConnection;
+  fConnectTimeout := account.NNTPServerSettings.ConnectTimeout;
+  fReadTimeout := account.NNTPServerSettings.ReadTimeout;
   fServerTimeout := account.NNTPServerSettings.ServerTimeout;
   fUseXOver := not account.NoXNews;
   fUsePipelining := Account.UsePipelining;
