@@ -881,7 +881,7 @@ type
     procedure vstArticlesHeaderClick(Sender: TVTHeader; Column: TColumnIndex; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure vstArticlesHeaderMouseUp(Sender: TVTHeader; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure vstArticlesGetImageIndex(Sender: TBaseVirtualTree; Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var Index: Integer);
-    procedure vstArticlesGetHint2(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; var LineBreakStyle: TVTTooltipLineBreakStyle; var HintText: string);
+    procedure vstArticlesGetHint(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; var LineBreakStyle: TVTTooltipLineBreakStyle; var HintText: string);
     procedure vstArticlesGetText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType; var Text: string);
     procedure vstArticlesHeaderDrawQueryElements(Sender: TVTHeader; var PaintInfo: THeaderPaintInfo; var Elements: THeaderPaintElements);
     procedure vstArticlesInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
@@ -10468,7 +10468,7 @@ begin
   tbMain.Visible := actViewShowToolbar.Checked
 end;
 
-procedure TfmMain.vstArticlesGetHint2(Sender: TBaseVirtualTree;
+procedure TfmMain.vstArticlesGetHint(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex;
   var LineBreakStyle: TVTTooltipLineBreakStyle; var HintText: string);
 var
