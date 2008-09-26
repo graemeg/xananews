@@ -422,7 +422,7 @@ type
 
 implementation
 
-uses ShellAPI, ClipBrd, printers, unitCharsetMap;
+uses ShellAPI, ClipBrd, printers, unitCharsetMap, CommDlg;
 
 var
   gRichEditModule : THandle;
@@ -522,7 +522,7 @@ begin
 
           SetLength (fURLText, 65536);
           textRange.chrg := ENLink^.chrg;
-          textRange.lpstrText := PChar (fURLText);
+          textRange.lpstrText := PAnsiChar (AnsiString(fURLText));
           SendMessage (Handle, EM_GETTEXTRANGE, 0, lParam (@textRange));
           fURLText := PChar (fURLText);
 
@@ -839,8 +839,8 @@ begin
     cpMax := -1; // cpMin + Length;
   end;
   Flags := FT_DOWN;
-  if stWholeWord in Options then Flags := Flags or FT_WHOLEWORD;
-  if stMatchCase in Options then Flags := Flags or FT_MATCHCASE;
+  if stWholeWord in Options then Flags := Flags or FR_WHOLEWORD;
+  if stMatchCase in Options then Flags := Flags or FR_MATCHCASE;
   ws := SearchStr;
   Find.lpstrText := PChar (SearchStr);
   Result := SendMessage(Handle, EM_FINDTEXT, Flags, LongInt(@Find));

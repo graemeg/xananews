@@ -73,7 +73,7 @@ implementation
 
 {$R *.dfm}
 
-uses registry, GIFImage, XFace, NewsGlobals, unitNNTPServices, ClipBrd;
+uses registry, GIFImg, XFace, NewsGlobals, unitNNTPServices, ClipBrd;
 
 procedure TdlgIdentity.btnLoadXFaceClick(Sender: TObject);
 var

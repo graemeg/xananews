@@ -30,7 +30,8 @@ requires
   vclie,
   vcl,
   LowLevel100,
-  ImageTypes100;
+  ImageTypes100,
+  vclimg;
 
 contains
   MiscUnitsReg in 'MiscUnitsReg.pas',

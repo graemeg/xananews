@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, ComCtrls, ExtCtrls, GifImage, StdCtrls;
+  Dialogs, ComCtrls, ExtCtrls, GifImg, StdCtrls;
 
 type
   TfmAddAccountWizard = class(TForm)

@@ -543,7 +543,7 @@ begin
   Dec (cmd);
 
   SetLength (verb, 256);
-  if Succeeded (mnuIntf.GetCommandString(cmd, GCS_VERBA, Nil, PChar (verb), 256)) then
+  if Succeeded (mnuIntf.GetCommandString(cmd, GCS_VERBA, Nil, PAnsiChar(AnsiString(verb)), 256)) then
   begin
     verb := PChar (verb);
     if not HandleMenuCommand (verb) then
@@ -551,7 +551,7 @@ begin
       FillChar (ici, sizeof (ici), 0);
       ici.cbSize := sizeof (ici);
       ici.hwnd := Handle;
-      ici.lpVerb := MakeIntResource (cmd);
+      ici.lpVerb := MakeIntResourceA(cmd);
       ici.nShow := SW_SHOWNORMAL;
 
       mnuIntf.InvokeCommand(ici)

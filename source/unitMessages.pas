@@ -261,7 +261,7 @@ function GetGraphicClass(ext: string): TGraphicClass;
 implementation
 
 uses
-  GIFImage, Jpeg, PngImage, unitMessageMime, NewsGlobals, idCoder, idCoderUUE,
+  GIFImg, Jpeg, PngImage, unitMessageMime, NewsGlobals, idCoder, idCoderUUE,
   idCoderMIME, unitCharsetMap, XFace, unitNNTPServices, unitSearchString, XnCoderUUE;
 
 var

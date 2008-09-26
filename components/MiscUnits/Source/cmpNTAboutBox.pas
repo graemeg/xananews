@@ -62,7 +62,7 @@ var
 
 implementation
 
-uses Registry, GifImage;
+uses Registry, gifimg;
 
 {$R *.DFM}
 

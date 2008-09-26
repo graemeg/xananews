@@ -106,7 +106,8 @@ public
   procedure GetOverviewFMT(var AResponse: TStringList);
   function SelectArticle(const AMsgNo: Cardinal): Boolean;
   procedure SelectGroup(const AGroup: string);
-  function SendCmd(AOut: string; const AResponse: array of SmallInt): SmallInt; override;
+  function SendCmd(AOut: string; const AResponse: array of SmallInt;
+      const AEncoding: TIdEncoding = en7bit): SmallInt; override;
   procedure SendXOVER(const AParam: string; AResponse: TStrings);
   procedure Send (header, msg : TStrings);
   procedure Authenticate;
@@ -544,17 +545,18 @@ begin
   SendCmd('.', 240);
 end;
 
-function TidNNTPX.SendCmd(AOut: string; const AResponse: array of SmallInt): SmallInt;
+function TidNNTPX.SendCmd(AOut: string; const AResponse: array of SmallInt;
+      const AEncoding: TIdEncoding = en7bit): SmallInt;
 begin
   // NOTE: Responses must be passed as arrays so that the proper inherited SendCmd is called
   // and a stack overflow is not caused.
-  Result := inherited SendCmd(AOut, []);
+  Result := inherited SendCmd(AOut, [], AEncoding);
   if (Result = 480) or (Result = 450) then begin
     result := inherited SendCmd('AuthInfo User ' + Username, [281, 381]);
 
     if result = 381 then
       inherited SendCmd('AuthInfo Pass ' + Password, [281]);
-    Result := inherited SendCmd(AOut, AResponse);
+    Result := inherited SendCmd(AOut, AResponse, AEncoding);
   end else begin
     Result := CheckResponse(Result, AResponse);
   end;

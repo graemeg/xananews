@@ -31,9 +31,7 @@ requires
   vcl;
 
 contains
-  GIFImage in 'GIFImage.pas',
   unitExIcon in 'unitExIcon.pas',
-  PngImage in 'PngImage.pas',
   MMPropZLIB in 'MMPropZLIB.pas',
   XFace in 'XFace.pas';
 

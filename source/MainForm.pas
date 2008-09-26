@@ -881,8 +881,8 @@ type
     procedure vstArticlesHeaderClick(Sender: TVTHeader; Column: TColumnIndex; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure vstArticlesHeaderMouseUp(Sender: TVTHeader; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure vstArticlesGetImageIndex(Sender: TBaseVirtualTree; Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var Index: Integer);
-    procedure vstArticlesGetHint(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; var LineBreakStyle: TVTTooltipLineBreakStyle; var HintText: WideString);
-    procedure vstArticlesGetText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType; var Text: WideString);
+    procedure vstArticlesGetHint2(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; var LineBreakStyle: TVTTooltipLineBreakStyle; var HintText: string);
+    procedure vstArticlesGetText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType; var Text: string);
     procedure vstArticlesHeaderDrawQueryElements(Sender: TVTHeader; var PaintInfo: THeaderPaintInfo; var Elements: THeaderPaintElements);
     procedure vstArticlesInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
     procedure vstArticlesInitChildren(Sender: TBaseVirtualTree; Node: PVirtualNode; var ChildCount: Cardinal);
@@ -894,7 +894,7 @@ type
     procedure vstBookmarkDragDrop(Sender: TBaseVirtualTree; Source: TObject; DataObject: IDataObject; Formats: TFormatArray; Shift: TShiftState; Pt: TPoint; var Effect: Integer; Mode: TDropMode);
     procedure vstBookmarkDragOver(Sender: TBaseVirtualTree; Source: TObject; Shift: TShiftState; State: TDragState; Pt: TPoint; Mode: TDropMode; var Effect: Integer; var Accept: Boolean);
     procedure vstBookmarkFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex);
-    procedure vstBookmarkGetText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType; var CellText: WideString);
+    procedure vstBookmarkGetText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
     procedure vstBookmarkHeaderMouseUp(Sender: TVTHeader; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure vstBookmarkInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
     procedure vstBookmarkResize(Sender: TObject);
@@ -902,7 +902,7 @@ type
     procedure vstQueuedRequestsInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
     procedure vstQueuedRequestsInitChildren(Sender: TBaseVirtualTree; Node: PVirtualNode; var ChildCount: Cardinal);
     procedure vstQueuedRequestsGetImageIndex(Sender: TBaseVirtualTree; Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var ImageIndex: Integer);
-    procedure vstQueuedRequestsGetText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType; var CellText: WideString);
+    procedure vstQueuedRequestsGetText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
 
     procedure vstSubscribedAfterItemPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; ItemRect: TRect);
     procedure vstSubscribedCollapsed(Sender: TBaseVirtualTree; Node: PVirtualNode);
@@ -913,13 +913,13 @@ type
     procedure vstSubscribedExpanded(Sender: TBaseVirtualTree; Node: PVirtualNode);
     procedure vstSubscribedDblClick(Sender: TObject);
     procedure vstSubscribedFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex);
-    procedure vstSubscribedGetHint(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; var LineBreakStyle: TVTTooltipLineBreakStyle; var HintText: WideString);
+    procedure vstSubscribedGetHint(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; var LineBreakStyle: TVTTooltipLineBreakStyle; var HintText: string);
     procedure vstSubscribedGetImageIndex(Sender: TBaseVirtualTree; Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var Index: Integer);
-    procedure vstSubscribedGetText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType; var Text: WideString);
+    procedure vstSubscribedGetText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType; var Text: string);
     procedure vstSubscribedInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
     procedure vstSubscribedInitChildren(Sender: TBaseVirtualTree; Node: PVirtualNode; var ChildCount: Cardinal);
     procedure vstSubscribedKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
-    procedure vstSubscribedNewText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; NewText: WideString);
+    procedure vstSubscribedNewText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; NewText: string);
     procedure vstSubscribedPaintText(Sender: TBaseVirtualTree; const Canvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType);
   private
     fHeaderSortCol: Integer;
@@ -6330,7 +6330,7 @@ end;
 
 procedure TfmMain.vstArticlesGetText(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
-  var Text: WideString);
+  var Text: string);
 var
   article: TArticleBase;
   st, stNumber: string;
@@ -6759,7 +6759,7 @@ end;
 
 procedure TfmMain.vstQueuedRequestsGetText(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
-  var CellText: WideString);
+  var CellText: string);
 var
   data: PObject;
   getter: TTCPGetter;
@@ -7101,7 +7101,7 @@ end;
 
 procedure TfmMain.vstSubscribedGetText(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
-  var Text: WideString);
+  var Text: string);
 var
   data: PObject;
   ct, ct1: Integer;
@@ -7246,7 +7246,7 @@ begin
 end;
 
 procedure TfmMain.vstSubscribedNewText(Sender: TBaseVirtualTree;
-  Node: PVirtualNode; Column: TColumnIndex; NewText: WideString);
+  Node: PVirtualNode; Column: TColumnIndex; NewText: string);
 var
   fldr: TArticleFolder;
 begin
@@ -8312,7 +8312,7 @@ begin
     end;
   end;
  {$elseif CompilerVersion > 18.5}
-   {$Message Warn 'Re-check if above fix is still needed on later versions. Also see: http://qc.codegear.com/wc/qcmain.aspx?d=65418'}
+   {.$Message Warn 'Re-check if above fix is still needed on later versions. Also see: http://qc.codegear.com/wc/qcmain.aspx?d=65418'}
  {$ifend}
 {$endif}
 end;
@@ -8979,7 +8979,7 @@ end;
 
 procedure TfmMain.vstBookmarkGetText(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
-  var CellText: WideString);
+  var CellText: string);
 var
   obj: PObject;
   ma: TMarkedArticle;
@@ -9499,7 +9499,7 @@ end;
 
 procedure TfmMain.WmNameThread(var msg: TMessage);
 begin
-  NameThread(msg.WParam, PChar(msg.LParam));
+  NameThread(msg.WParam, UTF8Encode(PChar(msg.LParam)));
 end;
 
 procedure TfmMain.WmGetConnected(var msg: TMessage);
@@ -10468,9 +10468,9 @@ begin
   tbMain.Visible := actViewShowToolbar.Checked
 end;
 
-procedure TfmMain.vstArticlesGetHint(Sender: TBaseVirtualTree;
+procedure TfmMain.vstArticlesGetHint2(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex;
-  var LineBreakStyle: TVTTooltipLineBreakStyle; var HintText: WideString);
+  var LineBreakStyle: TVTTooltipLineBreakStyle; var HintText: string);
 var
   article: TArticleBase;
   st, stNumber: string;
@@ -10547,7 +10547,7 @@ end;
 
 procedure TfmMain.vstSubscribedGetHint(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex;
-  var LineBreakStyle: TVTTooltipLineBreakStyle; var HintText: WideString);
+  var LineBreakStyle: TVTTooltipLineBreakStyle; var HintText: string);
 var
   data: PObject;
   ct, ct1: Integer;

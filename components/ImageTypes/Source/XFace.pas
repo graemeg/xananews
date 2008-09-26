@@ -146,7 +146,7 @@ begin
 
   encode_face(Pixels, @buffer[0], 2);
 
-  l := strlen(@buffer[0]);
+  l := strlen(PAnsiChar(@buffer[0]));
 
   SetLength(XFace, l);
 

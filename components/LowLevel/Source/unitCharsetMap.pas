@@ -349,7 +349,7 @@ begin
       dlen := 0
   end
   else
-    dlen := WideCharToMultiByte (codePage, 0, PWideChar (ws), len, PChar (result), len * 4, nil, nil);
+    dlen := WideCharToMultiByte (codePage, 0, PWideChar (ws), len, PAnsiChar(AnsiString(result)), len * 4, nil, nil);
 
   if dlen = 0 then
     result := ws
@@ -379,7 +379,7 @@ begin
         dlen := 0;
     end
     else
-      dlen := MultiByteToWideChar (codepage, 0, PChar (st), len, PWideChar (result), len * 4);
+      dlen := MultiByteToWideChar (codepage, 0, PAnsiChar(AnsiString(st)), len, PWideChar (result), len * 4);
 
     if dlen = 0 then
       result := st

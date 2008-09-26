@@ -70,7 +70,7 @@ procedure DecodeFormatFlowed(const ins: TStream; outs: TStrings);
 implementation
 
 uses
-  GIFImage, Jpeg, pngImage, NewsGlobals, idCoderUUE, idCoder, idCoderMIME,
+  GIFImg, Jpeg, pngImage, NewsGlobals, idCoderUUE, idCoder, idCoderMIME,
   unitStreamTextReader, unitRFC2646Coder, XnCoderUUE;
 
 function GetMimeGraphicClass(const imageClass: string): TGraphicClass;

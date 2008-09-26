@@ -236,8 +236,8 @@ begin
   if useMAPI then
   begin
     FillChar (mmsg, SizeOf (mmsg), 0);
-    mmsg.lpszSubject := PChar (edSubject.Text);
-    mmsg.lpszNoteText := PChar (st);
+    mmsg.lpszSubject := PAnsiChar(AnsiString(edSubject.Text));
+    mmsg.lpszNoteText := PAnsiChar(AnsiString(st));
     mmsg.lpOriginator := nil;
 
     if edCC.Text <> '' then
@@ -251,9 +251,9 @@ begin
     DecodeFromEMail (edTo.Text, toName, toEMail);
     FillChar (recips [0], mmsg.nRecipCount * sizeof (TMapiRecipDesc), 0);
     recips [0].ulRecipClass := MAPI_TO;
-    recips [0].lpszName := PChar (toName);
+    recips [0].lpszName := PAnsiChar(AnsiString(toName));
     raddr := 'SMTP:' + toEMail;
-    recips [0].lpszAddress := PChar (raddr);
+    recips [0].lpszAddress := PAnsiChar(AnsiString(raddr));
 
     SetLength(attach, fAttachments.Count);
     FillChar(attach[0], fAttachments.Count * SizeOf(TMapiFileDesc), 0);
@@ -262,7 +262,7 @@ begin
     for I := 0 to fAttachments.Count - 1 do
     begin
       attach[I].nPosition := $FFFFFFFF;
-      attach[I].lpszPathName := PChar(TAttachment(fAttachments[I]).PathName);
+      attach[I].lpszPathName := PAnsiChar(AnsiString(TAttachment(fAttachments[I]).PathName));
     end;
 
     ActiveWindow := GetActiveWindow;

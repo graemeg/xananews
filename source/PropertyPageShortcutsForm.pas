@@ -54,7 +54,7 @@ type
       TargetCanvas: TCanvas; Node: PVirtualNode; ItemRect: TRect);
     procedure vstActionsGetText(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
-      var CellText: WideString);
+      var CellText: string);
     procedure vstActionsInitNode(Sender: TBaseVirtualTree; ParentNode,
       Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
     procedure vstActionsInitChildren(Sender: TBaseVirtualTree;
@@ -63,7 +63,7 @@ type
       const TargetCanvas: TCanvas; Node: PVirtualNode;
       Column: TColumnIndex; TextType: TVSTTextType);
     procedure vstActionsNewText(Sender: TBaseVirtualTree;
-      Node: PVirtualNode; Column: TColumnIndex; NewText: WideString);
+      Node: PVirtualNode; Column: TColumnIndex; NewText: string);
     procedure vstActionsCreateEditor(Sender: TBaseVirtualTree;
       Node: PVirtualNode; Column: TColumnIndex; out EditLink: IVTEditLink);
     procedure btnEditClick(Sender: TObject);
@@ -321,7 +321,7 @@ end;
 
 procedure TfmPropertyPageShortcuts.vstActionsGetText(
   Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex;
-  TextType: TVSTTextType; var CellText: WideString);
+  TextType: TVSTTextType; var CellText: string);
 var
   data : PObject;
   action : TCustomAction;
@@ -417,7 +417,7 @@ end;
 
 procedure TfmPropertyPageShortcuts.vstActionsNewText(
   Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex;
-  NewText: WideString);
+  NewText: string);
 var
   act : TCustomAction;
   sc : TShortcut;
@@ -641,7 +641,7 @@ type
 // retrieves the true text bounds from the owner tree
 
 var
-  Text: WideString;
+  Text: string;
   idx : Integer;
 
 begin
