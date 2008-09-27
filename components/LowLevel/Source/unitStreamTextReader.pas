@@ -244,7 +244,7 @@ function TStreamTextReader.ReadLn(var st: string; continuationChar: AnsiChar): b
 var
   L, lineStartPos : Integer;
   pch, pch1 : PAnsiChar;
-  st1 : AnsiString;
+  st1 : UTF8String;
   cont, scont : boolean;
 begin
   lineStartPos := Position;
@@ -301,7 +301,8 @@ begin
     end;
 
 // TODO: check UTF8 decoding
-    st := st + st1
+//    st := st + st1
+    st := st + UTF8ToString(st1);
   end;
 
   if cont then
@@ -401,6 +402,7 @@ function TTextFileReader.ReadLn(var st: string): boolean;
 var
   p, p1: PAnsiChar;
   L: Integer;
+  S: UTF8String;
 begin
   L := fSize - fPosition;
   if L > 0 then
@@ -420,7 +422,10 @@ begin
     else
       Inc(fPosition, L);
 
-    SetString (st, p1, L);
+// TODO: check UTF8 decoding
+//    SetString(st, p1, L);
+    SetString(S, p1, L);
+    st := UTF8ToString(S);
   end
   else
     Result := False;

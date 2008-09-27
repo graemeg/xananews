@@ -3272,7 +3272,8 @@ begin
     pnlDetailsBar.Font.Charset := CodePageToCharset(article.CodePage);
     sub := DecodeSubject(article.subject, article.CodePage);
     st := Format('  Message %d from %s.  %s', [article.ArticleNo, article.FromName, sub]);
-    pnlDetailsBar.Caption := StringReplace(StringToGDIString(st, article.CodePage), '&', '&&', [rfReplaceAll]);
+//    pnlDetailsBar.Caption := StringReplace(StringToGDIString(st, article.CodePage), '&', '&&', [rfReplaceAll]);
+    pnlDetailsBar.Caption := StringReplace(st, '&', '&&', [rfReplaceAll]);
     idx := cbCharset.Items.IndexOf(CodePagetoCharsetName(article.CodePage));
     cbCharset.ItemIndex := idx;
   end
@@ -6400,7 +6401,8 @@ begin
       5: st := IntToStr(Article.Lines)
     end;
 
-    Text := StringToWideString(st, article.CodePage);
+//    Text := StringToWideString(st, article.CodePage);
+    Text := st;
   end
 end;
 
@@ -10541,7 +10543,8 @@ begin
       5: st := IntToStr(Article.Lines) + ' lines'
     end;
 
-    HintText := StringToWideString(st, article.CodePage);
+//    HintText := StringToWideString(st, article.CodePage);
+    HintText := st;
   end;
 end;
 

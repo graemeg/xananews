@@ -195,7 +195,7 @@ function WideReverseString(const st: WideString): WideString;
 procedure LoadRASEntries;
 function HeaderCharset(h: string): string;
 procedure DecodeFromEMail(const from: string; var fromName, fromEMail: string; codePage: Integer = -1);
-function DecodeHeader(const header: string; codePage: PInteger = nil): widestring;
+function DecodeHeader(const header: string; codePage: PInteger = nil): string;
 function DecodeSubject(const subject: string; codePage: Integer): string;
 function GenerateMessageID(const product, stub, host: string): string;
 function EncodeHeader(const header: string; codepage: Integer; from: Boolean): string;
@@ -788,14 +788,13 @@ begin
   end;
 
 
-  if codePage = -1 then
-    codePage := CP_ACP;
-  fromName := WideStringToString(DecodeHeader(fromName), CodePage);
+//  if codePage = -1 then
+//    codePage := CP_ACP;
+  fromName := DecodeHeader(fromName);
 
   if fromName = '' then
     fromName := from;
 
-//  fromName := Trim(StringReplace(fromName, '\', '', [rfReplaceAll]));
 end;
 
 { TActionDefault }
@@ -873,6 +872,9 @@ var
   enc: Char;
   x, cpnum: Integer;
   AttachSpace: Boolean;
+  DecodedBytes: TBytes;
+  DecodedStream: TMemoryStream;
+  EncodedStream: TMemoryStream;
 begin
   Result := '';
   x := Pos('?', Input);
@@ -889,35 +891,61 @@ begin
   enc := Input[x + 1];
   data := Copy(Input, x + 3, maxint);
 
-  if enc in ['b', 'B'] then begin
-    with TidDecoderMIME.Create(nil) do
+  DecodedStream := TMemoryStream.Create;
+  EncodedStream := TMemoryStream.Create;
+  try
+    if enc in ['b', 'B'] then
     begin
-      data := DecodeString(data);
-      Free;
-    end;
-  end
-  else
-  begin
-    // TidDecoderQuotedPrintable does not deal with underscore encoded spaces
-    data := StringReplace(data, '_', ' ', [rfReplaceAll]);
-    AttachSpace := data[Length(data)] = ' ';
-    with TidDecoderQuotedPrintable.Create(nil) do
+      AttachSpace := False;
+      with TidDecoderMIME.Create(nil) do
+      begin
+        WriteStringToStream(EncodedStream, Data, en7Bit);
+        EncodedStream.Position := 0;
+        try
+          DecodeBegin(DecodedStream);
+          Decode(EncodedStream);
+          DecodeEnd;
+        finally
+          Free;
+        end;
+      end;
+    end
+    else
     begin
-      data := DecodeString(data);
-      Free;
+      // TidDecoderQuotedPrintable does not deal with underscore encoded spaces
+      data := StringReplace(data, '_', ' ', [rfReplaceAll]);
+      AttachSpace := data[Length(data)] = ' ';
+      with TXnDecoderQuotedPrintable.Create(nil) do
+      begin
+        WriteStringToStream(EncodedStream, Data, en7Bit);
+        EncodedStream.Position := 0;
+        try
+          DecodeBegin(DecodedStream);
+          Decode(EncodedStream);
+          DecodeEnd;
+        finally
+          Free;
+        end;
+      end;
     end;
+    DecodedStream.Position := 0;
+    ReadTIdBytesFromStream(DecodedStream, DecodedBytes, -1);
+    Result := TEncoding.GetEncoding(cpnum).GetString(DecodedBytes);
     // Unfortunately, the Decoder will also trim trailing spaces
     if AttachSpace then
-      data := data + ' ';
+      Result := Result + ' ';
+  finally
+    EncodedStream.Free;
+    DecodedStream.Free;
   end;
 
-  // Convert character data to widestring
-  setlength(Result, Length(data));
-  x := MultiByteToWideChar(cpnum, 0, @data[1], Length(data), @Result[1], Length(Result));
-  SetLength(Result, x);
+//  // Convert character data to widestring
+//  setlength(Result, Length(data));
+//  x := MultiByteToWideChar(cpnum, 0, @data[1], Length(data), @Result[1], Length(Result));
+//  SetLength(Result, x);
 end;
 
-function DecodeHeader(const header: string; codePage: PInteger = nil): widestring;
+function DecodeHeader(const header: string; codePage: PInteger = nil): string;
 const
   CP_UTF_16 = 1200;
 var
@@ -949,7 +977,7 @@ var
   cp: Integer;
 begin
   cp := codePage;
-  Result := WideStringToString(DecodeHeader(subject, @cp), codePage);
+  Result := DecodeHeader(subject, @cp);
 end;
 
 var
