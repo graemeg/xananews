@@ -1,6 +1,7 @@
 program NewsReader3;
 
 uses
+//  FastMM4,
   madListHardware,
   madListProcesses,
   madListModules,

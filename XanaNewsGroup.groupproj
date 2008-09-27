@@ -3,19 +3,19 @@
 			<ProjectGuid>{86f9878d-6ea7-4638-a02a-875a697202af}</ProjectGuid>
 		</PropertyGroup>
 		<ItemGroup>
-			<Projects Include="components\ImageTypes\Source\ImageTypes100.dproj">
+			<Projects Include="components\ImageTypes\Source\ImageTypesD2009.dproj">
 				<Dependencies/>
 			</Projects>
-			<Projects Include="components\LowLevel\Source\LowLevel100.dproj">
+			<Projects Include="components\LowLevel\Source\LowLevelD2009.dproj">
 				<Dependencies/>
 			</Projects>
-			<Projects Include="components\MiscUnits\Source\MiscUnits100.dproj">
+			<Projects Include="components\MiscUnits\Source\MiscUnitsD2009.dproj">
 				<Dependencies/>
 			</Projects>
-			<Projects Include="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD10.dproj">
+			<Projects Include="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD2009.dproj">
 				<Dependencies/>
 			</Projects>
-			<Projects Include="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD10D.dproj">
+			<Projects Include="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD2009D.dproj">
 				<Dependencies/>
 			</Projects>
 			<Projects Include="source\NewsReader3.dproj">
@@ -31,50 +31,50 @@
 				</BorlandProject>
 			</BorlandProject>
 		</ProjectExtensions>
-		<Target Name="ImageTypes100">
-			<MSBuild Projects="components\ImageTypes\Source\ImageTypes100.dproj"/>
+		<Target Name="ImageTypesD2009">
+			<MSBuild Projects="components\ImageTypes\Source\ImageTypesD2009.dproj"/>
 		</Target>
-		<Target Name="ImageTypes100:Clean">
-			<MSBuild Targets="Clean" Projects="components\ImageTypes\Source\ImageTypes100.dproj"/>
+		<Target Name="ImageTypesD2009:Clean">
+			<MSBuild Targets="Clean" Projects="components\ImageTypes\Source\ImageTypesD2009.dproj"/>
 		</Target>
-		<Target Name="ImageTypes100:Make">
-			<MSBuild Targets="Make" Projects="components\ImageTypes\Source\ImageTypes100.dproj"/>
+		<Target Name="ImageTypesD2009:Make">
+			<MSBuild Targets="Make" Projects="components\ImageTypes\Source\ImageTypesD2009.dproj"/>
 		</Target>
-		<Target Name="LowLevel100">
-			<MSBuild Projects="components\LowLevel\Source\LowLevel100.dproj"/>
+		<Target Name="LowLevelD2009">
+			<MSBuild Projects="components\LowLevel\Source\LowLevelD2009.dproj"/>
 		</Target>
-		<Target Name="LowLevel100:Clean">
-			<MSBuild Targets="Clean" Projects="components\LowLevel\Source\LowLevel100.dproj"/>
+		<Target Name="LowLevelD2009:Clean">
+			<MSBuild Targets="Clean" Projects="components\LowLevel\Source\LowLevelD2009.dproj"/>
 		</Target>
-		<Target Name="LowLevel100:Make">
-			<MSBuild Targets="Make" Projects="components\LowLevel\Source\LowLevel100.dproj"/>
+		<Target Name="LowLevelD2009:Make">
+			<MSBuild Targets="Make" Projects="components\LowLevel\Source\LowLevelD2009.dproj"/>
 		</Target>
-		<Target Name="MiscUnits100">
-			<MSBuild Projects="components\MiscUnits\Source\MiscUnits100.dproj"/>
+		<Target Name="MiscUnitsD2009">
+			<MSBuild Projects="components\MiscUnits\Source\MiscUnitsD2009.dproj"/>
 		</Target>
-		<Target Name="MiscUnits100:Clean">
-			<MSBuild Targets="Clean" Projects="components\MiscUnits\Source\MiscUnits100.dproj"/>
+		<Target Name="MiscUnitsD2009:Clean">
+			<MSBuild Targets="Clean" Projects="components\MiscUnits\Source\MiscUnitsD2009.dproj"/>
 		</Target>
-		<Target Name="MiscUnits100:Make">
-			<MSBuild Targets="Make" Projects="components\MiscUnits\Source\MiscUnits100.dproj"/>
+		<Target Name="MiscUnitsD2009:Make">
+			<MSBuild Targets="Make" Projects="components\MiscUnits\Source\MiscUnitsD2009.dproj"/>
 		</Target>
-		<Target Name="VirtualTreesD10">
-			<MSBuild Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD10.dproj"/>
+		<Target Name="VirtualTreesD2009">
+			<MSBuild Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD2009.dproj"/>
 		</Target>
-		<Target Name="VirtualTreesD10:Clean">
-			<MSBuild Targets="Clean" Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD10.dproj"/>
+		<Target Name="VirtualTreesD2009:Clean">
+			<MSBuild Targets="Clean" Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD2009.dproj"/>
 		</Target>
-		<Target Name="VirtualTreesD10:Make">
-			<MSBuild Targets="Make" Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD10.dproj"/>
+		<Target Name="VirtualTreesD2009:Make">
+			<MSBuild Targets="Make" Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD2009.dproj"/>
 		</Target>
-		<Target Name="VirtualTreesD10D">
-			<MSBuild Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD10D.dproj"/>
+		<Target Name="VirtualTreesD2009D">
+			<MSBuild Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD2009D.dproj"/>
 		</Target>
-		<Target Name="VirtualTreesD10D:Clean">
-			<MSBuild Targets="Clean" Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD10D.dproj"/>
+		<Target Name="VirtualTreesD2009D:Clean">
+			<MSBuild Targets="Clean" Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD2009D.dproj"/>
 		</Target>
-		<Target Name="VirtualTreesD10D:Make">
-			<MSBuild Targets="Make" Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD10D.dproj"/>
+		<Target Name="VirtualTreesD2009D:Make">
+			<MSBuild Targets="Make" Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD2009D.dproj"/>
 		</Target>
 		<Target Name="NewsReader3">
 			<MSBuild Projects="source\NewsReader3.dproj"/>
@@ -86,13 +86,13 @@
 			<MSBuild Targets="Make" Projects="source\NewsReader3.dproj"/>
 		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="ImageTypes100;LowLevel100;MiscUnits100;VirtualTreesD10;VirtualTreesD10D;NewsReader3"/>
+			<CallTarget Targets="ImageTypesD2009;LowLevelD2009;MiscUnitsD2009;VirtualTreesD2009;VirtualTreesD2009D;NewsReader3"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="ImageTypes100:Clean;LowLevel100:Clean;MiscUnits100:Clean;VirtualTreesD10:Clean;VirtualTreesD10D:Clean;NewsReader3:Clean"/>
+			<CallTarget Targets="ImageTypesD2009:Clean;LowLevelD2009:Clean;MiscUnitsD2009:Clean;VirtualTreesD2009:Clean;VirtualTreesD2009D:Clean;NewsReader3:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="ImageTypes100:Make;LowLevel100:Make;MiscUnits100:Make;VirtualTreesD10:Make;VirtualTreesD10D:Make;NewsReader3:Make"/>
+			<CallTarget Targets="ImageTypesD2009:Make;LowLevelD2009:Make;MiscUnitsD2009:Make;VirtualTreesD2009:Make;VirtualTreesD2009D:Make;NewsReader3:Make"/>
 		</Target>
 		<Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 	</Project>

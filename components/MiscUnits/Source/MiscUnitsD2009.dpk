@@ -1,0 +1,76 @@
+package MiscUnitsD2009;
+
+{$R *.res}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO ON}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO ON}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DESCRIPTION 'Colin Wilson - Miscellaneous Components'}
+{$IMPLICITBUILD ON}
+
+requires
+  rtl,
+  vclie,
+  vcl,
+  ImageTypesD2009,
+  LowLevelD2009;
+
+contains
+  MiscUnitsReg in 'MiscUnitsReg.pas',
+  cmpFileCopier in 'cmpFileCopier.pas',
+  cmpSplitterPanel in 'cmpSplitterPanel.pas',
+  cmpTextDisplay in 'cmpTextDisplay.pas',
+  cmpUCtrls in 'cmpUCtrls.pas',
+  cmpCWSpellChecker in 'cmpCWSpellChecker.pas',
+  cmpPersistentOptions in 'cmpPersistentOptions.pas',
+  cmpTexturedPanel in 'cmpTexturedPanel.pas',
+  cmpColorSelector in 'cmpColorSelector.pas',
+  cmpHexDump in 'cmpHexDump.pas',
+  cmpSizingPageControl in 'cmpSizingPageControl.pas',
+  cmpSpellChecker in 'cmpSpellChecker.pas',
+  SpellCheckerForm in 'SpellCheckerForm.pas',
+  cmpThemedScrollBox in 'cmpThemedScrollBox.pas',
+  cmpCWRichEdit in 'cmpCWRichEdit.pas',
+  cmpNewsRichEdit in 'cmpNewsRichEdit.pas',
+  cmpRuler in 'cmpRuler.pas',
+  cmpMessageDisplay in 'cmpMessageDisplay.pas',
+  cmpNTAboutBox in 'cmpNTAboutBox.pas',
+  cmpRunOnce in 'cmpRunOnce.pas',
+  cmpStandardSystemMenu in 'cmpStandardSystemMenu.pas',
+  cmpExSplitter in 'cmpExSplitter.pas',
+  cmpHyperlinkButton in 'cmpHyperlinkButton.pas',
+  cmpExWebBrowser in 'cmpExWebBrowser.pas',
+  cmpMRUList in 'cmpMRUList.pas',
+  cmpPersistentPosition in 'cmpPersistentPosition.pas',
+  unitHTMLStringsDisplayObject in 'unitHTMLStringsDisplayObject.pas',
+  unitNewsStringsDisplayObject in 'unitNewsStringsDisplayObject.pas',
+  unitHTMLHelpViewer in 'unitHTMLHelpViewer.pas',
+  CustomAlignPanel in 'CustomAlignPanel.pas',
+  cmpSuDoku in 'cmpSuDoku.pas',
+  cmpExToolBar in 'cmpExToolBar.pas',
+  cmpUserDatabase in 'cmpUserDatabase.pas',
+  ExCoolBar in 'ExCoolBar.pas',
+  cmpExplorerTree in 'cmpExplorerTree.pas',
+  cmpRegistryPersistentOptions in 'cmpRegistryPersistentOptions.pas',
+  cmpIniFilePersistentOptions in 'cmpIniFilePersistentOptions.pas',
+  cmpXMLPersistentOptions in 'cmpXMLPersistentOptions.pas',
+  cmpCountryComboBox in 'cmpCountryComboBox.pas';
+
+end.
