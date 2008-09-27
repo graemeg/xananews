@@ -166,7 +166,7 @@ uses unitSearchString;
  |                                                                      |
  | The function returns PAnsiChar                                       |
  *----------------------------------------------------------------------*)
-function StrLScan(const Str: PAnsiChar; ch : char; len : DWORD): PAnsiChar;
+function StrLScan(const Str: PAnsiChar; ch : Char; len : DWORD): PAnsiChar;
 asm
         // EAX = Str
         // DL = char
@@ -242,7 +242,7 @@ end;
 
 function TStreamTextReader.ReadLn(var st: string; continuationChar: AnsiChar): boolean;
 var
-  l, lineStartPos : Integer;
+  L, lineStartPos : Integer;
   pch, pch1 : PAnsiChar;
   st1 : AnsiString;
   cont, scont : boolean;
@@ -263,43 +263,44 @@ begin
 
     if pch1 <> nil then
     begin
-      l := Integer (pch1) - Integer (pch);
-      Inc (fBufPos, l + 1);
+      L := pch1 - pch;
+      Inc (fBufPos, L + 1);
       if fBufPos > fBufSize then
         fBufPos := fBufSize;
-      if l > 0 then
+      if L > 0 then
       begin
         repeat
           Dec (pch1);
           if pch1^ = #13 then
-            Dec (l)
+            Dec (L)
           else
             break
         until pch1 = pch;
-        cont := pch1^ = continuationChar
+        cont := pch1^ = continuationChar;
       end
       else
         cont := scont;
-      SetLength (st1, l);
-      if l > 0 then
-        Move (pch^, PAnsiChar (st1)^, l);
+      SetLength (st1, L);
+      if L > 0 then
+        Move (pch^, PAnsiChar(st1)^, L);
     end
     else
     begin
       st1 := pch;
-      l := Length (st1);
+      L := Length (st1);
 
-      while (l > 0) and (st1 [l] = #13) do
-        Dec (l);
+      while (L > 0) and (st1 [L] = #13) do
+        Dec (L);
 
-      if l < Length (st1) then
-        SetLength (st1, l);
+      if L < Length (st1) then
+        SetLength (st1, L);
 
-      scont := (l > 0) and (st1 [l] = continuationChar);
+      scont := (L > 0) and (st1[L] = continuationChar);
 
       fBufPos := fBufSize
     end;
 
+// TODO: check UTF8 decoding
     st := st + st1
   end;
 
@@ -326,6 +327,7 @@ begin
     p := fBuffer;
     Inc (p, fBufPos);
 
+// TODO: searching
     p1 := StrPos (p, PAnsiChar (AnsiString(st)));
 
     if p1 <> Nil then
@@ -397,31 +399,31 @@ end;
 
 function TTextFileReader.ReadLn(var st: string): boolean;
 var
-  p, p1 : PAnsiChar;
-  l : Integer;
+  p, p1: PAnsiChar;
+  L: Integer;
 begin
-  l := fSize - fPosition;
-  if l > 0 then
+  L := fSize - fPosition;
+  if L > 0 then
   begin
-    result := True;
+    Result := True;
     p1 := fMemory + fPosition;
-    p := StrLScan(p1, #10, l);
+    p := StrLScan(p1, #10, L);
 
-    if p <> Nil then
+    if p <> nil then
     begin
-      l := Integer (p) - Integer (p1);
-      Inc (fPosition, l+1);
+      L := p - p1;
+      Inc(fPosition, L + 1);
 
-      while (l > 0) and (p1 [l - 1] = #13) do
-        Dec (l)
+      while (L > 0) and (p1[L - 1] = #13) do
+        Dec(L);
     end
     else
-      Inc (fPosition, l);
+      Inc(fPosition, L);
 
-    SetString(st, p1, l);
+    SetString (st, p1, L);
   end
   else
-    result := False;
+    Result := False;
 end;
 
 { TTextFileWriter }
@@ -430,13 +432,14 @@ procedure TTextFileWriter.Write(const st: string);
 var
   EncodedString: UTF8String;
 begin
+// TODO: check UTF8 decoding
   EncodedString := UTF8Encode(st);
   inherited Write(EncodedString[1], Length(EncodedString));
 end;
 
 procedure TTextFileWriter.WriteLn(const st: string);
 begin
-  Write(st + #13#10)
+  Write(st + #13#10);
 end;
 
 { TStreamWideTextReader }
@@ -602,7 +605,6 @@ end;
 function TMappedFileStream.Write(const Buffer; Count: Integer): Longint;
 begin
   raise Exception.Create ('TMappedFileStream is read only');
-
 end;
 
 constructor TMappedFileStream.Create(const AFileName: string);
@@ -729,6 +731,7 @@ procedure TTextStreamWriter.Write(const st: string);
 var
   EncodedString: UTF8String;
 begin
+// TODO: check UTF8 decoding
   EncodedString := UTF8Encode(st);
   inherited Write(EncodedString[1], Length(EncodedString));
 end;

@@ -149,30 +149,32 @@ end;
  | characters after it.  If it was not found, return an empty string    |
  | and leave the source string unchanged.                               |
  *----------------------------------------------------------------------*)
-function ExtractString (const search : string; var s : string) : string;
+function ExtractString(const search: string; var s: string): string;
 var
-  p, l : Integer;
-  pc : PChar;
-
+  p, l: Integer;
+  pc: PChar;
+  ps: PChar;
 begin
-  l := Length (search);
+  l := Length(search);
+// TODO: Check if this is still needed and/or has any speed advances
   if l = 1 then
   begin
-    pc := AnsiStrScan (PChar (s), search [1]);
+    ps := PChar(s);
+    pc := AnsiStrScan(ps, search [1]);
     if pc = nil then
       p := 0
     else
-      p := ((Integer(pc) - Integer(PChar(s))) div SizeOf(Char)) + 1
+      p := pc - ps + 1;
   end
   else
-    p := Pos (search, s);
+    p := Pos(search, s);
   if p > 0 then
   begin
-    result := Trim (Copy (s, 1, p - 1));
-    s := Trim (Copy (s, p + l, maxInt))
+    Result := Trim(Copy(s, 1, p - 1));
+    s := Trim(Copy(s, p + l, MaxInt))
   end
   else
-    result := ''
+    Result := ''
 end;
 
 (*----------------------------------------------------------------------*
@@ -183,30 +185,33 @@ end;
  | characters after it.  If it was not found, return the entire source  |
  | string, and set the source string to an empty string                 |
  *----------------------------------------------------------------------*)
-function SplitString (const search : string; var s : string) : string;
+function SplitString(const search: string; var s: string): string;
 var
-  p, l : Integer;
-  pc : PChar;
+  p, l: Integer;
+  pc: PChar;
+  ps: PChar;
 begin
   l := Length(search);
+// TODO: Check if this is still needed and/or has any speed advances
   if l = 1 then
   begin
-    pc := AnsiStrScan(PChar(s), search[1]);
+    ps := PChar(s);
+    pc := AnsiStrScan(ps, search[1]);
     if pc = nil then
       p := 0
     else
-      p := (Integer(pc) - Integer(PChar(s))) div SizeOf(Char) + 1
+      p := pc - ps + 1
   end
   else
     p := Pos(search, s);
   if p > 0 then
   begin
-    result := Trim(Copy(s, 1, p - 1));
-    s := Trim (Copy (s, p + l, maxInt))
+    Result := Trim(Copy(s, 1, p - 1));
+    s := Trim(Copy(s, p + l, MaxInt))
   end
   else
   begin
-    result := Trim(s);
+    Result := Trim(s);
     s := ''
   end
 end;

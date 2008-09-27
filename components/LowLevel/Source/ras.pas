@@ -21,6 +21,8 @@
  *======================================================================*)
 unit Ras;
 
+{$I CompVers.inc}
+
 interface
 
 uses windows;
@@ -406,7 +408,11 @@ type
     dwSubEntry : DWORD;
   end;
 
+{$ifdef COMPILER12_UP}
+  TRasConn = TRasConnW;
+{$else}
   TRasConn = TRasConnA;
+{$endif}
 
   PRASCONNW = ^TRasConnw;
   PRASCONNA = ^TRasConnA;
@@ -436,7 +442,11 @@ type
     szPhoneNumber : array [0..RAS_MaxPhoneNumber] of AnsiChar;
   end;
 
+{$ifdef COMPILER12_UP}
+  TRASConnStatus = TRASConnStatusW;
+{$else}
   TRASConnStatus = TRASConnStatusA;
+{$endif}
 
   PRASConnStatusW = ^TRASConnStatusW;
   PRASConnStatusA = ^TRASConnStatusA;
@@ -468,7 +478,12 @@ type
     dwCallbackId : DWORD;
   end;
 
+{$ifdef COMPILER12_UP}
+  TRASDialParams = TRASDialParamsW;
+{$else}
   TRASDialParams = TRASDialParamsA;
+{$endif}
+
 
   PRASDialParamsW = ^TRASDialParamsW;
   PRASDialParamsA = ^TRASDialParamsA;
@@ -499,7 +514,11 @@ type
     szEntryName : array [0..RAS_MaxEntryName] of AnsiChar;
   end;
 
+{$ifdef COMPILER12_UP}
+  TRASEntryName = TRASEntryNameW;
+{$else}
   TRASEntryName = TRASEntryNameA;
+{$endif}
 
   PRASEntryNameW = ^TRASEntryNameW;
   PRASEntryNameA = ^TRASEntryNameA;
@@ -529,7 +548,11 @@ type
     bLana : BYTE;
   end;
 
+{$ifdef COMPILER12_UP}
+  TRASAMB = TRASAMBW;
+{$else}
   TRASAMB = TRASAMBA;
+{$endif}
 
   PRASAMBW = ^TRASAMBW;
   PRASAMBA = ^TRASAMBA;
@@ -556,7 +579,11 @@ type
     bLana : byte;
   end;
 
+{$ifdef COMPILER12_UP}
+  TRASPPPNBF = TRASPPPNBFW;
+{$else}
   TRASPPPNBF = TRASPPPNBFA;
+{$endif}
 
   PRASPPPNBFW = ^TRASPPPNBFW;
   PRASPPPNBFA = ^TRASPPPNBFA;
@@ -578,7 +605,11 @@ type
     szIpxAddress : array [0..RAS_MaxIpxAddress] of AnsiChar;
   end;
 
+{$ifdef COMPILER12_UP}
+  TRASPPPIPX = TRASPPPIPXW;
+{$else}
   TRASPPPIPX = TRASPPPIPXA;
+{$endif}
 
   PRASPPPIPXW = ^TRASPPPIPXW;
   PRASPPPIPXA = ^TRASPPPIPXA;
@@ -602,7 +633,11 @@ type
     szServerIpAddress : array [0..RAS_MaxIpAddress] of AnsiChar;
   end;
 
+{$ifdef COMPILER12_UP}
+  TRASPPPIP = TRASPPPIPW;
+{$else}
   TRASPPPIP = TRASPPPIPA;
+{$endif}
 
   PRASPPPIPW = ^TRASPPPIPW;
   PRASPPPIPA = ^TRASPPPIPA;
@@ -634,7 +669,11 @@ type
     szIpAddress : array [0..RAS_MaxIpAddress] of AnsiChar;
   end;
 
+{$ifdef COMPILER12_UP}
+  TRASSLIP = TRASSLIPW;
+{$else}
   TRASSLIP = TRASSLIPA;
+{$endif}
 
   PRASSLIPW = ^TRASSLIPW;
   PRASSLIPA = ^TRASSLIPA;
@@ -648,7 +687,7 @@ type
 ** For RASDIALFUNC2, subsequent callback notifications for all
 ** subentries can be cancelled by returning FALSE.
 *)
-                 
+
 TRasDialFunc = procedure (unMsg : UINT; RASConnState : TRASConnState; dwError : DWORD); stdcall;
 TRasDialFunc1 = procedure (HRASConn : HRASCON; unMsg : UINT; rascs : TRASConnState; dwError, dwExtendedError : DWORD); stdcall;
 TRasDialFunc2 = function (dwCallbackID, dwSubEntry : DWORD; HRASConn : HRASCON; unMsg : UINT; rascs : TRASConnState; dwError, dwExtendedError : DWORD) : DWORD; stdcall;
@@ -668,7 +707,11 @@ TRasDialFunc2 = function (dwCallbackID, dwSubEntry : DWORD; HRASConn : HRASCON; 
     szDeviceName : array [0..RAS_MaxDeviceName] of AnsiChar;
   end;
 
+{$ifdef COMPILER12_UP}
+  TRASDevInfo = TRASDevInfoW;
+{$else}
   TRASDevInfo = TRASDevInfoA;
+{$endif}
 
   PRASDevInfoW = ^TRASDevInfoW;
   PRASDevInfoA = ^TRASDevInfoA;
@@ -863,7 +906,11 @@ type
     dwIdleDisconnectSeconds : DWORD;
   end;
 
+{$ifdef COMPILER12_UP}
+  TRASEntry = TRASEntryW;
+{$else}
   TRASEntry = TRASEntryA;
+{$endif}
 
   PRASEntryW = ^TRASEntryW;
   PRASEntryA = ^TRASEntryA;
@@ -934,7 +981,11 @@ ORASADFUNC = function (hwndOwner : HWND; lpszEntry : PChar; dwFlags : DWORD; var
     dwAlternateOffset : DWORD;
   end;
 
+{$ifdef COMPILER12_UP}
+  TRASSubEntry = TRASSubEntryW;
+{$else}
   TRASSubEntry = TRASSubEntryA;
+{$endif}
 
   PRASSubEntryW = ^TRASSubEntryW;
   PRASSubEntryA = ^TRASSubEntryA;
@@ -960,7 +1011,11 @@ ORASADFUNC = function (hwndOwner : HWND; lpszEntry : PChar; dwFlags : DWORD; var
     szDomain : array [0..DNLEN] of WideChar;
   end;
 
+{$ifdef COMPILER12_UP}
+  TRASCredentials = TRASCredentialsW;
+{$else}
   TRASCredentials = TRASCredentialsA;
+{$endif}
 
   PRASCredentialsW = ^TRASCredentialsW;
   PRASCredentialsA = ^TRASCredentialsA;
@@ -983,7 +1038,11 @@ ORASADFUNC = function (hwndOwner : HWND; lpszEntry : PChar; dwFlags : DWORD; var
     szEntry : array [0..RAS_MaxEntryName] of WideChar;
   end;
 
+{$ifdef COMPILER12_UP}
+  TRASAutoDialEntry = TRASAutoDialEntryW;
+{$else}
   TRASAutoDialEntry = TRASAutoDialEntryA;
+{$endif}
 
   PRASAutoDialEntryW = TRASAutoDialEntryW;
   PRASAutoDialEntryA = TRASAutoDialEntryA;
@@ -993,8 +1052,14 @@ ORASADFUNC = function (hwndOwner : HWND; lpszEntry : PChar; dwFlags : DWORD; var
 (* External RAS API function prototypes.
 *)
 
+{$ifdef COMPILER12_UP}
+  PPWideChar = ^PWideChar;
+  PPChar = PPWideChar;
+{$else}
   PPChar = ^PChar;
   PPWideChar = ^PWideChar;
+{$endif}
+
 
 TfnRasDialA = function (
                  RASDialExtension : PRASDialExtensions;
@@ -1168,7 +1233,7 @@ TfnRasSetSubEntryPropertiesW = function ( lpszPhonebook, lpszEntry : PWideChar; 
 TfnRasSetSubEntryProperties = function ( lpszPhonebook, lpszEntry : PChar; dwSubEntry : DWORD; subEntry : PRasSubEntry; cb : DWORD) : DWORD; stdcall;
 TfnRasGetAutodialAddressA = function ( lpszAddress : PChar; lpdwReserved : PDWORD; entries : PRASAutoDialEntryA; var cb, cEntries : DWORD) : DWORD; stdcall;
 TfnRasGetAutodialAddressW = function ( lpszAddress : PWideChar; lpdwReserved : PDWORD; entries : PRASAutoDialEntryW; var cb, cEntries : DWORD) : DWORD; stdcall;
-TfnRasGetAutodialAddress = function ( lpszAddress : PChar; lpdwReserved : PDWORD; entries : PRASAutoDialEntryA; var cb, cEntries : DWORD) : DWORD; stdcall;
+TfnRasGetAutodialAddress = function ( lpszAddress : PChar; lpdwReserved : PDWORD; entries : PRASAutoDialEntry; var cb, cEntries : DWORD) : DWORD; stdcall;
 TfnRasSetAutodialAddressA = function ( lpszAddress : PChar; dwReserved : DWORD; entries : PRASAutoDialEntry; cb, cEntries : DWORD) : DWORD; stdcall;
 TfnRasSetAutodialAddressW = function ( lpszAddress : PWideChar; dwReserved : DWORD; entries : PRASAutoDialEntryW; cb, cEntries : DWORD) : DWORD; stdcall;
 TfnRasSetAutodialAddress = function ( lpszAddress : PChar; dwReserved : DWORD; entries : PRASAutoDialEntry; cb, cEntries : DWORD) : DWORD; stdcall;
@@ -1189,113 +1254,113 @@ TfnRasSetAutodialParamW = function ( dwDiallingLocation : DWORD; param : pointer
 TfnRasSetAutodialParam = function ( dwDiallingLocation : DWORD; param : pointer; cb : DWORD) : DWORD; stdcall;
 
 var
-RasDialA : TfnRasDialA = Nil;
-RasDialW : TfnRasDialW = Nil;
-RasDial  : TfnRasDial  = Nil;
+RasDialA : TfnRasDialA = nil;
+RasDialW : TfnRasDialW = nil;
+RasDial  : TfnRasDial  = nil;
 
-RasEnumConnectionsA : TfnRasEnumConnectionsA = Nil;
-RasEnumConnectionsW : TfnRasEnumConnectionsW = Nil;
-RasEnumConnections : TfnRasEnumConnections = Nil;
+RasEnumConnectionsA : TfnRasEnumConnectionsA = nil;
+RasEnumConnectionsW : TfnRasEnumConnectionsW = nil;
+RasEnumConnections : TfnRasEnumConnections = nil;
 
-RasEnumEntriesA : TfnRasEnumEntriesA = Nil;
-RasEnumEntriesW : TfnRasEnumEntriesW = Nil;
-RasEnumEntries : TfnRasEnumEntries = Nil;
+RasEnumEntriesA : TfnRasEnumEntriesA = nil;
+RasEnumEntriesW : TfnRasEnumEntriesW = nil;
+RasEnumEntries : TfnRasEnumEntries = nil;
 
-RasGetConnectStatusA : TfnRasGetConnectStatusA = Nil;
-RasGetConnectStatusW : TfnRasGetConnectStatusW = Nil;
-RasGetConnectStatus : TfnRasGetConnectStatus = Nil;
+RasGetConnectStatusA : TfnRasGetConnectStatusA = nil;
+RasGetConnectStatusW : TfnRasGetConnectStatusW = nil;
+RasGetConnectStatus : TfnRasGetConnectStatus = nil;
 
-RasGetErrorStringA : TfnRasGetErrorStringA = Nil;
-RasGetErrorStringW : TfnRasGetErrorStringW = Nil;
-RasGetErrorString : TfnRasGetErrorString = Nil;
+RasGetErrorStringA : TfnRasGetErrorStringA = nil;
+RasGetErrorStringW : TfnRasGetErrorStringW = nil;
+RasGetErrorString : TfnRasGetErrorString = nil;
 
-RASHangUpA : TfnRASHangUpA = Nil;
-RASHangUpW : TfnRASHangUpW = Nil;
-RASHangUp : TfnRASHangUp = Nil;
+RASHangUpA : TfnRASHangUpA = nil;
+RASHangUpW : TfnRASHangUpW = nil;
+RASHangUp : TfnRASHangUp = nil;
 
-RasGetProjectionInfoA : TfnRasGetProjectionInfoA = Nil;
-RasGetProjectionInfoW : TfnRasGetProjectionInfoW = Nil;
-RasGetProjectionInfo : TfnRasGetProjectionInfo = Nil;
-RasCreatePhonebookEntryA : TfnRasCreatePhonebookEntryA = Nil;
-RasCreatePhonebookEntryW : TfnRasCreatePhonebookEntryW = Nil;
-RasCreatePhonebookEntry : TfnRasCreatePhonebookEntry = Nil;
+RasGetProjectionInfoA : TfnRasGetProjectionInfoA = nil;
+RasGetProjectionInfoW : TfnRasGetProjectionInfoW = nil;
+RasGetProjectionInfo : TfnRasGetProjectionInfo = nil;
+RasCreatePhonebookEntryA : TfnRasCreatePhonebookEntryA = nil;
+RasCreatePhonebookEntryW : TfnRasCreatePhonebookEntryW = nil;
+RasCreatePhonebookEntry : TfnRasCreatePhonebookEntry = nil;
 
-RasEditPhonebookEntryA : TfnRasEditPhonebookEntryA = Nil;
-RasEditPhonebookEntryW : TfnRasEditPhonebookEntryW = Nil;
-RasEditPhonebookEntry : TfnRasEditPhonebookEntry = Nil;
+RasEditPhonebookEntryA : TfnRasEditPhonebookEntryA = nil;
+RasEditPhonebookEntryW : TfnRasEditPhonebookEntryW = nil;
+RasEditPhonebookEntry : TfnRasEditPhonebookEntry = nil;
 
-RasSetEntryDialParamsA : TfnRasSetEntryDialParamsA = Nil;
-RasSetEntryDialParamsW : TfnRasSetEntryDialParamsW = Nil;
-RasSetEntryDialParams : TfnRasSetEntryDialParams = Nil;
+RasSetEntryDialParamsA : TfnRasSetEntryDialParamsA = nil;
+RasSetEntryDialParamsW : TfnRasSetEntryDialParamsW = nil;
+RasSetEntryDialParams : TfnRasSetEntryDialParams = nil;
 
-RasGetEntryDialParamsA : TfnRasGetEntryDialParamsA = Nil;
-RasGetEntryDialParamsW : TfnRasGetEntryDialParamsW = Nil;
-RasGetEntryDialParams : TfnRasGetEntryDialParams = Nil;
+RasGetEntryDialParamsA : TfnRasGetEntryDialParamsA = nil;
+RasGetEntryDialParamsW : TfnRasGetEntryDialParamsW = nil;
+RasGetEntryDialParams : TfnRasGetEntryDialParams = nil;
 
-RasEnumDevicesA : TfnRasEnumDevicesA = Nil;
-RasEnumDevicesW : TfnRasEnumDevicesW = Nil;
-RasEnumDevices : TfnRasEnumDevices = Nil;
+RasEnumDevicesA : TfnRasEnumDevicesA = nil;
+RasEnumDevicesW : TfnRasEnumDevicesW = nil;
+RasEnumDevices : TfnRasEnumDevices = nil;
 
-RasGetCountryInfoA : TfnRasGetCountryInfoA = Nil;
-RasGetCountryInfoW : TfnRasGetCountryInfoW = Nil;
-RasGetCountryInfo : TfnRasGetCountryInfo = Nil;
+RasGetCountryInfoA : TfnRasGetCountryInfoA = nil;
+RasGetCountryInfoW : TfnRasGetCountryInfoW = nil;
+RasGetCountryInfo : TfnRasGetCountryInfo = nil;
 
-RasGetEntryPropertiesA : TfnRasGetEntryPropertiesA = Nil;
-RasGetEntryPropertiesW : TfnRasGetEntryPropertiesW = Nil;
-RasGetEntryProperties : TfnRasGetEntryProperties = Nil;
-RasSetEntryPropertiesA : TfnRasSetEntryPropertiesA = Nil;
-RasSetEntryPropertiesW : TfnRasSetEntryPropertiesW = Nil;
-RasSetEntryProperties : TfnRasSetEntryProperties = Nil;
-RasRenameEntryA : TfnRasRenameEntryA = Nil;
-RasRenameEntryW : TfnRasRenameEntryW = Nil;
-RasRenameEntry : TfnRasRenameEntry = Nil;
-RasDeleteEntryA : TfnRasDeleteEntryA = Nil;
-RasDeleteEntryW : TfnRasDeleteEntryW = Nil;
-RasDeleteEntry : TfnRasDeleteEntry = Nil;
+RasGetEntryPropertiesA : TfnRasGetEntryPropertiesA = nil;
+RasGetEntryPropertiesW : TfnRasGetEntryPropertiesW = nil;
+RasGetEntryProperties : TfnRasGetEntryProperties = nil;
+RasSetEntryPropertiesA : TfnRasSetEntryPropertiesA = nil;
+RasSetEntryPropertiesW : TfnRasSetEntryPropertiesW = nil;
+RasSetEntryProperties : TfnRasSetEntryProperties = nil;
+RasRenameEntryA : TfnRasRenameEntryA = nil;
+RasRenameEntryW : TfnRasRenameEntryW = nil;
+RasRenameEntry : TfnRasRenameEntry = nil;
+RasDeleteEntryA : TfnRasDeleteEntryA = nil;
+RasDeleteEntryW : TfnRasDeleteEntryW = nil;
+RasDeleteEntry : TfnRasDeleteEntry = nil;
 
-RasValidateEntryNameA : TfnRasValidateEntryNameA = Nil;
-RasValidateEntryNameW : TfnRasValidateEntryNameW = Nil;
-RasValidateEntryName : TfnRasValidateEntryName = Nil;
+RasValidateEntryNameA : TfnRasValidateEntryNameA = nil;
+RasValidateEntryNameW : TfnRasValidateEntryNameW = nil;
+RasValidateEntryName : TfnRasValidateEntryName = nil;
 
-RasGetSubEntryHandleA : TfnRasGetSubEntryHandleA = Nil;
-RasGetSubEntryHandleW : TfnRasGetSubEntryHandleW = Nil;
-RasGetSubEntryHandle : TfnRasGetSubEntryHandle = Nil;
-RasGetCredentialsA : TfnRasGetCredentialsA = Nil;
-RasGetCredentialsW : TfnRasGetCredentialsW = Nil;
-RasGetCredentials : TfnRasGetCredentials = Nil;
-RasSetCredentialsA : TfnRasSetCredentialsA = Nil;
-RasSetCredentialsW : TfnRasSetCredentialsW = Nil;
-RasSetCredentials : TfnRasSetCredentials = Nil;
-RasConnectionNotificationA : TfnRasConnectionNotificationA = Nil;
-RasConnectionNotificationW : TfnRasConnectionNotificationW = Nil;
-RasConnectionNotification : TfnRasConnectionNotification = Nil;
-RasGetSubEntryPropertiesA : TfnRasGetSubEntryPropertiesA = Nil;
-RasGetSubEntryPropertiesW : TfnRasGetSubEntryPropertiesW = Nil;
-RasGetSubEntryProperties : TfnRasGetSubEntryProperties = Nil;
-RasSetSubEntryPropertiesA : TfnRasSetSubEntryPropertiesA = Nil;
-RasSetSubEntryPropertiesW : TfnRasSetSubEntryPropertiesW = Nil;
-RasSetSubEntryProperties : TfnRasSetSubEntryProperties = Nil;
-RasGetAutodialAddressA : TfnRasGetAutodialAddressA = Nil;
-RasGetAutodialAddressW : TfnRasGetAutodialAddressW = Nil;
-RasGetAutodialAddress : TfnRasGetAutodialAddress = Nil;
-RasSetAutodialAddressA : TfnRasSetAutodialAddressA = Nil;
-RasSetAutodialAddressW : TfnRasSetAutodialAddressW = Nil;
-RasSetAutodialAddress : TfnRasSetAutodialAddress = Nil;
-RasEnumAutodialAddressesA : TfnRasEnumAutodialAddressesA = Nil;
-RasEnumAutodialAddressesW : TfnRasEnumAutodialAddressesW = Nil;
-RasEnumAutodialAddresses : TfnRasEnumAutodialAddresses = Nil;
-RasGetAutodialEnableA : TfnRasGetAutodialEnableA = Nil;
-RasGetAutodialEnableW : TfnRasGetAutodialEnableW = Nil;
-RasGetAutodialEnable : TfnRasGetAutodialEnable = Nil;
-RasSetAutodialEnableA : TfnRasSetAutodialEnableA = Nil;
-RasSetAutodialEnableW : TfnRasSetAutodialEnableW = Nil;
-RasSetAutodialEnable : TfnRasSetAutodialEnable = Nil;
-RasGetAutodialParamA : TfnRasGetAutodialParamA = Nil;
-RasGetAutodialParamW : TfnRasGetAutodialParamW = Nil;
-RasGetAutodialParam : TfnRasGetAutodialParam = Nil;
-RasSetAutodialParamA : TfnRasSetAutodialParamA = Nil;
-RasSetAutodialParamW : TfnRasSetAutodialParamW = Nil;
-RasSetAutodialParam : TfnRasSetAutodialParam = Nil;
+RasGetSubEntryHandleA : TfnRasGetSubEntryHandleA = nil;
+RasGetSubEntryHandleW : TfnRasGetSubEntryHandleW = nil;
+RasGetSubEntryHandle : TfnRasGetSubEntryHandle = nil;
+RasGetCredentialsA : TfnRasGetCredentialsA = nil;
+RasGetCredentialsW : TfnRasGetCredentialsW = nil;
+RasGetCredentials : TfnRasGetCredentials = nil;
+RasSetCredentialsA : TfnRasSetCredentialsA = nil;
+RasSetCredentialsW : TfnRasSetCredentialsW = nil;
+RasSetCredentials : TfnRasSetCredentials = nil;
+RasConnectionNotificationA : TfnRasConnectionNotificationA = nil;
+RasConnectionNotificationW : TfnRasConnectionNotificationW = nil;
+RasConnectionNotification : TfnRasConnectionNotification = nil;
+RasGetSubEntryPropertiesA : TfnRasGetSubEntryPropertiesA = nil;
+RasGetSubEntryPropertiesW : TfnRasGetSubEntryPropertiesW = nil;
+RasGetSubEntryProperties : TfnRasGetSubEntryProperties = nil;
+RasSetSubEntryPropertiesA : TfnRasSetSubEntryPropertiesA = nil;
+RasSetSubEntryPropertiesW : TfnRasSetSubEntryPropertiesW = nil;
+RasSetSubEntryProperties : TfnRasSetSubEntryProperties = nil;
+RasGetAutodialAddressA : TfnRasGetAutodialAddressA = nil;
+RasGetAutodialAddressW : TfnRasGetAutodialAddressW = nil;
+RasGetAutodialAddress : TfnRasGetAutodialAddress = nil;
+RasSetAutodialAddressA : TfnRasSetAutodialAddressA = nil;
+RasSetAutodialAddressW : TfnRasSetAutodialAddressW = nil;
+RasSetAutodialAddress : TfnRasSetAutodialAddress = nil;
+RasEnumAutodialAddressesA : TfnRasEnumAutodialAddressesA = nil;
+RasEnumAutodialAddressesW : TfnRasEnumAutodialAddressesW = nil;
+RasEnumAutodialAddresses : TfnRasEnumAutodialAddresses = nil;
+RasGetAutodialEnableA : TfnRasGetAutodialEnableA = nil;
+RasGetAutodialEnableW : TfnRasGetAutodialEnableW = nil;
+RasGetAutodialEnable : TfnRasGetAutodialEnable = nil;
+RasSetAutodialEnableA : TfnRasSetAutodialEnableA = nil;
+RasSetAutodialEnableW : TfnRasSetAutodialEnableW = nil;
+RasSetAutodialEnable : TfnRasSetAutodialEnable = nil;
+RasGetAutodialParamA : TfnRasGetAutodialParamA = nil;
+RasGetAutodialParamW : TfnRasGetAutodialParamW = nil;
+RasGetAutodialParam : TfnRasGetAutodialParam = nil;
+RasSetAutodialParamA : TfnRasSetAutodialParamA = nil;
+RasSetAutodialParamW : TfnRasSetAutodialParamW = nil;
+RasSetAutodialParam : TfnRasSetAutodialParam = nil;
 
 function RasGetStatusString (status : Integer) : string;
 function InitRasLibrary : boolean;
@@ -1367,131 +1432,255 @@ begin
       begin
         RasDialA := GetProcAddress(RASLibrary, 'RasDialA');
         RasDialW := GetProcAddress(RASLibrary, 'RasDialW');
+{$ifdef COMPILER12_UP}
+        RasDial := RasDialW;
+{$else}
         RasDial := RasDialA;
+{$endif}
 
         RasEnumConnectionsA := GetProcAddress(RASLibrary, 'RasEnumConnectionsA');
         RasEnumConnectionsW := GetProcAddress(RASLibrary, 'RasEnumConnectionsW');
-        RasEnumConnections := TfnRasEnumConnections (RasEnumConnectionsA);
+{$ifdef COMPILER12_UP}
+        RasEnumConnections := TfnRasEnumConnections(RasEnumConnectionsW);
+{$else}
+        RasEnumConnections := TfnRasEnumConnections(RasEnumConnectionsA);
+{$endif}
 
         RasEnumEntriesA := GetProcAddress(RASLibrary, 'RasEnumEntriesA');
         RasEnumEntriesW := GetProcAddress(RASLibrary, 'RasEnumEntriesW');
+{$ifdef COMPILER12_UP}
+        RasEnumEntries := TfnRasEnumEntries (RasEnumEntriesW);
+{$else}
         RasEnumEntries := TfnRasEnumEntries (RasEnumEntriesA);
+{$endif}
 
         RasGetConnectStatusA := GetProcAddress(RASLibrary, 'RasGetConnectStatusA');
         RasGetConnectStatusW := GetProcAddress(RASLibrary, 'RasGetConnectStatusW');
+{$ifdef COMPILER12_UP}
+        RasGetConnectStatus := RasGetConnectstatusW;
+{$else}
         RasGetConnectStatus := RasGetConnectstatusA;
+{$endif}
 
         RasGetErrorStringA := GetProcAddress(RASLibrary, 'RasGetErrorStringA');
         RasGetErrorStringW := GetProcAddress(RASLibrary, 'RasGetErrorStringW');
+{$ifdef COMPILER12_UP}
+        RasGetErrorString := RasGetErrorStringW;
+{$else}
         RasGetErrorString := RasGetErrorStringA;
+{$endif}
 
         RasHangUpA := GetProcAddress(RASLibrary, 'RasHangUpA');
         RasHangUpW := GetProcAddress(RASLibrary, 'RasHangUpW');
+{$ifdef COMPILER12_UP}
+        RasHangUp := RasHangUpW;
+{$else}
         RasHangUp := RasHangUpA;
+{$endif}
 
         RasGetProjectionInfoA := GetProcAddress(RASLibrary, 'RasGetProjectionInfoA');
         RasGetProjectionInfoW := GetProcAddress(RASLibrary, 'RasGetProjectionInfoW');
+{$ifdef COMPILER12_UP}
+        RasGetProjectionInfo := RasGetProjectionInfoW;
+{$else}
         RasGetProjectionInfo := RasGetProjectionInfoA;
+{$endif}
 
         RasCreatePhonebookEntryA := GetProcAddress(RASLibrary, 'RasCreatePhonebookEntryA');
         RasCreatePhonebookEntryW := GetProcAddress(RASLibrary, 'RasCreatePhonebookEntryW');
+{$ifdef COMPILER12_UP}
+        RasCreatePhonebookEntry := RasCreatePhonebookEntryW;
+{$else}
         RasCreatePhonebookEntry := RasCreatePhonebookEntryA;
+{$endif}
 
         RasEditPhonebookEntryA := GetProcAddress(RASLibrary, 'RasEditPhonebookEntryA');
         RasEditPhonebookEntryW := GetProcAddress(RASLibrary, 'RasEditPhonebookEntryW');
+{$ifdef COMPILER12_UP}
+        RasEditPhonebookEntry := RasEditPhonebookEntryW;
+{$else}
         RasEditPhonebookEntry := RasEditPhonebookEntryA;
+{$endif}
 
         RasSetEntryDialParamsA := GetProcAddress(RASLibrary, 'RasSetEntryDialParamsA');
         RasSetEntryDialParamsW := GetProcAddress(RASLibrary, 'RasSetEntryDialParamsW');
+{$ifdef COMPILER12_UP}
+        RasSetEntryDialParams := RasSetEntryDialParamsW;
+{$else}
         RasSetEntryDialParams := RasSetEntryDialParamsA;
+{$endif}
 
         RasGetEntryDialParamsA := GetProcAddress(RASLibrary, 'RasGetEntryDialParamsA');
         RasGetEntryDialParamsW := GetProcAddress(RASLibrary, 'RasGetEntryDialParamsW');
+{$ifdef COMPILER12_UP}
+        RasGetEntryDialParams := RasGetEntryDialParamsW;
+{$else}
         RasGetEntryDialParams := RasGetEntryDialParamsA;
+{$endif}
 
         RasEnumDevicesA := GetProcAddress(RASLibrary, 'RasEnumDevicesA');
         RasEnumDevicesW := GetProcAddress(RASLibrary, 'RasEnumDevicesW');
-        RasEnumDevices := TfnRasEnumDevices (RasEnumDevicesA);
+{$ifdef COMPILER12_UP}
+        RasEnumDevices := TfnRasEnumDevices(RasEnumDevicesW);
+{$else}
+        RasEnumDevices := TfnRasEnumDevices(RasEnumDevicesA);
+{$endif}
 
         RasGetCountryInfoA := GetProcAddress(RASLibrary, 'RasGetCountryInfoA');
         RasGetCountryInfoW := GetProcAddress(RASLibrary, 'RasGetCountryInfoW');
-        RasGetCountryInfo := TfnRasGetCountryInfo (RasGetCountryInfoA);
+{$ifdef COMPILER12_UP}
+        RasGetCountryInfo := TfnRasGetCountryInfo(RasGetCountryInfoW);
+{$else}
+        RasGetCountryInfo := TfnRasGetCountryInfo(RasGetCountryInfoA);
+{$endif}
 
         RasGetEntryPropertiesA := GetProcAddress(RASLibrary, 'RasGetEntryPropertiesA');
         RasGetEntryPropertiesW := GetProcAddress(RASLibrary, 'RasGetEntryPropertiesW');
-        RasGetEntryProperties := TfnRasGetEntryProperties (RasGetEntryPropertiesA);
+{$ifdef COMPILER12_UP}
+        RasGetEntryProperties := TfnRasGetEntryProperties(RasGetEntryPropertiesW);
+{$else}
+        RasGetEntryProperties := TfnRasGetEntryProperties(RasGetEntryPropertiesA);
+{$endif}
 
         RasSetEntryPropertiesA := GetProcAddress(RASLibrary, 'RasSetEntryPropertiesA');
         RasSetEntryPropertiesW := GetProcAddress(RASLibrary, 'RasSetEntryPropertiesW');
+{$ifdef COMPILER12_UP}
+        RasSetEntryProperties := RasSetEntryPropertiesW;
+{$else}
         RasSetEntryProperties := RasSetEntryPropertiesA;
+{$endif}
 
         RasRenameEntryA := GetProcAddress(RASLibrary, 'RasRenameEntryA');
         RasRenameEntryW := GetProcAddress(RASLibrary, 'RasRenameEntryW');
+{$ifdef COMPILER12_UP}
+        RasRenameEntry := RasRenameEntryW;
+{$else}
         RasRenameEntry := RasRenameEntryA;
+{$endif}
 
         RasDeleteEntryA := GetProcAddress(RASLibrary, 'RasDeleteEntryA');
         RasDeleteEntryW := GetProcAddress(RASLibrary, 'RasDeleteEntryW');
+{$ifdef COMPILER12_UP}
+        RasDeleteEntry := RasDeleteEntryW;
+{$else}
         RasDeleteEntry := RasDeleteEntryA;
+{$endif}
 
         RasValidateEntryNameA := GetProcAddress(RASLibrary, 'RasValidateEntryNameA');
         RasValidateEntryNameW := GetProcAddress(RASLibrary, 'RasValidateEntryNameW');
+{$ifdef COMPILER12_UP}
+        RasValidateEntryName := RasValidateEntryNameW;
+{$else}
         RasValidateEntryName := RasValidateEntryNameA;
+{$endif}
 
         RasGetSubEntryHandleA := GetProcAddress(RASLibrary, 'RasGetSubEntryHandleA');
 
-        if Assigned (RasGetSubEntryHandleA) then
+        if Assigned(RasGetSubEntryHandleA) then
         begin
           RasVer401 := True;
           RasGetSubEntryHandleW := GetProcAddress(RASLibrary, 'RasGetSubEntryHandleW');
+{$ifdef COMPILER12_UP}
+          RasGetSubEntryHandle := RasGetSubEntryHandleW;
+{$else}
           RasGetSubEntryHandle := RasGetSubEntryHandleA;
+{$endif}
 
           RasGetCredentialsA := GetProcAddress(RASLibrary, 'RasGetCredentialsA');
           RasGetCredentialsW := GetProcAddress(RASLibrary, 'RasGetCredentialsW');
+{$ifdef COMPILER12_UP}
+          RasGetCredentials := RasGetCredentialsW;
+{$else}
           RasGetCredentials := RasGetCredentialsA;
+{$endif}
 
           RasSetCredentialsA := GetProcAddress(RASLibrary, 'RasSetCredentialsA');
           RasSetCredentialsW := GetProcAddress(RASLibrary, 'RasSetCredentialsW');
+{$ifdef COMPILER12_UP}
+          RasSetCredentials := RasSetCredentialsW;
+{$else}
           RasSetCredentials := RasSetCredentialsA;
+{$endif}
 
           RasConnectionNotificationA := GetProcAddress(RASLibrary, 'RasConnectionNotificationA');
           RasConnectionNotificationW := GetProcAddress(RASLibrary, 'RasConnectionNotificationW');
+{$ifdef COMPILER12_UP}
+          RasConnectionNotification := RasConnectionNotificationW;
+{$else}
           RasConnectionNotification := RasConnectionNotificationA;
+{$endif}
 
           RasGetSubEntryPropertiesA := GetProcAddress(RASLibrary, 'RasGetSubEntryPropertiesA');
           RasGetSubEntryPropertiesW := GetProcAddress(RASLibrary, 'RasGetSubEntryPropertiesW');
-          RasGetSubEntryProperties := TfnRasGetSubEntryProperties (RasGetSubEntryPropertiesA);
+{$ifdef COMPILER12_UP}
+          RasGetSubEntryProperties := TfnRasGetSubEntryProperties(RasGetSubEntryPropertiesW);
+{$else}
+          RasGetSubEntryProperties := TfnRasGetSubEntryProperties(RasGetSubEntryPropertiesA);
+{$endif}
 
           RasSetSubEntryPropertiesA := GetProcAddress(RASLibrary, 'RasSetSubEntryPropertiesA');
           RasSetSubEntryPropertiesW := GetProcAddress(RASLibrary, 'RasSetSubEntryPropertiesW');
-          RasSetSubEntryProperties := TfnRasSetSubEntryProperties (RasSetSubEntryPropertiesA);
+{$ifdef COMPILER12_UP}
+          RasSetSubEntryProperties := TfnRasSetSubEntryProperties(RasSetSubEntryPropertiesW);
+{$else}
+          RasSetSubEntryProperties := TfnRasSetSubEntryProperties(RasSetSubEntryPropertiesA);
+{$endif}
 
           RasGetAutodialAddressA := GetProcAddress(RASLibrary, 'RasGetAutodialAddressA');
           RasGetAutodialAddressW := GetProcAddress(RASLibrary, 'RasGetAutodialAddressW');
+{$ifdef COMPILER12_UP}
+          RasGetAutodialAddress := RasGetAutodialAddressW;
+{$else}
           RasGetAutodialAddress := RasGetAutodialAddressA;
+{$endif}
 
           RasSetAutodialAddressA := GetProcAddress(RASLibrary, 'RasSetAutodialAddressA');
           RasSetAutodialAddressW := GetProcAddress(RASLibrary, 'RasSetAutodialAddressW');
+{$ifdef COMPILER12_UP}
+          RasSetAutodialAddress := RasSetAutodialAddressW;
+{$else}
           RasSetAutodialAddress := RasSetAutodialAddressA;
+{$endif}
 
           RasEnumAutodialAddressesA := GetProcAddress(RASLibrary, 'RasEnumAutodialAddressesA');
           RasEnumAutodialAddressesW := GetProcAddress(RASLibrary, 'RasEnumAutodialAddressesW');
+{$ifdef COMPILER12_UP}
+          RasEnumAutodialAddresses := RasEnumAutodialAddressesW;
+{$else}
           RasEnumAutodialAddresses := RasEnumAutodialAddressesA;
+{$endif}
 
           RasGetAutodialEnableA := GetProcAddress(RASLibrary, 'RasGetAutodialEnableA');
           RasGetAutodialEnableW := GetProcAddress(RASLibrary, 'RasGetAutodialEnableW');
+{$ifdef COMPILER12_UP}
+          RasGetAutodialEnable := RasGetAutodialEnableW;
+{$else}
           RasGetAutodialEnable := RasGetAutodialEnableA;
+{$endif}
 
           RasSetAutodialEnableA := GetProcAddress(RASLibrary, 'RasSetAutodialEnableA');
           RasSetAutodialEnableW := GetProcAddress(RASLibrary, 'RasSetAutodialEnableW');
+{$ifdef COMPILER12_UP}
+          RasSetAutodialEnable := RasSetAutodialEnableW;
+{$else}
           RasSetAutodialEnable := RasSetAutodialEnableA;
+{$endif}
 
           RasGetAutodialParamA := GetProcAddress(RASLibrary, 'RasGetAutodialParamA');
           RasGetAutodialParamW := GetProcAddress(RASLibrary, 'RasGetAutodialParamW');
+{$ifdef COMPILER12_UP}
+          RasGetAutodialParam := RasGetAutodialParamW;
+{$else}
           RasGetAutodialParam := RasGetAutodialParamA;
+{$endif}
 
           RasSetAutodialParamA := GetProcAddress(RASLibrary, 'RasSetAutodialParamA');
           RasSetAutodialParamW := GetProcAddress(RASLibrary, 'RasSetAutodialParamW');
+{$ifdef COMPILER12_UP}
+          RasSetAutodialParam := RasSetAutodialParamW;
+{$else}
           RasSetAutodialParam := RasSetAutodialParamA;
+{$endif}
         end
       end;
     end;
@@ -1513,102 +1702,102 @@ begin
       FreeLibrary(RasLibrary);
       RasLibrary := 0;
 
-      RasDialA := Nil;
-      RasDialA := Nil;
-      RasDialW := Nil;
-      RasEnumConnectionsA := Nil;
-      RasEnumConnectionsW := Nil;
-      RasEnumEntriesA := Nil;
-      RasEnumEntriesW := Nil;
-      RasGetConnectStatusA := Nil;
-      RasGetConnectStatusW := Nil;
-      RasGetErrorStringA := Nil;
-      RasGetErrorStringW := Nil;
-      RasHangUpA := Nil;
-      RasHangUpW := Nil;
-      RasGetProjectionInfoA := Nil;
-      RasGetProjectionInfoW := Nil;
-      RasCreatePhonebookEntryA := Nil;
-      RasCreatePhonebookEntryW := Nil;
-      RasEditPhonebookEntryA := Nil;
-      RasEditPhonebookEntryW := Nil;
-      RasSetEntryDialParamsA := Nil;
-      RasSetEntryDialParamsW := Nil;
-      RasGetEntryDialParamsA := Nil;
-      RasGetEntryDialParamsW := Nil;
-      RasEnumDevicesA := Nil;
-      RasEnumDevicesW := Nil;
-      RasGetCountryInfoA := Nil;
-      RasGetCountryInfoW := Nil;
-      RasGetEntryPropertiesA := Nil;
-      RasGetEntryPropertiesW := Nil;
-      RasSetEntryPropertiesA := Nil;
-      RasSetEntryPropertiesW := Nil;
-      RasRenameEntryA := Nil;
-      RasRenameEntryW := Nil;
-      RasDeleteEntryA := Nil;
-      RasDeleteEntryW := Nil;
-      RasValidateEntryNameA := Nil;
-      RasValidateEntryNameW := Nil;
-      RasDial := Nil;
-      RasEnumConnections := Nil;
-      RasEnumEntries := Nil;
-      RasGetConnectStatus := Nil;
-      RasGetErrorString := Nil;
-      RasHangUp := Nil;
-      RasGetProjectionInfo := Nil;
-      RasCreatePhonebookEntry := Nil;
-      RasEditPhonebookEntry := Nil;
-      RasSetEntryDialParams := Nil;
-      RasGetEntryDialParams := Nil;
-      RasEnumDevices := Nil;
-      RasGetCountryInfo := Nil;
-      RasGetEntryProperties := Nil;
-      RasSetEntryProperties := Nil;
-      RasRenameEntry := Nil;
-      RasDeleteEntry := Nil;
-      RasValidateEntryName := Nil;
+      RasDialA := nil;
+      RasDialA := nil;
+      RasDialW := nil;
+      RasEnumConnectionsA := nil;
+      RasEnumConnectionsW := nil;
+      RasEnumEntriesA := nil;
+      RasEnumEntriesW := nil;
+      RasGetConnectStatusA := nil;
+      RasGetConnectStatusW := nil;
+      RasGetErrorStringA := nil;
+      RasGetErrorStringW := nil;
+      RasHangUpA := nil;
+      RasHangUpW := nil;
+      RasGetProjectionInfoA := nil;
+      RasGetProjectionInfoW := nil;
+      RasCreatePhonebookEntryA := nil;
+      RasCreatePhonebookEntryW := nil;
+      RasEditPhonebookEntryA := nil;
+      RasEditPhonebookEntryW := nil;
+      RasSetEntryDialParamsA := nil;
+      RasSetEntryDialParamsW := nil;
+      RasGetEntryDialParamsA := nil;
+      RasGetEntryDialParamsW := nil;
+      RasEnumDevicesA := nil;
+      RasEnumDevicesW := nil;
+      RasGetCountryInfoA := nil;
+      RasGetCountryInfoW := nil;
+      RasGetEntryPropertiesA := nil;
+      RasGetEntryPropertiesW := nil;
+      RasSetEntryPropertiesA := nil;
+      RasSetEntryPropertiesW := nil;
+      RasRenameEntryA := nil;
+      RasRenameEntryW := nil;
+      RasDeleteEntryA := nil;
+      RasDeleteEntryW := nil;
+      RasValidateEntryNameA := nil;
+      RasValidateEntryNameW := nil;
+      RasDial := nil;
+      RasEnumConnections := nil;
+      RasEnumEntries := nil;
+      RasGetConnectStatus := nil;
+      RasGetErrorString := nil;
+      RasHangUp := nil;
+      RasGetProjectionInfo := nil;
+      RasCreatePhonebookEntry := nil;
+      RasEditPhonebookEntry := nil;
+      RasSetEntryDialParams := nil;
+      RasGetEntryDialParams := nil;
+      RasEnumDevices := nil;
+      RasGetCountryInfo := nil;
+      RasGetEntryProperties := nil;
+      RasSetEntryProperties := nil;
+      RasRenameEntry := nil;
+      RasDeleteEntry := nil;
+      RasValidateEntryName := nil;
 
 
-      RasGetSubEntryHandleA := Nil;
-      RasGetSubEntryHandleW := Nil;
-      RasGetCredentialsA := Nil;
-      RasGetCredentialsW := Nil;
-      RasSetCredentialsA := Nil;
-      RasSetCredentialsW := Nil;
-      RasConnectionNotificationA := Nil;
-      RasConnectionNotificationW := Nil;
-      RasGetSubEntryPropertiesA := Nil;
-      RasGetSubEntryPropertiesW := Nil;
-      RasSetSubEntryPropertiesA := Nil;
-      RasSetSubEntryPropertiesW := Nil;
-      RasGetAutodialAddressA := Nil;
-      RasGetAutodialAddressW := Nil;
-      RasSetAutodialAddressA := Nil;
-      RasSetAutodialAddressW := Nil;
-      RasEnumAutodialAddressesA := Nil;
-      RasEnumAutodialAddressesW := Nil;
-      RasGetAutodialEnableA := Nil;
-      RasGetAutodialEnableW := Nil;
-      RasSetAutodialEnableA := Nil;
-      RasSetAutodialEnableW := Nil;
-      RasGetAutodialParamA := Nil;
-      RasGetAutodialParamW := Nil;
-      RasSetAutodialParamA := Nil;
-      RasSetAutodialParamW := Nil;
-      RasGetSubEntryHandle := Nil;
-      RasGetCredentials := Nil;
-      RasSetCredentials := Nil;
-      RasConnectionNotification := Nil;
-      RasGetSubEntryProperties := Nil;
-      RasSetSubEntryProperties := Nil;
-      RasGetAutodialAddress := Nil;
-      RasSetAutodialAddress := Nil;
-      RasEnumAutodialAddresses := Nil;
-      RasGetAutodialEnable := Nil;
-      RasSetAutodialEnable := Nil;
-      RasGetAutodialParam := Nil;
-      RasSetAutodialParam := Nil;
+      RasGetSubEntryHandleA := nil;
+      RasGetSubEntryHandleW := nil;
+      RasGetCredentialsA := nil;
+      RasGetCredentialsW := nil;
+      RasSetCredentialsA := nil;
+      RasSetCredentialsW := nil;
+      RasConnectionNotificationA := nil;
+      RasConnectionNotificationW := nil;
+      RasGetSubEntryPropertiesA := nil;
+      RasGetSubEntryPropertiesW := nil;
+      RasSetSubEntryPropertiesA := nil;
+      RasSetSubEntryPropertiesW := nil;
+      RasGetAutodialAddressA := nil;
+      RasGetAutodialAddressW := nil;
+      RasSetAutodialAddressA := nil;
+      RasSetAutodialAddressW := nil;
+      RasEnumAutodialAddressesA := nil;
+      RasEnumAutodialAddressesW := nil;
+      RasGetAutodialEnableA := nil;
+      RasGetAutodialEnableW := nil;
+      RasSetAutodialEnableA := nil;
+      RasSetAutodialEnableW := nil;
+      RasGetAutodialParamA := nil;
+      RasGetAutodialParamW := nil;
+      RasSetAutodialParamA := nil;
+      RasSetAutodialParamW := nil;
+      RasGetSubEntryHandle := nil;
+      RasGetCredentials := nil;
+      RasSetCredentials := nil;
+      RasConnectionNotification := nil;
+      RasGetSubEntryProperties := nil;
+      RasSetSubEntryProperties := nil;
+      RasGetAutodialAddress := nil;
+      RasSetAutodialAddress := nil;
+      RasEnumAutodialAddresses := nil;
+      RasGetAutodialEnable := nil;
+      RasSetAutodialEnable := nil;
+      RasGetAutodialParam := nil;
+      RasSetAutodialParam := nil;
     end;
   finally
     Lock.Leave;
