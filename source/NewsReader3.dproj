@@ -23,6 +23,7 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
+			<DCC_DebugDCUs>true</DCC_DebugDCUs>
 			<DCC_WIDECHAR_REDUCED>false</DCC_WIDECHAR_REDUCED>
 			<DCC_DependencyCheckOutputName>NewsReader3.exe</DCC_DependencyCheckOutputName>
 		</PropertyGroup>
@@ -52,9 +53,6 @@
 			<DelphiCompile Include="NewsReader3.dpr">
 				<MainSource>MainSource</MainSource>
 			</DelphiCompile>
-			<RcCompile Include="sslcerts.rc">
-				<Form>&apos;sslcerts.res&apos;</Form>
-			</RcCompile>
 			<DCCReference Include="MainForm.pas">
 				<Form>fmMain</Form>
 			</DCCReference>
@@ -313,6 +311,7 @@
 						<Parameters Name="UseLauncher">False</Parameters>
 						<Parameters Name="LoadAllSymbols">True</Parameters>
 						<Parameters Name="LoadUnspecifiedSymbols">False</Parameters>
+						<Parameters Name="RunParams">-ns</Parameters>
 					</Parameters>
 					<VersionInfo>
 						<VersionInfo Name="IncludeVerInfo">True</VersionInfo>

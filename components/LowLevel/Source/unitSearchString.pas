@@ -162,7 +162,7 @@ begin
     if pc = nil then
       p := 0
     else
-      p := Integer (pc) - Integer (PChar (s)) + 1
+      p := ((Integer(pc) - Integer(PChar(s))) div SizeOf(Char)) + 1
   end
   else
     p := Pos (search, s);
@@ -188,25 +188,25 @@ var
   p, l : Integer;
   pc : PChar;
 begin
-  l := Length (search);
+  l := Length(search);
   if l = 1 then
   begin
-    pc := AnsiStrScan (PChar (s), search [1]);
+    pc := AnsiStrScan(PChar(s), search[1]);
     if pc = nil then
       p := 0
     else
-      p := Integer (pc) - Integer (PChar (s)) + 1
+      p := (Integer(pc) - Integer(PChar(s))) div SizeOf(Char) + 1
   end
   else
-    p := Pos (search, s);
+    p := Pos(search, s);
   if p > 0 then
   begin
-    result := Trim (Copy (s, 1, p - 1));
+    result := Trim(Copy(s, 1, p - 1));
     s := Trim (Copy (s, p + l, maxInt))
   end
   else
   begin
-    result := Trim (s);
+    result := Trim(s);
     s := ''
   end
 end;

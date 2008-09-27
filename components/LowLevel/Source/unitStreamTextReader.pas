@@ -36,7 +36,7 @@ type
 TStreamTextReader = class
 private
   fStream : TStream;
-  fBuffer : PChar;
+  fBuffer : PAnsiChar;
 
   fbufPos : Integer;
   fBufSize : Integer;
@@ -50,8 +50,8 @@ private
 public
   constructor Create (AStream : TStream; blockSize : Integer = 1024);
   destructor Destroy; override;
-  function GetChar : char;
-  function ReadLn (var st : string; continuationChar : char = #0) : boolean;
+  function GetChar : AnsiChar;
+  function ReadLn (var st : string; continuationChar : AnsiChar = #0) : boolean;
   procedure ReadChunk (var chunk; offset, length : Integer);
   property Position : Integer read GetPosition write SetPosition;
   function Search (const st : string) : Integer;
@@ -84,21 +84,21 @@ end;
 TMappedFile = class
 private
   fSize : Integer;
-  fMemory : PChar;
+  fMemory : PAnsiChar;
   fFileHandle, fMappingHandle : THandle;
 public
   constructor Create (const AFileName : string);
   destructor Destroy; override;
 
   property Size : Integer read fSize;
-  property Memory : PChar read fMemory;
+  property Memory : PAnsiChar read fMemory;
 end;
 
 TMappedFileStream = class (TStream)
 private
   fPosition : Integer;
   fSize : Integer;
-  fMemory : PChar;
+  fMemory : PAnsiChar;
   fFileHandle, fMappingHandle : THandle;
 public
   constructor Create (const AFileName : string);
@@ -119,7 +119,7 @@ end;
 TBufferedStreamWriter = class
 private
   fStream : TStream;
-  fBuffer : PChar;
+  fBuffer : PAnsiChar;
   fBufPos, fBufSize : Integer;
   function GetPosition: Integer;
 public
@@ -140,14 +140,14 @@ end;
 
 TTextFileWriter = class (TBufferedFileWriter)
 public
-  procedure Write (const st : string);
-  procedure WriteLn (const st : string);
+  procedure Write(const st : string);
+  procedure WriteLn(const st : string);
 end;
 
 TTextStreamWriter = class (TBufferedStreamWriter)
 public
-  procedure Write (const st : string);
-  procedure WriteLn (const st : string);
+  procedure Write(const st : string);
+  procedure WriteLn(const st : string);
 end;
 
 
@@ -162,11 +162,11 @@ uses unitSearchString;
  | block of memory                                                      |
  |                                                                      |
  | Parameters:                                                          |
- |   const Str: PChar; ch : char; len : DWORD                           |
+ |   const Str: PAnsiChar; ch : char; len : DWORD                       |
  |                                                                      |
- | The function returns PChar                                           |
+ | The function returns PAnsiChar                                       |
  *----------------------------------------------------------------------*)
-function StrLScan(const Str: PChar; ch : char; len : DWORD): PChar;
+function StrLScan(const Str: PAnsiChar; ch : char; len : DWORD): PAnsiChar;
 asm
         // EAX = Str
         // DL = char
@@ -202,7 +202,7 @@ begin
   inherited;
 end;
 
-function TStreamTextReader.GetChar: char;
+function TStreamTextReader.GetChar: AnsiChar;
 begin
   GetChunk;
   if fBufPos < fBufSize then
@@ -240,11 +240,11 @@ begin
   fStream.Read(chunk, length)
 end;
 
-function TStreamTextReader.ReadLn(var st: string; continuationChar: char): boolean;
+function TStreamTextReader.ReadLn(var st: string; continuationChar: AnsiChar): boolean;
 var
   l, lineStartPos : Integer;
-  pch, pch1 : PChar;
-  st1 : string;
+  pch, pch1 : PAnsiChar;
+  st1 : AnsiString;
   cont, scont : boolean;
 begin
   lineStartPos := Position;
@@ -282,7 +282,7 @@ begin
         cont := scont;
       SetLength (st1, l);
       if l > 0 then
-        Move (pch^, PChar (st1)^, l);
+        Move (pch^, PAnsiChar (st1)^, l);
     end
     else
     begin
@@ -314,7 +314,7 @@ end;
 
 function TStreamTextReader.Search(const st: string): Integer;
 var
-  p, p1 : PChar;
+  p, p1 : PAnsiChar;
 begin
   result := -1;
   if Length (st) <> 0 then
@@ -326,7 +326,7 @@ begin
     p := fBuffer;
     Inc (p, fBufPos);
 
-    p1 := StrPos (p, PChar (st));
+    p1 := StrPos (p, PAnsiChar (AnsiString(st)));
 
     if p1 <> Nil then
     begin
@@ -397,7 +397,7 @@ end;
 
 function TTextFileReader.ReadLn(var st: string): boolean;
 var
-  p, p1 : PChar;
+  p, p1 : PAnsiChar;
   l : Integer;
 begin
   l := fSize - fPosition;
@@ -405,7 +405,7 @@ begin
   begin
     result := True;
     p1 := fMemory + fPosition;
-    p := StrLScan (p1, #10, l);
+    p := StrLScan(p1, #10, l);
 
     if p <> Nil then
     begin
@@ -418,7 +418,7 @@ begin
     else
       Inc (fPosition, l);
 
-    SetString (st, p1, l)
+    SetString(st, p1, l);
   end
   else
     result := False;
@@ -427,13 +427,16 @@ end;
 { TTextFileWriter }
 
 procedure TTextFileWriter.Write(const st: string);
+var
+  EncodedString: UTF8String;
 begin
-  inherited Write (st [1], Length (st));
+  EncodedString := UTF8Encode(st);
+  inherited Write(EncodedString[1], Length(EncodedString));
 end;
 
 procedure TTextFileWriter.WriteLn(const st: string);
 begin
-  Write (st + #13#10)
+  Write(st + #13#10)
 end;
 
 { TStreamWideTextReader }
@@ -697,7 +700,7 @@ end;
 procedure TBufferedStreamWriter.Write(const data; dataLen: Integer);
 var
   stPos, chunkLen : Integer;
-  p :PChar;
+  p :PAnsiChar;
 begin
   stPos := 0;
   while stPos < dataLen do
@@ -712,7 +715,7 @@ begin
     if chunkLen > dataLen - stPos then
       chunkLen := dataLen - stPos;
 
-    p := PChar (@data);
+    p := PAnsiChar (@data);
     Inc (p, stPos);
     Move (p^, (fBuffer + fBufPos)^, chunkLen);
     Inc (stPos, chunkLen);
@@ -723,13 +726,16 @@ end;
 { TTextStreamWriter }
 
 procedure TTextStreamWriter.Write(const st: string);
+var
+  EncodedString: UTF8String;
 begin
-  inherited Write (st [1], Length (st));
+  EncodedString := UTF8Encode(st);
+  inherited Write(EncodedString[1], Length(EncodedString));
 end;
 
 procedure TTextStreamWriter.WriteLn(const st: string);
 begin
-  Write (st + #13#10)
+  Write(st + #13#10)
 end;
 
 end.

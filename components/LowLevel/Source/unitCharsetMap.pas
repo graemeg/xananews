@@ -37,8 +37,8 @@ function CodepageToMIMECharsetName (codepage : Integer) : string;
 function CodepageToCharsetName (codepage : Integer) : string;
 function CharsetToCodePage (FontCharset : TFontCharset) : Integer;
 function CodePageToCharset (codePage : Integer) : TFontCharset;
-function WideStringToString (const ws : WideString; codePage : Integer) : string;
-function StringToWideString (const st : string; codePage : Integer) : WideString;
+function WideStringToString (const ws : string; codePage : Integer) : string; inline;
+function StringToWideString (const st : string; codePage : Integer) : string; inline;
 function StringToGDIString (const s : string; codePage : Integer) : string;
 function GDIStringToString (const s : string; codePage : Integer) : string;
 function URLSuffixToCodePage (urlSuffix : string) : Integer;
@@ -329,12 +329,13 @@ begin
       end
 end;
 
-function WideStringToString (const ws : WideString; codePage : Integer) : string;
-var
-  dlen, len : DWORD;
-  mode : DWORD;
+function WideStringToString (const ws : string; codePage : Integer) : string;
+//var
+//  dlen, len : DWORD;
+//  mode : DWORD;
 begin
-  LoadMultiLanguage;
+  Result := ws;
+{  LoadMultiLanguage;
 
   len := Length (ws);
   dlen := len * 4;
@@ -354,14 +355,15 @@ begin
   if dlen = 0 then
     result := ws
   else
-    SetLength (result, dlen)
+    SetLength (result, dlen) }
 end;
 
-function StringToWideString (const st : string; codePage : Integer) : WideString;
-var
-  len, dlen, mode : DWORD;
+function StringToWideString (const st : string; codePage : Integer) : string;
+//var
+//  len, dlen, mode : DWORD;
 begin
-  LoadMultiLanguage;
+  Result := st;
+{  LoadMultiLanguage;
   if codePage = -1 then
     codePage := CP_USASCII;
   if st = '' then
@@ -385,7 +387,7 @@ begin
       result := st
     else
       SetLength (result, dlen)
-  end
+  end }
 end;
 
 function URLSuffixToCodePage (urlSuffix : string) : Integer;

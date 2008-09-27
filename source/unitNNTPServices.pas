@@ -3806,7 +3806,7 @@ function TArticle.GetInterestingMessageLine: string;
 var
   i, len : Integer;
   hLen : word;
-  st : string;
+  st : AnsiString;
   r : TStrings;
   m : TMemoryStream;
   rCreated : boolean;
@@ -4098,7 +4098,7 @@ end;
  *----------------------------------------------------------------------*)
 procedure TArticle.SaveMessageBody;
 var
-  st : string;
+  st : AnsiString;
   i : Integer;
   hLen : Word;
 begin
@@ -6576,7 +6576,7 @@ end;
 
 function TArticleBase.GetMsgFromFile: TmvMessage;
 var
-  st : string;
+  st : AnsiString;
   len : DWORD;
   hLen : Word;
   cp : Integer;
@@ -6598,7 +6598,7 @@ begin
         SetLength (st, 9);
         Owner.fMessageFile.Read(st [1], 9);
         st [1] := '$';
-        len := StrToInt (st);
+        len := StrToInt(st);
 
         Owner.fMessageFile.Read(hLen, SizeOf (hLen));
 

@@ -87,7 +87,7 @@ begin
         Result := TBitmap
       else
         if CompareText(imageClass, 'png') = 0 then
-          Result := TPngObject;
+          Result := TPngImage;
 end;
 
 procedure DecodeQuotedPrintable(const ins: TStream; outs: TStrings);

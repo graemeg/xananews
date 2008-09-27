@@ -399,10 +399,10 @@ type
   TRasConnA = record
     dwSize : DWORD;
     hrasconn : HRasCon;
-    szEntryName : array [0..RAS_MaxEntryName] of char;
-    szDeviceType : array [0..RAS_MaxDeviceType] of char;
-    szDeviceName : array [0..RAS_MaxDeviceName] of char;
-    szPhonebook : array [0..MAX_PATH - 1] of char;
+    szEntryName : array [0..RAS_MaxEntryName] of AnsiChar;
+    szDeviceType : array [0..RAS_MaxDeviceType] of AnsiChar;
+    szDeviceName : array [0..RAS_MaxDeviceName] of AnsiChar;
+    szPhonebook : array [0..MAX_PATH - 1] of AnsiChar;
     dwSubEntry : DWORD;
   end;
 
@@ -431,9 +431,9 @@ type
     dwSize : DWORD;
     rasconnstate : TRASConnState;
     dwError : DWORD;
-    szDeviceType : array [0..RAS_MaxDeviceType] of char;
-    szDeviceName : array [0..RAS_MaxDeviceName] of char;
-    szPhoneNumber : array [0..RAS_MaxPhoneNumber] of char;
+    szDeviceType : array [0..RAS_MaxDeviceType] of AnsiChar;
+    szDeviceName : array [0..RAS_MaxDeviceName] of AnsiChar;
+    szPhoneNumber : array [0..RAS_MaxPhoneNumber] of AnsiChar;
   end;
 
   TRASConnStatus = TRASConnStatusA;
@@ -458,12 +458,12 @@ type
 
   TRASDialParamsA = record
     dwSize : DWORD;
-    szEntryName : array [0..RAS_MaxEntryName] of char;
-    szPhoneNumber : array [0..RAS_MaxPhoneNumber] of char;
-    szCallbackNumber : array [0..RAS_MaxCallbackNumber] of char;
-    szUserName : array [0..UNLEN] of char;
-    szPassword : array [0..PWLEN] of char;
-    szDomain : array [0..DNLEN] of char;
+    szEntryName : array [0..RAS_MaxEntryName] of AnsiChar;
+    szPhoneNumber : array [0..RAS_MaxPhoneNumber] of AnsiChar;
+    szCallbackNumber : array [0..RAS_MaxCallbackNumber] of AnsiChar;
+    szUserName : array [0..UNLEN] of AnsiChar;
+    szPassword : array [0..PWLEN] of AnsiChar;
+    szDomain : array [0..DNLEN] of AnsiChar;
     dwSubEntry : DWORD;
     dwCallbackId : DWORD;
   end;
@@ -496,7 +496,7 @@ type
 
   TRASEntryNameA = record
     dwSize : DWORD;
-    szEntryName : array [0..RAS_MaxEntryName] of char;
+    szEntryName : array [0..RAS_MaxEntryName] of AnsiChar;
   end;
 
   TRASEntryName = TRASEntryNameA;
@@ -525,7 +525,7 @@ type
   TRASAMBA = record
     dwSize : DWORD;
     dwError : DWORD;
-    szNetBiosError : array [0..NETBIOS_NAME_LEN] of char;
+    szNetBiosError : array [0..NETBIOS_NAME_LEN] of AnsiChar;
     bLana : BYTE;
   end;
 
@@ -551,8 +551,8 @@ type
     dwSize : DWORD;
     dwError : DWORD;
     dwNetBiosError : DWORD;
-    szNetBiosError : array [0..NETBIOS_NAME_LEN] of char;
-    szWorkstationName : array [0..NETBIOS_NAME_LEN] of char;
+    szNetBiosError : array [0..NETBIOS_NAME_LEN] of AnsiChar;
+    szWorkstationName : array [0..NETBIOS_NAME_LEN] of AnsiChar;
     bLana : byte;
   end;
 
@@ -575,7 +575,7 @@ type
   TRASPPPIPXA = record
     dwSize : DWORD;
     dwError : DWORD;
-    szIpxAddress : array [0..RAS_MaxIpxAddress] of char;
+    szIpxAddress : array [0..RAS_MaxIpxAddress] of AnsiChar;
   end;
 
   TRASPPPIPX = TRASPPPIPXA;
@@ -598,8 +598,8 @@ type
   TRASPPPIPA = record
     dwSize : DWORD;
     dwError : DWORD;
-    szIpAddress : array [0..RAS_MaxIpAddress] of char;
-    szServerIpAddress : array [0..RAS_MaxIpAddress] of char;
+    szIpAddress : array [0..RAS_MaxIpAddress] of AnsiChar;
+    szServerIpAddress : array [0..RAS_MaxIpAddress] of AnsiChar;
   end;
 
   TRASPPPIP = TRASPPPIPA;
@@ -631,7 +631,7 @@ type
   TRASSLIPA = record
     dwSize : DWORD;
     dwError : DWORD;
-    szIpAddress : array [0..RAS_MaxIpAddress] of char;
+    szIpAddress : array [0..RAS_MaxIpAddress] of AnsiChar;
   end;
 
   TRASSLIP = TRASSLIPA;
@@ -664,8 +664,8 @@ TRasDialFunc2 = function (dwCallbackID, dwSubEntry : DWORD; HRASConn : HRASCON; 
 
   TRASDevInfoA = record
     dwSize : DWORD;
-    szDeviceType : array [0..RAS_MaxDeviceType] of char;
-    szDeviceName : array [0..RAS_MaxDeviceName] of char;
+    szDeviceType : array [0..RAS_MaxDeviceType] of AnsiChar;
+    szDeviceName : array [0..RAS_MaxDeviceName] of AnsiChar;
   end;
 
   TRASDevInfo = TRASDevInfoA;
@@ -734,8 +734,8 @@ type
     //
     dwCountryID : DWORD;
     dwCountryCode : DWORD;
-    szAreaCode : array [0..RAS_MaxAreaCode] of char;
-    szLocalPhoneNumber : array [0..RAS_MaxPhoneNumber] of char;
+    szAreaCode : array [0..RAS_MaxAreaCode] of AnsiChar;
+    szLocalPhoneNumber : array [0..RAS_MaxPhoneNumber] of AnsiChar;
     dwAlternateOffset : DWORD;
     //
     // PPP/Ip
@@ -754,24 +754,24 @@ type
     //
     // Scripting
     //
-    szScript : array [0..MAX_PATH-1] of char;
+    szScript : array [0..MAX_PATH-1] of AnsiChar;
     //
     // AutoDial
     //
-    szAutodialDll : array [0..MAX_PATH-1] of char;
-    szAutodialFunc : array [0.. MAX_PATH-1] of char;
+    szAutodialDll : array [0..MAX_PATH-1] of AnsiChar;
+    szAutodialFunc : array [0.. MAX_PATH-1] of AnsiChar;
     //
     // Device
     //
-    szDeviceType : array [0..RAS_MaxDeviceType] of char;
-    szDeviceName : array [0..RAS_MaxDeviceName] of char;
+    szDeviceType : array [0..RAS_MaxDeviceType] of AnsiChar;
+    szDeviceName : array [0..RAS_MaxDeviceName] of AnsiChar;
     //
     // X.25
     //
-    szX25PadType : array [0..RAS_MaxPadType] of char;
-    szX25Address : array [0..RAS_MaxX25Address] of char;
-    szX25Facilities : array [0..RAS_MaxFacilities] of char;
-    szX25UserData : array [0..RAS_MaxUserData] of char;
+    szX25PadType : array [0..RAS_MaxPadType] of AnsiChar;
+    szX25Address : array [0..RAS_MaxX25Address] of AnsiChar;
+    szX25Facilities : array [0..RAS_MaxFacilities] of AnsiChar;
+    szX25UserData : array [0..RAS_MaxUserData] of AnsiChar;
     dwChannels : DWORD;
     //
     // Reserved
@@ -910,12 +910,12 @@ ORASADFUNC = function (hwndOwner : HWND; lpszEntry : PChar; dwFlags : DWORD; var
     //
     // Device
     //
-    szDeviceType : array [0..RAS_MaxDeviceType] of char;
-    szDeviceName : array [0..RAS_MaxDeviceName] of char;
+    szDeviceType : array [0..RAS_MaxDeviceType] of AnsiChar;
+    szDeviceName : array [0..RAS_MaxDeviceName] of AnsiChar;
     //
     // Phone numbers
     //
-    szLocalPhoneNumber : array [0..RAS_MaxPhoneNumber] of char;
+    szLocalPhoneNumber : array [0..RAS_MaxPhoneNumber] of AnsiChar;
     dwAlternateOffset : DWORD;
   end;
 
@@ -947,9 +947,9 @@ ORASADFUNC = function (hwndOwner : HWND; lpszEntry : PChar; dwFlags : DWORD; var
   TRASCredentialsA = record
     dwSize :DWORD;
     dwMask : DWORD;
-    szUserName : array [0..UNLEN] of char;
-    szPassword : array [0..PWLEN] of char;
-    szDomain : array [0..DNLEN] of char;
+    szUserName : array [0..UNLEN] of AnsiChar;
+    szPassword : array [0..PWLEN] of AnsiChar;
+    szDomain : array [0..DNLEN] of AnsiChar;
   end;
 
   TRASCredentialsW = record
@@ -973,7 +973,7 @@ ORASADFUNC = function (hwndOwner : HWND; lpszEntry : PChar; dwFlags : DWORD; var
     dwSize : DWORD;
     dwFlags : DWORD;
     dwDialingLocation : DWORD;
-    szEntry : array [0..RAS_MaxEntryName] of char;
+    szEntry : array [0..RAS_MaxEntryName] of AnsiChar;
   end;
 
   TRASAutoDialEntryW = record

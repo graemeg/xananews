@@ -1,7 +1,5 @@
 program NewsReader3;
 
-{$R 'sslcerts.res' 'sslcerts.rc'}
-
 uses
   madListHardware,
   madListProcesses,

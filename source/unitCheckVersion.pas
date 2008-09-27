@@ -34,6 +34,7 @@ var
   handle: hInternet;
   hurl: hInternet;
   bytesRead: DWORD;
+  Buffer: AnsiString;
 begin
   hurl := nil;
   handle := InternetOpen('XanaNews', INTERNET_OPEN_TYPE_PRECONFIG, nil, nil, 0);
@@ -50,11 +51,11 @@ begin
                                     , 0);
     if hurl = nil then RaiseLastOSError;
 
-    SetLength(Result, 256);
-    if InternetReadFile(hurl, PChar(Result), 256, bytesRead) then
+    SetLength(Buffer, 256);
+    if InternetReadFile(hurl, PAnsiChar(Buffer), 256, bytesRead) then
     begin
-      SetLength(Result, bytesRead);
-      Result := Trim(Result);
+      SetLength(Buffer, bytesRead);
+      Result := Trim(string(Buffer));
       if CompareText(SplitString(':', Result), 'version') <> 0 then
         raise Exception.Create(rstBadVersionInfo);
     end;
@@ -66,11 +67,11 @@ begin
                                     INTERNET_FLAG_RESYNCHRONIZE, 0);
     if hurl <> nil then
     begin
-      SetLength(contributors, 131072);
-      if InternetReadFile(hurl, PChar(contributors), 131072, bytesRead) then
+      SetLength(buffer, 131072);
+      if InternetReadFile(hurl, PAnsiChar(buffer), 131072, bytesRead) then
       begin
-        SetLength(contributors, bytesRead);
-        contributors := Trim(contributors);
+        SetLength(buffer, bytesRead);
+        contributors := Trim(string(buffer));
       end;
     end;
   finally

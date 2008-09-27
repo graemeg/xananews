@@ -314,7 +314,7 @@ begin
           Result := TGIFImage
         else
           if (ext = 'PNG') then
-            Result := TPngObject;
+            Result := TPngImage;
   end;
 end;
 
@@ -521,7 +521,7 @@ end;
 
 function TmvMessage.GetLine(var st: string): Boolean;
 var
-  pch, pch1: PChar;
+  pch, pch1: PAnsiChar;
   p, l: Integer;
 begin
   // Get a line of the message text.  This is threadsafe so we can add
@@ -620,7 +620,7 @@ var
   face: Boolean;
   faceDecoder: TIdDecoderMIME;
   facePngStrm: TStream;
-  png: TPngObject;
+  png: TPngImage;
 begin
   if not fGotXFace then
   begin
@@ -637,7 +637,7 @@ begin
         faceDecoder := TIdDecoderMIME.Create(nil);
         try
           facePngStrm := TMemoryStream.Create;
-          png := TPngObject.Create;
+          png := TPngImage.Create;
           faceDecoder.DecodeBegin(facePngStrm);
           faceDecoder.Decode(s);
           facePngStrm.Seek(0, soFromBeginning);
