@@ -11,7 +11,7 @@ uses
 type
   TfmePost = class(TFrame)
     ScrollBox1: TScrollBox;
-    Ruler1: TRuler;
+    Ruler1: TXNRuler;
     mmoMessage: TExRichEdit;
     cbCheckSpelling: TCheckBox;
     cbCharset: TComboBox;
@@ -260,7 +260,8 @@ var
   s : TStringList;
 begin
   fCloseOK := True;
-  st := WideStringToString (mmoMessage.Text, fCodePage);
+//  st := WideStringToString (mmoMessage.Text, fCodePage);
+  st := mmoMessage.Text;
 
   if (fPostingSettings.MaxPostLineLength > 0) and (fPostingSettings.TextPartStyle <> tpQuotedPrintable) and (fPostingSettings.TextPartStyle <> tpFlowed) then
   begin
@@ -450,18 +451,19 @@ end;
 
 procedure TfmePost.mnuPasteSelectedClick(Sender: TObject);
 var
-  ws : WideString;
-  art : TArticleBase;
-  cp : Integer;
+  ws: WideString;
+//  art : TArticleBase;
+//  cp : Integer;
 begin
-  fmMain.MessageScrollBox1.GetSelectedText (ws);
-  art := fmMain.GetFocusedArticle;
-  if Assigned (art) then
-    cp := art.CodePage
-  else
-    cp := CP_USASCII;
+  fmMain.MessageScrollBox1.GetSelectedText(ws);
+//  art := fmMain.GetFocusedArticle;
+//  if Assigned (art) then
+//    cp := art.CodePage
+//  else
+//    cp := CP_USASCII;
   if ws <> '' then
-    PasteQuote (WideStringToString (ws, cp));
+//    PasteQuote (WideStringToString(ws, cp));
+    PasteQuote(ws);
 end;
 
 procedure TfmePost.PasteQuote(const quote: string);

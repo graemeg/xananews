@@ -58,7 +58,7 @@ begin
     TThemedScrollBox,
     TExRichEdit,
     TNewsRichEdit,
-    TRuler,
+    TXNRuler,
     THexDump,
     TSizingPageControl,
     TSpellChecker,

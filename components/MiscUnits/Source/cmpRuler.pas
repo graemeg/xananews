@@ -6,8 +6,8 @@ uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs;
 
 type
-  TRulerOrientation = (ruHorizontal, ruVertical);
-  TRuler = class(TCustomControl)
+  TXNRulerOrientation = (ruHorizontal, ruVertical);
+  TXNRuler = class(TCustomControl)
   private
     fSmallTickSpacing: Integer;
     fSmallTickLength: Integer;
@@ -15,11 +15,11 @@ type
     fLargeTickLength: Integer;
     fDialogBox: HWND;
     procedure SetLargeTickLength(const Value: Integer);
-    procedure SetOrientation(const Value: TRulerOrientation);
+    procedure SetOrientation(const Value: TXNRulerOrientation);
     procedure SetSmallTickLength(const Value: Integer);
     procedure SetSmallTickSpacing(const Value: Integer);
     procedure SetSmallTicksperLargeTick(const Value: Integer);
-    function GetOrientation: TRulerOrientation;
+    function GetOrientation: TXNRulerOrientation;
     procedure SetDialogBox(const Value: HWND);
     { Private declarations }
   protected
@@ -43,14 +43,14 @@ type
     property SmallTicksPerLargeTick : Integer read fSmallTicksPerLargeTick write SetSmallTicksperLargeTick default 5;
     property SmallTickLength : Integer read fSmallTickLength write SetSmallTickLength default 5;
     property LargeTickLength : Integer read fLargeTickLength write SetLargeTickLength default 10;
-    property Orientation : TRulerOrientation read GetOrientation write SetOrientation stored False;
+    property Orientation : TXNRulerOrientation read GetOrientation write SetOrientation stored False;
   end;
 
 implementation
 
-{ TRuler }
+{ TXNRuler }
 
-constructor TRuler.Create(AOwner: TComponent);
+constructor TXNRuler.Create(AOwner: TComponent);
 begin
   inherited Create (AOwner);
   Width := 180;
@@ -64,7 +64,7 @@ begin
   fSmallTickSpacing := 10;
 end;
 
-function TRuler.GetOrientation: TRulerOrientation;
+function TXNRuler.GetOrientation: TXNRulerOrientation;
 begin
   if Width > Height then
     result := ruHorizontal
@@ -72,12 +72,12 @@ begin
     result := ruVertical
 end;
 
-procedure TRuler.Loaded;
+procedure TXNRuler.Loaded;
 begin
   inherited;
 end;
 
-procedure TRuler.Paint;
+procedure TXNRuler.Paint;
 var
   x, y : Integer;
   w, h : Integer;
@@ -157,13 +157,13 @@ begin
   end
 end;
 
-procedure TRuler.SetDialogBox(const Value: HWND);
+procedure TXNRuler.SetDialogBox(const Value: HWND);
 begin
   fDialogBox := Value;
   invalidate
 end;
 
-procedure TRuler.SetLargeTickLength(const Value: Integer);
+procedure TXNRuler.SetLargeTickLength(const Value: Integer);
 begin
   if value <> fLargeTickLength then
   begin
@@ -172,7 +172,7 @@ begin
   end
 end;
 
-procedure TRuler.SetOrientation(const Value: TRulerOrientation);
+procedure TXNRuler.SetOrientation(const Value: TXNRulerOrientation);
 var
   h : Integer;
 begin
@@ -185,7 +185,7 @@ begin
   end
 end;
 
-procedure TRuler.SetSmallTickLength(const Value: Integer);
+procedure TXNRuler.SetSmallTickLength(const Value: Integer);
 begin
   if value <> fSmallTickLength then
   begin
@@ -194,7 +194,7 @@ begin
   end
 end;
 
-procedure TRuler.SetSmallTickSpacing(const Value: Integer);
+procedure TXNRuler.SetSmallTickSpacing(const Value: Integer);
 begin
   if value <> fSmallTickSpacing then
   begin
@@ -203,7 +203,7 @@ begin
   end
 end;
 
-procedure TRuler.SetSmallTicksperLargeTick(const Value: Integer);
+procedure TXNRuler.SetSmallTicksperLargeTick(const Value: Integer);
 begin
   if value <> fSmallTicksPerLargeTick then
   begin
