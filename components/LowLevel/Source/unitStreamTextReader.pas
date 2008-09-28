@@ -35,12 +35,12 @@ type
 
 TStreamTextReader = class
 private
-  fStream : TStream;
-  fBuffer : PAnsiChar;
+  fStream: TStream;
+  fBuffer: PAnsiChar;
 
-  fbufPos : Integer;
-  fBufSize : Integer;
-  fBlockSize : Integer;
+  fbufPos: Integer;
+  fBufSize: Integer;
+  fBlockSize: Integer;
 
   procedure GetChunk;
   function GetPosition: Integer;
@@ -48,24 +48,24 @@ private
   procedure SetStream(const Value: TStream);
 
 public
-  constructor Create (AStream : TStream; blockSize : Integer = 1024);
+  constructor Create(AStream: TStream; blockSize: Integer = 1024);
   destructor Destroy; override;
-  function GetChar : AnsiChar;
-  function ReadLn (var st : string; continuationChar : AnsiChar = #0) : boolean;
-  procedure ReadChunk (var chunk; offset, length : Integer);
-  property Position : Integer read GetPosition write SetPosition;
-  function Search (const st : string) : Integer;
-  property Stream : TStream read fStream write SetStream;
+  function GetChar: AnsiChar;
+  function ReadLn(var st: UTF8String; continuationChar: AnsiChar = #0): Boolean;
+  procedure ReadChunk(var chunk; offset, length: Integer);
+  property Position: Integer read GetPosition write SetPosition;
+  function Search(const st: UTF8String): Integer;
+  property Stream: TStream read fStream write SetStream;
 end;
 
 TStreamWideTextReader = class
 private
-  fStream : TStream;
-  fBuffer : PWideChar;
+  fStream: TStream;
+  fBuffer: PWideChar;
 
-  fbufPos : Integer;
-  fBufSize : Integer;
-  fBlockSize : Integer;
+  fbufPos: Integer;
+  fBufSize: Integer;
+  fBlockSize: Integer;
 
   procedure GetChunk;
   function GetPosition: Integer;
@@ -73,35 +73,35 @@ private
   procedure SetStream(const Value: TStream);
 
 public
-  constructor Create (AStream : TStream; blockSize : Integer = 1024);
+  constructor Create(AStream: TStream; blockSize: Integer = 1024);
   destructor Destroy; override;
-  function GetChar : WideChar;
-  function ReadLn (var st : WideString; continuationChar : WideChar = #0) : boolean;
-  property Position : Integer read GetPosition write SetPosition;
-  property Stream : TStream read fStream write SetStream;
+  function GetChar: WideChar;
+  function ReadLn(var st: WideString; continuationChar: WideChar = #0): Boolean;
+  property Position: Integer read GetPosition write SetPosition;
+  property Stream: TStream read fStream write SetStream;
 end;
 
 TMappedFile = class
 private
-  fSize : Integer;
-  fMemory : PAnsiChar;
-  fFileHandle, fMappingHandle : THandle;
+  fSize: Integer;
+  fMemory: PAnsiChar;
+  fFileHandle, fMappingHandle: THandle;
 public
-  constructor Create (const AFileName : string);
+  constructor Create(const AFileName: string);
   destructor Destroy; override;
 
-  property Size : Integer read fSize;
-  property Memory : PAnsiChar read fMemory;
+  property Size: Integer read fSize;
+  property Memory: PAnsiChar read fMemory;
 end;
 
-TMappedFileStream = class (TStream)
+TMappedFileStream = class(TStream)
 private
-  fPosition : Integer;
-  fSize : Integer;
-  fMemory : PAnsiChar;
-  fFileHandle, fMappingHandle : THandle;
+  fPosition: Integer;
+  fSize: Integer;
+  fMemory: PAnsiChar;
+  fFileHandle, fMappingHandle: THandle;
 public
-  constructor Create (const AFileName : string);
+  constructor Create(const AFileName: string);
   destructor Destroy; override;
 
   function Read(var Buffer; Count: Longint): Longint; override;
@@ -109,45 +109,45 @@ public
   function Seek(Offset: Longint; Origin: Word): Longint; override;
 end;
 
-TTextFileReader = class (TMappedFile)
+TTextFileReader = class(TMappedFile)
 private
-  fPosition : Integer;
+  fPosition: Integer;
 public
-  function ReadLn (var st : string) : boolean;
+  function ReadLn(var st: UTF8String): Boolean;
 end;
 
 TBufferedStreamWriter = class
 private
-  fStream : TStream;
-  fBuffer : PAnsiChar;
-  fBufPos, fBufSize : Integer;
+  fStream: TStream;
+  fBuffer: PAnsiChar;
+  fBufPos, fBufSize: Integer;
   function GetPosition: Integer;
 public
-  constructor Create (const AStream : TStream);
+  constructor Create(const AStream: TStream);
   destructor Destroy; override;
-  procedure Write (const data; dataLen : Integer);
+  procedure Write(const data; dataLen: Integer);
   procedure FlushBuffer;
-  property Position : Integer read GetPosition;
+  property Position: Integer read GetPosition;
 end;
 
-TBufferedFileWriter = class (TBufferedStreamWriter)
+TBufferedFileWriter = class(TBufferedStreamWriter)
 private
-  fStream : TFileStream;
+  fStream: TFileStream;
 public
-  constructor Create (const AFileName : string);
+  constructor Create(const AFileName: string);
   destructor Destroy; override;
 end;
 
-TTextFileWriter = class (TBufferedFileWriter)
+TTextFileWriter = class(TBufferedFileWriter)
 public
-  procedure Write(const st : string);
-  procedure WriteLn(const st : string);
+  procedure Write(const st: string);
+  procedure WriteLn(const st: string);
 end;
 
-TTextStreamWriter = class (TBufferedStreamWriter)
+TTextStreamWriter = class(TBufferedStreamWriter)
 public
-  procedure Write(const st : string);
-  procedure WriteLn(const st : string);
+  procedure Write(const st: string);
+  procedure WriteLn(const st: string);
 end;
 
 
@@ -162,16 +162,16 @@ uses unitSearchString;
  | block of memory                                                      |
  |                                                                      |
  | Parameters:                                                          |
- |   const Str: PAnsiChar; ch : char; len : DWORD                       |
+ |   const Str: PAnsiChar; ch: char; len: DWORD                         |
  |                                                                      |
  | The function returns PAnsiChar                                       |
  *----------------------------------------------------------------------*)
-function StrLScan(const Str: PAnsiChar; ch : Char; len : DWORD): PAnsiChar;
+function StrLScan(const Str: PAnsiChar; ch: Char; len: DWORD): PAnsiChar;
 asm
         // EAX = Str
         // DL = char
         // ECX = len
-        
+
         PUSH    EDI
         MOV     EDI, EAX
         MOV     AL, DL
@@ -192,14 +192,14 @@ constructor TStreamTextReader.Create(AStream: TStream; blockSize: Integer);
 begin
   fStream := AStream;
   fBlockSize := blockSize;
-  GetMem (fBuffer, fBlockSize + 1);
-  fBuffer [blockSize] := #0
+  GetMem(fBuffer, fBlockSize + 1);
+  fBuffer[blockSize] := #0
 end;
 
 destructor TStreamTextReader.Destroy;
 begin
-  FreeMem (fBuffer);
-  inherited;
+  FreeMem(fBuffer);
+  inherited Destroy;
 end;
 
 function TStreamTextReader.GetChar: AnsiChar;
@@ -207,11 +207,11 @@ begin
   GetChunk;
   if fBufPos < fBufSize then
   begin
-    result := fBuffer [fBufPos];
-    Inc (fBufPos)
+    Result := fBuffer[fBufPos];
+    Inc(fBufPos);
   end
   else
-    result := #0
+    Result := #0;
 end;
 
 procedure TStreamTextReader.GetChunk;
@@ -225,13 +225,13 @@ begin
 
     fBufSize := fStream.Read(fBuffer^, fBufSize);
     if fBufSize < fBlockSize then
-      fBuffer [fBufSize] := #10
+      fBuffer[fBufSize] := #10;
   end;
 end;
 
 function TStreamTextReader.GetPosition: Integer;
 begin
-  result := fStream.Position - fBufSize + fBufPos;
+  Result := fStream.Position - fBufSize + fBufPos;
 end;
 
 procedure TStreamTextReader.ReadChunk(var chunk; offset, length: Integer);
@@ -240,12 +240,12 @@ begin
   fStream.Read(chunk, length)
 end;
 
-function TStreamTextReader.ReadLn(var st: string; continuationChar: AnsiChar): boolean;
+function TStreamTextReader.ReadLn(var st:UTF8String; continuationChar: AnsiChar): Boolean;
 var
-  L, lineStartPos : Integer;
-  pch, pch1 : PAnsiChar;
-  st1 : UTF8String;
-  cont, scont : boolean;
+  L, lineStartPos: Integer;
+  pch, pch1: PAnsiChar;
+  st1: UTF8String;
+  cont, scont: Boolean;
 begin
   lineStartPos := Position;
   cont := True;
@@ -255,93 +255,91 @@ begin
   begin
     GetChunk;
     if fBufPos = fBufSize then
-      break;
+      Break;
 
     pch := fBuffer;
-    Inc (pch, fBufPos);
-    pch1 := StrScan (pch, #10);
+    Inc(pch, fBufPos);
+    pch1 := StrScan(pch, #10);
 
     if pch1 <> nil then
     begin
       L := pch1 - pch;
-      Inc (fBufPos, L + 1);
+      Inc(fBufPos, L + 1);
       if fBufPos > fBufSize then
         fBufPos := fBufSize;
       if L > 0 then
       begin
         repeat
-          Dec (pch1);
+          Dec(pch1);
           if pch1^ = #13 then
-            Dec (L)
+            Dec(L)
           else
-            break
+            Break;
         until pch1 = pch;
         cont := pch1^ = continuationChar;
       end
       else
         cont := scont;
-      SetLength (st1, L);
+      SetLength(st1, L);
       if L > 0 then
-        Move (pch^, PAnsiChar(st1)^, L);
+        Move(pch^, PAnsiChar(st1)^, L);
     end
     else
     begin
       st1 := pch;
-      L := Length (st1);
+      L := Length(st1);
 
-      while (L > 0) and (st1 [L] = #13) do
-        Dec (L);
+      while (L > 0) and (st1[L] = #13) do
+        Dec(L);
 
-      if L < Length (st1) then
-        SetLength (st1, L);
+      if L < Length(st1) then
+        SetLength(st1, L);
 
       scont := (L > 0) and (st1[L] = continuationChar);
 
-      fBufPos := fBufSize
+      fBufPos := fBufSize;
     end;
 
-// TODO: check UTF8 decoding
-//    st := st + st1
-    st := st + UTF8ToString(st1);
+    st := st + st1;
   end;
 
   if cont then
   begin
     Position := lineStartPos;
-    result := False
+    Result := False;
   end
   else
-    result := True;
+    Result := True;
 end;
 
-function TStreamTextReader.Search(const st: string): Integer;
+function TStreamTextReader.Search(const st: UTF8String): Integer;
 var
-  p, p1 : PAnsiChar;
+  p, p1: PAnsiChar;
 begin
-  result := -1;
-  if Length (st) <> 0 then
+  Result := -1;
+  if Length(st) <> 0 then
   repeat
     GetChunk;
-    if fBufSize < Length (st) then
+    if fBufSize < Length(st) then
       Exit;
 
     p := fBuffer;
-    Inc (p, fBufPos);
+    Inc(p, fBufPos);
 
 // TODO: searching
-    p1 := StrPos (p, PAnsiChar (AnsiString(st)));
+    p1 := StrPos(p, PAnsiChar(AnsiString(st)));
 
-    if p1 <> Nil then
+    if p1 <> nil then
     begin
-      result := (fStream.Position - fBufSize) + Integer (p1) - Integer (fBuffer);
-      fBufPos := Integer (p1) - Integer (fBuffer) + Length (st);
-      break
+      Result := (fStream.Position - fBufSize) + Integer(p1) - Integer(fBuffer);
+      fBufPos := Integer(p1) - Integer(fBuffer) + Length(st);
+      Break
     end;
 
-    fStream.Position := fStream.Position - (Length (st) - 1);
+    fStream.Position := fStream.Position - (Length(st) - 1);
     fBufPos := 0;
     fBufSize := 0;
-  until False
+  until False;
 end;
 
 procedure TStreamTextReader.SetPosition(const Value: Integer);
@@ -350,7 +348,7 @@ begin
   begin
     fBufSize := 0;
     fBufPos := 0;
-    fStream.Position := Value
+    fStream.Position := Value;
   end
 end;
 
@@ -358,51 +356,51 @@ procedure TStreamTextReader.SetStream(const Value: TStream);
 begin
   fStream := Value;
   fBufPos := 0;
-  fBufSize := 0
+  fBufSize := 0;
 end;
 
 { TMappedFile }
 
 constructor TMappedFile.Create(const AFileName: string);
 begin
-  fFileHandle := CreateFile (PChar (AFileName), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, 0);
+  fFileHandle := CreateFile(PChar(AFileName), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, 0);
   if fFileHandle = INVALID_HANDLE_VALUE then
     RaiseLastOSError;
 
-  fSize := GetFileSize (fFileHandle, nil);
+  fSize := GetFileSize(fFileHandle, nil);
   if fSize <> 0 then
   begin
-    fMappingHandle := CreateFileMapping (fFileHandle, nil, PAGE_READONLY, 0, 0, nil);
+    fMappingHandle := CreateFileMapping(fFileHandle, nil, PAGE_READONLY, 0, 0, nil);
     if fMappingHandle = 0 then
       RaiseLastOSError;
 
-    fMemory := MapViewOfFile (fMappingHandle, FILE_MAP_READ, 0, 0, 0);
-    if fMemory = Nil then
+    fMemory := MapViewOfFile(fMappingHandle, FILE_MAP_READ, 0, 0, 0);
+    if fMemory = nil then
       RaiseLastOSError;
-  end
+  end;
 end;
 
 destructor TMappedFile.Destroy;
 begin
-  if fMemory <> Nil then
-    UnmapViewOfFile (fMemory);
+  if fMemory <> nil then
+    UnmapViewOfFile(fMemory);
 
   if fMappingHandle <> 0 then
-    CloseHandle (fMappingHandle);
+    CloseHandle(fMappingHandle);
 
   if fFileHandle <> INVALID_HANDLE_VALUE then
-    CloseHandle (fFileHandle);
+    CloseHandle(fFileHandle);
 
-  inherited;
+  inherited Destroy;
 end;
 
 { TTextFileReader }
 
-function TTextFileReader.ReadLn(var st: string): boolean;
+function TTextFileReader.ReadLn(var st: UTF8String): Boolean;
 var
   p, p1: PAnsiChar;
   L: Integer;
-  S: UTF8String;
+//  S: UTF8String;
 begin
   L := fSize - fPosition;
   if L > 0 then
@@ -423,9 +421,9 @@ begin
       Inc(fPosition, L);
 
 // TODO: check UTF8 decoding
-//    SetString(st, p1, L);
-    SetString(S, p1, L);
-    st := UTF8ToString(S);
+    SetString(st, p1, L);
+//    SetString(S, p1, L);
+//    st := UTF8ToString(S);
   end
   else
     Result := False;
@@ -454,15 +452,15 @@ constructor TStreamWideTextReader.Create(AStream: TStream;
 begin
   fStream := AStream;
   fBlockSize := blockSize;
-  GetMem (fBuffer, (fBlockSize + 1) * sizeof (WideChar));
-  fBuffer [blockSize] := #0;
+  GetMem(fBuffer, (fBlockSize + 1) * SizeOf(WideChar));
+  fBuffer[blockSize] := #0;
   Position := 0;
 end;
 
 destructor TStreamWideTextReader.Destroy;
 begin
-  FreeMem (fBuffer);
-  inherited;
+  FreeMem(fBuffer);
+  inherited Destroy;
 end;
 
 function TStreamWideTextReader.GetChar: WideChar;
@@ -470,43 +468,43 @@ begin
   GetChunk;
   if fBufPos < fBufSize then
   begin
-    result := fBuffer [fBufPos];
-    Inc (fBufPos)
+    Result := fBuffer[fBufPos];
+    Inc(fBufPos);
   end
   else
-    result := #0
+    Result := #0;
 end;
 
 procedure TStreamWideTextReader.GetChunk;
 var
-  ps : Integer;
+  ps: Integer;
 begin
   if fBufPos = fBufSize then
   begin
-    ps := (fStream.Size - fStream.Position) div sizeof (WideChar);
+    ps := (fStream.Size - fStream.Position) div SizeOf(WideChar);
     fBufPos := 0;
     fBufSize := fBlockSize;
     if fBufSize > ps then
       fBufSize := ps;
 
-    fBufSize := fStream.Read(fBuffer^, fBufSize * sizeof (WideChar)) div sizeof (WideChar);
+    fBufSize := fStream.Read(fBuffer^, fBufSize * SizeOf(WideChar)) div SizeOf(WideChar);
     if fBufSize < fBlockSize then
-      fBuffer [fBufSize] := #10
+      fBuffer[fBufSize] := #10;
   end;
 end;
 
 function TStreamWideTextReader.GetPosition: Integer;
 begin
-  result := ((fStream.Position - 2) div sizeof (WideChar)) - fBufSize + fBufPos;
+  Result := ((fStream.Position - 2) div SizeOf(WideChar)) - fBufSize + fBufPos;
 end;
 
 function TStreamWideTextReader.ReadLn(var st: WideString;
-  continuationChar: WideChar): boolean;
+  continuationChar: WideChar): Boolean;
 var
-  l, lineStartPos : Integer;
-  pch, pch1 : PWideChar;
-  st1 : WideString;
-  cont, scont : boolean;
+  l, lineStartPos: Integer;
+  pch, pch1: PWideChar;
+  st1: WideString;
+  cont, scont: Boolean;
 begin
   lineStartPos := Position;
   cont := True;
@@ -516,61 +514,61 @@ begin
   begin
     GetChunk;
     if fBufPos = fBufSize then
-      break;
+      Break;
 
     pch := fBuffer;
-    Inc (pch, fBufPos);
-    pch1 := WideStrScan (pch, #10);
+    Inc(pch, fBufPos);
+    pch1 := WideStrScan(pch, #10);
 
     if pch1 <> nil then
     begin
-      l := (Integer (pch1) - Integer (pch)) div sizeof (WideChar);
-      Inc (fBufPos, l + 1);
+      l := (Integer(pch1) - Integer(pch)) div SizeOf(WideChar);
+      Inc(fBufPos, l + 1);
       if fBufPos > fBufSize then
         fBufPos := fBufSize;
       if l > 0 then
       begin
         repeat
-          Dec (pch1);
+          Dec(pch1);
           if pch1^ = #13 then
-            Dec (l)
+            Dec(l)
           else
-            break
+            Break;
         until pch1 = pch;
-        cont := pch1^ = continuationChar
+        cont := pch1^ = continuationChar;
       end
       else
         cont := scont;
-      SetLength (st1, l);
+      SetLength(st1, l);
       if l > 0 then
-        Move (pch^, PWideChar (st1)^, l * sizeof (WideChar));
+        Move(pch^, PWideChar(st1)^, l * SizeOf(WideChar));
     end
     else
     begin
       st1 := pch;
-      l := Length (st1);
+      l := Length(st1);
 
-      while (l > 0) and (st1 [l] = #13) do
-        Dec (l);
+      while (l > 0) and (st1[l] = #13) do
+        Dec(l);
 
-      if l < Length (st1) then
-        SetLength (st1, l);
+      if l < Length(st1) then
+        SetLength(st1, l);
 
-      scont := (l > 0) and (st1 [l] = continuationChar);
+      scont := (l > 0) and (st1[l] = continuationChar);
 
-      fBufPos := fBufSize
+      fBufPos := fBufSize;
     end;
 
-    st := st + st1
+    st := st + st1;
   end;
 
   if cont then
   begin
     Position := lineStartPos;
-    result := False
+    Result := False;
   end
   else
-    result := True;
+    Result := True;
 end;
 
 procedure TStreamWideTextReader.SetPosition(const Value: Integer);
@@ -579,7 +577,7 @@ begin
   begin
     fBufSize := 0;
     fBufPos := 0;
-    fStream.Position := Value * sizeof (WideChar) + 2;
+    fStream.Position := Value * SizeOf(WideChar) + 2;
   end
 end;
 
@@ -596,37 +594,37 @@ end;
 constructor TBufferedFileWriter.Create(const AFileName: string);
 begin
   fStream := TFileStream.Create(AFileName, fmCreate);
-  inherited Create (fStream);
+  inherited Create(fStream);
 end;
 
 destructor TBufferedFileWriter.Destroy;
 begin
-  inherited;
-  FreeAndNil (fStream);
+  inherited Destroy;  // !!!!!!  Why before?
+  FreeAndnil(fStream);
 end;
 
 { TMappedFileStream }
 
 function TMappedFileStream.Write(const Buffer; Count: Integer): Longint;
 begin
-  raise Exception.Create ('TMappedFileStream is read only');
+  raise Exception.Create('TMappedFileStream is read only');
 end;
 
 constructor TMappedFileStream.Create(const AFileName: string);
 begin
-  fFileHandle := CreateFile (PChar (AFileName), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, 0);
+  fFileHandle := CreateFile(PChar(AFileName), GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN, 0);
   if fFileHandle = INVALID_HANDLE_VALUE then
     RaiseLastOSError;
 
-  fSize := GetFileSize (fFileHandle, nil);
+  fSize := GetFileSize(fFileHandle, nil);
   if fSize <> 0 then
   begin
-    fMappingHandle := CreateFileMapping (fFileHandle, nil, PAGE_READONLY, 0, 0, nil);
+    fMappingHandle := CreateFileMapping(fFileHandle, nil, PAGE_READONLY, 0, 0, nil);
     if fMappingHandle = 0 then
       RaiseLastOSError;
 
-    fMemory := MapViewOfFile (fMappingHandle, FILE_MAP_READ, 0, 0, 0);
-    if fMemory = Nil then
+    fMemory := MapViewOfFile(fMappingHandle, FILE_MAP_READ, 0, 0, 0);
+    if fMemory = nil then
       RaiseLastOSError;
   end
 end;
@@ -634,46 +632,46 @@ end;
 function TMappedFileStream.Seek(Offset: Integer; Origin: Word): Longint;
 begin
   case Origin of
-    soFromBeginning : fPosition := Offset;
-    soFromEnd : fPosition := fSize - Offset;
-    soFromCurrent : Inc (fPosition, Offset)
+    soFromBeginning: fPosition := Offset;
+    soFromEnd: fPosition := fSize - Offset;
+    soFromCurrent: Inc(fPosition, Offset);
   end;
 
   if fPosition > fSize then
     fPosition := fSize;
 
-  result := fPosition
+  Result := fPosition;
 end;
 
 function TMappedFileStream.Read(var Buffer; Count: Integer): Longint;
 begin
   if Count <= (fSize - fPosition) then
-    result := Count
+    Result := Count
   else
-    result := fSize - fPosition;
+    Result := fSize - fPosition;
 
-  if result < 0 then
-    result := 0;
+  if Result < 0 then
+    Result := 0;
 
-  if result > 0 then
+  if Result > 0 then
   begin
-    Move (fMemory [fPosition], Buffer, result);
-    Inc (fPosition, result)
-  end
+    Move(fMemory[fPosition], Buffer, Result);
+    Inc(fPosition, Result);
+  end;
 end;
 
 destructor TMappedFileStream.Destroy;
 begin
-  if fMemory <> Nil then
-    UnmapViewOfFile (fMemory);
+  if fMemory <> nil then
+    UnmapViewOfFile(fMemory);
 
   if fMappingHandle <> 0 then
-    CloseHandle (fMappingHandle);
+    CloseHandle(fMappingHandle);
 
   if fFileHandle <> INVALID_HANDLE_VALUE then
-    CloseHandle (fFileHandle);
+    CloseHandle(fFileHandle);
 
-  inherited
+  inherited Destroy;
 end;
 
 { TBufferedStreamWriter }
@@ -681,32 +679,32 @@ end;
 constructor TBufferedStreamWriter.Create(const AStream: TStream);
 begin
   fBufSize := 65536;
-  GetMem (fBuffer, fBufSize);
+  GetMem(fBuffer, fBufSize);
   fStream := AStream;
 end;
 
 destructor TBufferedStreamWriter.Destroy;
 begin
   FlushBuffer;
-  FreeMem (fBuffer);
+  FreeMem(fBuffer);
 
-  inherited;
+  inherited Destroy;
 end;
 
 procedure TBufferedStreamWriter.FlushBuffer;
 begin
   fStream.Write(fBuffer^, fBufPos);
-  fBufPos := 0
+  fBufPos := 0;
 end;
 
 function TBufferedStreamWriter.GetPosition: Integer;
 begin
-  result := fStream.Position + fBufPos;
+  Result := fStream.Position + fBufPos;
 end;
 
 procedure TBufferedStreamWriter.Write(const data; dataLen: Integer);
 var
-  stPos, chunkLen : Integer;
+  stPos, chunkLen: Integer;
   p :PAnsiChar;
 begin
   stPos := 0;
@@ -716,18 +714,18 @@ begin
     if chunkLen = 0 then
     begin
       FlushBuffer;
-      chunkLen := fBufSize - fBufPos
+      chunkLen := fBufSize - fBufPos;
     end;
 
     if chunkLen > dataLen - stPos then
       chunkLen := dataLen - stPos;
 
-    p := PAnsiChar (@data);
-    Inc (p, stPos);
-    Move (p^, (fBuffer + fBufPos)^, chunkLen);
-    Inc (stPos, chunkLen);
-    Inc (fBufPos, chunkLen)
-  end
+    p := PAnsiChar(@data);
+    Inc(p, stPos);
+    Move(p^, (fBuffer + fBufPos)^, chunkLen);
+    Inc(stPos, chunkLen);
+    Inc(fBufPos, chunkLen);
+  end;
 end;
 
 { TTextStreamWriter }
@@ -743,7 +741,7 @@ end;
 
 procedure TTextStreamWriter.WriteLn(const st: string);
 begin
-  Write(st + #13#10)
+  Write(st + #13#10);
 end;
 
 end.

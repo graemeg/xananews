@@ -207,7 +207,8 @@ procedure InitializeFolders (rootReg : TExSettings);
 
 implementation
 
-uses unitStreamTextReader, unitSearchString, unitMailServices, idGlobal,
+uses
+  unitStreamTextReader, unitSearchString, unitMailServices, idGlobal,
   unitCharsetMap, IdGlobalProtocols;
 
 (*----------------------------------------------------------------------*
@@ -662,23 +663,26 @@ end;
 
 procedure TArticleFolder.FixDots;
 var
-  f : TTextFileReader;
-  fw : TTextFileWriter;
-  st : string;
+  f: TTextFileReader;
+  fw: TTextFileWriter;
+  st: string;
+  raw: UTF8String;
 begin
   Deactivate;
 
-  fw := Nil;
+  fw := nil;
   f := TTextFileReader.Create(FileName);
   try
     fw := TTextFileWriter.Create(GetTempFileName);
-    while f.ReadLn (st) do
+    while f.ReadLn(raw) do
     begin
+      st := UTF8ToString(raw);
       if st = '.' then
       begin
-        if f.ReadLn (st) then
+        if f.ReadLn(raw) then
         begin
-          if SameText (Copy (st, 1, 11), 'Message-Id:') then
+          st := UTF8ToString(raw);
+          if SameText(Copy(st, 1, 11), 'Message-Id:') then
             fw.WriteLn('.')
           else
             fw.WriteLn('..');
@@ -686,27 +690,21 @@ begin
           fw.WriteLn(st);
         end
         else
-          fw.WriteLn('.')
+          fw.WriteLn('.');
       end
       else
-        fw.WriteLn(st)
+        fw.WriteLn(st);
     end;
 
-    FreeAndNil (fw);
-    FreeAndNil (f);
+    FreeAndNil(fw);
+    FreeAndNil(f);
 
-    DeleteFile (FileName);
-    RenameFile (GetTempFileName, FileName);
-
-
-
-
+    DeleteFile(FileName);
+    RenameFile(GetTempFileName, FileName);
   finally
     f.Free;
     fw.Free;
-
   end;
-
 end;
 
 (*----------------------------------------------------------------------*
@@ -856,8 +854,9 @@ function TArticleFolder.RawLoadArticleHeader(idx: Integer;
   var pos: Integer): TFolderArticle;
 var
   reader : TStreamTextReader;
-  s : TStringList;
-  st : string;
+  s: TStringList;
+  st: string;
+  raw: UTF8String;
 begin
   if pos >= fFileStream.Size then
   begin
@@ -881,10 +880,10 @@ begin
 
 
                                         // Read the header lines into 's'
-      while reader.ReadLn(st) and (st <> '') do
-        s.Add(st);
+      while reader.ReadLn(raw) and (raw <> '') do
+        s.Add(UTF8ToString(raw));
 
-      if st = '' then
+      if raw = '' then
       begin
         result.fMessageOffset := reader.Position;
                                         // Initialize the TFolderArticle.  This
@@ -943,11 +942,12 @@ var
   date : TDateTime;
 
 // Return the specified header field.
-  function FindHeaderField (const field : string; var deleted, mail : boolean; var date : TDateTime) : string;
+  function FindHeaderField(const field: string; var deleted, mail: boolean; var date: TDateTime): string;
   var
-    st, st1, dtst : string;
-    l1 : boolean;
-    gotDate, gotResult : boolean;
+    st, st1, dtst: string;
+    l1: boolean;
+    gotDate, gotResult: boolean;
+    raw: UTF8String;
   begin
     deleted := False;
     mail := False;
@@ -955,55 +955,56 @@ var
     gotDate := False;
     gotResult := False;
     repeat                    // Get each header line until we find XRef
-      if not reader.ReadLn(st) then
-        break;
+      if not reader.ReadLn(raw) then
+        Break;
 
-      if st = '' then
-        break;
+      if raw = '' then
+        Break;
 
+      st := UTF8ToString(raw);
       if l1 then // 1st line of header.  The article has been deleted
       begin      // from the folder if the first char is lower case.
-        deleted := st [1] = LowerCase (st [1]);
-        l1 := False
+        deleted := st[1] = LowerCase(st[1]);
+        l1 := False;
       end;
 
-      st1 := SplitString (':', st);
+      st1 := SplitString(':', st);
 
-      if SameText (st1, field) then
+      if SameText(st1, field) then
       begin
         result := st;
-        if SameText (field, 'Date') then
+        if SameText(field, 'Date') then
         begin
           gotDate := True;
-          dtst := st
+          dtst := st;
         end;
-        if not SameText (field, 'xref') then
+        if not SameText(field, 'xref') then
           gotResult := True;
       end
       else
-        if SameText (field, 'xref') and (SameText (st1, 'x-ref') or SameText (st1, 'x-uidl')) then
+        if SameText(field, 'xref') and (SameText(st1, 'x-ref') or SameText(st1, 'x-uidl')) then
         begin
-          if sameText (st1, 'x-uidl') then
+          if sameText(st1, 'x-uidl') then
             mail := True;
           result := st;
           gotResult := True;
-          break
+          Break;
         end
         else
-          if SameText (st1, 'date') then
+          if SameText(st1, 'date') then
           begin
             dtst := st;
-            gotDate := True
-          end
+            gotDate := True;
+          end;
     until gotDate and gotResult;
 
-    if gotDate then                  
-      date := GMTToLocalDateTime (dtst);
+    if gotDate then
+      date := GMTToLocalDateTime(dtst);
 
     if not gotResult then
-      result := ''
+      Result := ''
     else
-      result := Trim (result)
+      Result := Trim(Result);
   end;
 
 begin  // ReCreateIndex
@@ -1481,13 +1482,14 @@ end;
 
 function TFolderArticle.GetMsg: TmvMessage;
 var
-  reader : TStreamTextReader;
-  st : string;
-  ap, ae : Integer;
+  reader: TStreamTextReader;
+  raw: UTF8String;
+  st: string;
+  ap, ae: Integer;
 begin
-  if not Assigned (fMsg) then
+  if not Assigned(fMsg) then
   begin
-    reader := TStreamTextReader.Create(TArticleFolder (Owner).fFileStream);
+    reader := TStreamTextReader.Create(TArticleFolder(Owner).fFileStream);
     try
       reader.Position := fMessageOffset;
 
@@ -1495,34 +1497,36 @@ begin
       try
         fMsg.Header.AddStrings(fExtraHeaders);
 
-        if st = '' then
+        if raw = '' then // !!!!!! huh?
         begin
           ap := reader.Position;
           ae := reader.Search(#13#10'.'#13#10);
           if ae > ap then
           begin
-            SetLength (st, ae - ap);
-            reader.ReadChunk(PChar (st)^, ap, ae - ap);
+            SetLength(raw, ae - ap);
+            reader.ReadChunk(raw[1], ap, ae - ap);
 
-            st := StringReplace (st, #13#10'..'#13#10, #13#10'.'#13#10, [rfReplaceAll]);
+            st := UTF8ToString(raw);
+            st := StringReplace(st, #13#10'..'#13#10, #13#10'.'#13#10, [rfReplaceAll]);
+            raw := UTF8Encode(st);
 
-            fMsg.RawData.Write(PChar (st)^, Length (st))
-          end
-        end
+            fMsg.RawData.Write(raw[1], Length(raw));
+          end;
+        end;
       except
-        FreeAndNil (fMsg);
-        raise
+        FreeAndNil(fMsg);
+        raise;
       end;
 
       fSeenMessage := True;
       fCodePage := Msg.Codepage;
       MessageCacheController.Add(Self);
     finally
-      reader.Free
-    end
+      reader.Free;
+    end;
   end;
 
-  result := fMsg;
+  Result := fMsg;
 end;
 
 function TFolderArticle.GetUniqueID: string;

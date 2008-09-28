@@ -175,9 +175,10 @@ begin
   begin
     groupName := ReplyToArticle.Owner.Name;
     sub := DecodeSubject(ReplyToArticle.subject, ReplyToArticle.CodePage);
-    Caption := 'Reply to article from ' +
-               StringToGDIString(ReplyToArticle.FromName, ReplyToArticle.CodePage) + ' - ' +
-               StringToGDIString(sub, ReplyToArticle.CodePage);
+//    Caption := 'Reply to article from ' +
+//               StringToGDIString(ReplyToArticle.FromName, ReplyToArticle.CodePage) + ' - ' +
+//               StringToGDIString(sub, ReplyToArticle.CodePage);
+    Caption := 'Reply to article from ' + ReplyToArticle.FromName + ' - ' + sub;
     sub := Trim (sub);
 
     fOrigReferences := ReplyToArticle.References;
@@ -313,7 +314,8 @@ begin
     fHeader := TStringList.Create;
     fHeader.CaseSensitive := False;
     fHeader.Add('From="' + fIdentity.UserName + '" <' + fIdentity.EMailAddress + '>');
-    fHeader.Add('Subject=' + WideStringToString (edSubject.Text, fmePost1.CodePage));
+//    fHeader.Add('Subject=' + WideStringToString (edSubject.Text, fmePost1.CodePage));
+    fHeader.Add('Subject=' + edSubject.Text);
     fHeader.Add('Newsgroups=' + cbGroup.Text);
     if (fIdentity.ReplyAddress <> '') and (fIdentity.ReplyAddress <> fIdentity.EMailAddress) then
       fHeader.Add('Reply-To="' + fIdentity.UserName + '" <' + fIdentity.ReplyAddress + '>');
@@ -368,7 +370,8 @@ begin
   end
   else
   begin
-    fHeader.Values ['Subject'] := WideStringToString (edSubject.Text, fmePost1.CodePage);
+//    fHeader.Values ['Subject'] := WideStringToString (edSubject.Text, fmePost1.CodePage);
+    fHeader.Values ['Subject'] := edSubject.Text;
     fHeader.Values ['Newsgroups'] := cbGroup.Text;
     if cbFollowupTo.Text = '' then
     begin
@@ -393,7 +396,8 @@ begin
     fHeader.Insert (0, 'Newsgroups=' + cbGroup.Text);
 
   if fHeader.Values ['Subject'] = '' then
-    fHeader.Insert(0, 'Subject=' + WideStringToString (edSubject.Text, fmePost1.CodePage));
+//    fHeader.Insert(0, 'Subject=' + WideStringToString (edSubject.Text, fmePost1.CodePage));
+    fHeader.Insert(0, 'Subject=' + edSubject.Text);
 
   if fHeader.Values ['From'] = '' then
     fHeader.Insert(0, 'From="' + fIdentity.UserName + '" <' + fIdentity.EMailAddress + '>');

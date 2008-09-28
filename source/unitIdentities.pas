@@ -384,80 +384,84 @@ end;
  |                              // branch                               |
  |   const AName: string        // Name of the identity to load.        |
  *----------------------------------------------------------------------*)
-function TIdentity.ChooseSignature (sigOverride : string) : string;
+function TIdentity.ChooseSignature (sigOverride: string): string;
 var
-  f : TFileStream;
-  rdr : TStreamTextReader;
-  idx : TList;
-  st : string;
-  sig : string;
-  useSigFile : boolean;
+  f: TFileStream;
+  rdr: TStreamTextReader;
+  idx: TList;
+  st: string;
+  raw: UTF8String;
+  sig: string;
+  useSigFile: boolean;
 
-  function GetSig (pos : Integer) : string;
+  function GetSig(pos: Integer) : string;
   var
-    st : string;
+    st: string;
   begin
     rdr.Position := pos;
     result := '';
     st := '';
-    while rdr.ReadLn(st) do
+    while rdr.ReadLn(raw) do
+    begin
+      st := UTF8ToString(raw);
       if st <> '.' then
-        result := result + st + #13#10
+        Result := Result + st + #13#10
       else
-        exit;
-    if st <> '' then
-      result := result + st + #13#10;
+        Exit;
+      if st <> '' then
+        Result := Result + st + #13#10;
+    end;
   end;
 
 begin
-  sigOverride := TrimRightWhitespace (sigOverride, #13#10#9' ');
+  sigOverride := TrimRightWhitespace(sigOverride, #13#10#9' ');
   if sigOverride <> '' then   // Use the override value, but still insert
   begin                       // the sigfile info if there's a %sigfile%
     sig := sigOverride;
-    useSigFile := ContainsText (sig, '%sigfile%')
+    useSigFile := ContainsText(sig, '%sigfile%');
   end
   else
   begin                       // For compatibility with previous versions,
     sig := Signature;         // use the sigfile value in preference to
-    useSigFile := True        // this one.  But if this value contains
+    useSigFile := True;       // this one.  But if this value contains
                               // '%sigfile', then use both.
   end;
 
-  if useSigFile and (SigFile <> '') and FileExists (sigFile) then
+  if useSigFile and (SigFile <> '') and FileExists(sigFile) then
   begin
-    rdr := Nil;
-    idx := Nil;
+    rdr := nil;
+    idx := nil;
     f := TFileStream.Create(sigFile, fmOpenRead or fmShareDenyNone);
     try
       rdr := TStreamTextReader.Create(f);
       idx := TList.Create;
 
-      idx.Add (pointer (0));
-      while rdr.ReadLn(st) do
-        if st = '.' then
-          idx.Add(pointer (rdr.Position));
+      idx.Add(Pointer(0));
+      while rdr.ReadLn(raw) do
+        if raw = '.' then
+          idx.Add(Pointer(rdr.Position));
 
       if idx.Count = 1 then
-        st := GetSig (0)
+        st := GetSig(0)
       else
-        st := GetSig (Integer (idx [Random (idx.Count)]));
+        st := GetSig(Integer(idx[Random(idx.Count)]));
 
-      st := TrimRightWhitespace (st, #13#10#9' ');
+      st := TrimRightWhitespace(st, #13#10#9' ');
 
-      if ContainsText (sig, '%sigfile%') then
-        result := StringReplace (sig, '%sigfile%', st, [])
+      if ContainsText(sig, '%sigfile%') then
+        Result := StringReplace(sig, '%sigfile%', st, [])
       else
-        result := st
+        Result := st;
     finally
       rdr.Free;
       f.Free;
       idx.Free;
-    end
+    end;
   end
   else
-    result := StringReplace (sig, '%sigfile%', '', []);
+    Result := StringReplace(sig, '%sigfile%', '', []);
 
-  result := TrimRightWhitespace (Result, #13#10#9' ') + #13#10
+  Result := TrimRightWhitespace(Result, #13#10#9' ') + #13#10;
 end;
 
 procedure TIdentity.Load(rootReg : TExSettings; const AName: string);

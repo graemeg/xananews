@@ -2541,7 +2541,7 @@ procedure TfmMain.actToolsLoadTestMessageExecute(Sender: TObject);
 var
   s: TStream;
   reader: TStreamTextReader;
-  st: string;
+  raw: UTF8String;
 begin
   if Opendialog1.Execute then
   begin
@@ -2553,8 +2553,8 @@ begin
     try
       reader := TStreamTextReader.Create(s);
       fTestMessage.Header.Clear;
-      while reader.ReadLn(st, ';') and (st <> '') do
-        fTestMessage.Header.Add(st);
+      while reader.ReadLn(raw, ';') and (raw <> '') do
+        fTestMessage.Header.Add(UTF8ToString(raw));
 
       FixHeaders(fTestMessage.Header);
 
@@ -4594,7 +4594,8 @@ begin
 
       if st <> '' then
       begin
-        s.Text := WideStringToString(st, article.CodePage);
+//        s.Text := WideStringToString(st, article.CodePage);
+        s.Text := st;
 
         if trimSig and (Options.ShowHeader <> shNone) then
         begin
@@ -4767,6 +4768,7 @@ var
   mailAccount: TMailAccount;
   ctnr: TServerAccount;
   attachments: TObjectList;
+  raw: UTF8String;
   rok: Boolean;
 begin
    // Load unposted messages that were saved the last time XanaNews was run.
@@ -4783,9 +4785,10 @@ begin
         reader := TStreamTextReader.Create(f);
         h := TStringList.Create;
         m := TStringList.Create;
-        rok := reader.ReadLn(st);
+        rok := reader.ReadLn(raw);
         while rok do
         begin
+          st := UTF8ToString(raw);
           accountName := SplitString(#9, st);
           noHdrs := StrToIntDef(SplitString(#9, st), -1);
           noMsgLines := StrToIntDef(SplitString(#9, st), -1);
@@ -4793,7 +4796,7 @@ begin
           codepage := StrToIntDef(st, -1);
 
           if (noMsgLines = -1) or (noHdrs = -1) or (noMsgLines = -1) or (noAttachments = -1) then
-            rok := reader.ReadLn(st)
+            rok := reader.ReadLn(raw)
           else
           begin
             st := Copy(accountName, 1, 2);
@@ -4820,18 +4823,39 @@ begin
                     mailAccount := nil;
 
 
-                rok := reader.ReadLn(MTo);
-                if rok then rok := reader.ReadLn(MCC);
-                if rok then rok := reader.ReadLn(MBCC);
-                if rok then rok := reader.ReadLn(MSubject);
-                if rok then rok := reader.ReadLn(MReplyTo);
+                rok := reader.ReadLn(raw);
+                MTo := UTF8ToString(raw);
+
+                if rok then
+                begin
+                  rok := reader.ReadLn(raw);
+                  MCC := UTF8ToString(raw);
+                end;
+
+                if rok then
+                begin
+                  rok := reader.ReadLn(raw);
+                  MBCC := UTF8ToString(raw);
+                end;
+
+                if rok then
+                begin
+                  rok := reader.ReadLn(raw);
+                  MSubject := UTF8ToString(raw);
+                end;
+
+                if rok then
+                begin
+                  rok := reader.ReadLn(raw);
+                  MReplyTo := UTF8ToString(raw);
+                end;
 
                 i := noMsgLines;
 
                 while rok and (i > 0) do
                 begin
-                  rok := reader.ReadLn(st);
-                  if rok then m.Add(st);
+                  rok := reader.ReadLn(raw);
+                  if rok then m.Add(UTF8ToString(raw));
                   Dec(i);
                 end;
 
@@ -4841,10 +4865,10 @@ begin
                   attachments := TObjectList.Create;
                   while rok and (i > 0) do
                   begin
-                    rok := reader.ReadLn(st);
+                    rok := reader.ReadLn(raw);
                     if rok then
                     try
-                      attachments.Add(TAttachment.Create(st));
+                      attachments.Add(TAttachment.Create(UTF8ToString(raw)));
                     except // They might have deleted the file - ignore attachment
                     end;
                     Dec(i);
@@ -4859,7 +4883,7 @@ begin
                     mailAccount.ServerSettings as TSMTPServerSettings,
                     MTo, MCC, MBCC, MSubject, MReplyTo, m.Text,
                     attachments, codePage, mailAccount.PostingSettings.DelayPosting);
-                  rok := Reader.ReadLn(st);
+                  rok := Reader.ReadLn(raw);
                 end;
               end;
             end
@@ -4879,25 +4903,29 @@ begin
                 m.Clear;
 
                 i := noHdrs;
-                rok := reader.ReadLn(st);
+                rok := reader.ReadLn(raw);
+                st := UTF8ToString(raw);
                 while rok and (i > 0) do
                 begin
                   if h.Count > 0 then
                     while rok and (Copy(st, 1, 1) = ' ') do
                     begin
                       h[h.Count - 1] := h[h.Count - 1] + #13#10 + st;
-                      rok := reader.ReadLn(st)
+                      rok := reader.ReadLn(raw);
+                      st := UTF8ToString(raw);
                     end;
                   h.Add(st);
-                  rok := reader.ReadLn(st);
-                  Dec(i)
+                  rok := reader.ReadLn(raw);
+                  st := UTF8ToString(raw);
+                  Dec(i);
                 end;
 
                 if h.Count > 0 then
                   while rok and (Copy(st, 1, 1) = ' ') do
                   begin
                     h[h.Count - 1] := h[h.Count - 1] + #13#10 + st;
-                    rok := reader.ReadLn(st);
+                    rok := reader.ReadLn(raw);
+                    st := UTF8ToString(raw);
                   end;
 
                 i := noMsgLines;
@@ -4905,7 +4933,8 @@ begin
                 begin
                   m.Add(st);
                   Dec(i);
-                  rok := reader.ReadLn(st);
+                  rok := reader.ReadLn(raw);
+                  st := UTF8ToString(raw);
                 end;
 
                 i := noAttachments;
@@ -4919,7 +4948,8 @@ begin
                     except // They might have deleted the file - ignore attachment
                     end;
                     Dec(i);
-                    rok := reader.ReadLn(st);
+                    rok := reader.ReadLn(raw);
+                    st := UTF8ToString(raw);
                   end;
                 end
                 else

@@ -553,7 +553,7 @@ begin
 
     if pch1 <> nil then
     begin
-      l := Integer(pch1) - Integer(pch);
+      l := pch1 - pch;
       Inc(fDecodePos, l + 1);
       Dec(pch1);
       while (l > 0) and (pch1^ = #13) do
@@ -562,9 +562,10 @@ begin
         Dec(pch1);
       end;
 
-      SetLength(st, l);
-      if l > 0 then
-        Move(pch^, st[1], l);
+      SetString(st, pch, L);
+//      SetLength(st, l);
+//      if l > 0 then
+//        Move(pch^, st[1], l);
       Result := True;
     end
     else
@@ -913,7 +914,7 @@ end;
 
 function TmvMessagePart.AddLine(const st: string): TAddLine;
 var
-  s: string;
+  s: UTF8String;
   mp: TmvMIMEMessagePart;
   mpHeader: TMimeHeader;
 begin
@@ -951,7 +952,7 @@ begin
           Exit;
         end;
 
-      s := st + #13#10;
+      s := UTF8Encode(st + #13#10);
       fData.Write(s[1], Length(s));
     end
     else                        // We're still in the header

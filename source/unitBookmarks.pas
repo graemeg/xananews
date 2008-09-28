@@ -227,9 +227,10 @@ end;
 
 procedure TBookmark.Load;
 var
-  f : TFileStream;
-  str : TStreamTextReader;
-  st : string;
+  f: TFileStream;
+  raw: UTF8String;
+  str: TStreamTextReader;
+  st: string;
 begin
   if fLoaded then exit;
 
@@ -237,19 +238,23 @@ begin
 // Subsequent lines =
 // <Account>#9<Group>#9<Message ID>#9<Subject>#9<From>#9<Date (Dos date)>#9<Lines>#9<CodePage>#9<BookmarkedDate DOS Date>
 
-  str := Nil;
+  str := nil;
   f := TFileStream.Create(gMessageBaseRoot + '\' + Name + '.bmk', fmOpenRead or fmShareDenyNone);
   try
     str := TStreamTextReader.Create(f);
 
-    if str.ReadLn (st) then
+    if str.ReadLn(raw) then
     begin
+      st := UTF8ToString(raw);
       if not ((SplitString (' ', st) = 'Bookmark') and (st = name)) then
-        raise Exception.CreateFmt (rstBadBookmarkFile, [Name]);
+        raise Exception.CreateFmt(rstBadBookmarkFile, [Name]);
 
-      while str.ReadLn(st) do
+      while str.ReadLn(raw) do
+      begin
+        st := UTF8ToString(raw);
         if st <> '' then
-          fMarkedArticles.Add(TMarkedArticle.CreateFromBookmarkFileLine(self, st))
+          fMarkedArticles.Add(TMarkedArticle.CreateFromBookmarkFileLine(Self, st));
+      end;
     end;
 
   finally
@@ -257,7 +262,7 @@ begin
     f.Free;
   end;
   fLoaded := True;
-  fDirty := False
+  fDirty := False;
 end;
 
 procedure TBookmark.Save;

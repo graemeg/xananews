@@ -162,6 +162,7 @@ var
   str: TStreamTextReader;
   s: TMemoryStream;
   st: string;
+  raw: UTF8String;
 begin
   str := nil;
   s := nil;
@@ -172,8 +173,10 @@ begin
     s := TMemoryStream.Create;
     try
       decoder.DecodeBegin(s);
-      while str.ReadLn(st) do
+      while str.ReadLn(raw) do
       begin
+        // TODO: fix / optimize decoding
+        st := UTF8ToString(raw);
         if (Length(st) mod 4) <> 0 then
           st := Copy(st, 1, (Length(st) div 4) * 4);
         decoder.Decode(st);
@@ -273,6 +276,7 @@ var
   decoder: TidDecoder;
   st: string;
   str: TStreamTextReader;
+  raw: UTF8String;
 begin
   DecodeHeader;
 
@@ -298,8 +302,12 @@ begin
         str := TStreamTextReader.Create(fData);
         try
           decoder.DecodeBegin(s);
-          while str.ReadLn(st) do
+          while str.ReadLn(raw) do
+          begin
+            // TODO: fix / optimize decoding
+            st := UTF8ToString(raw);
             decoder.Decode(st);
+          end;
         except
         end
       finally

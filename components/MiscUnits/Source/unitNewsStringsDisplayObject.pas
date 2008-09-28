@@ -272,7 +272,7 @@ end;
 
 function TNewsStringsDisplayObjectLink.GetRichEdit: TNewsRichEditX;
 begin
-  result := TNewsRichEditX (Obj);
+  result := TNewsRichEditX(Obj);
 end;
 
 function TNewsStringsDisplayObjectLink.GetRightMargin: Integer;
@@ -636,11 +636,12 @@ begin
   lastLen := 0;
   for i := 0 to fTextObjects.Count - 1 do
   begin
-    Inc (n);
-    st := StringReplace (TStrings (fTextObjects [i]).Text, 'url:', 'url: ', [rfReplaceAll, rfIgnoreCase]);
+    Inc(n);
+    st := StringReplace(TStrings(fTextObjects[i]).Text, 'url:', 'url: ', [rfReplaceAll, rfIgnoreCase]);
 //    UnwrapURLS (st);
-    ws := StringToWideString (st, cp);
-    lastLen := Length (ws);
+//    ws := StringToWideString(st, cp);
+    ws := st;
+    lastLen := Length(ws);
     ws1 := ws1 + ws;
   end;
 
@@ -688,7 +689,7 @@ end;
 procedure TNewsStringsDisplayObjectLink.SetTextObject(objNo: Integer;
   obj: TObject);
 begin
-  fTextObjects [objNo] := obj;
+  fTextObjects[objNo] := obj;
   LoadFromTextObjects
 end;
 
