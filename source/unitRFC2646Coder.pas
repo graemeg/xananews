@@ -10,7 +10,7 @@ TRFC2646Decoder = class (TidDecoder)
 private
   fInsertSpaceAfterQuote: boolean;
 public
-  procedure DecodeBuffer (buf : PChar; bufLen : Integer; ADest : TStream);
+  procedure DecodeBuffer (buf : PAnsiChar; bufLen : Integer; ADest : TStream);
   procedure Decode(ASrcStream: TStream; const ABytes: Integer = -1); override;
 
   // InsertSpaceAfterQuote inserts a space between the last quote character
@@ -35,14 +35,14 @@ implementation
 
 { TRFC2646Decoder }
 
-procedure TRFC2646Decoder.DecodeBuffer(buf: PChar; bufLen: Integer;
+procedure TRFC2646Decoder.DecodeBuffer(buf: PAnsiChar; bufLen: Integer;
   ADest: TStream);
 var
-  s : string;
+  s: UTF8String;
 begin
   SetString(s, buf, bufLen);
   DecodeBegin(ADest);
-  Decode (s);
+  Decode(UTF8ToString(s));
 end;
 
 procedure TRFC2646Decoder.Decode(ASrcStream: TStream; const ABytes: Integer = -1);

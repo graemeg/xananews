@@ -669,7 +669,7 @@ begin
             xFace.Width := 48;
             xFace.Height := 48;
             xFace.PixelFormat := pf1Bit;
-            if XFaceToBitmap(s, fXFace) < 0 then
+            if XFaceToBitmap(AnsiString(s), fXFace) < 0 then
               FreeAndNil(fXFace);
           except
             FreeAndNil(fXFace);

@@ -45,10 +45,13 @@ contains
   unitStreamTextReader in 'unitStreamTextReader.pas',
   unitVersionInfo in 'unitVersionInfo.pas',
   MultiLanguage_tlb in 'MultiLanguage_tlb.pas',
-  unitParser in 'unitParser.pas',
-  unitCExpression in 'unitCExpression.pas',
+// TODO: temporary removed
+//  unitParser in 'unitParser.pas',
+// TODO: temporary removed
+//  unitCExpression in 'unitCExpression.pas',
   unitHTMLHelp in 'unitHTMLHelp.pas',
-  WinCrypt in 'WinCrypt.pas',
+// TODO: temporary removed
+//  WinCrypt in 'WinCrypt.pas',
   unitProcesses in 'unitProcesses.pas',
   unitRTF2HTML in 'unitRTF2HTML.pas',
   unitTypelibUtils in 'unitTypelibUtils.pas',

@@ -37,12 +37,12 @@ const
 
   ERR_BADFACE   = -3;   { bad face source bitmap }
 
-function XFaceToBitmap(XFace: string; var Bitmap: TBitmap): Integer;
-function BitmapToXFace(Bitmap: TBitmap; var XFace: string): Integer;
+function XFaceToBitmap(XFace: AnsiString; var Bitmap: TBitmap): Integer;
+function BitmapToXFace(Bitmap: TBitmap; var XFace: AnsiString): Integer;
 
 { Extra Boolean for inverting image. On a Windows 95 system some 24-bit images
   get inverted somehow - use this boolean to work around it }
-function BitmapToXFaceI(Bitmap: TBitmap; var XFace: string; Invert: Boolean): Integer;
+function BitmapToXFaceI(Bitmap: TBitmap; var XFace: AnsiString; Invert: Boolean): Integer;
 
 implementation
 
@@ -88,7 +88,7 @@ begin
   result := StrLen(s);
 end;
 
-function XFaceToBitmap(XFace: string; var Bitmap: TBitmap): Integer;
+function XFaceToBitmap(XFace: AnsiString; var Bitmap: TBitmap): Integer;
 var
   src, dst: HDC;
   l: integer;
@@ -118,12 +118,12 @@ begin
   DeleteDC(dst);
 end;
 
-function BitmapToXFace(Bitmap: TBitmap; var XFace: string): Integer;
+function BitmapToXFace(Bitmap: TBitmap; var XFace: AnsiString): Integer;
 begin
   result := BitmapToXFaceI(Bitmap, XFace, False);
 end;
 
-function BitmapToXFaceI(Bitmap: TBitmap; var XFace: string; Invert: Boolean): Integer;
+function BitmapToXFaceI(Bitmap: TBitmap; var XFace: AnsiString; Invert: Boolean): Integer;
 var
   src, dst: HDC;
   l: integer;

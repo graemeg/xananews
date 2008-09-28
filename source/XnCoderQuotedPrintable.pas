@@ -127,7 +127,11 @@ begin
         if (DecodedByte = 32) and (LBufferIndex < LBufferLen) and ByteIsInEOL(LBuffer, LBufferIndex) then begin
           if Assigned(FStream) then begin
             FStream.Write(DecodedByte, 1);
-            FStream.Write(EOL, Length(EOL));
+            DecodedByte := 13;
+            FStream.Write(DecodedByte, 1);
+            DecodedByte := 10;
+            FStream.Write(DecodedByte, 1);
+//            FStream.Write(EOL, Length(EOL));
 //            WriteStringToStream(FStream, Char(DecodedByte) + EOL);
           end;
           StripEOLChars;

@@ -94,8 +94,8 @@ end;
 
 procedure TdlgIdentity.DisplayXFace;
 var
-  bmp : TBitmap;
-  res : Integer;
+  bmp: TBitmap;
+  res: Integer;
 begin
   bmp := TBitmap.Create;
   try
@@ -103,16 +103,15 @@ begin
     bmp.Height := 48;
     bmp.PixelFormat := pf1Bit;
     if fXFace <> '' then
-      res := XFaceToBitmap (fXFace, bmp)
+      res := XFaceToBitmap(AnsiString(fXFace), bmp)
     else
       res := 0;
 
     if res = 0 then
       imgXFace.Picture.Assign(bmp);
-
   finally
-    bmp.Free
-  end
+    bmp.Free;
+  end;
 end;
 
 procedure TdlgIdentity.FormShow(Sender: TObject);
@@ -246,27 +245,27 @@ end;
 
 procedure TdlgIdentity.LoadXFace(pic: TPicture);
 var
-  bmp, bmp1 : TBitmap;
-  bmp1Created : boolean;
-  XFace : string;
+  bmp, bmp1: TBitmap;
+  bmp1Created: boolean;
+  XFace: AnsiString;
 begin
-  bmp := Nil;
-  bmp1 := Nil;
+  bmp := nil;
+  bmp1 := nil;
   bmp1Created := False;
   try
     if (pic.Graphic is TBitmap) then
       bmp1 := pic.Bitmap;
 
-    if not Assigned (bmp1) or (bmp1.PixelFormat <> pf1Bit) then
+    if not Assigned(bmp1) or (bmp1.PixelFormat <> pf1Bit) then
     begin
       bmp := TBitmap.Create;
       bmp.Width := pic.Graphic.Width;
       bmp.Height := pic.Graphic.Height;
       bmp.PixelFormat := pf24Bit;
       bmp.Canvas.Draw(0, 0, pic.Graphic);
-      bmp1 := ReduceColors (bmp, rmMonochrome, dmNearest, 1, 0);
+      bmp1 := ReduceColors(bmp, rmMonochrome, dmNearest, 1, 0);
       bmp1Created := True;
-      FreeAndNil (bmp)
+      FreeAndNil(bmp);
     end;
 
     bmp := TBitmap.Create;
@@ -279,17 +278,17 @@ begin
     else
       bmp.Canvas.StretchDraw(Rect (0, 0, 48, 48), bmp1);
 
-    if BitmapToXFace (bmp, XFace) = 0 then
+    if BitmapToXFace(bmp, XFace) = 0 then
     begin
-      fXFace := Trim (XFace);
-      fXFace := StringReplace (fXFace, #13#10' ', '', [rfReplaceAll]);
+      fXFace := Trim(string(XFace));
+      fXFace := StringReplace(fXFace, #13#10' ', '', [rfReplaceAll]);
       DisplayXFace;
-    end
+    end;
   finally
     bmp.Free;
     if bmp1Created then
-      bmp1.Free
-  end
+      bmp1.Free;
+  end;
 end;
 
 procedure TdlgIdentity.actXFacePasteClick(Sender: TObject);

@@ -92,11 +92,12 @@ end;
 
 procedure DecodeQuotedPrintable(const ins: TStream; outs: TStrings);
 var
-  ch, ch1, ch2: Char;
-  st: string;
+  ch, ch1, ch2: AnsiChar;
+  st: AnsiString;
   s: TStringStream;
+  raw: AnsiString;
 begin
-  // Decode a 'quoted-printable' stream to a string list                  
+  // Decode a 'quoted-printable' stream to a string list
   s := TStringStream.Create(st);
   try
     while ins.Read(ch, SizeOf(ch)) = SizeOf(ch) do
@@ -112,7 +113,8 @@ begin
 
         // '=' means that the next two characters are hex digits for the
         // character.
-        ch := Char(StrToIntDef('$' + ch1 + ch2, 0));
+        raw := AnsiChar('$') + ch1 + ch2;
+        ch := AnsiChar(StrToIntDef(UTF8ToString(raw), 0));
 
         if ch = #0 then
           Continue;
@@ -130,9 +132,10 @@ procedure DecodeFormatFlowed(const ins: TStream; outs: TStrings);
 var
   coder: TRFC2646Decoder;
   s: TStringStream;
-  inst, st: string;
+  st: AnsiString;
+  raw: UTF8String;
 begin
-  // Decode a 'format flowed' stream to a string list - See RFC 2646      
+  // Decode a 'format flowed' stream to a string list - See RFC 2646
   coder := nil;
   s := TStringStream.Create(st);
   try
@@ -143,10 +146,10 @@ begin
       coder.DecodeBuffer(TMemoryStream(ins).Memory, ins.Size, s)
     else
     begin
-      SetLength(inst, ins.Size);
-      ins.Read(inst[1], ins.Size);
+      SetLength(raw, ins.Size);
+      ins.Read(raw[1], ins.Size);
       coder.DecodeBegin(s);
-      coder.Decode(inst);
+      coder.Decode(UTF8ToString(raw));
     end;
 
     outs.Text := s.DataString;
