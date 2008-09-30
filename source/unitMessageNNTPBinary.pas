@@ -43,7 +43,7 @@ var
   str: TStreamTextReader;
   sz: Integer;
   st: string;
-  raw: UTF8String;
+  raw: RawByteString;
 begin
   // Clear and fill the stream with decoded data.
   // nb - *must* leave fData at end of stream.
@@ -59,7 +59,7 @@ begin
       while str.ReadLn(raw) do
       begin
         // TODO: fix / optimize decoding
-        st := UTF8ToString(raw);
+        st := string(raw);
         decoder.Decode(st);
       end;
       fData.Seek(0, soFromEnd);

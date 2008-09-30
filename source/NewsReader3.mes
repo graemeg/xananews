@@ -2,7 +2,7 @@
 MesVersion=2
 AppendMapFileToBinary=1
 HandleExceptions=1
-CheckForFrozenMainThread=1
+CheckForFrozenMainThread=0
 FreezeTimeout=240000
 ShowExceptionBox=1
 SuspendAllRunningThreads=1

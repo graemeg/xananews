@@ -187,7 +187,7 @@ begin
 
   if fIsReply then
   begin
-    sub := DecodeSubject(ReplyToArticle.subject, ReplyToArticle.CodePage);
+    sub := DecodeSubject(ReplyToArticle.subject);
     Caption := 'Reply to article from ' + ReplyToArticle.FromName + ' - ' + sub;
     sub := Trim (sub);
 

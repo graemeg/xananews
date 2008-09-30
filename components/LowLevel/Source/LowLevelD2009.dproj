@@ -72,7 +72,6 @@
 			<DCCReference Include="unitTypelibUtils.pas"/>
 			<DCCReference Include="unitTreeData.pas"/>
 			<DCCReference Include="unitXMLDoc.pas"/>
-			<DCCReference Include="unitSimpleDatabase.pas"/>
 			<DCCReference Include="unitFolderUtils.pas"/>
 			<DCCReference Include="unitExFileSettings.pas"/>
 			<DCCReference Include="unitExIniSettings.pas"/>
@@ -81,6 +80,7 @@
 			<DCCReference Include="unitExXMLSettings.pas"/>
 			<DCCReference Include="unitFolderInfo.pas"/>
 			<DCCReference Include="unitEXGraphics.pas"/>
+			<DCCReference Include="XnClasses.pas"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>

@@ -25,7 +25,9 @@ unit unitNewsStringsDisplayObject;
 
 interface
 
-uses Windows, Messages, Classes, SysUtils, Controls, Graphics, Forms, cmpMessageDisplay, cmpNewsRichEdit, Dialogs, SyncObjs, ComCtrls, StrUtils;
+uses
+  Windows, Messages, Classes, SysUtils, Controls, Graphics, Forms,
+  cmpMessageDisplay, cmpNewsRichEdit, Dialogs, SyncObjs, ComCtrls, StrUtils, XnClasses;
 
 type
   TNewsRichEditX = class (TNewsRichEdit)
@@ -191,7 +193,7 @@ end;
 class function TNewsStringsDisplayObjectLink.DisplaysObject(
   obj: TObject): Boolean;
 begin
-  result := obj is TStrings;
+  result := (obj is TStrings) or (obj is TAnsiStrings);
 end;
 
 procedure TNewsStringsDisplayObjectLink.DoOnURLMouseDown(Sender: TObject;
@@ -617,32 +619,46 @@ end;
 
 procedure TNewsStringsDisplayObjectLink.LoadFromTextObjects;
 var
-  ctrl : TNewsRichEditX;
-  i : Integer;
-  st : string;
-  ws, ws1 : WideString;
-  cp, n, lastLen : Integer;
-
+  ctrl: TNewsRichEditX;
+  i: Integer;
+  st, ws: string;
+  cp, n, lastLen: Integer;
+  sl: TStringList;
+  ms: TMemoryStream;
 begin
   if fUpdating then Exit;
   ctrl := GetRichEdit;
   ctrl.RawText := Owner.RawMode;
 
-  ws1 := '';
-  cp := ctrl.CodePage;
-//  if cp = 1252 then
-//    cp := CP_ACP;
+  ws := '';
   n := 0;
   lastLen := 0;
   for i := 0 to fTextObjects.Count - 1 do
   begin
     Inc(n);
-    st := StringReplace(TStrings(fTextObjects[i]).Text, 'url:', 'url: ', [rfReplaceAll, rfIgnoreCase]);
-//    UnwrapURLS (st);
-//    ws := StringToWideString(st, cp);
-    ws := st;
-    lastLen := Length(ws);
-    ws1 := ws1 + ws;
+    if TObject(fTextObjects[i]) is TAnsiStrings then
+    begin
+      cp := ctrl.CodePage;
+      if cp = 1252 then
+        cp := CP_ACP;
+      sl := TStringList.Create;
+      ms := TMemoryStream.Create;
+      try
+        // Decode raw data to unicode using spevified CodePage.
+        TAnsiStrings(fTextObjects[i]).SaveToStream(ms);
+        ms.Position := 0;
+        sl.LoadFromStream(ms, TEncoding.GetEncoding(cp));
+        st := StringReplace(sl.Text, 'url:', 'url: ', [rfReplaceAll, rfIgnoreCase])
+      finally
+        sl.Free;
+        ms.Free;
+      end;
+    end
+    else
+      st := StringReplace(TStrings(fTextObjects[i]).Text, 'url:', 'url: ', [rfReplaceAll, rfIgnoreCase]);
+
+    lastLen := Length(st);
+    ws := ws + st;
   end;
 
   if (n <> fLastNoChunks) or (lastLen <> fLastChunkLen) then
@@ -651,7 +667,7 @@ begin
 
     fLastNoChunks := n;
     fLastChunkLen := lastLen;
-    ctrl.Text := ws1
+    ctrl.Text := ws;
   end
 end;
 

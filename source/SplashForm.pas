@@ -32,7 +32,6 @@ type
   TfmSplash = class(TForm)
     Image1: TImage;
     procedure FormShow(Sender: TObject);
-    procedure FormCreate(Sender: TObject);
   private
     { Private declarations }
   public
@@ -45,12 +44,6 @@ var
 implementation
 
 {$R *.DFM}
-
-procedure TfmSplash.FormCreate(Sender: TObject);
-begin
-  if DebugHook <> 0 then
-    FormStyle := fsNormal;
-end;
 
 procedure TfmSplash.FormShow(Sender: TObject);
 var

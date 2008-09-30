@@ -81,7 +81,7 @@ begin
       result := ExtractFilePath (ParamStr (0))
     else
     begin
-      result := PChar (path) + '\';
+      result := PChar(path) + '\';
 
       if Manufacturer <> '' then
         result := result + Manufacturer + '\';

@@ -347,7 +347,7 @@ begin
                     begin
                       m := article.Msg;
                       if Assigned (m.TextPart) then
-                        st := m.TextPart.Text;
+                        st := string(m.TextPart.Text);
 
                       if Assigned (m.MessageParts) then
                         for i := 0 to m.MessageParts.Count - 1 do

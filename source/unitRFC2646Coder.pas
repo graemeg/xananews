@@ -1,234 +1,233 @@
 unit unitRFC2646Coder;
 
+// TODO: fix / optimize decoding
+
 interface
 
 uses Windows, Classes, SysUtils, IdCoder;
 
 type
+  TRFC2646Decoder = class(TidDecoder)
+  private
+    fInsertSpaceAfterQuote: boolean;
+  public
+    procedure DecodeBuffer(buf: PAnsiChar; bufLen: Integer; ADest: TStream);
+    procedure Decode(ASrcStream: TStream; const ABytes: Integer = -1); override;
 
-TRFC2646Decoder = class (TidDecoder)
-private
-  fInsertSpaceAfterQuote: boolean;
-public
-  procedure DecodeBuffer (buf : PAnsiChar; bufLen : Integer; ADest : TStream);
-  procedure Decode(ASrcStream: TStream; const ABytes: Integer = -1); override;
+    // InsertSpaceAfterQuote inserts a space between the last quote character
+    // and the first character of the message line - so that it displays
+    // 'better'.  RFC 2646 would treat this space as 'space stuffing' so
+    // it's not possible for the actual message to provide this space.
+    property InsertSpaceAfterQuote: boolean read fInsertSpaceAfterQuote write fInsertSpaceAfterQuote;
+  end;
 
-  // InsertSpaceAfterQuote inserts a space between the last quote character
-  // and the first character of the message line - so that it displays
-  // 'better'.  RFC 2646 would treat this space as 'space stuffing' so
-  // it's not possible for the actual message to provide this space.
-  property InsertSpaceAfterQuote : boolean read fInsertSpaceAfterQuote write fInsertSpaceAfterQuote;
-end;
+  TRFC2646Encoder = class(TidEncoder)
+  private
+    fMaxLineLength: Integer;
+  public
+    procedure InitComponent; override;
+    procedure Encode(ASrcStream: TStream; ADestStream: TStream; const ABytes: Integer = -1); override;
+    procedure EncodeStrings(strings: TStrings);
 
-TRFC2646Encoder = class (TidEncoder)
-private
-  fMaxLineLength: Integer;
-public
-  procedure InitComponent; override;
-  procedure Encode(ASrcStream: TStream; ADestStream: TStream; const ABytes: Integer = -1); override;
-  procedure EncodeStrings (strings : TStrings);
-
-  property MaxLineLength : Integer read fMaxLineLength write fMaxLineLength;
-end;
+    property MaxLineLength: Integer read fMaxLineLength write fMaxLineLength;
+  end;
 
 implementation
 
 { TRFC2646Decoder }
 
-procedure TRFC2646Decoder.DecodeBuffer(buf: PAnsiChar; bufLen: Integer;
-  ADest: TStream);
+procedure TRFC2646Decoder.DecodeBuffer(buf: PAnsiChar; bufLen: Integer; ADest: TStream);
 var
-  s: UTF8String;
+  s: RawByteString;
 begin
   SetString(s, buf, bufLen);
   DecodeBegin(ADest);
-  Decode(UTF8ToString(s));
+  Decode(string(s));
 end;
 
 procedure TRFC2646Decoder.Decode(ASrcStream: TStream; const ABytes: Integer = -1);
 var
-  sl : TStringList;
-  i, l : Integer;
-  st, qs : string;
+  sl: TStringList;
+  i, l: Integer;
+  st, qs: string;
 
   procedure AnalyzeQuotes;
   var
-    i, l, p : Integer;
-    st : string;
+    i, l, p: Integer;
+    st: string;
   begin
     for i := 0 to sl.Count - 1 do
     begin
-      st := sl [i];
-      l := Length (st);
+      st := sl[i];
+      l := Length(st);
       if l = 0 then Continue;
 
       p := 1;
       while (st[p] = '>') and (p < l) do
-        Inc (p);
+        Inc(p);
 
       if p > 1 then
-        sl [i] := Copy (st, p, MaxInt);
+        sl[i] := Copy(st, p, MaxInt);
 
-      sl.Objects [i] := TObject (p - 1)
-    end
+      sl.Objects[i] := TObject(p - 1);
+    end;
   end;
 
 begin
-  SetLength (qs, 80);
-  FillChar (qs [1], 80, '>');
+  qs := StringOfChar('>', 80);
   sl := TStringList.Create;
   try
     sl.LoadFromStream(ASrcStream);
-    AnalyzeQuotes;  // Count quote markers (into sl.Objects [i]) and
+    AnalyzeQuotes;  // Count quote markers (into sl.Objects[i]) and
                     // remove them from the text
     i := 0;
     while i < sl.Count do
     begin
-      st := sl [i];
-      l := Length (st);
+      st := sl[i];
+      l := Length(st);
 
       if (l = 0) or (st = '-- ') then
       begin
-        Inc (i);
-        Continue
+        Inc(i);
+        Continue;
       end;
 
-      if st [1] = ' ' then // Remove space stuffing.  (We already took it
+      if st[1] = ' ' then // Remove space stuffing.  (We already took it
                            // into consideration in AnalyzeQuotes
       begin
-        Delete (st, 1, 1);
-        sl [i] := st;
-        Dec (l);
+        Delete(st, 1, 1);
+        sl[i] := st;
+        Dec(l);
       end;
                           // Wrap next line into this one - only if this
                           // line ends with ' ', and it has the same
                           // quote level.
 
-      if (l > 0) and (st [l] = ' ') and
-        (i + 1 < sl.Count) and (sl.Objects [i] = sl.Objects [i + 1]) then
+      if (l > 0) and (st[l] = ' ') and
+        (i + 1 < sl.Count) and (sl.Objects[i] = sl.Objects[i + 1]) then
       begin
-        if sl [i + 1] = '' then
-          sl [i] := TrimRight (st)
+        if sl[i + 1] = '' then
+          sl[i] := TrimRight(st)
         else
-          sl [i] := st + sl [i + 1];
-        sl.Delete (i + 1)
+          sl[i] := st + sl[i + 1];
+        sl.Delete(i + 1);
       end
       else
-        Inc (i)
+        Inc(i);
     end;
 
                         // Add the quote markers back in.
     for i := 0 to sl.Count - 1 do
-      if Integer (sl.Objects [i]) > 0 then
+      if Integer(sl.Objects[i]) > 0 then
         if InsertSpaceAfterQuote then
-          sl [i] := Copy (qs, 1, Integer (sl.Objects [i])) + ' ' + sl [i]
+          sl[i] := Copy(qs, 1, Integer(sl.Objects[i])) + ' ' + sl[i]
         else
-          sl [i] := Copy (qs, 1, Integer (sl.Objects [i])) + sl [i];
+          sl[i] := Copy(qs, 1, Integer(sl.Objects[i])) + sl[i];
     sl.SaveToStream(FStream);
   finally
-    sl.Free
-  end
+    sl.Free;
+  end;
 end;
 
 { TRFC2646Encoder }
 
-procedure TRFC2646Encoder.EncodeStrings (strings : TStrings);
+procedure TRFC2646Encoder.EncodeStrings(strings: TStrings);
 var
-  i, l, p, quoteDepth : Integer;
-  st, st1, qs : string;
+  i, l, p, quoteDepth: Integer;
+  st, st1, qs: string;
 
   procedure AnalyzeQuotes;
   var
-    i, l, p, quoteDepth : Integer;
-    st : string;
+    i, l, p, quoteDepth: Integer;
+    st: string;
   begin
     for i := 0 to strings.Count - 1 do
     begin
-      st := strings [i];
-      l := Length (st);
+      st := strings[i];
+      l := Length(st);
       p := 1;
 
       quoteDepth := 0;
 
-      while (p <= l) and (st [p] = '>') do
+      while (p <= l) and (st[p] = '>') do
       begin
-        Inc (quoteDepth);
-        Inc (p);
+        Inc(quoteDepth);
+        Inc(p);
 
-        if (p <= l) and (st [p] = ' ') then
-          Inc (p)
+        if (p <= l) and (st[p] = ' ') then
+          Inc(p);
       end;
 
-      st := Copy (st, p, MaxInt);
-      if st <> strings [i] then
-        strings [i] := st;
-      strings.Objects [i] := TObject (quoteDepth);
-    end
+      st := Copy(st, p, MaxInt);
+      if st <> strings[i] then
+        strings[i] := st;
+      strings.Objects[i] := TObject(quoteDepth);
+    end;
   end;
 
 begin
   AnalyzeQuotes;
 
-  SetLength (qs, MaxLineLength);
-  FillChar (qs [1], MaxLineLength, '>');
+  SetLength(qs, MaxLineLength);
+  FillChar(qs[1], MaxLineLength, '>');
   i := 0;
   while i < strings.Count do
   begin
-    st := strings [i];
+    st := strings[i];
     if st = '-- ' then  // Always skip signature separator
     begin
-      Inc (i);
-      Continue
+      Inc(i);
+      Continue;
     end;
 
                         // Always strip of trailing spaces
-    st := TrimRight (st);
-    l := Length (st);
-    quoteDepth := Integer (strings.Objects [i]);
+    st := TrimRight(st);
+    l := Length(st);
+    quoteDepth := Integer(strings.Objects[i]);
 
                         // If a line starts with ' ' or '>' then
                         // space-stuff it.
 
-    if (l > 0) and (st [1] in [' ', '>']) then
-      strings [i] := ' ' + st
+    if (l > 0) and (st[1] in [' ', '>']) then
+      strings[i] := ' ' + st
     else
       if l > (maxLineLength - quoteDepth) then
       begin
         p := MaxLineLength - 1;
-        while (p > 1) and (st [p] <> ' ') do
-          Dec (p);
+        while (p > 1) and (st[p] <> ' ') do
+          Dec(p);
 
         if (p = 1) then
         begin
           p := MaxLineLength;
-          while (p < l) and (st [p] <> ' ') do
-            Inc (p);
+          while (p < l) and (st[p] <> ' ') do
+            Inc(p);
 
           if p = l then
-            p := 0
+            p := 0;
         end;
 
         if p > 1 then
         begin
-          st1 := Copy (st, p + 1, MaxInt);
-          st := Copy (st, 1, p);
-          strings.InsertObject(i + 1, st1, TObject (quoteDepth));
-          strings [i] := st;
+          st1 := Copy(st, p + 1, MaxInt);
+          st := Copy(st, 1, p);
+          strings.InsertObject(i + 1, st1, TObject(quoteDepth));
+          strings[i] := st;
         end
       end
       else
-        if strings [i] <> st then
-          strings [i] := st;
+        if strings[i] <> st then
+          strings[i] := st;
 
-    Inc (i)
+    Inc(i);
   end;
 
   for i := 0 to strings.Count - 1 do
   begin
-    quoteDepth := Integer (strings.Objects [i]);
+    quoteDepth := Integer(strings.Objects[i]);
 
     if quoteDepth > 0 then
-      strings [i] := Copy (qs, 1, quoteDepth) + strings [i];
+      strings[i] := Copy(qs, 1, quoteDepth) + strings[i];
   end;
 
   st := strings.Text;

@@ -74,7 +74,13 @@ object fmPostMessage: TfmPostMessage
     Anchors = [akLeft, akTop, akRight]
     AutoURLDetect = False
     AutoURLExecute = False
+    Font.Charset = ANSI_CHARSET
+    Font.Color = clWindowText
+    Font.Height = -11
+    Font.Name = 'MS Sans Serif'
+    Font.Style = []
     MultiLine = False
+    ParentFont = False
     TabOrder = 2
     WordWrap = False
   end

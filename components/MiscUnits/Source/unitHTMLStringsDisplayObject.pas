@@ -36,7 +36,7 @@ type
 
 implementation
 
-uses cmpExWebBrowser;
+uses cmpExWebBrowser, XnClasses;
 
 resourcestring
   rstCantSetHeight = 'Can''t set height of this object';
@@ -86,25 +86,25 @@ end;
 class function THTMLStringsDisplayObjectLink.DisplaysObject(
   obj: TObject): Boolean;
 var
-  s : TStrings;
-  i : Integer;
-  st, st1 : string;
+  s: TAnsiStrings;
+  i: Integer;
+  st, st1: string;
 begin
   Result := False;
-  if obj is TStrings then
+  if obj is TAnsiStrings then
   begin
-    s := TStrings (obj);
+    s := TAnsiStrings(obj);
     for i := 0 to s.Count - 1 do        // Is it HTML ??
     begin
-      st := Trim (s [i]);
+      st := Trim(string(s[i]));
 
       if st = '' then                   // Ignore blank lines
         Continue;
 
-      if Copy (st, 1, 2) = '<!' then    // Ignore HTML Comments (eg. <!DOCTYPE
+      if Copy(st, 1, 2) = '<!' then     // Ignore HTML Comments (eg. <!DOCTYPE
         Continue;
 
-      st1 := Uppercase (Copy (st, 1, 5));
+      st1 := Uppercase(Copy(st, 1, 5));
       if st1 = '<HTML' then
         Result := True;
 
@@ -114,9 +114,9 @@ begin
       if st1 = '<HEAD' then
         Result := True;
 
-      break
-    end
-  end
+      Break;
+    end;
+  end;
 end;
 
 procedure THTMLStringsDisplayObjectLink.DoOnBeforeNavigate2(

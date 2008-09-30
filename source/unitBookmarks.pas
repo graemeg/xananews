@@ -228,7 +228,7 @@ end;
 procedure TBookmark.Load;
 var
   f: TFileStream;
-  raw: UTF8String;
+  raw: RawByteString;
   str: TStreamTextReader;
   st: string;
 begin
@@ -245,13 +245,13 @@ begin
 
     if str.ReadLn(raw) then
     begin
-      st := UTF8ToString(raw);
+      st := string(raw);
       if not ((SplitString (' ', st) = 'Bookmark') and (st = name)) then
         raise Exception.CreateFmt(rstBadBookmarkFile, [Name]);
 
       while str.ReadLn(raw) do
       begin
-        st := UTF8ToString(raw);
+        st := string(raw);
         if st <> '' then
           fMarkedArticles.Add(TMarkedArticle.CreateFromBookmarkFileLine(Self, st));
       end;

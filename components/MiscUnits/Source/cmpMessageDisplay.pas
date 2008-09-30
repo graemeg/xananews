@@ -899,7 +899,6 @@ end;
  |                                                                      |
  | The function returns the link to the inserted object                 |
  *----------------------------------------------------------------------*)
-
 function TMessageDisplay.InsertObject(idx : Integer; obj: TObject; codepage : Integer; tp : TDisplayObjectLinkClass): TDisplayObjectLink;
 begin
   Result := nil;
@@ -916,6 +915,15 @@ begin
       fFocusedObject := 0;
   end
 end;
+
+procedure TMessageDisplay.MouseDown(Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+  inherited;
+
+  FocusedObject := ObjectAt (x, y);
+end;
+
 (*----------------------------------------------------------------------*
  | function TMessageDisplay.ObjectAt                                    |
  |                                                                      |
@@ -926,14 +934,6 @@ end;
  |                                                                      |
  | The function returns the index of the object                         |
  *----------------------------------------------------------------------*)
-procedure TMessageDisplay.MouseDown(Button: TMouseButton;
-  Shift: TShiftState; X, Y: Integer);
-begin
-  inherited;
-
-  FocusedObject := ObjectAt (x, y);
-end;
-
 function TMessageDisplay.ObjectAt(x, y: Integer): Integer;
 var
   i, h : Integer;
@@ -1016,11 +1016,6 @@ begin
   end;
 end;
 
-(*----------------------------------------------------------------------*
- | procedure TMessageDisplay.RecalcBounds                               |
- |                                                                      |
- | Recalculate the bounds so that it includes all the display oblects   |
- *----------------------------------------------------------------------*)
 procedure TMessageDisplay.Print;
 var
   i, LogX, LogY : Integer;
@@ -1059,6 +1054,11 @@ begin
   end
 end;
 
+(*----------------------------------------------------------------------*
+ | procedure TMessageDisplay.RecalcBounds                               |
+ |                                                                      |
+ | Recalculate the bounds so that it includes all the display oblects   |
+ *----------------------------------------------------------------------*)
 procedure TMessageDisplay.RecalcBounds;
 begin
   if fUpdateCount > 0 then
@@ -1268,7 +1268,6 @@ end;
  | Parameters:                                                          |
  |   var Message: TWMGetDlgCode                                         |
  *----------------------------------------------------------------------*)
-
 procedure TMessageDisplay.WMGetDlgCode(var Message: TWMGetDlgCode);
 begin
   Message.Result := DLGC_WANTARROWS or DLGC_WANTCHARS;
@@ -1305,11 +1304,6 @@ begin
   Result := Cursor
 end;
 
-(*----------------------------------------------------------------------*
- | procedure TDisplayObjectLink.GetBusy                                 |
- |                                                                      |
- | Stub 'Get' method for 'Busy' property                                |
- *----------------------------------------------------------------------*)
 destructor TDisplayObjectLink.Destroy;
 begin
   fFont.Free;
@@ -1323,6 +1317,11 @@ begin
   result := False;
 end;
 
+(*----------------------------------------------------------------------*
+ | procedure TDisplayObjectLink.GetBusy                                 |
+ |                                                                      |
+ | Stub 'Get' method for 'Busy' property                                |
+ *----------------------------------------------------------------------*)
 function TDisplayObjectLink.GetBusy: Boolean;
 begin
   result := False
@@ -1339,11 +1338,6 @@ begin
   Result := Owner.Cursor
 end;
 
-(*----------------------------------------------------------------------*
- | procedure TDisplayObjectLink.GetMargin                               |
- |                                                                      |
- | Stub 'Get' method for Margin property                                |
- *----------------------------------------------------------------------*)
 function TDisplayObjectLink.GetHasText: boolean;
 begin
   result := False;
@@ -1354,6 +1348,11 @@ begin
   // stub
 end;
 
+(*----------------------------------------------------------------------*
+ | procedure TDisplayObjectLink.GetMargin                               |
+ |                                                                      |
+ | Stub 'Get' method for Margin property                                |
+ *----------------------------------------------------------------------*)
 function TDisplayObjectLink.GetMargin: Integer;
 begin
   Result := 0; // Stub
@@ -1407,13 +1406,6 @@ procedure TDisplayObjectLink.Refresh;
 begin
 end;
 
-(*----------------------------------------------------------------------*
- | procedure TDisplayObjectLink.SetCursor                               |
- |                                                                      |
- | Stub 'Get' method for 'Cursor' propery.  This should be treated as   |
- | Read Only in the base class                                          |
- *----------------------------------------------------------------------*)
-
 procedure TDisplayObjectLink.SetColor(const Value: TColor);
 begin
   if fColor <> Value then
@@ -1423,9 +1415,21 @@ begin
   end
 end;
 
+(*----------------------------------------------------------------------*
+ | procedure TDisplayObjectLink.SetCursor                               |
+ |                                                                      |
+ | Stub 'Get' method for 'Cursor' propery.  This should be treated as   |
+ | Read Only in the base class                                          |
+ *----------------------------------------------------------------------*)
 procedure TDisplayObjectLink.SetCursor(const Value: TCursor);
 begin
   raise Exception.Create (rstCantSetCursor);
+end;
+
+procedure TDisplayObjectLink.SetFont(const Value: TFont);
+begin
+  fFont.Assign (Value);
+  Refresh
 end;
 
 (*----------------------------------------------------------------------*
@@ -1434,12 +1438,6 @@ end;
  | Stub 'Get' method for 'Height' propery.  This should be treated as   |
  | Read Only in the base class                                          |
  *----------------------------------------------------------------------*)
-procedure TDisplayObjectLink.SetFont(const Value: TFont);
-begin
-  fFont.Assign (Value);
-  Refresh
-end;
-
 procedure TDisplayObjectLink.SetHeight(const Value: Integer);
 begin
   raise Exception.Create (rstCantSetHeight);
@@ -1456,17 +1454,17 @@ begin
   raise Exception.Create (rstCantSetObj);
 end;
 
+procedure TDisplayObjectLink.SetSelectedText(const txt: WideString);
+begin
+// stub
+end;
+
 (*----------------------------------------------------------------------*
  | procedure TDisplayObjectLink.SetWidth                                |
  |                                                                      |
  | Stub 'Get' method for 'Width' propery.  This should be treated as    |
  | Read Only in the base class                                          |
  *----------------------------------------------------------------------*)
-procedure TDisplayObjectLink.SetSelectedText(const txt: WideString);
-begin
-// stub
-end;
-
 procedure TDisplayObjectLink.SetWidth(const Value: Integer);
 begin
   raise Exception.Create (rstCantSetWidth);

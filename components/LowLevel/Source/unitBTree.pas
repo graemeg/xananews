@@ -4,12 +4,12 @@
  | Cached, variable length key B-Tree index unit.  Public classes are:  |
  |                                                                      |
  | TBTree               Associate an integer with a variable length     |
- |                      string                                          |
+ |                      RawByteString                                   |
  |                                                                      |
  | TBTreeIterator       Iterate through a TBTree                        |
  |                                                                      |
- | TDataTree            Associate a variable length string with an      |
- |                      integer                                         |
+ | TDataTree            Associate a variable length RawByteString       |
+ |                      with an integer                                 |
  |                                                                      |
  | TDataTreeIterator    Iterate through a TDataTree                     |
  |                                                                      |
@@ -35,31 +35,31 @@
  | 10.0     08/03/2006  CPWW  BDS 2006 release version                  |
  *======================================================================*)
 
-
 unit unitBTree;
+
 interface
 
-uses Windows, Classes, SysUtils, ConTnrs, unitObjectCache;
+uses
+  Windows, Classes, SysUtils, ConTnrs, unitObjectCache;
 
 type
+  //----------------------------------------------------------------
+  // Header for B-Tree page (in index file)
+  TPageHeader = packed record
+    Flags: Integer;
+    KeysOnPage: Integer;
+    PrevPage: Integer;          // -1 = leaf
+    PrevPageHeight: Integer;
+  end;
 
-//----------------------------------------------------------------
-// Header for B-Tree page (in index file)
-TPageHeader = packed record
-  Flags : Integer;
-  KeysOnPage : Integer;
-  PrevPage : Integer;          // -1 = leaf
-  PrevPageHeight : Integer;
-end;
-
-//----------------------------------------------------------------
-// Header for B-Tree node (in index file)
-TNodeHeader = packed record
-  NextPage : Integer;
-  NextPageHeight : Integer;
-  KeyLen : Word;
-end;
-PNodeHeader = ^TNodeHeader;
+  //----------------------------------------------------------------
+  // Header for B-Tree node (in index file)
+  TNodeHeader = packed record
+    NextPage: Integer;
+    NextPageHeight: Integer;
+    KeyLen: Word;
+  end;
+  PNodeHeader = ^TNodeHeader;
 
 const
   flgDirty = 1;                 // Page flags
@@ -71,310 +71,307 @@ const
   fflgDupFlags = 14;
 
   PAGE_SIZE = 4096;
-  PAGE_DATA_SIZE = PAGE_SIZE - sizeof (TPageHeader);
+  PAGE_DATA_SIZE = PAGE_SIZE - SizeOf(TPageHeader);
 
-  MAX_KEY_LEN = (PAGE_DATA_SIZE div 2) - SizeOf (TNodeHeader);
+  MAX_KEY_LEN = (PAGE_DATA_SIZE div 2) - SizeOf(TNodeHeader);
 
   NO_CACHED_PAGES = 64;
 
 type
+  //----------------------------------------------------------------
+  // Index file header
+  TFileInfo = packed record
+    id: array[0..7] of AnsiChar;
+    Flags: Integer;
+    PageCount: Integer;
+    RootPage: Integer;
+    RecordCount: Integer;
+    FirstDeletedPage: Integer;
+                                  // Let the user use the otherwise unused
+                                  // space in the file header.
+    ExtraDataSize: word;
+    ExtraData: array[0..PAGE_SIZE - 5 * SizeOf(Integer) - 8 - 1 - SizeOf(word)] of Byte;
+  end;
 
-//----------------------------------------------------------------
-// Index file header
-TFileInfo = packed record
-  id : array [0..7] of char;
-  Flags : Integer;
-  PageCount : Integer;
-  RootPage : Integer;
-  RecordCount : Integer;
-  FirstDeletedPage : Integer;
-                                // Let the user use the otherwise unused
-                                // space in the file header.
-  ExtraDataSize : word;
-  ExtraData : array [0..PAGE_SIZE - 5 * SizeOf (Integer) - 8 - 1 - sizeof (word)] of byte;
-end;
+  //----------------------------------------------------------------
+  // B-Tree page (in index file)
+  TPageRec = packed record
+    Header: TPageHeader;
+    Data: array[0..PAGE_DATA_SIZE - 1] of Byte; // The node data
+  end;
 
-//----------------------------------------------------------------
-// B-Tree page (in index file)
-TPageRec = packed record
-  Header : TPageHeader;
-  Data : Array [0..PAGE_DATA_SIZE - 1] of byte ;// The node data
-end;
+  //----------------------------------------------------------------
+  // B-Tree node (in memory)
+  TNode = record
+    key: RawByteString;
+    NextPage: Integer;
+    NextPageHeight: Integer;
+  end;
 
-//----------------------------------------------------------------
-// B-Tree node (in memory)
-TNode = record
-  key : string;
-  NextPage : Integer;
-  NextPageHeight : Integer;
-end;
+  TRawBTree = class;
 
-TRawBTree = class;
+  //----------------------------------------------------------------
+  // B-Tree page (in memory)
+  TPage = class
+  private
+    fFlags: Integer;
+    fPrevPage: Integer;
+    fPrevPageHeight: Integer;
+    fNodes: array of TNode;
+    fNodeCount: Integer;
 
-//----------------------------------------------------------------
-// B-Tree page (in memory)
-TPage = class
-private
-  fFlags : Integer;
-  fPrevPage : Integer;
-  fPrevPageHeight : Integer;
-  fNodes : array of TNode;
-  fNodeCount : Integer;
+    fOwner: TRawBTree;
+    fIdx: Integer;
+    fTotalDataLen: Integer;
+    function GetFlags(bits: Integer): Boolean;
+    procedure SetFlags(bits: Integer; const Value: Boolean);
 
-  fOwner : TRawBTree;
-  fIdx : Integer;
-  fTotalDataLen : Integer;
-  function GetFlags(bits: Integer): boolean;
-  procedure SetFlags(bits: Integer; const Value: boolean);
+    function FindNode(const st: RawByteString; var idx: Integer): Boolean;
+    procedure InsertNode(idx: Integer; const node: TNode);
+    function GetNode(idx: Integer): TNode;
+    function GetHeight: Integer;
+  public
+    constructor Create(AOwner: TRawBTree; AIdx: Integer);
+    destructor Destroy; override;
 
-  function FindNode (const st : string; var idx : Integer) : boolean;
-  procedure InsertNode (idx : Integer; const node : TNode);
-  function GetNode (idx  :Integer) : TNode;
-  function GetHeight: Integer;
-public
-  constructor Create (AOwner : TRawBTree; AIdx : Integer);
-  destructor Destroy; override;
+    procedure Load;
+    procedure Save;
 
-  procedure Load;
-  procedure Save;
+    property Flags[bits: Integer]: Boolean read GetFlags write SetFlags;
+    property Height: Integer read GetHeight;
+    property Idx: Integer read fIDX;
+    property NodeCount: Integer read fNodeCount;
+    property Node[idx: Integer]: TNode read GetNode;
+    property Owner: TRawBTree read fOwner;
+    property PrevPage: Integer read fPrevPage;
+    property PrevPageHeight: Integer read fPrevPageHeight;
+  end;
 
-  property Flags [bits : Integer] : boolean read GetFlags write SetFlags;
-  property Height : Integer read GetHeight;
-  property Idx : Integer read fIDX;
-  property NodeCount : Integer read fNodeCount;
-  property Node [idx : Integer] : TNode read GetNode;
-  property Owner : TRawBTree read fOwner;
-  property PrevPage : Integer read fPrevPage;
-  property PrevPageHeight : Integer read fPrevPageHeight;
-end;
+  //----------------------------------------------------------------
+  // Page cache stores TPage objects.  CanRemove is overridden to save
+  // a page on disk befor it's removed
+  TPageCache = class(TObjectCache)
+  protected
+    procedure Notify(Ptr: Pointer; Action: TListNotification); override;
+  end;
 
-//----------------------------------------------------------------
-// Page cache stores TPage objects.  CanRemove is overridden to save
-// a page on disk befor it's removed
-TPageCache = class(TObjectCache)
-protected
-  procedure Notify(Ptr: Pointer; Action: TListNotification); override;
-end;
+  TRawBTreeForEachProc = procedure(const key: RawByteString; param: Integer; var continue: Boolean) of object;
 
-TRawBTreeForEachProc = procedure (const key : string; param : Integer; var continue : boolean) of object;
+  TBTreeDuplicates = (dupIgnore, dupAccept, dupError, dupReplace);
 
-TBTreeDuplicates = (dupIgnore, dupAccept, dupError, dupReplace);
+  //----------------------------------------------------------------
+  // TRawBTree object
+  TRawBTree = class
+  private
+    fFileName: string;
+    f: TFileStream;
+    fFileInfo: TFileInfo;
+    fPageCache: TPageCache;
+    fUpdateCount: Integer;
+    fDelIDx, fDelPIdx: Integer;  // Used during delete.
+    fOK: Boolean;
 
-//----------------------------------------------------------------
-// TRawBTree object
-TRawBTree = class
-private
-  fFileName : string;
-  f : TFileStream;
-  fFileInfo : TFileInfo;
-  fPageCache : TPageCache;
+    procedure Open;
+    procedure Close;
+    procedure Flush(clearPageCache: Boolean);
+    procedure SaveFileInfo;
 
-  fUpdateCount : Integer;
+    function GetPage(pageNo: Integer): TPage;
+    function GetCaseSensitive: Boolean;
+    procedure SetCaseSensitive(const Value: Boolean);
+    procedure CacheCheckProc(obj: TObject; idx, param: Integer; var continue: Boolean);
+    procedure CacheSaveProc(obj: TObject; idx, param: Integer; var continue: Boolean);
+    function CreateNewPage: TPage;
+    procedure DeleteOldPage(page: TPage);
 
-  fDelIDx, fDelPIdx : Integer;  // Used during delete.
-  fOK : boolean;
+    function PutKeyOnPage(pg: TPage; idx: Integer; const memNode: TNode): TNode;
+    function PutKeyInTree(pg: TPage; const key: RawByteString): TNode;
+    function DeleteKeyFromTree(pg: TPage; const key: RawByteString): Integer;
+    function DeleteKeyFromPage(page: TPage; idx: Integer): Integer;
+    function GetRecordCount: Integer;
+    function GetRootPage: TPage;
+    procedure SetDuplicates(const Value: TBTreeDuplicates);
+    function GetDuplicates: TBTreeDuplicates;
+    function GetExtraData: RawByteString;
+    procedure ResetNodeHeight(pg: TPage; idx: Integer);
+    procedure SetExtraData(Value: RawByteString);
+    function GetIndexOfKey(var key: RawByteString): Integer;
+  protected
+    function GetKey(idx: Integer): RawByteString;
+    function CompareKeys(const k1, k2: RawByteString): Integer; virtual;
 
-  procedure Open;
-  procedure Close;
-  procedure Flush (clearPageCache : boolean);
-  procedure SaveFileInfo;
+    function AddKey(const key: RawByteString): Boolean;
+    function DeleteKey(const key: RawByteString): Boolean;
+    procedure ForEach(proc: TRawBTreeForEachProc; param: Integer);
+    function Find(key: RawByteString; var fKey: RawByteString): Boolean;
 
-  function GetPage (pageNo : Integer) : TPage;
-  function GetCaseSensitive: boolean;
-  procedure SetCaseSensitive(const Value: boolean);
-  procedure CacheCheckProc (obj : TObject; idx, param : Integer; var continue : boolean);
-  procedure CacheSaveProc (obj : TObject; idx, param : Integer; var continue : boolean);
-  function CreateNewPage : TPage;
-  procedure DeleteOldPage (page : TPage);
+    property Key[idx: Integer]: RawByteString read GetKey;
+  public
+    constructor Create(const AFileName: string); virtual;
+    destructor Destroy; override;
 
-  function PutKeyOnPage (pg : TPage; idx : Integer; const memNode : TNode) : TNode;
-  function PutKeyInTree(pg : TPage; const key : string) : TNode;
-  function DeleteKeyFromTree (pg : TPage; const key : string) : Integer;
-  function DeleteKeyFromPage (page : TPage; idx : Integer) : Integer;
-  function GetRecordCount: Integer;
-  function GetRootPage: TPage;
-  procedure SetDuplicates(const Value: TBTreeDuplicates);
-  function GetDuplicates: TBTreeDuplicates;
-  function GetExtraData: string;
-  procedure ResetNodeHeight (pg : TPage; idx : Integer);
-  procedure SetExtraData(Value: string);
-  function GetIndexOfKey(var key: string): Integer;
-protected
-  function GetKey(idx: Integer): string;
-  function CompareKeys (const k1, k2 : string) : Integer; virtual;
-
-  function AddKey (const key : string) : boolean;
-  function DeleteKey (const key : string) : boolean;
-  procedure ForEach (proc : TRawBTreeForEachProc; param : Integer);
-  function Find (key : string; var fKey : string) : boolean;
-
-  property Key [idx : Integer] : string read GetKey;
-public
-  constructor Create (const AFileName : string); virtual;
-  destructor Destroy; override;
-
-  procedure BeginUpdate;
-  procedure EndUpdate;
+    procedure BeginUpdate;
+    procedure EndUpdate;
 
 
-  property ExtraData : string read GetExtraData write SetExtraData;
+    property ExtraData: RawByteString read GetExtraData write SetExtraData;
 
-  property RecordCount : Integer read GetRecordCount;
+    property RecordCount: Integer read GetRecordCount;
 
-// ------ May not always be public, but handy for diagnostics
-  property RootPage : TPage read GetRootPage;
-  property Page [pageNo : Integer] : TPage read GetPage;
+    // ------ May not always be public, but handy for diagnostics
+    property RootPage: TPage read GetRootPage;
+    property Page[pageNo: Integer]: TPage read GetPage;
 
+    property FileName: string read fFileName;
+    property CaseSensitive: Boolean read GetCaseSensitive write SetCaseSensitive;
+    property Duplicates: TBTreeDuplicates read GetDuplicates write SetDuplicates;
+  end;
 
-  property FileName : string read fFileName;
-  property CaseSensitive : boolean read GetCaseSensitive write SetCaseSensitive;
-  property Duplicates : TBTreeDuplicates read GetDuplicates write SetDuplicates;
-end;
+  //----------------------------------------------------------------
+  // TIteratorNode.  An element on the iterator's stack
+  TIteratorNode = class
+  private
+    fPageNo: Integer;
+    fKeyIdx: Integer;
+  public
+    constructor Create(APageNo: Integer; AKeyIdx: Integer);
 
-//----------------------------------------------------------------
-// TIteratorNode.  An element on the iterator's stack
-TIteratorNode = class
-private
-  fPageNo: Integer;
-  fKeyIdx: Integer;
-public
-  constructor Create (APageNo : Integer; AKeyIdx : Integer);
+    property PageNo: Integer read fPageNo;
+    property KeyIdx: Integer read fKeyIdx;
+  end;
 
-  property PageNo : Integer read fPageNo;
-  property KeyIdx : Integer read fKeyIdx;
-end;
+  //----------------------------------------------------------------
+  // TRawBTreeIterator.  Class for iterating through the BTree
+  TRawBTreeIterator = class
+  private
+    fBTree: TRawBTree;
+    fStack: TObjectStack;
+    procedure ClearPageStack;
+    function IntToBin(i: Integer): RawByteString;
+  public
+    constructor Create(ABTree: TRawBTree);
+    destructor Destroy; override;
 
-//----------------------------------------------------------------
-// TRawBTreeIterator.  Class for iterating through the BTree
-TRawBTreeIterator = class
-private
-  fBTree : TRawBTree;
-  fStack : TObjectStack;
-  procedure ClearPageStack;
-public
-  constructor Create (ABTree : TRawBTree);
-  destructor Destroy; override;
+    function First(var key: RawByteString): Boolean;
+    function Last(var key: RawByteString): Boolean;
+    function Next(var key: RawByteString): Boolean;
+    function Prev(var key: RawByteString): Boolean;
+    function Find(var key: RawByteString): Boolean;
 
-  function First (var key : string) : boolean;
-  function Last (var key : string) : boolean;
-  function Next (var key : string) : boolean;
-  function Prev (var key : string) : boolean;
-  function Find (var key : string) : boolean;
+    property BTree: TRawBTree read fBTree;
+  end;
 
-  property BTree : TRawBTree read fBTree;
-end;
+  TBTreeForEachProc = procedure (const key: RawByteString; dataRec: Integer; var continue: Boolean) of object;
 
-TBTreeForEachProc = procedure (const key : string; dataRec : Integer; var continue : boolean) of object;
+  //----------------------------------------------------------------
+  // TBTree class.  Associate an integer with a RawByteString
+  //
+  // eg.   The integer could contain an offset into a file of
+  //       'user details' records, and the RawByteString could contain the
+  //       user id.
+  //
+  //       In the XanaNewz server, this is used both to associate a
+  //       message-id with the offset into the messages data file, and to
+  //       associate a message-id with a group's article no.
 
-//----------------------------------------------------------------
-// TBTree class.  Associate an integer with a string
-//
-// eg.   The integer could contain an offset into a file of
-//       'user details' records, and the string could contain the
-//       user id.
-//
-//       In the XanaNewz server, this is used both to associate a
-//       message-id with the offset into the messages data file, and to
-//       associate a message-id with a group's article no.
+  TBTree = class(TRawBTree)
+  private
+    function IntToBin(i: Integer): RawByteString;
+    function ExtractDataRec (const key: RawByteString): Integer;
+    function InternalGetKey(idx: Integer): RawByteString;
+    function GetDataRec(const key: RawByteString): Integer;
+    procedure SetDataRec(const key: RawByteString; const Value: Integer);
+  protected
+    function CompareKeys(const k1, k2: RawByteString): Integer; override;
+  public
+    function AddKey(const key: RawByteString; DataRec: Integer): Boolean;
+    function DeleteKey(const key: RawByteString): Boolean;
+    procedure ForEach(proc: TBTreeForEachProc);
+    function Find(key: RawByteString; var dataRec: Integer): Boolean;
 
-TBTree = class (TRawBTree)
-private
-  function IntToBin (i : Integer) : string;
-  function ExtractDataRec (const key : string) : Integer;
-  function InternalGetKey(idx: Integer): string;
-  function GetDataRec(const key: string): Integer;
-  procedure SetDataRec(const key: string; const Value: Integer);
-protected
-  function CompareKeys (const k1, k2 : string) : Integer; override;
-public
-  function AddKey (const key : string; DataRec : Integer) : boolean;
-  function DeleteKey (const key : string) : boolean;
-  procedure ForEach (proc : TBTreeForEachProc);
-  function Find (key : string; var dataRec : Integer) : boolean;
+    function GetKey(idx: Integer; var dataRec: Integer): RawByteString;
+    function GetIndexOfKey(var key: RawByteString; var dataRec: Integer): Integer;
 
-  function GetKey(idx: Integer; var dataRec : Integer): string;
-  function GetIndexOfKey(var key: string; var dataRec : Integer): Integer;
+    property Key[idx: Integer]: RawByteString read InternalGetKey;
+    property DataRec[const key: RawByteString]: Integer read GetDataRec write SetDataRec;
+  end;
 
-  property Key [idx : Integer] : string read InternalGetKey;
-  property DataRec [const key : string] : Integer read GetDataRec write SetDataRec;
-end;
+  TDataTreeForEachProc = procedure (n: Integer; const st: RawByteString; var continue: Boolean) of object;
 
-TDataTreeForEachProc = procedure (n : Integer; const st : string; var continue : boolean) of object;
+  //----------------------------------------------------------------
+  // TDataTree class.  Associate a RawByteString with an integer.
+  //
+  // This effectively gives a sparse array of RawByteStrings.
+  //
+  // eg.   In the XanaNewz server, this is used to associate a group's
+  //       article no with a message id.
+  TDataTree = class(TRawBTree)
+  private
+    function IntToBin(i: Integer): RawByteString;
+    function BinToInt(const st: RawByteString): Integer;
+    function GetValue(n: Integer): RawByteString;
+  protected
+    function CompareKeys(const k1, k2: RawByteString): Integer; override;
+  public
+    function AddKey(n: Integer; const st: RawByteString): Boolean;
+    function DeleteKey(n: Integer): Boolean;
+    procedure ForEach(proc: TDataTreeForEachProc);
+    function Find(n: Integer; var st: RawByteString): Boolean;
+    function GetKey(idx: Integer; var dataRec: Integer): RawByteString;
+    property Value[n: Integer]: RawByteString read GetValue; default;
+  end;
 
-//----------------------------------------------------------------
-// TDataTree class.  Associate a string with an integer.
-//
-// This effectively gives a sparse array of strings.
-//
-// eg.   In the XanaNewz server, this is used to associate a group's
-//       article no with a message id.
-TDataTree = class (TRawBTree)
-private
-  function IntToBin (i : Integer) : string;
-  function BinToInt (const st : string) : Integer;
-  function GetValue (n : Integer) : string;
-protected
-  function CompareKeys (const k1, k2 : string) : Integer; override;
-public
-  function AddKey (n : Integer; const st : string) : boolean;
-  function DeleteKey (n : Integer) : boolean;
-  procedure ForEach (proc : TDataTreeForEachProc);
-  function Find (n : Integer; var st : string) : boolean;
-  function GetKey(idx: Integer; var dataRec : Integer): string;
-  property Value [n : Integer] : String read GetValue; default;
-end;
+  TBTreeIterator = class(TRawBTreeIterator)
+  private
+    procedure SplitKey(var key: RawByteString; var dataRec: Integer);
+  public
+    constructor Create(ABTree: TBTree);
+    function First(var key: RawByteString; var dataRec: Integer): Boolean;
+    function Last(var key: RawByteString; var dataRec: Integer): Boolean;
+    function Next(var key: RawByteString; var dataRec: Integer): Boolean;
+    function Prev(var key: RawByteString; var dataRec: Integer): Boolean;
+    function Find(var key: RawByteString; var dataRec: Integer): Boolean;
+  end;
 
-TBTreeIterator = class (TRawBTreeIterator)
-private
-  procedure SplitKey (var key : string; var dataRec : Integer);
-public
-  constructor Create (ABTree : TBTree);
-  function First (var key : string; var dataRec : Integer) : boolean;
-  function Last (var key : string; var dataRec : Integer) : boolean;
-  function Next (var key : string; var dataRec : Integer) : boolean;
-  function Prev (var key : string; var dataRec : Integer) : boolean;
-  function Find (var key : string; var dataRec : Integer) : boolean;
-end;
+  TDataTreeIterator = class(TRawBTreeIterator)
+  private
+    procedure SplitKey(var n: Integer; var key: RawByteString);
+  public
+    constructor Create(ADataTree: TDataTree);
+    function First(var n: Integer; var st: RawByteString): Boolean;
+    function Last(var n: Integer; var st: RawByteString): Boolean;
+    function Next(var n: Integer; var st: RawByteString): Boolean;
+    function Prev(var n: Integer; var st: RawByteString): Boolean;
+    function Find(n: Integer; var st: RawByteString): Boolean;
+  end;
 
-TDataTreeIterator = class (TRawBTreeIterator)
-private
-  procedure SplitKey (var n : Integer; var key : string);
-public
-  constructor Create (ADataTree : TDataTree);
-  function First (var n : Integer; var st : string) : boolean;
-  function Last (var n : Integer; var st : string) : boolean;
-  function Next (var n : Integer; var st : string) : boolean;
-  function Prev (var n : Integer; var st : string) : boolean;
-  function Find (n : Integer; var st : string) : boolean;
-end;
+  TIndexTreeForEachProc = procedure(i: Integer; var continue: Boolean) of object;
+  //----------------------------------------------------------------
+  // TIndexTree class.  Associate an integer with an integer.
+  //
+  // This effectively gives a sparse array of integers.
+  TIndexTree = class(TRawBTree)
+  private
+    fBinBuffer: RawByteString;
+    procedure IntToBinBuffer(i: Integer);
+    function BinToInt(const st: RawByteString): Integer;
+    function GetValue(n: Integer): Integer;
+    function GetIndexOf(i: Integer): Integer;
+  protected
+    function CompareKeys(const k1, k2: RawByteString): Integer; override;
+  public
+    constructor Create(const AFileName: string); override;
+    function AddKey(i: Integer): Boolean;
+    function DeleteKey(i: Integer): Boolean;
+    procedure ForEach(proc: TIndexTreeForEachProc);
+    function Find(i: Integer): Boolean;
 
-TIndexTreeForEachProc = procedure (i : Integer; var continue : boolean) of object;
-//----------------------------------------------------------------
-// TIndexTree class.  Associate an integer with an integer.
-//
-// This effectively gives a sparse array of integers.
-TIndexTree = class (TRawBTree)
-private
-  fBinBuffer : string;
-  procedure IntToBinBuffer (i : Integer);
-  function BinToInt (const st : string) : Integer;
-  function GetValue(n: Integer): Integer;
-  function GetIndexOf(i: Integer): Integer;
-protected
-  function CompareKeys (const k1, k2 : string) : Integer; override;
-public
-  constructor Create (const AFileName : string); override;
-  function AddKey (i : Integer) : boolean;
-  function DeleteKey (i : Integer) : boolean;
-  procedure ForEach (proc : TIndexTreeForEachProc);
-  function Find (i : Integer) : boolean;
+    function Delete(n: Integer): Boolean;
+    property Value[n: Integer]: Integer read GetValue; default;
+    property IndexOf[i: Integer]: Integer read GetIndexOf;
+  end;
 
-  function Delete (n : Integer) : boolean;
-  property Value [n : Integer] : Integer read GetValue; default;
-  property IndexOf [i : Integer] : Integer read GetIndexOf;
-end;
-
-EBTree = class (Exception);
+  EBTree = class(Exception);
 
 implementation
 
@@ -384,6 +381,213 @@ resourcestring
   rstDuplicateKey = 'Duplicate key %s';
   rstIndexExceedsBounds = 'Index exceeds bounds';
 
+// CompareStr() from Pierre le Riche as found at the FastCode project.
+function CompareStr(const S1, S2: RawByteString): Integer;
+asm
+  cmp eax, edx
+  je @SameString
+  {Is either of the strings perhaps nil?}
+  test eax, edx
+  jz @PossibleNilString
+  {Compare the first four characters (there has to be a trailing #0). In random
+   string compares this can save a lot of CPU time.}
+@BothNonNil:
+  {Compare the first character}
+  movzx ecx, byte ptr [edx]
+  cmp cl, [eax]
+  je @FirstCharacterSame
+  {First character differs}
+  movzx eax, byte ptr [eax]
+  sub eax, ecx
+  ret
+@FirstCharacterSame:
+  {Save ebx}
+  push ebx
+  {Set ebx = length(S1)}
+  mov ebx, [eax - 4]
+  xor ecx, ecx
+  {Set ebx = length(S1) - length(S2)}
+  sub ebx, [edx - 4]
+  {Save the length difference on the stack}
+  push ebx
+  {Set ecx = 0 if length(S1) < length(S2), $ffffffff otherwise}
+  adc ecx, -1
+  {Set ecx = - min(length(S1), length(S2))}
+  and ecx, ebx
+  sub ecx, [eax - 4]
+  {Adjust the pointers to be negative based}
+  sub eax, ecx
+  sub edx, ecx
+@CompareLoop:
+  mov ebx, [eax + ecx]
+  xor ebx, [edx + ecx]
+  jnz @Mismatch
+  add ecx, 4
+  js @CompareLoop
+  {All characters match - return the difference in length}
+@MatchUpToLength:
+  pop eax
+  pop ebx
+  ret
+@Mismatch:
+  bsf ebx, ebx
+  shr ebx, 3
+  add ecx, ebx
+  jns @MatchUpToLength
+  movzx eax, byte ptr [eax + ecx]
+  movzx edx, byte ptr [edx + ecx]
+  sub eax, edx
+  pop ebx
+  pop ebx
+  ret
+  {It is the same string}
+@SameString:
+  xor eax, eax
+  ret
+  {Good possibility that at least one of the strings are nil}
+@PossibleNilString:
+  test eax, eax
+  jz @FirstStringNil
+  test edx, edx
+  jnz @BothNonNil
+  {Return first string length: second string is nil}
+  mov eax, [eax - 4]
+  ret
+@FirstStringNil:
+  {Return 0 - length(S2): first string is nil}
+  sub eax, [edx - 4]
+end;
+
+
+// CompareText from Aleksandr Sharahov as found at the FastCode project.
+function CompareText(const S1, S2: RawByteString): Integer;
+asm
+        test  eax, eax       // if S1 = nil then return(False)
+        jz    @nil1
+        test  edx, edx       // if S2 = nil then return(False)
+        jz    @nil2
+        mov   ecx, [eax-4]
+        cmp   ecx, [edx-4]
+        je    @lenok         // if Length(S1) <> Length(S2) then return(False)
+
+@nil2:  xor   eax, eax
+@nil1:  ret
+
+@lenok: push  edi
+        push  ebx
+        xor   ebx, ebx
+        mov   edi, eax
+        sub   ebx, ecx
+
+        sub   edi, ebx
+        sub   edx, ebx
+
+@loop:  mov   eax, [ebx+edi]
+        mov   ecx, [ebx+edx]
+        cmp   eax, ecx
+        jne   @byte0
+@same:  add   ebx, 4
+        jl    @loop
+
+@len:   mov   al, 1
+        pop   ebx
+        pop   edi
+        ret
+
+@loop2: mov   eax, [ebx+edi]
+        mov   ecx, [ebx+edx]
+        cmp   eax, ecx
+        je    @same
+
+@byte0: cmp   al, cl
+        je    @byte1
+
+        and   eax, $FF
+        and   ecx, $FF
+        sub   eax, 'a'
+        sub   ecx, 'a'
+        cmp   al, 'z'-'a'
+        ja    @up0a
+        sub   eax, 'a'-'A'
+@up0a:  cmp   cl, 'z'-'a'
+        ja    @up0c
+        sub   ecx, 'a'-'A'
+@up0c:  sub   eax, ecx
+        jnz   @done
+
+        mov   eax, [ebx+edi]
+        mov   ecx, [ebx+edx]
+
+@byte1: cmp   ah, ch
+        je    @byte2
+
+        and   eax, $FF00
+        and   ecx, $FF00
+        sub   eax, 'a'*256
+        sub   ecx, 'a'*256
+        cmp   ah, 'z'-'a'
+        ja    @up1a
+        sub   eax, ('a'-'A')*256
+@up1a:  cmp   ch, 'z'-'a'
+        ja    @up1c
+        sub   ecx, ('a'-'A')*256
+@up1c:  sub   eax, ecx
+        jnz   @done
+
+        mov   eax, [ebx+edi]
+        mov   ecx, [ebx+edx]
+
+@byte2: add   ebx, 2
+        jnl   @len2
+        shr   eax, 16
+        shr   ecx, 16
+        cmp   al, cl
+        je    @byte3
+
+        and   eax, $FF
+        and   ecx, $FF
+        sub   eax, 'a'
+        sub   ecx, 'a'
+        cmp   al, 'z'-'a'
+        ja    @up2a
+        sub   eax, 'a'-'A'
+@up2a:  cmp   cl, 'z'-'a'
+        ja    @up2c
+        sub   ecx, 'a'-'A'
+@up2c:  sub   eax, ecx
+        jnz   @done
+
+        movzx eax, word ptr [ebx+edi]
+        movzx ecx, word ptr [ebx+edx]
+
+@byte3: cmp   ah, ch
+        je    @byte4
+
+        and   eax, $FF00
+        and   ecx, $FF00
+        sub   eax, 'a'*256
+        sub   ecx, 'a'*256
+        cmp   ah, 'z'-'a'
+        ja    @up3a
+        sub   eax, ('a'-'A')*256
+@up3a:  cmp   ch, 'z'-'a'
+        ja    @up3c
+        sub   ecx, ('a'-'A')*256
+@up3c:  sub   eax, ecx
+        jnz   @done
+
+@byte4: add   ebx, 2
+        jl    @loop2
+
+@len2:  mov   al, 1
+        pop   ebx
+        pop   edi
+        ret
+
+@done:  pop   ebx
+        pop   edi
+end;
+
 { TRawBTree }
 
 (*----------------------------------------------------------------------*
@@ -392,37 +596,37 @@ resourcestring
  | Add a key to the index                                               |
  |                                                                      |
  | Parameters:                                                          |
- |   key: string;               The key to add                          |
+ |   key: RawByteString;               The key to add                          |
  *----------------------------------------------------------------------*)
-function TRawBTree.AddKey(const key: string) : boolean;
+function TRawBTree.AddKey(const key: RawByteString): Boolean;
 var
-  passout : TNode;
-  newPage0 : TPage;
+  passout: TNode;
+  newPage0: TPage;
 begin
-  if Length (key) > MAX_KEY_LEN then
+  if Length(key) > MAX_KEY_LEN then
     raise EBTree.Create(rstKeyTooLong);
 
   BeginUpdate;
   try
     fOK := True;
-    passout := PutKeyInTree (RootPage, key);
+    passout := PutKeyInTree(RootPage, key);
 
     if passout.NextPage <> -1 then
     begin
       newPage0 := CreateNewPage;
       newPage0.fPrevPage := fFileInfo.RootPage;
       fFileInfo.RootPage := newPage0.fIdx;
-      PutKeyOnPage (newPage0, 0, passout);
+      PutKeyOnPage(newPage0, 0, passout);
 
-      ResetNodeHeight (newPage0, -1);
-      ResetNodeHeight (newPage0, 0);
+      ResetNodeHeight(newPage0, -1);
+      ResetNodeHeight(newPage0, 0);
     end;
     if fOK then
-      Inc (fFileInfo.RecordCount)
+      Inc(fFileInfo.RecordCount)
   finally
     EndUpdate
   end;
-  result := fOK
+  Result := fOK
 end;
 
 (*----------------------------------------------------------------------*
@@ -432,7 +636,7 @@ end;
  *----------------------------------------------------------------------*)
 procedure TRawBTree.BeginUpdate;
 begin
-  Inc (fUpdateCount);
+  Inc(fUpdateCount);
 end;
 
 (*----------------------------------------------------------------------*
@@ -442,9 +646,9 @@ end;
  | already in the cache.                                                |
  *----------------------------------------------------------------------*)
 procedure TRawBTree.CacheCheckProc(obj: TObject; idx, param: Integer;
-  var continue: boolean);
+  var continue: Boolean);
 begin
-  continue := TPage (obj).fIdx <> param
+  continue := TPage(obj).fIdx <> param
 end;
 
 (*----------------------------------------------------------------------*
@@ -454,9 +658,9 @@ end;
  | page when flushing the cache                                         |
  *----------------------------------------------------------------------*)
 procedure TRawBTree.CacheSaveProc(obj: TObject; idx, param: Integer;
-  var continue: boolean);
+  var continue: Boolean);
 begin
-  TPage (obj).Save;
+  TPage(obj).Save;
   continue := True
 end;
 
@@ -467,8 +671,8 @@ end;
  *----------------------------------------------------------------------*)
 procedure TRawBTree.Close;
 begin
-  Flush (True);         // Flush and clear cached pages
-  FreeAndNil (f)        // Close the index file
+  Flush(True);         // Flush and clear cached pages
+  FreeAndNil(f);        // Close the index file
 end;
 
 (*----------------------------------------------------------------------*
@@ -477,14 +681,14 @@ end;
  | constructor for TRawBTree                                            |
  |                                                                      |
  | Parameters:                                                          |
- |   const AFileName: string    The index file name                     |
+ |   const AFileName: RawByteString    The index file name                     |
  *----------------------------------------------------------------------*)
-function TRawBTree.CompareKeys(const k1, k2: string): Integer;
+function TRawBTree.CompareKeys(const k1, k2: RawByteString): Integer;
 begin
   if CaseSensitive then
-    Result := CompareStr (k1, k2)
+    Result := CompareStr(k1, k2)
   else
-    result := CompareText (k1, k2)
+    Result := CompareText(k1, k2);
 end;
 
 constructor TRawBTree.Create(const AFileName: string);
@@ -503,17 +707,17 @@ end;
  *----------------------------------------------------------------------*)
 function TRawBTree.CreateNewPage: TPage;
 begin
-  result := TPage.Create (self, fFileInfo.PageCount);
+  Result := TPage.Create(self, fFileInfo.PageCount);
   if fFileInfo.FirstDeletedPage <> -1 then
   begin
-    result.fIdx := fFileInfo.FirstDeletedPage;
-    result.Load;
-    fFileInfo.FirstDeletedPage := result.PrevPage;
-    result.fPrevPage := -1
+    Result.fIdx := fFileInfo.FirstDeletedPage;
+    Result.Load;
+    fFileInfo.FirstDeletedPage := Result.PrevPage;
+    Result.fPrevPage := -1
   end;
-  fPageCache.Add(result);
-  result.Flags [flgDirty] := True;
-  Inc (fFileInfo.PageCount);
+  fPageCache.Add(Result);
+  Result.Flags[flgDirty] := True;
+  Inc(fFileInfo.PageCount);
 end;
 
 (*----------------------------------------------------------------------*
@@ -521,15 +725,15 @@ end;
  |                                                                      |
  | Destructor for TRawBTree.                                            |
  *----------------------------------------------------------------------*)
-function TRawBTree.DeleteKey(const key: string) : boolean;
+function TRawBTree.DeleteKey(const key: RawByteString): Boolean;
 var
-  page0 : TPage;
+  page0: TPage;
 begin
   fDelPIdx := -1;
   BeginUpdate;
   try
     fOK := True;
-    DeleteKeyFromTree (RootPage, key);
+    DeleteKeyFromTree(RootPage, key);
     if fOK then
     begin
       page0 := RootPage;
@@ -538,19 +742,19 @@ begin
         if page0.PrevPage <> -1 then
         begin
           fFileInfo.RootPage := page0.PrevPage;
-          ResetNodeHeight (RootPage, -1);
-          DeleteOldPage (page0)
-        end
+          ResetNodeHeight(RootPage, -1);
+          DeleteOldPage(page0);
+        end;
       end;
 
       if fOK then
-        Dec (fFileInfo.RecordCount)
+        Dec(fFileInfo.RecordCount)
     end
   finally
     EndUpdate
   end;
 
-  result := fOK
+  Result := fOK
 end;
 
 (*----------------------------------------------------------------------*
@@ -560,40 +764,40 @@ end;
  |                                                                      |
  | Parameters:                                                          |
  |   page: TPage;               The page to delete from                 |
- |   idx : Integer              The node index on the page              |
+ |   idx: Integer              The node index on the page              |
  |                                                                      |
  | The function returns the number of nodes remaining on the page       |
  *----------------------------------------------------------------------*)
-function TRawBTree.DeleteKeyFromPage(page: TPage; idx : Integer) : Integer;
+function TRawBTree.DeleteKeyFromPage(page: TPage; idx: Integer): Integer;
 var
-  dl : Integer;
+  dl: Integer;
 begin
-  dl := SizeOf (TNodeHeader) + Length (page.fNodes [idx].key);
-  finalize (page.fNodes [idx]);
-  FillChar (page.fNodes [idx], SizeOf (TNode), 0);
+  dl := SizeOf(TNodeHeader) + Length(page.fNodes[idx].key);
+  Finalize(page.fNodes[idx]);
+  FillChar(page.fNodes[idx], SizeOf(TNode), 0);
 
   if idx < page.fNodeCount - 1 then
   begin
-    Move (page.fNodes [idx + 1], page.fNodes [idx], (page.fNodeCount - idx - 1) * sizeof (TNode));
-    FillChar (page.fNodes [page.fNodeCount - 1], Sizeof (TNode), 0)
+    Move(page.fNodes[idx + 1], page.fNodes[idx], (page.fNodeCount - idx - 1) * SizeOf(TNode));
+    FillChar(page.fNodes[page.fNodeCount - 1], SizeOf(TNode), 0)
   end;
 
-  Dec (page.fTotalDataLen, dl);
-  Dec (page.fNodeCount);
-  page.Flags [flgDirty] := True;
-  result := page.fNodeCount
+  Dec(page.fTotalDataLen, dl);
+  Dec(page.fNodeCount);
+  page.Flags[flgDirty] := True;
+  Result := page.fNodeCount
 end;
 
-function TRawBTree.DeleteKeyFromTree(pg: TPage; const key: string) : Integer;
+function TRawBTree.DeleteKeyFromTree(pg: TPage; const key: RawByteString): Integer;
 var
-  idx, pidx, nidx, tidx, mp : Integer;
-  tn : TNode;
-  tp, br : TPage;
-  found : boolean;
+  idx, pidx, nidx, tidx, mp: Integer;
+  tn: TNode;
+  tp, br: TPage;
+  found: Boolean;
 
 begin
   pidx := pg.Idx;
-  found := pg.FindNode (key, idx);
+  found := pg.FindNode(key, idx);
   if found then
   begin
     fDelPidx := pg.Idx;
@@ -606,96 +810,96 @@ begin
   if pg.PrevPage <> -1 then
   begin
     if nidx = 0 then
-      tp := Page [pg.PrevPage]
+      tp := Page[pg.PrevPage]
     else
-      tp := Page [pg.Node [nidx - 1].NextPage];
+      tp := Page[pg.Node[nidx - 1].NextPage];
 
     tidx := tp.Idx;
 
-    if DeleteKeyFromTree (tp, key) = 0 then
+    if DeleteKeyFromTree(tp, key) = 0 then
 
     begin       // The pg we deleted from is now empty.  Some adjustments must
                 // be made...
 
-      tp := Page [tidx];        // Make sure these still exist in the cache
-      pg := Page [pidx];
+      tp := Page[tidx];        // Make sure these still exist in the cache
+      pg := Page[pidx];
 
       if tp.Idx = pg.PrevPage then
       begin
         idx := 0;
-        br := Page [pg.Node [0].NextPage];
+        br := Page[pg.Node[0].NextPage];
         mp := 0;
       end
       else
       begin
         idx := nidx - 1;
         if idx = 0 then
-          br := Page [pg.PrevPage]
+          br := Page[pg.PrevPage]
         else
-          br := Page [pg.Node [idx - 1].NextPage];
+          br := Page[pg.Node[idx - 1].NextPage];
         mp := br.NodeCount;
       end;
 
       // Here:
       // tp is the empty pg
       // br is the non-empty pg to borrow or merge with
-      // pg.fNodes [idx] is the node on this pg to rotate around
+      // pg.fNodes[idx] is the node on this pg to rotate around
       // mp is the insertion pos on br.
       // if mp=0 then we're rotating left to the PrevPage - otherwise we're
-      // rotating right to pg.fNodes [idx]'s Next pg
+      // rotating right to pg.fNodes[idx]'s Next pg
 
       if br.NodeCount = 1 then  // merge with neighbour
       begin
         if mp = 0 then          // PageLeft is empty.  Move current key into it's
         begin                   // right branch
-          pg.fNodes [idx].NextPage := br.fPrevPage;
+          pg.fNodes[idx].NextPage := br.fPrevPage;
           br.fPrevPage := tp.PrevPage;
           pg.fPrevPage := br.Idx;
         end
         else                    // Current key's pg right is empty.  Move current
                                // key to it's left sibling's children
-          pg.fNodes [idx].NextPage := tp.PrevPage;
+          pg.fNodes[idx].NextPage := tp.PrevPage;
 
-        PutKeyOnPage (br, mp, pg.Node [idx]);
-        ResetNodeHeight (br, mp);
-        ResetNodeHeight (br, -1);
-        DeleteKeyFromPage (pg, idx);
-        DeleteOldPage (tp);
+        PutKeyOnPage(br, mp, pg.Node[idx]);
+        ResetNodeHeight(br, mp);
+        ResetNodeHeight(br, -1);
+        DeleteKeyFromPage(pg, idx);
+        DeleteOldPage(tp);
       end
       else                      // Borrow from neighbour
       begin
-        PutKeyOnPage (tp, 0, pg.Node [idx]);
+        PutKeyOnPage(tp, 0, pg.Node[idx]);
         if mp = 0 then
         begin
-          tp.fNodes [0].NextPage := br.PrevPage;
-          br.fPrevPage := br.Node [mp].NextPage;
-          br.fPrevPageHeight := br.Node [mp].NextPageHeight
+          tp.fNodes[0].NextPage := br.PrevPage;
+          br.fPrevPage := br.Node[mp].NextPage;
+          br.fPrevPageHeight := br.Node[mp].NextPageHeight
         end
         else
         begin
-          Dec (mp);
-          tp.fNodes [0].NextPage := tp.PrevPage;
-          tp.fPrevPage := br.Node [mp].NextPage;
+          Dec(mp);
+          tp.fNodes[0].NextPage := tp.PrevPage;
+          tp.fPrevPage := br.Node[mp].NextPage;
         end;
-        pg.fNodes [idx].key := br.Node [mp].key;
-        DeleteKeyFromPage (br, mp);
+        pg.fNodes[idx].key := br.Node[mp].key;
+        DeleteKeyFromPage(br, mp);
 
-        ResetNodeHeight (tp, -1);
-        ResetNodeHeight (tp, 0)
+        ResetNodeHeight(tp, -1);
+        ResetNodeHeight(tp, 0)
       end;
-      pg.Flags [flgDirty] := True;
-      br.Flags [flgDirty] := True;
+      pg.Flags[flgDirty] := True;
+      br.Flags[flgDirty] := True;
 
       if idx < pg.NodeCount then
-        ResetNodeHeight (pg, idx);
+        ResetNodeHeight(pg, idx);
       if idx > 0 then
-        ResetNodeHeight (pg, idx - 1);
-      ResetNodeHeight (pg, -1);
+        ResetNodeHeight(pg, idx - 1);
+      ResetNodeHeight(pg, -1);
     end
     else
     begin
-      pg := Page [pidx];
-      ResetNodeHeight (pg, nidx - 1);
+      pg := Page[pidx];
+      ResetNodeHeight(pg, nidx - 1);
     end
   end
   else
@@ -706,30 +910,30 @@ begin
       begin
         if fDelPIdx <> pidx then
         begin       // Move node to delete to the leaves
-          tp := Page [fDelPIdx];
-          tn := pg.Node [idx];
-          pg.fNodes [idx].key := tp.Node [fDelIdx].key;
-          tp.fNodes [fDelIdx].key := tn.Key;
-          tp.Flags [flgDirty] := True;
+          tp := Page[fDelPIdx];
+          tn := pg.Node[idx];
+          pg.fNodes[idx].key := tp.Node[fDelIdx].key;
+          tp.fNodes[fDelIdx].key := tn.Key;
+          tp.Flags[flgDirty] := True;
         end;
 
-        DeleteKeyFromPage (pg, idx)
+        DeleteKeyFromPage(pg, idx)
       end
     end
     else
       fOK := False
   end;
 
-  result := pg.NodeCount
+  Result := pg.NodeCount
 end;
 
 procedure TRawBTree.DeleteOldPage(page: TPage);
 begin
   page.fPrevPage := fFileInfo.FirstDeletedPage;
   fFileInfo.FirstDeletedPage := page.fIdx;
-  page.Flags [flgDirty] := True;
+  page.Flags[flgDirty] := True;
   page.fNodeCount := 0;
-  SetLength (page.fNodes, 0);
+  SetLength(page.fNodes, 0);
   fPageCache.Remove(page);
 end;
 
@@ -749,9 +953,9 @@ procedure TRawBTree.EndUpdate;
 begin
   if fUpdateCount > 0 then
   begin
-    Dec (fUpdateCount);
+    Dec(fUpdateCount);
     if fUpdateCount = 0 then
-      Flush (False)
+      Flush(False)
   end
 end;
 
@@ -761,37 +965,37 @@ end;
  | Find a key                                                           |
  |                                                                      |
  | Parameters:                                                          |
- |   key: string;               The key to find                         |
+ |   key: RawByteString;               The key to find                         |
  |   var DataRec: Integer       Returns the associated data rec         |
  |                                                                      |
  | The function returns True if the key was found.                      |
  *----------------------------------------------------------------------*)
-function TRawBTree.Find(key: string; var fKey : string): boolean;
+function TRawBTree.Find(key: RawByteString; var fKey: RawByteString): Boolean;
 var
-  pg : TPage;
-  idx : Integer;
+  pg: TPage;
+  idx: Integer;
 begin
   pg := RootPage;
   while pg <> Nil do
   begin
     if pg.FindNode(key, idx) then
     begin                               // Found it!
-      fKey := pg.Node [idx].key;
-      break;
+      fKey := pg.Node[idx].key;
+      Break;
     end;
 
     if idx = 0 then
       idx := pg.PrevPage                      // Search pg left
     else
-      idx := pg.node [idx-1].NextPage;        // Search node right
+      idx := pg.node[idx-1].NextPage;        // Search node right
 
     if idx > -1 then
-      pg := Page [idx]
+      pg := Page[idx]
     else
       pg := Nil
   end;
 
-  result := pg <> Nil
+  Result := pg <> Nil
 end;
 
 (*----------------------------------------------------------------------*
@@ -799,7 +1003,7 @@ end;
  |                                                                      |
  | Flush the cached pages, and optionally clear the cache.              |
  *----------------------------------------------------------------------*)
-procedure TRawBTree.Flush (clearPageCache : boolean);
+procedure TRawBTree.Flush(clearPageCache: Boolean);
 begin
   if fUpdateCount > 0 then Exit;
 
@@ -820,26 +1024,26 @@ end;
  |   proc: TBTreeForEachProc            The procedure to call for each  |
  |                                      key.                            |
  *----------------------------------------------------------------------*)
-procedure TRawBTree.ForEach(proc: TRawBTreeForEachProc; param : Integer);
+procedure TRawBTree.ForEach(proc: TRawBTreeForEachProc; param: Integer);
 var
-  continue : boolean;
+  continue: Boolean;
 
 //----------------------------------------------------------
 // Recursively call 'proc' for all the keys and children.
-  procedure DoForEach (pageNo : Integer);
+  procedure DoForEach(pageNo: Integer);
   var
-    i : Integer;
-    node : TNode;
-    pg : TPage;
+    i: Integer;
+    node: TNode;
+    pg: TPage;
 
   begin
     if not Continue then Exit;
 
-    pg := Page [pageNo];
+    pg := Page[pageNo];
     if pg.PrevPage <> -1 then
     begin                               // Do subkeys on pg left
-      DoForEach (pg.PrevPage);
-      pg := Page [pageNo]               // Original 'pg' may no have been
+      DoForEach(pg.PrevPage);
+      pg := Page[pageNo]               // Original 'pg' may no have been
                                         // deleted from the cache.  So make sure
                                         // it's reloaded
     end;
@@ -848,21 +1052,21 @@ var
       if continue then
       begin
                                         // Call the callback for the node
-        node := pg.Node [i];
-        Proc (node.key, param, continue);
+        node := pg.Node[i];
+        Proc(node.key, param, continue);
 
                                         // Do subkeys on node right
         if continue and (node.NextPage <> -1) then
         begin
-          DoForEach (node.NextPage);
-          pg := Page [pageNo]
+          DoForEach(node.NextPage);
+          pg := Page[pageNo]
         end
       end
   end;
 
 begin
   continue := True;
-  DoForEach (fFileInfo.RootPage)
+  DoForEach(fFileInfo.RootPage)
 end;
 
 (*----------------------------------------------------------------------*
@@ -870,9 +1074,9 @@ end;
  |                                                                      |
  | 'Get' method for CaseSensitive property                              |
  *----------------------------------------------------------------------*)
-function TRawBTree.GetCaseSensitive: boolean;
+function TRawBTree.GetCaseSensitive: Boolean;
 begin
-  result := (fFileInfo.Flags and fflgCaseSensitive) <> 0;
+  Result := (fFileInfo.Flags and fflgCaseSensitive) <> 0;
 end;
 
 (*----------------------------------------------------------------------*
@@ -883,15 +1087,15 @@ end;
 function TRawBTree.GetDuplicates: TBTreeDuplicates;
 begin
   if (fFileInfo.Flags and fflgDupAccept) <> 0 then
-    result := dupAccept
+    Result := dupAccept
   else
     if (fFileInfo.Flags and fflgDupError) <> 0 then
-      result := dupError
+      Result := dupError
     else
       if (fFileInfo.Flags and fflgDupReplace) <> 0 then
-        result := dupReplace
+        Result := dupReplace
       else
-        result := dupIgnore
+        Result := dupIgnore
 end;
 
 (*----------------------------------------------------------------------*
@@ -899,114 +1103,114 @@ end;
  |                                                                      |
  | 'Get' method for ExtraData property                                  |
  *----------------------------------------------------------------------*)
-function TRawBTree.GetExtraData: string;
+function TRawBTree.GetExtraData: RawByteString;
 begin
-  SetLength (result, fFileInfo.ExtraDataSize);
-  Move (fFileInfo.ExtraData [0], result [1], fFileInfo.ExtraDataSize)
+  SetLength(Result, fFileInfo.ExtraDataSize);
+  Move(fFileInfo.ExtraData[0], Result[1], fFileInfo.ExtraDataSize)
 end;
 
 (*----------------------------------------------------------------------*
  | function TRawBTree.GetPage                                           |
  |                                                                      |
- | 'Get' method for Page property.  Return Page [pageno]                |
+ | 'Get' method for Page property.  Return Page[pageno]                |
  *----------------------------------------------------------------------*)
-function TRawBTree.GetIndexOfKey(var key: string): Integer;
+function TRawBTree.GetIndexOfKey(var key: RawByteString): Integer;
 var
-  pg : TPage;
-  i, idx : Integer;
+  pg: TPage;
+  i, idx: Integer;
 begin
   pg := RootPage;
-  result := 0;
+  Result := 0;
   while pg <> Nil do
   begin
     if pg.FindNode(key, idx) then
     begin                               // Found it!
-      key := pg.Node [idx].key;
-      Inc (result, pg.PrevPageHeight);
-      Inc (result, idx);
+      key := pg.Node[idx].key;
+      Inc(Result, pg.PrevPageHeight);
+      Inc(Result, idx);
       for i := 0 to idx - 2 do
-        Inc (result, pg.Node [i].NextPageHeight);
-      break;
+        Inc(Result, pg.Node[i].NextPageHeight);
+      Break;
     end;
 
     if idx = 0 then
       idx := pg.PrevPage                      // Search pg left
     else
     begin
-      Inc (result, pg.PrevPageHeight);
+      Inc(Result, pg.PrevPageHeight);
 
-      Inc (result, idx);
+      Inc(Result, idx);
       for i := 0 to idx - 2 do
-        Inc (result, pg.Node [i].NextPageHeight);
-      idx := pg.node [idx-1].NextPage;        // Search node right
+        Inc(Result, pg.Node[i].NextPageHeight);
+      idx := pg.node[idx-1].NextPage;        // Search node right
     end;
 
     if idx > -1 then
-      pg := Page [idx]
+      pg := Page[idx]
     else
       pg := Nil
   end;
 
   if pg = Nil then
-    result := -1
+    Result := -1
 end;
 
-function TRawBTree.GetKey(idx: Integer): string;
+function TRawBTree.GetKey(idx: Integer): RawByteString;
 
-  function gk (root : TPage; idx : Integer) : string;
+  function gk(root: TPage; idx: Integer): RawByteString;
   var
-    i : Integer;
+    i: Integer;
   begin
     if root.PrevPage = -1 then
-      result := root.Node [idx].key
+      Result := root.Node[idx].key
     else
     begin
       if idx < root.PrevPageHeight then
-        result := gk (Page [root.PrevPage], idx)
+        Result := gk(Page[root.PrevPage], idx)
       else
       begin
-        Dec (idx, root.PrevPageHeight);
+        Dec(idx, root.PrevPageHeight);
 
         i := 0;
         while (i < root.NodeCount) and (idx > 0) do
         begin
-          if idx <= root.Node [i].NextPageHeight then
+          if idx <= root.Node[i].NextPageHeight then
           begin
-            result := gk (Page [root.Node [i].NextPage], idx - 1);
-            break
+            Result := gk(Page[root.Node[i].NextPage], idx - 1);
+            Break
           end;
 
-          Dec (idx, 1 + root.Node [i].NextPageHeight);
-          Inc (i)
+          Dec(idx, 1 + root.Node[i].NextPageHeight);
+          Inc(i)
         end;
 
         if idx = 0 then
-          result := root.Node [i].key
+          Result := root.Node[i].key
       end
     end
   end;
 begin
   if idx >= RecordCount then
     raise EBTree.Create(rstIndexExceedsBounds);
-  result := gk (RootPage, idx)
+  Result := gk(RootPage, idx)
 end;
 
-function TRawBTree.GetPage(pageNo: Integer) : TPage;
+function TRawBTree.GetPage(pageNo: Integer): TPage;
 var
-  idx : Integer;
+  idx: Integer;
 begin
   idx := fPageCache.ForEachIdx(CacheCheckProc, pageNo);
 
   if idx >= 0 then
   begin
-    result := TPage(fPageCache[idx]);
+    Result := TPage(fPageCache[idx]);
     fPageCache.BringToFront(idx)
   end
   else
   begin
-    result := TPage.Create(self, pageNo);
-    result.Load;
-    fPageCache.Add(result);
+    Result := TPage.Create(self, pageNo);
+    Result.Load;
+    fPageCache.Add(Result);
   end
 end;
 
@@ -1017,7 +1221,7 @@ end;
  *----------------------------------------------------------------------*)
 function TRawBTree.GetRecordCount: Integer;
 begin
-  result := fFileInfo.RecordCount;
+  Result := fFileInfo.RecordCount;
 end;
 
 (*----------------------------------------------------------------------*
@@ -1027,7 +1231,7 @@ end;
  *----------------------------------------------------------------------*)
 function TRawBTree.GetRootPage: TPage;
 begin
-  result := Page [fFileInfo.RootPage];
+  Result := Page[fFileInfo.RootPage];
 end;
 
 (*----------------------------------------------------------------------*
@@ -1037,19 +1241,19 @@ end;
  *----------------------------------------------------------------------*)
 procedure TRawBTree.Open;
 var
-  page0 : TPage;
-  id : string;
+  page0: TPage;
+  id: RawByteString;
 begin
-  if not FileExists (FileName) then
+  if not FileExists(FileName) then
   begin                                 // New file
-    f := TFileStream.Create (FileName, fmCreate);
+    f := TFileStream.Create(FileName, fmCreate);
     try
                                         // Create file info page and empty root page
       id := 'BTWoozle';
-      Move (id [1], fFileInfo.id [0], 8);
-      page0 := TPage.Create (self, 0);
+      Move(id[1], fFileInfo.id[0], 8);
+      page0 := TPage.Create(self, 0);
       try
-        page0.Flags [flgDirty] := True;
+        page0.Flags[flgDirty] := True;
         page0.Save;
       finally
         page0.Free
@@ -1059,14 +1263,14 @@ begin
       fFileInfo.Flags := fflgCaseSensitive;
       SaveFileInfo;
     finally
-      FreeAndNil (f)                    // Close newly created file
-    end
+      FreeAndNil(f);                    // Close newly created file
+    end;
   end;
 
                                         // Open existing file
-  f := TFileStream.Create (FileName, fmOpenReadWrite or fmShareDenyWrite);
+  f := TFileStream.Create(FileName, fmOpenReadWrite or fmShareDenyWrite);
                                         // Read file info page.
-  f.Read(fFileInfo, sizeof (fFileInfo));
+  f.Read(fFileInfo, SizeOf(fFileInfo));
 end;
 
 (*----------------------------------------------------------------------*
@@ -1078,61 +1282,61 @@ end;
  |                                                                      |
  | Parameters:                                                          |
  |   page: TPage;                       Root page of tree               |
- |   const key: string;                 The key to add                  |
+ |   const key: RawByteString;                 The key to add                  |
  |   DataRec: Integer                   DataRec associated with the key |
  |                                                                      |
  | The function returns a new root node if retval.NextPage <> -1        |
  *----------------------------------------------------------------------*)
-function TRawBTree.PutKeyInTree(pg : TPage; const key: string): TNode;
+function TRawBTree.PutKeyInTree(pg: TPage; const key: RawByteString): TNode;
 var
-  pidx, idx : Integer;
+  pidx, idx: Integer;
 begin
   pidx := pg.Idx;
-  if pg.FindNode (key, idx) then
+  if pg.FindNode(key, idx) then
     case Duplicates of
       dupIgnore, dupReplace :
         begin
           fOK := False;
 
-          if (Duplicates = dupReplace) and (key <> pg.fNodes [idx].key) then
+          if (Duplicates = dupReplace) and (key <> pg.fNodes[idx].key) then
           begin
-            pg.fNodes [idx].key := key;
+            pg.fNodes[idx].key := key;
             pg.Flags[flgDirty] := True
           end;
-          result.NextPage := -1;
+          Result.NextPage := -1;
           Exit;
         end;
       dupAccept :;
-      dupError  : raise EBTree.Create(Format (rstDuplicateKey, [key]));
+      dupError : raise EBTree.Create(Format(rstDuplicateKey, [key]));
     end;
 
   if pg.PrevPage = -1 then            // We're at the leaves.
   begin
-    result.key := key;
-    result.NextPage := -1;
-    result.NextPageHeight := 0;
-    result := PutKeyOnPage (pg, idx, result)
+    Result.key := key;
+    Result.NextPage := -1;
+    Result.NextPageHeight := 0;
+    Result := PutKeyOnPage(pg, idx, Result)
   end
   else
   begin                                 // Not at leaves - put key in pg left
     if idx > 0 then                     // or node right
     begin
-      result := PutKeyInTree (Page [pg.Node [idx - 1].NextPage], key);
-      ResetNodeHeight (pg, idx - 1);
+      Result := PutKeyInTree(Page[pg.Node[idx - 1].NextPage], key);
+      ResetNodeHeight(pg, idx - 1);
     end
     else
     begin
-      result := PutKeyInTree (Page [pg.PrevPage], key);
-      ResetNodeHeight (pg, -1)
+      Result := PutKeyInTree(Page[pg.PrevPage], key);
+      ResetNodeHeight(pg, -1)
     end;
 
                                         // If a node was passed out by inserting to
                                         // the child, put it on this pg.
-    if result.NextPage <> -1 then
+    if Result.NextPage <> -1 then
     begin
-      pg := Page [pidx];                // Just possible that the original pg is
+      pg := Page[pidx];                // Just possible that the original pg is
                                         // no longer in the cache.  Make sure it is.
-      result := PutKeyOnPage (pg, idx, result);
+      Result := PutKeyOnPage(pg, idx, Result);
     end
   end
 end;
@@ -1153,20 +1357,20 @@ end;
  |                                                                      |
  | Parameters:                                                          |
  |   page: TPage;               The page to put the node on.            |
- |   idx : Integer;             The position on the page to put the     |
+ |   idx: Integer;             The position on the page to put the     |
  |                              node.                                   |
- |   const memNode : TNode      The node to put.                        |
+ |   const memNode: TNode      The node to put.                        |
  |                                                                      |
  | The function returns a TNode.  If retval.NextPage is -1 then         |
  | retval is meaningless - otherwise it contains a node pointing to a   |
  | page of higher nodes to be inserted in a lower page.                 |
  *----------------------------------------------------------------------*)
-function TRawBTree.PutKeyOnPage(pg: TPage;  idx : Integer; const memNode : TNode) : TNode;
+function TRawBTree.PutKeyOnPage(pg: TPage;  idx: Integer; const memNode: TNode): TNode;
 var
-  i, iidx, ts : Integer;
-  newPage : TPage;
+  i, iidx, ts: Integer;
+  newPage: TPage;
 begin
-  if pg.fTotalDataLen + SizeOf (TNodeHeader) + Length (memNode.key) > PAGE_DATA_SIZE then
+  if pg.fTotalDataLen + SizeOf(TNodeHeader) + Length(memNode.key) > PAGE_DATA_SIZE then
 
   begin                 // Key doesn't fit on the pg.
                         // Split the pg into pg & newPage, and
@@ -1176,16 +1380,16 @@ begin
     iidx := 0;          // Find mid point - iidx
     while (ts <= PAGE_DATA_SIZE div 2) and (iidx < pg.NodeCount) do
     begin
-      Inc (ts, Length (pg.Node [iidx].key) + SizeOf (TNodeHeader));
-      Inc (iidx)
+      Inc(ts, Length(pg.Node[iidx].key) + SizeOf(TNodeHeader));
+      Inc(iidx)
     end;
 
-    Dec (iidx);
+    Dec(iidx);
 
                         // Passout mid point key
     if idx = iidx then
     begin
-      result := memNode;
+      Result := memNode;
       ts := iidx
     end
     else
@@ -1195,26 +1399,26 @@ begin
       else
       begin
         ts := iidx;
-        Dec (iidx)
+        Dec(iidx)
       end;
-      result := pg.Node [iidx];
+      Result := pg.Node[iidx];
     end;
 
     newPage := CreateNewPage;
-    newPage.fPrevPage := result.NextPage;
-    result.NextPage := newPage.fIdx;
+    newPage.fPrevPage := Result.NextPage;
+    Result.NextPage := newPage.fIdx;
 
                         // Move keys above midpoint to new pg.
 
     newPage.fNodeCount := pg.NodeCount - ts;
-    if Length (newPage.fNodes) < newPage.fNodeCount then
-      SetLength (newPage.fNodes, newPage.fNodeCount);
+    if Length(newPage.fNodes) < newPage.fNodeCount then
+      SetLength(newPage.fNodes, newPage.fNodeCount);
 
     for i := ts to pg.NodeCount - 1 do
     begin
-      newPage.fNodes [i - ts] := pg.Node [i];
-//      newPage.InsertNode (i - ts, pg.Node [i]);
-      Inc (newPage.fTotalDataLen, SizeOf (TNodeHeader) + Length (pg.Node [i].key));
+      newPage.fNodes[i - ts] := pg.Node[i];
+//      newPage.InsertNode(i - ts, pg.Node[i]);
+      Inc(newPage.fTotalDataLen, SizeOf(TNodeHeader) + Length(pg.Node[i].key));
     end;
 
                         // Truncate current pg
@@ -1225,23 +1429,23 @@ begin
                         // Recalc TotalDataLen for truncated pg
     pg.fTotalDataLen := 0;
     for i := 0 to iidx - 1 do
-      Inc (pg.fTotalDataLen, SizeOf (TNodeHeader) + Length (pg.Node [i].key));
+      Inc(pg.fTotalDataLen, SizeOf(TNodeHeader) + Length(pg.Node[i].key));
 
     if ts <> iidx then
       if idx <= iidx then // Put the new key on the old or new pg.
-        PutKeyOnPage (pg, idx, memNode)
+        PutKeyOnPage(pg, idx, memNode)
       else
-        PutKeyOnPage (newPage, idx - pg.NodeCount - 1, memNode);
+        PutKeyOnPage(newPage, idx - pg.NodeCount - 1, memNode);
 
-    ResetNodeHeight (newPage, -1);
-    result.NextPageHeight := newPage.Height;
+    ResetNodeHeight(newPage, -1);
+    Result.NextPageHeight := newPage.Height;
   end
   else                  // pg not full - just add the node
   begin
-    pg.InsertNode (idx, memNode);
-    Inc (pg.fTotalDataLen, SizeOf (TNodeHeader) + Length (memNode.key));
-    pg.Flags [flgDirty] := True;
-    result.NextPage := -1;  // Don't pass out anything.
+    pg.InsertNode(idx, memNode);
+    Inc(pg.fTotalDataLen, SizeOf(TNodeHeader) + Length(memNode.key));
+    pg.Flags[flgDirty] := True;
+    Result.NextPage := -1;  // Don't pass out anything.
   end
 end;
 
@@ -1252,9 +1456,9 @@ end;
  *----------------------------------------------------------------------*)
 procedure TRawBTree.ResetNodeHeight(pg: TPage; idx: Integer);
 var
-  node : TNode;
-  pint : PInteger;
-  val : Integer;
+  node: TNode;
+  pint: PInteger;
+  val: Integer;
 begin
   if idx = -1 then
   begin
@@ -1262,34 +1466,34 @@ begin
     if pg.PrevPage = -1 then
       val := 0
     else
-      val := Page [pg.PrevPage].Height
+      val := Page[pg.PrevPage].Height
   end
   else
   begin
     if idx >= pg.NodeCount then
       exit;
-    PInt := @pg.fNodes [idx].NextPageHeight;
-    node := pg.Node [idx];
+    PInt := @pg.fNodes[idx].NextPageHeight;
+    node := pg.Node[idx];
     if node.NextPage = -1 then
       val := 0
     else
-      val := Page [node.NextPage].Height
+      val := Page[node.NextPage].Height
   end;
 
   if PInt^ <> val then
   begin
     PInt^ := val;
-    pg.Flags [flgDirty] := True
+    pg.Flags[flgDirty] := True
   end
 end;
 
 procedure TRawBTree.SaveFileInfo;
 begin
   if fUpdateCount > 0 then Exit;
-  if Assigned (f) then
+  if Assigned(f) then
   begin
     f.Seek(0, soFromBeginning);
-    f.Write (fFileInfo, SizeOf (fFileInfo))
+    f.Write(fFileInfo, SizeOf(fFileInfo))
   end
 end;
 
@@ -1299,20 +1503,20 @@ end;
  | 'Set' method for CaseSensitive property.  The btree must be empty    |
  | to call this.                                                        |
  *----------------------------------------------------------------------*)
-procedure TRawBTree.SetCaseSensitive(const Value: boolean);
+procedure TRawBTree.SetCaseSensitive(const Value: Boolean);
 begin
   if Value <> CaseSensitive then
   begin
-    if Assigned (f) then
+    if Assigned(f) then
       if RootPage.NodeCount > 0 then
-        raise EBTree.Create (rstMustBeEmpty);
+        raise EBTree.Create(rstMustBeEmpty);
 
     if Value then
       fFileInfo.Flags := fFileInfo.Flags or fflgCaseSensitive
     else
       fFileInfo.Flags := fFileInfo.Flags and (not fflgCaseSensitive);
 
-    if Assigned (f) then
+    if Assigned(f) then
       SaveFileInfo
   end
 end;
@@ -1327,19 +1531,19 @@ procedure TRawBTree.SetDuplicates(const Value: TBTreeDuplicates);
 begin
   if Value <> Duplicates then
   begin
-    if Assigned (f) then
+    if Assigned(f) then
       if RootPage.NodeCount > 0 then
-        raise EBTree.Create (rstMustBeEmpty);
+        raise EBTree.Create(rstMustBeEmpty);
 
     fFileInfo.Flags := fFileInfo.Flags and not fflgDupFlags;
 
     case Value of
-      dupAccept : fFileInfo.Flags := fFileInfo.Flags or fflgDupAccept;
-      dupError : fFileInfo.Flags := fFileInfo.Flags or fflgDupError;
-      dupReplace : fFileInfo.Flags := fFileInfo.Flags or fflgDupReplace;
+      dupAccept: fFileInfo.Flags := fFileInfo.Flags or fflgDupAccept;
+      dupError: fFileInfo.Flags := fFileInfo.Flags or fflgDupError;
+      dupReplace: fFileInfo.Flags := fFileInfo.Flags or fflgDupReplace;
     end;
 
-    if Assigned (f) then
+    if Assigned(f) then
       SaveFileInfo
   end
 end;
@@ -1349,14 +1553,14 @@ end;
  |                                                                      |
  | 'Set' method for ExtraData property                                  |
  *----------------------------------------------------------------------*)
-procedure TRawBTree.SetExtraData(Value: string);
+procedure TRawBTree.SetExtraData(Value: RawByteString);
 begin
-  if Length (value) > SizeOf (fFileInfo.ExtraData) then
-    SetLength (value, SizeOf (fFileInfo.ExtraData));
+  if Length(value) > SizeOf(fFileInfo.ExtraData) then
+    SetLength(value, SizeOf(fFileInfo.ExtraData));
 
-  fFileInfo.ExtraDataSize := Length (Value);
-  if Length (Value) > 0 then
-    Move (Value [1], fFileInfo.ExtraData [0], Length (value));
+  fFileInfo.ExtraDataSize := Length(Value);
+  if Length(Value) > 0 then
+    Move(Value[1], fFileInfo.ExtraData[0], Length(value));
 
   SaveFileInfo
 end;
@@ -1368,12 +1572,12 @@ end;
  |                                                                      |
  | Constructor for TPage                                                |
  *----------------------------------------------------------------------*)
-constructor TPage.Create (AOwner : TRawBTree; AIdx : Integer);
+constructor TPage.Create(AOwner: TRawBTree; AIdx: Integer);
 begin
   fOwner := AOwner;
   fPrevPage := -1;
   fIdx := AIdx;
-  SetLength (fNodes, 384);
+  SetLength(fNodes, 384);
 end;
 
 (*----------------------------------------------------------------------*
@@ -1385,7 +1589,7 @@ destructor TPage.Destroy;
 begin
   Save;
 
-  finalize (fNodes);            // Free memory used by the fNodes dynamic array
+  Finalize(fNodes);             // Free memory used by the fNodes dynamic array
   inherited;
 end;
 
@@ -1397,47 +1601,47 @@ end;
  | inserted.                                                            |
  |                                                                      |
  | Parameters:                                                          |
- |   const st: string;          The key to find                         |
+ |   const st: RawByteString;          The key to find                         |
  |  var idx: Integer            If the key was found, returns the       |
  |                              index.  If it wasn't found, returns the |
  |                              insertion position.                     |
  |                                                                      |
  | The function returns True if the key was found.                      |
  *----------------------------------------------------------------------*)
-function TPage.FindNode(const st: string; var idx: Integer): boolean;
+function TPage.FindNode(const st: RawByteString; var idx: Integer): Boolean;
 
 //------------------------------------------------------
 // Binary search the page
-  function bsearch (s, e : Integer) : boolean;
+  function bsearch(s, e: Integer): Boolean;
   var
-    cmp : Integer;
+    cmp: Integer;
   begin
     if e >= s then
     begin
       idx := s + (e - s) div 2;
 
-      cmp := Owner.CompareKeys (st, Node [idx].key);
+      cmp := Owner.CompareKeys(st, Node[idx].key);
 
       if cmp < 0 then
-        result := bsearch (s, idx - 1)
+        Result := bsearch(s, idx - 1)
       else
         if cmp > 0 then
-          result := bsearch (idx + 1, e)
+          Result := bsearch(idx + 1, e)
         else
-          result := True
+          Result := True
     end
     else
-      result := False;
+      Result := False;
   end;
 
 begin
   idx := 0;
-  result := bsearch (0, NodeCount - 1);
+  Result := bsearch(0, NodeCount - 1);
 
-  if (not result) and (idx < NodeCount) then
+  if (not Result) and (idx < NodeCount) then
   // Adjust 'idx' so that it contains the correct insertion point
-    if Owner.CompareKeys (Node [idx].key, st) < 0 then
-      Inc (idx)
+    if Owner.CompareKeys(Node[idx].key, st) < 0 then
+      Inc(idx)
 end;
 
 (*----------------------------------------------------------------------*
@@ -1445,9 +1649,9 @@ end;
  |                                                                      |
  | 'Get' method for Flags property                                      |
  *----------------------------------------------------------------------*)
-function TPage.GetFlags(bits: Integer): boolean;
+function TPage.GetFlags(bits: Integer): Boolean;
 begin
-  result := (fFlags and bits) = bits;
+  Result := (fFlags and bits) = bits;
 end;
 
 (*----------------------------------------------------------------------*
@@ -1457,18 +1661,18 @@ end;
  *----------------------------------------------------------------------*)
 function TPage.GetHeight: Integer;
 var
-  i : Integer;
+  i: Integer;
 begin
-  result := NodeCount + PrevPageHeight;
+  Result := NodeCount + PrevPageHeight;
   for i := 0 to NodeCount - 1 do
-    Inc (result, Node [i].NextPageHeight)
+    Inc(Result, Node[i].NextPageHeight)
 end;
 
 function TPage.GetNode(idx: Integer): TNode;
 begin
   if idx = -1 then
     idx := NodeCount - 1;
-  result := fNodes [idx];
+  Result := fNodes[idx];
 end;
 
 (*----------------------------------------------------------------------*
@@ -1487,20 +1691,20 @@ begin
 
                                         // Grow the dynamic array if there's
                                         // no room
-  if NodeCount = Length (fNodes) then
-    SetLength (fNodes, Length (fNodes) + 64);
+  if NodeCount = Length(fNodes) then
+    SetLength(fNodes, Length(fNodes) + 64);
 
   if idx < NodeCount then               // If we're inserting within the existing
                                         // nodes, create a space by moving nodes.
   begin
-    Move (fNodes [idx], fNodes [idx + 1], (NodeCount - idx) * sizeof (TNode));
+    Move(fNodes[idx], fNodes[idx + 1], (NodeCount - idx) * SizeOf(TNode));
                                         // Very important to clear the space -
                                         // otherwise stings will go mad.
-    FillChar (fNodes [idx], SizeOf (TNode), 0);
+    FillChar(fNodes[idx], SizeOf(TNode), 0);
   end;
 
-  fNodes [idx] := node;
-  Inc (fNodeCount)
+  fNodes[idx] := node;
+  Inc(fNodeCount)
 end;
 
 (*----------------------------------------------------------------------*
@@ -1510,44 +1714,44 @@ end;
  *----------------------------------------------------------------------*)
 procedure TPage.Load;
 var
-  pr : TPageRec;
-  i : Integer;
-  p : PChar;
-  pnh : PNodeHeader;
-  st : string;
+  pr: TPageRec;
+  i: Integer;
+  p: PAnsiChar;
+  pnh: PNodeHeader;
+  st: RawByteString;
 begin
         // Read the page
-  Owner.f.Seek(SizeOf (TFileInfo) + fIdx * sizeof (TPageRec), soFromBeginning);
-  Owner.f.Read(pr, sizeof (pr));
+  Owner.f.Seek(SizeOf(TFileInfo) + fIdx * SizeOf(TPageRec), soFromBeginning);
+  Owner.f.Read(pr, SizeOf(pr));
 
         // Get headeer info
   self.fFlags := pr.Header.Flags;
   self.fPrevPage := pr.Header.PrevPage;
   self.fPrevPageHeight := pr.Header.PrevPageHeight;
 
-  p := @pr.Data [0];
-  if pr.Header.KeysOnPage > Length (fNodes) then
-    SetLength (fNodes, pr.Header.KeysOnPage);
+  p := @pr.Data[0];
+  if pr.Header.KeysOnPage > Length(fNodes) then
+    SetLength(fNodes, pr.Header.KeysOnPage);
 
   fNodeCount := 0;
         // Decode the nodes.
-  for i := 0 to Integer (pr.Header.KeysOnPage) - 1 do
+  for i := 0 to Integer(pr.Header.KeysOnPage) - 1 do
   begin
-    pnh := PNodeHeader (p);
-    Inc (p, SizeOf (TNodeHeader));
-    Inc (fTotalDataLen, sizeof (TNodeHeader) + pnh^.KeyLen);
+    pnh := PNodeHeader(p);
+    Inc(p, SizeOf(TNodeHeader));
+    Inc(fTotalDataLen, SizeOf(TNodeHeader) + pnh^.KeyLen);
 
-    SetString (st, p, pnh^.KeyLen);
-    Inc (p, pnh^.KeyLen);
+    SetString(st, p, pnh^.KeyLen);
+    Inc(p, pnh^.KeyLen);
 
-    fNodes [fNodeCount].key := st;
-    fNodes [fNodeCount].NextPage := pnh^.NextPage;
-    fNodes [fNodeCount].NextPageHeight := pnh^.NextPageHeight;
+    fNodes[fNodeCount].key := RawByteString(st);
+    fNodes[fNodeCount].NextPage := pnh^.NextPage;
+    fNodes[fNodeCount].NextPageHeight := pnh^.NextPageHeight;
 
-    Inc (fNodeCount)
+    Inc(fNodeCount)
   end;
 
-  Flags [flgDirty] := False
+  Flags[flgDirty] := False
 end;
 
 (*----------------------------------------------------------------------*
@@ -1557,41 +1761,41 @@ end;
  *----------------------------------------------------------------------*)
 procedure TPage.Save;
 var
-  pr : TPageRec;
-  i : Integer;
-  p : PChar;
-  pnh : PNodeHeader;
-  st : string;
-  nd : TNode;
+  pr: TPageRec;
+  i: Integer;
+  p: PAnsiChar;
+  pnh: PNodeHeader;
+  st: RawByteString;
+  nd: TNode;
 begin
-  if not Flags [flgDirty] then Exit;    // No need to save
+  if not Flags[flgDirty] then Exit;    // No need to save
 
   pr.Header.Flags := fFlags;            // Set the header info.
   pr.Header.KeysOnPage := NodeCount;
   pr.Header.PrevPage := PrevPage;
   pr.Header.PrevPageHeight := PrevPageHeight;
-  FillChar (pr.Data, SizeOf (pr.Data), 0);
+  FillChar(pr.Data, SizeOf(pr.Data), 0);
 
-  p := @pr.Data [0];
+  p := @pr.Data[0];
                                         // Encode the nodes
   for i := 0 to NodeCount - 1 do
   begin
-    nd := Node [i];
-    pnh := PNodeHeader (p);
+    nd := Node[i];
+    pnh := PNodeHeader(p);
     pnh^.NextPage := nd.NextPage;
     pnh^.NextPageHeight := nd.NextPageHeight;
     st := nd.key;
-    pnh^.KeyLen := Length (st);
+    pnh^.KeyLen := Length(st);
 
-    Inc (p, SizeOf (TNodeHeader));
-    Move (st [1], p^, pnh^.KeyLen);
-    Inc (p, pnh^.KeyLen)
+    Inc(p, SizeOf(TNodeHeader));
+    Move(st[1], p^, pnh^.KeyLen);
+    Inc(p, pnh^.KeyLen)
   end;
                                         // Write the data
-  Owner.f.Seek(SizeOf (TFileInfo) + fIdx * sizeof (TPageRec), soFromBeginning);
-  Owner.f.Write(pr, sizeof (pr));
+  Owner.f.Seek(SizeOf(TFileInfo) + fIdx * SizeOf(TPageRec), soFromBeginning);
+  Owner.f.Write(pr, SizeOf(pr));
 
-  Flags [flgDirty] := False
+  Flags[flgDirty] := False
 end;
 
 (*----------------------------------------------------------------------*
@@ -1599,7 +1803,7 @@ end;
  |                                                                      |
  | 'Set' method for flags property                                      |
  *----------------------------------------------------------------------*)
-procedure TPage.SetFlags(bits: Integer; const Value: boolean);
+procedure TPage.SetFlags(bits: Integer; const Value: Boolean);
 begin
   if Value then
     fFlags := fFlags or bits
@@ -1654,28 +1858,28 @@ begin
   inherited;
 end;
 
-function TRawBTreeIterator.Find(var key: string): boolean;
+function TRawBTreeIterator.Find(var key: RawByteString): Boolean;
 var
-  pageNo, idx : Integer;
-  pg : TPage;
-  found : boolean;
+  pageNo, idx: Integer;
+  pg: TPage;
+  found: Boolean;
 begin
   ClearPageStack;
   pageNo := BTree.fFileInfo.RootPage;
   repeat
-    pg := BTree.Page [pageNo];
+    pg := BTree.Page[pageNo];
     found := pg.FindNode(key, idx);
     fStack.Push(TIteratorNode.Create(pageNo, idx));
     if not found then
       if idx = 0 then
         pageNo := pg.PrevPage
       else
-        pageNo := pg.Node [idx - 1].NextPage
+        pageNo := pg.Node[idx - 1].NextPage
   until found or (pageNo = -1);
 
-  result := found;
+  Result := found;
   if found then
-    key := pg.Node [idx].key
+    key := pg.Node[idx].key
 end;
 
 (*----------------------------------------------------------------------*
@@ -1684,16 +1888,16 @@ end;
  | Iterate to the first node in the index and return it's data          |
  |                                                                      |
  | Parameters:                                                          |
- |   var key: string;           Returns the key of the first node       |
+ |   var key: RawByteString;           Returns the key of the first node       |
  |   var value: Integer         Returns the DataRec associated with the |
  |                              key                                     |
  |                                                                      |
  | The function returns True if there was a first node.                 |
  *----------------------------------------------------------------------*)
-function TRawBTreeIterator.First(var key: string): boolean;
+function TRawBTreeIterator.First(var key: RawByteString): Boolean;
 var
-  pageNo : Integer;
-  pg : TPage;
+  pageNo: Integer;
+  pg: TPage;
 begin
   ClearPageStack;
   pageNo := BTree.fFileInfo.RootPage;
@@ -1701,19 +1905,25 @@ begin
     pg := BTree.Page[pageNo];
 
     if (pg.PrevPage = -1) and (pg.NodeCount = 0) then
-      break;    // Empty tree containing empty root pg.
+      Break;    // Empty tree containing empty root pg.
 
-    fStack.Push(TIteratorNode.Create (pageNo, 0));
+    fStack.Push(TIteratorNode.Create(pageNo, 0));
     pageNo := pg.PrevPage
   until pageNo = -1;
 
   if pg.NodeCount > 0 then
   begin
-    key := pg.Node [0].key;
-    result := True
+    key := pg.Node[0].key;
+    Result := True
   end
   else
-    result := False
+    Result := False
+end;
+
+function TRawBTreeIterator.IntToBin(i: Integer): RawByteString;
+begin
+  SetLength(Result, SizeOf(Integer));
+  Move(i, Result[1], SizeOf(Integer));
 end;
 
 (*----------------------------------------------------------------------*
@@ -1722,16 +1932,16 @@ end;
  | Iterate to the last node in the index and return it's data           |
  |                                                                      |
  | Parameters:                                                          |
- |   var key: string;           Returns the key of the last node        |
+ |   var key: RawByteString;           Returns the key of the last node        |
  |   var value: Integer         Returns the DataRec associated with the |
  |                              key                                     |
  |                                                                      |
  | The function returns True if there was a last node.                  |
  *----------------------------------------------------------------------*)
-function TRawBTreeIterator.Last(var key: string): boolean;
+function TRawBTreeIterator.Last(var key: RawByteString): Boolean;
 var
-  pageNo : Integer;
-  pg : TPage;
+  pageNo: Integer;
+  pg: TPage;
 begin
   ClearPageStack;
   pageNo := BTree.fFileInfo.RootPage;
@@ -1739,19 +1949,19 @@ begin
     pg := BTree.Page[pageNo];
 
     if (pg.PrevPage = -1) and (pg.NodeCount = 0) then
-      break;
+      Break;
 
-    fStack.Push(TIteratorNode.Create (pageNo, pg.NodeCount - 1));
-    pageNo := pg.Node [-1].NextPage
+    fStack.Push(TIteratorNode.Create(pageNo, pg.NodeCount - 1));
+    pageNo := pg.Node[-1].NextPage
   until pg.PrevPage = -1;
 
   if pg.NodeCount > 0 then
   begin
-    key := pg.Node [-1].key;
-    result := True
+    key := pg.Node[-1].key;
+    Result := True
   end
   else
-    result := False
+    Result := False
 end;
 
 (*----------------------------------------------------------------------*
@@ -1760,39 +1970,36 @@ end;
  | Iterate to the next node in the index and return it's data.          |
  |                                                                      |
  | Parameters:                                                          |
- |   var key: string;           Returns the key of the next node        |
+ |   var key: RawByteString;           Returns the key of the next node        |
  |   var value: Integer         Returns the DataRec associated with the |
  |                              key                                     |
  |                                                                      |
  | The function returns True if there was a next node.                  |
  *----------------------------------------------------------------------*)
-function TRawBTreeIterator.Next(var key: string): boolean;
+function TRawBTreeIterator.Next(var key: RawByteString): Boolean;
 var
-  pg : TPage;
-  node : TIteratorNode;
-  tmp, tmp1 : Integer;
-
+  pg: TPage;
+  node: TIteratorNode;
+  tmp, tmp1: Integer;
 begin
   pg := Nil;
   node := Nil;
   if fStack.Count > 0 then
   begin
-    node := TIteratorNode (fStack.Pop);         // Pop previously returned node
+    node := TIteratorNode(fStack.Pop);         // Pop previously returned node
     pg := BTree.Page[node.PageNo];
-
                                                 // Are there children?
-    if pg.Node [node.fKeyIdx].NextPage <> -1 then
+    if pg.Node[node.fKeyIdx].NextPage <> -1 then
     begin
       fStack.Push(node);
                                                 // Goto children...
       pg := BTree.Page[pg.Node[node.fKeyIdx].NextPage];
       node := TIteratorNode.Create(pg.fIdx, 0);
-
                                                 // ... then Left, Left, Left!
       while pg.PrevPage <> -1 do
       begin
         fStack.Push(node);
-        pg := BTree.Page [pg.PrevPage];
+        pg := BTree.Page[pg.PrevPage];
         node := TIteratorNode.Create(pg.fIdx, 0)
       end;
 
@@ -1800,39 +2007,39 @@ begin
     end                                         // Can we go right ?
     else
       if node.fKeyIdx < pg.NodeCount - 1 then
-        Inc (node.fKeyIdx)
+        Inc(node.fKeyIdx)
       else
       repeat                                    // No children - and can't go right
         tmp := node.PageNo;
-        FreeAndNil (node);
+        FreeAndNil(node);
         if fStack.Count > 0 then
         begin                                   // Pop a lower node.
-          node := TIteratorNode (fStack.Pop);
+          node := TIteratorNode(fStack.Pop);
           pg := BTree.Page[node.PageNo];
 
           if (node.fKeyIdx = 0) then
             tmp1 := pg.PrevPage
           else
-            tmp1 := pg.Node [node.fKeyIdx - 1].NextPage;
+            tmp1 := pg.Node[node.fKeyIdx - 1].NextPage;
 
           if tmp <> tmp1 then                   // If we we came from the node's children...
-            Inc (node.fKeyIdx);                 // .. go right, or cycle round to pop another
+            Inc(node.fKeyIdx);                 // .. go right, or cycle round to pop another
                                                 // pg.
           if node.fKeyIdx < pg.NodeCount then
-            break
+            Break
         end
-        else break
+        else Break
       until False
   end;
 
-  if Assigned (node) then                       // Did we find a next node?
+  if Assigned(node) then                        // Did we find a next node?
   begin
     fStack.Push(node);                          // Push it, for next 'next' or 'prev'
-    key := pg.Node [node.fKeyIdx].key;
-    result := True
+    key := pg.Node[node.fKeyIdx].key;
+    Result := True
   end
   else
-    result := False
+    Result := False
 end;
 
 (*----------------------------------------------------------------------*
@@ -1841,15 +2048,15 @@ end;
  | Iterate to the previous node in the index and return it's data.      |
  |                                                                      |
  | Parameters:                                                          |
- |   var key: string;           Returns the key of the previous node    |
+ |   var key: RawByteString;           Returns the key of the previous node    |
  |   var value: Integer         Returns the DataRec associated with the |
  |                              key                                     |
  |                                                                      |
  | The function returns True if there was a previous node.              |
  *----------------------------------------------------------------------*)
-function TRawBTreeIterator.Prev(var key: string): boolean;
+function TRawBTreeIterator.Prev(var key: RawByteString): Boolean;
 begin
-  result := False;              // Not yet implemented!
+  Result := False;              // Not yet implemented!
 end;
 
 { TIteratorNode }
@@ -1867,59 +2074,59 @@ end;
 
 { TBTree }
 
-function TBTree.AddKey(const key: string; DataRec: Integer) : boolean;
+function TBTree.AddKey(const key: RawByteString; DataRec: Integer): Boolean;
 begin
-  result := inherited AddKey (key + IntToBin (DataRec))
+  Result := inherited AddKey(key + IntToBin(DataRec))
 end;
 
-function TBTree.CompareKeys(const k1, k2: string): Integer;
+function TBTree.CompareKeys(const k1, k2: RawByteString): Integer;
 begin
   if CaseSensitive then
-    result := CompareStr (Copy (k1, 1, Length (k1) - SizeOf (Integer)), Copy (k2, 1, Length (k2) - SizeOf (Integer)))
+    Result := CompareStr(Copy(k1, 1, Length(k1) - SizeOf(Integer)), Copy(k2, 1, Length(k2) - SizeOf(Integer)))
   else
-    result := CompareText (Copy (k1, 1, Length (k1) - SizeOf (Integer)), Copy (k2, 1, Length (k2) - SizeOf (Integer)))
+    Result := CompareText(Copy(k1, 1, Length(k1) - SizeOf(Integer)), Copy(k2, 1, Length(k2) - SizeOf(Integer)))
 end;
 
-function TBTree.DeleteKey(const key: string) : boolean;
+function TBTree.DeleteKey(const key: RawByteString): Boolean;
 begin
-  result := inherited DeleteKey (key + StringOfChar (#0, SizeOf (Integer)));
+  Result := inherited DeleteKey(key + IntToBin(0));
 end;
 
-function TBTree.ExtractDataRec(const key: string): Integer;
+function TBTree.ExtractDataRec(const key: RawByteString): Integer;
 begin
-  Move ((PChar (key) + Length (key) - 4)^, result, SizeOf (result))
+  Move((PAnsiChar(key) + Length(key) - 4)^, Result, SizeOf(Result))
 end;
 
-function TBTree.Find(key: string; var dataRec: Integer): boolean;
+function TBTree.Find(key: RawByteString; var dataRec: Integer): Boolean;
 var
-  k : string;
+  k: RawByteString;
 begin
-  result := inherited Find (key + StringOfChar (#0, SizeOf (Integer)), k);
-  if result then
-    dataRec := ExtractDataRec (k)
+  Result := inherited Find(key + IntToBin(0), k);
+  if Result then
+    dataRec := ExtractDataRec(k)
 end;
 
 procedure TBTree.ForEach(proc: TBTreeForEachProc);
 var
-  continue : boolean;
-  k : string;
+  continue: Boolean;
+  k: RawByteString;
 
 //----------------------------------------------------------
 // Recursively call 'proc' for all the keys and children.
-  procedure DoForEach (pageNo : Integer);
+  procedure DoForEach(pageNo: Integer);
   var
-    i : Integer;
-    node : TNode;
-    pg : TPage;
+    i: Integer;
+    node: TNode;
+    pg: TPage;
 
   begin
     if not Continue then Exit;
 
-    pg := Page [pageNo];
+    pg := Page[pageNo];
     if pg.PrevPage <> -1 then
     begin                               // Do subkeys on pg left
-      DoForEach (pg.PrevPage);
-      pg := Page [pageNo]               // Original 'pg' may no have been
+      DoForEach(pg.PrevPage);
+      pg := Page[pageNo]               // Original 'pg' may no have been
                                         // deleted from the cache.  So make sure
                                         // it's reloaded
     end;
@@ -1928,96 +2135,96 @@ var
       if continue then
       begin
                                         // Call the callback for the node
-        node := pg.Node [i];
-        k := Copy (node.key, 1, Length (node.key) - 4);
+        node := pg.Node[i];
+        k := Copy(node.key, 1, Length(node.key) - 4);
 
-        Proc (k, ExtractDataRec (node.key), continue);
+        Proc(k, ExtractDataRec(node.key), continue);
 
                                         // Do subkeys on node right
         if continue and (node.NextPage <> -1) then
         begin
-          DoForEach (node.NextPage);
-          pg := Page [pageNo]
+          DoForEach(node.NextPage);
+          pg := Page[pageNo]
         end
       end
   end;
 
 begin
   continue := True;
-  DoForEach (fFileInfo.RootPage)
+  DoForEach(fFileInfo.RootPage)
 end;
 
-function TBTree.GetDataRec(const key: string): Integer;
+function TBTree.GetDataRec(const key: RawByteString): Integer;
 begin
-  if not Find (key, result) then
-    result := -1
+  if not Find(key, Result) then
+    Result := -1
 end;
 
-function TBTree.GetIndexOfKey(var key: string;
+function TBTree.GetIndexOfKey(var key: RawByteString;
   var dataRec: Integer): Integer;
 var
-  k : string;
+  k: RawByteString;
 begin
-  k := key + StringOfChar (#0, 4);
-  result := inherited GetIndexOfKey (k);
-  if result > -1 then
+  k := key + IntToBin(0);
+  Result := inherited GetIndexOfKey(k);
+  if Result > -1 then
   begin
-    dataRec := ExtractDataRec (k);
-    key := Copy (k, 1, Length (k) - SizeOf (Integer))
+    dataRec := ExtractDataRec(k);
+    key := Copy(k, 1, Length(k) - SizeOf(Integer))
   end
 end;
 
-function TBTree.GetKey(idx: Integer; var dataRec : Integer): string;
+function TBTree.GetKey(idx: Integer; var dataRec: Integer): RawByteString;
 begin
-  result := inherited GetKey (idx);
-  if result <> '' then
+  Result := inherited GetKey(idx);
+  if Result <> '' then
   begin
-    dataRec := ExtractDataRec (result);
-    SetLength (result, Length (result) - sizeof (Integer))
+    dataRec := ExtractDataRec(Result);
+    SetLength(Result, Length(Result) - SizeOf(Integer))
   end
   else
     dataRec := -1
 end;
 
-function TBTree.InternalGetKey(idx: Integer): string;
+function TBTree.InternalGetKey(idx: Integer): RawByteString;
 var
-  dr : Integer;
+  dr: Integer;
 begin
-  result := GetKey (idx, dr)
+  Result := GetKey(idx, dr)
 end;
 
-function TBTree.IntToBin(i: Integer): string;
+function TBTree.IntToBin(i: Integer): RawByteString;
 begin
-  SetLength (result, SizeOf (Integer));
-  Move (i, result [1], SizeOf (Integer));
+  SetLength(Result, SizeOf(Integer));
+  Move(i, Result[1], SizeOf(Integer));
 end;
 
-procedure TBTree.SetDataRec(const key: string; const Value: Integer);
+procedure TBTree.SetDataRec(const key: RawByteString; const Value: Integer);
 var
-  pg : TPage;
-  idx : Integer;
-  k : string;
+  pg: TPage;
+  idx: Integer;
+  k: RawByteString;
 begin
   pg := RootPage;
-  k := key + StringOfChar (#0, SizeOf (Integer));
+  k := key + IntToBin(0);
 
   BeginUpdate;
   try
-    while Assigned (pg) do
+    while Assigned(pg) do
     begin
       if pg.FindNode(k, idx) then
       begin
-        pg.fNodes [idx].key := key + IntToBin (Value);
-        pg.Flags [flgDirty] := True;
-        break
+        pg.fNodes[idx].key := key + IntToBin(Value);
+        pg.Flags[flgDirty] := True;
+        Break
       end;
 
       if pg.PrevPage <> -1 then
       begin
         if idx = 0 then
-          pg := Page [pg.PrevPage]
+          pg := Page[pg.PrevPage]
         else
-          pg := Page [pg.Node [idx - 1].NextPage]
+          pg := Page[pg.Node[idx - 1].NextPage]
       end
       else
         pg := Nil
@@ -2031,113 +2238,113 @@ end;
 
 constructor TBTreeIterator.Create(ABTree: TBTree);
 begin
-  inherited Create (ABTree);
+  inherited Create(ABTree);
 end;
 
-function TBTreeIterator.Find(var key: string;
-  var dataRec: Integer): boolean;
+function TBTreeIterator.Find(var key: RawByteString;
+  var dataRec: Integer): Boolean;
 var
-  k : string;
+  k: RawByteString;
 begin
-  k := key + StringOfChar (#0, SizeOf (Integer));
+  k := key + IntToBin(0);
 
-  result := inherited Find (k);
-  if result then
+  Result := inherited Find(k);
+  if Result then
   begin
     key := k;
-    SplitKey (key, dataRec)
+    SplitKey(key, dataRec)
   end
 end;
 
-function TBTreeIterator.First(var key: string; var dataRec: Integer): boolean;
+function TBTreeIterator.First(var key: RawByteString; var dataRec: Integer): Boolean;
 begin
-  result := inherited First (key);
-  if result then
-    SplitKey (key, dataRec)
+  Result := inherited First(key);
+  if Result then
+    SplitKey(key, dataRec)
 end;
 
-function TBTreeIterator.Last(var key: string;
-  var dataRec: Integer): boolean;
+function TBTreeIterator.Last(var key: RawByteString;
+  var dataRec: Integer): Boolean;
 begin
-  result := inherited Last (key);
-  if result then
-    SplitKey (key, dataRec)
+  Result := inherited Last(key);
+  if Result then
+    SplitKey(key, dataRec)
 end;
 
-function TBTreeIterator.Next(var key: string;
-  var dataRec: Integer): boolean;
+function TBTreeIterator.Next(var key: RawByteString;
+  var dataRec: Integer): Boolean;
 begin
-  result := inherited Next (key);
-  if result then
-    SplitKey (key, dataRec)
+  Result := inherited Next(key);
+  if Result then
+    SplitKey(key, dataRec)
 end;
 
-function TBTreeIterator.Prev(var key: string;
-  var dataRec: Integer): boolean;
+function TBTreeIterator.Prev(var key: RawByteString;
+  var dataRec: Integer): Boolean;
 begin
-  result := inherited Prev (key);
-  if result then
-    SplitKey (key, dataRec)
+  Result := inherited Prev(key);
+  if Result then
+    SplitKey(key, dataRec)
 end;
 
-procedure TBTreeIterator.SplitKey(var key : string; var dataRec: Integer);
+procedure TBTreeIterator.SplitKey(var key: RawByteString; var dataRec: Integer);
 begin
-  dataRec := TBTree (BTree).ExtractDataRec(key);
-  key := Copy (key, 1, Length (key) - SizeOf (Integer))
+  dataRec := TBTree(BTree).ExtractDataRec(key);
+  key := Copy(key, 1, Length(key) - SizeOf(Integer))
 end;
 
 { TDataTree }
 
-function TDataTree.AddKey(n: Integer; const st: string) : boolean;
+function TDataTree.AddKey(n: Integer; const st: RawByteString): Boolean;
 begin
-  result := inherited AddKey (IntToBin (n) + st)
+  Result := inherited AddKey(IntToBin(n) + st)
 end;
 
-function TDataTree.BinToInt(const st: string): Integer;
+function TDataTree.BinToInt(const st: RawByteString): Integer;
 begin
-  move (st [1], result, SizeOf (Integer))
+  Move(st[1], Result, SizeOf(Integer))
 end;
 
-function TDataTree.CompareKeys(const k1, k2: string): Integer;
+function TDataTree.CompareKeys(const k1, k2: RawByteString): Integer;
 begin
-  result := BinToInt (k1) - BinToInt (k2)
+  Result := BinToInt(k1) - BinToInt(k2)
 end;
 
-function TDataTree.DeleteKey(n: Integer) : boolean;
+function TDataTree.DeleteKey(n: Integer): Boolean;
 begin
-  result := inherited DeleteKey (IntToBin (n))
+  Result := inherited DeleteKey(IntToBin(n))
 end;
 
-function TDataTree.Find(n: Integer; var st: string): boolean;
+function TDataTree.Find(n: Integer; var st: RawByteString): Boolean;
 var
-  k : string;
+  k: RawByteString;
 begin
-  result := inherited Find (IntToBin (n), k);
-  if result then
-    st := Copy (k, 5, MaxInt)
+  Result := inherited Find(IntToBin(n), k);
+  if Result then
+    st := Copy(k, 5, MaxInt)
 end;
 
 procedure TDataTree.ForEach(proc: TDataTreeForEachProc);
 var
-  continue : boolean;
-  k : string;
+  continue: Boolean;
+  k: RawByteString;
 
 //----------------------------------------------------------
 // Recursively call 'proc' for all the keys and children.
-  procedure DoForEach (pageNo : Integer);
+  procedure DoForEach(pageNo: Integer);
   var
-    i : Integer;
-    node : TNode;
-    pg : TPage;
+    i: Integer;
+    node: TNode;
+    pg: TPage;
 
   begin
     if not Continue then Exit;
 
-    pg := Page [pageNo];
+    pg := Page[pageNo];
     if pg.PrevPage <> -1 then
     begin                               // Do subkeys on pg left
-      DoForEach (pg.PrevPage);
-      pg := Page [pageNo]               // Original 'pg' may no have been
+      DoForEach(pg.PrevPage);
+      pg := Page[pageNo]               // Original 'pg' may no have been
                                         // deleted from the cache.  So make sure
                                         // it's reloaded
     end;
@@ -2146,165 +2353,165 @@ var
       if continue then
       begin
                                         // Call the callback for the node
-        node := pg.Node [i];
+        node := pg.Node[i];
         k := node.key;
-        Proc (BinToInt (k), Copy (k, SizeOf (Integer) + 1, MaxInt), continue);
+        Proc(BinToInt(k), Copy(k, SizeOf(Integer) + 1, MaxInt), continue);
 
                                         // Do subkeys on node right
         if continue and (node.NextPage <> -1) then
         begin
-          DoForEach (node.NextPage);
-          pg := Page [pageNo]
+          DoForEach(node.NextPage);
+          pg := Page[pageNo]
         end
       end
   end;
 
 begin
   continue := True;
-  DoForEach (fFileInfo.RootPage)
+  DoForEach(fFileInfo.RootPage)
 end;
 
-function TDataTree.GetKey(idx: Integer; var DataRec : Integer): string;
+function TDataTree.GetKey(idx: Integer; var DataRec: Integer): RawByteString;
 begin
-  result := inherited GetKey (idx);
-  DataRec := BinToInt (result);
-  result := Copy (result, SizeOf (Integer) + 1, MaxInt);
+  Result := inherited GetKey(idx);
+  DataRec := BinToInt(Result);
+  Result := Copy(Result, SizeOf(Integer) + 1, MaxInt);
 end;
 
-function TDataTree.GetValue(n: Integer): string;
+function TDataTree.GetValue(n: Integer): RawByteString;
 begin
-  if not find (n, result) then
+  if not Find(n, Result) then
     raise EBTree.Create('Value not found');
 end;
 
-function TDataTree.IntToBin(i: Integer): string;
+function TDataTree.IntToBin(i: Integer): RawByteString;
 begin
-  SetLength (result, SizeOf (Integer));
-  Move (i, result [1], SizeOf (Integer));
+  SetLength(Result, SizeOf(Integer));
+  Move(i, Result[1], SizeOf(Integer));
 end;
 
 { TDataTreeIterator }
 
 constructor TDataTreeIterator.Create(ADataTree: TDataTree);
 begin
-  inherited Create (ADataTree)
+  inherited Create(ADataTree)
 end;
 
-function TDataTreeIterator.Find(n: Integer; var st: string): boolean;
+function TDataTreeIterator.Find(n: Integer; var st: RawByteString): Boolean;
 var
-  k : string;
+  k: RawByteString;
 begin
-  SetLength (k, Sizeof (Integer));
-  Move (n, k [1], SizeOf (Integer));
-  result := inherited Find (k);
-  if result then
+  SetLength(k, SizeOf(Integer));
+  Move(n, k[1], SizeOf(Integer));
+  Result := inherited Find(k);
+  if Result then
   begin
     st := k;
-    SplitKey (n, st)
+    SplitKey(n, st)
   end
 end;
 
-function TDataTreeIterator.First(var n : Integer; var st : string) : boolean;
+function TDataTreeIterator.First(var n: Integer; var st: RawByteString): Boolean;
 begin
-  result := inherited First (st);
-  if result then
-    SplitKey (n, st)
+  Result := inherited First(st);
+  if Result then
+    SplitKey(n, st)
 end;
 
-function TDataTreeIterator.Last (var n : Integer; var st : string) : boolean;
+function TDataTreeIterator.Last(var n: Integer; var st: RawByteString): Boolean;
 begin
-  result := inherited Last (st);
-  if result then
-    SplitKey (n, st)
+  Result := inherited Last(st);
+  if Result then
+    SplitKey(n, st)
 end;
 
-function TDataTreeIterator.Next (var n : Integer; var st : string) : boolean;
+function TDataTreeIterator.Next(var n: Integer; var st: RawByteString): Boolean;
 begin
-  result := inherited Next (st);
-  if result then
-    SplitKey (n, st)
+  Result := inherited Next(st);
+  if Result then
+    SplitKey(n, st)
 end;
 
-function TDataTreeIterator.Prev (var n : Integer; var st : string) : boolean;
+function TDataTreeIterator.Prev(var n: Integer; var st: RawByteString): Boolean;
 begin
-  result := inherited Prev (st);
-  if result then
-    SplitKey (n, st)
+  Result := inherited Prev(st);
+  if Result then
+    SplitKey(n, st)
 end;
 
-procedure TDataTreeIterator.SplitKey(var n : Integer; var key : string);
+procedure TDataTreeIterator.SplitKey(var n: Integer; var key: RawByteString);
 begin
-  Move (key [1], n, SizeOf (Integer));
-  key := Copy (key, SizeOf (Integer) + 1, MaxInt)
+  Move(key[1], n, SizeOf(Integer));
+  key := Copy(key, SizeOf(Integer) + 1, MaxInt)
 end;
 
 { TIndexTree }
 
-function TIndexTree.AddKey(i : Integer) : boolean;
+function TIndexTree.AddKey(i: Integer): Boolean;
 begin
-  IntToBinBuffer (i);
-  result := inherited AddKey (fBinBuffer)
+  IntToBinBuffer(i);
+  Result := inherited AddKey(fBinBuffer)
 end;
 
-function TIndexTree.BinToInt(const st: string): Integer;
+function TIndexTree.BinToInt(const st: RawByteString): Integer;
 begin
-  move (st [1], result, SizeOf (Integer))
+  Move(st[1], Result, SizeOf(Integer))
 end;
 
-function TIndexTree.CompareKeys(const k1, k2: string): Integer;
+function TIndexTree.CompareKeys(const k1, k2: RawByteString): Integer;
 begin
-  result := BinToInt (k1) - BinToInt (k2)
+  Result := BinToInt(k1) - BinToInt(k2)
 end;
 
-constructor TIndexTree.Create (const AFileName : string);
+constructor TIndexTree.Create(const AFileName: string);
 begin
-  inherited Create (AFileName);
+  inherited Create(AFileName);
   fBinBuffer := #0#0#0#0
 end;
 
-function TIndexTree.Delete(n: Integer) : boolean;
+function TIndexTree.Delete(n: Integer): Boolean;
 var
-  i : Integer;
+  i: Integer;
 begin
-  i := BinToInt (GetKey (n));
-  result := DeleteKey (i)
+  i := BinToInt(GetKey(n));
+  Result := DeleteKey(i)
 end;
 
-function TIndexTree.DeleteKey(i: Integer) : boolean;
+function TIndexTree.DeleteKey(i: Integer): Boolean;
 begin
-  IntToBinBuffer (i);
-  result := inherited DeleteKey (fBinBuffer)
+  IntToBinBuffer(i);
+  Result := inherited DeleteKey(fBinBuffer)
 end;
 
-function TIndexTree.Find(i: Integer): boolean;
+function TIndexTree.Find(i: Integer): Boolean;
 var
-  fKey : string;
+  fKey: RawByteString;
 begin
-  IntToBinBuffer (i);
-  result := inherited Find (fBinBuffer, fKey)
+  IntToBinBuffer(i);
+  Result := inherited Find(fBinBuffer, fKey)
 end;
 
 procedure TIndexTree.ForEach(proc: TIndexTreeForEachProc);
 var
-  continue : boolean;
-  k : string;
+  continue: Boolean;
+  k: RawByteString;
 
 //----------------------------------------------------------
 // Recursively call 'proc' for all the keys and children.
-  procedure DoForEach (pageNo : Integer);
+  procedure DoForEach(pageNo: Integer);
   var
-    i : Integer;
-    node : TNode;
-    pg : TPage;
+    i: Integer;
+    node: TNode;
+    pg: TPage;
 
   begin
     if not Continue then Exit;
 
-    pg := Page [pageNo];
+    pg := Page[pageNo];
     if pg.PrevPage <> -1 then
     begin                               // Do subkeys on pg left
-      DoForEach (pg.PrevPage);
-      pg := Page [pageNo]               // Original 'pg' may no have been
+      DoForEach(pg.PrevPage);
+      pg := Page[pageNo]               // Original 'pg' may no have been
                                         // deleted from the cache.  So make sure
                                         // it's reloaded
     end;
@@ -2313,38 +2520,38 @@ var
       if continue then
       begin
                                         // Call the callback for the node
-        node := pg.Node [i];
+        node := pg.Node[i];
         k := node.key;
-        Proc (BinToInt (k), continue);
+        Proc(BinToInt(k), continue);
 
                                         // Do subkeys on node right
         if continue and (node.NextPage <> -1) then
         begin
-          DoForEach (node.NextPage);
-          pg := Page [pageNo]
+          DoForEach(node.NextPage);
+          pg := Page[pageNo]
         end
       end
   end;
 
 begin
   continue := True;
-  DoForEach (fFileInfo.RootPage)
+  DoForEach(fFileInfo.RootPage)
 end;
 
 function TIndexTree.GetIndexOf(i: Integer): Integer;
 begin
-  IntToBinBuffer (i);
-  result := GetIndexOfKey (fBinBuffer)
+  IntToBinBuffer(i);
+  Result := GetIndexOfKey(fBinBuffer)
 end;
 
 function TIndexTree.GetValue(n: Integer): Integer;
 begin
-  result := BinToInt (GetKey (n))
+  Result := BinToInt(GetKey(n))
 end;
 
 procedure TIndexTree.IntToBinBuffer(i: Integer);
 begin
-  Move (i, fBinBuffer [1], SizeOf (Integer));
+  Move(i, fBinBuffer[1], SizeOf(Integer));
 end;
 
 end.

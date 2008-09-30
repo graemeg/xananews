@@ -69,7 +69,6 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
     Caption = 'Close'
     ModalResult = 2
     TabOrder = 0
-    ExplicitTop = 402
   end
   object pcSelect: TPageControl
     Left = 0
@@ -82,7 +81,6 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
     ExplicitHeight = 212
     object tsThreads: TTabSheet
       Caption = 'Threads'
-      ExplicitHeight = 150
       object lvThreads: TListView
         Left = 0
         Top = 0
@@ -109,21 +107,16 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
         ViewStyle = vsReport
         OnColumnClick = lvThreadsColumnClick
         OnData = lvThreadsData
-        ExplicitHeight = 150
       end
     end
     object tsPosters: TTabSheet
       Caption = 'Posters'
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 172
       object lvPosters: TListView
         Left = 0
         Top = 0
         Width = 437
-        Height = 150
+        Height = 165
         Align = alClient
         Columns = <
           item
@@ -149,21 +142,16 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
         ViewStyle = vsReport
         OnColumnClick = lvPostersColumnClick
         OnData = lvPostersData
-        ExplicitHeight = 172
       end
     end
     object tsNewsreaders: TTabSheet
       Caption = 'Newsreaders'
       ImageIndex = 2
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 172
       object lvNewsreaders: TListView
         Left = 0
         Top = 0
         Width = 437
-        Height = 150
+        Height = 165
         Align = alClient
         Columns = <
           item
@@ -189,7 +177,6 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
         ViewStyle = vsReport
         OnColumnClick = lvNewsreadersColumnClick
         OnData = lvNewsreadersData
-        ExplicitHeight = 172
       end
     end
   end
@@ -283,7 +270,6 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
     Caption = '&Report to Clipboard'
     TabOrder = 3
     OnClick = btnCopyToClipboardClick
-    ExplicitTop = 402
   end
   object btnStart: TButton
     Left = 358
@@ -294,7 +280,6 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
     Caption = '&Start'
     TabOrder = 8
     OnClick = btnStartClick
-    ExplicitTop = 329
   end
   object dtpFrom: TDateTimePicker
     Left = 62
@@ -327,7 +312,6 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
     Caption = '&Post to Group'
     TabOrder = 4
     OnClick = btnPostToGroupClick
-    ExplicitTop = 402
   end
   object cbResults: TComboBox
     Left = 62

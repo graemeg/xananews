@@ -174,7 +174,7 @@ begin
   if fIsReply then
   begin
     groupName := ReplyToArticle.Owner.Name;
-    sub := DecodeSubject(ReplyToArticle.subject, ReplyToArticle.CodePage);
+    sub := DecodeSubject(ReplyToArticle.subject);
 //    Caption := 'Reply to article from ' +
 //               StringToGDIString(ReplyToArticle.FromName, ReplyToArticle.CodePage) + ' - ' +
 //               StringToGDIString(sub, ReplyToArticle.CodePage);

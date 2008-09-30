@@ -45,19 +45,12 @@ contains
   unitStreamTextReader in 'unitStreamTextReader.pas',
   unitVersionInfo in 'unitVersionInfo.pas',
   MultiLanguage_tlb in 'MultiLanguage_tlb.pas',
-// TODO: temporary removed
-//  unitParser in 'unitParser.pas',
-// TODO: temporary removed
-//  unitCExpression in 'unitCExpression.pas',
   unitHTMLHelp in 'unitHTMLHelp.pas',
-// TODO: temporary removed
-//  WinCrypt in 'WinCrypt.pas',
   unitProcesses in 'unitProcesses.pas',
   unitRTF2HTML in 'unitRTF2HTML.pas',
   unitTypelibUtils in 'unitTypelibUtils.pas',
   unitTreeData in 'unitTreeData.pas',
   unitXMLDoc in 'unitXMLDoc.pas',
-  unitSimpleDatabase in 'unitSimpleDatabase.pas',
   unitFolderUtils in 'unitFolderUtils.pas',
   unitExFileSettings in 'unitExFileSettings.pas',
   unitExIniSettings in 'unitExIniSettings.pas',
@@ -65,6 +58,7 @@ contains
   unitExSettings in 'unitExSettings.pas',
   unitExXMLSettings in 'unitExXMLSettings.pas',
   unitFolderInfo in 'unitFolderInfo.pas',
-  unitEXGraphics in 'unitEXGraphics.pas';
+  unitEXGraphics in 'unitEXGraphics.pas',
+  XnClasses in 'XnClasses.pas';
 
 end.

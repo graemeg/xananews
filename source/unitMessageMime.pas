@@ -25,7 +25,7 @@ unit unitMessageMime;
 interface
 
 uses
-  Windows, Classes, SysUtils, Graphics, unitMessages;
+  Windows, Classes, SysUtils, Graphics, unitMessages, XnClasses;
 
 type
   TmvMimeMessagePart = class(TmvMessagePart)
@@ -35,7 +35,7 @@ type
     fImageClass: string;
     fMIMEHeaderStrings: TStrings;
     fForced: Boolean;
-    fBody: TStrings;
+    fBody: TAnsiStrings;
     fGotBody: Boolean;
     fMIMEHeader: TMIMEHeader;
     fMultipartHeader: TMIMEHeader;
@@ -46,7 +46,7 @@ type
     function IsBoundaryEnd(const st: string): Boolean; override;
     function ProcessHeaderLine(const st: string): Boolean; override;
     function GetGraphic: TGraphic; override;
-    function GetBody: TStrings; override;
+    function GetBody: TAnsiStrings; override;
     function GetFileName: string; override;
     function GetDecodeType: TDecodeType; override;
     procedure InitMultipart(multipartHeader: TMIMEHeader); override;
@@ -65,12 +65,12 @@ type
   end;
 
 function GetMimeGraphicClass(const imageClass: string): TGraphicClass;
-procedure DecodeFormatFlowed(const ins: TStream; outs: TStrings);
+procedure DecodeFormatFlowed(const ins: TStream; outs: TAnsiStrings);
 
 implementation
 
 uses
-  GIFImg, Jpeg, pngImage, NewsGlobals, idCoderUUE, idCoder, idCoderMIME,
+  GIFImg, Jpeg, pngImage, NewsGlobals, idGlobal, idCoderUUE, idCoder, idCoderMIME,
   unitStreamTextReader, unitRFC2646Coder, XnCoderUUE;
 
 function GetMimeGraphicClass(const imageClass: string): TGraphicClass;
@@ -90,7 +90,7 @@ begin
           Result := TPngImage;
 end;
 
-procedure DecodeQuotedPrintable(const ins: TStream; outs: TStrings);
+procedure DecodeQuotedPrintable(const ins: TStream; outs: TAnsiStrings);
 var
   ch, ch1, ch2: AnsiChar;
   st: AnsiString;
@@ -114,7 +114,7 @@ begin
         // '=' means that the next two characters are hex digits for the
         // character.
         raw := AnsiChar('$') + ch1 + ch2;
-        ch := AnsiChar(StrToIntDef(UTF8ToString(raw), 0));
+        ch := AnsiChar(StrToIntDef(string(raw), 0));
 
         if ch = #0 then
           Continue;
@@ -122,18 +122,20 @@ begin
       s.Write(ch, SizeOf(ch));
     end;
 
-    outs.Text := s.DataString;
+    s.Position := 0;
+    outs.LoadFromStream(s);
+//    outs.Text := s.DataString;
   finally
     s.Free;
   end;
 end;
 
-procedure DecodeFormatFlowed(const ins: TStream; outs: TStrings);
+procedure DecodeFormatFlowed(const ins: TStream; outs: TAnsiStrings);
 var
   coder: TRFC2646Decoder;
   s: TStringStream;
   st: AnsiString;
-  raw: UTF8String;
+  raw: RawByteString;
 begin
   // Decode a 'format flowed' stream to a string list - See RFC 2646
   coder := nil;
@@ -142,6 +144,7 @@ begin
     coder := TRFC2646Decoder.Create(nil);
     coder.InsertSpaceAfterQuote := False;
 
+    // TODO: fix / optimize decoding
     if ins is TMemoryStream then
       coder.DecodeBuffer(TMemoryStream(ins).Memory, ins.Size, s)
     else
@@ -149,23 +152,25 @@ begin
       SetLength(raw, ins.Size);
       ins.Read(raw[1], ins.Size);
       coder.DecodeBegin(s);
-      coder.Decode(UTF8ToString(raw));
+      coder.Decode(string(raw));
     end;
 
-    outs.Text := s.DataString;
+    s.Position := 0;
+    outs.LoadFromStream(s);
+//    outs.Text := s.DataString;
   finally
     coder.Free;
     s.Free;
   end;
 end;
 
-procedure DecodeBase64(const ins: TStream; outs: TStrings);
+procedure DecodeBase64(const ins: TStream; outs: TAnsiStrings);
 var
   decoder: TidDecoder;
   str: TStreamTextReader;
   s: TMemoryStream;
   st: string;
-  raw: UTF8String;
+  raw: RawByteString;
 begin
   str := nil;
   s := nil;
@@ -179,7 +184,7 @@ begin
       while str.ReadLn(raw) do
       begin
         // TODO: fix / optimize decoding
-        st := UTF8ToString(raw);
+        st := string(raw);
         if (Length(st) mod 4) <> 0 then
           st := Copy(st, 1, (Length(st) div 4) * 4);
         decoder.Decode(st);
@@ -224,7 +229,7 @@ begin
   inherited;
 end;
 
-function TmvMimeMessagePart.GetBody: TStrings;
+function TmvMimeMessagePart.GetBody: TAnsiStrings;
 begin
   if not fGotBody then
   begin
@@ -233,7 +238,7 @@ begin
       if not Assigned(fMIMEHeader) or (CompareText(fMIMEHeader.ContentType_Type, 'text') = 0) then
       begin
         if not Assigned(fBody) then
-          fBody := TStringList.Create;
+          fBody := TAnsiStringList.Create;
 
         if fData = nil then
         begin
@@ -257,10 +262,10 @@ begin
                   fBody.LoadFromStream(fData);
 
             if (CompareText(fMIMEHeader.ContentType_Subtype, 'html') = 0) and (fBody.Count > 0) then
-              if Pos('<HTML', UpperCase(fBody.Text)) = 0 then
+              if Pos('<HTML', UpperCase(string(fBody.Text))) = 0 then
               begin
-                fBody.Strings[0] := '<HTML>' + fBody.Strings[0];
-                fBody.Strings[fBody.Count - 1] := fBody.Strings[fBody.Count - 1] + '</HTML> ';
+                fBody.AnsiStrings[0] := '<HTML>' + fBody.AnsiStrings[0];
+                fBody.AnsiStrings[fBody.Count - 1] := fBody.AnsiStrings[fBody.Count - 1] + '</HTML> ';
               end;
           end
           else
@@ -279,7 +284,7 @@ var
   decoder: TidDecoder;
   st: string;
   str: TStreamTextReader;
-  raw: UTF8String;
+  raw: RawByteString;
 begin
   DecodeHeader;
 
@@ -308,7 +313,7 @@ begin
           while str.ReadLn(raw) do
           begin
             // TODO: fix / optimize decoding
-            st := UTF8ToString(raw);
+            st := string(raw);
             decoder.Decode(st);
           end;
         except

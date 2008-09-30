@@ -1,7 +1,7 @@
 program NewsReader3;
 
 uses
-//  FastMM4,
+  FastMM4,
   madListHardware,
   madListProcesses,
   madListModules,
@@ -101,7 +101,8 @@ uses
   SearchDialog in 'SearchDialog.pas' {dlgSearch},
   unitRFC2646Coder in 'unitRFC2646Coder.pas',
   ReadLnDelayDialog in 'ReadLnDelayDialog.pas' {dlgReadLnDelay},
-  unitMessageBaseSearch in 'unitMessageBaseSearch.pas';
+  unitMessageBaseSearch in 'unitMessageBaseSearch.pas',
+  unitNewsThread in 'unitNewsThread.pas';
 
 {$R *.res}
 {$R I.RES}

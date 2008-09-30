@@ -196,7 +196,7 @@ procedure LoadRASEntries;
 function HeaderCharset(h: string): string;
 procedure DecodeFromEMail(const from: string; var fromName, fromEMail: string; codePage: Integer = -1);
 function DecodeHeader(const header: string; codePage: PInteger = nil): string;
-function DecodeSubject(const subject: string; codePage: Integer): string;
+function DecodeSubject(const subject: string): string;
 function GenerateMessageID(const product, stub, host: string): string;
 function EncodeHeader(const header: string; codepage: Integer; from: Boolean): string;
 procedure SetTempStatusMessage(const msg: string; pos, max: word);
@@ -972,12 +972,9 @@ begin
     CodePage^ := CP_UTF_16;
 end;
 
-function DecodeSubject(const subject: string; codePage: Integer): string;
-var
-  cp: Integer;
+function DecodeSubject(const subject: string): string;
 begin
-  cp := codePage;
-  Result := DecodeHeader(subject, @cp);
+  Result := DecodeHeader(subject);
 end;
 
 var

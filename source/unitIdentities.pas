@@ -390,7 +390,7 @@ var
   rdr: TStreamTextReader;
   idx: TList;
   st: string;
-  raw: UTF8String;
+  raw: RawByteString;
   sig: string;
   useSigFile: boolean;
 
@@ -403,7 +403,7 @@ var
     st := '';
     while rdr.ReadLn(raw) do
     begin
-      st := UTF8ToString(raw);
+      st := string(raw);
       if st <> '.' then
         Result := Result + st + #13#10
       else

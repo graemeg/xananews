@@ -65,7 +65,6 @@ contains
   CustomAlignPanel in 'CustomAlignPanel.pas',
   cmpSuDoku in 'cmpSuDoku.pas',
   cmpExToolBar in 'cmpExToolBar.pas',
-  cmpUserDatabase in 'cmpUserDatabase.pas',
   ExCoolBar in 'ExCoolBar.pas',
   cmpExplorerTree in 'cmpExplorerTree.pas',
   cmpRegistryPersistentOptions in 'cmpRegistryPersistentOptions.pas',

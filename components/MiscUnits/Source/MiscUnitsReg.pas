@@ -39,7 +39,6 @@ uses Classes,
      CustomAlignPanel,
      cmpSuDoku,
      cmpExToolbar,
-     cmpUserDatabase,
      ExCoolBar,
      cmpExplorerTree,
      cmpCountryComboBox;
@@ -78,7 +77,6 @@ begin
     TCustomAlignPanel,
     TSuDoku,
     TExToolbar,
-    TUserDatabase,
     TExCoolBar,
     TExplorerTree,
     TCountryComboBox

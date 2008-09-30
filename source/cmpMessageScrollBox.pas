@@ -185,7 +185,7 @@ begin
     else
     begin
       from := '"' + art.FromName + '" <' + art.FromEmail + '>';
-      sub  := DecodeSubject(art.Subject, art.CodePage);
+      sub  := DecodeSubject(art.Subject);
     end;
 
     Result :=

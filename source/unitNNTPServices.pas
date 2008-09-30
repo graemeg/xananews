@@ -31,7 +31,8 @@ interface
 
 uses Windows, Classes, SysUtils, Forms, Dialogs, Controls, Contnrs, idGlobal, unitMessages,
      StrUtils, unitNNTPFilters, NewsGlobals, unitObjectCache, unitIdentities,
-     unitSearchString, unitSettings, unitBatches, unitExSettings, unitStreamTextReader, Shfolder, ShellAPI, SyncObjs;
+     unitSearchString, unitSettings, unitBatches, unitExSettings, unitStreamTextReader,
+     Shfolder, ShellAPI, SyncObjs, XnClasses;
 
 //-----------------------------------------------------------------------
 // Constant definitions
@@ -3106,20 +3107,20 @@ end;
 
 { TSubscribedGroup }
 
-function TSubscribedGroup.AddArticle (articleNo : Integer; header : TStrings; body : TStream; isNew : boolean) : TArticle;
+function TSubscribedGroup.AddArticle (articleNo: Integer; header: TStrings; body: TStream; isNew: boolean): TArticle;
 var
-  article : TArticle;
-  filterIt, bozo : Boolean;
-  action : TBozoAction;
+  article: TArticle;
+  filterIt, bozo: Boolean;
+  action: TBozoAction;
 begin
   if not Loaded then
     LoadArticles;
 
-  article := TArticle.Create (self);
+  article := TArticle.Create(Self);
   try
     article.Initialize(articleNo, header);
 
-    article.fMsg := TmvMessage.Create (article);
+    article.fMsg := TmvMessage.Create(article);
     article.fMsg.Header := header;
     article.fMsg.AddData(body);
 
@@ -3140,7 +3141,7 @@ begin
       if bozo then article.IsRead := True;
       article.SaveMessageBody;
 
-      RawAddArticle (article);
+      RawAddArticle(article);
       fUnreadArticleCount := -1;
       fUnloadedArticleCount := -1;
       fInterestingArticleCount := -1;
@@ -3151,13 +3152,13 @@ begin
         fThreads.Add(article);
     end
     else
-      FreeAndNil (article)
+      FreeAndNil(article);
   except
-    FreeAndNil (article);
-    raise
+    FreeAndNil(article);
+    raise;
   end;
 
-  result := article
+  result := article;
 end;
 
 (*----------------------------------------------------------------------*
@@ -3371,13 +3372,13 @@ end;
  *----------------------------------------------------------------------*)
 procedure TSubscribedGroup.LoadArticles;
 var
-  reader : TTextFileReader;
-  fileName : string;
+  reader: TTextFileReader;
+  fileName: string;
 begin
   OpenMessageFile;
   if not fArticlesLoaded then
   begin
-    LogMessage ('Loading ' + name);
+    LogMessage('Loading ' + name);
     LSSync.Enter;
     try
       fArticlesLoaded := True;
@@ -3388,15 +3389,15 @@ begin
       fHideMessagesNotToMe := False;
       fHideIgnoredMessages := Options.HideIgnoredMessages;
 
-      fileName := gMessageBaseRoot + '\' + FixFileNameString (Owner.AccountName) + '\' + FixFileNameString (Name) + '\articles.dat';
-      if FileExists (fileName) then
+      fileName := gMessageBaseRoot + '\' + FixFileNameString(Owner.AccountName) + '\' + FixFileNameString(Name) + '\articles.dat';
+      if FileExists(fileName) then
       begin
-        NNTPAccounts.PerfCue (440, 'Loading Article headers');
+        NNTPAccounts.PerfCue(440, 'Loading Article headers');
         reader := TTextFileReader.Create(fileName);
         try
-          NNTPAccounts.PerfCue (550, 'Adding article headers');
+          NNTPAccounts.PerfCue(550, 'Adding article headers');
           RawClearArticles;
-          AddRawHeaders (reader);
+          AddRawHeaders(reader);
         finally
           reader.Free
         end
@@ -3408,8 +3409,8 @@ begin
       DontUnloadCache.MaxDepth := 3
     else
       DontUnloadCache.MaxDepth := 2;
-    DontUnloadCache.Add(self);
-    NNTPAccounts.UnloadOldContainers (self);
+    DontUnloadCache.Add(Self);
+    NNTPAccounts.UnloadOldContainers(Self);
   end
   else
     SortArticles;
@@ -3449,6 +3450,7 @@ var
   i, j : Integer;
   article : Tarticle;
   st : string;
+  raw: RawByteString;
 //  ms : TFileStream;
   ms : TBufferedFileWriter;
   hasMessage, tmpMessage : boolean;
@@ -3472,7 +3474,7 @@ begin
     newMsgFileName := gMessageBaseRoot + '\' + accName + '\' + gName + '\messages.new';
     msgFileName := gMessageBaseRoot + '\' + accName + '\' + gName + '\messages.dat';
 
-    ms := Nil;
+    ms := nil;
     ForceDirectories (ExtractFilePath (msgFileName));
     w := TTextFileWriter.Create (newFileName);
     try
@@ -3508,7 +3510,7 @@ begin
           if recreateMessageFile and hasMessage then
             article.fMessageOffset := ms.Position;
 
-          st := Format ('%d'#9'%s'#9'%s'#9'%s'#9'%s'#9'%s'#9'%d'#9'%d'#9'%d', [
+          st := Format('%d'#9'%s'#9'%s'#9'%s'#9'%s'#9'%s'#9'%d'#9'%d'#9'%d', [
             article.fArticleNo,
             article.fSubject,
             article.fFrom,
@@ -3522,23 +3524,23 @@ begin
 
           if hasMessage then // Add extra 'message offset' field to header string
             if recreateMessageFile then
-              st := st + #9 + IntToStr (ms.Position)
+              st := st + #9 + IntToStr(ms.Position)
             else
-              st := st + #9 + IntToStr (article.fMessageOffset);
+              st := st + #9 + IntToStr(article.fMessageOffset);
 
-          w.WriteLn (st);
+          w.WriteLn(st);
 
           if hasMessage and recreateMessageFile then
           begin
-            st := 'X-Msg:'+ IntToHex (article.fMsg.RawData.Size, 8);
-            ms.Write(st [1], Length (st));
+            raw := RawByteString('X-Msg:'+ IntToHex(article.fMsg.RawData.Size, 8));
+            ms.Write(raw[1], Length(raw));
 
             for j := 0 to article.fMsg.Header.Count - 1 do
             begin
-              st := article.fMsg.Header [j];
-              hLen := Length (st);
-              ms.Write(hLen, SizeOf (hLen));
-              ms.Write(st [1], Length (st));
+              raw := RawByteString(article.fMsg.Header[j]);
+              hLen := Length(raw);
+              ms.Write(hLen, SizeOf(hLen));
+              ms.Write(raw[1], Length(raw));
             end;
 
             hLen := 0;
@@ -3549,7 +3551,7 @@ begin
           end;
 
           if tmpMessage then
-            FreeAndNil (article.fMsg)
+            FreeAndNil(article.fMsg)
         end
       end;
 
@@ -3807,8 +3809,8 @@ var
   i, len: Integer;
   hLen: word;
   st: string;
-  raw: UTF8String;
-  r: TStrings;
+  raw: RawByteString;
+  r: TAnsiStrings;
   m: TMemoryStream;
   rCreated: boolean;
 begin
@@ -3841,7 +3843,7 @@ begin
           SetLength(raw, 9);
           Owner.fMessageFile.Read(raw[1], 9);
           raw[1] := '$';
-          len := StrToInt(UTF8ToString(raw));
+          len := StrToInt(string(raw));
 
           Owner.fMessageFile.Read(hLen, SizeOf(hLen));
 
@@ -3852,7 +3854,7 @@ begin
             Owner.fMessageFile.Read(hLen, SizeOf(hLen));
           end;
 
-          r := TStringList.Create;
+          r := TAnsiStringList.Create;
           rCreated := True;
           m := TMemoryStream.Create;
           if len > 2048 then len := 2048;
@@ -3868,7 +3870,7 @@ begin
       i := 0;
       while i < r.Count do
       begin
-        st := r[i];
+        st := string(r[i]);
 
         if st <> '' then
         begin
@@ -3899,7 +3901,7 @@ begin
               st := '';
               repeat
                 Inc(i)
-              until (i >= r.Count) or AnsiContainsText(r[i], '>>');
+              until (i >= r.Count) or AnsiContainsText(string(r[i]), '>>');
             end;
         end
         else
@@ -3920,7 +3922,7 @@ begin
 
   st := Trim(st);
   if (st = '') or (st = '-- ') then
-    Result := DecodeSubject(Subject, CodePage)
+    Result := DecodeSubject(Subject)
   else
     Result := st;
 end;
@@ -3929,7 +3931,7 @@ function TArticle.MatchesKeyPhrase (st : string; searcher: TStringSearcher) : bo
 var
   thing : Integer;
   st1 : string;
-  tp : TStrings;
+  tp : TAnsiStrings;
 begin
   thing := 0;
 
@@ -3968,7 +3970,7 @@ begin
 
       tp := Msg.TextPart;
       if Assigned (tp) then
-        st1 := tp.Text
+        st1 := string(tp.Text)
       else
         thing := -1
     end
@@ -4099,19 +4101,19 @@ end;
  *----------------------------------------------------------------------*)
 procedure TArticle.SaveMessageBody;
 var
-  st: UTF8String;
+  st: RawByteString;
   i: Integer;
   hLen: Word;
 begin
   fOwner.OpenMessageFile;
   fOwner.fMessageFile.Seek(0, soFromEnd);
   fMessageOffset := fOwner.fMessageFile.Position;
-  st := UTF8Encode('X-Msg:'+ IntToHex(fMsg.RawData.Size, 8));
+  st := RawByteString('X-Msg:'+ IntToHex(fMsg.RawData.Size, 8));
   fOwner.fMessageFile.Write(st[1], Length(st));
 
   for i := 0 to fMsg.Header.Count - 1 do
   begin
-    st := UTF8Encode(fMsg.Header[i]);
+    st := RawByteString(fMsg.Header[i]);
     hLen := Length(st);
     fOwner.fMessageFile.Write(hLen, SizeOf(hLen));
     fOwner.fMessageFile.Write(st[1], Length(st));
@@ -4366,7 +4368,7 @@ var
   pc, pc1 : PChar;
   reader : TTextFileReader;
   n, l, fgs : Integer;
-  raw: UTF8String;
+  raw: RawByteString;
 begin
   // Already LSSync-ed when this is called
   fileName := gMessageBaseRoot + '\' + FixFileNameString(Owner.AccountName) + '\' + FixFileNameString(Name) + '\articles.dat';
@@ -4381,7 +4383,7 @@ begin
     fRawLastArticle := 0;
     while reader.ReadLn(raw) do
     try
-      st := UTF8ToString(raw);
+      st := string(raw);
       Inc(fUnloadedArticleCount);
       n := 0;
       pc := PChar(st);
@@ -4466,7 +4468,7 @@ var
   lines : Cardinal;
   exd, s, st : string;
   article : TArticle;
-  raw: UTF8String;
+  raw: RawByteString;
 
 begin
   if not fArticlesLoaded then
@@ -4474,7 +4476,7 @@ begin
 
   while headers.ReadLn(raw) do
   begin
-    st := UTF8ToString(raw);
+    st := string(raw);
     ParseXOVER(st, articleNo, subject, from, date, MessageID, references, bytes, lines, exd);
     article := TArticle.Create(self);
 
@@ -6579,7 +6581,7 @@ end;
 
 function TArticleBase.GetMsgFromFile: TmvMessage;
 var
-  st: UTF8String;
+  st: RawByteString;
   len: DWORD;
   hLen: Word;
   cp: Integer;
@@ -6599,7 +6601,7 @@ begin
         SetLength(st, 9);
         Owner.fMessageFile.Read(st[1], 9);
         st[1] := '$';
-        len := StrToInt(UTF8ToString(st));
+        len := StrToInt(string(st));
 
         Owner.fMessageFile.Read(hLen, SizeOf(hLen));
 
@@ -6610,7 +6612,7 @@ begin
         begin
           SetLength(st, hLen);
           Owner.fMessageFile.read(st[1], hLen);
-          fMsg.Header.Add(UTF8ToString(st));
+          fMsg.Header.Add(string(st));
           Owner.fMessageFile.Read(hLen, SizeOf(hLen));
         end;
 
@@ -6824,41 +6826,44 @@ end;
 
 function TArticleBase.PeekAtMsgHdrFromFile(const hdr: string): string;
 var
-  st : string;
-  hLen : word;
+  st: string;
+  raw: RawByteString;
+  hLen: word;
 begin
   result := '';
-  if (fMessageOffset <> $ffffffff) and Assigned (Owner.fMessageFile) then
+  if (fMessageOffset <> $ffffffff) and Assigned(Owner.fMessageFile) then
   begin               // Load (some of) the message from 'messages.datx'
                         // I did this to prevent huge messages being loaded/
                         // decoded when simply displaying the headers for non-
                         // selected messages.
 
-    Owner.fMessageFile.Seek (fMessageOffset, soFromBeginning);
+    Owner.fMessageFile.Seek(fMessageOffset, soFromBeginning);
 
-    SetLength (st, 5);        // Read XMsg: prefix
-    Owner.fMessageFile.Read(st [1], 5);
+    SetLength(raw, 5);         // Read XMsg: prefix
+    Owner.fMessageFile.Read(raw[1], 5);
+    st := string(raw);
 
     if st = 'X-Msg' then      // New style - contains extra header lines
     begin
-      SetLength (st, 9);
-      Owner.fMessageFile.Read(st [1], 9);
+      SetLength(raw, 9);
+      Owner.fMessageFile.Read(raw[1], 9);
       Owner.fMessageFile.Read(hLen, SizeOf (hLen));
 
       while hLen > 0 do
       begin
-        SetLength (st, hLen);
-        Owner.fMessageFile.read (st [1], hLen);
+        SetLength(raw, hLen);
+        Owner.fMessageFile.read(raw[1], hLen);
+        st := string(raw);
 
-        if CompareText (SplitString (':', st), hdr) = 0 then
+        if CompareText(SplitString(':', st), hdr) = 0 then
         begin
-          result := Trim (st);
-          exit
+          result := Trim(st);
+          Exit;
         end;
         Owner.fMessageFile.Read(hLen, SizeOf (hLen));
-      end
-    end
-  end
+      end;
+    end;
+  end;
 end;
 
 procedure TArticleBase.ReleaseMsg;

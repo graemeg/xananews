@@ -125,7 +125,7 @@ begin
     ato := ReplyToArticle.Header ['Reply-To'];
     if ato = '' then
       ato := ReplyToArticle.From;
-    sub := Trim (DecodeSubject(ReplyToArticle.Subject, ReplyToArticle.CodePage));
+    sub := Trim (DecodeSubject(ReplyToArticle.Subject));
     Caption := 'Reply by mail to ' + ato + ' - ' + sub;
 
     fOrigMessageID := ReplyToArticle.MessageId;

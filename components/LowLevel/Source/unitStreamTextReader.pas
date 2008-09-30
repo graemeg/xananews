@@ -51,10 +51,10 @@ public
   constructor Create(AStream: TStream; blockSize: Integer = 1024);
   destructor Destroy; override;
   function GetChar: AnsiChar;
-  function ReadLn(var st: UTF8String; continuationChar: AnsiChar = #0): Boolean;
+  function ReadLn(var st: RawByteString; continuationChar: AnsiChar = #0): Boolean;
   procedure ReadChunk(var chunk; offset, length: Integer);
   property Position: Integer read GetPosition write SetPosition;
-  function Search(const st: UTF8String): Integer;
+  function Search(const st: RawByteString): Integer;
   property Stream: TStream read fStream write SetStream;
 end;
 
@@ -113,7 +113,7 @@ TTextFileReader = class(TMappedFile)
 private
   fPosition: Integer;
 public
-  function ReadLn(var st: UTF8String): Boolean;
+  function ReadLn(var st: RawByteString): Boolean;
 end;
 
 TBufferedStreamWriter = class
@@ -240,11 +240,11 @@ begin
   fStream.Read(chunk, length)
 end;
 
-function TStreamTextReader.ReadLn(var st:UTF8String; continuationChar: AnsiChar): Boolean;
+function TStreamTextReader.ReadLn(var st: RawByteString; continuationChar: AnsiChar): Boolean;
 var
   L, lineStartPos: Integer;
   pch, pch1: PAnsiChar;
-  st1: UTF8String;
+  st1: RawByteString;
   cont, scont: Boolean;
 begin
   lineStartPos := Position;
@@ -312,7 +312,7 @@ begin
     Result := True;
 end;
 
-function TStreamTextReader.Search(const st: UTF8String): Integer;
+function TStreamTextReader.Search(const st: RawByteString): Integer;
 var
   p, p1: PAnsiChar;
 begin
@@ -396,11 +396,10 @@ end;
 
 { TTextFileReader }
 
-function TTextFileReader.ReadLn(var st: UTF8String): Boolean;
+function TTextFileReader.ReadLn(var st: RawByteString): Boolean;
 var
   p, p1: PAnsiChar;
   L: Integer;
-//  S: UTF8String;
 begin
   L := fSize - fPosition;
   if L > 0 then
@@ -422,8 +421,6 @@ begin
 
 // TODO: check UTF8 decoding
     SetString(st, p1, L);
-//    SetString(S, p1, L);
-//    st := UTF8ToString(S);
   end
   else
     Result := False;
@@ -433,10 +430,10 @@ end;
 
 procedure TTextFileWriter.Write(const st: string);
 var
-  EncodedString: UTF8String;
+  EncodedString: RawByteString;
 begin
 // TODO: check UTF8 decoding
-  EncodedString := UTF8Encode(st);
+  EncodedString := RawByteString(st);
   inherited Write(EncodedString[1], Length(EncodedString));
 end;
 
@@ -599,7 +596,7 @@ end;
 
 destructor TBufferedFileWriter.Destroy;
 begin
-  inherited Destroy;  // !!!!!!  Why before?
+  inherited Destroy;  // Note: needs to be first to flush the buffers!
   FreeAndnil(fStream);
 end;
 
@@ -732,10 +729,10 @@ end;
 
 procedure TTextStreamWriter.Write(const st: string);
 var
-  EncodedString: UTF8String;
+  EncodedString: RawByteString;
 begin
 // TODO: check UTF8 decoding
-  EncodedString := UTF8Encode(st);
+  EncodedString := RawByteString(st);
   inherited Write(EncodedString[1], Length(EncodedString));
 end;
 

@@ -23,7 +23,6 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
-			<DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
 			<DCC_ImageBase>00400000</DCC_ImageBase>
 			<DCC_DependencyCheckOutputName>C:\Documents and Settings\All Users\Documenten\RAD Studio\6.0\Bpl\MiscUnitsD2009.bpl</DCC_DependencyCheckOutputName>
 			<DCC_Description>Colin Wilson - Miscellaneous Components</DCC_Description>
@@ -90,7 +89,6 @@
 			<DCCReference Include="CustomAlignPanel.pas"/>
 			<DCCReference Include="cmpSuDoku.pas"/>
 			<DCCReference Include="cmpExToolBar.pas"/>
-			<DCCReference Include="cmpUserDatabase.pas"/>
 			<DCCReference Include="ExCoolBar.pas"/>
 			<DCCReference Include="cmpExplorerTree.pas"/>
 			<DCCReference Include="cmpRegistryPersistentOptions.pas"/>

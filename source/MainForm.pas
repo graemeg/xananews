@@ -2541,7 +2541,7 @@ procedure TfmMain.actToolsLoadTestMessageExecute(Sender: TObject);
 var
   s: TStream;
   reader: TStreamTextReader;
-  raw: UTF8String;
+  raw: RawByteString;
 begin
   if Opendialog1.Execute then
   begin
@@ -2554,7 +2554,7 @@ begin
       reader := TStreamTextReader.Create(s);
       fTestMessage.Header.Clear;
       while reader.ReadLn(raw, ';') and (raw <> '') do
-        fTestMessage.Header.Add(UTF8ToString(raw));
+        fTestMessage.Header.Add(string(raw));
 
       FixHeaders(fTestMessage.Header);
 
@@ -3269,8 +3269,9 @@ begin
     end;
 
     MessageScrollBox1.Msg := article.Msg;
-    pnlDetailsBar.Font.Charset := CodePageToCharset(article.CodePage);
-    sub := DecodeSubject(article.subject, article.CodePage);
+// TODO: can this be removed?
+//    pnlDetailsBar.Font.Charset := CodePageToCharset(article.CodePage);
+    sub := DecodeSubject(article.subject);
     st := Format('  Message %d from %s.  %s', [article.ArticleNo, article.FromName, sub]);
 //    pnlDetailsBar.Caption := StringReplace(StringToGDIString(st, article.CodePage), '&', '&&', [rfReplaceAll]);
     pnlDetailsBar.Caption := StringReplace(st, '&', '&&', [rfReplaceAll]);
@@ -4768,7 +4769,7 @@ var
   mailAccount: TMailAccount;
   ctnr: TServerAccount;
   attachments: TObjectList;
-  raw: UTF8String;
+  raw: RawByteString;
   rok: Boolean;
 begin
    // Load unposted messages that were saved the last time XanaNews was run.
@@ -4788,7 +4789,7 @@ begin
         rok := reader.ReadLn(raw);
         while rok do
         begin
-          st := UTF8ToString(raw);
+          st := string(raw);
           accountName := SplitString(#9, st);
           noHdrs := StrToIntDef(SplitString(#9, st), -1);
           noMsgLines := StrToIntDef(SplitString(#9, st), -1);
@@ -4824,30 +4825,30 @@ begin
 
 
                 rok := reader.ReadLn(raw);
-                MTo := UTF8ToString(raw);
+                MTo := string(raw);
 
                 if rok then
                 begin
                   rok := reader.ReadLn(raw);
-                  MCC := UTF8ToString(raw);
+                  MCC := string(raw);
                 end;
 
                 if rok then
                 begin
                   rok := reader.ReadLn(raw);
-                  MBCC := UTF8ToString(raw);
+                  MBCC := string(raw);
                 end;
 
                 if rok then
                 begin
                   rok := reader.ReadLn(raw);
-                  MSubject := UTF8ToString(raw);
+                  MSubject := string(raw);
                 end;
 
                 if rok then
                 begin
                   rok := reader.ReadLn(raw);
-                  MReplyTo := UTF8ToString(raw);
+                  MReplyTo := string(raw);
                 end;
 
                 i := noMsgLines;
@@ -4855,7 +4856,7 @@ begin
                 while rok and (i > 0) do
                 begin
                   rok := reader.ReadLn(raw);
-                  if rok then m.Add(UTF8ToString(raw));
+                  if rok then m.Add(string(raw));
                   Dec(i);
                 end;
 
@@ -4868,7 +4869,7 @@ begin
                     rok := reader.ReadLn(raw);
                     if rok then
                     try
-                      attachments.Add(TAttachment.Create(UTF8ToString(raw)));
+                      attachments.Add(TAttachment.Create(string(raw)));
                     except // They might have deleted the file - ignore attachment
                     end;
                     Dec(i);
@@ -4904,7 +4905,7 @@ begin
 
                 i := noHdrs;
                 rok := reader.ReadLn(raw);
-                st := UTF8ToString(raw);
+                st := string(raw);
                 while rok and (i > 0) do
                 begin
                   if h.Count > 0 then
@@ -4912,11 +4913,11 @@ begin
                     begin
                       h[h.Count - 1] := h[h.Count - 1] + #13#10 + st;
                       rok := reader.ReadLn(raw);
-                      st := UTF8ToString(raw);
+                      st := string(raw);
                     end;
                   h.Add(st);
                   rok := reader.ReadLn(raw);
-                  st := UTF8ToString(raw);
+                  st := string(raw);
                   Dec(i);
                 end;
 
@@ -4925,7 +4926,7 @@ begin
                   begin
                     h[h.Count - 1] := h[h.Count - 1] + #13#10 + st;
                     rok := reader.ReadLn(raw);
-                    st := UTF8ToString(raw);
+                    st := string(raw);
                   end;
 
                 i := noMsgLines;
@@ -4934,7 +4935,7 @@ begin
                   m.Add(st);
                   Dec(i);
                   rok := reader.ReadLn(raw);
-                  st := UTF8ToString(raw);
+                  st := string(raw);
                 end;
 
                 i := noAttachments;
@@ -4949,7 +4950,7 @@ begin
                     end;
                     Dec(i);
                     rok := reader.ReadLn(raw);
-                    st := UTF8ToString(raw);
+                    st := string(raw);
                   end;
                 end
                 else
@@ -5381,6 +5382,7 @@ end;
 procedure TfmMain.SaveOutstandingPostings;
 var
   f: TFileStream;
+  writer: TTextStreamWriter;
   i, j, k, attachCount: Integer;
   st: string;
   getter: TTCPGetter;
@@ -5388,111 +5390,100 @@ var
   mailerRequest: TEMailerRequest;
   h, m: TStrings;
   requests, getters: TObjectList;
-
 begin
   m := nil;
   f := TFileStream.Create(gMessageBaseRoot + '\UnsentMessages.dat', fmCreate);
   try
-    m := TStringList.Create;
-    getters := ThreadManager.LockGetterList;
+    writer := TTextStreamWriter.Create(f);
     try
-      for i := 0 to getters.Count - 1 do
-      begin
-        getter := TTCPGetter(getters[i]);
-
-        if Getter is TPoster then
+      m := TStringList.Create;
+      getters := ThreadManager.LockGetterList;
+      try
+        for i := 0 to getters.Count - 1 do
         begin
-          requests := TPoster(getter).LockList;
-          try
-            for j := 0 to requests.Count - 1 do
-            begin
-              posterRequest := TPosterRequest(requests[j]);
-              if Assigned(posterRequest.Attachments) then
-                attachCount := posterRequest.Attachments.Count
-              else
-                attachCount := 0;
+          getter := TTCPGetter(getters[i]);
 
-              m.Text := posterRequest.Msg;
-              h := posterRequest.Hdr;
-
-              st := TPoster(getter).Account.AccountName + #9 +
-                IntToStr(h.Count) + #9 +
-                IntToStr(m.Count) + #9 +
-                IntToStr(attachCount) + #9 +
-                IntToStr(posterRequest.Codepage) + #13#10;
-
-              f.Write(st[1], Length(st));
-
-              for k := 0 to h.Count - 1 do
-              begin
-                st := h[k] + #13#10;
-                f.Write(st[1], Length(st));
-              end;
-
-              for k := 0 to m.Count - 1 do
-              begin
-                st := m[k] + #13#10;
-                f.Write(st[1], Length(st));
-              end;
-
-              for k := 0 to attachCount - 1 do
-              begin
-                st := TAttachment(posterRequest.Attachments[k]).PathName + #13#10;
-                f.Write(st[1], Length(st));
-              end;
-            end;
-          finally
-            TPoster(getter).UnlockList;
-          end;
-        end
-        else
-          if Getter is TEMailer then
+          if Getter is TPoster then
           begin
-            for j := 0 to getter.OutstandingRequestCount - 1 do
+            requests := TPoster(getter).LockList;
             try
-              mailerRequest := TEMailerRequest (TEMailer(getter).Messages[j]);
-              if Assigned(mailerRequest.Attachments) then
-                attachCount := mailerRequest.Attachments.Count
-              else
-                attachCount := 0;
-
-              m.Text := mailerRequest.Msg;
-              if mailerRequest.ArticleContainer is TSubscribedGroup then
-                st := '&&' + TSubscribedGroup(mailerRequest.ArticleContainer).Owner.AccountName + ':'
-              else
-                st := '&&' + 'Mail:';
-
-              st := st + mailerRequest.ArticleContainer.Name + #9 +
-                    IntToStr(5 {h.Count}) + #9 +
-                    IntToStr(m.Count) + #9 +
-                    IntToStr(attachCount) + #9 +
-                    IntToStr(mailerRequest.Codepage)+#13#10;
-
-              f.Write(st[1], Length(st));
-
-              st := mailerRequest.MTo + #13#10; f.Write(st[1], Length(st));
-              st := mailerRequest.MCC + #13#10; f.Write(st[1], Length(st));
-              st := mailerRequest.MBCC + #13#10; f.Write(st[1], Length(st));
-              st := mailerRequest.MSubject + #13#10; f.Write(st[1], Length(st));
-              st := mailerRequest.MReplyTo + #13#10; f.Write(st[1], Length(st));
-
-              for k := 0 to m.Count - 1 do
+              for j := 0 to requests.Count - 1 do
               begin
-                st := m[k] + #13#10;
-                f.Write(st[1], Length(st));
-              end;
+                posterRequest := TPosterRequest(requests[j]);
+                if Assigned(posterRequest.Attachments) then
+                  attachCount := posterRequest.Attachments.Count
+                else
+                  attachCount := 0;
 
-              for k := 0 to attachCount - 1 do
-              begin
-                st := TAttachment (mailerRequest.Attachments[k]).PathName + #13#10;
-                f.Write(st[1], Length (st));
+                m.Text := posterRequest.Msg;
+                h := posterRequest.Hdr;
+
+                st := TPoster(getter).Account.AccountName + #9 +
+                  IntToStr(h.Count) + #9 +
+                  IntToStr(m.Count) + #9 +
+                  IntToStr(attachCount) + #9 +
+                  IntToStr(posterRequest.Codepage);
+
+                writer.WriteLn(st);
+
+                for k := 0 to h.Count - 1 do
+                  writer.WriteLn(h[k]);
+
+                for k := 0 to m.Count - 1 do
+                  writer.WriteLn(m[k]);
+
+                for k := 0 to attachCount - 1 do
+                  writer.WriteLn(TAttachment(posterRequest.Attachments[k]).PathName);
               end;
-            except
+            finally
+              TPoster(getter).UnlockList;
             end;
-          end;
+          end
+          else
+            if Getter is TEMailer then
+            begin
+              for j := 0 to getter.OutstandingRequestCount - 1 do
+              try
+                mailerRequest := TEMailerRequest(TEMailer(getter).Messages[j]);
+                if Assigned(mailerRequest.Attachments) then
+                  attachCount := mailerRequest.Attachments.Count
+                else
+                  attachCount := 0;
+
+                m.Text := mailerRequest.Msg;
+                if mailerRequest.ArticleContainer is TSubscribedGroup then
+                  st := '&&' + TSubscribedGroup(mailerRequest.ArticleContainer).Owner.AccountName + ':'
+                else
+                  st := '&&' + 'Mail:';
+
+                st := st + mailerRequest.ArticleContainer.Name + #9 +
+                      IntToStr(5 {h.Count}) + #9 +
+                      IntToStr(m.Count) + #9 +
+                      IntToStr(attachCount) + #9 +
+                      IntToStr(mailerRequest.Codepage);
+
+                writer.WriteLn(st);
+
+                writer.WriteLn(mailerRequest.MTo);
+                writer.WriteLn(mailerRequest.MCC);
+                writer.WriteLn(mailerRequest.MBCC);
+                writer.WriteLn(mailerRequest.MSubject);
+                writer.WriteLn(mailerRequest.MReplyTo);
+
+                for k := 0 to m.Count - 1 do
+                  writer.WriteLn(m[k]);
+
+                for k := 0 to attachCount - 1 do
+                  writer.WriteLn(TAttachment(mailerRequest.Attachments[k]).PathName);
+              except
+              end;
+            end;
+        end;
+      finally
+        ThreadManager.UnlockGetterList;
       end;
     finally
-      ThreadManager.UnlockGetterList;
+      writer.Free;
     end;
   finally
     f.Free;
@@ -6366,8 +6357,8 @@ var
   article: TArticleBase;
   st, stNumber: string;
   isRoot: Boolean;
-  cp, defCP: Integer;
-  s: string;
+//  cp, defCP: Integer;
+//  s: string;
 begin
   article := GetNodeArticle(node);
   if article is TArticle then
@@ -6390,38 +6381,39 @@ begin
   st := '';
   if Assigned(article) then
   begin
-    defCP := article.Owner.DisplaySettings.DefaultCodepage;
-
-    if article.CodePage = CP_USASCII then
-    begin
-      s := HeaderCharset(article.From);
-      if s = '' then
-        s := HeaderCharset(article.Subject);
-
-      if s <> '' then
-      begin
-        cp := MimeCharsetNameToCodePage(s);
-        if cp = 0 then cp := defCP;
-      end
-      else
-        cp := defCP;
-      if (article.CodePage <> cp) then
-      begin
-        article.CodePage := cp;
-        if node = vstArticles.FocusedNode then
-        begin
-          DisplayArticleBody(article);
-          MessageScrollBox1.Refresh(False, True);
-        end;
-      end;
-    end;
+// TODO: can this be removed?
+//    defCP := article.Owner.DisplaySettings.DefaultCodepage;
+//
+//    if article.CodePage = CP_USASCII then
+//    begin
+//      s := HeaderCharset(article.From);
+//      if s = '' then
+//        s := HeaderCharset(article.Subject);
+//
+//      if s <> '' then
+//      begin
+//        cp := MimeCharsetNameToCodePage(s);
+//        if cp = 0 then cp := defCP;
+//      end
+//      else
+//        cp := defCP;
+//      if (article.CodePage <> cp) then
+//      begin
+//        article.CodePage := cp;
+//        if node = vstArticles.FocusedNode then
+//        begin
+//          DisplayArticleBody(article);
+//          MessageScrollBox1.Refresh(False, True);
+//        end;
+//      end;
+//    end;
 
     case Column of
       0: st := '';
       1: st := stNumber;
       2: if not fForensicMode then
            if isRoot or not Options.FirstLineAsSubject then
-             st := DecodeSubject(article.Subject, article.CodePage)
+             st := DecodeSubject(article.Subject)
            else
              st := Article.InterestingMessageLine
          else
@@ -6685,7 +6677,8 @@ begin
     bclr := clHighlight;
   if Assigned(article) then
   begin
-    Canvas.Font.Charset := CodePageToCharset(article.Codepage);
+// TODO: can this be removed?
+//    Canvas.Font.Charset := CodePageToCharset(article.Codepage);
 
     if not (vsSelected in node^.States) or Options.HighlightSelectedText then
     begin
@@ -10507,8 +10500,8 @@ var
   article: TArticleBase;
   st, stNumber: string;
   isRoot: Boolean;
-  cp, defCP: Integer;
-  s: string;
+//  cp, defCP: Integer;
+//  s: string;
 begin
   article := GetNodeArticle(node);
   if article is TArticle then
@@ -10532,23 +10525,24 @@ begin
   st := '';
   if Assigned(article) then
   begin
-    defCP := article.Owner.DisplaySettings.DefaultCodepage;
-
-    if article.CodePage = CP_USASCII then
-    begin
-      s := HeaderCharset(article.From);
-      if s = '' then
-        s := HeaderCharset(article.Subject);
-
-      if s <> '' then
-      begin
-        cp := MimeCharsetNameToCodePage(s);
-        if cp = 0 then cp := defCP;
-      end
-      else
-        cp := defCP;
-      article.CodePage := cp;
-    end;
+// TODO: Can this be removed?
+//    defCP := article.Owner.DisplaySettings.DefaultCodepage;
+//
+//    if article.CodePage = CP_USASCII then
+//    begin
+//      s := HeaderCharset(article.From);
+//      if s = '' then
+//        s := HeaderCharset(article.Subject);
+//
+//      if s <> '' then
+//      begin
+//        cp := MimeCharsetNameToCodePage(s);
+//        if cp = 0 then cp := defCP;
+//      end
+//      else
+//        cp := defCP;
+//      article.CodePage := cp;
+//    end;
 
     case Column of
       0: if Assigned(Article.Owner) and (Article.Owner.ThreadOrder = toThreaded) then
@@ -10558,7 +10552,7 @@ begin
       1: st := stNumber;
       2: if not fForensicMode then
            if (isRoot) or (not Options.FirstLineAsSubject) then
-             st := DecodeSubject(article.Subject, article.CodePage)
+             st := DecodeSubject(article.Subject)
            else
              st := Article.InterestingMessageLine
          else
