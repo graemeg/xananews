@@ -2,13 +2,15 @@ unit unitLog;
 
 interface
 
-uses Windows, Classes, SysUtils, SyncObjs;
+uses
+  Windows, Classes, SysUtils, SyncObjs;
 
 procedure LogMessage(msg: string; Force: Boolean = False);
 
 implementation
 
-uses NewsGlobals, unitNNTPServices;
+uses
+  NewsGlobals, unitNNTPServices;
 
 var
   crit: TCriticalSection = nil;
@@ -17,6 +19,7 @@ var
 procedure LogMessage(msg: string; Force: Boolean = False);
 var
   dt: TDateTime;
+  raw: RawByteString;
 begin
   if (Force or gLogFlag) and Assigned(crit) then
   begin
@@ -39,7 +42,9 @@ begin
       end;
 
       msg := FormatDateTime('hh:nn:ss:zzzz', Now) + ' TID=' + IntToStr(GetCurrentThreadID) + '- ' + msg + #13#10;
-      lf.Write(msg [1], Length(msg));
+
+      raw := RawByteString(msg);
+      lf.Write(raw[1], Length(raw));
     finally
       crit.Leave;
     end;

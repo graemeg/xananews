@@ -875,6 +875,7 @@ var
   DecodedBytes: TBytes;
   DecodedStream: TMemoryStream;
   EncodedStream: TMemoryStream;
+  Encoding: TEncoding;
 begin
   Result := '';
   x := Pos('?', Input);
@@ -930,7 +931,12 @@ begin
     end;
     DecodedStream.Position := 0;
     ReadTIdBytesFromStream(DecodedStream, DecodedBytes, -1);
-    Result := TEncoding.GetEncoding(cpnum).GetString(DecodedBytes);
+    Encoding := TEncoding.GetEncoding(cpnum);
+    try
+      Result := Encoding.GetString(DecodedBytes);
+    finally
+      Encoding.Free;
+    end;
     // Unfortunately, the Decoder will also trim trailing spaces
     if AttachSpace then
       Result := Result + ' ';
@@ -938,11 +944,6 @@ begin
     EncodedStream.Free;
     DecodedStream.Free;
   end;
-
-//  // Convert character data to widestring
-//  setlength(Result, Length(data));
-//  x := MultiByteToWideChar(cpnum, 0, @data[1], Length(data), @Result[1], Length(Result));
-//  SetLength(Result, x);
 end;
 
 function DecodeHeader(const header: string; codePage: PInteger = nil): string;

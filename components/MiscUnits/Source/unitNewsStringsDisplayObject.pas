@@ -625,6 +625,7 @@ var
   cp, n, lastLen: Integer;
   sl: TStringList;
   ms: TMemoryStream;
+  Encoding: TEncoding;
 begin
   if fUpdating then Exit;
   ctrl := GetRichEdit;
@@ -647,7 +648,12 @@ begin
         // Decode raw data to unicode using spevified CodePage.
         TAnsiStrings(fTextObjects[i]).SaveToStream(ms);
         ms.Position := 0;
-        sl.LoadFromStream(ms, TEncoding.GetEncoding(cp));
+        Encoding := TEncoding.GetEncoding(cp);
+        try
+          sl.LoadFromStream(ms, Encoding);
+        finally
+          Encoding.Free;
+        end;
         st := StringReplace(sl.Text, 'url:', 'url: ', [rfReplaceAll, rfIgnoreCase])
       finally
         sl.Free;

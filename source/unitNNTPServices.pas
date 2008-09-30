@@ -1884,8 +1884,8 @@ begin
       end
     end
   finally
-    reg1.Free;
     reg2.Free;
+    reg1.Free;
     keyNames.Free;
     keyNames1.Free;
     reg.Free;
@@ -2519,11 +2519,11 @@ begin
       reg.DeleteSection ('Batches')
     end;
   finally
+    reg2.Free;
     reg1.Free;
     reg.Free;
     keyNames.Free;
     keyNames1.Free;
-    reg2.Free;
   end
 end;
 
