@@ -27,8 +27,6 @@ type
     hlbSupport: THyperlinkButton;
     stThankYou: TLabel;
     lbDonations: TListBox;
-    TabSheet3: TTabSheet;
-    Memo1: TMemo;
     procedure FormShow(Sender: TObject);
   private
     fThanksTo : string;
