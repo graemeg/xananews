@@ -168,8 +168,7 @@ var
 begin
   AnalyzeQuotes;
 
-  SetLength(qs, MaxLineLength);
-  FillChar(qs[1], MaxLineLength, '>');
+  qs := StringOfChar('>', 80);
   i := 0;
   while i < strings.Count do
   begin
