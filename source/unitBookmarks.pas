@@ -2,7 +2,7 @@ unit unitBookmarks;
 
 interface
 
-uses Windows, Classes, SysUtils, ConTnrs;
+uses Windows, Classes, SysUtils, ConTnrs, XnClasses;
 
 type
 
@@ -228,7 +228,7 @@ end;
 procedure TBookmark.Load;
 var
   f: TFileStream;
-  raw: RawByteString;
+  raw: MessageString;
   str: TStreamTextReader;
   st: string;
 begin

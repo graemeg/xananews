@@ -639,13 +639,24 @@ begin
     Inc(n);
     if TObject(fTextObjects[i]) is TAnsiStrings then
     begin
-      cp := ctrl.CodePage;
-      if cp = 1252 then
-        cp := CP_ACP;
+      if Owner.RawMessage then
+        cp := CP_ACP
+      else
+      begin
+//        cp := ctrl.CodePage; // TODO: check again later if using codepage from object is OK.
+        cp := CodePage;
+// << TODO: why isn't 28593 Latin (3) supported?
+        if cp = 28593 then
+          cp := 28599;
+// >>
+        if cp = 1252 then
+          cp := CP_ACP;
+      end;
+
       sl := TStringList.Create;
       ms := TMemoryStream.Create;
       try
-        // Decode raw data to unicode using spevified CodePage.
+        // Decode raw data to unicode using specified CodePage.
         TAnsiStrings(fTextObjects[i]).SaveToStream(ms);
         ms.Position := 0;
         Encoding := TEncoding.GetEncoding(cp);

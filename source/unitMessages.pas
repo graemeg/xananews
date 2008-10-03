@@ -143,7 +143,7 @@ type
     procedure SetRawMode(const Value: Boolean);
 
   protected
-    function GetLine(var st: RawByteString): Boolean;
+    function GetLine(var st: MessageString): Boolean;
     function TryCreateMessagePart(const st: string; hdr: TMimeHeader): TmvMessagePart;
   public
     constructor Create(AObject: TObject);
@@ -212,7 +212,7 @@ type
     class function IsBoundary(const st: string; MIMEHeader: TMIMEHeader): Boolean; virtual;
     function IsBoundaryEnd(const st: string): Boolean; virtual;
     function ProcessHeaderLine(const st: string): Boolean; virtual; // Return False when header is complete
-    function AddLine(const st: RawByteString): TAddLine; virtual;
+    function AddLine(const st: MessageString): TAddLine; virtual;
     function GetGraphic: TGraphic; virtual;
     function GetBody: TAnsiStrings; virtual;
     procedure DecodeGraphic(gc: TGraphicClass);
@@ -520,7 +520,7 @@ begin
   Result := (fDecodePos = 0) and (fDecodeSize = 0);
 end;
 
-function TmvMessage.GetLine(var st: RawByteString): Boolean;
+function TmvMessage.GetLine(var st: MessageString): Boolean;
 var
   pch, pch1: PAnsiChar;
   p, l: Integer;
@@ -705,11 +705,11 @@ end;
 
 procedure TmvMessage.PartialDecode;
 var
-  st: RawByteString;
+  st: MessageString;
   mp: TmvMessagePart;
   hdr: TMimeHeader;
 
-  procedure AddMessagePartLine(const st: RawByteString);
+  procedure AddMessagePartLine(const st: MessageString);
   var
     prevMessagePart: TmvMessagePart;
     pmp: TmvMIMEMessagePart;
@@ -887,6 +887,10 @@ procedure TmvMessage.SetRawMode(const Value: Boolean);
 begin
   if fRawMode <> Value then
   begin
+    // In case the message was displayed raw, the codepage needs to be read again
+    // when raw mode is switched off.
+    if fRawMode then
+      fCodePage := -1;
     fRawMode := Value;
     fDecodeSize := 0;
     fDecodePos := 0;
@@ -912,9 +916,9 @@ end;
 
 { TmvMessagePart }
 
-function TmvMessagePart.AddLine(const st: RawByteString): TAddLine;
+function TmvMessagePart.AddLine(const st: MessageString): TAddLine;
 var
-  s: RawByteString;
+  s: MessageString;
   mp: TmvMIMEMessagePart;
   mpHeader: TMimeHeader;
 begin
@@ -952,7 +956,7 @@ begin
           Exit;
         end;
 
-      s := st + RawByteString(#13#10);
+      s := st + MessageString(#13#10);
       fData.Write(s[1], Length(s));
     end
     else                        // We're still in the header
@@ -1267,7 +1271,7 @@ begin
   // the body.
   if not Assigned(fBody) then
     fBody := TAnsiStringList.Create;
-  fBody.Add(RawByteString(st));
+  fBody.Add(MessageString(st));
   Result := True;
 end;
 

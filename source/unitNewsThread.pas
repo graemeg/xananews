@@ -1803,6 +1803,7 @@ procedure TPosterRequest.CreateEncodedMessage(var msg: TStrings; const multipart
   end;
 
 begin
+  // TODO: encoding of posted messages
   msg := TStringList.Create;
 
   try

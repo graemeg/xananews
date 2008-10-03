@@ -886,13 +886,13 @@ procedure TidNNTPX.ProcessPipeline;
           end
         end;
 
-        if respOK then                        // We *must* get the response text
+        if respOK then                          // We *must* get the response text
         case pipelineCommand.Command of
-          gmBody : IOHandler.Capture (body, '.');       // nb. Capture works if body is nil -
-                                              // it just discards the result which
-                                              // is what we want.
+          gmBody: IOHandler.Capture(body, '.'); // nb. Capture works if body is nil -
+                                                // it just discards the result which
+                                                // is what we want.
 
-          gmHeader :
+          gmHeader:
             ReceiveHeader (header, '.');
           gmArticle : if ReceiveHeader (header, '') then
                         IOHandler.Capture (body, '.')

@@ -13,7 +13,7 @@ unit unitMessageNNTPBinary;
 interface
 
 uses
-  Windows, Classes, SysUtils, unitMessages, Graphics;
+  Windows, Classes, SysUtils, unitMessages, Graphics, XnClasses;
 
 type
   TmvNNTPBinary = class(TmvMessagePart)
@@ -43,7 +43,7 @@ var
   str: TStreamTextReader;
   sz: Integer;
   st: string;
-  raw: RawByteString;
+  raw: MessageString;
 begin
   // Clear and fill the stream with decoded data.
   // nb - *must* leave fData at end of stream.

@@ -3,7 +3,7 @@ unit unitLog;
 interface
 
 uses
-  Windows, Classes, SysUtils, SyncObjs;
+  Windows, Classes, SysUtils, SyncObjs, XnClasses;
 
 procedure LogMessage(msg: string; Force: Boolean = False);
 
@@ -19,7 +19,7 @@ var
 procedure LogMessage(msg: string; Force: Boolean = False);
 var
   dt: TDateTime;
-  raw: RawByteString;
+  raw: MessageString;
 begin
   if (Force or gLogFlag) and Assigned(crit) then
   begin
@@ -43,7 +43,7 @@ begin
 
       msg := FormatDateTime('hh:nn:ss:zzzz', Now) + ' TID=' + IntToStr(GetCurrentThreadID) + '- ' + msg + #13#10;
 
-      raw := RawByteString(msg);
+      raw := MessageString(msg);
       lf.Write(raw[1], Length(raw));
     finally
       crit.Leave;

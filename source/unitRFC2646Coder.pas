@@ -4,7 +4,7 @@ unit unitRFC2646Coder;
 
 interface
 
-uses Windows, Classes, SysUtils, IdCoder;
+uses Windows, Classes, SysUtils, IdCoder, XnClasses;
 
 type
   TRFC2646Decoder = class(TidDecoder)
@@ -38,7 +38,7 @@ implementation
 
 procedure TRFC2646Decoder.DecodeBuffer(buf: PAnsiChar; bufLen: Integer; ADest: TStream);
 var
-  s: RawByteString;
+  s: MessageString;
 begin
   SetString(s, buf, bufLen);
   DecodeBegin(ADest);

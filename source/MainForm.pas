@@ -46,7 +46,7 @@ uses
 {$endif}
   unitBookmarks, cmpSplitterPanel, unitNewsStringsDisplayObject,
   unitGetMessages1, unitMailServices, Tabs, ButtonGroup, CategoryButtons,
-  ExCoolBar, unitExSettings;
+  ExCoolBar, unitExSettings, XnClasses;
 
 type
 
@@ -2541,7 +2541,7 @@ procedure TfmMain.actToolsLoadTestMessageExecute(Sender: TObject);
 var
   s: TStream;
   reader: TStreamTextReader;
-  raw: RawByteString;
+  raw: MessageString;
 begin
   if Opendialog1.Execute then
   begin
@@ -4769,7 +4769,7 @@ var
   mailAccount: TMailAccount;
   ctnr: TServerAccount;
   attachments: TObjectList;
-  raw: RawByteString;
+  raw: MessageString;
   rok: Boolean;
 begin
    // Load unposted messages that were saved the last time XanaNews was run.

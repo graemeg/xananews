@@ -240,7 +240,6 @@ var
   mp : TmvMessagePart;
   XFace : TBitmap;
   bo : TObject;
-  headst : string;
   nsd : TNewsStringsDisplayObjectLink;
 
   procedure AddOrReplaceObject (obj : TObject; XFace, header : boolean);
@@ -351,11 +350,8 @@ begin
 
   fMessageDisplay.BeginUpdate;
   try
-    fMessageDisplay.RawMode := RawMode or RawMessage;
-    if fMessageDisplay.RawMode then
-      headst := ''
-    else
-      headst := #1;
+    fMessageDisplay.RawMode    := RawMode;
+    fMessageDisplay.RawMessage := RawMessage;
 
     c := 0;
     ct := 0;
@@ -394,19 +390,13 @@ begin
     begin
       mp := Msg.AlternateMessagePart [i];
 
-(*
-      if Assigned (mp.Preamble) then
-        AddOrReplaceObject (mp.Preamble);
-*)
-
-
       if Assigned (mp.Body) then
         AddOrReplaceObject (mp.Body, False, False)
       else
         if Assigned (mp.Graphic) then
           AddOrReplaceObject (mp.Graphic, False, False);
 
-      Inc (i)
+      Inc(i);
     end
   finally
     try
@@ -433,7 +423,6 @@ end;
 
 procedure TMessageScrollBox.SetMsg(const Value: TmvMessage);
 begin
-
   if fParsing or fMessageDisplay.IsUpdating then
   begin
     Windows.Beep (440, 10);
@@ -464,13 +453,11 @@ begin
     DisableAutoRange;
     try
       fMessageDisplay.Clear;
-
-      Refresh (false);
+      Refresh(false);
     finally
       EnableAutoRange
     end
   end
-
 end;
 
 procedure TMessageScrollBox.Refresh (erase : boolean; renew : boolean);
@@ -612,7 +599,7 @@ begin
       HorzScrollBar.Position := 0;
       DisableAutoRange;
       try
-        fMessageDisplay.Clear;
+        fMessageDisplay.RawMessage := fRawMessage;
         fLastSize := 0;
         Refresh (false);
       finally

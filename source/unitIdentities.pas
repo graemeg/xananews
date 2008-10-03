@@ -25,7 +25,7 @@ unit unitIdentities;
 
 interface
 
-uses Windows, Classes, SysUtils, StrUtils, ConTnrs, unitExSettings;
+uses Windows, Classes, SysUtils, StrUtils, ConTnrs, unitExSettings, XnClasses;
 
 type
   TIdentity = class
@@ -390,7 +390,7 @@ var
   rdr: TStreamTextReader;
   idx: TList;
   st: string;
-  raw: RawByteString;
+  raw: MessageString;
   sig: string;
   useSigFile: boolean;
 

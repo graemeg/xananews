@@ -1,7 +1,9 @@
 program NewsReader3;
 
 uses
+{$ifdef DEBUG}
   FastMM4,
+{$endif}
   madListHardware,
   madListProcesses,
   madListModules,
@@ -12,6 +14,10 @@ uses
   SysUtils,
   SyncObjs,
   NewsGlobals,
+{$ifdef DEBUG}
+  IdGlobal,
+  IdThreadSafe,
+{$endif}
   MainForm in 'MainForm.pas' {fmMain},
   SplashForm in 'SplashForm.pas' {fmSplash},
   AccountsDialog in 'AccountsDialog.pas' {dlgAccounts},
@@ -107,7 +113,7 @@ uses
 {$R *.res}
 {$R I.RES}
 
-procedure ShowSplash;               
+procedure ShowSplash;
 var
   i : Integer;
   noSplash : boolean;
@@ -129,9 +135,10 @@ begin
 end;
 
 begin
-  {$ifdef FastMM}
-//  RegisterExpectedMemoryLeak (TCriticalSection); {In Indy 9}
-  {$endif}
+{$ifdef DEBUG}
+  RegisterExpectedMemoryLeak(TIdThreadSafeInteger);  {In Indy 10.2.5 (D2009)}
+  RegisterExpectedMemoryLeak(TIdCriticalSection, 2); {In Indy 10.2.5 (D2009)}
+{$endif}
   if TfmMain.CheckRunOnce then
   begin
     Application.Initialize;
@@ -140,6 +147,6 @@ begin
     Application.Title := 'XanaNews';
     Application.HelpFile := 'XanaNews.chm';
     Application.CreateForm(TfmMain, fmMain);
-  Application.Run
+    Application.Run
   end
 end.

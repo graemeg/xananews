@@ -256,26 +256,37 @@ end;
 
 procedure TfmePost.PostAndClose;
 var
-  st : string;
-  s : TStringList;
+  st: string;
+  s: TStringList;
+  DecodedBytes: TBytes;
+  Encoding: TEncoding;
 begin
   fCloseOK := True;
 //  st := WideStringToString (mmoMessage.Text, fCodePage);
   st := mmoMessage.Text;
+
+//  // TODO: encoding of posted messages
+//  Encoding := TEncoding.GetEncoding(fCodePage);
+//  try
+//    DecodedBytes := TEncoding.ASCII.GetBytes(mmoMessage.Text);
+//    st := Encoding.GetString(DecodedBytes);
+//  finally
+//    Encoding.Free;
+//  end;
 
   if (fPostingSettings.MaxPostLineLength > 0) and (fPostingSettings.TextPartStyle <> tpQuotedPrintable) and (fPostingSettings.TextPartStyle <> tpFlowed) then
   begin
     s := TStringList.Create;
     try
       s.Text := st;
-      WrapStrings (s, fPostingSettings.MaxPostLineLength, tpNNTP, false, false);
-      st := s.Text
+      WrapStrings(s, fPostingSettings.MaxPostLineLength, tpNNTP, false, false);
+      st := s.Text;
     finally
-      s.Free
+      s.Free;
     end;
   end;
 
-  SendMessage (Parent.Handle, WM_POSTANDCLOSE, Integer (PChar (st)), fCodePage);
+  SendMessage(Parent.Handle, WM_POSTANDCLOSE, Integer(PChar(st)), fCodePage);
 end;
 
 procedure TfmePost.UpdateActions(okOK: boolean);

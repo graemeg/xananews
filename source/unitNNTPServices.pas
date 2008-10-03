@@ -3450,7 +3450,7 @@ var
   i, j : Integer;
   article : Tarticle;
   st : string;
-  raw: RawByteString;
+  raw: MessageString;
 //  ms : TFileStream;
   ms : TBufferedFileWriter;
   hasMessage, tmpMessage : boolean;
@@ -3532,12 +3532,12 @@ begin
 
           if hasMessage and recreateMessageFile then
           begin
-            raw := RawByteString('X-Msg:'+ IntToHex(article.fMsg.RawData.Size, 8));
+            raw := MessageString('X-Msg:'+ IntToHex(article.fMsg.RawData.Size, 8));
             ms.Write(raw[1], Length(raw));
 
             for j := 0 to article.fMsg.Header.Count - 1 do
             begin
-              raw := RawByteString(article.fMsg.Header[j]);
+              raw := MessageString(article.fMsg.Header[j]);
               hLen := Length(raw);
               ms.Write(hLen, SizeOf(hLen));
               ms.Write(raw[1], Length(raw));
@@ -3809,7 +3809,7 @@ var
   i, len: Integer;
   hLen: word;
   st: string;
-  raw: RawByteString;
+  raw: MessageString;
   r: TAnsiStrings;
   m: TMemoryStream;
   rCreated: boolean;
@@ -4101,19 +4101,19 @@ end;
  *----------------------------------------------------------------------*)
 procedure TArticle.SaveMessageBody;
 var
-  st: RawByteString;
+  st: MessageString;
   i: Integer;
   hLen: Word;
 begin
   fOwner.OpenMessageFile;
   fOwner.fMessageFile.Seek(0, soFromEnd);
   fMessageOffset := fOwner.fMessageFile.Position;
-  st := RawByteString('X-Msg:'+ IntToHex(fMsg.RawData.Size, 8));
+  st := MessageString('X-Msg:'+ IntToHex(fMsg.RawData.Size, 8));
   fOwner.fMessageFile.Write(st[1], Length(st));
 
   for i := 0 to fMsg.Header.Count - 1 do
   begin
-    st := RawByteString(fMsg.Header[i]);
+    st := MessageString(fMsg.Header[i]);
     hLen := Length(st);
     fOwner.fMessageFile.Write(hLen, SizeOf(hLen));
     fOwner.fMessageFile.Write(st[1], Length(st));
@@ -4368,7 +4368,7 @@ var
   pc, pc1 : PChar;
   reader : TTextFileReader;
   n, l, fgs : Integer;
-  raw: RawByteString;
+  raw: MessageString;
 begin
   // Already LSSync-ed when this is called
   fileName := gMessageBaseRoot + '\' + FixFileNameString(Owner.AccountName) + '\' + FixFileNameString(Name) + '\articles.dat';
@@ -4468,7 +4468,7 @@ var
   lines : Cardinal;
   exd, s, st : string;
   article : TArticle;
-  raw: RawByteString;
+  raw: MessageString;
 
 begin
   if not fArticlesLoaded then
@@ -6581,7 +6581,7 @@ end;
 
 function TArticleBase.GetMsgFromFile: TmvMessage;
 var
-  st: RawByteString;
+  st: MessageString;
   len: DWORD;
   hLen: Word;
   cp: Integer;
@@ -6827,7 +6827,7 @@ end;
 function TArticleBase.PeekAtMsgHdrFromFile(const hdr: string): string;
 var
   st: string;
-  raw: RawByteString;
+  raw: MessageString;
   hLen: word;
 begin
   result := '';

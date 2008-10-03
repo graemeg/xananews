@@ -6,6 +6,7 @@ uses
   Windows, Messages, Classes, SysUtils, Variants, TypInfo, ActiveX;
 
 type
+  MessageString = type RawByteString;
 
   TAnsiStrings = class(TPersistent)
   private

@@ -931,6 +931,10 @@ begin
     end;
     DecodedStream.Position := 0;
     ReadTIdBytesFromStream(DecodedStream, DecodedBytes, -1);
+// << TODO: why isn't 28593 Latin (3) supported?
+    if cpnum = 28593 then
+      cpnum := 28599;
+// >>
     Encoding := TEncoding.GetEncoding(cpnum);
     try
       Result := Encoding.GetString(DecodedBytes);

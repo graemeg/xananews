@@ -1,6 +1,6 @@
 object fmMain: TfmMain
-  Left = 93
-  Top = 117
+  Left = 123
+  Top = 163
   HelpType = htKeyword
   HelpKeyword = 'Workspace'
   ActiveControl = vstSubscribed
@@ -51,7 +51,6 @@ object fmMain: TfmMain
     OnClick = StatusBarClick
     OnMouseMove = StatusBarMouseMove
     OnDrawPanel = StatusBarDrawPanel
-    ExplicitWidth = 967
   end
   object pnlRight: TPanel
     Left = 294
@@ -605,9 +604,9 @@ object fmMain: TfmMain
   end
   object SplitterPanel1: TSplitterPanel
     Left = 0
-    Top = 119
+    Top = 112
     Width = 4
-    Height = 371
+    Height = 378
     Align = alLeft
     AutoSize = True
     BevelledSplitters = False
@@ -621,9 +620,9 @@ object fmMain: TfmMain
   end
   object SplitterPanel2: TSplitterPanel
     Left = 805
-    Top = 119
+    Top = 112
     Width = 4
-    Height = 371
+    Height = 378
     Align = alRight
     AutoSize = True
     BevelledSplitters = False
@@ -634,11 +633,10 @@ object fmMain: TfmMain
     SplitterWidth = 6
     TabOrder = 5
     OnDockDrop = SplitterPanel1DockDrop
-    ExplicitLeft = 963
   end
   object SplitterPanel3: TSplitterPanel
     Left = 0
-    Top = 113
+    Top = 106
     Width = 809
     Height = 6
     Align = alTop
@@ -650,51 +648,52 @@ object fmMain: TfmMain
     SplitterWidth = 6
     TabOrder = 6
     OnDockDrop = SplitterPanel3DockDrop
-    ExplicitWidth = 967
   end
   object cbMain: TExCoolBar
     Left = 0
     Top = 0
     Width = 809
-    Height = 113
+    Height = 106
     AutoSize = True
     Bands = <
       item
         Control = tbMenu
         ImageIndex = -1
         MinHeight = 21
-        Width = 809
+        Width = 807
       end
       item
         Control = tbMain
         ImageIndex = -1
         MinHeight = 36
-        Width = 809
+        Width = 807
       end
       item
         Control = pnlSearchBar
         ImageIndex = -1
-        Width = 809
+        MinHeight = 21
+        Width = 807
       end
       item
         Control = pnlBatchBar
         ImageIndex = -1
-        Width = 809
+        MinHeight = 22
+        Width = 807
       end>
     EdgeBorders = []
-    ExplicitWidth = 967
     object pnlBatchBar: TPanel
-      Left = 10
-      Top = 88
-      Width = 795
-      Height = 25
+      Left = 12
+      Top = 84
+      Width = 254
+      Height = 22
       Alignment = taLeftJustify
+      AutoSize = True
       BevelOuter = bvNone
       Caption = '   Run Batch'
       TabOrder = 0
       object cbBatches: TComboBox
-        Left = 63
-        Top = 1
+        Left = 0
+        Top = 0
         Width = 224
         Height = 22
         Style = csOwnerDrawFixed
@@ -704,8 +703,8 @@ object fmMain: TfmMain
         OnSelect = cbBatchesSelect
       end
       object ToolBar1: TToolBar
-        Left = 294
-        Top = 1
+        Left = 231
+        Top = 0
         Width = 23
         Height = 22
         Align = alNone
@@ -722,9 +721,9 @@ object fmMain: TfmMain
       end
     end
     object tbMain: TToolBar
-      Left = 10
+      Left = 12
       Top = 23
-      Width = 795
+      Width = 793
       Height = 36
       AutoSize = True
       ButtonHeight = 36
@@ -860,9 +859,9 @@ object fmMain: TfmMain
       end
     end
     object tbMenu: TToolBar
-      Left = 10
+      Left = 12
       Top = 0
-      Width = 795
+      Width = 793
       Height = 21
       AutoSize = True
       ButtonHeight = 21
@@ -955,17 +954,18 @@ object fmMain: TfmMain
       end
     end
     object pnlSearchBar: TPanel
-      Left = 10
+      Left = 12
       Top = 61
-      Width = 795
-      Height = 25
+      Width = 609
+      Height = 21
       Alignment = taLeftJustify
+      AutoSize = True
       BevelOuter = bvNone
       Caption = '   Search'
       TabOrder = 3
       object cbSearchBarTarget: TComboBox
-        Left = 48
-        Top = 2
+        Left = 0
+        Top = 0
         Width = 105
         Height = 21
         Style = csDropDownList
@@ -982,8 +982,8 @@ object fmMain: TfmMain
           'Lines')
       end
       object cbSearchBarOp: TComboBox
-        Left = 159
-        Top = 2
+        Left = 111
+        Top = 0
         Width = 121
         Height = 21
         Style = csDropDownList
@@ -991,8 +991,8 @@ object fmMain: TfmMain
         TabOrder = 1
       end
       object edSearchBarText: TEdit
-        Left = 286
-        Top = 2
+        Left = 238
+        Top = 0
         Width = 162
         Height = 21
         TabOrder = 2
@@ -1000,8 +1000,8 @@ object fmMain: TfmMain
         OnExit = edSearchBarTextExit
       end
       object rbSearchbarSearch: TRadioButton
-        Left = 454
-        Top = 4
+        Left = 406
+        Top = 2
         Width = 59
         Height = 17
         Caption = 'Search'
@@ -1010,24 +1010,24 @@ object fmMain: TfmMain
         TabStop = True
       end
       object rbBookmark: TRadioButton
-        Left = 516
-        Top = 4
+        Left = 468
+        Top = 2
         Width = 73
         Height = 17
         Caption = 'Bookmark'
         TabOrder = 4
       end
       object rbFilter: TRadioButton
-        Left = 587
-        Top = 4
+        Left = 539
+        Top = 2
         Width = 46
         Height = 17
         Caption = 'Filter'
         TabOrder = 5
       end
       object Button1: TButton
-        Left = 636
-        Top = 2
+        Left = 588
+        Top = 0
         Width = 21
         Height = 21
         Action = actToolsSearchbarGo

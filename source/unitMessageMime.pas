@@ -135,7 +135,7 @@ var
   coder: TRFC2646Decoder;
   s: TStringStream;
   st: AnsiString;
-  raw: RawByteString;
+  raw: MessageString;
 begin
   // Decode a 'format flowed' stream to a string list - See RFC 2646
   coder := nil;
@@ -170,7 +170,7 @@ var
   str: TStreamTextReader;
   s: TMemoryStream;
   st: string;
-  raw: RawByteString;
+  raw: MessageString;
 begin
   str := nil;
   s := nil;
@@ -284,7 +284,7 @@ var
   decoder: TidDecoder;
   st: string;
   str: TStreamTextReader;
-  raw: RawByteString;
+  raw: MessageString;
 begin
   DecodeHeader;
 

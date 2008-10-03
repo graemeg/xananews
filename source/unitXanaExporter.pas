@@ -2,7 +2,9 @@ unit unitXanaExporter;
 
 interface
 
-uses Windows, Classes, SysUtils, Forms, ZLib, unitEXSettings, unitNNTPServices;
+uses
+  Windows, Classes, SysUtils, Forms, ZLib, unitEXSettings, unitNNTPServices,
+  XnClasses;
 
 type
   TOnProgress = procedure(sender: TObject; pos, max: Integer; const group: string) of object;
@@ -21,19 +23,21 @@ implementation
 uses NewsGlobals, unitSearchString;
 
 type
-  TLabelBlock = array[0..255] of char;
+  TLabelBlock = array[0..255] of AnsiChar;
 
 procedure WriteLabelBlock(lab: string; size: Integer; strm: TStream);
 var
   len: Integer;
   blck: TLabelBlock;
+  raw: MessageString;
 begin
   lab := '~~XaNaFood~' + IntToHex(size, 8) + '~' + lab;
   FillChar(blck, SizeOf(blck), 0);
   len := Length(lab);
   if len > SizeOf(blck) then
-    len := sizeof(blck);
-  Move(lab[1], blck, len);
+    len := SizeOf(blck);
+  raw := MessageString(lab);
+  Move(raw[1], blck, len);
   strm.Write(blck[0], SizeOf(blck));
 end;
 
@@ -43,14 +47,13 @@ var
   st: string;
 begin
   strm.Read(blck[0], SizeOf(blck));
+  st := string(blck);
 
-  if Copy(blck, 1, 11) <> '~~XaNaFood~' then
+  if Copy(st, 1, 11) <> '~~XaNaFood~' then
     raise Exception.Create('Invalid archive block');
 
-  st := Copy(blck, 12, 8);
-  size := StrToInt('$' + st);
-  lab := Copy(blck, 21, SizeOf(blck) - 21);
-  lab := PChar(lab);
+  size := StrToInt('$' + Copy(st, 12, 8));
+  lab := Copy(st, 21, SizeOf(blck) - 21);
 end;
 
 procedure CopyFileToStream(const lab, fileName: string; stream: TStream);

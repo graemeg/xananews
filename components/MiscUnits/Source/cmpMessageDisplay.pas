@@ -168,6 +168,7 @@ type
     fOnURLClick: TURLNotifyEvent;
     fOnURLDblClick: TURLNotifyEvent;
     fReadOnly: boolean;
+    fRawMessage: boolean;
     fRawMode: boolean;
     fCreateWindowSizeW: Integer;
     fCreateWindowSizeH: Integer;
@@ -193,6 +194,7 @@ type
     procedure SetFocusedObject(const Value: Integer);
     function GetUpdating: boolean;
     function GetHasSelection: boolean;
+    procedure SetRawMessage(const Value: boolean);
     procedure SetRawMode(const Value: boolean);
     function GetText: WideString;
     function GetSelLength: Integer;
@@ -260,6 +262,7 @@ type
     property Font;
     property NewsAttributes : Boolean read fNewsAttributes write fNewsAttributes;
     property PictureIndent : Integer read fPictureIndent write SetPictureIndent;
+    property RawMessage : boolean read fRawMessage write SetRawMessage;
     property RawMode : boolean read fRawMode write SetRawMode;
     property ReadOnly : boolean read fReadOnly write fReadOnly default True;
     property TextIndent : Integer read fTextIndent write SetTextIndent;
@@ -1181,19 +1184,23 @@ begin
   end
 end;
 
-(*----------------------------------------------------------------------*
- | procedure TMessageDisplay.SetSelPos                                  |
- |                                                                      |
- | Set the sel start position.  Make sure it's valid.                   |
- *----------------------------------------------------------------------*)
+procedure TMessageDisplay.SetRawMessage(const Value: boolean);
+begin
+  if fRawMessage <> value then
+  begin
+    fRawMessage := Value;
+    Clear;
+  end;
+end;
+
 procedure TMessageDisplay.SetRawMode(const Value: boolean);
 begin
   if fRawMode <> value then
   begin
     fRawMode := Value;
     Refresh;
-    Invalidate
-  end
+    Invalidate;
+  end;
 end;
 
 (*----------------------------------------------------------------------*

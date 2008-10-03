@@ -4,11 +4,11 @@
  | Cached, variable length key B-Tree index unit.  Public classes are:  |
  |                                                                      |
  | TBTree               Associate an integer with a variable length     |
- |                      RawByteString                                   |
+ |                      MessageString                                   |
  |                                                                      |
  | TBTreeIterator       Iterate through a TBTree                        |
  |                                                                      |
- | TDataTree            Associate a variable length RawByteString       |
+ | TDataTree            Associate a variable length MessageString       |
  |                      with an integer                                 |
  |                                                                      |
  | TDataTreeIterator    Iterate through a TDataTree                     |
@@ -40,23 +40,23 @@ unit unitBTree;
 interface
 
 uses
-  Windows, Classes, SysUtils, ConTnrs, unitObjectCache;
+  Windows, Classes, SysUtils, ConTnrs, unitObjectCache, XnClasses;
 
 type
   //----------------------------------------------------------------
   // Header for B-Tree page (in index file)
   TPageHeader = packed record
-    Flags: Integer;
-    KeysOnPage: Integer;
-    PrevPage: Integer;          // -1 = leaf
-    PrevPageHeight: Integer;
+    Flags: LongInt;
+    KeysOnPage: LongInt;
+    PrevPage: LongInt;          // -1 = leaf
+    PrevPageHeight: LongInt;
   end;
 
   //----------------------------------------------------------------
   // Header for B-Tree node (in index file)
   TNodeHeader = packed record
-    NextPage: Integer;
-    NextPageHeight: Integer;
+    NextPage: LongInt;
+    NextPageHeight: LongInt;
     KeyLen: Word;
   end;
   PNodeHeader = ^TNodeHeader;
@@ -82,15 +82,15 @@ type
   // Index file header
   TFileInfo = packed record
     id: array[0..7] of AnsiChar;
-    Flags: Integer;
-    PageCount: Integer;
-    RootPage: Integer;
-    RecordCount: Integer;
-    FirstDeletedPage: Integer;
+    Flags: LongInt;
+    PageCount: LongInt;
+    RootPage: LongInt;
+    RecordCount: LongInt;
+    FirstDeletedPage: LongInt;
                                   // Let the user use the otherwise unused
                                   // space in the file header.
-    ExtraDataSize: word;
-    ExtraData: array[0..PAGE_SIZE - 5 * SizeOf(Integer) - 8 - 1 - SizeOf(word)] of Byte;
+    ExtraDataSize: Word;
+    ExtraData: array[0..PAGE_SIZE - 5 * SizeOf(LongInt) - 8 - 1 - SizeOf(Word)] of Byte;
   end;
 
   //----------------------------------------------------------------
@@ -103,9 +103,9 @@ type
   //----------------------------------------------------------------
   // B-Tree node (in memory)
   TNode = record
-    key: RawByteString;
-    NextPage: Integer;
-    NextPageHeight: Integer;
+    key: MessageString;
+    NextPage: LongInt;
+    NextPageHeight: LongInt;
   end;
 
   TRawBTree = class;
@@ -126,7 +126,7 @@ type
     function GetFlags(bits: Integer): Boolean;
     procedure SetFlags(bits: Integer; const Value: Boolean);
 
-    function FindNode(const st: RawByteString; var idx: Integer): Boolean;
+    function FindNode(const st: MessageString; var idx: Integer): Boolean;
     procedure InsertNode(idx: Integer; const node: TNode);
     function GetNode(idx: Integer): TNode;
     function GetHeight: Integer;
@@ -155,7 +155,7 @@ type
     procedure Notify(Ptr: Pointer; Action: TListNotification); override;
   end;
 
-  TRawBTreeForEachProc = procedure(const key: RawByteString; param: Integer; var continue: Boolean) of object;
+  TRawBTreeForEachProc = procedure(const key: MessageString; param: Integer; var continue: Boolean) of object;
 
   TBTreeDuplicates = (dupIgnore, dupAccept, dupError, dupReplace);
 
@@ -185,27 +185,27 @@ type
     procedure DeleteOldPage(page: TPage);
 
     function PutKeyOnPage(pg: TPage; idx: Integer; const memNode: TNode): TNode;
-    function PutKeyInTree(pg: TPage; const key: RawByteString): TNode;
-    function DeleteKeyFromTree(pg: TPage; const key: RawByteString): Integer;
+    function PutKeyInTree(pg: TPage; const key: MessageString): TNode;
+    function DeleteKeyFromTree(pg: TPage; const key: MessageString): Integer;
     function DeleteKeyFromPage(page: TPage; idx: Integer): Integer;
     function GetRecordCount: Integer;
     function GetRootPage: TPage;
     procedure SetDuplicates(const Value: TBTreeDuplicates);
     function GetDuplicates: TBTreeDuplicates;
-    function GetExtraData: RawByteString;
+    function GetExtraData: MessageString;
     procedure ResetNodeHeight(pg: TPage; idx: Integer);
-    procedure SetExtraData(Value: RawByteString);
-    function GetIndexOfKey(var key: RawByteString): Integer;
+    procedure SetExtraData(Value: MessageString);
+    function GetIndexOfKey(var key: MessageString): Integer;
   protected
-    function GetKey(idx: Integer): RawByteString;
-    function CompareKeys(const k1, k2: RawByteString): Integer; virtual;
+    function GetKey(idx: Integer): MessageString;
+    function CompareKeys(const k1, k2: MessageString): Integer; virtual;
 
-    function AddKey(const key: RawByteString): Boolean;
-    function DeleteKey(const key: RawByteString): Boolean;
+    function AddKey(const key: MessageString): Boolean;
+    function DeleteKey(const key: MessageString): Boolean;
     procedure ForEach(proc: TRawBTreeForEachProc; param: Integer);
-    function Find(key: RawByteString; var fKey: RawByteString): Boolean;
+    function Find(key: MessageString; var fKey: MessageString): Boolean;
 
-    property Key[idx: Integer]: RawByteString read GetKey;
+    property Key[idx: Integer]: MessageString read GetKey;
   public
     constructor Create(const AFileName: string); virtual;
     destructor Destroy; override;
@@ -214,7 +214,7 @@ type
     procedure EndUpdate;
 
 
-    property ExtraData: RawByteString read GetExtraData write SetExtraData;
+    property ExtraData: MessageString read GetExtraData write SetExtraData;
 
     property RecordCount: Integer read GetRecordCount;
 
@@ -247,27 +247,27 @@ type
     fBTree: TRawBTree;
     fStack: TObjectStack;
     procedure ClearPageStack;
-    function IntToBin(i: Integer): RawByteString;
+    function IntToBin(i: Integer): MessageString;
   public
     constructor Create(ABTree: TRawBTree);
     destructor Destroy; override;
 
-    function First(var key: RawByteString): Boolean;
-    function Last(var key: RawByteString): Boolean;
-    function Next(var key: RawByteString): Boolean;
-    function Prev(var key: RawByteString): Boolean;
-    function Find(var key: RawByteString): Boolean;
+    function First(var key: MessageString): Boolean;
+    function Last(var key: MessageString): Boolean;
+    function Next(var key: MessageString): Boolean;
+    function Prev(var key: MessageString): Boolean;
+    function Find(var key: MessageString): Boolean;
 
     property BTree: TRawBTree read fBTree;
   end;
 
-  TBTreeForEachProc = procedure (const key: RawByteString; dataRec: Integer; var continue: Boolean) of object;
+  TBTreeForEachProc = procedure(const key: MessageString; dataRec: Integer; var continue: Boolean) of object;
 
   //----------------------------------------------------------------
-  // TBTree class.  Associate an integer with a RawByteString
+  // TBTree class.  Associate an integer with a MessageString
   //
   // eg.   The integer could contain an offset into a file of
-  //       'user details' records, and the RawByteString could contain the
+  //       'user details' records, and the MessageString could contain the
   //       user id.
   //
   //       In the XanaNewz server, this is used both to associate a
@@ -276,73 +276,73 @@ type
 
   TBTree = class(TRawBTree)
   private
-    function IntToBin(i: Integer): RawByteString;
-    function ExtractDataRec (const key: RawByteString): Integer;
-    function InternalGetKey(idx: Integer): RawByteString;
-    function GetDataRec(const key: RawByteString): Integer;
-    procedure SetDataRec(const key: RawByteString; const Value: Integer);
+    function IntToBin(i: Integer): MessageString;
+    function ExtractDataRec(const key: MessageString): Integer;
+    function InternalGetKey(idx: Integer): MessageString;
+    function GetDataRec(const key: MessageString): Integer;
+    procedure SetDataRec(const key: MessageString; const Value: Integer);
   protected
-    function CompareKeys(const k1, k2: RawByteString): Integer; override;
+    function CompareKeys(const k1, k2: MessageString): Integer; override;
   public
-    function AddKey(const key: RawByteString; DataRec: Integer): Boolean;
-    function DeleteKey(const key: RawByteString): Boolean;
+    function AddKey(const key: MessageString; DataRec: Integer): Boolean;
+    function DeleteKey(const key: MessageString): Boolean;
     procedure ForEach(proc: TBTreeForEachProc);
-    function Find(key: RawByteString; var dataRec: Integer): Boolean;
+    function Find(key: MessageString; var dataRec: Integer): Boolean;
 
-    function GetKey(idx: Integer; var dataRec: Integer): RawByteString;
-    function GetIndexOfKey(var key: RawByteString; var dataRec: Integer): Integer;
+    function GetKey(idx: Integer; var dataRec: Integer): MessageString;
+    function GetIndexOfKey(var key: MessageString; var dataRec: Integer): Integer;
 
-    property Key[idx: Integer]: RawByteString read InternalGetKey;
-    property DataRec[const key: RawByteString]: Integer read GetDataRec write SetDataRec;
+    property Key[idx: Integer]: MessageString read InternalGetKey;
+    property DataRec[const key: MessageString]: Integer read GetDataRec write SetDataRec;
   end;
 
-  TDataTreeForEachProc = procedure (n: Integer; const st: RawByteString; var continue: Boolean) of object;
+  TDataTreeForEachProc = procedure(n: Integer; const st: MessageString; var continue: Boolean) of object;
 
   //----------------------------------------------------------------
-  // TDataTree class.  Associate a RawByteString with an integer.
+  // TDataTree class.  Associate a MessageString with an integer.
   //
-  // This effectively gives a sparse array of RawByteStrings.
+  // This effectively gives a sparse array of MessageStrings.
   //
   // eg.   In the XanaNewz server, this is used to associate a group's
   //       article no with a message id.
   TDataTree = class(TRawBTree)
   private
-    function IntToBin(i: Integer): RawByteString;
-    function BinToInt(const st: RawByteString): Integer;
-    function GetValue(n: Integer): RawByteString;
+    function IntToBin(i: Integer): MessageString;
+    function BinToInt(const st: MessageString): Integer;
+    function GetValue(n: Integer): MessageString;
   protected
-    function CompareKeys(const k1, k2: RawByteString): Integer; override;
+    function CompareKeys(const k1, k2: MessageString): Integer; override;
   public
-    function AddKey(n: Integer; const st: RawByteString): Boolean;
+    function AddKey(n: Integer; const st: MessageString): Boolean;
     function DeleteKey(n: Integer): Boolean;
     procedure ForEach(proc: TDataTreeForEachProc);
-    function Find(n: Integer; var st: RawByteString): Boolean;
-    function GetKey(idx: Integer; var dataRec: Integer): RawByteString;
-    property Value[n: Integer]: RawByteString read GetValue; default;
+    function Find(n: Integer; var st: MessageString): Boolean;
+    function GetKey(idx: Integer; var dataRec: Integer): MessageString;
+    property Value[n: Integer]: MessageString read GetValue; default;
   end;
 
   TBTreeIterator = class(TRawBTreeIterator)
   private
-    procedure SplitKey(var key: RawByteString; var dataRec: Integer);
+    procedure SplitKey(var key: MessageString; var dataRec: Integer);
   public
     constructor Create(ABTree: TBTree);
-    function First(var key: RawByteString; var dataRec: Integer): Boolean;
-    function Last(var key: RawByteString; var dataRec: Integer): Boolean;
-    function Next(var key: RawByteString; var dataRec: Integer): Boolean;
-    function Prev(var key: RawByteString; var dataRec: Integer): Boolean;
-    function Find(var key: RawByteString; var dataRec: Integer): Boolean;
+    function First(var key: MessageString; var dataRec: Integer): Boolean;
+    function Last(var key: MessageString; var dataRec: Integer): Boolean;
+    function Next(var key: MessageString; var dataRec: Integer): Boolean;
+    function Prev(var key: MessageString; var dataRec: Integer): Boolean;
+    function Find(var key: MessageString; var dataRec: Integer): Boolean;
   end;
 
   TDataTreeIterator = class(TRawBTreeIterator)
   private
-    procedure SplitKey(var n: Integer; var key: RawByteString);
+    procedure SplitKey(var n: Integer; var key: MessageString);
   public
     constructor Create(ADataTree: TDataTree);
-    function First(var n: Integer; var st: RawByteString): Boolean;
-    function Last(var n: Integer; var st: RawByteString): Boolean;
-    function Next(var n: Integer; var st: RawByteString): Boolean;
-    function Prev(var n: Integer; var st: RawByteString): Boolean;
-    function Find(n: Integer; var st: RawByteString): Boolean;
+    function First(var n: Integer; var st: MessageString): Boolean;
+    function Last(var n: Integer; var st: MessageString): Boolean;
+    function Next(var n: Integer; var st: MessageString): Boolean;
+    function Prev(var n: Integer; var st: MessageString): Boolean;
+    function Find(n: Integer; var st: MessageString): Boolean;
   end;
 
   TIndexTreeForEachProc = procedure(i: Integer; var continue: Boolean) of object;
@@ -352,13 +352,13 @@ type
   // This effectively gives a sparse array of integers.
   TIndexTree = class(TRawBTree)
   private
-    fBinBuffer: RawByteString;
+    fBinBuffer: MessageString;
     procedure IntToBinBuffer(i: Integer);
-    function BinToInt(const st: RawByteString): Integer;
+    function BinToInt(const st: MessageString): Integer;
     function GetValue(n: Integer): Integer;
     function GetIndexOf(i: Integer): Integer;
   protected
-    function CompareKeys(const k1, k2: RawByteString): Integer; override;
+    function CompareKeys(const k1, k2: MessageString): Integer; override;
   public
     constructor Create(const AFileName: string); override;
     function AddKey(i: Integer): Boolean;
@@ -382,7 +382,7 @@ resourcestring
   rstIndexExceedsBounds = 'Index exceeds bounds';
 
 // CompareStr() from Pierre le Riche as found at the FastCode project.
-function CompareStr(const S1, S2: RawByteString): Integer;
+function CompareStr(const S1, S2: MessageString): Integer;
 asm
   cmp eax, edx
   je @SameString
@@ -460,7 +460,7 @@ end;
 
 
 // CompareText from Aleksandr Sharahov as found at the FastCode project.
-function CompareText(const S1, S2: RawByteString): Integer;
+function CompareText(const S1, S2: MessageString): Integer;
 asm
         test  eax, eax       // if S1 = nil then return(False)
         jz    @nil1
@@ -596,9 +596,9 @@ end;
  | Add a key to the index                                               |
  |                                                                      |
  | Parameters:                                                          |
- |   key: RawByteString;               The key to add                          |
+ |   key: MessageString;               The key to add                          |
  *----------------------------------------------------------------------*)
-function TRawBTree.AddKey(const key: RawByteString): Boolean;
+function TRawBTree.AddKey(const key: MessageString): Boolean;
 var
   passout: TNode;
   newPage0: TPage;
@@ -681,9 +681,9 @@ end;
  | constructor for TRawBTree                                            |
  |                                                                      |
  | Parameters:                                                          |
- |   const AFileName: RawByteString    The index file name                     |
+ |   const AFileName: MessageString    The index file name                     |
  *----------------------------------------------------------------------*)
-function TRawBTree.CompareKeys(const k1, k2: RawByteString): Integer;
+function TRawBTree.CompareKeys(const k1, k2: MessageString): Integer;
 begin
   if CaseSensitive then
     Result := CompareStr(k1, k2)
@@ -725,7 +725,7 @@ end;
  |                                                                      |
  | Destructor for TRawBTree.                                            |
  *----------------------------------------------------------------------*)
-function TRawBTree.DeleteKey(const key: RawByteString): Boolean;
+function TRawBTree.DeleteKey(const key: MessageString): Boolean;
 var
   page0: TPage;
 begin
@@ -788,7 +788,7 @@ begin
   Result := page.fNodeCount
 end;
 
-function TRawBTree.DeleteKeyFromTree(pg: TPage; const key: RawByteString): Integer;
+function TRawBTree.DeleteKeyFromTree(pg: TPage; const key: MessageString): Integer;
 var
   idx, pidx, nidx, tidx, mp: Integer;
   tn: TNode;
@@ -965,12 +965,12 @@ end;
  | Find a key                                                           |
  |                                                                      |
  | Parameters:                                                          |
- |   key: RawByteString;               The key to find                         |
+ |   key: MessageString;               The key to find                         |
  |   var DataRec: Integer       Returns the associated data rec         |
  |                                                                      |
  | The function returns True if the key was found.                      |
  *----------------------------------------------------------------------*)
-function TRawBTree.Find(key: RawByteString; var fKey: RawByteString): Boolean;
+function TRawBTree.Find(key: MessageString; var fKey: MessageString): Boolean;
 var
   pg: TPage;
   idx: Integer;
@@ -1103,7 +1103,7 @@ end;
  |                                                                      |
  | 'Get' method for ExtraData property                                  |
  *----------------------------------------------------------------------*)
-function TRawBTree.GetExtraData: RawByteString;
+function TRawBTree.GetExtraData: MessageString;
 begin
   SetLength(Result, fFileInfo.ExtraDataSize);
   Move(fFileInfo.ExtraData[0], Result[1], fFileInfo.ExtraDataSize)
@@ -1114,7 +1114,7 @@ end;
  |                                                                      |
  | 'Get' method for Page property.  Return Page[pageno]                |
  *----------------------------------------------------------------------*)
-function TRawBTree.GetIndexOfKey(var key: RawByteString): Integer;
+function TRawBTree.GetIndexOfKey(var key: MessageString): Integer;
 var
   pg: TPage;
   i, idx: Integer;
@@ -1155,9 +1155,9 @@ begin
     Result := -1
 end;
 
-function TRawBTree.GetKey(idx: Integer): RawByteString;
+function TRawBTree.GetKey(idx: Integer): MessageString;
 
-  function gk(root: TPage; idx: Integer): RawByteString;
+  function gk(root: TPage; idx: Integer): MessageString;
   var
     i: Integer;
   begin
@@ -1242,7 +1242,7 @@ end;
 procedure TRawBTree.Open;
 var
   page0: TPage;
-  id: RawByteString;
+  id: MessageString;
 begin
   if not FileExists(FileName) then
   begin                                 // New file
@@ -1282,12 +1282,12 @@ end;
  |                                                                      |
  | Parameters:                                                          |
  |   page: TPage;                       Root page of tree               |
- |   const key: RawByteString;                 The key to add                  |
+ |   const key: MessageString;          The key to add                  |
  |   DataRec: Integer                   DataRec associated with the key |
  |                                                                      |
  | The function returns a new root node if retval.NextPage <> -1        |
  *----------------------------------------------------------------------*)
-function TRawBTree.PutKeyInTree(pg: TPage; const key: RawByteString): TNode;
+function TRawBTree.PutKeyInTree(pg: TPage; const key: MessageString): TNode;
 var
   pidx, idx: Integer;
 begin
@@ -1357,9 +1357,9 @@ end;
  |                                                                      |
  | Parameters:                                                          |
  |   page: TPage;               The page to put the node on.            |
- |   idx: Integer;             The position on the page to put the     |
+ |   idx: Integer;              The position on the page to put the     |
  |                              node.                                   |
- |   const memNode: TNode      The node to put.                        |
+ |   const memNode: TNode       The node to put.                        |
  |                                                                      |
  | The function returns a TNode.  If retval.NextPage is -1 then         |
  | retval is meaningless - otherwise it contains a node pointing to a   |
@@ -1553,7 +1553,7 @@ end;
  |                                                                      |
  | 'Set' method for ExtraData property                                  |
  *----------------------------------------------------------------------*)
-procedure TRawBTree.SetExtraData(Value: RawByteString);
+procedure TRawBTree.SetExtraData(Value: MessageString);
 begin
   if Length(value) > SizeOf(fFileInfo.ExtraData) then
     SetLength(value, SizeOf(fFileInfo.ExtraData));
@@ -1601,14 +1601,14 @@ end;
  | inserted.                                                            |
  |                                                                      |
  | Parameters:                                                          |
- |   const st: RawByteString;          The key to find                         |
+ |   const st: MessageString;   The key to find                         |
  |  var idx: Integer            If the key was found, returns the       |
  |                              index.  If it wasn't found, returns the |
  |                              insertion position.                     |
  |                                                                      |
  | The function returns True if the key was found.                      |
  *----------------------------------------------------------------------*)
-function TPage.FindNode(const st: RawByteString; var idx: Integer): Boolean;
+function TPage.FindNode(const st: MessageString; var idx: Integer): Boolean;
 
 //------------------------------------------------------
 // Binary search the page
@@ -1718,7 +1718,7 @@ var
   i: Integer;
   p: PAnsiChar;
   pnh: PNodeHeader;
-  st: RawByteString;
+  st: MessageString;
 begin
         // Read the page
   Owner.f.Seek(SizeOf(TFileInfo) + fIdx * SizeOf(TPageRec), soFromBeginning);
@@ -1744,7 +1744,7 @@ begin
     SetString(st, p, pnh^.KeyLen);
     Inc(p, pnh^.KeyLen);
 
-    fNodes[fNodeCount].key := RawByteString(st);
+    fNodes[fNodeCount].key := st;
     fNodes[fNodeCount].NextPage := pnh^.NextPage;
     fNodes[fNodeCount].NextPageHeight := pnh^.NextPageHeight;
 
@@ -1765,7 +1765,7 @@ var
   i: Integer;
   p: PAnsiChar;
   pnh: PNodeHeader;
-  st: RawByteString;
+  st: MessageString;
   nd: TNode;
 begin
   if not Flags[flgDirty] then Exit;    // No need to save
@@ -1858,7 +1858,7 @@ begin
   inherited;
 end;
 
-function TRawBTreeIterator.Find(var key: RawByteString): Boolean;
+function TRawBTreeIterator.Find(var key: MessageString): Boolean;
 var
   pageNo, idx: Integer;
   pg: TPage;
@@ -1888,13 +1888,13 @@ end;
  | Iterate to the first node in the index and return it's data          |
  |                                                                      |
  | Parameters:                                                          |
- |   var key: RawByteString;           Returns the key of the first node       |
+ |   var key: MessageString;           Returns the key of the first node       |
  |   var value: Integer         Returns the DataRec associated with the |
  |                              key                                     |
  |                                                                      |
  | The function returns True if there was a first node.                 |
  *----------------------------------------------------------------------*)
-function TRawBTreeIterator.First(var key: RawByteString): Boolean;
+function TRawBTreeIterator.First(var key: MessageString): Boolean;
 var
   pageNo: Integer;
   pg: TPage;
@@ -1920,7 +1920,7 @@ begin
     Result := False
 end;
 
-function TRawBTreeIterator.IntToBin(i: Integer): RawByteString;
+function TRawBTreeIterator.IntToBin(i: Integer): MessageString;
 begin
   SetLength(Result, SizeOf(Integer));
   Move(i, Result[1], SizeOf(Integer));
@@ -1932,13 +1932,13 @@ end;
  | Iterate to the last node in the index and return it's data           |
  |                                                                      |
  | Parameters:                                                          |
- |   var key: RawByteString;           Returns the key of the last node        |
+ |   var key: MessageString;           Returns the key of the last node        |
  |   var value: Integer         Returns the DataRec associated with the |
  |                              key                                     |
  |                                                                      |
  | The function returns True if there was a last node.                  |
  *----------------------------------------------------------------------*)
-function TRawBTreeIterator.Last(var key: RawByteString): Boolean;
+function TRawBTreeIterator.Last(var key: MessageString): Boolean;
 var
   pageNo: Integer;
   pg: TPage;
@@ -1970,13 +1970,13 @@ end;
  | Iterate to the next node in the index and return it's data.          |
  |                                                                      |
  | Parameters:                                                          |
- |   var key: RawByteString;           Returns the key of the next node        |
+ |   var key: MessageString;           Returns the key of the next node        |
  |   var value: Integer         Returns the DataRec associated with the |
  |                              key                                     |
  |                                                                      |
  | The function returns True if there was a next node.                  |
  *----------------------------------------------------------------------*)
-function TRawBTreeIterator.Next(var key: RawByteString): Boolean;
+function TRawBTreeIterator.Next(var key: MessageString): Boolean;
 var
   pg: TPage;
   node: TIteratorNode;
@@ -2048,13 +2048,13 @@ end;
  | Iterate to the previous node in the index and return it's data.      |
  |                                                                      |
  | Parameters:                                                          |
- |   var key: RawByteString;           Returns the key of the previous node    |
+ |   var key: MessageString;           Returns the key of the previous node    |
  |   var value: Integer         Returns the DataRec associated with the |
  |                              key                                     |
  |                                                                      |
  | The function returns True if there was a previous node.              |
  *----------------------------------------------------------------------*)
-function TRawBTreeIterator.Prev(var key: RawByteString): Boolean;
+function TRawBTreeIterator.Prev(var key: MessageString): Boolean;
 begin
   Result := False;              // Not yet implemented!
 end;
@@ -2074,12 +2074,12 @@ end;
 
 { TBTree }
 
-function TBTree.AddKey(const key: RawByteString; DataRec: Integer): Boolean;
+function TBTree.AddKey(const key: MessageString; DataRec: Integer): Boolean;
 begin
   Result := inherited AddKey(key + IntToBin(DataRec))
 end;
 
-function TBTree.CompareKeys(const k1, k2: RawByteString): Integer;
+function TBTree.CompareKeys(const k1, k2: MessageString): Integer;
 begin
   if CaseSensitive then
     Result := CompareStr(Copy(k1, 1, Length(k1) - SizeOf(Integer)), Copy(k2, 1, Length(k2) - SizeOf(Integer)))
@@ -2087,19 +2087,19 @@ begin
     Result := CompareText(Copy(k1, 1, Length(k1) - SizeOf(Integer)), Copy(k2, 1, Length(k2) - SizeOf(Integer)))
 end;
 
-function TBTree.DeleteKey(const key: RawByteString): Boolean;
+function TBTree.DeleteKey(const key: MessageString): Boolean;
 begin
   Result := inherited DeleteKey(key + IntToBin(0));
 end;
 
-function TBTree.ExtractDataRec(const key: RawByteString): Integer;
+function TBTree.ExtractDataRec(const key: MessageString): Integer;
 begin
   Move((PAnsiChar(key) + Length(key) - 4)^, Result, SizeOf(Result))
 end;
 
-function TBTree.Find(key: RawByteString; var dataRec: Integer): Boolean;
+function TBTree.Find(key: MessageString; var dataRec: Integer): Boolean;
 var
-  k: RawByteString;
+  k: MessageString;
 begin
   Result := inherited Find(key + IntToBin(0), k);
   if Result then
@@ -2109,7 +2109,7 @@ end;
 procedure TBTree.ForEach(proc: TBTreeForEachProc);
 var
   continue: Boolean;
-  k: RawByteString;
+  k: MessageString;
 
 //----------------------------------------------------------
 // Recursively call 'proc' for all the keys and children.
@@ -2154,16 +2154,16 @@ begin
   DoForEach(fFileInfo.RootPage)
 end;
 
-function TBTree.GetDataRec(const key: RawByteString): Integer;
+function TBTree.GetDataRec(const key: MessageString): Integer;
 begin
   if not Find(key, Result) then
     Result := -1
 end;
 
-function TBTree.GetIndexOfKey(var key: RawByteString;
+function TBTree.GetIndexOfKey(var key: MessageString;
   var dataRec: Integer): Integer;
 var
-  k: RawByteString;
+  k: MessageString;
 begin
   k := key + IntToBin(0);
   Result := inherited GetIndexOfKey(k);
@@ -2174,7 +2174,7 @@ begin
   end
 end;
 
-function TBTree.GetKey(idx: Integer; var dataRec: Integer): RawByteString;
+function TBTree.GetKey(idx: Integer; var dataRec: Integer): MessageString;
 begin
   Result := inherited GetKey(idx);
   if Result <> '' then
@@ -2186,24 +2186,24 @@ begin
     dataRec := -1
 end;
 
-function TBTree.InternalGetKey(idx: Integer): RawByteString;
+function TBTree.InternalGetKey(idx: Integer): MessageString;
 var
   dr: Integer;
 begin
   Result := GetKey(idx, dr)
 end;
 
-function TBTree.IntToBin(i: Integer): RawByteString;
+function TBTree.IntToBin(i: Integer): MessageString;
 begin
   SetLength(Result, SizeOf(Integer));
   Move(i, Result[1], SizeOf(Integer));
 end;
 
-procedure TBTree.SetDataRec(const key: RawByteString; const Value: Integer);
+procedure TBTree.SetDataRec(const key: MessageString; const Value: Integer);
 var
   pg: TPage;
   idx: Integer;
-  k: RawByteString;
+  k: MessageString;
 begin
   pg := RootPage;
   k := key + IntToBin(0);
@@ -2241,10 +2241,10 @@ begin
   inherited Create(ABTree);
 end;
 
-function TBTreeIterator.Find(var key: RawByteString;
+function TBTreeIterator.Find(var key: MessageString;
   var dataRec: Integer): Boolean;
 var
-  k: RawByteString;
+  k: MessageString;
 begin
   k := key + IntToBin(0);
 
@@ -2256,14 +2256,14 @@ begin
   end
 end;
 
-function TBTreeIterator.First(var key: RawByteString; var dataRec: Integer): Boolean;
+function TBTreeIterator.First(var key: MessageString; var dataRec: Integer): Boolean;
 begin
   Result := inherited First(key);
   if Result then
     SplitKey(key, dataRec)
 end;
 
-function TBTreeIterator.Last(var key: RawByteString;
+function TBTreeIterator.Last(var key: MessageString;
   var dataRec: Integer): Boolean;
 begin
   Result := inherited Last(key);
@@ -2271,7 +2271,7 @@ begin
     SplitKey(key, dataRec)
 end;
 
-function TBTreeIterator.Next(var key: RawByteString;
+function TBTreeIterator.Next(var key: MessageString;
   var dataRec: Integer): Boolean;
 begin
   Result := inherited Next(key);
@@ -2279,7 +2279,7 @@ begin
     SplitKey(key, dataRec)
 end;
 
-function TBTreeIterator.Prev(var key: RawByteString;
+function TBTreeIterator.Prev(var key: MessageString;
   var dataRec: Integer): Boolean;
 begin
   Result := inherited Prev(key);
@@ -2287,7 +2287,7 @@ begin
     SplitKey(key, dataRec)
 end;
 
-procedure TBTreeIterator.SplitKey(var key: RawByteString; var dataRec: Integer);
+procedure TBTreeIterator.SplitKey(var key: MessageString; var dataRec: Integer);
 begin
   dataRec := TBTree(BTree).ExtractDataRec(key);
   key := Copy(key, 1, Length(key) - SizeOf(Integer))
@@ -2295,17 +2295,17 @@ end;
 
 { TDataTree }
 
-function TDataTree.AddKey(n: Integer; const st: RawByteString): Boolean;
+function TDataTree.AddKey(n: Integer; const st: MessageString): Boolean;
 begin
   Result := inherited AddKey(IntToBin(n) + st)
 end;
 
-function TDataTree.BinToInt(const st: RawByteString): Integer;
+function TDataTree.BinToInt(const st: MessageString): Integer;
 begin
   Move(st[1], Result, SizeOf(Integer))
 end;
 
-function TDataTree.CompareKeys(const k1, k2: RawByteString): Integer;
+function TDataTree.CompareKeys(const k1, k2: MessageString): Integer;
 begin
   Result := BinToInt(k1) - BinToInt(k2)
 end;
@@ -2315,9 +2315,9 @@ begin
   Result := inherited DeleteKey(IntToBin(n))
 end;
 
-function TDataTree.Find(n: Integer; var st: RawByteString): Boolean;
+function TDataTree.Find(n: Integer; var st: MessageString): Boolean;
 var
-  k: RawByteString;
+  k: MessageString;
 begin
   Result := inherited Find(IntToBin(n), k);
   if Result then
@@ -2327,7 +2327,7 @@ end;
 procedure TDataTree.ForEach(proc: TDataTreeForEachProc);
 var
   continue: Boolean;
-  k: RawByteString;
+  k: MessageString;
 
 //----------------------------------------------------------
 // Recursively call 'proc' for all the keys and children.
@@ -2371,20 +2371,20 @@ begin
   DoForEach(fFileInfo.RootPage)
 end;
 
-function TDataTree.GetKey(idx: Integer; var DataRec: Integer): RawByteString;
+function TDataTree.GetKey(idx: Integer; var DataRec: Integer): MessageString;
 begin
   Result := inherited GetKey(idx);
   DataRec := BinToInt(Result);
   Result := Copy(Result, SizeOf(Integer) + 1, MaxInt);
 end;
 
-function TDataTree.GetValue(n: Integer): RawByteString;
+function TDataTree.GetValue(n: Integer): MessageString;
 begin
   if not Find(n, Result) then
     raise EBTree.Create('Value not found');
 end;
 
-function TDataTree.IntToBin(i: Integer): RawByteString;
+function TDataTree.IntToBin(i: Integer): MessageString;
 begin
   SetLength(Result, SizeOf(Integer));
   Move(i, Result[1], SizeOf(Integer));
@@ -2397,9 +2397,9 @@ begin
   inherited Create(ADataTree)
 end;
 
-function TDataTreeIterator.Find(n: Integer; var st: RawByteString): Boolean;
+function TDataTreeIterator.Find(n: Integer; var st: MessageString): Boolean;
 var
-  k: RawByteString;
+  k: MessageString;
 begin
   SetLength(k, SizeOf(Integer));
   Move(n, k[1], SizeOf(Integer));
@@ -2411,35 +2411,35 @@ begin
   end
 end;
 
-function TDataTreeIterator.First(var n: Integer; var st: RawByteString): Boolean;
+function TDataTreeIterator.First(var n: Integer; var st: MessageString): Boolean;
 begin
   Result := inherited First(st);
   if Result then
     SplitKey(n, st)
 end;
 
-function TDataTreeIterator.Last(var n: Integer; var st: RawByteString): Boolean;
+function TDataTreeIterator.Last(var n: Integer; var st: MessageString): Boolean;
 begin
   Result := inherited Last(st);
   if Result then
     SplitKey(n, st)
 end;
 
-function TDataTreeIterator.Next(var n: Integer; var st: RawByteString): Boolean;
+function TDataTreeIterator.Next(var n: Integer; var st: MessageString): Boolean;
 begin
   Result := inherited Next(st);
   if Result then
     SplitKey(n, st)
 end;
 
-function TDataTreeIterator.Prev(var n: Integer; var st: RawByteString): Boolean;
+function TDataTreeIterator.Prev(var n: Integer; var st: MessageString): Boolean;
 begin
   Result := inherited Prev(st);
   if Result then
     SplitKey(n, st)
 end;
 
-procedure TDataTreeIterator.SplitKey(var n: Integer; var key: RawByteString);
+procedure TDataTreeIterator.SplitKey(var n: Integer; var key: MessageString);
 begin
   Move(key[1], n, SizeOf(Integer));
   key := Copy(key, SizeOf(Integer) + 1, MaxInt)
@@ -2453,12 +2453,12 @@ begin
   Result := inherited AddKey(fBinBuffer)
 end;
 
-function TIndexTree.BinToInt(const st: RawByteString): Integer;
+function TIndexTree.BinToInt(const st: MessageString): Integer;
 begin
   Move(st[1], Result, SizeOf(Integer))
 end;
 
-function TIndexTree.CompareKeys(const k1, k2: RawByteString): Integer;
+function TIndexTree.CompareKeys(const k1, k2: MessageString): Integer;
 begin
   Result := BinToInt(k1) - BinToInt(k2)
 end;
@@ -2466,7 +2466,7 @@ end;
 constructor TIndexTree.Create(const AFileName: string);
 begin
   inherited Create(AFileName);
-  fBinBuffer := #0#0#0#0
+  SetLength(fBinBuffer, 4); //  fBinBuffer := #0#0#0#0;
 end;
 
 function TIndexTree.Delete(n: Integer): Boolean;
@@ -2485,7 +2485,7 @@ end;
 
 function TIndexTree.Find(i: Integer): Boolean;
 var
-  fKey: RawByteString;
+  fKey: MessageString;
 begin
   IntToBinBuffer(i);
   Result := inherited Find(fBinBuffer, fKey)
@@ -2494,7 +2494,7 @@ end;
 procedure TIndexTree.ForEach(proc: TIndexTreeForEachProc);
 var
   continue: Boolean;
-  k: RawByteString;
+  k: MessageString;
 
 //----------------------------------------------------------
 // Recursively call 'proc' for all the keys and children.

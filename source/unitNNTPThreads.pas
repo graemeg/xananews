@@ -249,6 +249,7 @@ begin
           NNTP.Mode := mtReader;
           NNTP.NewsAgent := ThreadManager.NewsAgent;
           NNTP.Connect;
+          NNTP.IOHandler.DefStringEncoding := en8Bit;
           fGreet := NNTP.Greeting.Text.Text;
           Synchronize(SetGreeting);
           if ServerSettings.AlwaysAuthenticate then
@@ -1337,6 +1338,7 @@ begin
             else
               SMTP.Port := Settings.ServerPort;
             SMTP.Connect;
+            SMTP.IOHandler.DefStringEncoding := en8Bit;
             if Settings.SSLRequired then
             begin
 {$IFNDEF USEOPENSTRSEC}
