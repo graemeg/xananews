@@ -11,7 +11,6 @@ type
   private
     fInsertSpaceAfterQuote: boolean;
   public
-    procedure DecodeBuffer(buf: PAnsiChar; bufLen: Integer; ADest: TStream);
     procedure Decode(ASrcStream: TStream; const ABytes: Integer = -1); override;
 
     // InsertSpaceAfterQuote inserts a space between the last quote character
@@ -34,16 +33,10 @@ type
 
 implementation
 
-{ TRFC2646Decoder }
+uses
+  IdGlobal;
 
-procedure TRFC2646Decoder.DecodeBuffer(buf: PAnsiChar; bufLen: Integer; ADest: TStream);
-var
-  s: MessageString;
-begin
-  SetString(s, buf, bufLen);
-  DecodeBegin(ADest);
-  Decode(string(s));
-end;
+{ TRFC2646Decoder }
 
 procedure TRFC2646Decoder.Decode(ASrcStream: TStream; const ABytes: Integer = -1);
 var
@@ -78,8 +71,8 @@ begin
   sl := TStringList.Create;
   try
     sl.LoadFromStream(ASrcStream);
-    AnalyzeQuotes;  // Count quote markers (into sl.Objects[i]) and
-                    // remove them from the text
+    AnalyzeQuotes;        // Count quote markers (into sl.Objects[i]) and
+                          // remove them from the text
     i := 0;
     while i < sl.Count do
     begin
@@ -93,7 +86,7 @@ begin
       end;
 
       if st[1] = ' ' then // Remove space stuffing.  (We already took it
-                           // into consideration in AnalyzeQuotes
+                          // into consideration in AnalyzeQuotes
       begin
         Delete(st, 1, 1);
         sl[i] := st;
@@ -116,7 +109,7 @@ begin
         Inc(i);
     end;
 
-                        // Add the quote markers back in.
+                          // Add the quote markers back in.
     for i := 0 to sl.Count - 1 do
       if Integer(sl.Objects[i]) > 0 then
         if InsertSpaceAfterQuote then

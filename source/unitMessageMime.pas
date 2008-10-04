@@ -124,7 +124,6 @@ begin
 
     s.Position := 0;
     outs.LoadFromStream(s);
-//    outs.Text := s.DataString;
   finally
     s.Free;
   end;
@@ -133,34 +132,24 @@ end;
 procedure DecodeFormatFlowed(const ins: TStream; outs: TAnsiStrings);
 var
   coder: TRFC2646Decoder;
-  s: TStringStream;
-  st: AnsiString;
-  raw: MessageString;
+  ms: TMemoryStream;
 begin
   // Decode a 'format flowed' stream to a string list - See RFC 2646
   coder := nil;
-  s := TStringStream.Create(st);
+  ms := TMemoryStream.Create;
   try
     coder := TRFC2646Decoder.Create(nil);
     coder.InsertSpaceAfterQuote := False;
 
-    // TODO: fix / optimize decoding
-    if ins is TMemoryStream then
-      coder.DecodeBuffer(TMemoryStream(ins).Memory, ins.Size, s)
-    else
-    begin
-      SetLength(raw, ins.Size);
-      ins.Read(raw[1], ins.Size);
-      coder.DecodeBegin(s);
-      coder.Decode(string(raw));
-    end;
+    coder.DecodeBegin(ms);
+    coder.Decode(ins, ins.Size);
+    coder.DecodeEnd;
 
-    s.Position := 0;
-    outs.LoadFromStream(s);
-//    outs.Text := s.DataString;
+    ms.Position := 0;
+    outs.LoadFromStream(ms);
   finally
     coder.Free;
-    s.Free;
+    ms.Free;
   end;
 end;
 
