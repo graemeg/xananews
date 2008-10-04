@@ -3443,9 +3443,19 @@ begin
           DoDeleteArticles(group, Integer(filter));
           PurgeCtnr(group, False, False, True);
         end;
+        if p.fActionType = batAll then
+        begin
+          lart := -2;
+          p.fActionType := batAllNew;
+        end;
       end
       else
         DoMarkArticlesAsRead(group, Integer(filter));
+
+      // When something goes wrong during retreiving messages and this batch is
+      // restarted don't delete or mark as read the messages again.
+      // Especially when deleting message first, it will run forever otherwise.
+      p.fManagementOption := bmoNone;
     finally
       filter.Free;
     end;

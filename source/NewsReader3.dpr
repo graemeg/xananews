@@ -108,7 +108,8 @@ uses
   unitRFC2646Coder in 'unitRFC2646Coder.pas',
   ReadLnDelayDialog in 'ReadLnDelayDialog.pas' {dlgReadLnDelay},
   unitMessageBaseSearch in 'unitMessageBaseSearch.pas',
-  unitNewsThread in 'unitNewsThread.pas';
+  unitNewsThread in 'unitNewsThread.pas',
+  unitNNTPThreads in 'unitNNTPThreads.pas';
 
 {$R *.res}
 {$R I.RES}
@@ -147,6 +148,6 @@ begin
     Application.Title := 'XanaNews';
     Application.HelpFile := 'XanaNews.chm';
     Application.CreateForm(TfmMain, fmMain);
-    Application.Run
+  Application.Run
   end
 end.
