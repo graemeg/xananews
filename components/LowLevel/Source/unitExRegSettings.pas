@@ -478,12 +478,12 @@ begin
   for i := 0 to sl.Count - 1 do
     Inc (size, Length (sl [i]) + 1);
   Inc (size);
-  GetMem (buffer, size);
+  GetMem (buffer, size * SizeOf(Char));
   try
     p := buffer;
     for i := 0 to sl.count - 1 do
     begin
-      lstrcpy (p, PChar (sl [i]));
+      lstrcpy (p, PChar(sl[i]));
       Inc (p, lstrlen (p) + 1)
     end;
     p^ := #0;

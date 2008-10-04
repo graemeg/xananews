@@ -130,7 +130,7 @@ begin
         mapHandle := CreateFileMapping ($ffffffff, Nil, PAGE_READWRITE, 0, 65536, Nil);
         if mapHandle <> 0 then
         try
-          paramPtr := MapViewOfFile (mapHandle, FILE_MAP_WRITE, 0, 0, paramSize);
+          paramPtr := MapViewOfFile (mapHandle, FILE_MAP_WRITE, 0, 0, paramSize * SizeOf(Char));
           if paramPtr <> Nil then
           try
             p := paramPtr;

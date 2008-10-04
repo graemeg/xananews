@@ -10753,7 +10753,7 @@ begin
     html := StringReplace(html, 'ffffffff', Format('%08.8d', [Pos('<!--StartFrag', html) - 1]), []);
     html := StringReplace(html, 'gggggggg', Format('%08.8d', [Pos('<!--EndFrag', html) - 1]), []);
 
-    h := GlobalAlloc(GMEM_MOVEABLE or GMEM_DDESHARE, len + 4);
+    h := GlobalAlloc(GMEM_MOVEABLE or GMEM_DDESHARE, (len + 4)  * SizeOf(Char));
     try
       p := GlobalLock(h);
       try
@@ -10770,7 +10770,7 @@ begin
         html := '<html><body>'#13#10 +
           origHTML + #13#10 +
           '</body></html>';
-        h := GlobalAlloc(GMEM_MOVEABLE or GMEM_DDESHARE, Length(html) + 4);
+        h := GlobalAlloc(GMEM_MOVEABLE or GMEM_DDESHARE, (Length(html) + 4) * SizeOf(Char));
         p := GlobalLock(h);
         try
           lstrcpy(p, PChar(html));

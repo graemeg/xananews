@@ -937,7 +937,7 @@ begin
   for i := 0 to strings.Count - 1 do
     Inc (size, Length (strings [i]) + 1);
   Inc (size);
-  GetMem (buffer, size);
+  GetMem (buffer, size * SizeOf(PChar));
   try
     p := buffer;
     for i := 0 to strings.count - 1 do
