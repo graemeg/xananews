@@ -42,7 +42,7 @@ type
   public
     constructor Create (const APath, ACmd : string; ACodePage : Integer);
     destructor Destroy; override;
-    procedure SpellCommand (const cmd : string);
+    procedure SpellCommand(const cmd: AnsiString);
     function GetResponse : string;
     function GetCheckResponse : string;
     property CodePage : Integer read fCodePage;
@@ -125,11 +125,28 @@ var
  |   const word: WideString             The word to add                 |
  *----------------------------------------------------------------------*)
 procedure TSpellChecker.Add(const word: WideString);
+var
+  ansi: AnsiString;
+  DecodedBytes: TBytes;
+  Encoding: TEncoding;
 begin
-  if not Assigned (fSpeller) then
+  if not Assigned(fSpeller) then
     Initialize;
-  if Assigned (fSpeller) then
-    fSpeller.SpellCommand('*' + WideStringToString (word, fSpeller.CodePage));
+  if Assigned(fSpeller) then
+  begin
+    // TODO: this is probably overkill and maybe just...
+    //  ansi := AnsiString(word)
+    // ...would be enough?
+    Encoding := TEncoding.GetEncoding(fSpeller.CodePage);
+    try
+      DecodedBytes := Encoding.GetBytes(word);
+      ansi := AnsiString(TEncoding.Default.GetString(DecodedBytes));
+    finally
+      Encoding.Free;
+    end;
+
+    fSpeller.SpellCommand('*' + ansi);
+  end;
 end;
 
 (*----------------------------------------------------------------------*
@@ -276,35 +293,50 @@ end;
 function TSpellChecker.CheckWord(const ws: WideString;
   suggestions: TStrings): boolean;
 var
-  resp : string;
+  resp: string;
+  ansi: AnsiString;
+  DecodedBytes: TBytes;
+  Encoding: TEncoding;
 begin
-  if not Assigned (fSpeller) then
+  if not Assigned(fSpeller) then
     Initialize;
-  if Assigned (fSpeller) then
+
+  if Assigned(fSpeller) then
   begin                         // Send word to ispell.exe
-    fSpeller.SpellCommand(WideStringToString (ws, fSpeller.CodePage));
+    // TODO: this is probably overkill and maybe just...
+    //  ansi := AnsiString(ws)
+    // ...would be enough?
+    Encoding := TEncoding.GetEncoding(fSpeller.CodePage);
+    try
+      DecodedBytes := Encoding.GetBytes(ws);
+      ansi := AnsiString(TEncoding.Default.GetString(DecodedBytes));
+    finally
+      Encoding.Free;
+    end;
+
+    fSpeller.SpellCommand(ansi);
     resp := fSpeller.GetResponse;
     result := resp = '';        // If blank line received the word was
                                 // spelt OK.
-    if Assigned (suggestions) then
+    if Assigned(suggestions) then
     begin
       Suggestions.BeginUpdate;
       Suggestions.Clear;
       try
-        if (not result) then
+        if not Result then
         begin                   // Misspelt word.  Parse the suggestions
-          SplitString (':', resp);
+          SplitString(':', resp);
 
           while resp <> '' do
-            Suggestions.Add(SplitString (',', resp))
-        end
+            Suggestions.Add(SplitString (',', resp));
+        end;
       finally
-        Suggestions.EndUpdate
-      end
-    end
+        Suggestions.EndUpdate;
+      end;
+    end;
   end
   else
-    result := True;
+    Result := True;
 end;
 
 (*----------------------------------------------------------------------*
@@ -592,13 +624,16 @@ end;
  *----------------------------------------------------------------------*)
 function TSpeller.GetResponse: string;
 var
-  avail : DWORD;
+  ansi: AnsiString;
+  avail: DWORD;
 begin
-  SetLength (result, 2048);
-  if ReadFile (fHOutputRead, result [1], 2048, avail, nil) then
+  Result := '';
+
+  SetLength(ansi, 2048);
+  if ReadFile(fHOutputRead, ansi[1], 2048, avail, nil) then
   begin
-    SetLength (result, avail);
-    result := Trim (result)
+    SetString(Result, PAnsiChar(ansi), avail);
+    Result := Trim(Result);
   end
   else
     raiseLastOSError;
@@ -609,11 +644,11 @@ end;
  |                                                                      |
  | Send a command to ISpell                                             |
  *----------------------------------------------------------------------*)
-procedure TSpeller.SpellCommand(const cmd: string);
+procedure TSpeller.SpellCommand(const cmd: AnsiString);
 var
-  n : DWORD;
+  n: DWORD;
 begin
-  WriteFile (fHInputWrite, (cmd + #13#10) [1], Length (cmd) + 2, n, Nil);
+  WriteFile(fHInputWrite, (cmd + #13#10)[1], Length(cmd) + 2, n, nil);
 end;
 
 procedure InitISpell;
