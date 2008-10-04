@@ -496,6 +496,7 @@ procedure TCustomExRichEdit.CNNotify(var Message: TWMNotify);
 type
   PENLink = ^TENLink;
 var
+  ansi: AnsiString;
   ENLink : PENLink;
   mouseMsg : TWMMouse;
   textRange : TTextRangeA;
@@ -520,11 +521,11 @@ begin
           mouseMsg.YPos := HiWord (ENLink^.lParam);
           mouseMsg.Result := 0;
 
-          SetLength (fURLText, 65536);
+          SetLength(ansi, 65536);
           textRange.chrg := ENLink^.chrg;
-          textRange.lpstrText := PAnsiChar (AnsiString(fURLText));
-          SendMessage (Handle, EM_GETTEXTRANGE, 0, lParam (@textRange));
-          fURLText := PChar (fURLText);
+          textRange.lpstrText := PAnsiChar(ansi);
+          SendMessage(Handle, EM_GETTEXTRANGE, 0, lParam(@textRange));
+          SetString(fURLText, PAnsiChar(ansi), Length(PAnsiChar(ansi)));
 
           case ENLink^.Msg of
             WM_LBUTTONDOWN :
