@@ -4251,6 +4251,8 @@ begin
   begin
     StatusBar.Panels[n - 1].Bevel := pbLowered;
     w := StatusBar.Canvas.TextWidth(StatusBar.Panels[n - 1].Text) + 16;
+    if Assigned(fMedal) and fMedal.Visible then
+      w := w + fMedal.Width;
   end;
 
   sbPanelSize := ((ClientWidth - 16) - w) div (StatusBar.Panels.Count - 1);
@@ -4315,6 +4317,7 @@ begin
     fMedal.AutoSize := True;
     fMedal.Top := (StatusBar.Height - fMedal.Height) div 2;
     fMedal.Left := StatusBar.Left + StatusBar.Width - fMedal.Width - 20;
+    fMedal.Transparent := True;
     fMedal.Visible := Options.DeservesMedal;
   end;
 
@@ -8410,7 +8413,7 @@ procedure TfmMain.StatusBarDrawPanel(StatusBar: TStatusBar;
   Panel: TStatusPanel; const Rect: TRect);
 begin
   fPanelTextRect := Rect;
-  InflateRect(fPanelTextRect, -8, 0);
+  InflateRect(fPanelTextRect, -4, 0);
   OffsetRect(fPanelTextRect, 0, 2);
   StatusBar.Canvas.Font.Color := clBlue;
   StatusBar.Canvas.Font.Style := StatusBar.Canvas.Font.Style + [fsUnderline];
