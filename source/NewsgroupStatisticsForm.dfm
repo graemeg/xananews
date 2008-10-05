@@ -78,7 +78,6 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
     ActivePage = tsThreads
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 1
-    ExplicitHeight = 212
     object tsThreads: TTabSheet
       Caption = 'Threads'
       object lvThreads: TListView
@@ -106,6 +105,7 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
         TabOrder = 0
         ViewStyle = vsReport
         OnColumnClick = lvThreadsColumnClick
+        OnCustomDrawSubItem = lvCustomDrawSubItem
         OnData = lvThreadsData
       end
     end
@@ -141,6 +141,7 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
         TabOrder = 0
         ViewStyle = vsReport
         OnColumnClick = lvPostersColumnClick
+        OnCustomDrawSubItem = lvCustomDrawSubItem
         OnData = lvPostersData
       end
     end
@@ -176,6 +177,7 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
         TabOrder = 0
         ViewStyle = vsReport
         OnColumnClick = lvNewsreadersColumnClick
+        OnCustomDrawSubItem = lvCustomDrawSubItem
         OnData = lvNewsreadersData
       end
     end
@@ -290,7 +292,6 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
     Date = 38078.000000000000000000
     Time = 38078.000000000000000000
     TabOrder = 5
-    ExplicitTop = 329
   end
   object dtpTo: TDateTimePicker
     Left = 206
@@ -301,7 +302,6 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
     Date = 38078.999988425930000000
     Time = 38078.999988425930000000
     TabOrder = 6
-    ExplicitTop = 329
   end
   object btnPostToGroup: TButton
     Left = 144
@@ -329,7 +329,6 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
       '50'
       '100'
       '[No limit]')
-    ExplicitTop = 358
   end
   object PersistentPosition1: TPersistentPosition
     Manufacturer = 'Woozle'

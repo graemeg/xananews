@@ -6909,25 +6909,19 @@ begin
 end;
 
 procedure TArticleBase.SetIsIgnore(const Value: boolean);
-var
-  flg : Integer;
 begin
+  SetFlag(fgIgnore, Value);
   if Value then
-    flg := fgIgnore or fgRead
-  else
-    flg := fgIgnore;
-
-  SetFlag (flg, Value);
-
-  if value then
+  begin
+    fFlags := fFlags or fgRead;
     fFlags := fFlags and not fgInteresting;
+  end;
 end;
 
 procedure TArticleBase.SetIsInteresting(const Value: boolean);
 begin
-  SetFlag (fgInteresting, value);
-
-  if value then
+  SetFlag(fgInteresting, Value);
+  if Value then
     fFlags := fFlags and not fgIgnore;
 end;
 

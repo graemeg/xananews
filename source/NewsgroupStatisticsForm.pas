@@ -36,6 +36,7 @@ type
     fRanking: Integer;
     fDataString: string;
     fDataInteger: Integer;
+    fLastString: string;
   public
     property Number: Integer read fNumber;
     property Ranking: Integer read fRanking;
@@ -113,21 +114,22 @@ type
     btnPostToGroup: TButton;
     lblResult: TLabel;
     cbResults: TComboBox;
-    procedure FormShow(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure lvNewsreadersData(Sender: TObject; Item: TListItem);
-    procedure lvPostersData(Sender: TObject; Item: TListItem);
-    procedure lvPostersColumnClick(Sender: TObject; Column: TListColumn);
-    procedure lvNewsreadersColumnClick(Sender: TObject; Column: TListColumn);
-    procedure lvThreadsData(Sender: TObject; Item: TListItem);
-    procedure lvThreadsColumnClick(Sender: TObject; Column: TListColumn);
+    procedure FormShow(Sender: TObject);
     procedure btnCopyToClipboardClick(Sender: TObject);
+    procedure btnPostToGroupClick(Sender: TObject);
     procedure btnStartClick(Sender: TObject);
+    procedure cbResultsKeyPress(Sender: TObject; var Key: Char);
+    procedure lvCustomDrawSubItem(Sender: TCustomListView; Item: TListItem; SubItem: Integer; State: TCustomDrawState; var DefaultDraw: Boolean);
+    procedure lvNewsreadersColumnClick(Sender: TObject; Column: TListColumn);
+    procedure lvNewsreadersData(Sender: TObject; Item: TListItem);
+    procedure lvPostersColumnClick(Sender: TObject; Column: TListColumn);
+    procedure lvPostersData(Sender: TObject; Item: TListItem);
+    procedure lvThreadsColumnClick(Sender: TObject; Column: TListColumn);
+    procedure lvThreadsData(Sender: TObject; Item: TListItem);
     procedure PersistentPosition1GetSettingsClass(Owner: TObject; var SettingsClass: TExSettingsClass);
     procedure PersistentPosition1GetSettingsFile(Owner: TObject; var fileName: string);
-    procedure btnPostToGroupClick(Sender: TObject);
-    procedure cbResultsKeyPress(Sender: TObject; var Key: Char);
-    procedure FormCreate(Sender: TObject);
   private
     fGroup: TSubscribedGroup;
 
@@ -159,10 +161,14 @@ var
 
 implementation
 
-uses ClipBrd;
+uses
+  ClipBrd;
 
 var
   gReverseSort: Boolean = False;
+
+resourcestring
+  rsUnspecifiedReader = '<not specified>';
 
 {$R *.dfm}
 
@@ -177,7 +183,6 @@ begin
   if gReverseSort then
     Result := -Result;
 end;
-
 
 function CompareStatisticDataIntegers(list: TStringList; idx1, idx2: Integer): Integer;
 var
@@ -242,7 +247,7 @@ begin
     Clipboard.AsText := Report.Text
   finally
     Report.Free;
-  end
+  end;
 end;
 
 procedure TfmNewsgroupStatistics.btnPostToGroupClick(Sender: TObject);
@@ -269,12 +274,12 @@ begin
         Form.Show;
       except
         Form.Free;
-        raise
-      end
+        raise;
+      end;
     end;
   finally
     Report.Free;
-  end
+  end;
 end;
 
 procedure TfmNewsgroupStatistics.btnStartClick(Sender: TObject);
@@ -299,9 +304,9 @@ begin
   reg := CreateExSettings;
   try
     reg.Section := 'Statistics';
-    S := reg.StringValue['MaxResults']
+    S := reg.StringValue['MaxResults'];
   finally
-    reg.Free
+    reg.Free;
   end;
   if S <> '' then
     cbResults.Text := S;
@@ -316,7 +321,7 @@ begin
     reg.Section := 'Statistics';
     reg.StringValue['MaxResults'] := cbResults.Text;
   finally
-    reg.Free
+    reg.Free;
   end;
   fStatistics.Free;
   fStatisticContainer.Free;
@@ -338,17 +343,20 @@ begin
   begin
     art := fGroup.Articles[i];
 
-    if sd = 0 then
-      sd := art.Date
-    else
-      if art.Date < sd then
-        sd := art.Date;
+    if art.Date <> 0 then
+    begin
+      if sd = 0 then
+        sd := art.Date
+      else
+        if art.Date < sd then
+          sd := art.Date;
 
-    if ed = 0 then
-      ed := art.Date
-    else
-      if art.Date > ed then
+      if ed = 0 then
         ed := art.Date
+      else
+        if art.Date > ed then
+          ed := art.Date;
+    end;
   end;
 
   dtpFrom.DateTime := Int(sd);
@@ -447,6 +455,26 @@ begin
     Result := nil;  
 end;
 
+procedure TfmNewsgroupStatistics.lvCustomDrawSubItem(
+  Sender: TCustomListView; Item: TListItem; SubItem: Integer;
+  State: TCustomDrawState; var DefaultDraw: Boolean);
+var
+  S: string;
+begin
+  if SubItem = 0 then Exit;
+
+  if SubItem <= Item.SubItems.Count then
+  begin
+    S := Item.SubItems[SubItem - 1];
+    if SameText(S, 'XanaNews') then
+      Sender.Canvas.Font.Color := $00C000 // halfway between clGreen and clLime
+    else if SameText(S, rsUnspecifiedReader) then
+      Sender.Canvas.Font.Color := $0000C0 // halfway between clMaroon and clRed
+    else
+      Sender.Canvas.Font.Color := GetSysColor(COLOR_WINDOWTEXT);
+  end;
+end;
+
 procedure TfmNewsgroupStatistics.lvNewsreadersColumnClick(Sender: TObject;
   Column: TListColumn);
 var
@@ -469,7 +497,7 @@ begin
   end;
 
   fReadersSortColumn := Col;
-  lvNewsreaders.Invalidate
+  lvNewsreaders.Invalidate;
 end;
 
 procedure TfmNewsgroupStatistics.lvNewsreadersData(Sender: TObject;
@@ -487,7 +515,7 @@ begin
     Item.SubItems.Add(IntToStr(Statistic.Number));
     Item.SubItems.Add(fStatistics.fReaders[idx]);
     Item.SubItems.Add(IntToStr(Statistic.DataInteger));
-  end
+  end;
 end;
 
 procedure TfmNewsgroupStatistics.lvPostersColumnClick(Sender: TObject;
@@ -512,7 +540,7 @@ begin
   end;
 
   fPostersSortColumn := Col;
-  lvPosters.Invalidate
+  lvPosters.Invalidate;
 end;
 
 procedure TfmNewsgroupStatistics.lvPostersData(Sender: TObject;
@@ -529,8 +557,8 @@ begin
     Item.Caption := IntToStr(Statistic.Ranking);
     Item.SubItems.Add(IntToStr(Statistic.Number));
     Item.SubItems.Add(fStatistics.fPosters[idx]);
-    Item.SubItems.Add(Statistic.DataString)
-  end
+    Item.SubItems.Add(Statistic.DataString);
+  end;
 end;
 
 procedure TfmNewsgroupStatistics.lvThreadsColumnClick(Sender: TObject;
@@ -555,9 +583,8 @@ begin
   end;
 
   fThreadsSortColumn := Col;
-  lvThreads.Invalidate
+  lvThreads.Invalidate;
 end;
-
 
 procedure TfmNewsgroupStatistics.lvThreadsData(Sender: TObject;
   Item: TListItem);
@@ -573,7 +600,7 @@ begin
     Item.Caption := IntToStr(Statistic.Ranking);
     Item.SubItems.Add(IntToStr(Statistic.Number));
     Item.SubItems.Add(fStatistics.fThreads[idx]);
-  end
+  end;
 end;
 
 procedure TfmNewsgroupStatistics.PersistentPosition1GetSettingsClass(
@@ -585,7 +612,7 @@ end;
 procedure TfmNewsgroupStatistics.PersistentPosition1GetSettingsFile(
   Owner: TObject; var fileName: string);
 begin
- fileName := gExSettingsFile
+ fileName := gExSettingsFile;
 end;
 
 procedure TfmNewsgroupStatistics.UpdateActions;
@@ -634,7 +661,7 @@ begin
   finally
     Screen.Cursor := oldCursor;
     fCalculating := False;
-  end
+  end;
 end;
 
 { TStatisticArticle }
@@ -666,7 +693,7 @@ end;
 
 function TStatisticArticle.GetMsg: TmvMessage;
 begin
-  Result := nil
+  Result := nil;
 end;
 
 { TStatisticContainer }
@@ -695,8 +722,8 @@ begin
     begin
       nart := TStatisticArticle.Create(Self);
       nart.Assign(art);
-      RawAddArticle(nart)
-    end
+      RawAddArticle(nart);
+    end;
   end;
 
   fUnreadArticleCount := -1;
@@ -713,12 +740,12 @@ end;
 
 function TStatisticContainer.GetNext: TArticleContainer;
 begin
-  Result := nil
+  Result := nil;
 end;
 
 function TStatisticContainer.GetServerSettings: TServerSettings;
 begin
-  Result := nil
+  Result := nil;
 end;
 
 function TStatisticContainer.GetUnreadArticleCount: Integer;
@@ -743,12 +770,12 @@ begin
         if ArticleBase[i].IsReply then
           Inc(fUnreadReplyCount);
         if ArticleBase[i].IsXanaNews then
-          Inc(fUnreadXananewsArticleCount)
+          Inc(fUnreadXananewsArticleCount);
       end;
-    fUnreadArticleCount := Result
+    fUnreadArticleCount := Result;
   end
   else
-    Result := fUnreadArticleCount
+    Result := fUnreadArticleCount;
 end;
 
 procedure TStatisticContainer.LoadArticles;
@@ -763,11 +790,13 @@ end;
 
 constructor TStatistics.Create(AGroup: TArticleContainer; MaxResults: Integer);
 var
-  i, idx: Integer;
+  i, j, idx: Integer;
   article: TArticleBase;
   bart: TArticleBase;
   agent, poster: string;
   Stat: TStatistic;
+  obj: TObject;
+  sl: TStringList;
 
   function GetAgent(article: TArticleBase): string;
   var
@@ -784,17 +813,17 @@ var
         Result := Copy(Result, 1, p - 1);
       p := 0;
       for idx := 3 to Length(Result) do       // Start at 3 so that 40tude doesn't feel left out.
-        if Result[idx] in['0'..'9'] then
+        if Result[idx] in ['0'..'9'] then
         begin
           p := idx;
-          break
+          Break;
         end;
       if p > 0 then
         Result := Trim(Copy(Result, 1, p - 1));
 
       if (Length(Result) > 2) and SameText(Copy(Result, Length(Result) - 1, MaxInt), ' v') then
         Result := Copy(Result, 1, Length(Result) - 2);
-    end
+    end;
   end;
 
   function GetThreadHeight(article: TArticleBase): Integer;
@@ -806,77 +835,128 @@ var
     while Assigned(p) do
     begin
       Inc(Result, GetThreadHeight(p));
-      p := p.sibling
-    end
+      p := p.sibling;
+    end;
   end;
 
 begin
   fGroup := AGroup;
 
-  fPosters := TStringList.Create;  fPosters.CaseSensitive := False; fPosters.Duplicates := dupError; fPosters.Sorted := True;
-  fReaders := TStringList.Create;  fReaders.CaseSensitive := False; fReaders.Duplicates := dupError; fReaders.Sorted := True;
-  fThreads := TStringList.Create;  fThreads.CaseSensitive := False; fThreads.Duplicates := dupAccept; fThreads.Sorted := True;
+  fPosters := TStringList.Create; fPosters.CaseSensitive := False; fPosters.Duplicates := dupAccept;
+  fReaders := TStringList.Create; fReaders.CaseSensitive := False; fReaders.Duplicates := dupError;
+  fThreads := TStringList.Create; fThreads.CaseSensitive := False; fThreads.Duplicates := dupAccept;
 
   for i := 0 to fGroup.ArticleCount - 1 do
   begin
     article := fGroup.ArticleBase[i];
     if article.ArticleNo <> 0 then
+    begin
       Inc(fNonDummyArticleCount);
 
-    agent := GetAgent(article);
-    if SameText(agent, 'XanaNews') then
-      Inc(fNoXanaNews);
+      agent := GetAgent(article);
+      if SameText(agent, 'XanaNews') then
+        Inc(fNoXanaNews);
 
-    if agent <> '' then
-    begin
+      if agent = '' then
+        agent := rsUnspecifiedReader;
+
       idx := fReaders.IndexOf(agent);
       if idx = -1 then
       begin
         Stat := TStatistic.Create;
-        fReaders.AddObject(agent, Stat)
+        fReaders.AddObject(agent, Stat);
       end
       else
         Stat := TStatistic(fReaders.Objects[idx]);
-      Inc(Stat.fNumber)
-    end;
-
-    poster := article.FromName;
-
-    if poster <> '' then
-    begin
-      idx := fPosters.IndexOf(poster);
-      if idx = -1 then
-      begin
-        Stat := TStatistic.Create;
-        fPosters.AddObject(poster, Stat)
-      end
-      else
-        Stat := TStatistic(fPosters.Objects[idx]);
       Inc(Stat.fNumber);
-      if agent <> '' then
-        Stat.fDataString := agent
-    end
+
+      poster := article.FromName;
+      if poster <> '' then
+      begin
+        idx := -1;
+        for j := fPosters.Count - 1 downto 0 do
+          if SameText(fPosters[j], poster) then
+          begin
+            obj := fPosters.Objects[j];
+            if SameText(TStatistic(obj).fDataString, agent) then
+            begin
+              idx := j;
+              Break;
+            end
+            else
+              TStatistic(obj).fLastString := agent;
+          end;
+
+        if idx = -1 then
+        begin
+          Stat := TStatistic.Create;
+          fPosters.AddObject(poster, Stat);
+        end
+        else
+          Stat := TStatistic(fPosters.Objects[idx]);
+        Inc(Stat.fNumber);
+        Stat.fDataString := agent;
+      end;
+    end;
   end;
 
-  fPosters.Sorted := False;
-  gReverseSort := True;
-  fPosters.CustomSort(CompareStatisticNumbers);
+  // Totalize newsreaders per poster & agent
   for i := 0 to fPosters.Count - 1 do
   begin
     Stat := TStatistic(fPosters.Objects[i]);
-    Stat.fRanking := i + 1;
     if Stat.fDataString <> '' then
     begin
       idx := fReaders.IndexOf(Stat.fDataString);
       if idx >= 0 then
       begin
         Stat := TStatistic(fReaders.Objects[idx]);
-        Inc(Stat.fDataInteger)
-      end
-    end
+        Inc(Stat.fDataInteger);
+      end;
+    end;
   end;
 
-  fReaders.Sorted := False;
+  // Recreate list of posters (independent of the used newsreader).
+  sl := TStringList.Create;
+  try
+    sl.CaseSensitive := False;
+    sl.Duplicates := dupError;
+
+    for I := 0 to fPosters.Count - 1 do
+    begin
+      poster := fPosters[I];
+      idx := sl.IndexOf(poster);
+      if idx = -1 then
+      begin
+        Stat := TStatistic.Create;
+        sl.AddObject(poster, Stat);
+      end
+      else
+        Stat := TStatistic(sl.Objects[idx]);
+      Inc(Stat.fNumber, TStatistic(fPosters.Objects[i]).fNumber);
+
+      obj := fPosters.Objects[i];
+      if TStatistic(obj).fLastString <> '' then
+        Stat.fDataString := TStatistic(obj).fLastString
+      else
+        Stat.fDataString := TStatistic(obj).fDataString;
+    end;
+
+    for i := 0 to fPosters.Count - 1 do
+      fPosters.Objects[i].Free;
+    fPosters.Clear;
+
+    for i := 0 to sl.Count - 1 do
+      fPosters.AddObject(sl[i], sl.Objects[I]);
+  finally
+    sl.Free;
+  end;
+
+  gReverseSort := True;
+  fPosters.CustomSort(CompareStatisticNumbers);
+  for i := 0 to fPosters.Count - 1 do
+    TStatistic(fPosters.Objects[i]).fRanking := i + 1;
+
+  gReverseSort := True;
   fReaders.CustomSort(CompareStatisticNumbers);
   for idx := 0 to fReaders.Count - 1 do
     TStatistic(fReaders.Objects[idx]).fRanking := idx + 1;
@@ -893,7 +973,6 @@ begin
     fThreads.AddObject(DecodeSubject(bart.Subject), Stat);
   end;
 
-  fThreads.Sorted := False;
   fThreads.CustomSort(CompareStatisticNumbers);
   for idx := 0 to fThreads.Count - 1 do
     TStatistic(fThreads.Objects[idx]).fRanking := idx + 1;
