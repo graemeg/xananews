@@ -52,43 +52,42 @@ type
     procedure mnuRedoClick(Sender: TObject);
     procedure btnCancelClick(Sender: TObject);
     procedure btnAttachmentsClick(Sender: TObject);
-    procedure mmoMessageKeyDown(Sender: TObject; var Key: Word;
-      Shift: TShiftState);
+    procedure mmoMessageKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure ReverseSelectedText1Click(Sender: TObject);
     procedure mnuPasteSelectedClick(Sender: TObject);
     procedure cbIdentityChange(Sender: TObject);
   private
-    fInitialText : WideString;
-    fInitialIdentity : string;
-    fInitialP : Integer;
-    fCodePage : Integer;
-    fIsReply : boolean;
-    fIsExistingMessage : boolean;
-    fOrigReferences : string;
-    fOrigMessageID : string;
-    fSpellInstalled : boolean;
-    fCheckSpelling : boolean;
-    fPostingSettings : TPostingSettings;
-    fResizing : boolean;
-    fAttachments : TObjectList;
-    fCloseOK : boolean;
-    fSignatureOverride : string;
+    fInitialText: WideString;
+    fInitialIdentity: string;
+    fInitialP: Integer;
+    fCodePage: Integer;
+    fIsReply: Boolean;
+    fIsExistingMessage: Boolean;
+    fOrigReferences: string;
+    fOrigMessageID: string;
+    fSpellInstalled: Boolean;
+    fCheckSpelling: Boolean;
+    fPostingSettings: TPostingSettings;
+    fResizing: Boolean;
+    fAttachments: TObjectList;
+    fCloseOK: Boolean;
+    fSignatureOverride: string;
 
     procedure PostAndClose;
     function GetAttachment(idx: Integer): TAttachment;
     function GetAttachmentCount: Integer;
-    procedure PasteQuote (const quote : string);
-    procedure ApplySignature (Identity : TIdentity; const signatureOverride : string);
+    procedure PasteQuote(const quote: string);
+    procedure ApplySignature(Identity: TIdentity; const signatureOverride: string);
   public
-    procedure Initialize (const InitialText : WideString; PostingSettings : TPostingSettings; identity : TIdentity; ReplyTOArticle : TArticleBase; Request : TObject; attachments : TObjectList; codePageOverride : Integer; const signatureOverride : string);
-    procedure UpdateActions (okOK : boolean);
+    procedure Initialize(const InitialText: WideString; PostingSettings: TPostingSettings; identity: TIdentity; ReplyTOArticle: TArticleBase; Request: TObject; attachments: TObjectList; codePageOverride: Integer; const signatureOverride: string);
+    procedure UpdateActions(okOK: Boolean);
     procedure DoResize;
-    property AttachmentCount : Integer read GetAttachmentCount;
-    property Attachment [idx : Integer] : TAttachment read GetAttachment;
-    procedure AddAttachment (const fileName : string);
-    procedure RemoveAttachment (idx : Integer);
-    property CodePage : Integer read fCodePage;
-    property CloseOK : boolean read fCloseOK;
+    property AttachmentCount: Integer read GetAttachmentCount;
+    property Attachment[idx: Integer]: TAttachment read GetAttachment;
+    procedure AddAttachment(const fileName: string);
+    procedure RemoveAttachment(idx: Integer);
+    property CodePage: Integer read fCodePage;
+    property CloseOK: Boolean read fCloseOK;
   end;
 
 implementation
@@ -100,12 +99,12 @@ uses unitNewsreaderOptions, unitCharsetMap, ClipBrd,
 
 procedure TfmePost.btnOKClick(Sender: TObject);
 var
-  okToPost : boolean;
-  skipFirstLine : boolean;
+  okToPost: Boolean;
+  skipFirstLine: Boolean;
 begin
   okToPost := True;
   if (mmoMessage.Text = '') and (AttachmentCount = 0) then
-    if MessageBox (Handle, 'Are you sure you want to post an empty message', PChar (Application.Title), MB_YESNO or MB_DEFBUTTON2 or MB_ICONQUESTION) <> IDYES then
+    if MessageBox(Handle, 'Are you sure you want to post an empty message', PChar(Application.Title), MB_YESNO or MB_DEFBUTTON2 or MB_ICONQUESTION) <> IDYES then
       okToPost := False;
 
   if okToPost then
@@ -118,23 +117,20 @@ begin
     if not cbCheckSpelling.Checked or (CWSpellChecker1.CheckAndShowModal(Owner as TCustomForm, skipFirstLine) = mrOK) then
       PostAndClose
     else
-      mmoMessage.SetFocus
-
-  end
+      mmoMessage.SetFocus;
+  end;
 end;
 
 procedure TfmePost.DoResize;
 var
-  w, h, cxvs : Integer;
-
+  w, h, cxvs: Integer;
 begin
-  if fResizing or not Assigned (fPostingSettings) then
+  if fResizing or not Assigned(fPostingSettings) then
     Exit;
-
 
   if mmoMessage.WordWrap and (fPostingSettings.MaxPostLineLength > 0) then
   begin
-    cxvs := GetSystemMetrics (SM_CXVSCROLL);
+    cxvs := GetSystemMetrics(SM_CXVSCROLL);
     w := (fPostingSettings.MaxPostLineLength + 1) * mmoMessage.AveCharWidth + cxvs;
     if w < ScrollBox1.ClientWidth then
       w := ScrollBox1.ClientWidth;
@@ -145,7 +141,7 @@ begin
 
   h := ScrollBox1.ClientHeight;
   if Ruler1.Visible then
-    Dec (h, Ruler1.Height);
+    Dec(h, Ruler1.Height);
 
   fResizing := True;
   try
@@ -156,15 +152,15 @@ begin
     if mmoMessage.WordWrap and (fPostingSettings.MaxPostLineLength > 0) then
       mmoMessage.SetupRightMargin;
   finally
-    fResizing := False
+    fResizing := False;
   end;
 end;
 
-procedure TfmePost.Initialize(const InitialText : WideString; PostingSettings: TPostingSettings;identity: TIdentity; ReplyTOArticle : TArticleBase; Request : TObject; attachments : TObjectList; codePageOverride : Integer; const signatureOverride : string);
+procedure TfmePost.Initialize(const InitialText: WideString; PostingSettings: TPostingSettings;identity: TIdentity; ReplyTOArticle: TArticleBase; Request: TObject; attachments: TObjectList; codePageOverride: Integer; const signatureOverride: string);
 var
-  sub : string;
-  i, idx : Integer;
-  att : TObjectList;
+  sub: string;
+  i, idx: Integer;
+  att: TObjectList;
 begin
   fSignatureOverride := SignatureOverride;
   mmoMessage.RawPaste := True;
@@ -173,29 +169,29 @@ begin
   fAttachments := Attachments;
   fInitialIdentity := Identity.Name;
   for i := 0 to NNTPAccounts.Identities.Count - 1 do
-    cbIdentity.Items.Add(NNTPAccounts.Identities.Identity [i].Name);
+    cbIdentity.Items.Add(NNTPAccounts.Identities.Identity[i].Name);
 
   idx := cbIdentity.Items.IndexOf(fInitialIdentity);
   if idx <> -1 then
     cbIdentity.ItemIndex := idx;
 
-  mmoMessage.Color := Options.Appearance [apMessageEditor].ApplyFontAndGetColor(mmoMessage.Font);
+  mmoMessage.Color := Options.Appearance[apMessageEditor].ApplyFontAndGetColor(mmoMessage.Font);
   fInitialP := 0;
   fCodePage := PostingSettings.DefaultCodePage;
-  GetCharsetNames (cbCharset.Items);
-  fIsReply := Assigned (ReplyToArticle);
+  GetCharsetNames(cbCharset.Items);
+  fIsReply := Assigned(ReplyToArticle);
 
   if fIsReply then
   begin
     sub := DecodeSubject(ReplyToArticle.subject);
     Caption := 'Reply to article from ' + ReplyToArticle.FromName + ' - ' + sub;
-    sub := Trim (sub);
+    sub := Trim(sub);
 
     fOrigReferences := ReplyToArticle.References;
     fOrigMessageID := ReplyToArticle.MessageId;
 
-    while UpperCase (Copy (sub, 1, 3)) = 'RE:' do
-      sub := Trim (Copy (sub, 4, MaxInt));
+    while UpperCase(Copy(sub, 1, 3)) = 'RE:' do
+      sub := Trim(Copy(sub, 4, MaxInt));
 
     if PostingSettings.PostingStyle = psTop then
       mmoMessage.Text := #13#10#13#10 + InitialText
@@ -204,30 +200,30 @@ begin
     fInitialP := mmoMessage.GetTextLen;
     fInitialText := mmoMessage.Text;
 
-    if Assigned (ReplyToArticle.Msg) then
-      fCodePage := ReplyToArticle.Msg.Codepage
+    if Assigned(ReplyToArticle.Msg) then
+      fCodePage := ReplyToArticle.Msg.Codepage;
   end;
   if codePageOverride <> -1 then
     fCodePage := codePageOverride;
   mmoMessage.CodePage := fCodePage;
 
-  idx := cbCharset.Items.IndexOf (CodePagetoCharsetName (fCodePage));
+  idx := cbCharset.Items.IndexOf(CodePagetoCharsetName(fCodePage));
   cbCharset.ItemIndex := idx;
 
-  if not Assigned (Request) then
+  if not Assigned(Request) then
   begin
     if not fIsReply then
       fInitialText := InitialText;
-    ApplySignature (Identity, fSignatureOverride);
+    ApplySignature(Identity, fSignatureOverride);
   end
   else
   begin
     fIsExistingMessage := True;
-    att := Nil;
+    att := nil;
     if Request is TPosterRequest then
     begin
-      att := TPosterRequest (Request).Attachments;
-      mmoMessage.Text := InitialText
+      att := TPosterRequest(Request).Attachments;
+      mmoMessage.Text := InitialText;
     end
     else
       if Request is TEmailerRequest then
@@ -236,9 +232,9 @@ begin
         mmoMessage.Text := TEmailerRequest(Request).Msg;
       end;
 
-    if Assigned (att) then
+    if Assigned(att) then
       for i := 0 to att.Count - 1 do
-        Attachments.Add(TAttachment.Create (TAttachment (att [i]).PathName));
+        Attachments.Add(TAttachment.Create(TAttachment(att[i]).PathName));
   end;
 
 
@@ -247,33 +243,21 @@ begin
   fSpellInstalled := gDefaultISpellLanguage <> -1;
   fCheckSpelling := fSpellInstalled and options.CheckSpelling;
   cbCheckSpelling.Checked := fCheckSpelling;
-  SendMessage (mmoMessage.Handle, CM_FONTCHANGED, 0, 0);
+  SendMessage(mmoMessage.Handle, CM_FONTCHANGED, 0, 0);
 
   mmoMessage.ClearUndoBuffer;
 
-  SendMessage (Parent.Handle, WM_SETCODEPAGE, fCodePage, 0);
+  SendMessage(Parent.Handle, WM_SETCODEPAGE, fCodePage, 0);
 end;
 
 procedure TfmePost.PostAndClose;
 var
   st: string;
   s: TStringList;
-  DecodedBytes: TBytes;
-  Encoding: TEncoding;
 begin
   fCloseOK := True;
-//  st := WideStringToString (mmoMessage.Text, fCodePage);
+
   st := mmoMessage.Text;
-
-//  // TODO: encoding of posted messages
-//  Encoding := TEncoding.GetEncoding(fCodePage);
-//  try
-//    DecodedBytes := TEncoding.ASCII.GetBytes(mmoMessage.Text);
-//    st := Encoding.GetString(DecodedBytes);
-//  finally
-//    Encoding.Free;
-//  end;
-
   if (fPostingSettings.MaxPostLineLength > 0) and (fPostingSettings.TextPartStyle <> tpQuotedPrintable) and (fPostingSettings.TextPartStyle <> tpFlowed) then
   begin
     s := TStringList.Create;
@@ -289,7 +273,7 @@ begin
   SendMessage(Parent.Handle, WM_POSTANDCLOSE, Integer(PChar(st)), fCodePage);
 end;
 
-procedure TfmePost.UpdateActions(okOK: boolean);
+procedure TfmePost.UpdateActions(okOK: Boolean);
 begin
   btnOK.Enabled := okOK and (mmoMessage.GetTextLen <> 0);
 
@@ -308,7 +292,7 @@ end;
 
 procedure TfmePost.mnuUndoClick(Sender: TObject);
 begin
-  mmoMessage.Undo
+  mmoMessage.Undo;
 end;
 
 procedure TfmePost.mnuCutClick(Sender: TObject);
@@ -318,22 +302,22 @@ end;
 
 procedure TfmePost.mnuCopyClick(Sender: TObject);
 begin
-  mmoMessage.CopyToClipboard
+  mmoMessage.CopyToClipboard;
 end;
 
 procedure TfmePost.mnuPasteClick(Sender: TObject);
 begin
-  mmoMessage.PasteTextFromClipboard
+  mmoMessage.PasteTextFromClipboard;
 end;
 
 procedure TfmePost.mnuSelectAllClick(Sender: TObject);
 begin
-  mmoMessage.SelectAll
+  mmoMessage.SelectAll;
 end;
 
 procedure TfmePost.btnSpellClick(Sender: TObject);
 var
-  skipFirstLine : boolean;
+  skipFirstLine: Boolean;
 begin
   CWSpellChecker1.LanguageIdx := fPostingSettings.DefaultSpellLanguage;
   CWSpellChecker1.QuoteChars := '>|';
@@ -345,31 +329,31 @@ end;
 
 procedure TfmePost.mnuPasteQuoteClick(Sender: TObject);
 begin
-  PasteQuote (Clipboard.AsText);
+  PasteQuote(Clipboard.AsText);
 end;
 
 procedure TfmePost.ROT13SelectedText1Click(Sender: TObject);
 begin
   if mmoMessage.SelLength > 0 then
-    mmoMessage.SelText := WideROT13 (mmoMessage.SelText)
+    mmoMessage.SelText := WideROT13(mmoMessage.SelText);
 end;
 
 procedure TfmePost.cbCharsetChange(Sender: TObject);
 begin
-  fCodePage := CharsetNameToCodePage (cbCharset.Text);
-  mmoMessage.Font.Charset := CodePageToCharset (fCodePage);
+  fCodePage := CharsetNameToCodePage(cbCharset.Text);
+  mmoMessage.Font.Charset := CodePageToCharset(fCodePage);
   mmoMessage.CodePage := fCodePage;
-  SendMessage (Parent.Handle, WM_SETCODEPAGE, fCodePage, 0);
+  SendMessage(Parent.Handle, WM_SETCODEPAGE, fCodePage, 0);
 end;
 
 procedure TfmePost.mmoMessageFontChange(Sender: TObject);
 begin
-  if not Assigned (fPostingSettings) then Exit;
+  if not Assigned(fPostingSettings) then Exit;
   Ruler1.Visible := mmoMessage.FixedFont;
   if Ruler1.Visible then
   begin
     mmoMessage.Top := Ruler1.Height;
-    Ruler1.SmallTickSpacing := mmoMessage.AveCharWidth
+    Ruler1.SmallTickSpacing := mmoMessage.AveCharWidth;
   end
   else
     mmoMessage.Top := 0;
@@ -391,53 +375,53 @@ begin
     begin
       mmoMessage.WordWrap := True;
       mmoMessage.HideScrollBars := False;
-      mmoMessage.ScrollBars := ssVertical
-    end
+      mmoMessage.ScrollBars := ssVertical;
+    end;
 end;
 
 procedure TfmePost.mnuRedoClick(Sender: TObject);
 begin
-  mmoMessage.Redo
+  mmoMessage.Redo;
 end;
 
 procedure TfmePost.btnCancelClick(Sender: TObject);
 begin
-  SendMessage (Parent.Handle, WM_CLOSE, 0, 0)
+  SendMessage(Parent.Handle, WM_CLOSE, 0, 0);
 end;
 
 procedure TfmePost.btnAttachmentsClick(Sender: TObject);
 var
-  dlg : TdlgAttachments;
+  dlg: TdlgAttachments;
 begin
   dlg := TdlgAttachments.Create(Owner);
   try
     dlg.PopupParent := Owner as TCustomForm;
     dlg.PopupMode := pmExplicit;
-    dlg.PostFrame := self;
+    dlg.PostFrame := Self;
     if dlg.ShowModal = mrOK then
     begin
     end
   finally
-    dlg.Free
-  end
+    dlg.Free;
+  end;
 end;
 
 procedure TfmePost.AddAttachment(const fileName: string);
 begin
-  fAttachments.Add(TAttachment.Create(fileName))
+  fAttachments.Add(TAttachment.Create(fileName));
 end;
 
 function TfmePost.GetAttachment(idx: Integer): TAttachment;
 begin
-  result := TAttachment (fAttachments [idx])
+  Result := TAttachment(fAttachments[idx]);
 end;
 
 function TfmePost.GetAttachmentCount: Integer;
 begin
-  if Assigned (fAttachments) then
-    result := fAttachments.Count
+  if Assigned(fAttachments) then
+    Result := fAttachments.Count
   else
-    result := 0
+    Result := 0;
 end;
 
 procedure TfmePost.RemoveAttachment(idx: Integer);
@@ -451,94 +435,86 @@ begin
   if Key = VK_ESCAPE then
     btnCancel.Click;
 
-  fCloseOK := False
+  fCloseOK := False;
 end;
 
 procedure TfmePost.ReverseSelectedText1Click(Sender: TObject);
 begin
   if mmoMessage.SelLength > 0 then
-    mmoMessage.SelText := WideReverseString (mmoMessage.SelText)
+    mmoMessage.SelText := WideReverseString(mmoMessage.SelText);
 end;
 
 procedure TfmePost.mnuPasteSelectedClick(Sender: TObject);
 var
   ws: WideString;
-//  art : TArticleBase;
-//  cp : Integer;
 begin
   fmMain.MessageScrollBox1.GetSelectedText(ws);
-//  art := fmMain.GetFocusedArticle;
-//  if Assigned (art) then
-//    cp := art.CodePage
-//  else
-//    cp := CP_USASCII;
   if ws <> '' then
-//    PasteQuote (WideStringToString(ws, cp));
     PasteQuote(ws);
 end;
 
 procedure TfmePost.PasteQuote(const quote: string);
 var
-  s1 : TStrings;
-  wrap : boolean;
-  NewText: WideString;
+  s1: TStrings;
+  wrap: Boolean;
+  NewText: string;
 begin
   s1 := TStringList.Create;
   try
     s1.Text := quote;
     wrap := (fPostingSettings.TextPartStyle <> tpQuotedPrintable) and (fPostingSettings.TextPartStyle <> tpFlowed) and  (fPostingSettings.MaxPostLineLength <> 0);
-    FixQuotes (s1, wrap, fPostingSettings.MaxPostLineLength, fPostingSettings.QuoteLineMarker, False, Options.StrictSigSep);
-    NewText := StringToWideString (s1.Text, fCodePage);
+    FixQuotes(s1, wrap, fPostingSettings.MaxPostLineLength, fPostingSettings.QuoteLineMarker, False, Options.StrictSigSep);
+    NewText := s1.Text;
     mmoMessage.SelText := NewText;
     if (fPostingSettings.PostingStyle = psBottom) then
       mmoMessage.SelStart := mmoMessage.SelStart + Length(NewText) - 2;
   finally
-    s1.Free
-  end
+    s1.Free;
+  end;
 end;
 
 procedure TfmePost.cbIdentityChange(Sender: TObject);
 var
-  st : string;
-  idx : Integer;
+  st: string;
+  idx: Integer;
 begin
   if not fCloseOK then
-    if MessageBox (handle, 'Changing identity will loose any changes you have made to this message.  Are you sure', 'XanaNews', MB_YESNO or MB_DEFBUTTON2 or MB_ICONQUESTION) = IDNo then
+    if MessageBox(handle, 'Changing identity will loose any changes you have made to this message.  Are you sure', 'XanaNews', MB_YESNO or MB_DEFBUTTON2 or MB_ICONQUESTION) = IDNo then
     begin
       idx := cbIdentity.Items.IndexOf(fInitialIdentity);
       cbIdentity.ItemIndex := idx;
       mmoMessage.SetFocus;
-      Exit
+      Exit;
     end;
   st := cbIdentity.Text;
-  SendMessage (Parent.Handle, WM_SETIDENTITY, Integer (PChar (st)), 0);
+  SendMessage(Parent.Handle, WM_SETIDENTITY, Integer(PChar(st)), 0);
   if not fIsExistingMessage then
-    ApplySignature (NNTPAccounts.Identities.Find(st), fSignatureOverride);
+    ApplySignature(NNTPAccounts.Identities.Find(st), fSignatureOverride);
   fCloseOK := True;
   fInitialIdentity := st;
-  mmoMessage.SetFocus
+  mmoMessage.SetFocus;
 end;
 
-procedure TfmePost.ApplySignature (Identity : TIdentity; const signatureOverride : string);
+procedure TfmePost.ApplySignature(Identity: TIdentity; const signatureOverride: string);
 var
-  wst, sig : WideString;
+  wst, sig: WideString;
   p: Integer;
 begin
-  if Identity = Nil then Exit;
+  if Identity = nil then Exit;
   wst := fInitialText;
   p := fInitialP;
-  sig := Identity.ChooseSignature (signatureOverride);
-  sig := StringReplace (sig, '%author%', Identity.UserName, [rfReplaceAll, rfIgnoreCase]);
+  sig := Identity.ChooseSignature(signatureOverride);
+  sig := StringReplace(sig, '%author%', Identity.UserName, [rfReplaceAll, rfIgnoreCase]);
 // QEC-20041217-18:00  Added system Date-Time capability to signature.
-  sig := StringReplace (sig, '%DateTime%', DateTimeToStr(Now), [rfReplaceAll, rfIgnoreCase]);
-  sig := StringReplace (sig, '%ver%', ProductVersion, [rfReplaceAll, rfIgnoreCase]);
+  sig := StringReplace(sig, '%DateTime%', DateTimeToStr(Now), [rfReplaceAll, rfIgnoreCase]);
+  sig := StringReplace(sig, '%ver%', ProductVersion, [rfReplaceAll, rfIgnoreCase]);
 
   if Trim(sig) <> '' then
   begin
-    if (wst <> '') and (Copy (wst, Length (wst) - 1, 2) <> #13#10) then
+    if (wst <> '') and (Copy(wst, Length(wst) - 1, 2) <> #13#10) then
     begin
       wst := wst + #13#10;
-      Inc (p)
+      Inc(p);
     end;
 
     if fPostingSettings.PostingStyle = psBottom then
@@ -546,16 +522,14 @@ begin
       if wst <> '' then
       begin
         wst := wst + #13#10;
-        Inc (p, 2)
+        Inc(p, 2);
       end;
 
-      sig := StringReplace (sig, '%author%', Identity.UserName, [rfReplaceAll, rfIgnoreCase]);
-        mmoMessage.Text := wst + #13#10#13#10'-- '#13#10 + sig
+      sig := StringReplace(sig, '%author%', Identity.UserName, [rfReplaceAll, rfIgnoreCase]);
+        mmoMessage.Text := wst + #13#10#13#10'-- '#13#10 + sig;
     end
     else
-    begin
       mmoMessage.Text := #13#10'-- '#13#10 + sig + wst;
-    end
   end
   else
     if wst <> '' then
@@ -564,12 +538,12 @@ begin
         mmoMessage.Text := wst
       else
         mmoMessage.Text := wst + #13#10;
-      Inc (p, 2)
+      Inc(p, 2);
     end;
   if (p > 0) and (fPostingSettings.PostingStyle = psBottom) then
-    mmoMessage.SelStart := p-1
+    mmoMessage.SelStart := p - 1
   else
-    mmoMessage.SelStart := 0
+    mmoMessage.SelStart := 0;
 end;
 
 end.

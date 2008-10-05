@@ -37,7 +37,6 @@ contains
   cmpFileCopier in 'cmpFileCopier.pas',
   cmpSplitterPanel in 'cmpSplitterPanel.pas',
   cmpTextDisplay in 'cmpTextDisplay.pas',
-  cmpUCtrls in 'cmpUCtrls.pas',
   cmpCWSpellChecker in 'cmpCWSpellChecker.pas',
   cmpPersistentOptions in 'cmpPersistentOptions.pas',
   cmpTexturedPanel in 'cmpTexturedPanel.pas',

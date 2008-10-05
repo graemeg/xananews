@@ -426,11 +426,11 @@ type
                            pSrcStr: PChar; var pcSrcSize: SYSUINT; pDstStr: PChar; 
                            var pcDstSize: SYSUINT): HResult; stdcall;
     function ConvertStringToUnicode(var pdwMode: LongWord; dwEncoding: LongWord; 
-                                    pSrcStr: PChar; var pcSrcSize: SYSUINT;
+                                    pSrcStr: PAnsiChar; var pcSrcSize: SYSUINT;
                                     pDstStr: PWideChar; var pcDstSize: SYSUINT): HResult; stdcall;
     function ConvertStringFromUnicode(var pdwMode: LongWord; dwEncoding: LongWord;
                                       pSrcStr: PWideChar; var pcSrcSize: SYSUINT;
-                                      pDstStr: PChar; var pcDstSize: SYSUINT): HResult; stdcall;
+                                      pDstStr: PAnsiChar; var pcDstSize: SYSUINT): HResult; stdcall;
     function ConvertStringReset: HResult; stdcall;
     function GetRfc1766FromLcid(locale: LongWord; out pbstrRfc1766: WideString): HResult; stdcall;
     function GetLcidFromRfc1766(out plocale: LongWord; const bstrRfc1766: WideString): HResult; stdcall;

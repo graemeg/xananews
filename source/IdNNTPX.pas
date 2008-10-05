@@ -2,7 +2,9 @@ unit IdNNTPX;
 
 interface
 
-uses Windows, Classes, SysUtils, IdTCPClient, IdGlobal, IdException, IdAssignedNumbers, IdIOHandlerSocket, ConTnrs, IdReplyRFC;
+uses
+  Windows, Classes, SysUtils, IdTCPClient, IdGlobal, IdException,
+  IdAssignedNumbers, IdIOHandlerSocket, ConTnrs, IdReplyRFC, XnClasses;
 
 type
   TModeType = (mtStream, mtIHAVE, mtReader);
@@ -520,6 +522,8 @@ procedure TidNNTPX.Send(header, msg: TStrings);
 var
   i : Integer;
   name, val : string;
+  S: string;
+  Bytes: TBytes;
 begin
   SendCmd('Post', 340);
   BeginWork(wmWrite);
@@ -535,10 +539,14 @@ begin
     IOHandler.WriteLn;
 
     for i := 0 to msg.Count - 1 do
-      if Copy (msg [i], 1, 1) = '.' then
-        IOHandler.WriteLn('.' + msg[i])
+    begin
+      if Copy(msg[i], 1, 1) = '.' then
+        S := '.' + msg[i] + EOL
       else
-        IOHandler.WriteLn(msg[i]);
+        S := msg[i] + EOL;
+      Bytes := TEncoding.Default.GetBytes(S);
+      IOHandler.Write(Bytes);
+    end;
   finally
     EndWork(wmWrite);
   end;

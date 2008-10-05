@@ -26,7 +26,7 @@ interface
 
 uses Windows, Messages, SysUtils, Classes, Graphics, Forms, Dialogs, Controls, StdCtrls,
   Buttons, ExtCtrls, unitNNTPFilters, unitNNTPServices, unitBookmarks,
-  cmpUCtrls, cmpPersistentPosition, ConTnrs, ComCtrls, unitExSettings;
+  cmpPersistentPosition, ConTnrs, ComCtrls, unitExSettings;
 
 type
   TSearchableColumns = ftSubject..ftCrossposted;
@@ -58,13 +58,13 @@ type
     cbxCrossposted: TComboBox;
     Bevel1: TBevel;
     DateTimePicker1: TDateTimePicker;
-    edSubject: TuEdit;
-    edAuthor: TuEdit;
-    edLines: TuEdit;
-    edMessageBody: TuEdit;
-    edMessageID: TuEdit;
-    edHeaderLines: TuEdit;
-    edCrossposted: TuEdit;
+    edSubject: TEdit;
+    edAuthor: TEdit;
+    edLines: TEdit;
+    edMessageBody: TEdit;
+    edMessageID: TEdit;
+    edHeaderLines: TEdit;
+    edCrossposted: TEdit;
     Timer1: TTimer;
     cbInterestingMessagesOnly: TCheckBox;
     procedure PersistentPosition1GetSettingsFile(Owner: TObject;
@@ -91,7 +91,7 @@ type
     fSearchToBookmark : boolean;
     function GetFilters: TNNTPFilters;
     function GetOperators(column : TNNTPFilterColumn): TComboBox;
-    function GetEditors(column: TNNTPFilterColumn): TuEdit;
+    function GetEditors(column: TNNTPFilterColumn): TEdit;
     function GetEditorCtrls(column: TNNTPFilterColumn): TWinControl;
     function GetEnableds(column: TNNTPFilterColumn): TCheckBox;
   protected
@@ -109,7 +109,7 @@ type
     property OnArticleFound : TOnArticleFound read fOnArticleFound write fOnArticleFound;
 
     property Operators [column : TNNTPFilterColumn] : TComboBox read GetOperators;
-    property Editors [column : TNNTPFilterColumn] : TuEdit read GetEditors;
+    property Editors [column : TNNTPFilterColumn] : TEdit read GetEditors;
     property EditorCtrls [column : TNNTPFilterColumn] : TWinControl read GetEditorCtrls;
     property Enableds [column : TNNTPFilterColumn] : TCheckBox read GetEnableds;
   end;
@@ -142,7 +142,7 @@ var
   col : TNNTPFilterColumn;
   en : TCheckBox;
   op : TComboBox;
-  ed : TuEdit;
+  ed : TEdit;
 begin
   if Assigned (fFilters) then
   begin
@@ -176,7 +176,7 @@ begin
         fFilters.AddObject('', TNNTPFilter.Create('', col, operator, StrToIntDef (ed.Text, 0), unread, interesting, caseSensitive));
 
       else
-        fFilters.AddObject ('', TNNTPFilter.Create('', col, operator, ed.WideText, unread, interesting, caseSensitive))
+        fFilters.AddObject ('', TNNTPFilter.Create('', col, operator, ed.Text, unread, interesting, caseSensitive))
     end
   end;
   result := fFilters
@@ -436,7 +436,7 @@ var
   i : Integer;
   col : TNNTPFilterColumn;
   op : TNNTPFilterOperator;
-  ed : TuEdit;
+  ed : TEdit;
   cb : TComboBox;
   en : TCheckBox;
 begin
@@ -460,10 +460,7 @@ begin
     en := Enableds [col];
     ed := Editors [col];
     if Assigned (ed) then
-    begin
-      ed.CodePage := fCodePage;
       ed.Enabled := en.Checked;
-    end;
 
     cb := Operators [col];
     if Assigned (cb) then
@@ -499,7 +496,7 @@ var
   op : TNNTPFilterOperator;
   en : TCheckBox;
   opc : TComboBox;
-  ed : TuEdit;
+  ed : TEdit;
 
 begin
   FreeAndNil (fFilters);
@@ -555,7 +552,7 @@ begin
           else
           begin
             ed := Editors [col];
-            ed.WideText := fFilters [i].StrVal
+            ed.Text := fFilters [i].StrVal
           end
         end
       end
@@ -642,7 +639,7 @@ begin
   end
 end;
 
-function TdlgSearch.GetEditors(column: TNNTPFilterColumn): TuEdit;
+function TdlgSearch.GetEditors(column: TNNTPFilterColumn): TEdit;
 begin
   case column of
     ftSubject     : result := edSubject;

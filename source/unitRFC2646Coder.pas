@@ -1,7 +1,5 @@
 unit unitRFC2646Coder;
 
-// TODO: fix / optimize decoding
-
 interface
 
 uses Windows, Classes, SysUtils, IdCoder, XnClasses;

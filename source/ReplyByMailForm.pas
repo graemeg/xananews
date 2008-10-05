@@ -102,7 +102,9 @@ begin
   if Assigned (EMailerRequest) then
   begin
     ArticleContainer := EMailerRequest.ArticleContainer;
-    fInitialText := StringToWideString (EMailerRequest.Msg, EMailerRequest.CodePage);
+    // TODO: Maybe make similar changes like in NNTP?
+//    fInitialText := StringToWideString (EMailerRequest.Msg, EMailerRequest.CodePage);
+    fInitialText := EMailerRequest.Msg;
 
     edSubject.Text := EMailerRequest.MSubject;
     edTo.Text := EMailerRequest.MTo;

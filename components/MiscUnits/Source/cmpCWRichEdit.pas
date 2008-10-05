@@ -1235,23 +1235,20 @@ end;
  | 'Set' method for Text property                                       |
  *----------------------------------------------------------------------*)
 procedure TCustomExRichEdit.SetText(const Value: WideString);
-var
-  st : string;
 begin
   if HandleAllocated then
   begin
     if Value = '' then
       Clear
     else
-      fRichEditProvider.SetText (value);
-    ClearUndoBuffer
+      fRichEditProvider.SetText(Value);
+    ClearUndoBuffer;
   end
   else
   begin
-    st := WideStringToString (Value, fCodePage);
-    StrDispose (WindowText);
-    WindowText := StrNew (PChar (st))
-  end
+    StrDispose(WindowText);
+    WindowText := StrNew(PChar(Value));
+  end;
 end;
 
 (*----------------------------------------------------------------------*
@@ -1505,13 +1502,11 @@ end;
 
 function TRichEdit1Provider.GetSelText: WideString;
 var
-  Length : Integer;
-  st : string;
+  len: Integer;
 begin
-  SetLength(st, Owner.SelLength + 1);
-  Length := SendMessage(Owner.Handle, EM_GETSELTEXT, 0, Longint(PChar(st)));
-  SetLength(st, Length);
-  result := StringToWideString (st, Owner.CodePage);
+  SetLength(Result, Owner.SelLength + 1);
+  len := SendMessage(Owner.Handle, EM_GETSELTEXT, 0, Longint(PChar(Result)));
+  SetLength(Result, len);
 end;
 
 (*----------------------------------------------------------------------*
@@ -1521,13 +1516,11 @@ end;
  *----------------------------------------------------------------------*)
 function TRichEdit1Provider.GetText: WideString;
 var
-  s : string;
-  len : Integer;
+  len: Integer;
 begin
-  len := GetWindowTextLength (Owner.Handle);
-  SetLength (s, len);
-  GetWindowText (Owner.Handle, PChar (s), len);
-  result := StringToWideString (s, Owner.CodePage);
+  len := GetWindowTextLength(Owner.Handle);
+  SetLength(Result, len);
+  GetWindowText(Owner.Handle, PChar(Result), len);
 end;
 
 (*----------------------------------------------------------------------*
@@ -1547,7 +1540,7 @@ end;
  *----------------------------------------------------------------------*)
 procedure TRichEdit1Provider.SetSelText(const value: WideString);
 begin
-  SendMessage(Owner.Handle, EM_REPLACESEL, 0, LongInt(PChar (WideStringToString (Value, Owner.CodePage))));
+  SendMessage(Owner.Handle, EM_REPLACESEL, 0, LongInt(PChar(Value)));
 end;
 
 (*----------------------------------------------------------------------*
@@ -1557,7 +1550,7 @@ end;
  *----------------------------------------------------------------------*)
 procedure TRichEdit1Provider.SetText(const st: WideString);
 begin
-  SetWindowText (Owner.Handle, PChar (WideStringToString (st, Owner.CodePage)));
+  SetWindowText(Owner.Handle, PChar(st));
 end;
 
 { TRichEditStream }
@@ -2040,7 +2033,7 @@ end;
 
 procedure TCustomExRichEdit.WmGetText(var Message: TWMGetText);
 var
-  txt : string;
+  txt: string;
 begin
   if fInGetText then
     inherited
@@ -2049,16 +2042,16 @@ begin
     fInGetText := True;
     try
       if HandleAllocated then
-        txt := WideStringToString (GetText, fCodePage)
+        txt := GetText
       else
-        text := WindowText;
+        txt := WindowText;
 
       with Message do
-        Result := StrLen(StrLCopy(PChar(Text), PChar(txt), TextMax - 1))
+        Result := StrLen(StrLCopy(Text, PChar(txt), TextMax - 1))
     finally
-      fInGetText := False
-    end
-  end
+      fInGetText := False;
+    end;
+  end;
 end;
 
 procedure TCustomExRichEdit.WmGetTextLength(var Message: TWMGetTextLength);
@@ -2070,8 +2063,6 @@ begin
 end;
 
 procedure TCustomExRichEdit.WmSetText(var Message: TWMSetText);
-var
-  txt : string;
 begin
   if fINSetText then
     inherited
@@ -2079,13 +2070,12 @@ begin
   begin
     fInSetText := True;
     try
-      txt := Message.Text;
-      SetText (StringToWideString (txt, fCodePage));
-      Message.Result := 1
+      SetText(Message.Text);
+      Message.Result := 1;
     finally
-      fInSetText := False
-    end
-  end
+      fInSetText := False;
+    end;
+  end;
 end;
 
 function TCustomExRichEdit.GetCodePage: Integer;

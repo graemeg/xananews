@@ -169,7 +169,6 @@ public
   fMessageID: string;
   constructor Create (AOwner : TArticleContainer); virtual;
   procedure Assign (article : TArticleBase); virtual;
-  function Equals (art : TArticleBase) : boolean; virtual;
   procedure Initialize (articleNo : Integer; header : TStrings);
   function HasMsg : boolean;
   function MsgDownloading : boolean;
@@ -6231,11 +6230,6 @@ begin
       end
     end
   end
-end;
-
-function TArticleBase.Equals(art: TArticleBase): boolean;
-begin
-  result := self = art
 end;
 
 function TArticleBase.GetCodePage: Integer;

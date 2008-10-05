@@ -1215,7 +1215,7 @@ var
             st := gtr.Account.NNTPSettings.MessageIDDomain;
           hdr.Values ['Message-ID'] := NewsGlobals.GenerateMessageID ('xn',gtr.Account.NNTPSettings.MessageIDStub, st)
         end;
-        NNTP.Send (hdr, tmsg);
+        NNTP.Send(hdr, tmsg);
 
         Inc (c);
         n := m
@@ -1244,8 +1244,9 @@ begin
           if (msg.Count > maxLines) and (maxLines >= 100) then
             PostSplitMessage
           else
-            NNTP.Send (hdr, msg);
-          ok := True
+            NNTP.Send(hdr, msg);
+
+          ok := True;
         finally
           msg.Free;
         end;

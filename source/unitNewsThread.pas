@@ -15,7 +15,7 @@ interface
 
 uses Windows, Classes, Graphics, SysUtils, unitNNTPServices, unitMailServices,
   SyncObjs, IdTCPClient, ConTnrs, unitSettings, unitIdentities,
-  IdMessage, NewsGlobals, IdNNTPX
+  IdMessage, NewsGlobals, IdNNTPX, XnClasses
 {$IFDEF USEOPENSTRSEC}
 , SsTLSIdIOHandler
 {$ELSE}
@@ -309,7 +309,7 @@ TPosterRequest = class
 private
   fOwner : TPoster;
   fHdr : TStrings;
-  fMsg : string;
+  fMsg : MessageString;
 
   fGroups : string;
   fSubject : string;
@@ -331,7 +331,7 @@ public
   procedure AddAttachments (msg : TStrings; const multipartBoundary : string);
 
   property Hdr : TStrings read fHdr;
-  property Msg : string read fMsg write fMsg;
+  property Msg : MessageString read fMsg write fMsg;
 
   property Groups : string read GetGroups;
   property Subject : string read GetSubject;
@@ -433,7 +433,8 @@ implementation
 
 uses unitNNTPThreadManager, unitNewsReaderOptions, unitNNTPThreads,
      idCoder, idCoderMIME, unitCharsetMap, unitSearchString,
-     IdSMTP, idHeaderList, unitLog, unitRFC2646Coder, XnCoderUUE;
+     IdSMTP, idHeaderList, unitLog, unitRFC2646Coder, XnCoderUUE,
+     XnCoderQuotedPrintable;
 
 { TTCPThread }
 
@@ -1475,10 +1476,10 @@ procedure TPoster.AddPostToList(hdr : TStrings; const msg : string; attachments 
 begin
   LockList;
   try
-    fRequests.Add (TPosterRequest.Create (self, hdr, msg, attachments, ACodepage, ATextPartStyle))
+    fRequests.Add(TPosterRequest.Create(Self, hdr, msg, attachments, ACodepage, ATextPartStyle));
   finally
-    Unlocklist
-  end
+    Unlocklist;
+  end;
 end;
 
 procedure TPoster.Clear;
@@ -1517,8 +1518,8 @@ begin
   if Count = 0 then
   begin
     State := tsDormant;
-    fPaused := False
-  end
+    fPaused := False;
+  end;
 end;
 
 
@@ -1647,7 +1648,7 @@ begin
   fTextPartStyle := ATextPartStyle;
   fHdr := TStringList.Create;
   fHdr.Assign(AHdr);
-  fMsg := AMsg;
+  fMsg := WideStringToAnsiString(AMsg, ACodePage);
   fAttachments := attachments;
   fCodepage := ACodepage;
 end;
@@ -1699,39 +1700,39 @@ var
 
 begin
   multipartBoundary := '';
-  hdrCreated := MimeHeaderRequired (self.hdr);
+  hdrCreated := MimeHeaderRequired(Self.hdr);
 
   if hdrCreated then
     hdr := TStringList.Create
   else
-    hdr := self.Hdr;
+    hdr := Self.Hdr;
 
   try
     if hdrCreated then
     begin
-      mimeCharsetName := CodepageToMIMECharsetName (fCodepage);
+      mimeCharsetName := CodepageToMIMECharsetName(fCodepage);
       if mimeCharsetName <> '' then
-        for i := 0 to self.hdr.Count - 1 do
+        for i := 0 to Self.hdr.Count - 1 do
         begin
-          s := self.Hdr [i];
+          s := Self.Hdr[i];
           if Pos('Face', s) = 1 then
             hdr.Add(EncodeFace(s))
           else
-            if Pos ('X-Face', s) = 1 then
+            if Pos('X-Face', s) = 1 then
               hdr.Add(s)
             else
             begin
-              s1 := SplitString ('=', s);
-              if Pos ('Newsgroups', s1) = 1 then
-                hdr.Add (s1 + '=' + s)
+              s1 := SplitString('=', s);
+              if Pos('Newsgroups', s1) = 1 then
+                hdr.Add(s1 + '=' + s)
               else
-                hdr.Add (s1 + '=' + EncodeHeader (s, CodePage, Pos ('From', s1) = 1));
-          end
+                hdr.Add(s1 + '=' + EncodeHeader(s, CodePage, Pos('From', s1) = 1));
+          end;
         end
       else
-        hdr.Assign(self.Hdr);
+        hdr.Assign(Self.Hdr);
       hdr.Add('MIME-Version=1.0');
-      if not Assigned (attachments) or (attachments.Count = 0) then
+      if not Assigned(attachments) or (attachments.Count = 0) then
       begin
         s := 'Content-Type=text/plain';
 
@@ -1741,95 +1742,126 @@ begin
         if fTextPartStyle = tpFlowed then
           s := s + '; format=flowed';
 
-        hdr.Add (s);
+        hdr.Add(s);
 
         if fTextPartStyle = tpQuotedPrintable then
           hdr.Add ('Content-Transfer-Encoding=quoted-printable')
         else
         begin
           bt8 := False;
-          for i := 1 to Length (msg) do
-            if not (msg [i] in [#9, #10, #13, ' '..'~']) then
+          for i := 1 to Length(msg) do
+            if not (Msg[i] in [#9, #10, #13, ' '..'~']) then
             begin
               bt8 := True;
-              break
+              Break;
             end;
 
           if bt8 then
-            hdr.Add ('Content-Transfer-Encoding=8bit')
-        end
+            hdr.Add('Content-Transfer-Encoding=8bit');
+        end;
       end
       else
       begin
         multipartBoundary := GenerateMultipartBoundary;
-        hdr.Add('Content-Type=Multipart/Mixed; boundary=' + multipartBoundary)
+        hdr.Add('Content-Type=Multipart/Mixed; boundary=' + multipartBoundary);
       end;
-
-    end
-
+    end;
   except
     if hdrCreated then
       hdr.Free;
-    raise
-  end
+    raise;
+  end;
 end;
 
 procedure TPosterRequest.CreateEncodedMessage(var msg: TStrings; const multipartBoundary: string);
+var
+  bt8: Boolean;
+  i: Integer;
+  s: string;
+  mimeCharsetName: string;
 
-  procedure AddMessageString (msg : TStrings; const st : string);
+  procedure AddMessageString(msg: TStrings; const st: AnsiString);
   var
-    m : TStrings;
-    coder : TRFC2646Encoder;
+    m: TStrings;
+    coder: TidEncoder;
   begin
     m := TStringList.Create;
     try
-      m.Text := st;
+      m.Text := string(st);
       if fTextPartStyle = tpQuotedPrintable then
-        WrapStrings (m, 75, fTextPartStyle, false, false)
+      begin
+// TODO: WrapStrings is handling URLSs as well,
+//       is that really needed in this case? I don't think so!
+//
+//        WrapStrings(m, 75, fTextPartStyle, false, false)
+        coder := TXnEncoderQuotedPrintable.Create(nil);
+        TXnEncoderQuotedPrintable(coder).AddEOL := True;
+        try
+          m.Text := coder.Encode(m.Text);
+        finally
+          coder.Free;
+        end;
+      end
       else
         if fTextPartStyle = tpFlowed then
         begin
           coder := TRFC2646Encoder.Create(nil);
           try
-            coder.EncodeStrings (m)
+            TRFC2646Encoder(coder).EncodeStrings(m);
           finally
-            coder.Free
-          end
+            coder.Free;
+          end;
         end;
       msg.AddStrings(m);
     finally
-      m.Free
-    end
+      m.Free;
+    end;
   end;
 
 begin
-  // TODO: encoding of posted messages
   msg := TStringList.Create;
 
   try
     if multipartBoundary <> '' then
     begin
       msg.Add('This is a multipart message in MIME format');
-      msg.Add ('');  // Do we need this ??
-      msg.Add ('--' + multipartBoundary);
-      if fTextPartStyle = tpQuotedPrintable then
-        msg.Add ('Content-Transfer-Encoding: quoted-printable');
-      msg.Add ('');
+      msg.Add('');  // Do we need this ??
+      msg.Add('--' + multipartBoundary);
 
-      AddMessageString (msg, self.Msg);
+      mimeCharsetName := CodepageToMIMECharsetName(fCodepage);
+
+      s := 'Content-Type=text/plain';
+      if mimeCharsetName <> '' then
+        s := s + '; charset=' + mimeCharsetName;
+      if fTextPartStyle = tpFlowed then
+        s := s + '; format=flowed';
+      msg.Add(s);
+
+      if fTextPartStyle = tpQuotedPrintable then
+        msg.Add('Content-Transfer-Encoding: quoted-printable')
+      else
+      begin
+        bt8 := False;
+        for i := 1 to Length(Self.Msg) do
+          if not (Self.Msg[i] in [#9, #10, #13, ' '..'~']) then
+          begin
+            bt8 := True;
+            Break;
+          end;
+
+        if bt8 then
+          msg.Add('Content-Transfer-Encoding=8bit');
+      end;
+      msg.Add('');
+
+      AddMessageString(msg, Self.Msg);
 
       msg.Add ('');
       if Attachments.Count = 0 then
-        msg.Add ('--' + multipartBoundary + '--')
+        msg.Add ('--' + multipartBoundary + '--');
     end
     else
-      AddMessageString (msg, self.Msg);
-
-(* Done in IdNNTPX
-    for i := 0 to msg.Count - 1 do
-      if msg [i] = '.' then
-        msg [i] := '..';
-*)
+      AddMessageString(msg, Self.Msg);
   except
     msg.Free;
     raise
@@ -1856,25 +1888,25 @@ end;
 
 function TPoster.GetOutstandingRequestText(idx: Integer): WideString;
 var
-  post : TPosterRequest;
+  post: TPosterRequest;
 begin
   try
     LockList;
     if idx < fRequests.Count then
     begin
-      post := TPosterRequest (fRequests [idx]);
+      post := TPosterRequest(fRequests [idx]);
       Result := post.Groups + ':';
-      Result := Result + StringToWideString (post.Subject, post.Codepage)
-    end
+      Result := Result + AnsiStringToWideString(AnsiString(post.Subject), post.Codepage);
+    end;
   finally
-    UnlockList
+    UnlockList;
   end
 end;
 
 function TPoster.GetStatusBarMessage(group: TServerAccount): WideString;
 var
-  req : TPosterRequest;
-  s : WideString;
+  req: TPosterRequest;
+  s: WideString;
 begin
   result := inherited GetStatusBarMessage (group);
 
@@ -1887,18 +1919,18 @@ begin
       begin
         req := TPosterRequest (fRequests [0]);
         s := req.Groups + ':';
-        s := s + StringToWideString (req.Subject, req.Codepage)
-      end
+        s := s + req.Subject;
+      end;
     finally
-      UnlockList
+      UnlockList;
     end;
 
     if s <> '' then
     case State of
       tsPending : result := 'Queued ' + s;
       tsBusy : result := 'Posting ' + s;
-    end
-  end
+    end;
+  end;
 end;
 
 procedure TPosterRequest.GetGroupAndSubject;
@@ -1936,30 +1968,20 @@ begin
   result := fSubject;
 end;
 
-function TPosterRequest.MIMEHeaderRequired (Ahdr : TStrings): boolean;
+function TPosterRequest.MIMEHeaderRequired(Ahdr: TStrings): Boolean;
 var
-  i : Integer;
+  i: Integer;
 begin
-  result := (fCodepage <> CP_USASCII) or (fTextPartStyle <> tpNNTP);
-  if not result and Assigned (attachments) then
+  Result := (fCodepage <> CP_USASCII) or (fTextPartStyle <> tpNNTP);
+  if not Result and Assigned(attachments) then
   begin
     for i := 0 to Attachments.Count - 1 do
-      if not TAttachment (Attachments [i]).fInline then
+      if not TAttachment(Attachments[i]).fInline then
       begin
-        result := True;
-        break
+        Result := True;
+        Break;
       end;
-
-(*
-    if not result then
-      for i := 1 to Length (msg) do
-        if not (msg [i] in [' '..'~']) then
-        begin
-          result := True;
-          break
-        end
-*)
-  end
+  end;
 end;
 
 procedure TPosterRequest.Reset;

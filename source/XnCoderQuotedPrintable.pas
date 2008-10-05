@@ -1,5 +1,7 @@
 unit XnCoderQuotedPrintable;
 
+// Replacement unit for Indy 10 IdCoderQuotedPrintable.
+
 interface
 
 uses
@@ -12,15 +14,17 @@ type
   end;
 
   TXnEncoderQuotedPrintable = class(TIdEncoderQuotedPrintable)
+  private
+    FAddEOL: Boolean;
   public
     procedure Encode(ASrcStream, ADestStream: TStream; const ABytes: Integer = -1); override;
+    property AddEOL: Boolean read FAddEOL write FAddEOL;
   end;
 
 implementation
 
 uses
-  IdGlobal,
-  IdStream;
+  IdGlobal, IdStream, IdGlobalProtocols;
 
 { TXnDecoderQuotedPrintable }
 
@@ -131,7 +135,6 @@ begin
             FStream.Write(DecodedByte, 1);
             DecodedByte := 10;
             FStream.Write(DecodedByte, 1);
-//            FStream.Write(EOL, Length(EOL));
 //            WriteStringToStream(FStream, Char(DecodedByte) + EOL);
           end;
           StripEOLChars;
@@ -150,13 +153,79 @@ end;
 
 { TXnEncoderQuotedPrintable }
 
-procedure TXnEncoderQuotedPrintable.Encode(ASrcStream, ADestStream: TStream;
-  const ABytes: Integer);
+procedure TXnEncoderQuotedPrintable.Encode(ASrcStream, ADestStream: TStream; const ABytes: Integer = -1);
+const
+  SafeChars = [#33..#60, #62..#126];
+  HalfSafeChars = [#32, TAB];
+  // Rule #2, #3
+var
+  CurrentLine: ShortString;
+  // this is a shortstring for performance reasons.
+  // the lines may never get longer than 76, so even if I go a bit
+  // further, they won't go longer than 80 or so
+  SourceLine: AnsiString;
+  CurrentPos: Integer;
+
+  procedure WriteToString(const s: AnsiString);
+  var
+    SLen: Integer;
+  begin
+    SLen := Length(s);
+    MoveChars(s, 1, CurrentLine, CurrentPos, SLen);
+    Inc(CurrentPos, SLen);
+  end;
+
+  procedure FinishLine(AddCRLF: Boolean = True);
+  var
+    S: string;
+  begin
+    S := Copy(string(CurrentLine), 1, CurrentPos - 1);
+    if AddCRLF then
+      S := S + EOL;
+    WriteStringToStream(ADestStream, S);
+    CurrentPos := 1;
+  end;
+
+  function CharToHex(const AChar: AnsiChar): AnsiString;
+  begin
+    Result := '=' + AnsiString(ByteToHex(Ord(AChar))); {do not localize}
+  end;
+
+var
+  I: Integer;
+  LSourceSize: Integer;
 begin
-  inherited Encode(ASrcStream, ADestStream, ABytes);
-  // Remove the extra EOL from the encoded stream.
-  if ADestStream.Size >= Length(EOL) then
-    ADestStream.Size := ADestStream.Size - Length(EOL);
+  SetLength(CurrentLine, 255);
+  //ie while not eof
+  LSourceSize := ASrcStream.Size;
+  while ASrcStream.Position < LSourceSize do begin                // en8Bit !
+    SourceLine := AnsiString(ReadLnFromStream(ASrcStream, -1, False, en8Bit)); // explicit convert to Ansi
+    CurrentPos := 1;
+    for i := 1 to Length(SourceLine) do begin
+      if not (SourceLine[i] in SafeChars) then
+      begin
+        if (SourceLine[i] in HalfSafeChars) then begin
+          if i = Length(SourceLine) then begin
+            WriteToString(CharToHex(SourceLine[i]));
+          end else begin
+            WriteToString(SourceLine[i]);
+          end;
+        end else begin
+          WriteToString(CharToHex(SourceLine[i]));
+        end;
+      end
+      else if ((CurrentPos = 1) or (CurrentPos = 71)) and (SourceLine[i] = '.') then begin {do not localize}
+        WriteToString(CharToHex(SourceLine[i]));
+      end else begin
+        WriteToString(SourceLine[i]);
+      end;
+      if CurrentPos > 70 then begin
+        WriteToString('=');  {Do not Localize}
+        FinishLine;
+      end;
+    end;
+    FinishLine(FAddEOL);
+  end;
 end;
 
 end.

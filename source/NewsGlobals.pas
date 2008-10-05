@@ -31,7 +31,7 @@ interface
 
 uses
   Windows, Messages, Classes, SysUtils, Forms, Ras, StrUtils, ActnList, ConTnrs, Dialogs, SyncObjs,
-  unitExSettings, unitExRegSettings, unitExXMLSettings;
+  unitExSettings, unitExRegSettings, unitExXMLSettings, XnClasses;
 
 const
   WM_SETUP = WM_APP + $400;
@@ -58,7 +58,7 @@ const
 
 type
   TTransfer = (bit7, bit8, iso2022jp);
-  CSET = set of Char;
+  CSET = set of AnsiChar;
   TTextPartStyle = (tpNNTP, tpMIME, tpQuotedPrintable, tpFlowed);
   TPostingStyle = (psBottom, psTop);
 
@@ -1021,7 +1021,7 @@ begin
 end;
 
 const
-  base64_tbl: array[0..63] of Char = (
+  base64_tbl: array[0..63] of AnsiChar = (
     'A','B','C','D','E','F','G','H',      {Do not Localize}
     'I','J','K','L','M','N','O','P',      {Do not Localize}
     'Q','R','S','T','U','V','W','X',      {Do not Localize}
@@ -1031,19 +1031,19 @@ const
     'w','x','y','z','0','1','2','3',      {Do not Localize}
     '4','5','6','7','8','9','+','/');     {Do not Localize}
 
-function EncodeHeader1(const Header: string; specials: CSET; HeaderEncoding: Char;
-  TransferHeader: TTransfer; MimeCharSet: string): string;
+function EncodeHeader1(const Header: MessageString; specials: CSET; HeaderEncoding: AnsiChar;
+  TransferHeader: TTransfer; MimeCharSet: MessageString): string;
 const
   SPACES: set of Char = [' ', #9, #10, #13, '''', '"'];    {Do not Localize}
 var
-  S, T: string;
+  S, T: MessageString;
   L, P, Q, R: Integer;
   B0, B1, B2: Integer;
   InEncode: Integer;
   NeedEncode: Boolean;
   csNeedEncode, csReqQuote: CSET;
-  BeginEncode, EndEncode: string;
-  ch: char;
+  BeginEncode, EndEncode: MessageString;
+  ch: AnsiChar;
 
   procedure EncodeWord(P: Integer);
   const
@@ -1051,7 +1051,8 @@ var
   var
     Q: Integer;
     EncLen: Integer;
-    Enc1: string;
+    Enc1: MessageString;
+    ac: AnsiChar;
   begin
     T := T + BeginEncode;
     if L < P then P := L + 1;
@@ -1063,14 +1064,15 @@ var
     begin
       while Q < P do
       begin
-        if not (S[Q] in csReqQuote) then
-          Enc1 := S[Q]
+        ac := S[Q];
+        if not (ac in csReqQuote) then
+          Enc1 := ac
         else
         begin
-          if S[Q] = ' ' then  {Do not Localize}
+          if ac = ' ' then  {Do not Localize}
             Enc1 := '_'   {Do not Localize}
           else
-            Enc1 := '=' + IntToHex(Ord(S[Q]), 2);     {Do not Localize}
+            Enc1 := '=' + MessageString(IntToHex(Ord(ac), 2));     {Do not Localize}
         end;
         if EncLen + Length(Enc1) > MaxEncLen then
         begin
@@ -1123,7 +1125,7 @@ begin
   {Suggested by Andrew P.Rybin for easy 8bit support}
   if HeaderEncoding = '8' then
   begin
-    Result := S;
+    Result := string(S);
     Exit;
   end;
   csNeedEncode := [#0..#31, #127..#255] + specials;
@@ -1174,7 +1176,7 @@ begin
   if InEncode <> 0 then
     EncodeWord(P);
 
-  Result := T;
+  Result := string(T);
 end;
 
 function EncodeHeader(const header: string; codePage: Integer; from: Boolean): string;
@@ -1214,7 +1216,7 @@ begin
   end;
 
   if ansi or not from then
-    Result := EncodeHeader1(header, [], 'Q', bit7, CodePageToMIMECharsetName(CodePage))
+    Result := EncodeHeader1(MessageString(header), [], 'Q', bit7, MessageString(CodePageToMIMECharsetName(CodePage)))
   else
   begin
     coder := TXnEncoderQuotedPrintable.Create(nil);

@@ -35,7 +35,7 @@ begin
 
   if Succeeded (folder.GetDisplayNameOf(pidl, t, str)) then
   case str.uType of
-    STRRET_CSTR   : result := str.cStr;
+    STRRET_CSTR   : result := string(str.cStr);
     STRRET_WSTR   : begin
                       result := str.pOleStr;
                       CoTaskMemFree (str.pOleStr)

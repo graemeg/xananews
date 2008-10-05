@@ -58,7 +58,7 @@ begin
       decoder.DecodeBegin(s);
       while str.ReadLn(raw) do
       begin
-        // TODO: fix / optimize decoding
+        // TODO: optimize decoding
         st := string(raw);
         decoder.Decode(st);
       end;

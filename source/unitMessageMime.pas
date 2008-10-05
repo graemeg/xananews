@@ -172,7 +172,7 @@ begin
       decoder.DecodeBegin(s);
       while str.ReadLn(raw) do
       begin
-        // TODO: fix / optimize decoding
+        // TODO: optimize decoding
         st := string(raw);
         if (Length(st) mod 4) <> 0 then
           st := Copy(st, 1, (Length(st) div 4) * 4);
@@ -301,7 +301,7 @@ begin
           decoder.DecodeBegin(s);
           while str.ReadLn(raw) do
           begin
-            // TODO: fix / optimize decoding
+            // TODO: optimize decoding
             st := string(raw);
             decoder.Decode(st);
           end;

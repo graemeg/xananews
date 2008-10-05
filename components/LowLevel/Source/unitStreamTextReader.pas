@@ -326,7 +326,6 @@ begin
     p := fBuffer;
     Inc(p, fBufPos);
 
-// TODO: searching
     p1 := StrPos(p, PAnsiChar(AnsiString(st)));
 
     if p1 <> nil then
@@ -419,7 +418,6 @@ begin
     else
       Inc(fPosition, L);
 
-// TODO: check UTF8 decoding
     SetString(st, p1, L);
   end
   else
@@ -432,9 +430,11 @@ procedure TTextFileWriter.Write(const st: string);
 var
   EncodedString: MessageString;
 begin
-// TODO: check UTF8 decoding
-  EncodedString := MessageString(st);
-  inherited Write(EncodedString[1], Length(EncodedString));
+  if st <> '' then
+  begin
+    EncodedString := MessageString(st);
+    inherited Write(EncodedString[1], Length(EncodedString));
+  end;
 end;
 
 procedure TTextFileWriter.WriteLn(const st: string);
@@ -731,9 +731,11 @@ procedure TTextStreamWriter.Write(const st: string);
 var
   EncodedString: MessageString;
 begin
-// TODO: check UTF8 decoding
-  EncodedString := MessageString(st);
-  inherited Write(EncodedString[1], Length(EncodedString));
+  if st <> '' then
+  begin
+    EncodedString := MessageString(st);
+    inherited Write(EncodedString[1], Length(EncodedString));
+  end;
 end;
 
 procedure TTextStreamWriter.WriteLn(const st: string);

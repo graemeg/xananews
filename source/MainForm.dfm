@@ -708,7 +708,6 @@ object fmMain: TfmMain
         Width = 23
         Height = 22
         Align = alNone
-        AutoSize = True
         Caption = 'ToolBar1'
         DisabledImages = ilDisabled
         Images = ilMain
@@ -956,10 +955,9 @@ object fmMain: TfmMain
     object pnlSearchBar: TPanel
       Left = 12
       Top = 61
-      Width = 609
+      Width = 793
       Height = 21
       Alignment = taLeftJustify
-      AutoSize = True
       BevelOuter = bvNone
       Caption = '   Search'
       TabOrder = 3

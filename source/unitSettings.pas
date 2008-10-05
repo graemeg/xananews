@@ -243,7 +243,7 @@ protected
   function GetDefaultSSLPort : Integer; virtual;
 public
   constructor Create (AParent : TSettings); override;
-  function Equals (settings : TServerSettings) : boolean;
+  function Equals(Obj: TObject): Boolean; override;
   property Id : string read fId write fId;
   procedure Assign (source : TPersistent); override;
   procedure ReadSettings (reg : TExSettings); override;
@@ -1197,15 +1197,23 @@ begin
   fServerTimeout := 60;
 end;
 
-function TServerSettings.Equals (settings : TServerSettings) : boolean;
+function TServerSettings.Equals(Obj: TObject): Boolean;
+var
+  settings: TServerSettings;
 begin
-  result := (RASConnection = settings.RASConnection) and
-            (ServerName = settings.ServerName) and
-            (ServerAccountName = settings.ServerAccountName) and
-            (ServerPort = settings.ServerPort) and
-            (SSLPort = settings.SSLPort) and
-            (SSLRequired = settings.SSLRequired) and
-            (fID = settings.fId);
+  if Obj is TServerSettings then
+  begin
+    settings := TServerSettings(Obj);
+    Result := (RASConnection = settings.RASConnection) and
+              (ServerName = settings.ServerName) and
+              (ServerAccountName = settings.ServerAccountName) and
+              (ServerPort = settings.ServerPort) and
+              (SSLPort = settings.SSLPort) and
+              (SSLRequired = settings.SSLRequired) and
+              (fID = settings.fId);
+  end
+  else
+    Result := inherited Equals(Obj);
 end;
 
 function TServerSettings.GetConnectTimeout: Integer;

@@ -623,9 +623,6 @@ var
   i: Integer;
   st, ws: string;
   cp, n, lastLen: Integer;
-  sl: TStringList;
-  ms: TMemoryStream;
-  Encoding: TEncoding;
 begin
   if fUpdating then Exit;
   ctrl := GetRichEdit;
@@ -645,31 +642,12 @@ begin
       begin
 //        cp := ctrl.CodePage; // TODO: check again later if using codepage from object is OK.
         cp := CodePage;
-// << TODO: why isn't 28593 Latin (3) supported?
-        if cp = 28593 then
-          cp := 28599;
-// >>
         if cp = 1252 then
           cp := CP_ACP;
       end;
 
-      sl := TStringList.Create;
-      ms := TMemoryStream.Create;
-      try
-        // Decode raw data to unicode using specified CodePage.
-        TAnsiStrings(fTextObjects[i]).SaveToStream(ms);
-        ms.Position := 0;
-        Encoding := TEncoding.GetEncoding(cp);
-        try
-          sl.LoadFromStream(ms, Encoding);
-        finally
-          Encoding.Free;
-        end;
-        st := StringReplace(sl.Text, 'url:', 'url: ', [rfReplaceAll, rfIgnoreCase])
-      finally
-        sl.Free;
-        ms.Free;
-      end;
+      st := AnsiStringToWideString(TAnsiStrings(fTextObjects[i]).Text, cp);
+      st := StringReplace(st, 'url:', 'url: ', [rfReplaceAll, rfIgnoreCase])
     end
     else
       st := StringReplace(TStrings(fTextObjects[i]).Text, 'url:', 'url: ', [rfReplaceAll, rfIgnoreCase]);

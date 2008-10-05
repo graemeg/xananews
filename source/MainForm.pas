@@ -2192,7 +2192,7 @@ begin
           poster.UnlockList
         end;
         frm.Show;
-        fModelessWindowList.Add(frm)
+        fModelessWindowList.Add(frm);
       except
         frm.Free;
         raise;
@@ -3269,11 +3269,8 @@ begin
     end;
 
     MessageScrollBox1.Msg := article.Msg;
-// TODO: can this be removed?
-//    pnlDetailsBar.Font.Charset := CodePageToCharset(article.CodePage);
     sub := DecodeSubject(article.subject);
     st := Format('  Message %d from %s.  %s', [article.ArticleNo, article.FromName, sub]);
-//    pnlDetailsBar.Caption := StringReplace(StringToGDIString(st, article.CodePage), '&', '&&', [rfReplaceAll]);
     pnlDetailsBar.Caption := StringReplace(st, '&', '&&', [rfReplaceAll]);
     idx := cbCharset.Items.IndexOf(CodePagetoCharsetName(article.CodePage));
     cbCharset.ItemIndex := idx;
@@ -4608,7 +4605,6 @@ begin
 
       if st <> '' then
       begin
-//        s.Text := WideStringToString(st, article.CodePage);
         s.Text := st;
 
         if trimSig and (Options.ShowHeader <> shNone) then
@@ -4636,7 +4632,7 @@ begin
       if postingSettings.QuoteSalutation <> '' then
         s.Insert(0, ExpandQuoteHeader(postingSettings.QuoteSalutation));
 
-      Result := StringToWideString(s.Text, article.CodePage);
+      Result := s.Text;
     finally
       s.Free;
     end;
@@ -4948,7 +4944,7 @@ begin
                   m.Add(st);
                   Dec(i);
                   rok := reader.ReadLn(raw);
-                  st := string(raw);
+                  st := AnsiStringToWideString(raw, codepage);
                 end;
 
                 i := noAttachments;
@@ -5428,7 +5424,7 @@ begin
                 else
                   attachCount := 0;
 
-                m.Text := posterRequest.Msg;
+                m.Text := string(posterRequest.Msg);
                 h := posterRequest.Hdr;
 
                 st := TPoster(getter).Account.AccountName + #9 +
@@ -6370,8 +6366,6 @@ var
   article: TArticleBase;
   st, stNumber: string;
   isRoot: Boolean;
-//  cp, defCP: Integer;
-//  s: string;
 begin
   article := GetNodeArticle(node);
   if article is TArticle then
@@ -6394,33 +6388,6 @@ begin
   st := '';
   if Assigned(article) then
   begin
-// TODO: can this be removed?
-//    defCP := article.Owner.DisplaySettings.DefaultCodepage;
-//
-//    if article.CodePage = CP_USASCII then
-//    begin
-//      s := HeaderCharset(article.From);
-//      if s = '' then
-//        s := HeaderCharset(article.Subject);
-//
-//      if s <> '' then
-//      begin
-//        cp := MimeCharsetNameToCodePage(s);
-//        if cp = 0 then cp := defCP;
-//      end
-//      else
-//        cp := defCP;
-//      if (article.CodePage <> cp) then
-//      begin
-//        article.CodePage := cp;
-//        if node = vstArticles.FocusedNode then
-//        begin
-//          DisplayArticleBody(article);
-//          MessageScrollBox1.Refresh(False, True);
-//        end;
-//      end;
-//    end;
-
     case Column of
       0: st := '';
       1: st := stNumber;
@@ -6435,8 +6402,6 @@ begin
       4: st := DateTimeToStr(Article.Date);
       5: st := IntToStr(Article.Lines)
     end;
-
-//    Text := StringToWideString(st, article.CodePage);
     Text := st;
   end
 end;
@@ -6690,9 +6655,6 @@ begin
     bclr := clHighlight;
   if Assigned(article) then
   begin
-// TODO: can this be removed?
-//    Canvas.Font.Charset := CodePageToCharset(article.Codepage);
-
     if not (vsSelected in node^.States) or Options.HighlightSelectedText then
     begin
       if fForensicMode then
@@ -10538,25 +10500,6 @@ begin
   st := '';
   if Assigned(article) then
   begin
-// TODO: Can this be removed?
-//    defCP := article.Owner.DisplaySettings.DefaultCodepage;
-//
-//    if article.CodePage = CP_USASCII then
-//    begin
-//      s := HeaderCharset(article.From);
-//      if s = '' then
-//        s := HeaderCharset(article.Subject);
-//
-//      if s <> '' then
-//      begin
-//        cp := MimeCharsetNameToCodePage(s);
-//        if cp = 0 then cp := defCP;
-//      end
-//      else
-//        cp := defCP;
-//      article.CodePage := cp;
-//    end;
-
     case Column of
       0: if Assigned(Article.Owner) and (Article.Owner.ThreadOrder = toThreaded) then
            st := Format('Messages in thread: Unread=%d Total=%d', [Article.UnreadMessagesInThread, Article.MessagesInThread])
@@ -10580,7 +10523,6 @@ begin
       5: st := IntToStr(Article.Lines) + ' lines'
     end;
 
-//    HintText := StringToWideString(st, article.CodePage);
     HintText := st;
   end;
 end;

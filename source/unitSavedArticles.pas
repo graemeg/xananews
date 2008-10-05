@@ -1080,9 +1080,6 @@ begin  // ReCreateIndex
                                           // Find the end of article #13#10.#13#10
                                           // sequence
 
-// TODO: Handle "deleted" items better, it was now skipping messages and ruining
-//       the node count (temporary removed)
-
         ae := reader.Search(#13#10'.'#13#10);
         if (ae <> -1) and not deleted then
         begin

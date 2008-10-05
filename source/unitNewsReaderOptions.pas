@@ -48,7 +48,7 @@ type
     procedure Init (font : TFont; bkColor : TColor);
 
     procedure Assign (source : TAppearanceSettings);
-    function Equals (source : TAppearanceSettings) : boolean;
+    function Equals(Obj: TObject): Boolean; override;
   end;
 
   TIntArray = array of Integer;
@@ -836,13 +836,21 @@ begin
   fFontSize := source.fFontSize
 end;
 
-function TAppearanceSettings.Equals(source: TAppearanceSettings): boolean;
+function TAppearanceSettings.Equals(Obj: TObject): Boolean;
+var
+  source: TAppearanceSettings;
 begin
-  result := (fFontColor = source.fFontColor) and
-            (fFontSize = source.fFontSize) and
-            (fFontStyle = source.fFontStyle) and
-            (fBackgroundColor = source.fBackgroundColor) and
-            (fFontName = source.fFontName);
+  if Obj is TAppearanceSettings then
+  begin
+    source := TAppearanceSettings(Obj);
+    Result := (fFontColor = source.fFontColor) and
+              (fFontSize = source.fFontSize) and
+              (fFontStyle = source.fFontStyle) and
+              (fBackgroundColor = source.fBackgroundColor) and
+              (fFontName = source.fFontName);
+  end
+  else
+    Result := inherited Equals(Obj);
 end;
 
 procedure TAppearanceSettings.Init(font: TFont; bkColor: TColor);

@@ -839,47 +839,46 @@ var
 begin
   if Account.PostingSettings.ArchivePostedMessages then
   begin
-    sentMessages := TSentMessages (gArticleFolders.FindFolder ('Posted Messages'));
-    if Assigned (sentMessages) then
-      sentMessages.AddMessage(account, hdr, msg, attachments, ACodePage, AtextPartStyle)
+    sentMessages := TSentMessages(gArticleFolders.FindFolder('Posted Messages'));
+    if Assigned(sentMessages) then
+      sentMessages.AddMessage(account, hdr, msg, attachments, ACodePage, AtextPartStyle);
   end;
 
-  nsettings := Nil;
-  naccount := Nil;
+  nsettings := nil;
+  naccount := nil;
   if account.PostingAccountName <> '' then
     for i := 0 to NNTPAccounts.Count - 1 do
-      if NNTPAccounts [i].AccountName = account.PostingAccountName then
+      if NNTPAccounts[i].AccountName = account.PostingAccountName then
       begin
-        naccount := NNTPAccounts [i];
+        naccount := NNTPAccounts[i];
         nsettings := naccount.NNTPServerSettings;
-        break
+        Break;
       end;
 
-  if nsettings = Nil then
+  if nsettings = nil then
     nsettings := account.NNTPServerSettings;
 
-  if naccount = Nil then
+  if naccount = nil then
     naccount := account;
 
-  getter := TPoster (LockFindGetter (TPoster, nsettings));
+  getter := TPoster(LockFindGetter(TPoster, nsettings));
   try
-
-    if getter = Nil then
+    if getter = nil then
     begin
-      getter := TPoster.Create (naccount);
+      getter := TPoster.Create(naccount);
       fGetterList.Add(getter);
       getter.Paused := AllThreadsPaused;
     end;
 
-    getter.AddPostToList (hdr, msg, attachments, ACodepage, ATextPartStyle);
+    getter.AddPostToList(hdr, msg, attachments, ACodepage, ATextPartStyle);
 
     if getter.State <> tsBusy then
       getter.State := tsPending;
   finally
-    UnlockGetterList
+    UnlockGetterList;
   end;
 
-  JogThreads
+  JogThreads;
 end;
 
 function TNNTPThreadManager.StopArticleDownloads(group: TSubscribedGroup) : boolean;

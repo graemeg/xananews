@@ -37,8 +37,8 @@ function CodepageToMIMECharsetName (codepage : Integer) : string;
 function CodepageToCharsetName (codepage : Integer) : string;
 function CharsetToCodePage (FontCharset : TFontCharset) : Integer;
 function CodePageToCharset (codePage : Integer) : TFontCharset;
-function WideStringToString (const ws : string; codePage : Integer) : string; inline;
-function StringToWideString (const st : string; codePage : Integer) : string; inline;
+function WideStringToAnsiString(const ws: string; codePage: Integer): AnsiString;
+function AnsiStringToWideString(const st: AnsiString; codePage: Integer): string;
 function StringToGDIString (const s : string; codePage : Integer) : string;
 function GDIStringToString (const s : string; codePage : Integer) : string;
 function URLSuffixToCodePage (urlSuffix : string) : Integer;
@@ -47,8 +47,8 @@ function TrimEx(const S: string): string;
 function IsWideCharAlpha (ch : WideChar) : boolean;
 function IsWideCharAlnum (ch : WideChar) : boolean;
 procedure FontToCharFormat(font: TFont; codePage : Integer; var Format: TCharFormatW);
-function WideStringToUTF8 (const ws : WideString) : string;
-function UTF8ToWideString (const st : string) : WideString;
+function WideStringToUTF8(const ws: WideString): AnsiString;
+function UTF8ToWideString(const st: AnsiString): WideString;
 
 var
   gIMultiLanguage : IMultiLanguage = Nil;
@@ -329,66 +329,66 @@ begin
       end
 end;
 
-function WideStringToString (const ws : string; codePage : Integer) : string;
-//var
-//  dlen, len : DWORD;
-//  mode : DWORD;
+function WideStringToAnsiString(const ws: string; codePage: Integer): AnsiString;
+var
+  dlen, len: DWORD;
+  mode: DWORD;
 begin
-  Result := ws;
-{  LoadMultiLanguage;
+  LoadMultiLanguage;
 
-  len := Length (ws);
+  len := Length(ws);
   dlen := len * 4;
-  SetLength (result, dlen);  // Dest string may be longer than source string if it's UTF-8
+  SetLength(Result, dlen);  // Dest string may be longer than source string if it's UTF-8
   if codePage = -1 then
     codePage := CP_USASCII;
 
   if gMultiLang and (codePage <> CP_ACP) then
   begin
     mode := 0;
-    if not SUCCEEDED (gIMultiLanguage.ConvertStringFromUnicode(mode, codepage, PWideChar (ws), len, PChar (result), dlen)) then
-      dlen := 0
+    if not SUCCEEDED(gIMultiLanguage.ConvertStringFromUnicode(mode, codepage, PWideChar(ws), len, PAnsiChar(Result), dlen)) then
+      dlen := 0;
   end
   else
-    dlen := WideCharToMultiByte (codePage, 0, PWideChar (ws), len, PAnsiChar(AnsiString(result)), len * 4, nil, nil);
+    dlen := WideCharToMultiByte(codePage, 0, PWideChar(ws), len, PAnsiChar(Result), len * 4, nil, nil);
 
   if dlen = 0 then
-    result := ws
+    Result := AnsiString(ws)
   else
-    SetLength (result, dlen) }
+    SetLength(Result, dlen);
 end;
 
-function StringToWideString (const st : string; codePage : Integer) : string;
-//var
-//  len, dlen, mode : DWORD;
+function AnsiStringToWideString(const st: AnsiString; codePage: Integer): string;
+var
+  len, dlen, mode: DWORD;
 begin
-  Result := st;
-{  LoadMultiLanguage;
+  LoadMultiLanguage;
+
   if codePage = -1 then
     codePage := CP_USASCII;
   if st = '' then
-    result := ''
+    Result := ''
   else
   begin
-    len := Length (st);
+    len := Length(st);
     dlen := len * 4;
-    SetLength (result, dlen);
+    SetLength(Result, dlen);
 
     if gMultiLang and (codePage <> CP_ACP) then
     begin
       mode := 0;
-      if not SUCCEEDED (gIMultiLanguage.ConvertStringToUnicode(mode, codepage, PChar (st), len, PWideChar (result), dlen)) then
+      if not SUCCEEDED(gIMultiLanguage.ConvertStringToUnicode(mode, codepage, PAnsiChar(st), len, PWideChar(Result), dlen)) then
         dlen := 0;
     end
     else
-      dlen := MultiByteToWideChar (codepage, 0, PAnsiChar(AnsiString(st)), len, PWideChar (result), len * 4);
+      dlen := MultiByteToWideChar(codepage, 0, PAnsiChar(st), len, PWideChar(Result), len * 4);
 
     if dlen = 0 then
-      result := st
+      Result := string(st)
     else
-      SetLength (result, dlen)
-  end }
+      SetLength(Result, dlen);
+  end;
 end;
+
 
 function URLSuffixToCodePage (urlSuffix : string) : Integer;
 var
@@ -609,14 +609,14 @@ begin
   lstrcpynw (Format.szFaceName, PWideChar (wFontName),LF_FACESIZE - 1) ;
 end;
 
-function WideStringToUTF8 (const ws : WideString) : string;
+function WideStringToUTF8(const ws: WideString): AnsiString;
 begin
-  result := WideStringToString (ws, CP_UTF8);
+  Result := WideStringToAnsiString(ws, CP_UTF8);
 end;
 
-function UTF8TOWideString (const st : string) : WideString;
+function UTF8ToWideString(const st: AnsiString): WideString;
 begin
-  result := StringToWideString (st, CP_UTF8);
+  Result := AnsiStringToWideString(st, CP_UTF8);
 end;
 
 { TCountryCodes }

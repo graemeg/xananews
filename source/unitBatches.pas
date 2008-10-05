@@ -12,7 +12,7 @@ TBatchManagementOption = (bmoNone, bmoAll, bmoDay, bmoWeek, bmoMonth);
 //-----------------------------------------------------------------------
 // TBatchAction class.
 
-TBatchAction = class
+TBatchAction = class(TObject)
 private
   fHeadersOnly: Boolean;
   fMessageCount: Integer;
@@ -31,7 +31,7 @@ public
   procedure LoadFromRegistry (reg : TExSettings);
   procedure SaveToRegistry (reg : TExSettings);
   procedure Assign (action : TBatchAction);
-  function Equals (action : TBatchAction) : boolean;
+  function Equals(Obj: TObject): Boolean; override;
 
   property AccountName : string read fAccountName write fAccountName;
   property GroupName : string read fGroupName write fGroupName;
@@ -100,16 +100,24 @@ begin
   fManagementCount  := action.fManagementCount;
 end;
 
-function TBatchAction.Equals(action: TBatchAction): boolean;
-// Only check the batch fields - not Account, Group or Name
+function TBatchAction.Equals(Obj: TObject): Boolean;
+var
+  action: TBatchAction;
 begin
-  result :=
-    (fHeadersOnly      = action.fHeadersOnly)      and
-    (fMessageCount     = action.fMessageCount)     and
-    (fActionType       = action.fActionType)       and
-    (fManagementType   = action.fManagementType)   and
-    (fManagementOption = action.fManagementOption) and
-    (fManagementCount  = action.fManagementCount);
+  if Obj is TBatchAction then
+  begin
+    // Only check the batch fields - not Account, Group or Name
+    action := TBatchAction(Obj);
+    Result :=
+      (fHeadersOnly      = action.fHeadersOnly)      and
+      (fMessageCount     = action.fMessageCount)     and
+      (fActionType       = action.fActionType)       and
+      (fManagementType   = action.fManagementType)   and
+      (fManagementOption = action.fManagementOption) and
+      (fManagementCount  = action.fManagementCount);
+  end
+  else
+    Result := inherited Equals(Obj);
 end;
 
 function TBatchAction.GetActionName: string;
