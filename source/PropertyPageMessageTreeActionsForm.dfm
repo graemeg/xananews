@@ -8,6 +8,8 @@ inherited fmPropertyPageMessageTreeActions: TfmPropertyPageMessageTreeActions
   ClientWidth = 332
   Constraints.MinHeight = 235
   Constraints.MinWidth = 234
+  ExplicitLeft = 212
+  ExplicitTop = 180
   PixelsPerInch = 96
   TextHeight = 13
   object Label14: TLabel [0]
@@ -26,14 +28,17 @@ inherited fmPropertyPageMessageTreeActions: TfmPropertyPageMessageTreeActions
   end
   inherited Panel1: TPanel
     Width = 332
+    ExplicitWidth = 332
     inherited Bevel1: TBevel
       Width = 332
+      ExplicitWidth = 332
     end
     inherited stSectionDetails: TLabel
       Width = 320
       Caption = 
         'These options affect how the message tree behaves when messages ' +
         'are clicked'
+      ExplicitWidth = 320
     end
   end
   object cbAutoExpandThread: TCheckBox

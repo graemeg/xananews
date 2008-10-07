@@ -8,6 +8,7 @@ inherited fmPropertyPageGeneral: TfmPropertyPageGeneral
   ClientWidth = 397
   Constraints.MinHeight = 370
   Constraints.MinWidth = 397
+  ExplicitLeft = 547
   PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel [0]
@@ -47,14 +48,17 @@ inherited fmPropertyPageGeneral: TfmPropertyPageGeneral
   end
   inherited Panel1: TPanel
     Width = 397
+    ExplicitWidth = 397
     inherited Bevel1: TBevel
       Width = 397
+      ExplicitWidth = 397
     end
     inherited stSectionDetails: TLabel
       Width = 385
       Caption = 
         'This section contains settings that define the basic behaviour o' +
         'f XanaNews'
+      ExplicitWidth = 385
     end
   end
   object cbShowInSystemTray: TCheckBox

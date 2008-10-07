@@ -68,7 +68,7 @@ begin
 
   edServername.Text := fData.fServerName;
   edServerAccountName.Text := fData.fServerAccountName;
-  if Options.PlainTextPasswords then
+  if XNOptions.PlainTextPasswords then
   begin
     edServerAccountPassword.Text := fData.fServerAccountPassword;
     edRetypePassword.Text := fData.fRetypePassword;
@@ -112,7 +112,7 @@ var
   passReq : boolean;
   passOk : boolean;
 begin
-  passReq := not Options.PlainTextPasswords;
+  passReq := not XNOptions.PlainTextPasswords;
   if passReq then
     passOk := edServerAccountPassword.Text = edRetypePassword.Text
   else
@@ -126,7 +126,7 @@ function TPropertyPageMailAccountServerData.Apply : boolean;
 var
   acct : TMailAccount;
 begin
-  result := (fServerAccountPassword = fRetypePassword) or Options.PlainTextPasswords;
+  result := (fServerAccountPassword = fRetypePassword) or XNOptions.PlainTextPasswords;
   if result then
   begin
     acct := TMailAccount (Param);

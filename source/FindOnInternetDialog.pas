@@ -52,7 +52,7 @@ end;
 
 procedure TdlgFindMessageOnInternet.btnOKClick(Sender: TObject);
 begin
-  GotoMessageOnInternet (Handle, Options.SearchInternetURLStub, edMessageId.Text);
+  GotoMessageOnInternet (Handle, XNOptions.SearchInternetURLStub, edMessageId.Text);
 end;
 
 end.

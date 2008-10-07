@@ -6,6 +6,8 @@ inherited fmPropertyPageBozos: TfmPropertyPageBozos
   ClientWidth = 436
   Constraints.MinHeight = 278
   Constraints.MinWidth = 271
+  ExplicitLeft = 323
+  ExplicitTop = 135
   PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel [0]
@@ -47,14 +49,17 @@ inherited fmPropertyPageBozos: TfmPropertyPageBozos
   end
   inherited Panel1: TPanel
     Width = 436
+    ExplicitWidth = 436
     inherited Bevel1: TBevel
       Width = 436
+      ExplicitWidth = 436
     end
     inherited stSectionDetails: TLabel
       Width = 424
       Caption = 
         'Bozos are undesirable posters.  You can prevent their message fr' +
         'om being displayed or downloaded.'
+      ExplicitWidth = 424
     end
   end
   object lvBozos: TListView

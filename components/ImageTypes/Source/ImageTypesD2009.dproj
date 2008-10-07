@@ -54,8 +54,6 @@
 			<DCCReference Include="rtl.dcp"/>
 			<DCCReference Include="vcl.dcp"/>
 			<DCCReference Include="vclimg.dcp"/>
-			<DCCReference Include="unitExIcon.pas"/>
-			<DCCReference Include="MMPropZLIB.pas"/>
 			<DCCReference Include="XFace.pas"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>

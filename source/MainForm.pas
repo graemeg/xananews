@@ -46,7 +46,7 @@ uses
 {$endif}
   unitBookmarks, cmpSplitterPanel, unitNewsStringsDisplayObject,
   unitGetMessages1, unitMailServices, Tabs, ButtonGroup, CategoryButtons,
-  ExCoolBar, unitExSettings, XnClasses;
+  unitExSettings, XnClasses;
 
 type
 
@@ -623,7 +623,7 @@ type
     ilDisabled: TImageList;
     pnlBatchBar: TPanel;
     cbBatches: TComboBox;
-    cbMain: TExCoolBar;
+    cbMain: TCoolBar;
     ToolBar1: TToolBar;
     ToolButton1: TToolButton;
     pnlSearchBar: TPanel;
@@ -1176,16 +1176,17 @@ implementation
 {$R *.dfm}
 
 uses
-  AccountsDialog, NewsgroupsDialog, FilterDialog, StrUtils, MessagesDialog, unitNNTPFilters,
+  ClipBrd, Printers, StrUtils,
+  AccountsDialog, NewsgroupsDialog, FilterDialog, MessagesDialog, unitNNTPFilters,
   IdException, SplashForm, unitNNTPThreadManager, BatchesDialog, NewsgroupStatisticsForm,
   unitCharsetMap, MessagebaseManagementDialog, ServerAdminCreateGroupDialog, ServerAdminRemoveGroupDialog,
-  TestPerformanceDialog, IdGlobal, unitStreamTextReader, IdentitiesDialog, ClipBrd,
-  unitSearchString, Printers, MailAccountsDialog, cmpSpellChecker, unitLog, FileCtrl, Registry, unitXanaExporter,
-  unitCIDMIMEHandler, CancelArticleDialog,
-  unitIdentities, cmpNewsRichEdit, MoveMessagebaseDialog, IdCoder, IdCoderUUE, IdCoderMIME, CombineDecodeDialog,
+  TestPerformanceDialog, IdGlobal, IdStack, unitStreamTextReader, IdentitiesDialog,
+  unitSearchString, MailAccountsDialog, cmpSpellChecker, unitLog, FileCtrl, Registry,
+  unitXanaExporter, unitCIDMIMEHandler, CancelArticleDialog, unitIdentities, cmpNewsRichEdit,
+  MoveMessagebaseDialog, IdCoder, IdCoderUUE, IdCoderMIME, CombineDecodeDialog,
   OptionsForm, AccountForm, NewsgroupForm, unitFontDetails, AddAccountWizard,
   FindOnInternetDialog, ReadlnDelayDialog, IdURI, GraphUtil, unitMessageBaseSearch,
-  IdStack, XnCoderUUE;
+  XnCoderUUE;
 
 type
   TfnIterator = function(proc: TGroupIteratorProc; purge: Boolean; param: Integer = 0): Integer of object;
@@ -1348,7 +1349,7 @@ begin
   article := GetFocusedArticle;
   if Assigned(article) and (article is TArticle) then
   begin
-    if (vstArticles.SelectedCount > 1) and not Options.MagicUser then
+    if (vstArticles.SelectedCount > 1) and not XNOptions.MagicUser then
     begin
       MessageBox(Handle, 'This version of XanaNews does not allow you to cancel multiply selected messages', 'XanaNews', MB_OK);
       Exit;
@@ -2107,7 +2108,7 @@ begin
 
     if MessageDlg(Format(rstConfirmUnsubscribe, [st]), mtConfirmation, [mbYes, mbNo], 0) = idYes then
     begin
-      ForEachSelectedGroup(Unsubscribe, False);
+      ForEachSelectedGroup(Unsubscribe, False, 1);
       vstSubscribed.ClearSelection;
       fPrevArticle := nil;
     end;
@@ -2699,7 +2700,7 @@ begin
   try
     if fm.ShowModal = mrOK then
     begin
-      Options.Save;
+      XNOptions.Save;
       NNTPAccounts.SaveToRegistry;
 
       vstSubscribed.RootNodeCount := 0;
@@ -2833,32 +2834,32 @@ begin
   MessageScrollBox1.GetSelectedText(wtxt);
   txt := Trim(wtxt);
 
-  url := StringReplace(Options.TextInternetURLStub, '%qtext%', txt, []);
+  url := StringReplace(XNOptions.TextInternetURLStub, '%qtext%', txt, []);
   url := TidURI.URLEncode(url);
   ShellExecute(handle, 'open', PChar(url), nil, nil, SW_SHOW);
 end;
 
 procedure TfmMain.actViewHeadersFullExecute(Sender: TObject);
 begin
-  Options.ShowHeader := shFull;
+  XNOptions.ShowHeader := shFull;
   MessageScrollBox1.ShowHeader := shFull;
 end;
 
 procedure TfmMain.actViewHeadersNoneExecute(Sender: TObject);
 begin
-  Options.ShowHeader := shNone;
+  XNOptions.ShowHeader := shNone;
   MessageScrollBox1.ShowHeader := shNone;
 end;
 
 procedure TfmMain.actViewHeadersShortExecute(Sender: TObject);
 begin
-  Options.ShowHeader := shShort;
+  XNOptions.ShowHeader := shShort;
   MessageScrollBox1.ShowHeader := shShort;
 end;
 
 procedure TfmMain.actViewMessagesNormalExecute(Sender: TObject);
 begin
-  Options.ViewMode := vmNormal;
+  XNOptions.ViewMode := vmNormal;
   MessageScrollBox1.ImagesOnly := False;
   MessageScrollBox1.RawMessage := False;
   MessageScrollBox1.RawMode := False;
@@ -2867,7 +2868,7 @@ end;
 
 procedure TfmMain.actViewMessagesRawMessagesExecute(Sender: TObject);
 begin
-  Options.ViewMode := vmRaw;
+  XNOptions.ViewMode := vmRaw;
   MessageScrollBox1.ImagesOnly := False;
   MessageScrollBox1.RawMode := True;
   MessageScrollBox1.RawMessage := True;
@@ -2876,7 +2877,7 @@ end;
 
 procedure TfmMain.actViewMessagesRawTextExecute(Sender: TObject);
 begin
-  Options.ViewMode := vmRawText;
+  XNOptions.ViewMode := vmRawText;
   MessageScrollBox1.ImagesOnly := False;
   MessageScrollBox1.RawMessage := False;
   MessageScrollBox1.RawMode := True;
@@ -2966,44 +2967,44 @@ procedure TfmMain.ApplyControlOptions;
 var
   i: Integer;
 begin
-  pnlLeft.Width := Options.PanelLeft;
-  pnlArticles.Height := Options.ArticlesHeight;
-  pnlQueuedRequests.Height := Options.QueuedRequestsHeight;
-  pnlBookmark.Height := Options.BookmarkHeight;
+  pnlLeft.Width := XNOptions.PanelLeft;
+  pnlArticles.Height := XNOptions.ArticlesHeight;
+  pnlQueuedRequests.Height := XNOptions.QueuedRequestsHeight;
+  pnlBookmark.Height := XNOptions.BookmarkHeight;
 
-  tbMenu.SetBounds(Options.MenuToolbarLeft, Options.MenuToolbarTop, tbMenu.Width, tbMenu.Height);
-  tbMain.SetBounds(Options.MainToolbarLeft, Options.MainToolbarTop, tbMain.Width, tbMain.Height);
+  tbMenu.SetBounds(XNOptions.MenuToolbarLeft, XNOptions.MenuToolbarTop, tbMenu.Width, tbMenu.Height);
+  tbMain.SetBounds(XNOptions.MainToolbarLeft, XNOptions.MainToolbarTop, tbMain.Width, tbMain.Height);
 
-  vstArticles.Color := Options.Appearance[apMessageHeaders].ApplyFontAndGetColor(vstArticles.Font);
-  vstBookmark.Color := Options.Appearance[apMessageHeaders].ApplyFontAndGetColor(vstArticles.Font);
-  vstArticles.Header.MainColumn := Options.TreeColumn;
-  vstSubscribed.Color := Options.Appearance[apSubscribedGroups].ApplyFontAndGetColor(vstSubscribed.Font);
-  vstQueuedRequests.Color := Options.Appearance[apSubscribedGroups].ApplyFontAndGetColor(vstSubscribed.Font);
-  MessageScrollBox1.Color := Options.Appearance[apMessagePane].ApplyFontAndGetColor(MessageScrollBox1.Font);
-  MessageScrollBox1.ShowHeader := Options.ShowHeader;
+  vstArticles.Color := XNOptions.Appearance[apMessageHeaders].ApplyFontAndGetColor(vstArticles.Font);
+  vstBookmark.Color := XNOptions.Appearance[apMessageHeaders].ApplyFontAndGetColor(vstArticles.Font);
+  vstArticles.Header.MainColumn := XNOptions.TreeColumn;
+  vstSubscribed.Color := XNOptions.Appearance[apSubscribedGroups].ApplyFontAndGetColor(vstSubscribed.Font);
+  vstQueuedRequests.Color := XNOptions.Appearance[apSubscribedGroups].ApplyFontAndGetColor(vstSubscribed.Font);
+  MessageScrollBox1.Color := XNOptions.Appearance[apMessagePane].ApplyFontAndGetColor(MessageScrollBox1.Font);
+  MessageScrollBox1.ShowHeader := XNOptions.ShowHeader;
   MessageScrollBox1.Refresh(False, True);
-  TrayIcon1.Visible := Options.ShowInSystemTray;
+  TrayIcon1.Visible := XNOptions.ShowInSystemTray;
 
-  vstSubscribed.ShowHint := Options.ShowTooltips;
-  vstArticles.ShowHint := Options.ShowTooltips;
+  vstSubscribed.ShowHint := XNOptions.ShowTooltips;
+  vstArticles.ShowHint := XNOptions.ShowTooltips;
 
   for i := 0 to vstArticles.Header.Columns.Count - 1 do
   begin
-    vstArticles.Header.Columns[i].Position := Options.ArticlesColumnPositions[i];
-    if Options.HideColumn[i] then
+    vstArticles.Header.Columns[i].Position := XNOptions.ArticlesColumnPositions[i];
+    if XNOptions.HideColumn[i] then
       vstArticles.Header.Columns[i].Options := vstArticles.Header.Columns[i].Options - [coVisible]
     else
       vstArticles.Header.Columns[i].Options := vstArticles.Header.Columns[i].Options + [coVisible];
   end;
 
-  pnlDetailsBar.Visible := Options.ShowDetailsBar;
+  pnlDetailsBar.Visible := XNOptions.ShowDetailsBar;
 
   if Assigned(fLastFocusedArticleContainer) then
   begin
-    if fLastFocusedArticleContainer.HideReadMessages <> Options.HideReadMessages then
+    if fLastFocusedArticleContainer.HideReadMessages <> XNOptions.HideReadMessages then
       actViewHideReadMessagesExecute(Self);
 
-    if fLastFocusedArticleContainer.HideIgnoredMessages <> Options.HideIgnoredMessages then
+    if fLastFocusedArticleContainer.HideIgnoredMessages <> XNOptions.HideIgnoredMessages then
       actViewHideIgnoredMessagesExecute(Self);
 
     if fLastFocusedArticleContainer.HideMessagesNotToMe then
@@ -3016,9 +3017,9 @@ begin
   Refresh_vstArticles;
   ResizeArticleHeader;
   ResizeBookmarkHeader;
-  if Options.AutoExpandGroupTree then
+  if XNOptions.AutoExpandGroupTree then
     vstSubscribed.FullExpand;
-  MessageScrollBox1.AutoFit := Options.AutofitImages;
+  MessageScrollBox1.AutoFit := XNOptions.AutofitImages;
 end;
 
 procedure TfmMain.BatchToParams(batch: TBatchAction; var params: TGetMessagesParams);
@@ -3063,7 +3064,7 @@ begin
       while Assigned(n) and (bm > n.NodeHeight) do
       begin
         s1 := n;
-        if Options.AutoExpandThread then
+        if XNOptions.AutoExpandThread then
           vstArticles.Expanded[n] := True;
         bm := bm - n.NodeHeight;
         s := vstArticles.GetNext(n);
@@ -3265,7 +3266,7 @@ begin
     if Assigned(article.Msg) and Assigned(article.Owner) then
     begin
       article.Msg.TruncateFrom := article.Owner.DisplaySettings.TruncateFrom;
-      article.Msg.StrictSigSeparator := Options.StrictSigSep;
+      article.Msg.StrictSigSeparator := XNOptions.StrictSigSep;
     end;
 
     MessageScrollBox1.Msg := article.Msg;
@@ -3579,8 +3580,8 @@ begin
     begin
       article.Msg.DefaultCodePage := article.Owner.DisplaySettings.DefaultCodepage;
       article.Msg.TruncateFrom := article.Owner.DisplaySettings.TruncateFrom;
-      article.Msg.StrictSigSeparator := Options.StrictSigSep;
-      if Options.AutoMarkSeconds = 0 then
+      article.Msg.StrictSigSeparator := XNOptions.StrictSigSep;
+      if XNOptions.AutoMarkSeconds = 0 then
         TArticle(article).IsRead := True;
     end;
     MessageScrollBox1.Refresh(MessageScrollBox1.ShowHeader <> shNone, MessageScrollBox1.AutoFit);
@@ -3998,19 +3999,19 @@ begin
   begin
     CanClose := CheckSaveOutboxMessages;
 
-    if Assigned(Options) then
+    if Assigned(XNOptions) then
       SetControlOptions;
     TrayIcon1.Visible := False;
 
-    if Assigned(Options) then
+    if Assigned(XNOptions) then
     begin
-      Options.Save;
+      XNOptions.Save;
       if fDisableShortcutCount > 0 then
       begin
         fDisableShortcutCount := 1;
         EnableShortcuts(True);
       end;
-      Options.SaveKeyboardShortcuts;
+      XNOptions.SaveKeyboardShortcuts;
       SaveToolbarLayout;
       NNTPAccounts.SaveToRegistry;
     end;
@@ -4058,7 +4059,7 @@ begin
 
   fPrevArticleStack := TArticleStack.Create(10);
   fNextArticleStack := TArticleStack.Create(10);
-  Options.AppKey := PersistentPosition.ApplicationKey;
+  XNOptions.AppKey := PersistentPosition.ApplicationKey;
   fReloadedList := TList.Create;
   fDeferredCombineList := TObjectList.Create;
 
@@ -4081,17 +4082,17 @@ begin
   MessageScrollBox1.AutoFit := True;
 
   SetControlOptions;            // Save default options
-  Options.BookmarkHeight := pnlArticles.Height div 2;
+  XNOptions.BookmarkHeight := pnlArticles.Height div 2;
 
   Application.CreateForm(TfmPostMessage, pmForm);
   try
     pmForm.PersistentPosition1.Enabled := False;
-    Options.Appearance[apMessageEditor].Init(pmForm.fmePost1.mmoMessage.Font, pmForm.fmePost1.mmoMessage.Color);
+    XNOptions.Appearance[apMessageEditor].Init(pmForm.fmePost1.mmoMessage.Font, pmForm.fmePost1.mmoMessage.Color);
   finally
     pmForm.Free;
   end;
 
-  Options.Load;                 // Load options registry settings
+  XNOptions.Load;                 // Load options registry settings
   ApplyControlOptions;
 
   NNTPAccounts := TNNTPAccounts.Create;
@@ -4295,13 +4296,13 @@ begin
   LoadToolbarLayout;
   fPanelLeftWidth := pnlLeft.Width;
   fPanelLeftHeight := pnlLeft.Height;
-  if Options.PanelLeftHeight > 0 then
-    pnlLeft.UndockHeight := Options.PanelLeftHeight;
+  if XNOptions.PanelLeftHeight > 0 then
+    pnlLeft.UndockHeight := XNOptions.PanelLeftHeight;
 
-  case Options.PanelLeftSplitter of
+  case XNOptions.PanelLeftSplitter of
     0: pnlLeft.ManualDock(SplitterPanel1);
     1: pnlLeft.ManualDock(SplitterPanel2);
-    2: pnlLeft.ManualFloat(Rect(Options.PanelLeftLeft, Options.PanelLeftTop, Options.PanelLeftLeft + Options.PanelLeft, Options.PanelLeftTop + Options.PanelLeftHeight))
+    2: pnlLeft.ManualFloat(Rect(XNOptions.PanelLeftLeft, XNOptions.PanelLeftTop, XNOptions.PanelLeftLeft + XNOptions.PanelLeft, XNOptions.PanelLeftTop + XNOptions.PanelLeftHeight))
   end;
 
   fMedal := TImage.Create(Self);
@@ -4315,7 +4316,7 @@ begin
     fMedal.Top := (StatusBar.Height - fMedal.Height) div 2;
     fMedal.Left := StatusBar.Left + StatusBar.Width - fMedal.Width - 20;
     fMedal.Transparent := True;
-    fMedal.Visible := Options.DeservesMedal;
+    fMedal.Visible := XNOptions.DeservesMedal;
   end;
 
   pnlRight.Align := alClient;
@@ -4597,7 +4598,7 @@ begin
       st := '';
       MessageScrollBox1.GetSelectedText(st);
 
-      if (st = '') and Options.QuoteSelectedText then
+      if (st = '') and XNOptions.QuoteSelectedText then
       begin
         MessageScrollBox1.GetText(st);
         trimSig := True;
@@ -4607,7 +4608,7 @@ begin
       begin
         s.Text := st;
 
-        if trimSig and (Options.ShowHeader <> shNone) then
+        if trimSig and (XNOptions.ShowHeader <> shNone) then
         begin
           while s.Count > 0 do
           begin
@@ -4620,7 +4621,7 @@ begin
 
         wrap := (postingSettings.TextPartStyle <> tpQuotedPrintable) and (postingSettings.TextPartStyle <> tpFlowed) and (postingSettings.MaxPostLineLength <> 0);
 
-        FixQuotes(s, wrap, postingSettings.MaxPostLineLength, quoteLineMarker, trimSig, Options.StrictSigSep);
+        FixQuotes(s, wrap, postingSettings.MaxPostLineLength, quoteLineMarker, trimSig, XNOptions.StrictSigSep);
 
         if postingSettings.QuoteHeader <> '' then
           s.Insert(0, ExpandQuoteHeader(postingSettings.QuoteHeader));
@@ -4995,7 +4996,7 @@ end;
 
 procedure TfmMain.mnuViewHeadersClick(Sender: TObject);
 begin
-  case Options.ShowHeader of
+  case XNOptions.ShowHeader of
     shNone:   actViewHeadersNone.Checked := True;
     shShort:  actViewHeadersShort.Checked := True;
     shFull:   actViewHeadersFull.Checked := True;
@@ -5005,7 +5006,7 @@ end;
 
 procedure TfmMain.mnuViewMessagesClick(Sender: TObject);
 begin
-  case Options.ViewMode of
+  case XNOptions.ViewMode of
     vmNormal:  actViewMessagesNormal.Checked := True;
     vmRawText: actViewMessagesRawText.Checked := True;
     vmRaw:     actViewMessagesRawMessages.Checked := True;
@@ -5293,7 +5294,7 @@ begin
       cw := vstArticles.ClientWidth;
       for i := 0 to Columns.Count - 2 do
       begin
-        w := unitNewsReaderOptions.Options.ArticlesColumnPCs[i] * cw div 100;
+        w := unitNewsReaderOptions.XNOptions.ArticlesColumnPCs[i] * cw div 100;
         Columns[i].Width := w;
         if coVisible in Columns[i].Options then
           Inc(tot, w);
@@ -5320,7 +5321,7 @@ begin
       cw := vstBookmark.ClientWidth;
       for i := 0 to Columns.Count - 2 do
       begin
-        w := unitNewsReaderOptions.Options.BookmarkColumnPCs[i] * cw div 100;
+        w := unitNewsReaderOptions.XNOptions.BookmarkColumnPCs[i] * cw div 100;
         Columns[i].Width := w;
         if coVisible in Columns[i].Options then
           Inc(tot, w);
@@ -5376,7 +5377,7 @@ begin
   cw := vstArticles.ClientWidth;
   with vstArticles.Header do
     for i := 0 to Columns.Count - 2 do
-      unitNewsReaderOptions.Options.ArticlesColumnPCs[i] := (Columns[i].Width * 100 + cw div 2) div cw;
+      unitNewsReaderOptions.XNOptions.ArticlesColumnPCs[i] := (Columns[i].Width * 100 + cw div 2) div cw;
 end;
 
 procedure TfmMain.SaveArticleHeaderPositions;
@@ -5385,7 +5386,7 @@ var
 begin
   with vstArticles.Header do
     for i := 0 to Columns.Count - 1 do
-      unitNewsReaderOptions.Options.ArticlesColumnPositions[i] := Columns[i].Position;
+      unitNewsReaderOptions.XNOptions.ArticlesColumnPositions[i] := Columns[i].Position;
 end;
 
 procedure TfmMain.SaveOutstandingPostings;
@@ -5548,7 +5549,7 @@ begin
 
       vstArticles.ScrollIntoView(node, False);
 
-      if Options.AutoExpandThread and not fInCollapse then
+      if XNOptions.AutoExpandThread and not fInCollapse then
       begin
         while node^.Parent <> vstArticles.RootNode do
           node := node^.Parent;
@@ -5557,7 +5558,7 @@ begin
 
     finally
       vstArticles.EndUpdate;
-      if Options.AutoCentralizeMessage then
+      if XNOptions.AutoCentralizeMessage then
         CentralizeDisplay;
     end;
   end;
@@ -5565,43 +5566,43 @@ end;
 
 procedure TfmMain.SetControlOptions;
 begin
-  // Set control layout, based on 'Options' registry entries.
-  Options.PanelLeft := pnlLeft.Width;
+  // Set control layout, based on 'XNOptions' registry entries.
+  XNOptions.PanelLeft := pnlLeft.Width;
   if pnlLeft.Floating then
   begin
-    Options.PanelLeftSplitter := 2;
+    XNOptions.PanelLeftSplitter := 2;
     if Assigned(pnlLeft.Parent) then
     begin
-      Options.PanelLeftLeft := pnlLeft.Parent.Left;
-      Options.PanelLeftTop := pnlLeft.Parent.Top;
-      Options.PanelLeftHeight := pnlLeft.Parent.Height;
-      Options.PanelLeft := pnlLeft.Parent.Width;
+      XNOptions.PanelLeftLeft := pnlLeft.Parent.Left;
+      XNOptions.PanelLeftTop := pnlLeft.Parent.Top;
+      XNOptions.PanelLeftHeight := pnlLeft.Parent.Height;
+      XNOptions.PanelLeft := pnlLeft.Parent.Width;
     end;
   end
   else
     if pnlLeft.Parent = SplitterPanel2 then
-      Options.PanelLeftSplitter := 1
+      XNOptions.PanelLeftSplitter := 1
     else
-      Options.PanelLeftSplitter := 0;
+      XNOptions.PanelLeftSplitter := 0;
 
-  Options.ArticlesHeight := spltArticles.ResizeControlSize;
+  XNOptions.ArticlesHeight := spltArticles.ResizeControlSize;
 
-  Options.QueuedRequestsHeight := spltQueuedRequests.ResizeControlSize;
-  Options.ShowInSystemTray := TrayIcon1.Visible;
-  Options.BookmarkHeight := spltBookmark.ResizeControlSize;
+  XNOptions.QueuedRequestsHeight := spltQueuedRequests.ResizeControlSize;
+  XNOptions.ShowInSystemTray := TrayIcon1.Visible;
+  XNOptions.BookmarkHeight := spltBookmark.ResizeControlSize;
 
-  Options.MainToolbarLeft := tbMain.Left;
-  Options.MenuToolbarLeft := tbMenu.Left;
-  Options.MainToolbarTop := tbMain.Top;
-  Options.MenuToolbarTop := tbMenu.Top;
+  XNOptions.MainToolbarLeft := tbMain.Left;
+  XNOptions.MenuToolbarLeft := tbMenu.Left;
+  XNOptions.MainToolbarTop := tbMain.Top;
+  XNOptions.MenuToolbarTop := tbMenu.Top;
 
   SaveArticleHeaderColumns;
   SaveArticleHeaderPositions;
 
-  Options.Appearance[apMessageHeaders].Init(vstArticles.Font, vstArticles.Color);
-  Options.Appearance[apMessagePane].Init(MessageScrollBox1.Font, MessageScrollBox1.Color);
+  XNOptions.Appearance[apMessageHeaders].Init(vstArticles.Font, vstArticles.Color);
+  XNOptions.Appearance[apMessagePane].Init(MessageScrollBox1.Font, MessageScrollBox1.Color);
 
-  Options.Appearance[apSubscribedGroups].Init(vstSubscribed.Font, vstSubscribed.Color);
+  XNOptions.Appearance[apSubscribedGroups].Init(vstSubscribed.Font, vstSubscribed.Color);
 end;
 
 procedure TfmMain.spPauseRequestsClick(Sender: TObject);
@@ -5671,9 +5672,9 @@ begin
   if fAutoMarkTicks < MaxInt then
     Inc(fAutoMarkTicks);
 
-  if Options.AutoMarkAsRead and (Options.AutoMarkSeconds > 0) then
+  if XNOptions.AutoMarkAsRead and (XNOptions.AutoMarkSeconds > 0) then
   begin
-    if (fAutoMarkTicks < MaxInt) and (fAutoMarkTicks > Options.AutoMarkSeconds) then
+    if (fAutoMarkTicks < MaxInt) and (fAutoMarkTicks > XNOptions.AutoMarkSeconds) then
     begin
       article := GetFocusedArticle;
       if Assigned(article) then
@@ -5696,9 +5697,9 @@ begin
     // the article isn't on the server
     if (Assigned(article.Msg) or article.IsNotOnServer) and (fAutoMarkTicks < MaxInt) then
       Inc(fAutoMarkTicks);
-    if Options.AutoMarkAsRead and (Options.AutoMarkSeconds > 0) then
+    if XNOptions.AutoMarkAsRead and (XNOptions.AutoMarkSeconds > 0) then
     begin
-      if (fAutoMarkTicks < MaxInt) and (fAutoMarkTicks > Options.AutoMarkSeconds) then
+      if (fAutoMarkTicks < MaxInt) and (fAutoMarkTicks > XNOptions.AutoMarkSeconds) then
       begin
         if (Assigned(article.Msg) or article.IsNotOnServer) and not article.IsRead then
         begin
@@ -5738,11 +5739,11 @@ begin
       sl.Text := lv;
       sl.Sort;
 
-      Options.DeservesMedal := sl.Find(NNTPAccounts.Identities.DefaultIdentity.UserName, i);
+      XNOptions.DeservesMedal := sl.Find(NNTPAccounts.Identities.DefaultIdentity.UserName, i);
 
       if Assigned(fMedal) then
-        fMedal.Visible := Options.DeservesMedal;
-      Options.Save;
+        fMedal.Visible := XNOptions.DeservesMedal;
+      XNOptions.Save;
     finally
       sl.Free;
     end;
@@ -5790,7 +5791,7 @@ begin
   if Assigned(fLastFocusedArticleContainer) then
     vstArticles.RootNodeCount := fLastFocusedArticleContainer.ThreadCount;
 
-  if Options.ShowInSystemTray then
+  if XNOptions.ShowInSystemTray then
   begin
     hasUnread := False;
 
@@ -5870,7 +5871,10 @@ begin
       DisplayArticleBody(nil);
       fLastFocusedArticleContainer := nil;
     end;
-    group.Owner.UnsubscribeTo(group.Name);
+    if param = 1 then
+      group.Owner.UnsubscribeTo(group.Name, True)
+    else
+      group.Owner.UnsubscribeTo(group.Name, False);
     Result := True;
   finally
     SendMessage(handle, WM_GROUPSCHANGED, 0, 0);
@@ -6091,14 +6095,14 @@ begin
   else
     actArticleCancel.Enabled := False;
 
-  actSearchFindKeyword1.Enabled := hasKeyPhrase and (Options.KeyPhrase[0] <> '');
-  actSearchFindKeyword2.Enabled := hasKeyPhrase and (Options.KeyPhrase[1] <> '');
-  actSearchFindKeyword3.Enabled := hasKeyPhrase and (Options.KeyPhrase[2] <> '');
-  actSearchFindKeyword4.Enabled := hasKeyPhrase and (Options.KeyPhrase[3] <> '');
-  actSearchFindKeyword5.Enabled := hasKeyPhrase and (Options.KeyPhrase[4] <> '');
-  actSearchFindKeyword6.Enabled := hasKeyPhrase and (Options.KeyPhrase[5] <> '');
-  actSearchFindKeyword7.Enabled := hasKeyPhrase and (Options.KeyPhrase[6] <> '');
-  actSearchFindKeyword8.Enabled := hasKeyPhrase and (Options.KeyPhrase[7] <> '');
+  actSearchFindKeyword1.Enabled := hasKeyPhrase and (XNOptions.KeyPhrase[0] <> '');
+  actSearchFindKeyword2.Enabled := hasKeyPhrase and (XNOptions.KeyPhrase[1] <> '');
+  actSearchFindKeyword3.Enabled := hasKeyPhrase and (XNOptions.KeyPhrase[2] <> '');
+  actSearchFindKeyword4.Enabled := hasKeyPhrase and (XNOptions.KeyPhrase[3] <> '');
+  actSearchFindKeyword5.Enabled := hasKeyPhrase and (XNOptions.KeyPhrase[4] <> '');
+  actSearchFindKeyword6.Enabled := hasKeyPhrase and (XNOptions.KeyPhrase[5] <> '');
+  actSearchFindKeyword7.Enabled := hasKeyPhrase and (XNOptions.KeyPhrase[6] <> '');
+  actSearchFindKeyword8.Enabled := hasKeyPhrase and (XNOptions.KeyPhrase[7] <> '');
 
   actSearchFindAnyKeyword.Enabled := hasKeyPhrase;
 
@@ -6121,7 +6125,7 @@ begin
   else
     actArticleGotoNext.ImageIndex := 35;
 
-  spFixedFont.Visible := not IsFontFixed(Options.Appearance[apMessagePane].FontName);
+  spFixedFont.Visible := not IsFontFixed(XNOptions.Appearance[apMessagePane].FontName);
 
   actArticleMarkMessageAsInteresting.Enabled := hasFocusedArticle;
   actArticleIgnoreBranch.Enabled := hasFocusedArticle;
@@ -6193,7 +6197,7 @@ begin
         case art.KeyPhraseNo of
           -1: ;
         else
-          TargetCanvas.Brush.Color := Options.KeywordColors[art.KeyPhraseNo];
+          TargetCanvas.Brush.Color := XNOptions.KeywordColors[art.KeyPhraseNo];
           r.Left := r.Left + 23;
           r.Right := r.Left + 9;
           r.Top := r.Top + 5;
@@ -6219,8 +6223,8 @@ begin
   if not Assigned(article) then
     article := GetNodeArticle(vstArticles.FocusedNode);
 
-  if Assigned(article) and (Article is TArticle) and Options.AutoMarkAsRead then
-    if Options.AutoMarkSeconds = 0 then
+  if Assigned(article) and (Article is TArticle) and XNOptions.AutoMarkAsRead then
+    if XNOptions.AutoMarkSeconds = 0 then
       if Assigned(article.Msg) then
         TArticle(article).IsRead := True;
 
@@ -6228,7 +6232,7 @@ begin
 
   DisplayArticleBody(article);
 
-  if Options.AutoExpandThread then
+  if XNOptions.AutoExpandThread then
     PostMessage(Handle, WM_AUTOEXPAND, 0, 0);
 end;
 
@@ -6239,13 +6243,13 @@ var
 begin
   // Perform 'auto-download-on-click'
   fClicked := True;
-  if Options.AutoDownloadOnClick then
+  if XNOptions.AutoDownloadOnClick then
   begin
     Article := GetFocusedArticle;
     if Assigned(article) and not article.HasMsg then
     begin
       n := vstArticles.FocusedNode;
-      if Options.AutoExpandThread and not vstArticles.Expanded[n] and Assigned(vstArticles.GetFirstChild(n)) then
+      if XNOptions.AutoExpandThread and not vstArticles.Expanded[n] and Assigned(vstArticles.GetFirstChild(n)) then
       begin
         DoGetArticleBody(article, 0, False);
         vstArticles.Invalidate;
@@ -6338,7 +6342,7 @@ begin
                       Index := 32;
     end
     else
-      if (column = vstArticles.Header.MainColumn) and not Options.HideFolderIcons then
+      if (column = vstArticles.Header.MainColumn) and not XNOptions.HideFolderIcons then
       begin
         if Assigned(article.Child) then
           if vsExpanded in Node^.States then
@@ -6392,7 +6396,7 @@ begin
       0: st := '';
       1: st := stNumber;
       2: if not fForensicMode then
-           if isRoot or not Options.FirstLineAsSubject then
+           if isRoot or not XNOptions.FirstLineAsSubject then
              st := DecodeSubject(article.Subject)
            else
              st := Article.InterestingMessageLine
@@ -6655,7 +6659,7 @@ begin
     bclr := clHighlight;
   if Assigned(article) then
   begin
-    if not (vsSelected in node^.States) or Options.HighlightSelectedText then
+    if not (vsSelected in node^.States) or XNOptions.HighlightSelectedText then
     begin
       if fForensicMode then
       begin
@@ -6670,42 +6674,42 @@ begin
       end
       else
       begin
-        if article.IsInteresting and not (Options.Appearance[apInterestingMessages].Equals(Options.Appearance[apMessageHeaders])) then
-          Options.Appearance[apInterestingMessages].ApplyFontAndGetColor(Canvas.Font)
+        if article.IsInteresting and not (XNOptions.Appearance[apInterestingMessages].Equals(XNOptions.Appearance[apMessageHeaders])) then
+          XNOptions.Appearance[apInterestingMessages].ApplyFontAndGetColor(Canvas.Font)
         else
           if article.IsIgnore then
-            Options.Appearance[apIgnoredMessages].ApplyFontAndGetColor(Canvas.Font)
+            XNOptions.Appearance[apIgnoredMessages].ApplyFontAndGetColor(Canvas.Font)
           else
             if article.IsMine then
               if article.IsFromMe then
-                Options.Appearance[apMessagesFromMe].ApplyFontAndGetColor(Canvas.Font)
+                XNOptions.Appearance[apMessagesFromMe].ApplyFontAndGetColor(Canvas.Font)
               else
-                if article.IsXanaNews and not Options.DontHighlightXanaNewsUsers then
-                  Options.Appearance[apXananewsMessages].ApplyFontAndGetColor(Canvas.Font)
+                if article.IsXanaNews and not XNOptions.DontHighlightXanaNewsUsers then
+                  XNOptions.Appearance[apXananewsMessages].ApplyFontAndGetColor(Canvas.Font)
                 else
                 begin
                   if article.IsReply then
-                    Options.Appearance[apReplies].ApplyFontAndGetColor(Canvas.Font)
+                    XNOptions.Appearance[apReplies].ApplyFontAndGetColor(Canvas.Font)
                   else
-                    Options.Appearance[apMessagesToMe].ApplyFontAndGetColor(Canvas.Font);
+                    XNOptions.Appearance[apMessagesToMe].ApplyFontAndGetColor(Canvas.Font);
                 end
               else
-                if article.HasNoReplies and not (Options.Appearance[apChildlessMessages].Equals(Options.Appearance[apMessageHeaders])) then
-                  Options.Appearance[apChildlessMessages].ApplyFontAndGetColor(Canvas.Font)
+                if article.HasNoReplies and not (XNOptions.Appearance[apChildlessMessages].Equals(XNOptions.Appearance[apMessageHeaders])) then
+                  XNOptions.Appearance[apChildlessMessages].ApplyFontAndGetColor(Canvas.Font)
                 else
-                  if article.IsXanaNews and not Options.DontHighlightXanaNewsUsers then
-                    Options.Appearance[apXananewsMessages].ApplyFontAndGetColor(Canvas.Font)
+                  if article.IsXanaNews and not XNOptions.DontHighlightXanaNewsUsers then
+                    XNOptions.Appearance[apXananewsMessages].ApplyFontAndGetColor(Canvas.Font)
                   else
                     if article.IsDormant then
-                      Options.Appearance[apDormantMessages].ApplyFontAndGetColor(Canvas.Font);
+                      XNOptions.Appearance[apDormantMessages].ApplyFontAndGetColor(Canvas.Font);
       end;
     end;
 
     if not article.isRead then
-      Canvas.Font.Style := Options.UnreadFontStyle;
+      Canvas.Font.Style := XNOptions.UnreadFontStyle;
   end;
 
-  if (vsSelected in Node.States) and Options.HighlightSelectedText then
+  if (vsSelected in Node.States) and XNOptions.HighlightSelectedText then
     Canvas.Font.Color := BoostContrast(Canvas.Font.Color, bclr, clr);
 end;
 
@@ -7125,13 +7129,13 @@ begin
           if (data^ is TSubscribedGroup) and (TSubscribedGroup(data^).Nickname <> '') then
             nm := TSubscribedGroup(data^).Nickname
           else
-            case Options.TrimGroupNames of
+            case XNOptions.TrimGroupNames of
               0: nm := Name;
               1: nm := FairlyShortGroupName(Name);
               2: nm := ShortGroupName(Name);
             end;
 
-          if Options.ShowMessageCount then
+          if XNOptions.ShowMessageCount then
           begin
             if ct1 = 0 then
               text := nm
@@ -7203,7 +7207,7 @@ begin
 
         if account.SubscribedGroupCount > 0 then
           InitialStates := InitialStates + [ivshasChildren];
-        if not Options.AutoExpandGroupTree and not Options.AutoContractGroupTree then
+        if not XNOptions.AutoExpandGroupTree and not XNOptions.AutoContractGroupTree then
         begin
           if account.DisplaySettings.Expanded then
             InitialStates := InitialStates + [ivsExpanded];
@@ -7238,7 +7242,7 @@ procedure TfmMain.vstSubscribedKeyDown(Sender: TObject; var Key: Word;
 begin
   case key of
     VK_RETURN:
-      if Options.EnterGetMessages then
+      if XNOptions.EnterGetMessages then
         actNewsgroupGetMessages.Execute
       else
         vstArticles.SetFocus;
@@ -7277,14 +7281,14 @@ begin
   begin
     if group.UnreadArticleCount > 0 then
     begin
-      Canvas.Font.Style := Options.UnreadNewsgroupsFontStyle;
+      Canvas.Font.Style := XNOptions.UnreadNewsgroupsFontStyle;
 
-      if not (vsSelected in node^.States) or Options.HighlightSelectedText then
+      if not (vsSelected in node^.States) or XNOptions.HighlightSelectedText then
         if group.UnreadReplyCount > 0 then
-          Canvas.Font.Color := Options.Appearance[apReplies].FontColor
+          Canvas.Font.Color := XNOptions.Appearance[apReplies].FontColor
         else
           if group.UnreadArticleToMeCount > 0 then
-            Canvas.Font.Color := Options.Appearance[apMessagesToMe].FontColor;
+            Canvas.Font.Color := XNOptions.Appearance[apMessagesToMe].FontColor;
     end;
     if gAudiblePerformanceCues then
       if group.Loaded then
@@ -7302,23 +7306,23 @@ begin
         group := account.SubscribedGroups[i];
         if group.UnreadArticleCount > 0 then
         begin
-          Canvas.Font.Style := Options.GroupsWithMessagesFontStyle;
-          if (vsSelected in node^.States) and not Options.HighlightSelectedText then
+          Canvas.Font.Style := XNOptions.GroupsWithMessagesFontStyle;
+          if (vsSelected in node^.States) and not XNOptions.HighlightSelectedText then
             Break;
 
           if group.UnreadReplyCount > 0 then
           begin
-            Canvas.Font.Color := Options.Appearance[apReplies].FontColor;
+            Canvas.Font.Color := XNOptions.Appearance[apReplies].FontColor;
             Break
           end;
 
           if group.UnreadArticleToMeCount > 0 then
-            Canvas.Font.Color := Options.Appearance[apMessagesToMe].FontColor;
+            Canvas.Font.Color := XNOptions.Appearance[apMessagesToMe].FontColor;
         end;
       end;
     end;
   end;
-  if (vsSelected in Node.States) and Options.HighlightSelectedText then
+  if (vsSelected in Node.States) and XNOptions.HighlightSelectedText then
     Canvas.Font.Color := BoostContrast(Canvas.Font.Color, bclr, clr);
 end;
 
@@ -7383,7 +7387,7 @@ begin
   end;
   LoadUnpostedMessages;
   FreeAndNil(fmSplash);
-  Options.LoadKeyboardShortcuts;
+  XNOptions.LoadKeyboardShortcuts;
   Application.ProcessMessages;
 
   param := '';
@@ -7423,19 +7427,32 @@ begin
   PopulateBookmarkCombo;
   if fBookmarkSet.BookmarkCount > 0 then
     SetCurrentBookmark(TBookmark.Create(fBookmarkSet.BookmarkName[0]), True);
-  if Options.AutoExpandGroupTree then
+  if XNOptions.AutoExpandGroupTree then
     vstSubscribed.FullExpand;
   PopulateSearchBarOpCombo;
 end;
 
 procedure TfmMain.WmUnsubscribe(var Msg: TMessage);
 var
-  group: TSubscribedGroup;
+  I: Integer;
+  obj: TObject;
 begin
-  group := TSubscribedGroup(Msg.wParam);
+  obj := TObject(Msg.wParam);
 
-  if Assigned(group) then
-    Unsubscribe(group, 0);
+  if Assigned(obj) then
+  begin
+    if obj is TObjectList then
+    begin
+      try
+        for I := 0 to TObjectList(obj).Count - 1 do
+          Unsubscribe(TSubscribedGroup(TObjectList(obj)[I]), 0);
+      finally
+        NNTPAccounts.SaveToRegistry(nil);
+      end;
+    end
+    else
+      Unsubscribe(TSubscribedGroup(obj), 1);
+  end;
   Refresh_vstSubscribed;
 end;
 
@@ -7672,9 +7689,9 @@ begin
   if Assigned(ctnr) then
   begin
     ctnr.fFocused := True;
-    ctnr.HideReadMessages := Options.HideReadMessages;
+    ctnr.HideReadMessages := XNOptions.HideReadMessages;
     ctnr.HideMessagesNotToMe := False;
-    ctnr.HideIgnoredMessages := Options.HideIgnoredMessages;
+    ctnr.HideIgnoredMessages := XNOptions.HideIgnoredMessages;
     vstArticles.RootNodeCount := ctnr.ThreadCount;
 
     case ctnr.ThreadSortOrder of
@@ -7707,7 +7724,7 @@ begin
 
   if Assigned(ctnr) then
   begin
-    if Options.AutoExpandAll then
+    if XNOptions.AutoExpandAll then
       FullExpandThreads(ctnr, nil);
 
     if ctnr.CursorArticleID <> '' then
@@ -7745,7 +7762,7 @@ begin
 
   fLastFocusedAccount := GetFocusedAccount;
 
-  if Options.AutoContractGroupTree and (oldAcct <> nil) then
+  if XNOptions.AutoContractGroupTree and (oldAcct <> nil) then
   begin
     if fLastFocusedAccount <> oldAcct then
     begin
@@ -8054,7 +8071,7 @@ end;
 
 procedure TfmMain.actViewHeadersCustomExecute(Sender: TObject);
 begin
-  Options.ShowHeader := shCustom;
+  XNOptions.ShowHeader := shCustom;
   MessageScrollBox1.ShowHeader := shCustom;
 end;
 
@@ -8247,7 +8264,7 @@ end;
 
 procedure TfmMain.actViewMessagesImagesOnlyExecute(Sender: TObject);
 begin
-  Options.ViewMode := vmImages;
+  XNOptions.ViewMode := vmImages;
   MessageScrollBox1.RawMessage := False;
   MessageScrollBox1.RawMode := False;
   MessageScrollBox1.ImagesOnly := True;
@@ -8443,9 +8460,9 @@ begin
   else
   begin
     actViewHideReadMessages.Enabled := False;
-    actViewHideReadMessages.Checked := Options.HideReadMessages;
+    actViewHideReadMessages.Checked := XNOptions.HideReadMessages;
     actViewHideIgnoredMessages.Enabled := False;
-    actViewHideIgnoredMessages.Checked := Options.HideIgnoredMessages;
+    actViewHideIgnoredMessages.Checked := XNOptions.HideIgnoredMessages;
     actViewHideMessagesNotToMe.Enabled := False;
     actViewHideMessagesNotToMe.Checked := False;
   end;
@@ -8669,7 +8686,7 @@ begin
 //          end;
           exporter.Export(dlg.FileName, dlg.Groups, dlg.ExportSettings);
 //          GoToArticle(art)
-          Options.Reload;
+          XNOptions.Reload;
           ApplyControlOptions;
         finally
           StartEverything;
@@ -8695,7 +8712,7 @@ begin
       StopEverything;
       try
         exporter.Import(dlgImportCompressed.FileName);
-        Options.Reload;
+        XNOptions.Reload;
         ApplyControlOptions;
       finally
         StartEverything;
@@ -9331,12 +9348,12 @@ begin
                         // If the article hasn't been loaded, load it.
       begin
         article := GetFocusedArticle;
-        if Assigned(article) and (not article.HasMsg) and (article.ArticleNo <> 0) and (Options.EnterLoadsMessage) then
+        if Assigned(article) and (not article.HasMsg) and (article.ArticleNo <> 0) and (XNOptions.EnterLoadsMessage) then
           actArticleGetMessageBody.Execute
         else
         begin
           NextOptions := [naMarkAsRead, naUnreadOnly, naCanWrap, naCircularAccounts];
-          if Options.EnterGoToNextGroup then
+          if XNOptions.EnterGoToNextGroup then
             Include(NextOptions, naCanLeaveGroup);
 
           NextArticle(NextOptions, GetFocusedArticle);
@@ -10029,7 +10046,7 @@ procedure TfmMain.WmApplyChanges(var msg: TMessage);
 var
   ctnr: TArticleContainer;
 begin
-  Options.Save;
+  XNOptions.Save;
   NNTPAccounts.SaveToRegistry;
 
   ctnr := fLastFocusedArticleContainer;
@@ -10059,7 +10076,7 @@ begin
   cw := vstBookmark.ClientWidth;
   with vstBookmark.Header do
     for i := 0 to Columns.Count - 2 do
-      unitNewsReaderOptions.Options.BookmarkColumnPCs[i] := (Columns[i].Width * 100 + cw div 2) div cw;
+      unitNewsReaderOptions.XNOptions.BookmarkColumnPCs[i] := (Columns[i].Width * 100 + cw div 2) div cw;
 end;
 
 function TfmMain.ForEachSelectedBranch(proc: TArticleIteratorProc;
@@ -10507,7 +10524,7 @@ begin
            st := '';
       1: st := stNumber;
       2: if not fForensicMode then
-           if (isRoot) or (not Options.FirstLineAsSubject) then
+           if (isRoot) or (not XNOptions.FirstLineAsSubject) then
              st := DecodeSubject(article.Subject)
            else
              st := Article.InterestingMessageLine
@@ -10598,12 +10615,12 @@ var
   ct: Integer;
 begin
   data := PObject(vstSubscribed.GetNodeData(node));
-  if (data^ is TSubscribedGroup) and (Options.ShowInterestingMarkers <> 0) then
+  if (data^ is TSubscribedGroup) and (XNOptions.ShowInterestingMarkers <> 0) then
     grp := TSubscribedGroup(data^)
   else
     Exit;
 
-  case Options.ShowInterestingMarkers of
+  case XNOptions.ShowInterestingMarkers of
     1: ct := grp.UnreadInterestingArticleCount;
   else
     ct := grp.InterestingArticleCount;
@@ -10839,7 +10856,7 @@ end;
 procedure TfmMain.actViewAutofitImagesExecute(Sender: TObject);
 begin
   MessageScrollBox1.AutoFit := not MessageScrollBox1.AutoFit;
-  Options.AutofitImages := MessageScrollBox1.AutoFit;
+  XNOptions.AutofitImages := MessageScrollBox1.AutoFit;
 end;
 
 procedure TfmMain.actViewFindOnInternetExecute(Sender: TObject);
@@ -10881,7 +10898,7 @@ begin
     end;
   end
   else
-    GotoMessageOnInternet(Handle, Options.SearchInternetURLStub, mid);
+    GotoMessageOnInternet(Handle, XNOptions.SearchInternetURLStub, mid);
 end;
 
 procedure TfmMain.actArticleMarkBranchAsReadExecute(Sender: TObject);

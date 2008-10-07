@@ -778,7 +778,7 @@ end;
  *----------------------------------------------------------------------*)
 procedure TTCPGetter.WorkDone;
 begin
-  if Options.AutoDisconnectOnIdle then
+  if XNOptions.AutoDisconnectOnIdle then
     ThreadManager.DoAutoDisconnect
 end;
 

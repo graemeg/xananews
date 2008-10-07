@@ -61,13 +61,7 @@
 			<DCCReference Include="MiscUnitsReg.pas"/>
 			<DCCReference Include="cmpFileCopier.pas"/>
 			<DCCReference Include="cmpSplitterPanel.pas"/>
-			<DCCReference Include="cmpTextDisplay.pas"/>
 			<DCCReference Include="cmpCWSpellChecker.pas"/>
-			<DCCReference Include="cmpPersistentOptions.pas"/>
-			<DCCReference Include="cmpTexturedPanel.pas"/>
-			<DCCReference Include="cmpColorSelector.pas"/>
-			<DCCReference Include="cmpHexDump.pas"/>
-			<DCCReference Include="cmpSizingPageControl.pas"/>
 			<DCCReference Include="cmpSpellChecker.pas"/>
 			<DCCReference Include="SpellCheckerForm.pas"/>
 			<DCCReference Include="cmpThemedScrollBox.pas"/>
@@ -81,20 +75,10 @@
 			<DCCReference Include="cmpExSplitter.pas"/>
 			<DCCReference Include="cmpHyperlinkButton.pas"/>
 			<DCCReference Include="cmpExWebBrowser.pas"/>
-			<DCCReference Include="cmpMRUList.pas"/>
 			<DCCReference Include="cmpPersistentPosition.pas"/>
 			<DCCReference Include="unitHTMLStringsDisplayObject.pas"/>
 			<DCCReference Include="unitNewsStringsDisplayObject.pas"/>
 			<DCCReference Include="unitHTMLHelpViewer.pas"/>
-			<DCCReference Include="CustomAlignPanel.pas"/>
-			<DCCReference Include="cmpSuDoku.pas"/>
-			<DCCReference Include="cmpExToolBar.pas"/>
-			<DCCReference Include="ExCoolBar.pas"/>
-			<DCCReference Include="cmpExplorerTree.pas"/>
-			<DCCReference Include="cmpRegistryPersistentOptions.pas"/>
-			<DCCReference Include="cmpIniFilePersistentOptions.pas"/>
-			<DCCReference Include="cmpXMLPersistentOptions.pas"/>
-			<DCCReference Include="cmpCountryComboBox.pas"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>

@@ -637,7 +637,7 @@ begin
     Inc(crossPostCount);
   until SplitString(',', st) = '';
 
-  if (Options.CheckCrossposts > 0) and (crossPostCount > Options.CheckCrossposts) then
+  if (XNOptions.CheckCrossposts > 0) and (crossPostCount > XNOptions.CheckCrossposts) then
     Result := first
   else
     Result := ''

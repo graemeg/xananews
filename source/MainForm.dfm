@@ -649,7 +649,7 @@ object fmMain: TfmMain
     TabOrder = 6
     OnDockDrop = SplitterPanel3DockDrop
   end
-  object cbMain: TExCoolBar
+  object cbMain: TCoolBar
     Left = 0
     Top = 0
     Width = 809

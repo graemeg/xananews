@@ -106,8 +106,8 @@ end;
 function TPropertyPageBozoData.Apply : boolean;
 begin
   result := True;
-  Options.AutoRemoveFromBin := fRemoveFromBin;
-  Options.DefaultBozoAction := fDefaultBozoAction;
+  XNOptions.AutoRemoveFromBin := fRemoveFromBin;
+  XNOptions.DefaultBozoAction := fDefaultBozoAction;
   NNTPAccounts.ReplaceBozos(fBozos);
 end;
 
@@ -123,8 +123,8 @@ var
   i : Integer;
   b1, b2 : TBozo;
 begin
-  fRemoveFromBin := Options.AutoRemoveFromBin;
-  fDefaultBozoAction := Options.DefaultBozoAction;
+  fRemoveFromBin := XNOptions.AutoRemoveFromBin;
+  fDefaultBozoAction := XNOptions.DefaultBozoAction;
 
   fBozos := TObjectList.Create;
   for i := 0 to NNTPAccounts.BozoCount - 1 do
@@ -227,7 +227,7 @@ begin
     begin
       bozo := TBozo.Create(dlg.edName.Text,
                            dlg.edEMail.Text,
-                           dlg.dpDate.Date, Options.DefaultBozoAction);
+                           dlg.dpDate.Date, XNOptions.DefaultBozoAction);
       fData.fBozos.Add(bozo);
       lvBozos.Items.Count := fData.fBozos.Count
     end

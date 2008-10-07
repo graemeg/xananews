@@ -339,7 +339,7 @@ begin
     gNetworkMonitorThread.WaitFor;
     FreeAndNil(gNetworkMonitorThread);
   end;
-  if Assigned (Options) and (Options.AutoDisconnectOnIdle or Options.AutoDisconnectOnExit) then
+  if Assigned (XNOptions) and (XNOptions.AutoDisconnectOnIdle or XNOptions.AutoDisconnectOnExit) then
     DoAutoDisconnect;
 
   LockGetterList;

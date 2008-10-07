@@ -8,6 +8,8 @@ inherited fmPropertyPageColorFont: TfmPropertyPageColorFont
   ClientWidth = 381
   Constraints.MinHeight = 344
   Constraints.MinWidth = 389
+  ExplicitLeft = 590
+  ExplicitTop = 199
   DesignSize = (
     381
     381)
@@ -31,14 +33,17 @@ inherited fmPropertyPageColorFont: TfmPropertyPageColorFont
   end
   inherited Panel1: TPanel
     Width = 381
+    ExplicitWidth = 381
     DesignSize = (
       381
       41)
     inherited Bevel1: TBevel
       Width = 381
+      ExplicitWidth = 381
     end
     inherited stSectionDetails: TLabel
       Width = 369
+      ExplicitWidth = 369
     end
   end
   object rePreview: TRichEdit
@@ -47,7 +52,7 @@ inherited fmPropertyPageColorFont: TfmPropertyPageColorFont
     Width = 359
     Height = 54
     Anchors = [akLeft, akRight, akBottom]
-    Font.Charset = DEFAULT_CHARSET
+    Font.Charset = ANSI_CHARSET
     Font.Color = clWindowText
     Font.Height = -11
     Font.Name = 'MS Sans Serif'

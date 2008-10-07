@@ -137,8 +137,8 @@ begin
   result := True;
   for i := 0 to 7 do
   begin
-    Options.KeywordColors [i] := fKeywordColors [i];
-    Options.KeyPhrase [i] := fKeyPhrase [i]
+    XNOptions.KeywordColors [i] := fKeywordColors [i];
+    XNOptions.KeyPhrase [i] := fKeyPhrase [i]
   end
 end;
 
@@ -148,8 +148,8 @@ var
 begin
   for i := 0 to 7 do
   begin
-    fKeywordColors [i] := Options.KeywordColors [i];
-    fKeyPhrase [i] := Options.KeyPhrase [i]
+    fKeywordColors [i] := XNOptions.KeywordColors [i];
+    fKeyPhrase [i] := XNOptions.KeyPhrase [i]
   end
 end;
 

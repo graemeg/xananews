@@ -17,14 +17,17 @@ inherited fmPropertyPageCustomHeaders: TfmPropertyPageCustomHeaders
   end
   inherited Panel1: TPanel
     Width = 262
+    ExplicitWidth = 262
     inherited Bevel1: TBevel
       Width = 262
+      ExplicitWidth = 262
     end
     inherited stSectionDetails: TLabel
       Width = 250
       Caption = 
         'Select which headers are displayed when you select View, Headers' +
         ', Custom (F12)'
+      ExplicitWidth = 250
     end
   end
   object lvShowCustomHeaders: TListView
@@ -37,9 +40,7 @@ inherited fmPropertyPageCustomHeaders: TfmPropertyPageCustomHeaders
     Columns = <
       item
         Caption = 'Header'
-        Width = -2
-        WidthType = (
-          -2)
+        Width = 230
       end>
     HideSelection = False
     ReadOnly = True

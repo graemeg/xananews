@@ -59,14 +59,14 @@ end;
 function TPropertyPageConnectionData.Apply : boolean;
 begin
   result := True;
-  fAutoDisconnectOnIdle := Options.AutoDisconnectOnIdle;
-  fAutoDisconnectOnExit := Options.AutoDisconnectOnExit;
+  fAutoDisconnectOnIdle := XNOptions.AutoDisconnectOnIdle;
+  fAutoDisconnectOnExit := XNOptions.AutoDisconnectOnExit;
 end;
 
 procedure TPropertyPageConnectionData.Initialize;
 begin
-  Options.AutoDisconnectOnIdle := fAutoDisconnectOnIdle;
-  Options.AutoDisconnectOnExit := fAutoDisconnectOnExit;
+  XNOptions.AutoDisconnectOnIdle := fAutoDisconnectOnIdle;
+  XNOptions.AutoDisconnectOnExit := fAutoDisconnectOnExit;
 end;
 
 procedure TfmPropertyPageConnection.ControlsClick(Sender: TObject);

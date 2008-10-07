@@ -9,6 +9,8 @@ inherited fmPropertyPageMessageTreeDisplay: TfmPropertyPageMessageTreeDisplay
   ClientWidth = 371
   Constraints.MinHeight = 303
   Constraints.MinWidth = 371
+  ExplicitLeft = 307
+  ExplicitTop = 232
   PixelsPerInch = 96
   TextHeight = 13
   object Label3: TLabel [0]
@@ -37,12 +39,15 @@ inherited fmPropertyPageMessageTreeDisplay: TfmPropertyPageMessageTreeDisplay
   end
   inherited Panel1: TPanel
     Width = 371
+    ExplicitWidth = 371
     inherited Bevel1: TBevel
       Width = 371
+      ExplicitWidth = 371
     end
     inherited stSectionDetails: TLabel
       Width = 359
       Caption = 'These options affect how the message tree is displayed'
+      ExplicitWidth = 359
     end
   end
   object cbUnreadMessagesBold: TCheckBox

@@ -32,8 +32,6 @@ requires
   vclimg;
 
 contains
-  unitExIcon in 'unitExIcon.pas',
-  MMPropZLIB in 'MMPropZLIB.pas',
   XFace in 'XFace.pas';
 
 end.

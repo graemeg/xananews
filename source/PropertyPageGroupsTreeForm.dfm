@@ -31,8 +31,10 @@ inherited fmPropertyPageGroupsTree: TfmPropertyPageGroupsTree
   end
   inherited Panel1: TPanel
     Width = 327
+    ExplicitWidth = 327
     inherited Bevel1: TBevel
       Width = 327
+      ExplicitWidth = 327
     end
     inherited stSectionDetails: TLabel
       Width = 315
@@ -40,6 +42,7 @@ inherited fmPropertyPageGroupsTree: TfmPropertyPageGroupsTree
         'This section controls the Subscribed Groups tree is displayed.  ' +
         'Additional font & colour options are in the Colours & Fonts sect' +
         'ion'
+      ExplicitWidth = 315
     end
   end
   object cbShowMessageCount: TCheckBox

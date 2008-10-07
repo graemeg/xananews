@@ -81,7 +81,7 @@ begin
   cbLogonRequired.Checked := fData.fLogonRequired;
   edServerAccountName.Text := fData.fServerAccountName;
 
-  if Options.PlainTextPasswords then
+  if XNOptions.PlainTextPasswords then
   begin
     edServerAccountPassword.Text := fData.fServerPassword;
     edRetypePassword.Text := fData.fRetypePassword;
@@ -136,7 +136,7 @@ procedure TfmPropertyPageAccountServer.EnableLogonOptions(
 begin
   edServerAccountName.Enabled := logonEnabled;
   edServerAccountPassword.Enabled := logonEnabled;
-  edRetypePassword.Enabled := logonEnabled and not Options.PlainTextPasswords;
+  edRetypePassword.Enabled := logonEnabled and not XNOptions.PlainTextPasswords;
   cbAlwaysAuthenticate.Enabled := logonEnabled;
   stServerAccountName.Enabled := logonEnabled;
   stServerAccountPassword.Enabled := logonEnabled;
@@ -148,7 +148,7 @@ var
   passReq : boolean;
   passOk : boolean;
 begin
-  passReq := cbLogonRequired.Checked and not Options.PlainTextPasswords;
+  passReq := cbLogonRequired.Checked and not XNOptions.PlainTextPasswords;
   if passReq then
     passOk := edServerAccountPassword.Text = edRetypePassword.Text
   else
@@ -162,7 +162,7 @@ function TPropertyPageAccountServerData.Apply : boolean;
 var
   account : TNNTPAccount;
 begin
-  result := (fServerPassword = fRetypePassword) or Options.PlainTextPasswords;
+  result := (fServerPassword = fRetypePassword) or XNOptions.PlainTextPasswords;
   if result then
   begin
     account := TNNTPAccount (Param);

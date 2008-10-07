@@ -68,16 +68,16 @@ end;
 function TPropertyPageEnterKeyData.Apply : boolean;
 begin
   result := True;
-  Options.EnterGetMessages := fEnterGetMessages;
-  Options.EnterLoadsMessage := fEnterLoadsMessage;
-  Options.EnterGoToNextGroup := fEnterGotoNextGroup;
+  XNOptions.EnterGetMessages := fEnterGetMessages;
+  XNOptions.EnterLoadsMessage := fEnterLoadsMessage;
+  XNOptions.EnterGoToNextGroup := fEnterGotoNextGroup;
 end;
 
 procedure TPropertyPageEnterKeyData.Initialize;
 begin
-  fEnterGetMessages := Options.EnterGetMessages;
-  fEnterLoadsMessage := Options.EnterLoadsMessage;
-  fEnterGoToNextGroup := Options.EnterGoToNextGroup;
+  fEnterGetMessages := XNOptions.EnterGetMessages;
+  fEnterLoadsMessage := XNOptions.EnterLoadsMessage;
+  fEnterGoToNextGroup := XNOptions.EnterGoToNextGroup;
 end;
 
 procedure TfmPropertyPageEnterKey.ControlClick(Sender: TObject);

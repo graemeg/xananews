@@ -175,7 +175,7 @@ begin
   if idx <> -1 then
     cbIdentity.ItemIndex := idx;
 
-  mmoMessage.Color := Options.Appearance[apMessageEditor].ApplyFontAndGetColor(mmoMessage.Font);
+  mmoMessage.Color := XNOptions.Appearance[apMessageEditor].ApplyFontAndGetColor(mmoMessage.Font);
   fInitialP := 0;
   fCodePage := PostingSettings.DefaultCodePage;
   GetCharsetNames(cbCharset.Items);
@@ -241,7 +241,7 @@ begin
   mmoMessage.RightMargin := PostingSettings.MaxPostLineLength;
 
   fSpellInstalled := gDefaultISpellLanguage <> -1;
-  fCheckSpelling := fSpellInstalled and options.CheckSpelling;
+  fCheckSpelling := fSpellInstalled and XNOptions.CheckSpelling;
   cbCheckSpelling.Checked := fCheckSpelling;
   SendMessage(mmoMessage.Handle, CM_FONTCHANGED, 0, 0);
 
@@ -463,7 +463,7 @@ begin
   try
     s1.Text := quote;
     wrap := (fPostingSettings.TextPartStyle <> tpQuotedPrintable) and (fPostingSettings.TextPartStyle <> tpFlowed) and  (fPostingSettings.MaxPostLineLength <> 0);
-    FixQuotes(s1, wrap, fPostingSettings.MaxPostLineLength, fPostingSettings.QuoteLineMarker, False, Options.StrictSigSep);
+    FixQuotes(s1, wrap, fPostingSettings.MaxPostLineLength, fPostingSettings.QuoteLineMarker, False, XNOptions.StrictSigSep);
     NewText := s1.Text;
     mmoMessage.SelText := NewText;
     if (fPostingSettings.PostingStyle = psBottom) then

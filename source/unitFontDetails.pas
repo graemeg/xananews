@@ -126,7 +126,7 @@ end;
 
 function CompareSizes (p1, p2 : Pointer) : Integer;
 begin
-  result := Integer (p1) - Integer (p2)
+  Result := Integer(p1) - Integer(p2);
 end;
 
 function EnumFontFamiliesProc (const lpelfe : TEnumLogFontEx; const lpntme : TNewTextMetricExA; FontType : DWORD; param : lParam) : Integer; stdcall;

@@ -610,8 +610,8 @@ public
   procedure SetXOverFMT (s : TStringList);
 
   function IsSubscribedTo (const groupName : string) : boolean;
-  function SubscribeTo (const groupName : string) : TSubscribedGroup;
-  procedure UnsubscribeTo (const groupName : string);
+  function SubscribeTo(const groupName: string; save: Boolean = True): TSubscribedGroup;
+  procedure UnsubscribeTo (const groupName: string; save: Boolean = True);
   function FindSubscribedGroup (const groupName : string) : TSubscribedGroup;
   procedure CopySettingsFrom (account : TNNTPAccount);
   function CreateAccountRegistry (access : DWORD): TExSettings;
@@ -1128,7 +1128,7 @@ begin
 
   if (nm <> '') or (em <> '') then
   begin
-    fBozos.Add(TBozo.Create(art.FromName, art.FromEMail, Now, Options.DefaultBozoAction));
+    fBozos.Add(TBozo.Create(art.FromName, art.FromEMail, Now, XNOptions.DefaultBozoAction));
     SaveBozoList
   end
 end;
@@ -2182,12 +2182,12 @@ var
   t : TDateTime;
   changed : boolean;
 begin
-  if Options.AutoRemoveFromBin <= 0 then
+  if XNOptions.AutoRemoveFromBin <= 0 then
     Exit;
   i := 0;
   t := Trunc (Now);
   changed := False;
-  t := IncDay (t, -Options.AutoRemoveFromBin);
+  t := IncDay (t, -XNOptions.AutoRemoveFromBin);
   while i < fBozos.Count do
   begin
     if TBozo (fBozos [i]).BozodDate < t then
@@ -3037,7 +3037,7 @@ end;
  |                                                                      |
  |   const groupName : string   The group to subscribe to               |
  *----------------------------------------------------------------------*)
-function TNNTPAccount.SubscribeTo(const groupName: string) : TSubscribedGroup;
+function TNNTPAccount.SubscribeTo(const groupName: string; save: Boolean = True): TSubscribedGroup;
 var
   idx : Integer;
   reg : TExSettings;
@@ -3058,7 +3058,8 @@ begin
     finally
       reg.Free;
     end;
-    Owner.SaveToRegistry(Self);
+    if save then
+      Owner.SaveToRegistry(Self);
   end;
 
   result := TSubscribedGroup (fSubscribedGroups.Objects [idx])
@@ -3074,7 +3075,7 @@ end;
  |                                                                      |
  |   const groupName : string   The group to unsubscribe from.          |
  *----------------------------------------------------------------------*)
-procedure TNNTPAccount.UnsubscribeTo(const groupName: string);
+procedure TNNTPAccount.UnsubscribeTo(const groupName: string; save: Boolean = True);
 var
   idx : Integer;
   reg : TExSettings;
@@ -3100,7 +3101,8 @@ begin
     for idx := 0 to fSubscribedGroups.Count - 1 do
       TSubscribedGroup (fSubscribedGroups.Objects [idx]).fSortIdx := idx;
 
-    Owner.SaveToRegistry(Self);
+    if save then
+      Owner.SaveToRegistry(Self);
   end
 end;
 
@@ -3384,9 +3386,9 @@ begin
       fThreadSortDirection := DisplaySettings.ThreadSortDirection;
       fThreadSortOrder := DisplaySettings.ThreadSortOrder;
       fThreadOrder := DisplaySettings.ThreadOrder;
-      fHideReadMessages := Options.HideReadMessages;
+      fHideReadMessages := XNOptions.HideReadMessages;
       fHideMessagesNotToMe := False;
-      fHideIgnoredMessages := Options.HideIgnoredMessages;
+      fHideIgnoredMessages := XNOptions.HideIgnoredMessages;
 
       fileName := gMessageBaseRoot + '\' + FixFileNameString(Owner.AccountName) + '\' + FixFileNameString(Name) + '\articles.dat';
       if FileExists(fileName) then
@@ -3404,7 +3406,7 @@ begin
     finally
       LSSync.Leave
     end;
-    if Options.AutoCrosspostDetect then
+    if XNOptions.AutoCrosspostDetect then
       DontUnloadCache.MaxDepth := 3
     else
       DontUnloadCache.MaxDepth := 2;
@@ -4008,9 +4010,9 @@ begin
 
       for i := 0 to 7 do
       begin
-        if Options.KeyPhrase [i] <> '' then
+        if XNOptions.KeyPhrase [i] <> '' then
         begin
-          if MatchesKeyPhrase (Options.KeyPhrase [i], NNTPAccounts.KeyPhraseSearcher [i]) then
+          if MatchesKeyPhrase (XNOptions.KeyPhrase [i], NNTPAccounts.KeyPhraseSearcher [i]) then
           begin
             if result = -1 then
               result := i;
@@ -4551,7 +4553,7 @@ procedure TArticle.SetIsRead(const Value: boolean);
 begin
   inherited;
 
-  if Options.AutoCrosspostDetect then
+  if XNOptions.AutoCrosspostDetect then
     SetCrossPostsFlag (fgRead, Value)
 end;
 
@@ -5864,8 +5866,8 @@ begin
             else
             begin
                                           // Move the ID into ref
-              len := Integer (pe) - Integer (ps);
-              SetString(ref,  ps, len);
+              len := pe - ps;
+              SetString(ref, ps, len);
 
                                           // Skip spaces before the next id
               while pe^ = ' ' do
@@ -6173,7 +6175,7 @@ begin
 
     if (p1 <> Nil) and ((p^ = '[') or (p^ = '(')) then
     begin
-      l := Integer (p1) - Integer (p) - 1;
+      l := p1 - p - 1;
                                 // 'l' now contains the length of the bit within
                                 // the brackets.  It must be at least 3
       if l > 2 then
@@ -6189,8 +6191,8 @@ begin
         if p2 <> p1 then
         begin                   // We found the '/'
 
-          l2 := Integer (p1) - Integer (p2);    // l2 contains the length of the 'x' number
-          l1 := Integer (p2) - Integer (p);     // l contains the length of the 'n' number
+          l2 := p1 - p2;                        // l2 contains the length of the 'x' number
+          l1 := p2 - p;                         // l1 contains the length of the 'n' number
 
           if l2 >= l1 then                      // Reallity check!
           begin

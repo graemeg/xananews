@@ -70,12 +70,12 @@ begin
   inherited;
   fData := TPropertyPageMessagePaneData (Data);
 
-  cbShowDetailsBar.Checked := Options.ShowDetailsBar;
-  cbCheckSpelling.Checked := Options.CheckSpelling;
-  cbNOXFaces.Checked := Options.NoXFaces;
-  cbNoHTML.Checked := Options.NoHTML;
-  edWrapLines.Text := IntToStr (Options.WrapLines);
-  cbStrictSigSep.Checked := Options.StrictSigSep;
+  cbShowDetailsBar.Checked := XNOptions.ShowDetailsBar;
+  cbCheckSpelling.Checked := XNOptions.CheckSpelling;
+  cbNOXFaces.Checked := XNOptions.NoXFaces;
+  cbNoHTML.Checked := XNOptions.NoHTML;
+  edWrapLines.Text := IntToStr (XNOptions.WrapLines);
+  cbStrictSigSep.Checked := XNOptions.StrictSigSep;
 end;
 
 procedure TfmPropertyPageMessagePane.UpdateData;
@@ -94,22 +94,22 @@ end;
 function TPropertyPageMessagePaneData.Apply : boolean;
 begin
   result := True;
-  Options.ShowDetailsBar := fShowDetailsBar;
-  Options.CheckSpelling := fCheckSpelling;
-  Options.NoXFaces := fNoXFaces;
-  Options.StrictSigSep := fStrictSigSep;
-  Options.NoHTML := fNoHTML;
-  Options.WrapLines := fWrapLines;
+  XNOptions.ShowDetailsBar := fShowDetailsBar;
+  XNOptions.CheckSpelling := fCheckSpelling;
+  XNOptions.NoXFaces := fNoXFaces;
+  XNOptions.StrictSigSep := fStrictSigSep;
+  XNOptions.NoHTML := fNoHTML;
+  XNOptions.WrapLines := fWrapLines;
 end;
 
 procedure TPropertyPageMessagePaneData.Initialize;
 begin
-  fShowDetailsBar := Options.ShowDetailsBar;
-  fCheckSpelling := Options.CheckSpelling;
-  fNoXFaces := Options.NoXFaces;
-  fStrictSigSep := Options.StrictSigSep;
-  fNoHTML := Options.NoHTML;
-  fWrapLines := Options.WrapLines
+  fShowDetailsBar := XNOptions.ShowDetailsBar;
+  fCheckSpelling := XNOptions.CheckSpelling;
+  fNoXFaces := XNOptions.NoXFaces;
+  fStrictSigSep := XNOptions.StrictSigSep;
+  fNoHTML := XNOptions.NoHTML;
+  fWrapLines := XNOptions.WrapLines
 end;
 
 end.

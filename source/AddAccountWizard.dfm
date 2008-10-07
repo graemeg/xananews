@@ -1,7 +1,6 @@
 object fmAddAccountWizard: TfmAddAccountWizard
   Left = 0
   Top = 0
-  AutoScroll = False
   Caption = 'Create New Account'
   ClientHeight = 298
   ClientWidth = 439
@@ -71,6 +70,10 @@ object fmAddAccountWizard: TfmAddAccountWizard
     object TabSheet1: TTabSheet
       Caption = 'TabSheet1'
       TabVisible = False
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         328
         239)
@@ -129,6 +132,10 @@ object fmAddAccountWizard: TfmAddAccountWizard
       Caption = 'TabSheet2'
       ImageIndex = 1
       TabVisible = False
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         328
         239)
@@ -293,6 +300,10 @@ object fmAddAccountWizard: TfmAddAccountWizard
       Caption = 'TabSheet4'
       ImageIndex = 3
       TabVisible = False
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         328
         239)

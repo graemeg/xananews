@@ -56,12 +56,12 @@ end;
 function TPropertyPageWin98Data.Apply : boolean;
 begin
   result := True;
-  Options.TextWindowSizeK := fTextWindowSizeK
+  XNOptions.TextWindowSizeK := fTextWindowSizeK
 end;
 
 procedure TPropertyPageWin98Data.Initialize;
 begin
-  fTextWindowSizeK := Options.TextWindowSizeK;
+  fTextWindowSizeK := XNOptions.TextWindowSizeK;
 end;
 
 procedure TfmPropertyPageWin98.edTextWindowSizeChange(Sender: TObject);

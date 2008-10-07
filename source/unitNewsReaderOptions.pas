@@ -236,7 +236,7 @@ type
   end;
 
 var
-  Options : TNewsreaderOptions = Nil;
+  XNOptions: TNewsreaderOptions = Nil;
   gDefaultWindowSizeK : Integer;
 
 
@@ -886,7 +886,7 @@ initialization
   else
     gDefaultWindowSizeK := 8;
 
-  Options := TNewsReaderOptions.Create;
+  XNOptions := TNewsReaderOptions.Create;
 finalization
-  FreeAndNil (Options)
+  FreeAndNil (XNOptions)
 end.

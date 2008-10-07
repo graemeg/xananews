@@ -8,6 +8,8 @@ inherited fmPropertyPageMessagePane: TfmPropertyPageMessagePane
   ClientWidth = 310
   Constraints.MinHeight = 221
   Constraints.MinWidth = 289
+  ExplicitLeft = 516
+  ExplicitTop = 323
   PixelsPerInch = 96
   TextHeight = 13
   object Label22: TLabel [0]
@@ -26,12 +28,15 @@ inherited fmPropertyPageMessagePane: TfmPropertyPageMessagePane
   end
   inherited Panel1: TPanel
     Width = 310
+    ExplicitWidth = 310
     inherited Bevel1: TBevel
       Width = 310
+      ExplicitWidth = 310
     end
     inherited stSectionDetails: TLabel
       Width = 298
       Caption = 'Options to control how the message pane displays messages'
+      ExplicitWidth = 298
     end
   end
   object cbShowDetailsBar: TCheckBox

@@ -24,17 +24,20 @@ inherited fmPropertyPageEnterKey: TfmPropertyPageEnterKey
   end
   inherited Panel1: TPanel
     Width = 267
+    ExplicitWidth = 267
     DesignSize = (
       267
       41)
     inherited Bevel1: TBevel
       Width = 267
+      ExplicitWidth = 267
     end
     inherited stSectionDetails: TLabel
       Width = 255
       Caption = 
         'This section controls how XanaNews responds when you press the '#39 +
         'Enter'#39' key.'
+      ExplicitWidth = 255
     end
   end
   object rbEnterGetMessages: TRadioButton

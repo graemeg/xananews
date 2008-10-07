@@ -256,7 +256,7 @@ begin
     if pc = nil then
       p := 0
     else
-      p := (Integer (pc) - Integer (PWideChar (s))) div sizeof (WideChar) + 1
+      p := pc - PWideChar(s) + 1;
   end
   else
     p := Pos (search, s);

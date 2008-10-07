@@ -222,7 +222,7 @@ begin
       begin
         st := sl.Names [i];
         Delete (st, 1, Length (headst));
-        if Options.ShowCustomHeaders.Values [st] <> '1' then
+        if XNOptions.ShowCustomHeaders.Values [st] <> '1' then
           sl.Delete (i)
         else
           Inc (i)
@@ -294,12 +294,12 @@ var
             TruncateFrom := msg.TruncateFrom;
             StrictSigSeparator := msg.StrictSigSeparator;
             nsd := TNewsStringsDisplayObjectLink (newObj);
-            Options.Appearance [apHeadersInMessagePane].ApplyFontAndGetColor(nsd.RichEdit.HeaderFont, FixedFont);
-            Options.Appearance [apLevel1Quotes].ApplyFontAndGetColor(nsd.RichEdit.Level1QuoteFont, FixedFont);
-            Options.Appearance [apLevel2Quotes].ApplyFontAndGetColor(nsd.RichEdit.Level2QuoteFont, FixedFont);
-            Options.Appearance [apLevel3Quotes].ApplyFontAndGetColor(nsd.RichEdit.Level3QuoteFont, FixedFont);
-            Options.Appearance [apSignaturesInMessagePane].ApplyFontAndGetColor(nsd.RichEdit.SignatureFont, FixedFont);
-            RightMargin := Options.WrapLines
+            XNOptions.Appearance [apHeadersInMessagePane].ApplyFontAndGetColor(nsd.RichEdit.HeaderFont, FixedFont);
+            XNOptions.Appearance [apLevel1Quotes].ApplyFontAndGetColor(nsd.RichEdit.Level1QuoteFont, FixedFont);
+            XNOptions.Appearance [apLevel2Quotes].ApplyFontAndGetColor(nsd.RichEdit.Level2QuoteFont, FixedFont);
+            XNOptions.Appearance [apLevel3Quotes].ApplyFontAndGetColor(nsd.RichEdit.Level3QuoteFont, FixedFont);
+            XNOptions.Appearance [apSignaturesInMessagePane].ApplyFontAndGetColor(nsd.RichEdit.SignatureFont, FixedFont);
+            RightMargin := XNOptions.WrapLines
           end;
 
           ct := 1
@@ -337,10 +337,10 @@ begin
   if fParsing then Exit;
   fParsing := True;
 
-  gNoHTML := Options.NoHTML;
+  gNoHTML := XNOptions.NoHTML;
 
   if FixedFont = '' then
-    Font.Name := Options.Appearance [apMessagePane].FontName
+    Font.Name := XNOptions.Appearance [apMessagePane].FontName
   else
     Font.Name := FixedFont;
 
@@ -357,7 +357,7 @@ begin
     ct := 0;
     mp := Nil;
 
-    if not Options.NoXFaces then
+    if not XNOptions.NoXFaces then
     begin
       XFace := Msg.XFace;
       if Assigned (XFace) then

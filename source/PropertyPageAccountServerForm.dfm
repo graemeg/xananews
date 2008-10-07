@@ -66,17 +66,20 @@ inherited fmPropertyPageAccountServer: TfmPropertyPageAccountServer
   end
   inherited Panel1: TPanel
     Width = 340
+    ExplicitWidth = 340
     DesignSize = (
       340
       41)
     inherited Bevel1: TBevel
       Width = 340
+      ExplicitWidth = 340
     end
     inherited stSectionDetails: TLabel
       Width = 328
       Caption = 
         'This section contains the server name and server account setting' +
         's'
+      ExplicitWidth = 328
     end
   end
   object edServerName: TEdit

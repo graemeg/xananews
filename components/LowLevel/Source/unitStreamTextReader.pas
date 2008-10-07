@@ -330,8 +330,8 @@ begin
 
     if p1 <> nil then
     begin
-      Result := (fStream.Position - fBufSize) + Integer(p1) - Integer(fBuffer);
-      fBufPos := Integer(p1) - Integer(fBuffer) + Length(st);
+      Result := (fStream.Position - fBufSize) + (p1 - fBuffer);
+      fBufPos := (p1 - fBuffer) + Length(st);
       Break
     end;
 
@@ -519,7 +519,7 @@ begin
 
     if pch1 <> nil then
     begin
-      l := (Integer(pch1) - Integer(pch)) div SizeOf(WideChar);
+      l := pch1 - pch;
       Inc(fBufPos, l + 1);
       if fBufPos > fBufSize then
         fBufPos := fBufSize;

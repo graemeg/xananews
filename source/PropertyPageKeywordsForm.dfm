@@ -6,6 +6,8 @@ inherited fmPropertyPageKeywords: TfmPropertyPageKeywords
   ClientWidth = 499
   Constraints.MinHeight = 338
   Constraints.MinWidth = 410
+  ExplicitLeft = 319
+  ExplicitTop = 248
   PixelsPerInch = 96
   TextHeight = 13
   object Label18: TLabel [0]
@@ -79,8 +81,10 @@ inherited fmPropertyPageKeywords: TfmPropertyPageKeywords
   end
   inherited Panel1: TPanel
     Width = 499
+    ExplicitWidth = 499
     inherited Bevel1: TBevel
       Width = 499
+      ExplicitWidth = 499
     end
     inherited stSectionDetails: TLabel
       Width = 487
@@ -88,6 +92,7 @@ inherited fmPropertyPageKeywords: TfmPropertyPageKeywords
         'XanaNews will automatically search messages for keyphrases, and ' +
         'put an appropriately coloured marker in the message tree next to' +
         ' the ones it finds.'
+      ExplicitWidth = 487
     end
   end
   object edKeyPhrase0: TEdit

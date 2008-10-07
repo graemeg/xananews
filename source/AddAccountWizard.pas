@@ -67,7 +67,7 @@ var
   g : TGIFImage;
   rs : TResourceStream;
 begin
-  if Options.PlaintextPasswords then
+  if XNOptions.PlaintextPasswords then
   begin
     edRetypePassword.Visible := False;
     stRetypePassword.Visible := False
@@ -151,7 +151,7 @@ begin
     btnNext.ModalResult := mrNone;
   end;
 
-  if (activePage = 2) and cbLogonRequired.Checked and not Options.PlainTextPasswords then
+  if (activePage = 2) and cbLogonRequired.Checked and not XNOptions.PlainTextPasswords then
   begin
     ok := edPassword.Text = edRetypePassword.Text;
     btnNext.Enabled := ok;

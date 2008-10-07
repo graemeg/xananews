@@ -13,11 +13,11 @@ uses
   Windows,
   SysUtils,
   SyncObjs,
-  NewsGlobals,
 {$ifdef DEBUG}
   IdGlobal,
   IdThreadSafe,
 {$endif}
+  NewsGlobals in 'NewsGlobals.pas',
   MainForm in 'MainForm.pas' {fmMain},
   SplashForm in 'SplashForm.pas' {fmSplash},
   AccountsDialog in 'AccountsDialog.pas' {dlgAccounts},
@@ -45,8 +45,8 @@ uses
   ExportSettingsFrame in 'ExportSettingsFrame.pas' {fmeExportSettings: TFrame},
   BozoDetailsDialog in 'BozoDetailsDialog.pas' {dlgBozoDetails},
   unitBookmarks in 'unitBookmarks.pas',
-  unitCIDMimeHandler,
-  unitLog,
+  unitCIDMimeHandler in 'unitCIDMimeHandler.pas',
+  unitLog in 'unitLog.pas',
   CancelArticleDialog in 'CancelArticleDialog.pas' {dlgCancelArticles},
   MoveMessagebaseDialog in 'MoveMessagebaseDialog.pas' {dlgMoveMessagebase},
   IdentityDialog in 'IdentityDialog.pas' {dlgIdentity},
@@ -109,30 +109,41 @@ uses
   ReadLnDelayDialog in 'ReadLnDelayDialog.pas' {dlgReadLnDelay},
   unitMessageBaseSearch in 'unitMessageBaseSearch.pas',
   unitNewsThread in 'unitNewsThread.pas',
-  unitNNTPThreads in 'unitNNTPThreads.pas';
+  unitNNTPThreads in 'unitNNTPThreads.pas',
+  cmpMessageScrollBox in 'cmpMessageScrollBox.pas',
+  ExportDialog in 'ExportDialog.pas',
+  IdNNTPX in 'IdNNTPX.pas',
+  unitArticleHash in 'unitArticleHash.pas',
+  unitBatches in 'unitBatches.pas',
+  unitMessageMime in 'unitMessageMime.pas',
+  unitMessageNNTPBinary in 'unitMessageNNTPBinary.pas',
+  unitMessageYEncodedBinary in 'unitMessageYEncodedBinary.pas',
+  unitNewUserWizard in 'unitNewUserWizard.pas',
+  XnCoderQuotedPrintable in 'XnCoderQuotedPrintable.pas',
+  XnCoderUUE in 'XnCoderUUE.pas';
 
 {$R *.res}
 {$R I.RES}
 
 procedure ShowSplash;
 var
-  i : Integer;
-  noSplash : boolean;
+  i: Integer;
+  noSplash: Boolean;
 begin
   noSplash := False;
   for i := 1 to ParamCount do
-    if CompareText (ParamStr (i), '-ns') = 0 then
+    if CompareText(ParamStr(i), '-ns') = 0 then
       noSplash := True
     else
-      if CompareText (Copy (ParamStr (i), 1, 12), '-XMLSettings') = 0 then
-        NewsGlobals.UseXMLSettings (Copy (ParamStr (i), 13, MaxInt));
+      if CompareText(Copy(ParamStr(i), 1, 12), '-XMLSettings') = 0 then
+        NewsGlobals.UseXMLSettings(Copy(ParamStr(i), 13, MaxInt));
 
   if not noSplash then
   begin
     fmSplash := TfmSplash.Create(Application);
     fmSplash.Show;
-    fmSplash.Update
-  end
+    fmSplash.Update;
+  end;
 end;
 
 begin
@@ -148,6 +159,6 @@ begin
     Application.Title := 'XanaNews';
     Application.HelpFile := 'XanaNews.chm';
     Application.CreateForm(TfmMain, fmMain);
-  Application.Run
+    Application.Run
   end
 end.

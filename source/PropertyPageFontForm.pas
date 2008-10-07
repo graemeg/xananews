@@ -231,7 +231,7 @@ var
 begin
   appn := TAppearanceEnum (Param);
 
-  app := options.Appearance [appn];
+  app := XNOptions.Appearance [appn];
 
   fFontSize := app.FontSize;
   fFontName := app.FontName;

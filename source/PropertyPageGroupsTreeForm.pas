@@ -125,22 +125,22 @@ end;
 function TPropertyPageGroupsTreeData.Apply : boolean;
 begin
   result := True;
-  Options.ShowMessageCount := fShowMessageCount;
-  Options.AutoExpandGroupTree := fAutoExpandGroupTree;
-  Options.AutoContractGroupTree := fAutoContractGroupTree;
-  Options.UnreadNewsgroupsFontStyle := fUnreadFontStyle;
-  Options.TrimGroupNames := fTrimGroupNames;
-  Options.ShowInterestingMarkers := fShowInterestingMarkers;
+  XNOptions.ShowMessageCount := fShowMessageCount;
+  XNOptions.AutoExpandGroupTree := fAutoExpandGroupTree;
+  XNOptions.AutoContractGroupTree := fAutoContractGroupTree;
+  XNOptions.UnreadNewsgroupsFontStyle := fUnreadFontStyle;
+  XNOptions.TrimGroupNames := fTrimGroupNames;
+  XNOptions.ShowInterestingMarkers := fShowInterestingMarkers;
 end;
 
 procedure TPropertyPageGroupsTreeData.Initialize;
 begin
-  fShowMessageCount := Options.ShowMessageCount;
-  fAutoExpandGroupTree := Options.AutoExpandGroupTree;
-  fAutoContractGroupTree := Options.AutoContractGroupTree;
-  fUnreadFontStyle := Options.UnreadNewsgroupsFontStyle;
-  fTrimGroupNames := Options.TrimGroupNames;
-  fShowInterestingMarkers := Options.ShowInterestingMarkers
+  fShowMessageCount := XNOptions.ShowMessageCount;
+  fAutoExpandGroupTree := XNOptions.AutoExpandGroupTree;
+  fAutoContractGroupTree := XNOptions.AutoContractGroupTree;
+  fUnreadFontStyle := XNOptions.UnreadNewsgroupsFontStyle;
+  fTrimGroupNames := XNOptions.TrimGroupNames;
+  fShowInterestingMarkers := XNOptions.ShowInterestingMarkers
 end;
 
 procedure TfmPropertyPageGroupsTree.ControlClick(

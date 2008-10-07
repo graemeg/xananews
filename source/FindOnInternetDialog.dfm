@@ -1,7 +1,6 @@
 object dlgFindMessageOnInternet: TdlgFindMessageOnInternet
   Left = 0
   Top = 0
-  AutoScroll = False
   Caption = 'Find Message on Internet'
   ClientHeight = 98
   ClientWidth = 308

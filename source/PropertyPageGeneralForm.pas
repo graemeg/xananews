@@ -95,28 +95,28 @@ end;
 function TPropertyPageGeneralData.Apply : boolean;
 begin
   result := True;
-  Options.ShowInSystemTray := fShowInSystemTray;
-  Options.ShowTooltips := fShowTooltips;
+  XNOptions.ShowInSystemTray := fShowInSystemTray;
+  XNOptions.ShowTooltips := fShowTooltips;
   NNTPAccounts.DoVersionCheck := fCheckVersionOnInternet;
   NNTPAccounts.HideDormantConnections := fHideDormantConnections;
-  options.AutoCrosspostDetect := fAutoCrossPostDetect;
-  options.QuoteSelectedText := fQuoteFullText;
-  options.SearchInternetURLStub := fSearchInternetURLStub;
-  options.TextInternetURLStub := fTextInternetURLStub;
-  options.PlainTextPasswords := fPlainTextPasswords;
+  XNOptions.AutoCrosspostDetect := fAutoCrossPostDetect;
+  XNOptions.QuoteSelectedText := fQuoteFullText;
+  XNOptions.SearchInternetURLStub := fSearchInternetURLStub;
+  XNOptions.TextInternetURLStub := fTextInternetURLStub;
+  XNOptions.PlainTextPasswords := fPlainTextPasswords;
 end;
 
 procedure TPropertyPageGeneralData.Initialize;
 begin
-  fShowInSystemTray := Options.ShowInSystemTray;
-  fShowTooltips := Options.ShowTooltips;
+  fShowInSystemTray := XNOptions.ShowInSystemTray;
+  fShowTooltips := XNOptions.ShowTooltips;
   fCheckVersionOnInternet := NNTPAccounts.DoVersionCheck;
   fHideDormantConnections := NNTPAccounts.HideDormantConnections;
-  fAutoCrossPostDetect := options.AutoCrosspostDetect;
-  fQuoteFullText := options.QuoteSelectedText;
-  fSearchInternetURLStub := options.SearchInternetURLStub;
-  fTextInternetURLStub := Options.TextInternetURLStub;
-  fPlainTextPasswords := options.PlainTextPasswords;
+  fAutoCrossPostDetect := XNOptions.AutoCrosspostDetect;
+  fQuoteFullText := XNOptions.QuoteSelectedText;
+  fSearchInternetURLStub := XNOptions.SearchInternetURLStub;
+  fTextInternetURLStub := XNOptions.TextInternetURLStub;
+  fPlainTextPasswords := XNOptions.PlainTextPasswords;
 end;
 
 procedure TfmPropertyPageGeneral.ControlClick(Sender: TObject);

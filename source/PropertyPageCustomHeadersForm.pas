@@ -100,7 +100,7 @@ end;
 function TPropertyPageCustomHeadersData.Apply : boolean;
 begin
   result := True;
-  Options.ShowCustomHeaders.Assign(fShowCustomHeaders);
+  XNOptions.ShowCustomHeaders.Assign(fShowCustomHeaders);
 end;
 
 destructor TPropertyPageCustomHeadersData.Destroy;
@@ -113,7 +113,7 @@ end;
 procedure TPropertyPageCustomHeadersData.Initialize;
 begin
   fShowCustomHeaders := TStringList.Create;
-  fShowCustomHeaders.Assign(Options.ShowCustomHeaders);
+  fShowCustomHeaders.Assign(XNOptions.ShowCustomHeaders);
 end;
 
 procedure TfmPropertyPageCustomHeaders.btnAddShowCustomHeaderClick(

@@ -74,22 +74,22 @@ end;
 function TPropertyPageMessageTreeActionsData.Apply : boolean;
 begin
   result := True;
-  Options.AutoExpandThread := fAutoExpandThread;
-  Options.AutoCentralizeMessage := fAutoCentralizeMessage;
-  Options.AutoExpandAll := fAutoExpandAll;
-  Options.AutoDownloadOnClick := fAutoDownloadOnClick;
-  Options.AutoMarkAsRead := fAutoMarkAsRead;
-  Options.AutoMarkSeconds := fMarkAsReadTime;
+  XNOptions.AutoExpandThread := fAutoExpandThread;
+  XNOptions.AutoCentralizeMessage := fAutoCentralizeMessage;
+  XNOptions.AutoExpandAll := fAutoExpandAll;
+  XNOptions.AutoDownloadOnClick := fAutoDownloadOnClick;
+  XNOptions.AutoMarkAsRead := fAutoMarkAsRead;
+  XNOptions.AutoMarkSeconds := fMarkAsReadTime;
 end;
 
 procedure TPropertyPageMessageTreeActionsData.Initialize;
 begin
-  fAutoExpandThread := Options.AutoExpandThread;
-  fAutoCentralizeMessage := Options.AutoCentralizeMessage;
-  fAutoExpandAll := Options.AutoExpandAll;
-  fAutoDownloadOnClick := Options.AutoDownloadOnClick;
-  fAutoMarkAsRead := Options.AutoMarkAsRead;
-  fMarkAsReadTime := Options.AutoMarkSeconds;
+  fAutoExpandThread := XNOptions.AutoExpandThread;
+  fAutoCentralizeMessage := XNOptions.AutoCentralizeMessage;
+  fAutoExpandAll := XNOptions.AutoExpandAll;
+  fAutoDownloadOnClick := XNOptions.AutoDownloadOnClick;
+  fAutoMarkAsRead := XNOptions.AutoMarkAsRead;
+  fMarkAsReadTime := XNOptions.AutoMarkSeconds;
 end;
 
 procedure TfmPropertyPageMessageTreeActions.ControlClick(Sender: TObject);

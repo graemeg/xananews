@@ -6,6 +6,8 @@ inherited fmPropertyPageFont: TfmPropertyPageFont
   Caption = 'fmPropertyPageFont'
   ClientHeight = 381
   ClientWidth = 381
+  ExplicitLeft = 242
+  ExplicitTop = 200
   PixelsPerInch = 96
   TextHeight = 13
   object Bevel2: TBevel [0]
@@ -26,11 +28,14 @@ inherited fmPropertyPageFont: TfmPropertyPageFont
   end
   inherited Panel1: TPanel
     Width = 381
+    ExplicitWidth = 381
     inherited Bevel1: TBevel
       Width = 381
+      ExplicitWidth = 381
     end
     inherited stSectionDetails: TLabel
       Width = 369
+      ExplicitWidth = 369
     end
   end
   object lvFonts: TListView
@@ -139,7 +144,7 @@ inherited fmPropertyPageFont: TfmPropertyPageFont
     Width = 359
     Height = 54
     Anchors = [akLeft, akRight, akBottom]
-    Font.Charset = DEFAULT_CHARSET
+    Font.Charset = ANSI_CHARSET
     Font.Color = clWindowText
     Font.Height = -11
     Font.Name = 'MS Sans Serif'

@@ -15,14 +15,17 @@ inherited fmPropertyPageWin98: TfmPropertyPageWin98
   end
   inherited Panel1: TPanel
     Width = 378
+    ExplicitWidth = 378
     inherited Bevel1: TBevel
       Width = 378
+      ExplicitWidth = 378
     end
     inherited stSectionDetails: TLabel
       Width = 366
       Caption = 
         'On Windows 98/ME systems you may need to set Text Window Size to' +
         ' a very low value (eg. 3)'
+      ExplicitWidth = 366
     end
   end
   object edTextWindowSize: TEdit
