@@ -27,17 +27,18 @@ begin
     try
       if not Assigned(lf) then
       begin
-        if not FileAge(gXanaNewsDir + '\log.txt', dt) then
+        ForceDirectories(gLogFileRoot);
+        if not FileAge(gLogFileRoot + '\log.txt', dt) then
           dt := -1;
 
         if Trunc(dt) <> Trunc(Now) then
         begin
           if dt <> -1 then
-            RenameFile(gXanaNewsDir + '\log.txt', gXanaNewsDir + '\log-' + FormatDateTime('dd-mm', dt) + '.txt');
-          lf := TFileStream.Create(gXanaNewsDir + '\log.txt', fmCreate);
+            RenameFile(gLogFileRoot + '\log.txt', gLogFileRoot + '\log-' + FormatDateTime('yyyymmdd', dt) + '.txt');
+          lf := TFileStream.Create(gLogFileRoot + '\log.txt', fmCreate);
           FreeAndNil(lf);
         end;
-        lf := TFileStream.Create(gXanaNewsDir + '\log.txt', fmOpenReadWrite or fmShareDenyNone);
+        lf := TFileStream.Create(gLogFileRoot + '\log.txt', fmOpenReadWrite or fmShareDenyNone);
         lf.Seek(0, soFromEnd);
       end;
 
