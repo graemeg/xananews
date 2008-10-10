@@ -833,7 +833,6 @@ var
   gXanaNewsDir: string;                // The root directory
   gMessageBaseRoot: string;
   gBestMessageBaseLocation: string;
-  gLogFileRoot: string;
   gKeyName: string;                    // Root registry key
   MessageCacheController: TNNTPMessageCacheController;
   DontUnloadCache: TDontUnloadCache;   // Most recently access groups
@@ -5856,6 +5855,21 @@ begin
           fCodePage := CP_USASCII;
       end;
     end;
+
+    // In case the post does not have a codepage/charset defined at all,
+    // change it to the user' preference when also the From and Subject
+    // does not provide any clue about what the codepage might be.
+    if fCodePage = CP_USASCII then
+    begin
+      st := HeaderCharset(From);
+      if st = '' then
+        st := HeaderCharset(Subject);
+
+      if st <> '' then
+        CodePage := MimeCharsetNameToCodePage(st)
+      else
+        CodePage := Owner.DisplaySettings.DefaultCodepage;
+    end;
   end;
 
   Result := fCodePage;
@@ -7129,14 +7143,10 @@ initialization
   if SUCCEEDED(SHGetFolderPath(0, CSIDL_LOCAL_APPDATA, 0, 0, PChar(gMessageBaseRoot))) then
   begin
     gMessageBaseRoot := PChar(gMessageBaseRoot);
-    gLogFileRoot := gMessageBaseRoot + '\Woozle\XanaLogs';
     gMessageBaseRoot := gMessageBaseRoot + '\Woozle\XanaNews';
   end
   else
-  begin
-    gLogFileRoot := gXanaNewsDir;
     gMessageBaseRoot := gXanaNewsDir;
-  end;
 
   gBestmessageBaseLocation := gMessageBaseRoot;
   gKeyName := '\software\Woozle\XanaNews';

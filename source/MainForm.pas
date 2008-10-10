@@ -3269,12 +3269,15 @@ begin
       article.Msg.StrictSigSeparator := XNOptions.StrictSigSep;
     end;
 
+    // Note: Read CodePage, required for updating the CodePage of the message
+    //       in case there is nothing defined in the post.
+    idx := cbCharset.Items.IndexOf(CodePagetoCharsetName(article.CodePage));
+    cbCharset.ItemIndex := idx;
+
     MessageScrollBox1.Msg := article.Msg;
     sub := DecodeSubject(article.subject);
     st := Format('  Message %d from %s.  %s', [article.ArticleNo, article.FromName, sub]);
     pnlDetailsBar.Caption := StringReplace(st, '&', '&&', [rfReplaceAll]);
-    idx := cbCharset.Items.IndexOf(CodePagetoCharsetName(article.CodePage));
-    cbCharset.ItemIndex := idx;
   end
   else
   begin

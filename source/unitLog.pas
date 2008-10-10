@@ -27,18 +27,18 @@ begin
     try
       if not Assigned(lf) then
       begin
-        ForceDirectories(gLogFileRoot);
-        if not FileAge(gLogFileRoot + '\log.txt', dt) then
+        ForceDirectories(gMessageBaseRoot);
+        if not FileAge(gMessageBaseRoot + '\log.txt', dt) then
           dt := -1;
 
         if Trunc(dt) <> Trunc(Now) then
         begin
           if dt <> -1 then
-            RenameFile(gLogFileRoot + '\log.txt', gLogFileRoot + '\log-' + FormatDateTime('yyyymmdd', dt) + '.txt');
-          lf := TFileStream.Create(gLogFileRoot + '\log.txt', fmCreate);
+            RenameFile(gMessageBaseRoot + '\log.txt', gMessageBaseRoot + '\log-' + FormatDateTime('yyyymmdd', dt) + '.txt');
+          lf := TFileStream.Create(gMessageBaseRoot + '\log.txt', fmCreate);
           FreeAndNil(lf);
         end;
-        lf := TFileStream.Create(gLogFileRoot + '\log.txt', fmOpenReadWrite or fmShareDenyNone);
+        lf := TFileStream.Create(gMessageBaseRoot + '\log.txt', fmOpenReadWrite or fmShareDenyNone);
         lf.Seek(0, soFromEnd);
       end;
 

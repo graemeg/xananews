@@ -787,14 +787,11 @@ begin
     end;
   end;
 
-
-//  if codePage = -1 then
-//    codePage := CP_ACP;
+  // TODO: check for article codepage and/or user preference
   fromName := DecodeHeader(fromName);
 
   if fromName = '' then
     fromName := from;
-
 end;
 
 { TActionDefault }
@@ -979,6 +976,7 @@ end;
 
 function DecodeSubject(const subject: string): string;
 begin
+  // TODO: check for article codepage and/or user preference
   Result := DecodeHeader(subject);
 end;
 

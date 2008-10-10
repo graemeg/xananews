@@ -697,6 +697,7 @@ object fmMain: TfmMain
         Width = 224
         Height = 22
         Style = csOwnerDrawFixed
+        DropDownCount = 10
         ItemHeight = 16
         TabOrder = 0
         TabStop = False
