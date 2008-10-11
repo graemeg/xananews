@@ -17,6 +17,7 @@ uses
   IdGlobal,
   IdThreadSafe,
 {$endif}
+  HTMLHelpViewer,
   NewsGlobals in 'NewsGlobals.pas',
   MainForm in 'MainForm.pas' {fmMain},
   SplashForm in 'SplashForm.pas' {fmSplash},

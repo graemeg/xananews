@@ -3917,7 +3917,6 @@ object fmMain: TfmMain
     OnException = ApplicationEvents1Exception
     OnHelp = ApplicationEvents1Help
     OnHint = ApplicationEvents1Hint
-    OnMessage = ApplicationEvents1Message
     Left = 736
     Top = 312
   end
@@ -4047,11 +4046,6 @@ object fmMain: TfmMain
       Caption = '&Topic Search'
       Hint = 'Topic Search'
       ImageIndex = 2
-    end
-    object actHelpHelpOnHelp: THelpOnHelp
-      Category = 'Help'
-      Caption = '&Help on Help'
-      Hint = 'Help on help'
     end
     object actMessageSaveAttachment: TAction
       Category = 'Message'
@@ -5568,9 +5562,6 @@ object fmMain: TfmMain
       end
       object mnuHelpopicSearch: TMenuItem
         Action = actHelpTopicSearch
-      end
-      object mnuHelpHelponHelp: TMenuItem
-        Action = actHelpHelpOnHelp
       end
       object N12: TMenuItem
         Caption = '-'

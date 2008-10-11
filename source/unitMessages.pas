@@ -1059,7 +1059,7 @@ begin
           i := 0;
           while i < DecodedData.Size do
           begin
-            x := PDWORD(PChar(DecodedData.Memory) + i)^;
+            x := PDWORD(PByte(DecodedData.Memory) + i)^;
             if x = $E0FFD8FF then
             begin
               DecodedData.Seek(i, soFromBeginning);

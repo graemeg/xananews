@@ -36,7 +36,7 @@ uses
   cmpNTAboutBox, ComCtrls, ExtCtrls, VirtualTrees, ConTnrs, unitNNTPServices,
   Menus, AppEvnts, ExtDlgs, cmpMessageScrollBox, cmpExSplitter,
   unitMessages, PostMessageForm, ReplyByMailForm, unitNewsReaderOptions,
-  Buttons, unitHTMLHelpViewer, SearchDialog,
+  Buttons, {unitHTMLHelpViewer,} SearchDialog,
   ShellApi, NewsGlobals, CommCtrl,
   ActiveX, unitNewsThread, DateUtils, XPMan,
   cmpThemedScrollBox, unitSavedArticles, StdCtrls, MMSystem, unitBatches, unitSettings,
@@ -135,7 +135,6 @@ type
     actHelpAbout: TAction;
     actHelpContents: THelpContents;
     actHelpTopicSearch: THelpTopicSearch;
-    actHelpHelpOnHelp: THelpOnHelp;
     actMessageSaveAttachment: TAction;
     actNewsgroupDeleteMessages: TAction;
     actNewsgroupGetMessages: TAction;
@@ -191,7 +190,6 @@ type
     mnuHelp: TMenuItem;
     mnuHelpContents: TMenuItem;
     mnuHelpopicSearch: TMenuItem;
-    mnuHelpHelponHelp: TMenuItem;
     N12: TMenuItem;
     mnuHelpAbout: TMenuItem;
     PersistentPosition: TPersistentPosition;
@@ -663,7 +661,6 @@ type
     procedure ApplicationEvents1Exception(Sender: TObject; E: Exception);
     function  ApplicationEvents1Help(Command: Word; Data: Integer; var CallHelp: Boolean): Boolean;
     procedure ApplicationEvents1Hint(Sender: TObject);
-    procedure ApplicationEvents1Message(var Msg: tagMSG; var Handled: Boolean);
     procedure FindDialog1Close(Sender: TObject);
     procedure FindDialog1Find(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
@@ -2950,17 +2947,12 @@ begin
   CallHelp := not (command = HELP_FINDER);
   if not CallHelp then
     PostMessage(Application.Handle, CM_INVOKEHELP, HELP_CONTENTS, 0);
-  Result := False;
+  Result := True;
 end;
 
 procedure TfmMain.ApplicationEvents1Hint(Sender: TObject);
 begin
   if Monitor.Handle = 0 then ApplicationEvents1.CancelDispatch;
-end;
-
-procedure TfmMain.ApplicationEvents1Message(var Msg: tagMSG; var Handled: Boolean);
-begin
-  Handled := not HHPreTranslateMessage(Msg);
 end;
 
 procedure TfmMain.ApplyControlOptions;
@@ -4291,7 +4283,7 @@ end;
 
 procedure TfmMain.FormShow(Sender: TObject);
 begin
-  InitializeHTMLHelp;
+//  InitializeHTMLHelp;
   Caption := Application.Title + ' ' + ProductVersion;
   tbMenu.Font := Screen.MenuFont;
   SaveDefaultActions;

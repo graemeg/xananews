@@ -113,8 +113,9 @@ implementation
 
 uses
   IdException, unitNNTPThreadManager, unitNewsReaderOptions, unitMessages,
-  unitCharsetMap, unitMailServices, unitLog, NewsGlobals, IdGlobal, IdReplyRFC,
-  IdStack, IdGlobalProtocols, IdExceptionCore, IdAttachmentFile;
+  unitCharsetMap, unitMailServices, unitLog, unitSearchString, NewsGlobals,
+  IdGlobal, IdReplyRFC, IdStack, IdGlobalProtocols, IdExceptionCore,
+  IdAttachmentFile;
 
 { TNNTPThread }
 
@@ -124,6 +125,7 @@ var
   dt: TDateTime;
   groups, newGroups: TStringList;
   i: Integer;
+  st: string;
 begin
   if NNTPAccount.CheckedNewGroups then Exit;
 
@@ -138,26 +140,62 @@ begin
 
       try
         NNTP.GetNewGroupsList(dt, True, '', newGroups);
+
+        if newGroups.Count > 0 then
+        begin
+          groups := TStringList.Create;
+          groups.LoadFromFile(fileName);
+
+          groups.Sorted := True;
+          groups.Duplicates := dupIgnore;
+
+          // Check incoming line(s) should be:
+          //    group last first p
+          //  where <group> is the name of the newsgroup, <last> is the number of
+          //  the last known article currently in that newsgroup, <first> is the
+          //  number of the first article currently in the newsgroup, and <p> is
+          //  either 'y' or 'n' indicating whether posting to this newsgroup is
+          //  allowed ('y') or prohibited ('n').
+
+          for i := 0 to newGroups.Count - 1 do
+            if groups.IndexOf(newGroups[i]) = -1 then
+            begin
+              st := newGroups[i];
+              SplitString(' ', st);
+              if (StrToIntDef(SplitString(' ', st), -1) <> -1) and
+                 (StrToIntDef(SplitString(' ', st), -1) <> -1) then
+              begin
+                // Received a valid new group, add it to the list.
+                groups.Add(newGroups[i] + ' *')
+              end
+              else
+              begin
+                st := 'NEWSGROUPS: Invalid group recieved in thread "' +
+                      Getter.GetterRootText + '" - ' + newGroups[i];
+                try
+                  LogMessage(st, True);
+                except
+                end;
+              end;
+            end;
+
+          groups.SaveToFile(fileName);
+
+          Synchronize(DoNotifyNewGroups);
+        end;
+        NNTPAccount.CheckedNewGroups := True;
+
       except
+        on E: Exception do
+        begin
+          st := 'NEWSGROUPS: Error checking for new groups in thread "' +
+                Getter.GetterRootText + '" - ' + E.Message;
+          try
+            LogMessage(st, True);
+          except
+          end;
+        end;
       end;
-
-      if newGroups.Count > 0 then
-      begin
-        groups := TStringList.Create;
-        groups.LoadFromFile(fileName);
-
-        groups.Sorted := True;
-        groups.Duplicates := dupIgnore;
-
-        for i := 0 to newGroups.Count - 1 do
-          if groups.IndexOf(newGroups[i]) = -1 then
-            groups.Add(newGroups[i] + ' *');
-
-        groups.SaveToFile(fileName);
-
-        Synchronize(DoNotifyNewGroups);
-      end;
-      NNTPAccount.CheckedNewGroups := True;
     end;
   finally
     newGroups.Free;
@@ -1107,7 +1145,7 @@ end;
 procedure TNNTPArticleThread.GetProgressNumbers(group: TServerAccount; var min, max, pos: Integer);
 var
   i, s: Integer;
-  p: PChar;
+  p: PAnsiChar;
 begin
   min := 0;
   UILock;
