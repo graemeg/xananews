@@ -517,8 +517,8 @@ begin
           ENLink := PENLink (NMHdr);
           mouseMsg.Msg := ENLink^.Msg;
           mouseMsg.Keys := ENLink^.wParam;
-          mouseMsg.XPos := LoWord (ENLink^.lParam);
-          mouseMsg.YPos := HiWord (ENLink^.lParam);
+          mouseMsg.XPos := SmallInt(ENLink^.lParam and $FFFF);
+          mouseMsg.YPos := SmallInt(ENLink^.lParam shr 16);
           mouseMsg.Result := 0;
 
           SetLength(ansi, 65536);

@@ -125,28 +125,11 @@ var
  |   const word: WideString             The word to add                 |
  *----------------------------------------------------------------------*)
 procedure TSpellChecker.Add(const word: WideString);
-var
-  ansi: AnsiString;
-  DecodedBytes: TBytes;
-  Encoding: TEncoding;
 begin
   if not Assigned(fSpeller) then
     Initialize;
   if Assigned(fSpeller) then
-  begin
-    // TODO: this is probably overkill and maybe just...
-    //  ansi := AnsiString(word)
-    // ...would be enough?
-    Encoding := TEncoding.GetEncoding(fSpeller.CodePage);
-    try
-      DecodedBytes := Encoding.GetBytes(word);
-      ansi := AnsiString(TEncoding.Default.GetString(DecodedBytes));
-    finally
-      Encoding.Free;
-    end;
-
-    fSpeller.SpellCommand('*' + ansi);
-  end;
+    fSpeller.SpellCommand('*' + WideStringToAnsiString(word, fSpeller.CodePage));
 end;
 
 (*----------------------------------------------------------------------*
@@ -294,27 +277,13 @@ function TSpellChecker.CheckWord(const ws: WideString;
   suggestions: TStrings): boolean;
 var
   resp: string;
-  ansi: AnsiString;
-  DecodedBytes: TBytes;
-  Encoding: TEncoding;
 begin
   if not Assigned(fSpeller) then
     Initialize;
 
   if Assigned(fSpeller) then
   begin                         // Send word to ispell.exe
-    // TODO: this is probably overkill and maybe just...
-    //  ansi := AnsiString(ws)
-    // ...would be enough?
-    Encoding := TEncoding.GetEncoding(fSpeller.CodePage);
-    try
-      DecodedBytes := Encoding.GetBytes(ws);
-      ansi := AnsiString(TEncoding.Default.GetString(DecodedBytes));
-    finally
-      Encoding.Free;
-    end;
-
-    fSpeller.SpellCommand(ansi);
+    fSpeller.SpellCommand(WideStringToAnsiString(ws, fSpeller.CodePage));
     resp := fSpeller.GetResponse;
     result := resp = '';        // If blank line received the word was
                                 // spelt OK.
