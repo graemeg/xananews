@@ -687,7 +687,6 @@ object fmMain: TfmMain
       Width = 254
       Height = 22
       Alignment = taLeftJustify
-      AutoSize = True
       BevelOuter = bvNone
       Caption = '   Run Batch'
       TabOrder = 0
@@ -956,7 +955,7 @@ object fmMain: TfmMain
     object pnlSearchBar: TPanel
       Left = 12
       Top = 61
-      Width = 793
+      Width = 609
       Height = 21
       Alignment = taLeftJustify
       BevelOuter = bvNone

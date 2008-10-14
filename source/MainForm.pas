@@ -4722,19 +4722,25 @@ begin
         sl[i] := st;
       end;
 
+      // Workaround for D2009 to get the same behaviour as with the pre-D2009 versions.
+      // First create the bands and then in a separate run adjust the bands.
+      // Has to do with the changed behaviour of when Update is called in-side
+      // the constructor of TCoolBand.
+      cbMain.Bands.Clear;
+      for i := 0 to sl.Count - 1 do
+        cbMain.Bands.Add;
+
       cbMain.Bands.BeginUpdate;
       try
-        cbMain.Bands.Clear;
         for i := 0 to sl.Count - 1 do
         begin
-          band := cbMain.Bands.Add;
           st := sl[i];
+          band := cbMain.Bands[i];
           band.Control := TWinControl(sl.Objects[i]);
           band.Width := StrToIntDef(SplitString(',', st), 100);
           band.Break := StrToIntDef(SplitString(',', st), 1) <> 0;
           sl[i] := st;
         end;
-
       finally
         cbMain.Bands.EndUpdate;
       end;

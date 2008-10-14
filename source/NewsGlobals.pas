@@ -259,18 +259,20 @@ var
   inQuote: Boolean;
 begin
   i := 1;
-  while i < hdrs.Count do  // Merge split lines.
+  while i < hdrs.Count do              // Merge split lines (unfolding).
   begin
     s := hdrs[i];
-                           // If a line starts with whitespace then
-                           // append it to the previous line.
-    if (Length(s) = 0) or (s[1] in [' ', #9]) then
-    begin
-      hdrs[i - 1] := hdrs[i - 1] + Trim(s);
-      hdrs.Delete(i);
-    end
+
+    if Length(s) = 0 then
+      hdrs.Delete(i)
     else
-      Inc(i);
+      if s[1] in [' ', #9] then        // If a line starts with whitespace then
+      begin                            // append it to the previous line.
+        hdrs[i - 1] := hdrs[i - 1] + Copy(s, 2, Length(s) - 1);
+        hdrs.Delete(i);
+      end
+      else
+        Inc(i);
   end;
 
   for i := 0 to hdrs.Count - 1 do
@@ -286,7 +288,7 @@ begin
     begin
       ch := s[j];
 
-      if ch in [#9, #10, #13] then      // Replace these with spaces
+      if ch in [#9, #10, #13] then     // Replace these with spaces
         ch := ' ';
 
       if ch = '"' then
@@ -294,8 +296,8 @@ begin
 
       if ch <> ' ' then
         lastch := #0;
-                                        // Delete multiple spaces - unless they're
-                                        // in quotes.
+                                       // Delete multiple spaces - unless they're
+                                       // in quotes.
       if inQuote or (lastch <> ' ') then
       begin
         s1[p] := ch;
@@ -928,7 +930,7 @@ begin
     end;
     DecodedStream.Position := 0;
     ReadTIdBytesFromStream(DecodedStream, DecodedBytes, -1);
-// << TODO: why isn't 28593 Latin (3) supported?
+// TODO: why isn't 28593 Latin (3) supported?
     if cpnum = 28593 then
       cpnum := 28599;
 // >>
