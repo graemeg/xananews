@@ -78,7 +78,6 @@
 			<DCCReference Include="cmpPersistentPosition.pas"/>
 			<DCCReference Include="unitHTMLStringsDisplayObject.pas"/>
 			<DCCReference Include="unitNewsStringsDisplayObject.pas"/>
-			<DCCReference Include="unitHTMLHelpViewer.pas"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>

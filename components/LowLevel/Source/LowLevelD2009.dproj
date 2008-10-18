@@ -61,7 +61,6 @@
 			<DCCReference Include="unitSearchString.pas"/>
 			<DCCReference Include="unitStreamTextReader.pas"/>
 			<DCCReference Include="MultiLanguage_tlb.pas"/>
-			<DCCReference Include="unitHTMLHelp.pas"/>
 			<DCCReference Include="unitRTF2HTML.pas"/>
 			<DCCReference Include="unitExFileSettings.pas"/>
 			<DCCReference Include="unitExRegSettings.pas"/>

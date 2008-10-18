@@ -39,7 +39,6 @@ contains
   unitSearchString in 'unitSearchString.pas',
   unitStreamTextReader in 'unitStreamTextReader.pas',
   MultiLanguage_tlb in 'MultiLanguage_tlb.pas',
-  unitHTMLHelp in 'unitHTMLHelp.pas',
   unitRTF2HTML in 'unitRTF2HTML.pas',
   unitExFileSettings in 'unitExFileSettings.pas',
   unitExRegSettings in 'unitExRegSettings.pas',
