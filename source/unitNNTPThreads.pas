@@ -299,10 +299,12 @@ begin
         Getter.WorkDone;
         Synchronize(Getter.NotifyUI);
         Getter.ClearWork;
-      end;
 
-      if (Getter is TMultiNewsGetter) and (TMultiNewsGetter(Getter).Count > 0) then
-        State := tsPending
+        if (Getter is TMultiNewsGetter) and (TMultiNewsGetter(Getter).Count > 0) then
+          State := tsPending
+        else
+          State := tsDormant;
+      end
       else
         State := tsDormant;
 

@@ -3398,9 +3398,8 @@ var
   dt: TDateTime;
 begin
   Result := False;
-  if ThreadManager.GettingArticleList(group, p.fManagementOption = bmoNone) then Exit;
-
   p := PGetMessagesParams(params)^;
+  if ThreadManager.GettingArticleList(group, p.fManagementOption = bmoNone) then Exit;
 
   if p.useDefaultGroupSettings then
   begin
