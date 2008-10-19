@@ -467,7 +467,7 @@ begin
         header.Values['X-Ref'] := ref;
       end;
 
-      fFileStream.Seek(0, soFromEnd);   // Position in text file to write to
+      fFileStream.Seek(0, soEnd);       // Position in text file to write to
       p := fFileStream.Position;
 
       if not fNoIndex then
@@ -1727,7 +1727,7 @@ begin
       header.Add('References:' + article.References);
     header.AddStrings(article.fExtraHeaders);
 
-    fFileStream.Seek(0, soFromEnd);   // Position in text file to write to
+    fFileStream.Seek(0, soEnd);       // Position in text file to write to
     p := fFileStream.Position;
     xnref := RawByteSTring(IntToHex(Article.ArticleNo, 8));
     ok := fIndex.AddKey(xnref, p);

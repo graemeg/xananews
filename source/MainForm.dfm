@@ -1,6 +1,6 @@
 object fmMain: TfmMain
-  Left = 123
-  Top = 163
+  Left = 128
+  Top = 156
   HelpType = htKeyword
   HelpKeyword = 'Workspace'
   ActiveControl = vstSubscribed
@@ -90,25 +90,26 @@ object fmMain: TfmMain
         object pnlDetailsBar: TPanel
           Left = 0
           Top = 0
-          Width = 272
+          Width = 226
           Height = 25
           Align = alClient
           Alignment = taLeftJustify
           BevelInner = bvLowered
           BevelOuter = bvNone
           TabOrder = 0
+          ExplicitWidth = 249
         end
         object pnlCharset: TPanel
-          Left = 272
+          Left = 226
           Top = 0
-          Width = 209
+          Width = 255
           Height = 25
           Align = alRight
           Alignment = taLeftJustify
           BevelOuter = bvNone
           TabOrder = 1
           DesignSize = (
-            209
+            255
             25)
           object spFixedFont: TSpeedButton
             Left = 2
@@ -117,7 +118,6 @@ object fmMain: TfmMain
             Height = 21
             Hint = 'Force the Message Pane to use a fixed pitch font'
             AllowAllUp = True
-            Anchors = [akTop, akRight]
             GroupIndex = 1
             Caption = 'F'
             Flat = True
@@ -131,16 +131,14 @@ object fmMain: TfmMain
             ShowHint = True
             Visible = False
             OnClick = spFixedFontClick
-            ExplicitLeft = 4
           end
           object spGoToWebForum: TSpeedButton
-            Left = 28
+            Left = 27
             Top = 2
             Width = 23
             Height = 21
             Hint = 'Look up this message on the web forum'
             AllowAllUp = True
-            Anchors = [akTop, akRight]
             Flat = True
             Font.Charset = ANSI_CHARSET
             Font.Color = clWindowText
@@ -190,18 +188,18 @@ object fmMain: TfmMain
             Spacing = 0
             Visible = False
             OnClick = spGoToWebForumClick
-            ExplicitLeft = 30
           end
           object cbCharset: TComboBox
-            Left = 54
+            Left = 52
             Top = 2
-            Width = 147
+            Width = 200
             Height = 21
             Style = csDropDownList
-            Anchors = [akTop, akRight]
+            Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
             TabOrder = 0
             OnChange = cbCharsetChange
+            ExplicitWidth = 202
           end
         end
       end
@@ -425,9 +423,9 @@ object fmMain: TfmMain
           end
         end
         object cbBookmark: TComboBox
-          Left = 288
+          Left = 278
           Top = 2
-          Width = 190
+          Width = 200
           Height = 21
           Style = csDropDownList
           Anchors = [akTop, akRight]
@@ -684,7 +682,7 @@ object fmMain: TfmMain
     object pnlBatchBar: TPanel
       Left = 12
       Top = 84
-      Width = 254
+      Width = 793
       Height = 22
       Alignment = taLeftJustify
       BevelOuter = bvNone
@@ -696,7 +694,7 @@ object fmMain: TfmMain
         Width = 224
         Height = 22
         Style = csOwnerDrawFixed
-        DropDownCount = 10
+        DropDownCount = 20
         ItemHeight = 16
         TabOrder = 0
         TabStop = False
@@ -955,7 +953,7 @@ object fmMain: TfmMain
     object pnlSearchBar: TPanel
       Left = 12
       Top = 61
-      Width = 609
+      Width = 793
       Height = 21
       Alignment = taLeftJustify
       BevelOuter = bvNone

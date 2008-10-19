@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, Buttons, CheckLst, ConTnrs, unitNNTPServices, unitMessages,
+  Dialogs, StdCtrls, Buttons, CheckLst, Contnrs, unitNNTPServices, unitMessages,
   Menus;
 
 type
@@ -36,7 +36,7 @@ type
   protected
     procedure UpdateActions; override;
   public
-    Articles : TObjectList;
+    Articles: TObjectList;
     { Public declarations }
   end;
 
@@ -45,7 +45,8 @@ var
 
 implementation
 
-uses MainForm;
+uses
+  MainForm;
 
 {$R *.dfm}
 
@@ -57,33 +58,48 @@ end;
 
 procedure TdlgCombineDecode.FormDestroy(Sender: TObject);
 begin
-  Articles.Free
+  Articles.Free;
+end;
+
+function CompareArticlesSubjects(Item1, Item2: Pointer): Integer;
+var
+  n, x: Integer;
+  S1, S2: string;
+begin
+  S1 := TArticleBase(Item1).Subject;
+  S2 := TArticleBase(Item2).Subject;
+  DecodeMultipartSubject(S1, n, x, True, False);
+  DecodeMultipartSubject(S2, n, x, True, False);
+  Result := CompareText(S1, S2);
 end;
 
 procedure TdlgCombineDecode.FormShow(Sender: TObject);
 var
-  i : Integer;
-  article : TArticleBase;
+  i: Integer;
+  article: TArticleBase;
 begin
+  Articles.Sort(CompareArticlesSubjects);
+
   for i := 0 to Articles.Count - 1 do
   begin
-    article := TArticleBase (Articles [i]);
+    article := TArticleBase(Articles[i]);
     clbArticles.Items.AddObject(article.Subject, article);
-    clbArticles.State [i] := cbChecked;
+    clbArticles.State[i] := cbChecked;
   end;
-  clbArticles.Sorted := True;
 
   if Articles.Count > 0 then
   begin
-    clbArticles.Selected [0] := True;
-    GetFileNameFromFirstArticle
-  end
+    clbArticles.Selected[0] := True;
+    GetFileNameFromFirstArticle;
+  end;
+
+  Caption := 'Combine & Decode ' + IntToStr(Articles.Count) + ' Articles';
 end;
 
 procedure TdlgCombineDecode.FormResize(Sender: TObject);
 var
-  r, sbRect : TRect;
-  m, sbHeight : Integer;
+  r, sbRect: TRect;
+  m, sbHeight: Integer;
 begin
   sbRect.Top := sbUp.Top;
   sbRect.Left := sbUp.Left;
@@ -103,46 +119,47 @@ end;
 
 procedure TdlgCombineDecode.UpdateActions;
 var
-  idx : Integer;
+  idx: Integer;
 begin
   idx := clbArticles.ItemIndex;
   sbUp.Enabled := idx > 0;
-  sbDown.Enabled := idx < clbArticles.Count - 1
+  sbDown.Enabled := idx < clbArticles.Count - 1;
 end;
 
 procedure TdlgCombineDecode.sbUpClick(Sender: TObject);
 var
-  idx : Integer;
+  idx: Integer;
 begin
   idx := clbArticles.ItemIndex;
   if idx < 1 then Exit;
 
   clbArticles.Items.Exchange(idx, idx - 1);
-  clbArticles.ItemIndex := idx - 1
+  clbArticles.ItemIndex := idx - 1;
 end;
 
 procedure TdlgCombineDecode.sbDownClick(Sender: TObject);
 var
-  idx : Integer;
+  idx: Integer;
 begin
   idx := clbArticles.ItemIndex;
   if idx >= clbArticles.Count - 1 then Exit;
 
   clbArticles.Items.Exchange(idx, idx + 1);
-  clbArticles.ItemIndex := idx + 1
+  clbArticles.ItemIndex := idx + 1;
 end;
 
 procedure TdlgCombineDecode.btnOKClick(Sender: TObject);
 var
-  i : Integer;
-  p : string;
-  ok : boolean;
+  i: Integer;
+  p: string;
+  ok: boolean;
 begin
   ok := True;
-  p := ExtractFilePath (edFileName.Text);
-  if (p <> '') and not DirectoryExists (p) then
+  p := ExtractFilePath(edFileName.Text);
+  if (p <> '') and not DirectoryExists(p) then
   begin
-    MessageBox (0, PChar (Format ('Path %s does not exist.  Please verify that the correct path was given', [p])), 'XanaNews', MB_OK or MB_ICONEXCLAMATION);
+    MessageBox(0, PChar(Format('Path %s does not exist.  Please verify that the correct path was given', [p])),
+      'XanaNews', MB_OK or MB_ICONEXCLAMATION);
     ok := False
   end;
 
@@ -150,8 +167,8 @@ begin
   begin
     Articles.Clear;
     for i := 0 to clbArticles.Count - 1 do
-      if clbArticles.State [i] = cbChecked then
-        Articles.Add(clbArticles.Items.Objects [i]);
+      if clbArticles.State[i] = cbChecked then
+        Articles.Add(clbArticles.Items.Objects[i]);
     modalResult := mrOk;
   end;
 end;
@@ -165,50 +182,48 @@ end;
 
 procedure TdlgCombineDecode.GetFileNameFromFirstArticle;
 var
-  fileName : string;
-  article : TArticleBase;
-  mp : TmvMessagePart;
-  i : Integer;
+  fileName: string;
+  article: TArticleBase;
+  mp: TmvMessagePart;
+  i: Integer;
 begin
   if clbArticles.Count = 0 then Exit;
-  article := TArticleBase (clbArticles.Items.Objects [0]);
+  article := TArticleBase(clbArticles.Items.Objects[0]);
 
   fileName := '';
   if article.HasMsg then
-  begin
     if article.Msg.MessageParts.Count > 0 then
-    for i := 0 to article.Msg.MessageParts.Count - 1 do
-    begin
-      mp := article.Msg.MessageParts [i];
-      if mp.FileName <> '' then
+      for i := 0 to article.Msg.MessageParts.Count - 1 do
       begin
-        fileName := mp.FileName;
-        break
-      end
-    end
-  end;
+        mp := article.Msg.MessageParts[i];
+        if mp.FileName <> '' then
+        begin
+          fileName := mp.FileName;
+          Break;
+        end;
+      end;
 
-  fileName := StringReplace (fileName, '\', '-', [rfReplaceAll]);
-  fileName := StringReplace (fileName, '/', '-', [rfReplaceAll]);
+  fileName := StringReplace(fileName, '\', '-', [rfReplaceAll]);
+  fileName := StringReplace(fileName, '/', '-', [rfReplaceAll]);
 
   fileName := fmMain.GetAttachmentsDirectory + fileName;
-  edFileName.Text := fileName
+  edFileName.Text := fileName;
 end;
 
 procedure TdlgCombineDecode.SelectAll1Click(Sender: TObject);
 var
-  i : Integer;
+  i: Integer;
 begin
   for i := 0 to clbArticles.Count - 1 do
-    clbArticles.State [i] := cbChecked
+    clbArticles.State[i] := cbChecked;
 end;
 
 procedure TdlgCombineDecode.SelectNone1Click(Sender: TObject);
 var
-  i : Integer;
+  i: Integer;
 begin
   for i := 0 to clbArticles.Count - 1 do
-    clbArticles.State [i] := cbUnchecked
+    clbArticles.State[i] := cbUnchecked;
 end;
 
 end.

@@ -53,7 +53,7 @@ begin
     str := nil;
     decoder := TXnDecoderUUE.Create(nil);
     try
-      fData.Seek(0, soFromBeginning);
+      fData.Seek(0, soBeginning);
       str := TStreamTextReader.Create(fData);
       decoder.DecodeBegin(s);
       while str.ReadLn(raw) do
@@ -62,7 +62,7 @@ begin
         st := string(raw);
         decoder.Decode(st);
       end;
-      fData.Seek(0, soFromEnd);
+      fData.Seek(0, soEnd);
     finally
       decoder.Free;
       str.Free;

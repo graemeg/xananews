@@ -1486,7 +1486,7 @@ begin
   if fUpdateCount > 0 then Exit;
   if Assigned(f) then
   begin
-    f.Seek(0, soFromBeginning);
+    f.Seek(0, soBeginning);
     f.Write(fFileInfo, SizeOf(fFileInfo));
   end;
 end;
@@ -1715,7 +1715,7 @@ var
   st: MessageString;
 begin
         // Read the page
-  Owner.f.Seek(SizeOf(TFileInfo) + fIdx * SizeOf(TPageRec), soFromBeginning);
+  Owner.f.Seek(SizeOf(TFileInfo) + fIdx * SizeOf(TPageRec), soBeginning);
   Owner.f.Read(pr, SizeOf(pr));
 
         // Get headeer info
@@ -1786,7 +1786,7 @@ begin
     Inc(p, pnh^.KeyLen);
   end;
                                         // Write the data
-  Owner.f.Seek(SizeOf(TFileInfo) + fIdx * SizeOf(TPageRec), soFromBeginning);
+  Owner.f.Seek(SizeOf(TFileInfo) + fIdx * SizeOf(TPageRec), soBeginning);
   Owner.f.Write(pr, SizeOf(pr));
 
   Flags[flgDirty] := False;

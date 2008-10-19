@@ -1,7 +1,6 @@
 object dlgCombineDecode: TdlgCombineDecode
-  Left = 258
-  Top = 231
-  AutoScroll = False
+  Left = 264
+  Top = 194
   Caption = 'Combine & Decode Articles'
   ClientHeight = 330
   ClientWidth = 409

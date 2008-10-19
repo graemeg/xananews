@@ -118,7 +118,6 @@ type
     procedure SetIsReply(const Value: Boolean);
     function GetIsIgnore: Boolean;
     procedure SetIsIgnore(const Value: Boolean);
-    function DecodeMultipartSubject(var s: string; var n, x: Integer; fixIt, blankIt: Boolean): Boolean;
     function GetIsNotOnServer: Boolean;
     procedure SetIsNotOnServer(const Value: Boolean);
     function GetSubjectIsReply: Boolean;
@@ -136,7 +135,7 @@ type
     fSubject: string;
     fDate: TDateTime;
     fTo: string;
-    fMessageOffset: DWORD;        // Offset of message body in messages.dat
+    fMessageOffset: Int64;        // Offset of message body in messages.dat
     fMultipartFlags: TMultipartFlags;
     fFlags: DWORD;                // See fgXXXX constants above
     fArticleNo: Integer;          // 0 = Dummy article
@@ -825,6 +824,8 @@ type
     procedure Notify(Ptr: Pointer; Action: TListNotification); override;
   end;
 
+function DecodeMultipartSubject(var s: string; var n, x: Integer; fixIt, blankIt: Boolean): Boolean;
+
 //-----------------------------------------------------------------------
 // Global variables
 
@@ -893,8 +894,8 @@ var
   var
     n, x: Integer;
   begin
-    a1.DecodeMultipartSubject(s1, n, x, True, False);
-    a2.DecodeMultipartSubject(s2, n, x, True, False);
+    DecodeMultipartSubject(s1, n, x, True, False);
+    DecodeMultipartSubject(s2, n, x, True, False);
     Result := CompareText(s1, s2);
   end;
 
@@ -2880,7 +2881,7 @@ begin
     article.fFrom := from;
     article.fSubject := subject;
     article.fDate := date;
-    article.fMessageOffset := $FFFFFFFF;
+    article.fMessageOffset := -1;
     article.fFlags := fgNew;
 
     n := 7;
@@ -3125,18 +3126,18 @@ begin
           if recreateMessageFile then
           begin
             tmpMessage := False;
-            if not Assigned(article.fMsg) and (article.fMessageOffset <> $FFFFFFFF) then
+            if not Assigned(article.fMsg) and (article.fMessageOffset <> -1) then
               tmpMessage := True;
 
               // nb. use article.Msg, not article.fMsg to force loading of temp message.
               //
-              // Also, must test fMessageOffset <> $ffffffff.  We don't want to save downloading messages.
-            hasMessage := assigned(article.Msg) and (article.fMessageOffset <> $FFFFFFFF) and (article.fMsg.RawData.Size > 0);
+              // Also, must test fMessageOffset <> -1.  We don't want to save downloading messages.
+            hasMessage := assigned(article.Msg) and (article.fMessageOffset <> -1) and (article.fMsg.RawData.Size > 0);
           end
           else
           begin
             tmpMessage := False;
-            hasMessage := article.fMessageOffset <> $FFFFFFFF;
+            hasMessage := article.fMessageOffset <> -1;
           end;
 
           if recreateMessageFile and hasMessage then
@@ -3178,7 +3179,7 @@ begin
             hLen := 0;
             ms.Write(hLen, SizeOf(hLen));
 
-            article.fMsg.RawData.Seek(0, soFromBeginning);
+            article.fMsg.RawData.Seek(0, soBeginning);
             ms.Write(article.fMsg.RawData.Memory^, article.fMsg.RawData.Size);
           end;
 
@@ -3441,13 +3442,13 @@ begin
     if Assigned(fMsg) then
       r := fMsg.TextPart
     else
-      if (fMessageOffset <> $FFFFFFFF) and Assigned(Owner.fMessageFile) then
+      if (fMessageOffset <> -1) and Assigned(Owner.fMessageFile) then
       begin               // Load (some of) the message from 'messages.dat'
                           // I did this to prevent huge messages being loaded/
                           // decoded when simply displaying the headers for non-
                           // selected messages.
 
-        Owner.fMessageFile.Seek(fMessageOffset, soFromBeginning);
+        Owner.fMessageFile.Seek(fMessageOffset, soBeginning);
 
         SetLength(raw, 5);         // Read XMsg: prefix
         Owner.fMessageFile.Read(raw[1], 5);
@@ -3473,7 +3474,7 @@ begin
           m := TMemoryStream.Create;
           if len > 2048 then len := 2048;
           m.CopyFrom(Owner.fMessageFile, len);
-          m.Seek(0, soFromBeginning);
+          m.Seek(0, soBeginning);
           r.LoadFromStream(m);
         end;
       end;
@@ -3679,7 +3680,7 @@ end;
 procedure TArticle.RemoveMessage;
 begin
   FreeAndNil(fMsg);
-  fMessageOffset := $FFFFFFFF;
+  fMessageOffset := -1;
 end;
 
 (*----------------------------------------------------------------------*
@@ -3706,7 +3707,7 @@ var
   hLen: Word;
 begin
   fOwner.OpenMessageFile;
-  fOwner.fMessageFile.Seek(0, soFromEnd);
+  fOwner.fMessageFile.Seek(0, soEnd);
   fMessageOffset := fOwner.fMessageFile.Position;
   st := MessageString('X-Msg:' + IntToHex(fMsg.RawData.Size, 8));
   fOwner.fMessageFile.Write(st[1], Length(st));
@@ -3722,7 +3723,7 @@ begin
   hLen := 0;
   fOwner.fMessageFile.Write(hLen, SizeOf(hLen));
 
-  fMsg.RawData.Seek(0, soFromBeginning);
+  fMsg.RawData.Seek(0, soBeginning);
   fMsg.RawData.SaveToStream(fOwner.fMessageFile);
 end;
 
@@ -3793,7 +3794,7 @@ begin { GroupArticles }
     end;
 
     subject := Trim(art.Subject);
-    multipart := art.DecodeMultipartSubject(subject, n, count, False, True);
+    multipart := DecodeMultipartSubject(subject, n, count, False, True);
     if multipart then
     begin
       art.fSibling := nil;
@@ -4091,7 +4092,7 @@ begin
       article.Owner.fNeedsPurge := True;
 
     s := Fetch(exd, #9);
-    article.fMessageOffset := Cardinal(StrToIntDef(s, -1));
+    article.fMessageOffset := StrToIntDef(s, -1);
 
     RawAddArticle(article);
   end;
@@ -4791,7 +4792,7 @@ begin
               end;
 
               old.fArticleNo := 0;
-              old.fMessageOffset := $FFFFFFFF;
+              old.fMessageOffset := -1;
               old.fChild := nil;
               c.fParent := old;
               newc.fParent := old;
@@ -5470,7 +5471,7 @@ begin
                 refArticle.fArticleNo := 0; // ie.  It's a dummy article
                 refArticle.fSubject := article.fSubject;
                 refArticle.fDate := article.fDate;
-                refArticle.fMessageOffset := $FFFFFFFF;
+                refArticle.fMessageOffset := -1;
                 refArticle.fFlags := fgRead;
                 RawAddArticle(refArticle);
                 AddHash(id_table, hash, refArticle);
@@ -5690,7 +5691,7 @@ constructor TArticleBase.Create(AOwner: TArticleContainer);
 begin
   fOwner := AOwner;
   fCodePage := CP_USASCII;
-  fMessageOffset := $FFFFFFFF;
+  fMessageOffset := -1;
   fNewestMessage := -1;
 end;
 
@@ -5723,8 +5724,7 @@ end;
  | The function returns True if the subject indicates that it's part of |
  | a multipart.                                                         |
  *----------------------------------------------------------------------*)
-function TArticleBase.DecodeMultipartSubject(var s: string; var n,
-  x: Integer; fixIt, blankIt: Boolean): Boolean;
+function DecodeMultipartSubject(var s: string; var n, x: Integer; fixIt, blankIt: Boolean): Boolean;
 var
   p, p1, p2: PChar;
   l, l1, l2: Integer;
@@ -6176,11 +6176,11 @@ var
   hLen: Word;
   cp: Integer;
 begin
-  if not Assigned(fMsg) and (fMessageOffset <> $FFFFFFFF) then
+  if not Assigned(fMsg) and (fMessageOffset <> -1) then
   begin
     if Assigned(Owner.fMessageFile) then
     begin               // Load the message from 'messages.dat'
-      Owner.fMessageFile.Seek(fMessageOffset, soFromBeginning);
+      Owner.fMessageFile.Seek(fMessageOffset, soBeginning);
 
       SetLength(st, 5);        // Read XMsg: prefix
       Owner.fMessageFile.Read(st[1], 5);
@@ -6329,7 +6329,7 @@ end;
 
 function TArticleBase.HasMsg: Boolean;
 begin
-  Result := Assigned(fMsg) or (fMessageOffset <> $FFFFFFFF);
+  Result := Assigned(fMsg) or (fMessageOffset <> -1);
 end;
 
 (*----------------------------------------------------------------------*
@@ -6398,7 +6398,7 @@ end;
 
 function TArticleBase.MsgDownloading: Boolean;
 begin
-  Result := Assigned(fMsg) and (fMessageOffset = $FFFFFFFF);
+  Result := Assigned(fMsg) and (fMessageOffset = -1);
 end;
 
 function TArticleBase.PeekAtMsgHdr(const hdr: string): string;
@@ -6413,13 +6413,13 @@ var
   hLen: Word;
 begin
   Result := '';
-  if (fMessageOffset <> $FFFFFFFF) and Assigned(Owner.fMessageFile) then
+  if (fMessageOffset <> -1) and Assigned(Owner.fMessageFile) then
   begin                 // Load (some of) the message from 'messages.datx'
                         // I did this to prevent huge messages being loaded/
                         // decoded when simply displaying the headers for non-
                         // selected messages.
 
-    Owner.fMessageFile.Seek(fMessageOffset, soFromBeginning);
+    Owner.fMessageFile.Seek(fMessageOffset, soBeginning);
 
     SetLength(raw, 5);         // Read XMsg: prefix
     Owner.fMessageFile.Read(raw[1], 5);
@@ -6555,9 +6555,9 @@ begin
       if not Result then
       begin
                                     // Don't delete if the article's message is being
-                                    // downloaded (fMsg exists but fMessageOffset is still $ffffffff(
+                                    // downloaded (fMsg exists but fMessageOffset is still -1)
                                     // or is being displayed.
-        if (article.fMessageOffset <> $FFFFFFFF) and not article.fMsg.BeingDisplayed then
+        if (article.fMessageOffset <> -1) and not article.fMsg.BeingDisplayed then
         begin
           Result := True;
           FreeAndNil(article.fMsg);
@@ -6726,7 +6726,7 @@ begin
           if not (article.IsDeleted) and (article.ArticleNo > lastCurrentArticle) then
             lastCurrentArticle := Article.ArticleNo;
 
-          if (Assigned(article.fMsg) and (article.fMessageOffset = $FFFFFFFF)) or not article.IsDeleted then
+          if (Assigned(article.fMsg) and (article.fMessageOffset = -1)) or not article.IsDeleted then
             newArticles.Add(article)
           else
           begin

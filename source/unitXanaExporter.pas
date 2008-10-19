@@ -202,7 +202,7 @@ begin
         try
           reg := CreateExSettings;
           mStream.CopyFrom(expander, size);
-          mStream.Seek(0, soFromBeginning);
+          mStream.Seek(0, soBeginning);
           reg.ImportFromRegStream(mStream);
         finally
           mStream.Free;

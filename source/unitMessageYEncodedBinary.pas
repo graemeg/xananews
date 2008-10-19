@@ -18,7 +18,7 @@
  | the License for the specific language governing rights and           |
  | limitations under the License.                                       |
  |                                                                      |
- | Copyright © Colin Wilson 2002  All Rights Reserved
+ | Copyright © Colin Wilson 2002  All Rights Reserved                   |
  |                                                                      |
  | Version  Date        By    Description                               |
  | -------  ----------  ----  ------------------------------------------|
@@ -27,17 +27,15 @@
 
 unit unitMessageYEncodedBinary;
 
-{$Q-,R-}
-
 interface
 
-uses Windows, Classes, SysUtils, unitMessages, graphics, dialogs, Jpeg;
+uses
+  Windows, Classes, SysUtils, unitMessages, graphics, dialogs, Jpeg;
 
 type
   TmvYEncodedBinary = class(TmvMessagePart)
   private
     fGotBegin: Boolean;
-    fDecodePos: Integer;
     fFileName: string;
     procedure ParseHeaderLine(const st: string);
   protected
@@ -66,42 +64,59 @@ implementation
 procedure TmvYEncodedBinary.GetData(s: TStream);
 var
   b: Byte;
-  pb: PByte;
+  ms: TMemoryStream;
+  pSrc: PByte;
+  pSrcEnd: PByte;
+  pDst: PByte;
+  pDstStart: PByte;
 begin
   if not Assigned(fData) then
     Exit;
 
-  fDecodePos := 0;
-  pb := fData.Memory;           // Seeing as fData is a memory stream, use the
-                                // memory directly - for speed.
-  while fDecodePos < fData.Size do
-  begin
-    b := pb^;
-    if b = Ord('=') then
-                                // If our (incomplete) chunk of encoded data ends
-                                // with '=', finish.  We'll catch it next time, when we've
-                                // got more data to work with.
+  pSrc := fData.Memory;
+  pSrcEnd := pSrc + fData.Size - 1;
 
-      if fDecodePos = fData.Size - 1 then
-        Break
-      else
-      begin                     // Next character is munged.
-        Inc(fDecodePos);
-        Inc(pb);
-        b := pb^ - 64 - 42;     // Un-munge it
-        Inc(fDecodePos);
-        Inc(pb);
-      end
-    else
-    begin                       // This is a probably a good character.
-      Inc(fDecodePos);
-      Inc(pb);
-      if b in [10, 13] then     // ... but drop CR & LF.  They'll always be munged.
-        Continue;
-      b := b - 42;              // Subtract 42?  The answer to the ultimate question!
+  ms := TMemoryStream.Create;
+  try
+    ms.Size := fData.Size;               // "pre-allocate" buffer stream.
+    pDstStart := ms.Memory;
+    pDst := pDstStart + ms.Position;
+
+    if Assigned(pDstStart) then
+    begin
+      while pSrc <= pSrcEnd do
+      begin
+        b := pSrc^;
+        if b = Ord('=') then
+        begin                            // If our (incomplete) chunk of encoded data ends
+                                         // with '=', finish.  We'll catch it next time,
+                                         // when we've got more data to work with.
+          if pSrc = pSrcEnd then
+            Break
+          else
+          begin                          // Next character is munged.
+            Inc(pSrc);
+            b := Byte(pSrc^ - 64 - 42);  // Un-munge it
+            Inc(pSrc);
+          end;
+        end
+        else
+        begin                            // This is a probably a good character.
+          Inc(pSrc);
+          if b in [10, 13] then          // ... but drop CR & LF. They'll always be munged.
+            Continue;
+          b := Byte(b - 42);             // Subtract 42? The answer to the ultimate question!
+        end;
+
+        pDst^ := b;                      // Write to buffer stream.
+        Inc(pDst);
+      end;
+
+      ms.Size := pDst - pDstStart;       // Re-adjust buffer stream size.
     end;
-
-    s.Write(b, 1);
+    s.CopyFrom(ms, 0);
+  finally
+    ms.Free;
   end;
 end;
 
@@ -121,7 +136,7 @@ end;
  | I'm not sure why this isn't in the base class.  It's the same as     |
  | the uuencoded message part stuff.                                    |
  |                                                                      |
- | Get the graphic represntation of the attachment                      |
+ | Get the graphic representation of the attachment                     |
  *----------------------------------------------------------------------*)
 function TmvYEncodedBinary.GetGraphic: TGraphic;
 var

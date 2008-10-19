@@ -323,7 +323,7 @@ end;
 
 procedure TmvMessage.AddData(data: TStream);
 begin
-  fData.Seek(0, soFromEnd);
+  fData.Seek(0, soEnd);
   fData.CopyFrom(data, 0);
 end;
 
@@ -641,7 +641,7 @@ begin
           png := TPngImage.Create;
           faceDecoder.DecodeBegin(facePngStrm);
           faceDecoder.Decode(s);
-          facePngStrm.Seek(0, soFromBeginning);
+          facePngStrm.Seek(0, soBeginning);
           png.LoadFromStream(facePngStrm);
           fxFace := TBitmap.Create;
           fxFace.Width := png.Width;
@@ -1050,7 +1050,7 @@ begin
       try
         GetData(DecodedData);
 
-        DecodedData.Seek(0, soFromBeginning);
+        DecodedData.Seek(0, soBeginning);
 
         // Some people posts JPEG images with preliminary data before the JPEG header
         // Try to salvage something, though you may end up with just a thumbnail.
@@ -1062,7 +1062,7 @@ begin
             x := PDWORD(PByte(DecodedData.Memory) + i)^;
             if x = $E0FFD8FF then
             begin
-              DecodedData.Seek(i, soFromBeginning);
+              DecodedData.Seek(i, soBeginning);
               Break;
             end
             else

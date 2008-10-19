@@ -75,12 +75,12 @@ type
 
     procedure LoadPreviousGroups;
     procedure SaveFollowUp;
+    procedure WMEnable(var msg: TWMEnable); message WM_ENABLE;
     procedure WMSetup(var msg: TMessage); message WM_SETUP;
     procedure WMPostAndClose(var msg: TMessage); message WM_POSTANDCLOSE;
     procedure WMSetCodePage(var msg: TMessage); message WM_SETCODEPAGE;
     procedure WMSetIdentity(var msg: TMessage); message WM_SETIDENTITY;
     function CheckCrossPosts(const groups: string): string;
-
   protected
     procedure UpdateActions; override;
     procedure CreateParams(var params: TCreateParams); override;
@@ -514,6 +514,13 @@ end;
 procedure TfmPostMessage.FormResize(Sender: TObject);
 begin
   fmePost1.DoResize;
+end;
+
+procedure TfmPostMessage.WMEnable(var msg: TWMEnable);
+begin
+  inherited;
+  if not msg.Enabled then
+    Windows.EnableWindow(Handle, True);
 end;
 
 procedure TfmPostMessage.WMPostAndClose(var msg: TMessage);

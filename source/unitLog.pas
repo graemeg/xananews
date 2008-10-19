@@ -39,7 +39,7 @@ begin
           FreeAndNil(lf);
         end;
         lf := TFileStream.Create(gMessageBaseRoot + '\log.txt', fmOpenReadWrite or fmShareDenyNone);
-        lf.Seek(0, soFromEnd);
+        lf.Seek(0, soEnd);
       end;
 
       msg := FormatDateTime('hh:nn:ss:zzzz', Now) + ' TID=' + IntToStr(GetCurrentThreadID) + '- ' + msg + #13#10;

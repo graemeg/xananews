@@ -165,7 +165,7 @@ begin
   s := nil;
   decoder := TidDecoderMIME.Create(nil);
   try
-    ins.Seek(0, soFromBeginning);
+    ins.Seek(0, soBeginning);
     str := TStreamTextReader.Create(ins);
     s := TMemoryStream.Create;
     try
@@ -181,7 +181,7 @@ begin
     except
     end;
 
-    s.Seek(0, soFromBeginning);
+    s.Seek(0, soBeginning);
     outs.LoadFromStream(s);
   finally
     decoder.Free;
@@ -236,7 +236,7 @@ begin
         end;
 
         try
-          fData.Seek(0, soFromBeginning);
+          fData.Seek(0, soBeginning);
           if Assigned(fMIMEHeader) then
           begin
             if CompareText(fMIMEHeader.ContentTransferEncoding, 'Quoted-Printable') = 0 then
@@ -260,7 +260,7 @@ begin
           else
             fBody.LoadFromStream(fData);
         finally
-          fData.Seek(0, soFromEnd);
+          fData.Seek(0, soEnd);
         end;
       end;
     fGotBody := Complete;
@@ -282,7 +282,7 @@ begin
 
   if fHeaderDecoded then
   begin
-    fData.Seek(0, soFromBeginning);
+    fData.Seek(0, soBeginning);
     s.Size := 0;
     if DecodeType <> ttText then
     begin
@@ -295,7 +295,7 @@ begin
       str := nil;
       if Assigned(decoder) then
       try
-        fData.Seek(0, soFromBeginning);
+        fData.Seek(0, soBeginning);
         str := TStreamTextReader.Create(fData);
         try
           decoder.DecodeBegin(s);
@@ -315,7 +315,7 @@ begin
     else
       s.CopyFrom(fData, fData.Size);
   end;
-  fData.Seek(0, soFromEnd);
+  fData.Seek(0, soEnd);
 end;
 
 function TmvMimeMessagePart.GetDecodeType: TDecodeType;

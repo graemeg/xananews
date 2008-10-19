@@ -2556,7 +2556,7 @@ begin
 
       FixHeaders(fTestMessage.Header);
 
-      s.Seek(reader.Position, soFromBeginning);
+      s.Seek(reader.Position, soBeginning);
       fTestMessage.RawData.Clear;
       fTestMessage.RawData.CopyFrom(s, s.Size - s.Position);
       pnlDetailsBar.Caption := '  Test Message ' + OpenDialog1.FileName;
@@ -7378,6 +7378,7 @@ var
   i: Integer;
 begin
   GetCharsetNames(cbCharset.Items);
+  cbCharSet.DropDownCount := (Screen.Height div 3) div cbCharSet.ItemHeight;
   Application.ProcessMessages;
 
   Reinit_vstSubscribed(False);
@@ -8828,6 +8829,8 @@ begin
 
   if selectBatch >= 0 then
     cbBatches.ItemIndex := selectBatch;
+
+  cbBatches.DropDownCount := (Screen.Height div 3) div cbBatches.ItemHeight;
 end;
 
 procedure TfmMain.actToolsTestCrashExecute(Sender: TObject);
@@ -10322,7 +10325,7 @@ var
           while (c > 0) do
           begin
             mm := m.MessageParts[c - 1];
-            f.Seek(0, soFromBeginning);
+            f.Seek(0, soBeginning);
             mm.GetData(f);
             if f.Size > 4 then
               Break;
