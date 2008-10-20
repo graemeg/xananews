@@ -20,18 +20,19 @@ type
 
 implementation
 
-uses NewsGlobals, unitSearchString;
+uses
+  NewsGlobals, unitSearchString, StrUtils;
 
 type
   TLabelBlock = array[0..255] of AnsiChar;
 
-procedure WriteLabelBlock(lab: string; size: Integer; strm: TStream);
+procedure WriteLabelBlock(lab: string; size: Int64; strm: TStream);
 var
   len: Integer;
   blck: TLabelBlock;
   raw: MessageString;
 begin
-  lab := '~~XaNaFood~' + IntToHex(size, 8) + '~' + lab;
+  lab := '~~XaNaFood~' + IntToHex(size, 16) + '~' + lab;
   FillChar(blck, SizeOf(blck), 0);
   len := Length(lab);
   if len > SizeOf(blck) then
@@ -41,9 +42,10 @@ begin
   strm.Write(blck[0], SizeOf(blck));
 end;
 
-procedure ReadLabelBlock(var lab: string; var size: Integer; strm: TStream);
+procedure ReadLabelBlock(var lab: string; var size: Int64; strm: TStream);
 var
   blck: TLabelBlock;
+  i: Integer;
   st: string;
 begin
   strm.Read(blck[0], SizeOf(blck));
@@ -52,8 +54,10 @@ begin
   if Copy(st, 1, 11) <> '~~XaNaFood~' then
     raise Exception.Create('Invalid archive block');
 
-  size := StrToInt('$' + Copy(st, 12, 8));
-  lab := Copy(st, 21, SizeOf(blck) - 21);
+  I := PosEx('~', st, 12); // Determine Size of size (Integer or Int64).
+  size := StrToInt64('$' + Copy(st, 12, I-12));
+  Inc(I);
+  lab := Copy(st, I, SizeOf(blck) - I);
 end;
 
 procedure CopyFileToStream(const lab, fileName: string; stream: TStream);
@@ -94,7 +98,7 @@ begin
   end;
 end;
 
-procedure CreateFileFromStream(const dir, filename: string; stream: TStream; size: Integer);
+procedure CreateFileFromStream(const dir, filename: string; stream: TStream; size: Int64);
 var
   f: TFileStream;
 begin
@@ -178,7 +182,7 @@ var
   istream: TFileStream;
   mstream: TMemoryStream;
   st, lab, account: string;
-  size: Integer;
+  size: Int64;
   reg: TExSettings;
 begin
   expander := nil;
