@@ -4092,7 +4092,7 @@ begin
       article.Owner.fNeedsPurge := True;
 
     s := Fetch(exd, #9);
-    article.fMessageOffset := StrToIntDef(s, -1);
+    article.fMessageOffset := StrToInt64Def(s, -1);
 
     RawAddArticle(article);
   end;
