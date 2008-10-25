@@ -221,7 +221,7 @@ implementation
 
 uses
   unitSearchString, idCoder, idCoderMIME, idCoderQuotedPrintable, unitCharsetMap,
-  IdGlobal, unitExFileSettings, XnCoderQuotedPrintable;
+  IdGlobal, unitExFileSettings, XnCoderQuotedPrintable, unitLog;
 
 var
   gLatestVersionSync: TCriticalSection = nil;
@@ -263,11 +263,14 @@ begin
   begin
     s := hdrs[i];
 
+// TODO: remove (or make it user selectable *what* is logged)
+    LogMessage(S);
+
     if Length(s) = 0 then
       hdrs.Delete(i)
     else
-      if s[1] in [' ', #9] then        // If a line starts with whitespace then
-      begin                            // append it to the previous line.
+      if s[1] in [' ', #9] then        // If a line starts with a whitespace
+      begin                            // then append it to the previous line.
         hdrs[i - 1] := hdrs[i - 1] + Copy(s, 2, Length(s) - 1);
         hdrs.Delete(i);
       end
@@ -869,17 +872,16 @@ function DecodeChunk(Input: string): Widestring;
 var
   cp, data: string;
   enc: Char;
-  x, cpnum: Integer;
+  L, x, cpnum: Integer;
   AttachSpace: Boolean;
-  DecodedBytes: TBytes;
   DecodedStream: TMemoryStream;
   EncodedStream: TMemoryStream;
-  Encoding: TEncoding;
+  S: MessageString;
 begin
   Result := '';
   x := Pos('?', Input);
   // Checks for encoding byte, '?', and at least one byte of data.
-  if Length(Input) < x+3 then
+  if Length(Input) < x + 3 then
     Exit;
 
   // Encoding should be exactly one character
@@ -892,59 +894,61 @@ begin
   data := Copy(Input, x + 3, maxint);
 
   DecodedStream := TMemoryStream.Create;
-  EncodedStream := TMemoryStream.Create;
   try
-    if enc in ['b', 'B'] then
-    begin
-      AttachSpace := False;
-      with TidDecoderMIME.Create(nil) do
+    EncodedStream := TMemoryStream.Create;
+    try
+      if enc in ['b', 'B'] then
       begin
-        WriteStringToStream(EncodedStream, Data, en7Bit);
-        EncodedStream.Position := 0;
-        try
-          DecodeBegin(DecodedStream);
-          Decode(EncodedStream);
-          DecodeEnd;
-        finally
-          Free;
+        AttachSpace := False;
+        with TidDecoderMIME.Create(nil) do
+        begin
+          WriteStringToStream(EncodedStream, Data, en7Bit);
+          EncodedStream.Position := 0;
+          try
+            DecodeBegin(DecodedStream);
+            Decode(EncodedStream);
+            DecodeEnd;
+          finally
+            Free;
+          end;
+        end;
+      end
+      else
+      begin
+        // TidDecoderQuotedPrintable does not deal with underscore encoded spaces
+        data := StringReplace(data, '_', ' ', [rfReplaceAll]);
+        AttachSpace := data[Length(data)] = ' ';
+        with TXnDecoderQuotedPrintable.Create(nil) do
+        begin
+          WriteStringToStream(EncodedStream, Data, en7Bit);
+          EncodedStream.Position := 0;
+          try
+            DecodeBegin(DecodedStream);
+            Decode(EncodedStream);
+            DecodeEnd;
+          finally
+            Free;
+          end;
         end;
       end;
+    finally
+      EncodedStream.Free;
+    end;
+
+    L := DecodedStream.Size;
+    if L > 0 then
+    begin
+      SetLength(S, L);
+      Move(DecodedStream.Memory^, S[1], L);
+      Result := AnsiStringToWideString(S, cpnum);
     end
     else
-    begin
-      // TidDecoderQuotedPrintable does not deal with underscore encoded spaces
-      data := StringReplace(data, '_', ' ', [rfReplaceAll]);
-      AttachSpace := data[Length(data)] = ' ';
-      with TXnDecoderQuotedPrintable.Create(nil) do
-      begin
-        WriteStringToStream(EncodedStream, Data, en7Bit);
-        EncodedStream.Position := 0;
-        try
-          DecodeBegin(DecodedStream);
-          Decode(EncodedStream);
-          DecodeEnd;
-        finally
-          Free;
-        end;
-      end;
-    end;
-    DecodedStream.Position := 0;
-    ReadTIdBytesFromStream(DecodedStream, DecodedBytes, -1);
-// TODO: why isn't 28593 Latin (3) supported?
-    if cpnum = 28593 then
-      cpnum := 28599;
-// >>
-    Encoding := TEncoding.GetEncoding(cpnum);
-    try
-      Result := Encoding.GetString(DecodedBytes);
-    finally
-      Encoding.Free;
-    end;
+      Result := '';
+
     // Unfortunately, the Decoder will also trim trailing spaces
     if AttachSpace then
       Result := Result + ' ';
   finally
-    EncodedStream.Free;
     DecodedStream.Free;
   end;
 end;

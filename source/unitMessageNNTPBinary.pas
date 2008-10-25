@@ -39,33 +39,34 @@ uses
 
 procedure TmvNNTPBinary.GetData(s: TStream);
 var
-  decoder: TidDecoder;
-  str: TStreamTextReader;
+  Decoder: TXnDecoderUUE;
+  EncodedStream: TMemoryStream;
+  Reader: TStreamTextReader;
   sz: Integer;
-  st: string;
-  raw: MessageString;
 begin
   // Clear and fill the stream with decoded data.
   // nb - *must* leave fData at end of stream.
   sz := fData.Size;
   if sz > 0 then
   begin
-    str := nil;
-    decoder := TXnDecoderUUE.Create(nil);
+    EncodedStream := nil;
+    Reader := nil;
+    Decoder := TXnDecoderUUE.Create(nil);
     try
       fData.Seek(0, soBeginning);
-      str := TStreamTextReader.Create(fData);
-      decoder.DecodeBegin(s);
-      while str.ReadLn(raw) do
-      begin
-        // TODO: optimize decoding
-        st := string(raw);
-        decoder.Decode(st);
-      end;
+      EncodedStream := TMemoryStream.Create;
+      Reader := TStreamTextReader.Create(fData);
+
+      Decoder.DecodeBegin(s);
+      while Reader.ReadLn(EncodedStream) do
+        Decoder.Decode(EncodedStream);
+      Decoder.DecodeEnd;
+
       fData.Seek(0, soEnd);
     finally
-      decoder.Free;
-      str.Free;
+      Decoder.Free;
+      EncodedStream.Free;
+      Reader.Free;
     end;
   end;
 end;

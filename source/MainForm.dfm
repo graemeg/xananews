@@ -97,7 +97,6 @@ object fmMain: TfmMain
           BevelInner = bvLowered
           BevelOuter = bvNone
           TabOrder = 0
-          ExplicitWidth = 249
         end
         object pnlCharset: TPanel
           Left = 226
@@ -199,7 +198,6 @@ object fmMain: TfmMain
             ItemHeight = 13
             TabOrder = 0
             OnChange = cbCharsetChange
-            ExplicitWidth = 202
           end
         end
       end

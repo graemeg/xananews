@@ -633,6 +633,9 @@ begin
       s := header[i];
       if CompareText(SplitString(':', s), 'Face') = 0 then
       try
+// TODO: remove this temporary fix when Jive "folding" is fixed.
+        S := StringReplace(S, ' ', '', [rfReplaceAll]);
+
         facePngStrm := nil;
         png := nil;
         faceDecoder := TIdDecoderMIME.Create(nil);

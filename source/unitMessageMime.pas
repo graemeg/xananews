@@ -155,38 +155,36 @@ end;
 
 procedure DecodeBase64(const ins: TStream; outs: TAnsiStrings);
 var
-  decoder: TidDecoder;
-  str: TStreamTextReader;
-  s: TMemoryStream;
-  st: string;
-  raw: MessageString;
+  Decoder: TidDecoder;
+  Reader: TStreamTextReader;
+  DecodedStream: TMemoryStream;
+  EncodedStream: TMemoryStream;
 begin
-  str := nil;
-  s := nil;
-  decoder := TidDecoderMIME.Create(nil);
+  DecodedStream := nil;
+  EncodedStream := nil;
+  Reader := nil;
+  Decoder := TIdDecoderMIMELineByLine.Create(nil);
   try
     ins.Seek(0, soBeginning);
-    str := TStreamTextReader.Create(ins);
-    s := TMemoryStream.Create;
+    Reader := TStreamTextReader.Create(ins);
+    DecodedStream := TMemoryStream.Create;
+    EncodedStream := TMemoryStream.Create;
+
+    Decoder.DecodeBegin(DecodedStream);
     try
-      decoder.DecodeBegin(s);
-      while str.ReadLn(raw) do
-      begin
-        // TODO: optimize decoding
-        st := string(raw);
-        if (Length(st) mod 4) <> 0 then
-          st := Copy(st, 1, (Length(st) div 4) * 4);
-        decoder.Decode(st);
-      end;
-    except
+      while Reader.ReadLn(EncodedStream) do
+        Decoder.Decode(EncodedStream);
+    finally
+      Decoder.DecodeEnd;
     end;
 
-    s.Seek(0, soBeginning);
-    outs.LoadFromStream(s);
+    DecodedStream.Seek(0, soBeginning);
+    outs.LoadFromStream(DecodedStream);
   finally
-    decoder.Free;
-    str.Free;
-    s.Free;
+    Decoder.Free;
+    Reader.Free;
+    DecodedStream.Free;
+    EncodedStream.Free;
   end;
 end;
 
@@ -270,10 +268,9 @@ end;
 
 procedure TmvMimeMessagePart.GetData(s: TStream);
 var
-  decoder: TidDecoder;
-  st: string;
-  str: TStreamTextReader;
-  raw: MessageString;
+  Decoder: TidDecoder;
+  EncodedStream: TMemoryStream;
+  Reader: TStreamTextReader;
 begin
   DecodeHeader;
 
@@ -286,30 +283,30 @@ begin
     s.Size := 0;
     if DecodeType <> ttText then
     begin
-      decoder := nil;
+      Decoder := nil;
       case DecodeType of
-        ttUUEncode: decoder := TXnDecoderUUE.Create(nil);
-        ttBase64  : decoder := TidDecoderMIME.Create(nil);
+        ttUUEncode: Decoder := TXnDecoderUUE.Create(nil);
+        ttBase64  : Decoder := TidDecoderMIME.Create(nil);
       end;
 
-      str := nil;
-      if Assigned(decoder) then
+      EncodedStream := nil;
+      Reader := nil;
+      if Assigned(Decoder) then
       try
         fData.Seek(0, soBeginning);
-        str := TStreamTextReader.Create(fData);
+        EncodedStream := TMemoryStream.Create;
+        Reader := TStreamTextReader.Create(fData);
         try
-          decoder.DecodeBegin(s);
-          while str.ReadLn(raw) do
-          begin
-            // TODO: optimize decoding
-            st := string(raw);
-            decoder.Decode(st);
-          end;
+          Decoder.DecodeBegin(s);
+          while Reader.ReadLn(EncodedStream) do
+            Decoder.Decode(EncodedStream);
+          Decoder.DecodeEnd;
         except
         end
       finally
-        decoder.Free;
-        str.Free;
+        Decoder.Free;
+        EncodedStream.Free;
+        Reader.Free;
       end;
     end
     else

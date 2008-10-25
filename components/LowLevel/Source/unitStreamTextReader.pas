@@ -51,7 +51,8 @@ type
     constructor Create(AStream: TStream; blockSize: Integer = 1024);
     destructor Destroy; override;
     function GetChar: AnsiChar;
-    function ReadLn(var st: MessageString; continuationChar: AnsiChar = #0): Boolean;
+    function ReadLn(var st: MessageString; continuationChar: AnsiChar = #0): Boolean; overload;
+    function ReadLn(ms: TMemoryStream; continuationChar: AnsiChar = #0): Boolean; overload;
     procedure ReadChunk(var chunk; offset, length: Integer);
     property Position: Int64 read GetPosition write SetPosition;
     function Search(const st: MessageString): Integer;
@@ -165,7 +166,7 @@ end;
 
 { TStreamTextReader }
 
-constructor TStreamTextReader.Create(AStream: TStream; blockSize: Integer);
+constructor TStreamTextReader.Create(AStream: TStream; blockSize: Integer = 1024);
 begin
   fStream := AStream;
   fBlockSize := blockSize;
@@ -217,7 +218,7 @@ begin
   fStream.Read(chunk, length)
 end;
 
-function TStreamTextReader.ReadLn(var st: MessageString; continuationChar: AnsiChar): Boolean;
+function TStreamTextReader.ReadLn(var st: MessageString; continuationChar: AnsiChar = #0): Boolean;
 var
   L, lineStartPos: Integer;
   pch, pch1: PAnsiChar;
@@ -279,6 +280,80 @@ begin
 
     st := st + st1;
   end;
+
+  if cont then
+  begin
+    Position := lineStartPos;
+    Result := False;
+  end
+  else
+    Result := True;
+end;
+
+function TStreamTextReader.ReadLn(ms: TMemoryStream; continuationChar: AnsiChar = #0): Boolean;
+var
+  L, lineStartPos: Integer;
+  pch, pch1: PAnsiChar;
+  st1: MessageString;
+  cont, scont: Boolean;
+begin
+  lineStartPos := Position;
+  cont := True;
+  scont := false;
+
+  ms.Clear;
+  while cont do
+  begin
+    GetChunk;
+    if fBufPos = fBufSize then
+      Break;
+
+    pch := fBuffer;
+    Inc(pch, fBufPos);
+    pch1 := StrScan(pch, #10);
+
+    if pch1 <> nil then
+    begin
+      L := pch1 - pch;
+      Inc(fBufPos, L + 1);
+      if fBufPos > fBufSize then
+        fBufPos := fBufSize;
+      if L > 0 then
+      begin
+        repeat
+          Dec(pch1);
+          if pch1^ = #13 then
+            Dec(L)
+          else
+            Break;
+        until pch1 = pch;
+        cont := pch1^ = continuationChar;
+      end
+      else
+        cont := scont;
+
+      ms.Write(pch^, L);
+    end
+    else
+    begin
+      st1 := pch;
+      L := Length(st1);
+
+      while (L > 0) and (st1[L] = #13) do
+        Dec(L);
+
+      if L < Length(st1) then
+        SetLength(st1, L);
+
+      scont := (L > 0) and (st1[L] = continuationChar);
+
+      ms.Write(pch^, L);
+
+      fBufPos := fBufSize;
+    end;
+  end;
+
+  ms.Seek(0, soBeginning);
 
   if cont then
   begin

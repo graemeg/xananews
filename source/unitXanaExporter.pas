@@ -78,7 +78,7 @@ end;
 
 procedure WriteRegistrySettingsToStream(const section: string; strm: TStream; excludeList: TStrings = nil);
 var
-  mstream: TmemoryStream;
+  mstream: TMemoryStream;
   reg: TExSettings;
 begin
   mstream := nil;

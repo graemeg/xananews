@@ -2833,7 +2833,7 @@ begin
 
   url := StringReplace(XNOptions.TextInternetURLStub, '%qtext%', txt, []);
   url := TidURI.URLEncode(url);
-  ShellExecute(handle, 'open', PChar(url), nil, nil, SW_SHOW);
+  ShellExecute(Handle, 'open', PChar(url), nil, nil, SW_SHOW);
 end;
 
 procedure TfmMain.actViewHeadersFullExecute(Sender: TObject);
