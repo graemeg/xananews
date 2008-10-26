@@ -27,7 +27,8 @@ unit XFace;
 
 interface
 
-uses Windows, Graphics;
+uses
+  Windows, Graphics;
 
 const
   ERR_OK        =  0;   { successful completion }
@@ -46,16 +47,17 @@ function BitmapToXFaceI(Bitmap: TBitmap; var XFace: AnsiString; Invert: Boolean)
 
 implementation
 
-uses SysUtils;
+uses
+  SysUtils;
 
 var
   DIB: HBITMAP;         { 48x48x1 DIB }
-  Pixels: pointer;      { pointer to the pixels of the DIB }
+  Pixels: Pointer;      { Pointer to the pixels of the DIB }
 
   buffer: array[0..2047] of byte;
 
-function decode_face(src: pchar; dest: pointer; pad: integer): integer; stdcall; external;
-function encode_face(src: pointer; dest: pchar; pad: integer): integer; stdcall; external;
+function decode_face(src: PAnsiChar; dest: Pointer; pad: Integer): Integer; stdcall; external;
+function encode_face(src: Pointer; dest: PAnsiChar; pad: Integer): Integer; stdcall; external;
 
 {$L 'OBJ\x-face.obj'}
 
@@ -83,23 +85,22 @@ procedure _UnCompAll; external;
 procedure _UnGenFace; external;
 procedure _WriteFace; external;
 
-function _strlen(const s: pchar): integer; cdecl;
+function _strlen(const s: PAnsiChar): Integer; cdecl;
 begin
-  result := StrLen(s);
+  Result := StrLen(s);
 end;
 
 function XFaceToBitmap(XFace: AnsiString; var Bitmap: TBitmap): Integer;
 var
   src, dst: HDC;
-  l: integer;
+  l: Integer;
 begin
-  if(Length(XFace) > 2047) then begin
-    l := 2047;
-  end else begin
+  if Length(XFace) > 2047 then
+    l := 2047
+  else
     l := Length(XFace);
-  end;
 
-  move(XFace[1], buffer[0], l);
+  Move(XFace[1], buffer[0], l);
 
   buffer[l] := 0;
 
@@ -120,13 +121,13 @@ end;
 
 function BitmapToXFace(Bitmap: TBitmap; var XFace: AnsiString): Integer;
 begin
-  result := BitmapToXFaceI(Bitmap, XFace, False);
+  Result := BitmapToXFaceI(Bitmap, XFace, False);
 end;
 
 function BitmapToXFaceI(Bitmap: TBitmap; var XFace: AnsiString; Invert: Boolean): Integer;
 var
   src, dst: HDC;
-  l: integer;
+  l: Integer;
 begin
   Bitmap.HandleType := bmDIB;
 
@@ -135,22 +136,21 @@ begin
   dst := CreateCompatibleDC(0);
   SelectObject(dst, DIB);
 
-  if(Invert) then begin
-    StretchBlt(dst, 0, 0, 48, 48, src, 0, 0, Bitmap.Width, Bitmap.Height, NOTSRCCOPY);
-  end else begin
+  if(Invert) then
+    StretchBlt(dst, 0, 0, 48, 48, src, 0, 0, Bitmap.Width, Bitmap.Height, NOTSRCCOPY)
+  else
     StretchBlt(dst, 0, 0, 48, 48, src, 0, 0, Bitmap.Width, Bitmap.Height, SRCCOPY);
-  end;
 
   DeleteDC(src);
   DeleteDC(dst);
 
   encode_face(Pixels, @buffer[0], 2);
 
-  l := strlen(PAnsiChar(@buffer[0]));
+  l := StrLen(PAnsiChar(@buffer[0]));
 
   SetLength(XFace, l);
 
-  move(buffer, XFace[1], l);
+  Move(buffer, XFace[1], l);
 
   Result := 0;
 end;
@@ -195,11 +195,11 @@ var
   dc : HDC;
 
 initialization
-  dc := GetDC (0);
+  dc := GetDC(0);
   try
     DIB := CreateDIBSection(dc, xBI, DIB_RGB_COLORS, Pixels, 0, 0);
   finally
-    ReleaseDC (0, dc)
+    ReleaseDC(0, dc)
   end;
 
 finalization

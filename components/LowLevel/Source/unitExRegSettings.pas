@@ -23,54 +23,54 @@ unit unitExRegSettings;
 
 interface
 
-uses Windows, Classes, SysUtils, unitExSettings, Registry;
+uses
+  Windows, Classes, SysUtils, unitExSettings, Registry;
 
 type
+  //-----------------------------------------------------------------------
+  // TExRegSettings.
+  //
+  // Class to store application and other settings to the registry
+  TExRegSettings = class(TExSettings)
+  private
+    fCurrentReg: TRegistry;
+    fParentKey: HKEY;
+    fAutoReadOnly: Boolean;
+    fChildSection: string;
+    function GetCurrentKey: HKEY;
 
-//-----------------------------------------------------------------------
-// TExRegSettings.
-//
-// Class to store application and other settings to the registry
-TExRegSettings = class (TExSettings)
-private
-  fCurrentReg : TRegistry;
-  fParentKey : HKEY;
-  fAutoReadOnly : boolean;
-  fChildSection : string;
-  function GetCurrentKey: HKEY;
+    function ApplicationKeyName: string;
+  protected
+    function IsOpen: Boolean; override;
+    function CheckIsOpen(readOnly, autoReadOnly: Boolean): TIsOpen; override;
+    procedure SetSection(const SectionPath: string); override;
+    procedure InternalSetIntegerValue(const valueName: string; value: Integer); override;
+    procedure InternalSetStringValue(const valueName, value: string); override;
+  public
+    constructor CreateChild(AParent: TExSettings; const ASection: string); override;
+    procedure Close; override;
+    function Open(readOnly: Boolean = False): Boolean; override;
+    procedure Flush; override;
 
-  function ApplicationKeyName : string;
-protected
-  function IsOpen : boolean; override;
-  function CheckIsOpen (readOnly, autoReadOnly : boolean) : TIsOpen; override;
-  procedure SetSection (const SectionPath : string); override;
-  procedure InternalSetIntegerValue (const valueName : string; value : Integer); override;
-  procedure InternalSetStringValue (const valueName, value : string); override;
-public
-  constructor CreateChild (AParent : TExSettings; const ASection : string); override;
-  procedure Close; override;
-  function Open (readOnly : boolean = false) : boolean; override;
-  procedure Flush; override;
+    property CurrentKey: HKEY read GetCurrentKey;
 
-  property CurrentKey : HKEY read GetCurrentKey;
+    procedure DeleteValue(const valueName: string); override;
+    procedure DeleteSection(const sectionName: string); override;
+    function HasSection(const ASection: string): Boolean; override;
+    function HasValue(const AValue: string): Boolean; override;
+    procedure GetValueNames(names: TStrings); override;
+    procedure GetSectionNames(names: TStrings); override;
+    function GetExportValue(const valueName: string): string; override;
 
-  procedure DeleteValue (const valueName : string); override;
-  procedure DeleteSection (const sectionName : string); override;
-  function HasSection (const ASection : string) : boolean; override;
-  function HasValue (const AValue : string) : boolean; override;
-  procedure GetValueNames (names : TStrings); override;
-  procedure GetSectionNames (names : TStrings); override;
-  function GetExportValue (const valueName : string) : string; override;
+    function GetStringValue(const valueName: string; const deflt: string = ''): string; override;
+    function GetIntegerValue(const valueName: string; deflt: Integer = 0): Integer; override;
+    function GetStrings(const valueName: string; sl: TStrings): Integer; override;
 
-  function GetStringValue  (const valueName : string; const deflt : string = '') : string; override;
-  function GetIntegerValue (const valueName : string; deflt : Integer = 0) : Integer; override;
-  function GetStrings      (const valueName : string; sl : TStrings) : Integer; override;
+    procedure SetStrings(const valueName: string; sl: TStrings); override;
 
-  procedure SetStrings      (const valueName : string; sl : TStrings); override;
-
-  procedure RenameSection (const oldValue, newValue : string); override;
-  procedure RenameValue (const oldValue, newValue : string); override;
-end;
+    procedure RenameSection(const oldValue, newValue: string); override;
+    procedure RenameValue(const oldValue, newValue: string); override;
+  end;
 
 implementation
 
@@ -91,57 +91,47 @@ resourcestring
 function TExRegSettings.ApplicationKeyName: string;
 begin
   if Application = '' then
-    result := Section
+    Result := Section
   else
   begin
     if Manufacturer = '' then
-      result := 'Software\' + Application
+      Result := 'Software\' + Application
     else
-      result := 'Software\' + Manufacturer + '\' + Application;
+      Result := 'Software\' + Manufacturer + '\' + Application;
 
     if Version <> '' then
-      result := result + '\' + Version;
+      Result := Result + '\' + Version;
 
     if Section <> '' then
-      result := result + '\' + Section
+      Result := Result + '\' + Section
   end;
 
-  if result = '' then
+  if Result = '' then
     raise EExSettings.Create('Must specify an Application or a Section');
 end;
 
-(*----------------------------------------------------------------------*
- | function TExRegSettings.CheckIsOpen                                  |
- |                                                                      |
- | Ensure that the registry is open for reading or writing.             |
- *----------------------------------------------------------------------*)
-function TExRegSettings.CheckIsOpen (readOnly, autoReadOnly : boolean) : TIsOpen;
+function TExRegSettings.CheckIsOpen(readOnly, autoReadOnly: Boolean): TIsOpen;
 var
-  ok : boolean;
+  ok: Boolean;
 begin
-  result := inherited CheckIsOpen (readOnly, autoReadOnly);
+  Result := inherited CheckIsOpen(readOnly, autoReadOnly);
 
-  if (result = woClosed) or (result = woReopen) then
+  if (Result = woClosed) or (Result = woReopen) then
   begin
-    ok := Open (readOnly);
-    if result = woClosed then
+    ok := Open(readOnly);
+    if Result = woClosed then
       fReadOnly := False;
 
     if ok then
-      result := woOpen
+      Result := woOpen
     else
-      result := woClosed
-  end
+      Result := woClosed;
+  end;
 end;
 
-(*----------------------------------------------------------------------*
- | function TExRegSettings.Close                                        |
- |                                                                      |
- | Close the registry                                                   |
- *----------------------------------------------------------------------*)
 procedure TExRegSettings.Close;
 begin
-  FreeAndNil (fCurrentReg);
+  FreeAndNil(fCurrentReg);
 end;
 
 constructor TExRegSettings.CreateChild(AParent: TExSettings;
@@ -149,111 +139,93 @@ constructor TExRegSettings.CreateChild(AParent: TExSettings;
 begin
   inherited;
   fChildSection := ASection;
-  fParentKey := TExRegSettings (AParent).CurrentKey;
+  fParentKey := TExRegSettings(AParent).CurrentKey;
 end;
 
 procedure TExRegSettings.DeleteSection(const sectionName: string);
 begin
-  if CheckIsOpen (false, fAutoReadOnly) = woOpen then
-    fCurrentReg.DeleteKey (sectionName);
+  if CheckIsOpen(False, fAutoReadOnly) = woOpen then
+    fCurrentReg.DeleteKey(sectionName);
 end;
 
-(*----------------------------------------------------------------------*
- | function TExRegSettings.DeleteValue                                  |
- |                                                                      |
- | Delete the specified value from the current key                      |
- *----------------------------------------------------------------------*)
 procedure TExRegSettings.DeleteValue(const valueName: string);
 begin
-  if CheckIsOpen (false, fAutoReadOnly) = woOpen then
-    fCurrentReg.DeleteValue(valueName)
+  if CheckIsOpen(False, fAutoReadOnly) = woOpen then
+    fCurrentReg.DeleteValue(valueName);
 end;
 
-(*----------------------------------------------------------------------*
- | function TExRegSettings.Flush                                        |
- |                                                                      |
- | Flush the registry (don't do anything!)
- *----------------------------------------------------------------------*)
 procedure TExRegSettings.Flush;
 begin
   inherited;
   // Could call RegFlushKey - but isn't usually required
 end;
 
-(*----------------------------------------------------------------------*
- | function TExRegSettings.GetIntegerValue                              |
- |                                                                      |
- | Return an integer value, or the default if the value doesn't exist   |
- *----------------------------------------------------------------------*)
 function TExRegSettings.GetCurrentKey: HKEY;
 begin
-  if CheckIsOpen (true, fAutoReadOnly) = woOpen then
-    result := fCurrentReg.CurrentKey
+  if CheckIsOpen(True, fAutoReadOnly) = woOpen then
+    Result := fCurrentReg.CurrentKey
   else
-    result := 0;
+    Result := 0;
 end;
 
-function MakeCStringConst (const s : string; len : Integer = -1) : string;
+function MakeCStringConst(const s: string): string;
 var
-  i : Integer;
+  i: Integer;
 begin
-  result := '';
-  if len = -1 then
-    len := Length (s);
-  for i := 1 to len do
+  Result := '';
+  for i := 1 to Length(s) do
   begin
-    if s [i] in ['\', '"'] then
-      result := result + '\';
-    result := result + s [i]
+    if s[i] in ['\', '"'] then
+      Result := Result + '\';
+    Result := Result + s[i];
   end;
-  result := PChar (result)
 end;
 
 function TExRegSettings.GetExportValue(const valueName: string): string;
 var
-  tp : DWORD;
-  st, st1 : string;
-  j, dataLen : Integer;
-  data : PByte;
+  tp: DWORD;
+  st, st1: string;
+  j, dataLen: Integer;
+  data: PByte;
 begin
-  result := '';
-  if CheckIsOpen (true, fAutoReadOnly) = woOpen then
+  Result := '';
+  if CheckIsOpen(True, fAutoReadOnly) = woOpen then
   begin
-    if RegQueryValueEx (fCurrentReg.CurrentKey, PChar (valueName), Nil, @tp, Nil, PDWORD (@dataLen)) = ERROR_SUCCESS then
+    if RegQueryValueEx(fCurrentReg.CurrentKey, PChar(valueName), nil, @tp, nil, PDWORD(@dataLen)) = ERROR_SUCCESS then
     begin
       if valueName = '' then
         st := '@='
       else
-        st := Format ('"%s"=', [MakeCStringConst (valueName)]);
+        st := Format('"%s"=', [MakeCStringConst(valueName)]);
 
       case tp of
-        REG_DWORD :
-        begin
-          st1 := LowerCase (Format ('%8.8x', [IntegerValue [valueName]]));
-          st := st + format ('dword:%s', [st1])
-        end;
+        REG_DWORD:
+          begin
+            st1 := LowerCase(Format('%8.8x', [IntegerValue[valueName]]));
+            st := st + Format('dword:%s', [st1]);
+          end;
 
-        REG_SZ    :
-            st := st + format ('"%s"', [MakeCStringConst (StringValue [valueName])]);
+        REG_SZ:
+          st := st + Format('"%s"', [MakeCStringConst(StringValue[valueName])]);
 
         else
-        begin
           if tp = REG_BINARY then
             st := st + 'hex:'
           else
-            st := st + format ('hex(%d):', [tp]);
+            st := st + Format('hex(%d):', [tp]);
+
           GetMem(data, dataLen);
           try
-            RegQueryValueEx (fCurrentReg.CurrentKey, PChar (valueName), Nil, @tp, data, @dataLen);
+            RegQueryValueEx(fCurrentReg.CurrentKey, PChar(valueName), nil, @tp, data, @dataLen);
             for j := 0 to dataLen - 1 do
             begin
-              st1 := LowerCase(Format('%02.2x', [Byte(PChar(data)[j])]));
+              st1 := LowerCase(Format('%2.2x', [data[j]]));
               if j < dataLen - 1 then
                 st1 := st1 + ',';
 
-              if Length (st) + Length (st1) >= 77 then
+              if Length(st) + Length(st1) >= 77 then
               begin
-                result := result + st + st1 + '\' + #13#10;
+                Result := Result + st + st1 + '\' + #13#10;
                 st := '  ';
               end
               else
@@ -262,153 +234,124 @@ begin
           finally
             FreeMem(data);
           end;
-        end;
       end;
 
-      result := result + st;
-    end
+      Result := Result + st;
+    end;
   end;
 end;
 
-function TExRegSettings.GetIntegerValue(const valueName: string;
-  deflt: Integer): Integer;
+function TExRegSettings.GetIntegerValue(const valueName: string; deflt: Integer): Integer;
 begin
-  if (CheckIsOpen (true, fAutoReadOnly) = woOpen) and fCurrentReg.ValueExists (valueName) then
-    result := fCurrentReg.ReadInteger(valueName)
+  if (CheckIsOpen(True, fAutoReadOnly) = woOpen) and fCurrentReg.ValueExists(valueName) then
+    Result := fCurrentReg.ReadInteger(valueName)
   else
-    result := deflt
+    Result := deflt;
 end;
 
 procedure TExRegSettings.GetSectionNames(names: TStrings);
 begin
-  if CheckIsOpen (true, fAutoReadOnly) = woOpen then
+  if CheckIsOpen(True, fAutoReadOnly) = woOpen then
     fCurrentReg.GetKeyNames(names)
   else
     names.Clear;
 end;
 
-(*----------------------------------------------------------------------*
- | function TExRegSettings.GetStringValue                               |
- |                                                                      |
- | Return a string value, or the default if the value doesn't exist     |
- *----------------------------------------------------------------------*)
-function TExRegSettings.GetStrings(const valueName: string;
-  sl: TStrings): Integer;
+function TExRegSettings.GetStrings(const valueName: string; sl: TStrings): Integer;
 var
-  valueType, rv : DWORD;
-  valueLen : DWORD;
-  p, buffer : PChar;
+  valueType, rv: DWORD;
+  valueLen: DWORD;
+  p, buffer: PChar;
 begin
   sl.Clear;
-  if CheckIsOpen (true, fAutoReadOnly) = woOpen then
+  if CheckIsOpen(True, fAutoReadOnly) = woOpen then
   begin
-    rv := RegQueryValueEx (CurrentKey, PChar (valueName), Nil, @valueType, Nil, @valueLen);
+    rv := RegQueryValueEx(CurrentKey, PChar(valueName), nil, @valueType, nil, @valueLen);
     if rv = ERROR_SUCCESS then
       if valueType = REG_MULTI_SZ then
       begin
-        GetMem (buffer, valueLen);
+        GetMem(buffer, valueLen);
         try
-          RegQueryValueEx (CurrentKey, PChar (valueName), Nil, Nil, PBYTE (buffer), @valueLen);
+          RegQueryValueEx(CurrentKey, PChar(valueName), nil, nil, PBYTE(buffer), @valueLen);
           p := buffer;
           while p^ <> #0 do
           begin
-            sl.Add (p);
-            Inc (p, lstrlen (p) + 1)
-          end
+            sl.Add(p);
+            Inc(p, lstrlen(p) + 1);
+          end;
         finally
-          FreeMem (buffer)
-        end
+          FreeMem(buffer);
+        end;
       end
       else
-        raise EExSettings.Create ('String list expected')
+        raise EExSettings.Create('String list expected')
     else
-      raise EExSettings.Create ('Unable read MULTI_SZ value');
+      raise EExSettings.Create('Unable read MULTI_SZ value');
   end;
-  result := sl.Count
+  Result := sl.Count;
 end;
 
 function TExRegSettings.GetStringValue(const valueName, deflt: string): string;
 begin
-  if (CheckIsOpen (true, fAutoReadOnly) = woOpen) and fCurrentReg.ValueExists (valueName) then
-    result := fCurrentReg.ReadString(valueName)
+  if (CheckIsOpen(True, fAutoReadOnly) = woOpen) and fCurrentReg.ValueExists(valueName) then
+    Result := fCurrentReg.ReadString(valueName)
   else
-    result := deflt
+    Result := deflt;
 end;
 
 procedure TExRegSettings.GetValueNames(names: TStrings);
 begin
-  if CheckIsOpen (true, fAutoReadOnly) = woOpen then
-    fCurrentReg.GetValueNames (names)
+  if CheckIsOpen(True, fAutoReadOnly) = woOpen then
+    fCurrentReg.GetValueNames(names)
   else
     names.Clear;
 end;
 
-function TExRegSettings.HasSection(const ASection: string): boolean;
+function TExRegSettings.HasSection(const ASection: string): Boolean;
 begin
-  if CheckIsOpen (true, fAutoReadOnly) = woOpen then
-    result := fCurrentReg.KeyExists(ASection)
+  if CheckIsOpen(True, fAutoReadOnly) = woOpen then
+    Result := fCurrentReg.KeyExists(ASection)
   else
-    result := false
+    Result := False;
 end;
 
-function TExRegSettings.HasValue(const AValue: string): boolean;
+function TExRegSettings.HasValue(const AValue: string): Boolean;
 begin
-  if CheckIsOpen (true, fAutoReadOnly) = woOpen then
-    result := fCurrentReg.ValueExists (AValue)
+  if CheckIsOpen(True, fAutoReadOnly) = woOpen then
+    Result := fCurrentReg.ValueExists(AValue)
   else
-    result := false
+    Result := False;
 end;
-
-(*----------------------------------------------------------------------*
- | procedure TExRegSettings.InternalSetStringValue                      |
- |                                                                      |
- | Set an integer value.                                                |
- *----------------------------------------------------------------------*)
 
 procedure TExRegSettings.InternalSetIntegerValue(const valueName: string;
   value: Integer);
 begin
-  if CheckIsOpen (false, fAutoReadOnly) = woOpen then
+  if CheckIsOpen(False, fAutoReadOnly) = woOpen then
     fCurrentReg.WriteInteger(valueName, value)
   else
-    raise EExSettings.Create ('Unable to write value ' + valueName);
+    raise EExSettings.Create('Unable to write value ' + valueName);
 end;
 
-(*----------------------------------------------------------------------*
- | procedure TExRegSettings.InternalSetStringValue                      |
- |                                                                      |
- | Set a string value.                                                  |
- *----------------------------------------------------------------------*)
 procedure TExRegSettings.InternalSetStringValue(const valueName, value: string);
 begin
-  if CheckIsOpen (false, fAutoReadOnly) = woOpen then
+  if CheckIsOpen(False, fAutoReadOnly) = woOpen then
     fCurrentReg.WriteString(valueName, value)
   else
-    raise EExSettings.Create ('Unable to write value ' + valueName);
+    raise EExSettings.Create('Unable to write value ' + valueName);
 end;
 
-(*----------------------------------------------------------------------*
- | function TExRegSettings.IsOpen                                       |
- |                                                                      |
- | Return true if the object is Open                                    |
- *----------------------------------------------------------------------*)
-function TExRegSettings.IsOpen: boolean;
+function TExRegSettings.IsOpen: Boolean;
 begin
-  result := Assigned (fCurrentReg)
+  Result := Assigned(fCurrentReg)
 end;
 
-(*----------------------------------------------------------------------*
- | procedure TExRegSettings.Open                                        |
- |                                                                      |
- | Open the registry key.  Create it if it doesn't exist                |
- *----------------------------------------------------------------------*)
-function TExRegSettings.Open(readOnly : boolean) : boolean;
+function TExRegSettings.Open(readOnly: Boolean): Boolean;
 var
-  rootKey : HKEY;
-  section : string;
-  rights : DWORD;
+  rootKey: HKEY;
+  section: string;
+  rights: DWORD;
 begin
-  inherited Open (readOnly);
+  inherited Open(readOnly);
   Close;
   fAutoReadOnly := readOnly;
 
@@ -418,12 +361,12 @@ begin
     if SettingsType = stMachine then
       rootKey := HKEY_LOCAL_MACHINE
     else
-      rootKey := HKEY_CURRENT_USER
+      rootKey := HKEY_CURRENT_USER;
   end
   else
   begin
     rootKey := fParentKey;
-    section := fChildSection
+    section := fChildSection;
   end;
 
   if readOnly then
@@ -431,30 +374,24 @@ begin
   else
     rights := KEY_READ or KEY_WRITE;
 
-
-  fCurrentReg := TRegistry.Create (rights);
+  fCurrentReg := TRegistry.Create(rights);
   fCurrentReg.RootKey := rootKey;
 
-  result := fCurrentReg.OpenKey(section, not readOnly)
+  Result := fCurrentReg.OpenKey(section, not readOnly);
 end;
 
 procedure TExRegSettings.RenameSection(const oldValue, newValue: string);
 begin
-  if CheckIsOpen (false, fAutoReadOnly) = woOpen then
-    fCurrentReg.MoveKey(oldValue, newValue, true);
+  if CheckIsOpen(False, fAutoReadOnly) = woOpen then
+    fCurrentReg.MoveKey(oldValue, newValue, True);
 end;
 
 procedure TExRegSettings.RenameValue(const oldValue, newValue: string);
 begin
-  if CheckIsOpen (false, fAutoReadOnly) = woOpen then
+  if CheckIsOpen(False, fAutoReadOnly) = woOpen then
     fCurrentReg.RenameValue(oldValue, newValue);
 end;
 
-(*----------------------------------------------------------------------*
- | procedure TExRegSettings.SetSection                                  |
- |                                                                      |
- | Override the 'Set' method for the Section property                   |
- *----------------------------------------------------------------------*)
 procedure TExRegSettings.SetSection(const SectionPath: string);
 begin
   Close;      // Close the registry
@@ -462,37 +399,28 @@ begin
   if fParentKey <> 0 then
     fChildSection := SectionPath
   else
-    inherited
+    inherited;
 end;
 
 procedure TExRegSettings.SetStrings(const valueName: string; sl: TStrings);
 var
-  p, buffer : PChar;
-  i : Integer;
-  size : DWORD;
+  i: Integer;
+  size: DWORD;
+  st: string;
 begin
-  if CheckIsOpen (false, fAutoReadOnly) <> woOpen then
-    raise EExSettings.Create ('Unable to write MULTI_SZ value');
+  if CheckIsOpen(False, fAutoReadOnly) <> woOpen then
+    raise EExSettings.Create('Unable to write MULTI_SZ value');
 
-  size := 0;
+  st := '';
   for i := 0 to sl.Count - 1 do
-    Inc (size, Length (sl [i]) + 1);
-  Inc (size);
-  GetMem (buffer, size * SizeOf(Char));
-  try
-    p := buffer;
-    for i := 0 to sl.count - 1 do
-    begin
-      lstrcpy (p, PChar(sl[i]));
-      Inc (p, lstrlen (p) + 1)
-    end;
-    p^ := #0;
-    SetLastError (RegSetValueEx (CurrentKey, PChar (valueName), 0, REG_MULTI_SZ, buffer, size));
-    if GetLastError <> ERROR_SUCCESS then
-      raise EExSettings.Create ('Unable to write MULTI_SZ value');
-  finally
-    FreeMem (buffer)
-  end
+    st := st + sl[I] + #0;
+  st := st + #0;
+
+  size := Length(st);
+
+  SetLastError(RegSetValueEx(CurrentKey, PChar(valueName), 0, REG_MULTI_SZ, @st[1], size));
+  if GetLastError <> ERROR_SUCCESS then
+    raise EExSettings.Create('Unable to write MULTI_SZ value');
 end;
 
 end.

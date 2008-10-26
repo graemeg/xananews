@@ -389,23 +389,23 @@ type
 *)
 
   TRASConnW = record
-    dwSize : DWORD;
-    hrasconn : HRasCon;
-    szEntryName : array [0..RAS_MaxEntryName] of WideChar;
-    szDeviceType : array [0..RAS_MaxDeviceType] of WideChar;
-    szDeviceName : array [0..RAS_MaxDeviceName] of WideChar;
-    szPhonebook : array [0..MAX_PATH - 1] of WideChar;
-    dwSubEntry : DWORD;
+    dwSize: DWORD;
+    hrasconn: HRasCon;
+    szEntryName: array[0..RAS_MaxEntryName] of WideChar;
+    szDeviceType: array[0..RAS_MaxDeviceType] of WideChar;
+    szDeviceName: array[0..RAS_MaxDeviceName] of WideChar;
+    szPhonebook: array[0..MAX_PATH - 1] of WideChar;
+    dwSubEntry: DWORD;
   end;
 
   TRasConnA = record
-    dwSize : DWORD;
-    hrasconn : HRasCon;
-    szEntryName : array [0..RAS_MaxEntryName] of AnsiChar;
-    szDeviceType : array [0..RAS_MaxDeviceType] of AnsiChar;
-    szDeviceName : array [0..RAS_MaxDeviceName] of AnsiChar;
-    szPhonebook : array [0..MAX_PATH - 1] of AnsiChar;
-    dwSubEntry : DWORD;
+    dwSize: DWORD;
+    hrasconn: HRasCon;
+    szEntryName: array[0..RAS_MaxEntryName] of AnsiChar;
+    szDeviceType: array[0..RAS_MaxDeviceType] of AnsiChar;
+    szDeviceName: array[0..RAS_MaxDeviceName] of AnsiChar;
+    szPhonebook: array[0..MAX_PATH - 1] of AnsiChar;
+    dwSubEntry: DWORD;
   end;
 
 {$ifdef COMPILER12_UP}
@@ -425,21 +425,21 @@ type
 (* Describes the status of a RAS connection.  (See RasConnectionStatus)
 *)
   TRASConnStatusW = record
-    dwSize : DWORD;
-    rasconnstate : TRASConnState;
-    dwError : DWORD;
-    szDeviceType : array [0..RAS_MaxDeviceType] of WideChar;
-    szDeviceName : array [0..RAS_MaxDeviceName] of WideChar;
-    szPhoneNumber : array [0..RAS_MaxPhoneNumber] of WideChar;
+    dwSize: DWORD;
+    rasconnstate: TRASConnState;
+    dwError: DWORD;
+    szDeviceType: array[0..RAS_MaxDeviceType] of WideChar;
+    szDeviceName: array[0..RAS_MaxDeviceName] of WideChar;
+    szPhoneNumber: array[0..RAS_MaxPhoneNumber] of WideChar;
   end;
 
   TRASConnStatusA = record
-    dwSize : DWORD;
-    rasconnstate : TRASConnState;
-    dwError : DWORD;
-    szDeviceType : array [0..RAS_MaxDeviceType] of AnsiChar;
-    szDeviceName : array [0..RAS_MaxDeviceName] of AnsiChar;
-    szPhoneNumber : array [0..RAS_MaxPhoneNumber] of AnsiChar;
+    dwSize: DWORD;
+    rasconnstate: TRASConnState;
+    dwError: DWORD;
+    szDeviceType: array[0..RAS_MaxDeviceType] of AnsiChar;
+    szDeviceName: array[0..RAS_MaxDeviceName] of AnsiChar;
+    szPhoneNumber: array[0..RAS_MaxPhoneNumber] of AnsiChar;
   end;
 
 {$ifdef COMPILER12_UP}
@@ -455,27 +455,27 @@ type
 (* Describes connection establishment parameters.  (See RasDial)
 *)
   TRASDialParamsW = record
-    dwSize : DWORD;
-    szEntryName : array [0..RAS_MaxEntryName] of WideChar;
-    szPhoneNumber : array [0..RAS_MaxPhoneNumber] of WideChar;
-    szCallbackNumber : array [0..RAS_MaxCallbackNumber] of WideChar;
-    szUserName : array [0..UNLEN] of WideChar;
-    szPassword : array [0..PWLEN] of WideChar;
-    szDomain : array [0..DNLEN] of WideChar;
-    dwSubEntry : DWORD;
-    dwCallbackId : DWORD;
+    dwSize: DWORD;
+    szEntryName: array[0..RAS_MaxEntryName] of WideChar;
+    szPhoneNumber: array[0..RAS_MaxPhoneNumber] of WideChar;
+    szCallbackNumber: array[0..RAS_MaxCallbackNumber] of WideChar;
+    szUserName: array[0..UNLEN] of WideChar;
+    szPassword: array[0..PWLEN] of WideChar;
+    szDomain: array[0..DNLEN] of WideChar;
+    dwSubEntry: DWORD;
+    dwCallbackId: DWORD;
   end;
 
   TRASDialParamsA = record
-    dwSize : DWORD;
-    szEntryName : array [0..RAS_MaxEntryName] of AnsiChar;
-    szPhoneNumber : array [0..RAS_MaxPhoneNumber] of AnsiChar;
-    szCallbackNumber : array [0..RAS_MaxCallbackNumber] of AnsiChar;
-    szUserName : array [0..UNLEN] of AnsiChar;
-    szPassword : array [0..PWLEN] of AnsiChar;
-    szDomain : array [0..DNLEN] of AnsiChar;
-    dwSubEntry : DWORD;
-    dwCallbackId : DWORD;
+    dwSize: DWORD;
+    szEntryName: array[0..RAS_MaxEntryName] of AnsiChar;
+    szPhoneNumber: array[0..RAS_MaxPhoneNumber] of AnsiChar;
+    szCallbackNumber: array[0..RAS_MaxCallbackNumber] of AnsiChar;
+    szUserName: array[0..UNLEN] of AnsiChar;
+    szPassword: array[0..PWLEN] of AnsiChar;
+    szDomain: array[0..DNLEN] of AnsiChar;
+    dwSubEntry: DWORD;
+    dwCallbackId: DWORD;
   end;
 
 {$ifdef COMPILER12_UP}
@@ -494,10 +494,10 @@ type
 *)
 
   TRASDialExtensions = record
-    dwSize : DWORD;
-    dwfOptions : DWORD;
-    hwndParent : HWND;
-    reserved : DWORD;
+    dwSize: DWORD;
+    dwfOptions: DWORD;
+    hwndParent: HWND;
+    reserved: DWORD;
   end;
   PRASDialExtensions = ^TRASDialExtensions;
 
@@ -505,13 +505,13 @@ type
 (* Describes an enumerated RAS phone book entry name.  (See RasEntryEnum)
 *)
   TRASEntryNameW = record
-    dwSize : DWORD;
-    szEntryName : array [0..RAS_MaxEntryName] of WideChar;
+    dwSize: DWORD;
+    szEntryName: array[0..RAS_MaxEntryName] of WideChar;
   end;
 
   TRASEntryNameA = record
-    dwSize : DWORD;
-    szEntryName : array [0..RAS_MaxEntryName] of AnsiChar;
+    dwSize: DWORD;
+    szEntryName: array[0..RAS_MaxEntryName] of AnsiChar;
   end;
 
 {$ifdef COMPILER12_UP}
@@ -530,22 +530,22 @@ type
   TRASProjection = DWORD;
   PRASProjection = ^TRASProjection;
 
-(* Describes the result of a RAS AMB (Authentication Message Block)
+(* Describes the Result of a RAS AMB (Authentication Message Block)
 ** projection.  This protocol is used with NT 3.1 and OS/2 1.3 downlevel
 ** RAS servers.
 *)
   TRASAMBW = record
-    dwSize : DWORD;
-    dwError : DWORD;
-    szNetBiosError : array [0..NETBIOS_NAME_LEN] of WideChar;
-    bLana : BYTE;
+    dwSize: DWORD;
+    dwError: DWORD;
+    szNetBiosError: array[0..NETBIOS_NAME_LEN] of WideChar;
+    bLana: BYTE;
   end;
 
   TRASAMBA = record
-    dwSize : DWORD;
-    dwError : DWORD;
-    szNetBiosError : array [0..NETBIOS_NAME_LEN] of AnsiChar;
-    bLana : BYTE;
+    dwSize: DWORD;
+    dwError: DWORD;
+    szNetBiosError: array[0..NETBIOS_NAME_LEN] of AnsiChar;
+    bLana: BYTE;
   end;
 
 {$ifdef COMPILER12_UP}
@@ -558,25 +558,25 @@ type
   PRASAMBA = ^TRASAMBA;
   PRASAMB = ^TRASAMB;
 
-(* Describes the result of a PPP NBF (NetBEUI) projection.
+(* Describes the Result of a PPP NBF (NetBEUI) projection.
 *)
 
   TRASPPPNBFW = record
-    dwSize : DWORD;
-    dwError : DWORD;
-    dwNetBiosError : DWORD;
-    szNetBiosError : array [0..NETBIOS_NAME_LEN] of WideChar;
-    szWorkstationName : array [0..NETBIOS_NAME_LEN] of WideChar;
-    bLana : byte;
+    dwSize: DWORD;
+    dwError: DWORD;
+    dwNetBiosError: DWORD;
+    szNetBiosError: array[0..NETBIOS_NAME_LEN] of WideChar;
+    szWorkstationName: array[0..NETBIOS_NAME_LEN] of WideChar;
+    bLana: byte;
   end;
 
   TRASPPPNBFA = record
-    dwSize : DWORD;
-    dwError : DWORD;
-    dwNetBiosError : DWORD;
-    szNetBiosError : array [0..NETBIOS_NAME_LEN] of AnsiChar;
-    szWorkstationName : array [0..NETBIOS_NAME_LEN] of AnsiChar;
-    bLana : byte;
+    dwSize: DWORD;
+    dwError: DWORD;
+    dwNetBiosError: DWORD;
+    szNetBiosError: array[0..NETBIOS_NAME_LEN] of AnsiChar;
+    szWorkstationName: array[0..NETBIOS_NAME_LEN] of AnsiChar;
+    bLana: byte;
   end;
 
 {$ifdef COMPILER12_UP}
@@ -589,20 +589,20 @@ type
   PRASPPPNBFA = ^TRASPPPNBFA;
   PRASPPPNBF = ^TRASPPPNBF;
 
-(* Describes the results of a PPP IPX (Internetwork Packet Exchange)
+(* Describes the Results of a PPP IPX (Internetwork Packet Exchange)
 ** projection.
 *)
 
   TRASPPPIPXW = record
-    dwSize : DWORD;
-    dwError : DWORD;
-    szIpxAddress : array [0..RAS_MaxIpxAddress] of WideChar;
+    dwSize: DWORD;
+    dwError: DWORD;
+    szIpxAddress: array[0..RAS_MaxIpxAddress] of WideChar;
   end;
 
   TRASPPPIPXA = record
-    dwSize : DWORD;
-    dwError : DWORD;
-    szIpxAddress : array [0..RAS_MaxIpxAddress] of AnsiChar;
+    dwSize: DWORD;
+    dwError: DWORD;
+    szIpxAddress: array[0..RAS_MaxIpxAddress] of AnsiChar;
   end;
 
 {$ifdef COMPILER12_UP}
@@ -616,21 +616,21 @@ type
   PRASPPPIPX = ^TRASPPPIPX;
 
 
-(* Describes the results of a PPP IP (Internet) projection.
+(* Describes the Results of a PPP IP (Internet) projection.
 *)
 
   TRASPPPIPW = record
-    dwSize : DWORD;
-    dwError : DWORD;
-    szIpAddress : array [0..RAS_MaxIpAddress] of WideChar;
-    szServerIpAddress : array [0..RAS_MaxIpAddress] of WideChar;
+    dwSize: DWORD;
+    dwError: DWORD;
+    szIpAddress: array[0..RAS_MaxIpAddress] of WideChar;
+    szServerIpAddress: array[0..RAS_MaxIpAddress] of WideChar;
   end;
 
   TRASPPPIPA = record
-    dwSize : DWORD;
-    dwError : DWORD;
-    szIpAddress : array [0..RAS_MaxIpAddress] of AnsiChar;
-    szServerIpAddress : array [0..RAS_MaxIpAddress] of AnsiChar;
+    dwSize: DWORD;
+    dwError: DWORD;
+    szIpAddress: array[0..RAS_MaxIpAddress] of AnsiChar;
+    szServerIpAddress: array[0..RAS_MaxIpAddress] of AnsiChar;
   end;
 
 {$ifdef COMPILER12_UP}
@@ -645,28 +645,28 @@ type
 
 
 
-(* Describes the results of a PPP LCP/multi-link negotiation.
+(* Describes the Results of a PPP LCP/multi-link negotiation.
 *)
   TRASPPPLCP = record
-    dwSize : DWORD;
-    fBundled : BOOL;
+    dwSize: DWORD;
+    fBundled: BOOL;
   end;
 
   PRASPPPLCP = ^TRASPPPLCP;
 
 
-(* Describes the results of a SLIP (Serial Line IP) projection.
+(* Describes the Results of a SLIP (Serial Line IP) projection.
 *)
   TRASSLIPW = record
-    dwSize : DWORD;
-    dwError : DWORD;
-    szIpAddress : array [0..RAS_MaxIpAddress] of WideChar;
+    dwSize: DWORD;
+    dwError: DWORD;
+    szIpAddress: array[0..RAS_MaxIpAddress] of WideChar;
   end;
 
   TRASSLIPA = record
-    dwSize : DWORD;
-    dwError : DWORD;
-    szIpAddress : array [0..RAS_MaxIpAddress] of AnsiChar;
+    dwSize: DWORD;
+    dwError: DWORD;
+    szIpAddress: array[0..RAS_MaxIpAddress] of AnsiChar;
   end;
 
 {$ifdef COMPILER12_UP}
@@ -688,23 +688,23 @@ type
 ** subentries can be cancelled by returning FALSE.
 *)
 
-TRasDialFunc = procedure (unMsg : UINT; RASConnState : TRASConnState; dwError : DWORD); stdcall;
-TRasDialFunc1 = procedure (HRASConn : HRASCON; unMsg : UINT; rascs : TRASConnState; dwError, dwExtendedError : DWORD); stdcall;
-TRasDialFunc2 = function (dwCallbackID, dwSubEntry : DWORD; HRASConn : HRASCON; unMsg : UINT; rascs : TRASConnState; dwError, dwExtendedError : DWORD) : DWORD; stdcall;
+TRasDialFunc = procedure(unMsg: UINT; RASConnState: TRASConnState; dwError: DWORD); stdcall;
+TRasDialFunc1 = procedure(HRASConn: HRASCON; unMsg: UINT; rascs: TRASConnState; dwError, dwExtendedError: DWORD); stdcall;
+TRasDialFunc2 = function(dwCallbackID, dwSubEntry: DWORD; HRASConn: HRASCON; unMsg: UINT; rascs: TRASConnState; dwError, dwExtendedError: DWORD): DWORD; stdcall;
 
 (* Information describing a RAS-capable device.
 *)
 
   TRASDevInfoW = record
-    dwSize : DWORD;
-    szDeviceType : array [0..RAS_MaxDeviceType] of WideChar;
-    szDeviceName : array [0..RAS_MaxDeviceName] of WideChar;
+    dwSize: DWORD;
+    szDeviceType: array[0..RAS_MaxDeviceType] of WideChar;
+    szDeviceName: array[0..RAS_MaxDeviceName] of WideChar;
   end;
 
   TRASDevInfoA = record
-    dwSize : DWORD;
-    szDeviceType : array [0..RAS_MaxDeviceType] of AnsiChar;
-    szDeviceName : array [0..RAS_MaxDeviceName] of AnsiChar;
+    dwSize: DWORD;
+    szDeviceType: array[0..RAS_MaxDeviceType] of AnsiChar;
+    szDeviceName: array[0..RAS_MaxDeviceName] of AnsiChar;
   end;
 
 {$ifdef COMPILER12_UP}
@@ -717,15 +717,15 @@ TRasDialFunc2 = function (dwCallbackID, dwSubEntry : DWORD; HRASConn : HRASCON; 
   PRASDevInfoA = ^TRASDevInfoA;
   PRASDevInfo = ^TRASDevInfo;
 
-(* RAS country information (currently retrieved from TAPI).
+(* RAS country information(currently retrieved from TAPI).
 *)
 
   TRASCtryInfo = record
-    dwSize : DWORD;
-    dwCountryID : DWORD;
-    dwNextCountryID : DWORD;
-    dwCountryCode : DWORD;
-    dwCountryNameOffset : DWORD;
+    dwSize: DWORD;
+    dwCountryID: DWORD;
+    dwNextCountryID: DWORD;
+    dwCountryCode: DWORD;
+    dwCountryNameOffset: DWORD;
   end;
 
 (* There is currently no difference between
@@ -743,10 +743,10 @@ TRasDialFunc2 = function (dwCallbackID, dwSubEntry : DWORD; HRASConn : HRASCON; 
 *)
 
   TRASIPAddr = record
-    a : BYTE;
-    b : BYTE;
-    c : BYTE;
-    d : BYTE;
+    a: BYTE;
+    b: BYTE;
+    c: BYTE;
+    d: BYTE;
   end;
 
 const
@@ -770,140 +770,140 @@ type
 *)
 
   TRASEntryA = record
-    dwSize : DWORD;
-    dwfOptions : DWORD;
+    dwSize: DWORD;
+    dwfOptions: DWORD;
     //
     // Location/phone number.
     //
-    dwCountryID : DWORD;
-    dwCountryCode : DWORD;
-    szAreaCode : array [0..RAS_MaxAreaCode] of AnsiChar;
-    szLocalPhoneNumber : array [0..RAS_MaxPhoneNumber] of AnsiChar;
-    dwAlternateOffset : DWORD;
+    dwCountryID: DWORD;
+    dwCountryCode: DWORD;
+    szAreaCode: array[0..RAS_MaxAreaCode] of AnsiChar;
+    szLocalPhoneNumber: array[0..RAS_MaxPhoneNumber] of AnsiChar;
+    dwAlternateOffset: DWORD;
     //
     // PPP/Ip
     //
-    ipaddr : TRASIPAddr;
-    ipaddrDns : TRASIPAddr;
-    ipaddrDnsAlt : TRASIPAddr;
-    ipaddrWins : TRASIPAddr;
-    ipaddrWinsAlt : TRASIPAddr;
+    ipaddr: TRASIPAddr;
+    ipaddrDns: TRASIPAddr;
+    ipaddrDnsAlt: TRASIPAddr;
+    ipaddrWins: TRASIPAddr;
+    ipaddrWinsAlt: TRASIPAddr;
     //
     // Framing
     //
-    dwFrameSize : DWORD;
-    dwfNetProtocols : DWORD;
-    dwFramingProtocol : DWORD;
+    dwFrameSize: DWORD;
+    dwfNetProtocols: DWORD;
+    dwFramingProtocol: DWORD;
     //
     // Scripting
     //
-    szScript : array [0..MAX_PATH-1] of AnsiChar;
+    szScript: array[0..MAX_PATH-1] of AnsiChar;
     //
     // AutoDial
     //
-    szAutodialDll : array [0..MAX_PATH-1] of AnsiChar;
-    szAutodialFunc : array [0.. MAX_PATH-1] of AnsiChar;
+    szAutodialDll: array[0..MAX_PATH-1] of AnsiChar;
+    szAutodialFunc: array[0.. MAX_PATH-1] of AnsiChar;
     //
     // Device
     //
-    szDeviceType : array [0..RAS_MaxDeviceType] of AnsiChar;
-    szDeviceName : array [0..RAS_MaxDeviceName] of AnsiChar;
+    szDeviceType: array[0..RAS_MaxDeviceType] of AnsiChar;
+    szDeviceName: array[0..RAS_MaxDeviceName] of AnsiChar;
     //
     // X.25
     //
-    szX25PadType : array [0..RAS_MaxPadType] of AnsiChar;
-    szX25Address : array [0..RAS_MaxX25Address] of AnsiChar;
-    szX25Facilities : array [0..RAS_MaxFacilities] of AnsiChar;
-    szX25UserData : array [0..RAS_MaxUserData] of AnsiChar;
-    dwChannels : DWORD;
+    szX25PadType: array[0..RAS_MaxPadType] of AnsiChar;
+    szX25Address: array[0..RAS_MaxX25Address] of AnsiChar;
+    szX25Facilities: array[0..RAS_MaxFacilities] of AnsiChar;
+    szX25UserData: array[0..RAS_MaxUserData] of AnsiChar;
+    dwChannels: DWORD;
     //
     // Reserved
     //
-    dwReserved1  : DWORD;
-    dwReserved2 : DWORD;
+    dwReserved1 : DWORD;
+    dwReserved2: DWORD;
 
     //
     // Multilink
     //
-    dwSubEntries : DWORD;
-    dwDialMode : DWORD;
-    dwDialExtraPercent : DWORD;
-    dwDialExtraSampleSeconds : DWORD;
-    dwHangUpExtraPercent : DWORD;
-    dwHangUpExtraSampleSeconds : DWORD;
+    dwSubEntries: DWORD;
+    dwDialMode: DWORD;
+    dwDialExtraPercent: DWORD;
+    dwDialExtraSampleSeconds: DWORD;
+    dwHangUpExtraPercent: DWORD;
+    dwHangUpExtraSampleSeconds: DWORD;
     //
     // Idle timeout
     //
-    dwIdleDisconnectSeconds : DWORD;
+    dwIdleDisconnectSeconds: DWORD;
   end;
 
 
   TRASEntryW = record
-    dwSize : DWORD;
-    dwfOptions : DWORD;
+    dwSize: DWORD;
+    dwfOptions: DWORD;
     //
     // Location/phone number.
     //
-    dwCountryID : DWORD;
-    dwCountryCode : DWORD;
-    szAreaCode : array [0..RAS_MaxAreaCode] of WideChar;
-    szLocalPhoneNumber : array [0..RAS_MaxPhoneNumber] of WideChar;
-    dwAlternateOffset : DWORD;
+    dwCountryID: DWORD;
+    dwCountryCode: DWORD;
+    szAreaCode: array[0..RAS_MaxAreaCode] of WideChar;
+    szLocalPhoneNumber: array[0..RAS_MaxPhoneNumber] of WideChar;
+    dwAlternateOffset: DWORD;
     //
     // PPP/Ip
     //
-    ipaddr : TRASIPAddr;
-    ipaddrDns : TRASIPAddr;
-    ipaddrDnsAlt : TRASIPAddr;
-    ipaddrWins : TRASIPAddr;
-    ipaddrWinsAlt : TRASIPAddr;
+    ipaddr: TRASIPAddr;
+    ipaddrDns: TRASIPAddr;
+    ipaddrDnsAlt: TRASIPAddr;
+    ipaddrWins: TRASIPAddr;
+    ipaddrWinsAlt: TRASIPAddr;
     //
     // Framing
     //
-    dwFrameSize : DWORD;
-    dwfNetProtocols : DWORD;
-    dwFramingProtocol : DWORD;
+    dwFrameSize: DWORD;
+    dwfNetProtocols: DWORD;
+    dwFramingProtocol: DWORD;
     //
     // Scripting
     //
-    szScript : array [0..MAX_PATH-1] of WideChar;
+    szScript: array[0..MAX_PATH-1] of WideChar;
     //
     // AutoDial
     //
-    szAutodialDll : array [0..MAX_PATH-1] of WideChar;
-    szAutodialFunc : array [0.. MAX_PATH-1] of WideChar;
+    szAutodialDll: array[0..MAX_PATH-1] of WideChar;
+    szAutodialFunc: array[0.. MAX_PATH-1] of WideChar;
     //
     // Device
     //
-    szDeviceType : array [0..RAS_MaxDeviceType] of WideChar;
-    szDeviceName : array [0..RAS_MaxDeviceName] of WideChar;
+    szDeviceType: array[0..RAS_MaxDeviceType] of WideChar;
+    szDeviceName: array[0..RAS_MaxDeviceName] of WideChar;
     //
     // X.25
     //
-    szX25PadType : array [0..RAS_MaxPadType] of WideChar;
-    szX25Address : array [0..RAS_MaxX25Address] of WideChar;
-    szX25Facilities : array [0..RAS_MaxFacilities] of WideChar;
-    szX25UserData : array [0..RAS_MaxUserData] of WideChar;
-    dwChannels : DWORD;
+    szX25PadType: array[0..RAS_MaxPadType] of WideChar;
+    szX25Address: array[0..RAS_MaxX25Address] of WideChar;
+    szX25Facilities: array[0..RAS_MaxFacilities] of WideChar;
+    szX25UserData: array[0..RAS_MaxUserData] of WideChar;
+    dwChannels: DWORD;
     //
     // Reserved
     //
-    dwReserved1  : DWORD;
-    dwReserved2 : DWORD;
+    dwReserved1 : DWORD;
+    dwReserved2: DWORD;
 
     //
     // Multilink
     //
-    dwSubEntries : DWORD;
-    dwDialMode : DWORD;
-    dwDialExtraPercent : DWORD;
-    dwDialExtraSampleSeconds : DWORD;
-    dwHangUpExtraPercent : DWORD;
-    dwHangUpExtraSampleSeconds : DWORD;
+    dwSubEntries: DWORD;
+    dwDialMode: DWORD;
+    dwDialExtraPercent: DWORD;
+    dwDialExtraSampleSeconds: DWORD;
+    dwHangUpExtraPercent: DWORD;
+    dwHangUpExtraSampleSeconds: DWORD;
     //
     // Idle timeout
     //
-    dwIdleDisconnectSeconds : DWORD;
+    dwIdleDisconnectSeconds: DWORD;
   end;
 
 {$ifdef COMPILER12_UP}
@@ -926,17 +926,17 @@ type
 ** IN FUTURE VERSIONS OF RAS.
 *)
 
-ORASADFUNC = function (hwndOwner : HWND; lpszEntry : PChar; dwFlags : DWORD; var dwRetCode : DWORD) : BOOL; stdcall;
+ORASADFUNC = function(hwndOwner: HWND; lpszEntry: PChar; dwFlags: DWORD; var dwRetCode: DWORD): BOOL; stdcall;
 
 (* AutoDial DLL function parameter block.
 *)
 
   TRASADParams = record
-    dwSize : DWORD;
-    hwndOwner : HWND;
-    dwFlags : DWORD;
-    xDlg : LongInt;
-    yDlg : LongInt;
+    dwSize: DWORD;
+    hwndOwner: HWND;
+    dwFlags: DWORD;
+    xDlg: LongInt;
+    yDlg: LongInt;
   end;
 
   PRASADParams = ^TRASADParams;
@@ -944,41 +944,41 @@ ORASADFUNC = function (hwndOwner : HWND; lpszEntry : PChar; dwFlags : DWORD; var
 
 (* Prototype AutoDial DLL function.
 *)
-  RASADFuncA = function (lpszPhoneBook, lpszEntry : PCHAR; const AutoDialParams : TRASADParams; var dwRetCode : PDWORD) : BOOL; stdcall;
-  RASADFuncW = function (lpszPhoneBook, lpszEntry : PWideChar; const AutoDialParams : TRASADParams; var dwRetCode : PDWORD) : BOOL; stdcall;
+  RASADFuncA = function(lpszPhoneBook, lpszEntry: PCHAR; const AutoDialParams: TRASADParams; var dwRetCode: PDWORD): BOOL; stdcall;
+  RASADFuncW = function(lpszPhoneBook, lpszEntry: PWideChar; const AutoDialParams: TRASADParams; var dwRetCode: PDWORD): BOOL; stdcall;
 
   RASADFunc = RASADFuncA;
 
 (* A RAS phone book multilinked sub-entry.
 *)
   TRASSubEntryA = record
-    dwSize : DWORD;
-    dwfFlags : DWORD;
+    dwSize: DWORD;
+    dwfFlags: DWORD;
     //
     // Device
     //
-    szDeviceType : array [0..RAS_MaxDeviceType] of AnsiChar;
-    szDeviceName : array [0..RAS_MaxDeviceName] of AnsiChar;
+    szDeviceType: array[0..RAS_MaxDeviceType] of AnsiChar;
+    szDeviceName: array[0..RAS_MaxDeviceName] of AnsiChar;
     //
     // Phone numbers
     //
-    szLocalPhoneNumber : array [0..RAS_MaxPhoneNumber] of AnsiChar;
-    dwAlternateOffset : DWORD;
+    szLocalPhoneNumber: array[0..RAS_MaxPhoneNumber] of AnsiChar;
+    dwAlternateOffset: DWORD;
   end;
 
   TRASSubEntryW = record
-    dwSize : DWORD;
-    dwfFlags : DWORD;
+    dwSize: DWORD;
+    dwfFlags: DWORD;
     //
     // Device
     //
-    szDeviceType : array [0..RAS_MaxDeviceType] of WideChar;
-    szDeviceName : array [0..RAS_MaxDeviceName] of WideChar;
+    szDeviceType: array[0..RAS_MaxDeviceType] of WideChar;
+    szDeviceName: array[0..RAS_MaxDeviceName] of WideChar;
     //
     // Phone numbers
     //
-    szLocalPhoneNumber : array [0..RAS_MaxPhoneNumber] of WideChar;
-    dwAlternateOffset : DWORD;
+    szLocalPhoneNumber: array[0..RAS_MaxPhoneNumber] of WideChar;
+    dwAlternateOffset: DWORD;
   end;
 
 {$ifdef COMPILER12_UP}
@@ -997,18 +997,18 @@ ORASADFUNC = function (hwndOwner : HWND; lpszEntry : PChar; dwFlags : DWORD; var
 *)
   TRASCredentialsA = record
     dwSize :DWORD;
-    dwMask : DWORD;
-    szUserName : array [0..UNLEN] of AnsiChar;
-    szPassword : array [0..PWLEN] of AnsiChar;
-    szDomain : array [0..DNLEN] of AnsiChar;
+    dwMask: DWORD;
+    szUserName: array[0..UNLEN] of AnsiChar;
+    szPassword: array[0..PWLEN] of AnsiChar;
+    szDomain: array[0..DNLEN] of AnsiChar;
   end;
 
   TRASCredentialsW = record
     dwSize :DWORD;
-    dwMask : DWORD;
-    szUserName : array [0..UNLEN] of WideChar;
-    szPassword : array [0..PWLEN] of WideChar;
-    szDomain : array [0..DNLEN] of WideChar;
+    dwMask: DWORD;
+    szUserName: array[0..UNLEN] of WideChar;
+    szPassword: array[0..PWLEN] of WideChar;
+    szDomain: array[0..DNLEN] of WideChar;
   end;
 
 {$ifdef COMPILER12_UP}
@@ -1025,17 +1025,17 @@ ORASADFUNC = function (hwndOwner : HWND; lpszEntry : PChar; dwFlags : DWORD; var
 *)
 
   TRASAutoDialEntryA = record
-    dwSize : DWORD;
-    dwFlags : DWORD;
-    dwDialingLocation : DWORD;
-    szEntry : array [0..RAS_MaxEntryName] of AnsiChar;
+    dwSize: DWORD;
+    dwFlags: DWORD;
+    dwDialingLocation: DWORD;
+    szEntry: array[0..RAS_MaxEntryName] of AnsiChar;
   end;
 
   TRASAutoDialEntryW = record
-    dwSize : DWORD;
-    dwFlags : DWORD;
-    dwDialingLocation : DWORD;
-    szEntry : array [0..RAS_MaxEntryName] of WideChar;
+    dwSize: DWORD;
+    dwFlags: DWORD;
+    dwDialingLocation: DWORD;
+    szEntry: array[0..RAS_MaxEntryName] of WideChar;
   end;
 
 {$ifdef COMPILER12_UP}
@@ -1061,309 +1061,309 @@ ORASADFUNC = function (hwndOwner : HWND; lpszEntry : PChar; dwFlags : DWORD; var
 {$endif}
 
 
-TfnRasDialA = function (
-                 RASDialExtension : PRASDialExtensions;
-                 lpszPhonebook : PChar;
-                 const RASDialParams : TRASDialParamsA;
-                 dwNotifierType : DWORD;
-                 pNotifier : pointer;
-                 var hRasConn : hRasCon) : DWORD; stdcall;
+TfnRasDialA = function(
+                 RASDialExtension: PRASDialExtensions;
+                 lpszPhonebook: PChar;
+                 const RASDialParams: TRASDialParamsA;
+                 dwNotifierType: DWORD;
+                 pNotifier: Pointer;
+                 var hRasConn: hRasCon): DWORD; stdcall;
 
-TfnRasDialW = function (
-                 RASDialExtension : PRASDialExtensions;
-                 lpszPhonebook : PWideChar;
-                 const RASDialParams : TRASDialParamsW;
-                 dwNotifierType : DWORD;
-                 pNotifier : pointer;
-                 var hRasConn : hRasCon) : DWORD; stdcall;
+TfnRasDialW = function(
+                 RASDialExtension: PRASDialExtensions;
+                 lpszPhonebook: PWideChar;
+                 const RASDialParams: TRASDialParamsW;
+                 dwNotifierType: DWORD;
+                 pNotifier: Pointer;
+                 var hRasConn: hRasCon): DWORD; stdcall;
 
-TfnRasDial = function (
-                 RASDialExtension : PRASDialExtensions;
-                 lpszPhonebook : PChar;
-                 const RASDialParams : TRASDialParams;
-                 dwNotifierType : DWORD;
-                 pNotifier : pointer;
-                 var hRasConn : hRasCon) : DWORD; stdcall;
+TfnRasDial = function(
+                 RASDialExtension: PRASDialExtensions;
+                 lpszPhonebook: PChar;
+                 const RASDialParams: TRASDialParams;
+                 dwNotifierType: DWORD;
+                 pNotifier: Pointer;
+                 var hRasConn: hRasCon): DWORD; stdcall;
 
 
-TfnRasEnumConnectionsA = function ( connections : PRASConnA; var cb, cConnections : DWORD) : DWORD; stdcall;
-TfnRasEnumConnectionsW = function ( connections : PRASConnW; var cb, cConnections : DWORD) : DWORD; stdcall;
-TfnRasEnumConnections = function ( connections : PRASConn; var cb, cConnections : DWORD) : DWORD; stdcall;
+TfnRasEnumConnectionsA = function(connections: PRASConnA; var cb, cConnections: DWORD): DWORD; stdcall;
+TfnRasEnumConnectionsW = function(connections: PRASConnW; var cb, cConnections: DWORD): DWORD; stdcall;
+TfnRasEnumConnections = function(connections: PRASConn; var cb, cConnections: DWORD): DWORD; stdcall;
 
-TfnRasEnumEntriesA = function (
-                 lpszReserved, lpszPhonebook : PChar;
-                 pEntryname : PRASENTRYNAMEA;
-                 var cb, cEntries : DWORD) : DWORD; stdcall;
+TfnRasEnumEntriesA = function(
+                 lpszReserved, lpszPhonebook: PChar;
+                 pEntryname: PRASENTRYNAMEA;
+                 var cb, cEntries: DWORD): DWORD; stdcall;
 
-TfnRasEnumEntriesW = function ( 
-                 lpszReserved, lpszPhonebook : PWideChar;
-                 pEntryname : PRASENTRYNAMEW;
-                 var cb, cEntries : DWORD) : DWORD; stdcall;
+TfnRasEnumEntriesW = function(
+                 lpszReserved, lpszPhonebook: PWideChar;
+                 pEntryname: PRASENTRYNAMEW;
+                 var cb, cEntries: DWORD): DWORD; stdcall;
 
-TfnRasEnumEntries = function ( 
-                 lpszReserved, lpszPhonebook : PChar;
-                 pEntryname : PRASENTRYNAME;
-                 var cb, cEntries : DWORD) : DWORD; stdcall;
+TfnRasEnumEntries = function(
+                 lpszReserved, lpszPhonebook: PChar;
+                 pEntryname: PRASENTRYNAME;
+                 var cb, cEntries: DWORD): DWORD; stdcall;
 
-TfnRasGetConnectStatusA = function ( hRasConn : HRASCON; var status : TRASConnStatusA) : DWORD; stdcall;
-TfnRasGetConnectStatusW = function ( hRasConn : HRASCON; var status : TRASConnStatusW) : DWORD; stdcall;
-TfnRasGetConnectStatus = function ( hRasConn : HRASCON; var status : TRASConnStatus) : DWORD; stdcall;
+TfnRasGetConnectStatusA = function(hRasConn: HRASCON; var status: TRASConnStatusA): DWORD; stdcall;
+TfnRasGetConnectStatusW = function(hRasConn: HRASCON; var status: TRASConnStatusW): DWORD; stdcall;
+TfnRasGetConnectStatus = function(hRasConn: HRASCON; var status: TRASConnStatus): DWORD; stdcall;
 
-TfnRasGetErrorStringA = function ( error : UINT; errorString : PChar; cb : DWORD ) : DWORD; stdcall;
-TfnRasGetErrorStringW = function ( error : UINT; errorString : PWideChar; cb : DWORD ) : DWORD; stdcall;
-TfnRasGetErrorString = function ( error : UINT; errorString : PChar; cb : DWORD ) : DWORD; stdcall;
+TfnRasGetErrorStringA = function(error: UINT; errorString: PChar; cb: DWORD ): DWORD; stdcall;
+TfnRasGetErrorStringW = function(error: UINT; errorString: PWideChar; cb: DWORD ): DWORD; stdcall;
+TfnRasGetErrorString = function(error: UINT; errorString: PChar; cb: DWORD ): DWORD; stdcall;
 
-TfnRASHangUpA = function ( hRasConn : HRASCON) : DWORD; stdcall;
-TfnRASHangUpW = function ( hRasConn : HRASCON) : DWORD; stdcall;
-TfnRASHangUp = function ( hRasConn : HRASCON) : DWORD; stdcall;
+TfnRASHangUpA = function(hRasConn: HRASCON): DWORD; stdcall;
+TfnRASHangUpW = function(hRasConn: HRASCON): DWORD; stdcall;
+TfnRASHangUp = function(hRasConn: HRASCON): DWORD; stdcall;
 
-TfnRasGetProjectionInfoA = function (
-                 hRasConn : HRASCON;
-                 projection : TRasProjection;
-                 lpProjection : pointer;
-                 var cb : DWORD) : DWORD; stdcall;
+TfnRasGetProjectionInfoA = function(
+                 hRasConn: HRASCON;
+                 projection: TRasProjection;
+                 lpProjection: Pointer;
+                 var cb: DWORD): DWORD; stdcall;
 
-TfnRasGetProjectionInfoW = function ( 
-                 hRasConn : HRASCON;
-                 projection : TRasProjection;
-                 lpProjection : pointer;
-                 var cb : DWORD) : DWORD; stdcall;
+TfnRasGetProjectionInfoW = function(
+                 hRasConn: HRASCON;
+                 projection: TRasProjection;
+                 lpProjection: Pointer;
+                 var cb: DWORD): DWORD; stdcall;
 
-TfnRasGetProjectionInfo = function ( 
-                 hRasConn : HRASCON;
-                 projection : TRasProjection;
-                 lpProjection : pointer;
-                 var cb : DWORD) : DWORD; stdcall;
+TfnRasGetProjectionInfo = function(
+                 hRasConn: HRASCON;
+                 projection: TRasProjection;
+                 lpProjection: Pointer;
+                 var cb: DWORD): DWORD; stdcall;
 
-TfnRasCreatePhonebookEntryA = function ( HWND : hWnd; lpszPhonebook : PChar) : DWORD; stdcall;
-TfnRasCreatePhonebookEntryW = function ( HWND : hWnd; lpszPhonebook : PWideChar) : DWORD; stdcall;
-TfnRasCreatePhonebookEntry = function ( HWND : hWnd; lpszPhonebook : PChar) : DWORD; stdcall;
+TfnRasCreatePhonebookEntryA = function(HWND: hWnd; lpszPhonebook: PChar): DWORD; stdcall;
+TfnRasCreatePhonebookEntryW = function(HWND: hWnd; lpszPhonebook: PWideChar): DWORD; stdcall;
+TfnRasCreatePhonebookEntry = function(HWND: hWnd; lpszPhonebook: PChar): DWORD; stdcall;
 
-TfnRasEditPhonebookEntryA = function ( HWND : hWnd; lpszPhonebook, lpszEntryname : PChar) : DWORD; stdcall;
-TfnRasEditPhonebookEntryW = function ( HWND : hWnd; lpszPhonebook, lpszEntryname : PWideChar) : DWORD; stdcall;
-TfnRasEditPhonebookEntry = function ( HWND : hWnd; lpszPhonebook, lpszEntryname : PChar) : DWORD; stdcall;
+TfnRasEditPhonebookEntryA = function(HWND: hWnd; lpszPhonebook, lpszEntryname: PChar): DWORD; stdcall;
+TfnRasEditPhonebookEntryW = function(HWND: hWnd; lpszPhonebook, lpszEntryname: PWideChar): DWORD; stdcall;
+TfnRasEditPhonebookEntry = function(HWND: hWnd; lpszPhonebook, lpszEntryname: PChar): DWORD; stdcall;
 
-TfnRasSetEntryDialParamsA = function ( lpszPhonebook : PChar; const rasDialParams : TRasDialParamsA; fRemovePassword : BOOL) : DWORD; stdcall;
-TfnRasSetEntryDialParamsW = function ( lpszPhonebook : PWideChar; const rasDialParams : TRasDialParamsW; fRemovePassword : BOOL) : DWORD; stdcall;
-TfnRasSetEntryDialParams = function ( lpszPhonebook : PChar; const rasDialParams : TRasDialParams; fRemovePassword : BOOL) : DWORD; stdcall;
+TfnRasSetEntryDialParamsA = function(lpszPhonebook: PChar; const rasDialParams: TRasDialParamsA; fRemovePassword: BOOL): DWORD; stdcall;
+TfnRasSetEntryDialParamsW = function(lpszPhonebook: PWideChar; const rasDialParams: TRasDialParamsW; fRemovePassword: BOOL): DWORD; stdcall;
+TfnRasSetEntryDialParams = function(lpszPhonebook: PChar; const rasDialParams: TRasDialParams; fRemovePassword: BOOL): DWORD; stdcall;
 
-TfnRasGetEntryDialParamsA = function ( lpszPhonebook : PChar; var rasDialParams : TRasDialParamsA; var fRemovePassword : BOOL) : DWORD; stdcall;
-TfnRasGetEntryDialParamsW = function ( lpszPhonebook : PWideChar; var rasDialParams : TRasDialParamsW; var fRemovePassword : BOOL) : DWORD; stdcall;
-TfnRasGetEntryDialParams = function ( lpszPhonebook : PChar; var rasDialParams : TRasDialParams; var fRemovePassword : BOOL) : DWORD; stdcall;
+TfnRasGetEntryDialParamsA = function(lpszPhonebook: PChar; var rasDialParams: TRasDialParamsA; var fRemovePassword: BOOL): DWORD; stdcall;
+TfnRasGetEntryDialParamsW = function(lpszPhonebook: PWideChar; var rasDialParams: TRasDialParamsW; var fRemovePassword: BOOL): DWORD; stdcall;
+TfnRasGetEntryDialParams = function(lpszPhonebook: PChar; var rasDialParams: TRasDialParams; var fRemovePassword: BOOL): DWORD; stdcall;
 
-TfnRasEnumDevicesA = function (devices : PRASDevInfoA; var cb, cDevices : DWORD) : DWORD; stdcall;
-TfnRasEnumDevicesW = function (devices : PRASDevInfoW; var cb, cDevices : DWORD) : DWORD; stdcall;
-TfnRasEnumDevices = function (devices : PRASDevInfo; var cb, cDevices : DWORD) : DWORD; stdcall;
+TfnRasEnumDevicesA = function(devices: PRASDevInfoA; var cb, cDevices: DWORD): DWORD; stdcall;
+TfnRasEnumDevicesW = function(devices: PRASDevInfoW; var cb, cDevices: DWORD): DWORD; stdcall;
+TfnRasEnumDevices = function(devices: PRASDevInfo; var cb, cDevices: DWORD): DWORD; stdcall;
 
-TfnRasGetCountryInfoA = function ( countryInfo : PRasCtryInfoA; var cb : DWORD) : DWORD; stdcall;
-TfnRasGetCountryInfoW = function ( countryInfo : PRasCtryInfoW; var cb : DWORD) : DWORD; stdcall;
-TfnRasGetCountryInfo = function ( countryInfo : PRasCtryInfo; var cb : DWORD) : DWORD; stdcall;
+TfnRasGetCountryInfoA = function(countryInfo: PRasCtryInfoA; var cb: DWORD): DWORD; stdcall;
+TfnRasGetCountryInfoW = function(countryInfo: PRasCtryInfoW; var cb: DWORD): DWORD; stdcall;
+TfnRasGetCountryInfo = function(countryInfo: PRasCtryInfo; var cb: DWORD): DWORD; stdcall;
 
-TfnRasGetEntryPropertiesA = function (
-                  lpszPhonebook, lpszEntry : PChar;
-                  lpRasEntry : PRasEntryA;
-                  EntrySize : PDWORD;
-                  DeviceInfo : PBYTE;
-                  DeviceInfoSize : PDWORD) : DWORD; stdcall;
+TfnRasGetEntryPropertiesA = function(
+                  lpszPhonebook, lpszEntry: PChar;
+                  lpRasEntry: PRasEntryA;
+                  EntrySize: PDWORD;
+                  DeviceInfo: PBYTE;
+                  DeviceInfoSize: PDWORD): DWORD; stdcall;
 
-TfnRasGetEntryPropertiesW = function (
-                  lpszPhonebook, lpszEntry : PWideChar;
-                  lpRasEntry : PRasEntryW;
-                  EntrySize : PDWORD;
-                  DeviceInfo : PBYTE;
-                  DeviceInfoSize : PDWORD) : DWORD; stdcall;
+TfnRasGetEntryPropertiesW = function(
+                  lpszPhonebook, lpszEntry: PWideChar;
+                  lpRasEntry: PRasEntryW;
+                  EntrySize: PDWORD;
+                  DeviceInfo: PBYTE;
+                  DeviceInfoSize: PDWORD): DWORD; stdcall;
 
-TfnRasGetEntryProperties = function (
-                  lpszPhonebook, lpszEntry : PChar;
-                  lpRasEntry : PRasEntry;
-                  EntrySize : PDWORD;
-                  DeviceInfo : PBYTE;
-                  DeviceInfoSize : PDWORD) : DWORD; stdcall;
+TfnRasGetEntryProperties = function(
+                  lpszPhonebook, lpszEntry: PChar;
+                  lpRasEntry: PRasEntry;
+                  EntrySize: PDWORD;
+                  DeviceInfo: PBYTE;
+                  DeviceInfoSize: PDWORD): DWORD; stdcall;
 
-TfnRasSetEntryPropertiesA = function (
-                  lpszPhonebook, lpszEntry : PChar;
-                  const RasEntry : TRasEntryA;
-                  EntrySize : DWORD;
-                  DeviceInfo : PBYTE;
-                  DeviceInfoSize : DWORD) : DWORD; stdcall;
+TfnRasSetEntryPropertiesA = function(
+                  lpszPhonebook, lpszEntry: PChar;
+                  const RasEntry: TRasEntryA;
+                  EntrySize: DWORD;
+                  DeviceInfo: PBYTE;
+                  DeviceInfoSize: DWORD): DWORD; stdcall;
 
-TfnRasSetEntryPropertiesW = function ( 
-                  lpszPhonebook, lpszEntry : PWideChar;
-                  const RasEntry : TRasEntryW;
-                  EntrySize : DWORD;
-                  DeviceInfo : PBYTE;
-                  DeviceInfoSize : DWORD) : DWORD; stdcall;
+TfnRasSetEntryPropertiesW = function(
+                  lpszPhonebook, lpszEntry: PWideChar;
+                  const RasEntry: TRasEntryW;
+                  EntrySize: DWORD;
+                  DeviceInfo: PBYTE;
+                  DeviceInfoSize: DWORD): DWORD; stdcall;
 
-TfnRasSetEntryProperties = function ( 
-                  lpszPhonebook, lpszEntry : PChar;
-                  const RasEntry : TRasEntry;
-                  EntrySize : DWORD;
-                  DeviceInfo : PBYTE;
-                  DeviceInfoSize : DWORD) : DWORD; stdcall;
+TfnRasSetEntryProperties = function(
+                  lpszPhonebook, lpszEntry: PChar;
+                  const RasEntry: TRasEntry;
+                  EntrySize: DWORD;
+                  DeviceInfo: PBYTE;
+                  DeviceInfoSize: DWORD): DWORD; stdcall;
 
-TfnRasRenameEntryA = function ( lpszPhonebook, lpszOldEntry, lpszNewEntry : PChar) : DWORD; stdcall;
-TfnRasRenameEntryW = function ( lpszPhonebook, lpszOldEntry, lpszNewEntry : PWideChar) : DWORD; stdcall;
-TfnRasRenameEntry = function ( lpszPhonebook, lpszOldEntry, lpszNewEntry : PChar) : DWORD; stdcall;
+TfnRasRenameEntryA = function(lpszPhonebook, lpszOldEntry, lpszNewEntry: PChar): DWORD; stdcall;
+TfnRasRenameEntryW = function(lpszPhonebook, lpszOldEntry, lpszNewEntry: PWideChar): DWORD; stdcall;
+TfnRasRenameEntry = function(lpszPhonebook, lpszOldEntry, lpszNewEntry: PChar): DWORD; stdcall;
 
-TfnRasDeleteEntryA = function ( lpszPhonebook, lpszEntry : PChar) : DWORD; stdcall;
-TfnRasDeleteEntryW = function ( lpszPhonebook, lpszEntry : PWideChar) : DWORD; stdcall;
-TfnRasDeleteEntry = function ( lpszPhonebook, lpszEntry : PChar) : DWORD; stdcall;
+TfnRasDeleteEntryA = function(lpszPhonebook, lpszEntry: PChar): DWORD; stdcall;
+TfnRasDeleteEntryW = function(lpszPhonebook, lpszEntry: PWideChar): DWORD; stdcall;
+TfnRasDeleteEntry = function(lpszPhonebook, lpszEntry: PChar): DWORD; stdcall;
 
-TfnRasValidateEntryNameA = function ( lpszPhonebook, lpszEntry : PChar) : DWORD; stdcall;
-TfnRasValidateEntryNameW = function ( lpszPhonebook, lpszEntry : PWideChar) : DWORD; stdcall;
-TfnRasValidateEntryName = function ( lpszPhonebook, lpszEntry : PChar) : DWORD; stdcall;
+TfnRasValidateEntryNameA = function(lpszPhonebook, lpszEntry: PChar): DWORD; stdcall;
+TfnRasValidateEntryNameW = function(lpszPhonebook, lpszEntry: PWideChar): DWORD; stdcall;
+TfnRasValidateEntryName = function(lpszPhonebook, lpszEntry: PChar): DWORD; stdcall;
 
-TfnRasGetSubEntryHandleA = function ( hRasConn : HRASCON; dwSubEntry : DWORD; var handle : HRASCON) : DWORD; stdcall;
-TfnRasGetSubEntryHandleW = function ( hRasConn : HRASCON; dwSubEntry : DWORD; var handle : HRASCON) : DWORD; stdcall;
-TfnRasGetSubEntryHandle = function ( hRasConn : HRASCON; dwSubEntry : DWORD; var handle : HRASCON) : DWORD; stdcall;
-TfnRasGetCredentialsA = function ( lpszPhonebook, lpszEntry : PChar; var Credentials : TRASCredentialsA) : DWORD; stdcall;
-TfnRasGetCredentialsW = function ( lpszPhonebook, lpszEntry : PChar; var Credentials : TRASCredentialsW) : DWORD; stdcall;
-TfnRasGetCredentials = function ( lpszPhonebook, lpszEntry : PChar; var Credentials : TRASCredentials) : DWORD; stdcall;
-TfnRasSetCredentialsA = function ( lpszPhonebook, lpszEntry : PChar; const Credentials : TRASCredentialsA; fClearConnections : boolean) : DWORD; stdcall;
-TfnRasSetCredentialsW = function ( lpszPhonebook, lpszEntry : PChar; const Credentials : TRASCredentialsW; fClearConnections : boolean) : DWORD; stdcall;
-TfnRasSetCredentials = function ( lpszPhonebook, lpszEntry : PChar; const Credentials : TRASCredentials; fClearConnections : boolean) : DWORD; stdcall;
-TfnRasConnectionNotificationA = function ( hRasConn : HRASCON; hEvent : THandle; dwFlags : DWORD ) : DWORD; stdcall;
-TfnRasConnectionNotificationW = function ( hRasConn : HRASCON; hEvent : THandle; dwFlags : DWORD ) : DWORD; stdcall;
-TfnRasConnectionNotification = function ( hRasConn : HRASCON; hEvent : THandle; dwFlags : DWORD ) : DWORD; stdcall;
-TfnRasGetSubEntryPropertiesA = function ( lpszPhonebook, lpszEntry : PChar; dwSubEntry : DWORD; subEntry : PRasSubEntryA; pcb : PDWORD) : DWORD; stdcall;
-TfnRasGetSubEntryPropertiesW = function ( lpszPhonebook, lpszEntry : PWideChar; dwSubEntry : DWORD; subEntry : PRasSubEntryW; pcb : PDWORD) : DWORD; stdcall;
-TfnRasGetSubEntryProperties = function ( lpszPhonebook, lpszEntry : PChar; dwSubEntry : DWORD; subEntry : PRasSubEntry; pcb : PDWORD) : DWORD; stdcall;
-TfnRasSetSubEntryPropertiesA = function ( lpszPhonebook, lpszEntry : PChar; dwSubEntry : DWORD; subEntry : PRasSubEntryA; cb : DWORD) : DWORD; stdcall;
-TfnRasSetSubEntryPropertiesW = function ( lpszPhonebook, lpszEntry : PWideChar; dwSubEntry : DWORD; subEntry : PRasSubEntryW; cb : DWORD) : DWORD; stdcall;
-TfnRasSetSubEntryProperties = function ( lpszPhonebook, lpszEntry : PChar; dwSubEntry : DWORD; subEntry : PRasSubEntry; cb : DWORD) : DWORD; stdcall;
-TfnRasGetAutodialAddressA = function ( lpszAddress : PChar; lpdwReserved : PDWORD; entries : PRASAutoDialEntryA; var cb, cEntries : DWORD) : DWORD; stdcall;
-TfnRasGetAutodialAddressW = function ( lpszAddress : PWideChar; lpdwReserved : PDWORD; entries : PRASAutoDialEntryW; var cb, cEntries : DWORD) : DWORD; stdcall;
-TfnRasGetAutodialAddress = function ( lpszAddress : PChar; lpdwReserved : PDWORD; entries : PRASAutoDialEntry; var cb, cEntries : DWORD) : DWORD; stdcall;
-TfnRasSetAutodialAddressA = function ( lpszAddress : PChar; dwReserved : DWORD; entries : PRASAutoDialEntry; cb, cEntries : DWORD) : DWORD; stdcall;
-TfnRasSetAutodialAddressW = function ( lpszAddress : PWideChar; dwReserved : DWORD; entries : PRASAutoDialEntryW; cb, cEntries : DWORD) : DWORD; stdcall;
-TfnRasSetAutodialAddress = function ( lpszAddress : PChar; dwReserved : DWORD; entries : PRASAutoDialEntry; cb, cEntries : DWORD) : DWORD; stdcall;
-TfnRasEnumAutodialAddressesA = function ( addresses : PPChar; var cbAddresses, cAddresses : DWORD) : DWORD; stdcall;
-TfnRasEnumAutodialAddressesW = function ( addresses : PPWideChar; var cbAddresses, cAddresses : DWORD) : DWORD; stdcall;
-TfnRasEnumAutodialAddresses = function ( addresses : PPChar; var cbAddresses, cAddresses : DWORD) : DWORD; stdcall;
-TfnRasGetAutodialEnableA = function ( dwDiallingLocation : DWORD; var enabled : BOOL) : DWORD; stdcall;
-TfnRasGetAutodialEnableW = function ( dwDiallingLocation : DWORD; var enabled : BOOL) : DWORD; stdcall;
-TfnRasGetAutodialEnable = function ( dwDiallingLocation : DWORD; var enabled : BOOL) : DWORD; stdcall;
-TfnRasSetAutodialEnableA = function ( dwDiallingLocation : DWORD; enabled : BOOL) : DWORD; stdcall;
-TfnRasSetAutodialEnableW = function ( dwDiallingLocation : DWORD; enabled : BOOL) : DWORD; stdcall;
-TfnRasSetAutodialEnable = function ( dwDiallingLocation : DWORD; enabled : BOOL) : DWORD; stdcall;
-TfnRasGetAutodialParamA = function ( dwDiallingLocation : DWORD; param : pointer; var cb : DWORD) : DWORD; stdcall;
-TfnRasGetAutodialParamW = function ( dwDiallingLocation : DWORD; param : pointer; var cb : DWORD) : DWORD; stdcall;
-TfnRasGetAutodialParam = function ( dwDiallingLocation : DWORD; param : pointer; var cb : DWORD) : DWORD; stdcall;
-TfnRasSetAutodialParamA = function ( dwDiallingLocation : DWORD; param : pointer; cb : DWORD) : DWORD; stdcall;
-TfnRasSetAutodialParamW = function ( dwDiallingLocation : DWORD; param : pointer; cb : DWORD) : DWORD; stdcall;
-TfnRasSetAutodialParam = function ( dwDiallingLocation : DWORD; param : pointer; cb : DWORD) : DWORD; stdcall;
+TfnRasGetSubEntryHandleA = function(hRasConn: HRASCON; dwSubEntry: DWORD; var handle: HRASCON): DWORD; stdcall;
+TfnRasGetSubEntryHandleW = function(hRasConn: HRASCON; dwSubEntry: DWORD; var handle: HRASCON): DWORD; stdcall;
+TfnRasGetSubEntryHandle = function(hRasConn: HRASCON; dwSubEntry: DWORD; var handle: HRASCON): DWORD; stdcall;
+TfnRasGetCredentialsA = function(lpszPhonebook, lpszEntry: PChar; var Credentials: TRASCredentialsA): DWORD; stdcall;
+TfnRasGetCredentialsW = function(lpszPhonebook, lpszEntry: PChar; var Credentials: TRASCredentialsW): DWORD; stdcall;
+TfnRasGetCredentials = function(lpszPhonebook, lpszEntry: PChar; var Credentials: TRASCredentials): DWORD; stdcall;
+TfnRasSetCredentialsA = function(lpszPhonebook, lpszEntry: PChar; const Credentials: TRASCredentialsA; fClearConnections: Boolean): DWORD; stdcall;
+TfnRasSetCredentialsW = function(lpszPhonebook, lpszEntry: PChar; const Credentials: TRASCredentialsW; fClearConnections: Boolean): DWORD; stdcall;
+TfnRasSetCredentials = function(lpszPhonebook, lpszEntry: PChar; const Credentials: TRASCredentials; fClearConnections: Boolean): DWORD; stdcall;
+TfnRasConnectionNotificationA = function(hRasConn: HRASCON; hEvent: THandle; dwFlags: DWORD ): DWORD; stdcall;
+TfnRasConnectionNotificationW = function(hRasConn: HRASCON; hEvent: THandle; dwFlags: DWORD ): DWORD; stdcall;
+TfnRasConnectionNotification = function(hRasConn: HRASCON; hEvent: THandle; dwFlags: DWORD ): DWORD; stdcall;
+TfnRasGetSubEntryPropertiesA = function(lpszPhonebook, lpszEntry: PChar; dwSubEntry: DWORD; subEntry: PRasSubEntryA; pcb: PDWORD): DWORD; stdcall;
+TfnRasGetSubEntryPropertiesW = function(lpszPhonebook, lpszEntry: PWideChar; dwSubEntry: DWORD; subEntry: PRasSubEntryW; pcb: PDWORD): DWORD; stdcall;
+TfnRasGetSubEntryProperties = function(lpszPhonebook, lpszEntry: PChar; dwSubEntry: DWORD; subEntry: PRasSubEntry; pcb: PDWORD): DWORD; stdcall;
+TfnRasSetSubEntryPropertiesA = function(lpszPhonebook, lpszEntry: PChar; dwSubEntry: DWORD; subEntry: PRasSubEntryA; cb: DWORD): DWORD; stdcall;
+TfnRasSetSubEntryPropertiesW = function(lpszPhonebook, lpszEntry: PWideChar; dwSubEntry: DWORD; subEntry: PRasSubEntryW; cb: DWORD): DWORD; stdcall;
+TfnRasSetSubEntryProperties = function(lpszPhonebook, lpszEntry: PChar; dwSubEntry: DWORD; subEntry: PRasSubEntry; cb: DWORD): DWORD; stdcall;
+TfnRasGetAutodialAddressA = function(lpszAddress: PChar; lpdwReserved: PDWORD; entries: PRASAutoDialEntryA; var cb, cEntries: DWORD): DWORD; stdcall;
+TfnRasGetAutodialAddressW = function(lpszAddress: PWideChar; lpdwReserved: PDWORD; entries: PRASAutoDialEntryW; var cb, cEntries: DWORD): DWORD; stdcall;
+TfnRasGetAutodialAddress = function(lpszAddress: PChar; lpdwReserved: PDWORD; entries: PRASAutoDialEntry; var cb, cEntries: DWORD): DWORD; stdcall;
+TfnRasSetAutodialAddressA = function(lpszAddress: PChar; dwReserved: DWORD; entries: PRASAutoDialEntry; cb, cEntries: DWORD): DWORD; stdcall;
+TfnRasSetAutodialAddressW = function(lpszAddress: PWideChar; dwReserved: DWORD; entries: PRASAutoDialEntryW; cb, cEntries: DWORD): DWORD; stdcall;
+TfnRasSetAutodialAddress = function(lpszAddress: PChar; dwReserved: DWORD; entries: PRASAutoDialEntry; cb, cEntries: DWORD): DWORD; stdcall;
+TfnRasEnumAutodialAddressesA = function(addresses: PPChar; var cbAddresses, cAddresses: DWORD): DWORD; stdcall;
+TfnRasEnumAutodialAddressesW = function(addresses: PPWideChar; var cbAddresses, cAddresses: DWORD): DWORD; stdcall;
+TfnRasEnumAutodialAddresses = function(addresses: PPChar; var cbAddresses, cAddresses: DWORD): DWORD; stdcall;
+TfnRasGetAutodialEnableA = function(dwDiallingLocation: DWORD; var enabled: BOOL): DWORD; stdcall;
+TfnRasGetAutodialEnableW = function(dwDiallingLocation: DWORD; var enabled: BOOL): DWORD; stdcall;
+TfnRasGetAutodialEnable = function(dwDiallingLocation: DWORD; var enabled: BOOL): DWORD; stdcall;
+TfnRasSetAutodialEnableA = function(dwDiallingLocation: DWORD; enabled: BOOL): DWORD; stdcall;
+TfnRasSetAutodialEnableW = function(dwDiallingLocation: DWORD; enabled: BOOL): DWORD; stdcall;
+TfnRasSetAutodialEnable = function(dwDiallingLocation: DWORD; enabled: BOOL): DWORD; stdcall;
+TfnRasGetAutodialParamA = function(dwDiallingLocation: DWORD; param: Pointer; var cb: DWORD): DWORD; stdcall;
+TfnRasGetAutodialParamW = function(dwDiallingLocation: DWORD; param: Pointer; var cb: DWORD): DWORD; stdcall;
+TfnRasGetAutodialParam = function(dwDiallingLocation: DWORD; param: Pointer; var cb: DWORD): DWORD; stdcall;
+TfnRasSetAutodialParamA = function(dwDiallingLocation: DWORD; param: Pointer; cb: DWORD): DWORD; stdcall;
+TfnRasSetAutodialParamW = function(dwDiallingLocation: DWORD; param: Pointer; cb: DWORD): DWORD; stdcall;
+TfnRasSetAutodialParam = function(dwDiallingLocation: DWORD; param: Pointer; cb: DWORD): DWORD; stdcall;
 
 var
-RasDialA : TfnRasDialA = nil;
-RasDialW : TfnRasDialW = nil;
-RasDial  : TfnRasDial  = nil;
+RasDialA: TfnRasDialA = nil;
+RasDialW: TfnRasDialW = nil;
+RasDial : TfnRasDial  = nil;
 
-RasEnumConnectionsA : TfnRasEnumConnectionsA = nil;
-RasEnumConnectionsW : TfnRasEnumConnectionsW = nil;
-RasEnumConnections : TfnRasEnumConnections = nil;
+RasEnumConnectionsA: TfnRasEnumConnectionsA = nil;
+RasEnumConnectionsW: TfnRasEnumConnectionsW = nil;
+RasEnumConnections: TfnRasEnumConnections = nil;
 
-RasEnumEntriesA : TfnRasEnumEntriesA = nil;
-RasEnumEntriesW : TfnRasEnumEntriesW = nil;
-RasEnumEntries : TfnRasEnumEntries = nil;
+RasEnumEntriesA: TfnRasEnumEntriesA = nil;
+RasEnumEntriesW: TfnRasEnumEntriesW = nil;
+RasEnumEntries: TfnRasEnumEntries = nil;
 
-RasGetConnectStatusA : TfnRasGetConnectStatusA = nil;
-RasGetConnectStatusW : TfnRasGetConnectStatusW = nil;
-RasGetConnectStatus : TfnRasGetConnectStatus = nil;
+RasGetConnectStatusA: TfnRasGetConnectStatusA = nil;
+RasGetConnectStatusW: TfnRasGetConnectStatusW = nil;
+RasGetConnectStatus: TfnRasGetConnectStatus = nil;
 
-RasGetErrorStringA : TfnRasGetErrorStringA = nil;
-RasGetErrorStringW : TfnRasGetErrorStringW = nil;
-RasGetErrorString : TfnRasGetErrorString = nil;
+RasGetErrorStringA: TfnRasGetErrorStringA = nil;
+RasGetErrorStringW: TfnRasGetErrorStringW = nil;
+RasGetErrorString: TfnRasGetErrorString = nil;
 
-RASHangUpA : TfnRASHangUpA = nil;
-RASHangUpW : TfnRASHangUpW = nil;
-RASHangUp : TfnRASHangUp = nil;
+RASHangUpA: TfnRASHangUpA = nil;
+RASHangUpW: TfnRASHangUpW = nil;
+RASHangUp: TfnRASHangUp = nil;
 
-RasGetProjectionInfoA : TfnRasGetProjectionInfoA = nil;
-RasGetProjectionInfoW : TfnRasGetProjectionInfoW = nil;
-RasGetProjectionInfo : TfnRasGetProjectionInfo = nil;
-RasCreatePhonebookEntryA : TfnRasCreatePhonebookEntryA = nil;
-RasCreatePhonebookEntryW : TfnRasCreatePhonebookEntryW = nil;
-RasCreatePhonebookEntry : TfnRasCreatePhonebookEntry = nil;
+RasGetProjectionInfoA: TfnRasGetProjectionInfoA = nil;
+RasGetProjectionInfoW: TfnRasGetProjectionInfoW = nil;
+RasGetProjectionInfo: TfnRasGetProjectionInfo = nil;
+RasCreatePhonebookEntryA: TfnRasCreatePhonebookEntryA = nil;
+RasCreatePhonebookEntryW: TfnRasCreatePhonebookEntryW = nil;
+RasCreatePhonebookEntry: TfnRasCreatePhonebookEntry = nil;
 
-RasEditPhonebookEntryA : TfnRasEditPhonebookEntryA = nil;
-RasEditPhonebookEntryW : TfnRasEditPhonebookEntryW = nil;
-RasEditPhonebookEntry : TfnRasEditPhonebookEntry = nil;
+RasEditPhonebookEntryA: TfnRasEditPhonebookEntryA = nil;
+RasEditPhonebookEntryW: TfnRasEditPhonebookEntryW = nil;
+RasEditPhonebookEntry: TfnRasEditPhonebookEntry = nil;
 
-RasSetEntryDialParamsA : TfnRasSetEntryDialParamsA = nil;
-RasSetEntryDialParamsW : TfnRasSetEntryDialParamsW = nil;
-RasSetEntryDialParams : TfnRasSetEntryDialParams = nil;
+RasSetEntryDialParamsA: TfnRasSetEntryDialParamsA = nil;
+RasSetEntryDialParamsW: TfnRasSetEntryDialParamsW = nil;
+RasSetEntryDialParams: TfnRasSetEntryDialParams = nil;
 
-RasGetEntryDialParamsA : TfnRasGetEntryDialParamsA = nil;
-RasGetEntryDialParamsW : TfnRasGetEntryDialParamsW = nil;
-RasGetEntryDialParams : TfnRasGetEntryDialParams = nil;
+RasGetEntryDialParamsA: TfnRasGetEntryDialParamsA = nil;
+RasGetEntryDialParamsW: TfnRasGetEntryDialParamsW = nil;
+RasGetEntryDialParams: TfnRasGetEntryDialParams = nil;
 
-RasEnumDevicesA : TfnRasEnumDevicesA = nil;
-RasEnumDevicesW : TfnRasEnumDevicesW = nil;
-RasEnumDevices : TfnRasEnumDevices = nil;
+RasEnumDevicesA: TfnRasEnumDevicesA = nil;
+RasEnumDevicesW: TfnRasEnumDevicesW = nil;
+RasEnumDevices: TfnRasEnumDevices = nil;
 
-RasGetCountryInfoA : TfnRasGetCountryInfoA = nil;
-RasGetCountryInfoW : TfnRasGetCountryInfoW = nil;
-RasGetCountryInfo : TfnRasGetCountryInfo = nil;
+RasGetCountryInfoA: TfnRasGetCountryInfoA = nil;
+RasGetCountryInfoW: TfnRasGetCountryInfoW = nil;
+RasGetCountryInfo: TfnRasGetCountryInfo = nil;
 
-RasGetEntryPropertiesA : TfnRasGetEntryPropertiesA = nil;
-RasGetEntryPropertiesW : TfnRasGetEntryPropertiesW = nil;
-RasGetEntryProperties : TfnRasGetEntryProperties = nil;
-RasSetEntryPropertiesA : TfnRasSetEntryPropertiesA = nil;
-RasSetEntryPropertiesW : TfnRasSetEntryPropertiesW = nil;
-RasSetEntryProperties : TfnRasSetEntryProperties = nil;
-RasRenameEntryA : TfnRasRenameEntryA = nil;
-RasRenameEntryW : TfnRasRenameEntryW = nil;
-RasRenameEntry : TfnRasRenameEntry = nil;
-RasDeleteEntryA : TfnRasDeleteEntryA = nil;
-RasDeleteEntryW : TfnRasDeleteEntryW = nil;
-RasDeleteEntry : TfnRasDeleteEntry = nil;
+RasGetEntryPropertiesA: TfnRasGetEntryPropertiesA = nil;
+RasGetEntryPropertiesW: TfnRasGetEntryPropertiesW = nil;
+RasGetEntryProperties: TfnRasGetEntryProperties = nil;
+RasSetEntryPropertiesA: TfnRasSetEntryPropertiesA = nil;
+RasSetEntryPropertiesW: TfnRasSetEntryPropertiesW = nil;
+RasSetEntryProperties: TfnRasSetEntryProperties = nil;
+RasRenameEntryA: TfnRasRenameEntryA = nil;
+RasRenameEntryW: TfnRasRenameEntryW = nil;
+RasRenameEntry: TfnRasRenameEntry = nil;
+RasDeleteEntryA: TfnRasDeleteEntryA = nil;
+RasDeleteEntryW: TfnRasDeleteEntryW = nil;
+RasDeleteEntry: TfnRasDeleteEntry = nil;
 
-RasValidateEntryNameA : TfnRasValidateEntryNameA = nil;
-RasValidateEntryNameW : TfnRasValidateEntryNameW = nil;
-RasValidateEntryName : TfnRasValidateEntryName = nil;
+RasValidateEntryNameA: TfnRasValidateEntryNameA = nil;
+RasValidateEntryNameW: TfnRasValidateEntryNameW = nil;
+RasValidateEntryName: TfnRasValidateEntryName = nil;
 
-RasGetSubEntryHandleA : TfnRasGetSubEntryHandleA = nil;
-RasGetSubEntryHandleW : TfnRasGetSubEntryHandleW = nil;
-RasGetSubEntryHandle : TfnRasGetSubEntryHandle = nil;
-RasGetCredentialsA : TfnRasGetCredentialsA = nil;
-RasGetCredentialsW : TfnRasGetCredentialsW = nil;
-RasGetCredentials : TfnRasGetCredentials = nil;
-RasSetCredentialsA : TfnRasSetCredentialsA = nil;
-RasSetCredentialsW : TfnRasSetCredentialsW = nil;
-RasSetCredentials : TfnRasSetCredentials = nil;
-RasConnectionNotificationA : TfnRasConnectionNotificationA = nil;
-RasConnectionNotificationW : TfnRasConnectionNotificationW = nil;
-RasConnectionNotification : TfnRasConnectionNotification = nil;
-RasGetSubEntryPropertiesA : TfnRasGetSubEntryPropertiesA = nil;
-RasGetSubEntryPropertiesW : TfnRasGetSubEntryPropertiesW = nil;
-RasGetSubEntryProperties : TfnRasGetSubEntryProperties = nil;
-RasSetSubEntryPropertiesA : TfnRasSetSubEntryPropertiesA = nil;
-RasSetSubEntryPropertiesW : TfnRasSetSubEntryPropertiesW = nil;
-RasSetSubEntryProperties : TfnRasSetSubEntryProperties = nil;
-RasGetAutodialAddressA : TfnRasGetAutodialAddressA = nil;
-RasGetAutodialAddressW : TfnRasGetAutodialAddressW = nil;
-RasGetAutodialAddress : TfnRasGetAutodialAddress = nil;
-RasSetAutodialAddressA : TfnRasSetAutodialAddressA = nil;
-RasSetAutodialAddressW : TfnRasSetAutodialAddressW = nil;
-RasSetAutodialAddress : TfnRasSetAutodialAddress = nil;
-RasEnumAutodialAddressesA : TfnRasEnumAutodialAddressesA = nil;
-RasEnumAutodialAddressesW : TfnRasEnumAutodialAddressesW = nil;
-RasEnumAutodialAddresses : TfnRasEnumAutodialAddresses = nil;
-RasGetAutodialEnableA : TfnRasGetAutodialEnableA = nil;
-RasGetAutodialEnableW : TfnRasGetAutodialEnableW = nil;
-RasGetAutodialEnable : TfnRasGetAutodialEnable = nil;
-RasSetAutodialEnableA : TfnRasSetAutodialEnableA = nil;
-RasSetAutodialEnableW : TfnRasSetAutodialEnableW = nil;
-RasSetAutodialEnable : TfnRasSetAutodialEnable = nil;
-RasGetAutodialParamA : TfnRasGetAutodialParamA = nil;
-RasGetAutodialParamW : TfnRasGetAutodialParamW = nil;
-RasGetAutodialParam : TfnRasGetAutodialParam = nil;
-RasSetAutodialParamA : TfnRasSetAutodialParamA = nil;
-RasSetAutodialParamW : TfnRasSetAutodialParamW = nil;
-RasSetAutodialParam : TfnRasSetAutodialParam = nil;
+RasGetSubEntryHandleA: TfnRasGetSubEntryHandleA = nil;
+RasGetSubEntryHandleW: TfnRasGetSubEntryHandleW = nil;
+RasGetSubEntryHandle: TfnRasGetSubEntryHandle = nil;
+RasGetCredentialsA: TfnRasGetCredentialsA = nil;
+RasGetCredentialsW: TfnRasGetCredentialsW = nil;
+RasGetCredentials: TfnRasGetCredentials = nil;
+RasSetCredentialsA: TfnRasSetCredentialsA = nil;
+RasSetCredentialsW: TfnRasSetCredentialsW = nil;
+RasSetCredentials: TfnRasSetCredentials = nil;
+RasConnectionNotificationA: TfnRasConnectionNotificationA = nil;
+RasConnectionNotificationW: TfnRasConnectionNotificationW = nil;
+RasConnectionNotification: TfnRasConnectionNotification = nil;
+RasGetSubEntryPropertiesA: TfnRasGetSubEntryPropertiesA = nil;
+RasGetSubEntryPropertiesW: TfnRasGetSubEntryPropertiesW = nil;
+RasGetSubEntryProperties: TfnRasGetSubEntryProperties = nil;
+RasSetSubEntryPropertiesA: TfnRasSetSubEntryPropertiesA = nil;
+RasSetSubEntryPropertiesW: TfnRasSetSubEntryPropertiesW = nil;
+RasSetSubEntryProperties: TfnRasSetSubEntryProperties = nil;
+RasGetAutodialAddressA: TfnRasGetAutodialAddressA = nil;
+RasGetAutodialAddressW: TfnRasGetAutodialAddressW = nil;
+RasGetAutodialAddress: TfnRasGetAutodialAddress = nil;
+RasSetAutodialAddressA: TfnRasSetAutodialAddressA = nil;
+RasSetAutodialAddressW: TfnRasSetAutodialAddressW = nil;
+RasSetAutodialAddress: TfnRasSetAutodialAddress = nil;
+RasEnumAutodialAddressesA: TfnRasEnumAutodialAddressesA = nil;
+RasEnumAutodialAddressesW: TfnRasEnumAutodialAddressesW = nil;
+RasEnumAutodialAddresses: TfnRasEnumAutodialAddresses = nil;
+RasGetAutodialEnableA: TfnRasGetAutodialEnableA = nil;
+RasGetAutodialEnableW: TfnRasGetAutodialEnableW = nil;
+RasGetAutodialEnable: TfnRasGetAutodialEnable = nil;
+RasSetAutodialEnableA: TfnRasSetAutodialEnableA = nil;
+RasSetAutodialEnableW: TfnRasSetAutodialEnableW = nil;
+RasSetAutodialEnable: TfnRasSetAutodialEnable = nil;
+RasGetAutodialParamA: TfnRasGetAutodialParamA = nil;
+RasGetAutodialParamW: TfnRasGetAutodialParamW = nil;
+RasGetAutodialParam: TfnRasGetAutodialParam = nil;
+RasSetAutodialParamA: TfnRasSetAutodialParamA = nil;
+RasSetAutodialParamW: TfnRasSetAutodialParamW = nil;
+RasSetAutodialParam: TfnRasSetAutodialParam = nil;
 
-function RasGetStatusString (status : Integer) : string;
-function InitRasLibrary : boolean;
+function RasGetStatusString(status: Integer): string;
+function InitRasLibrary: Boolean;
 procedure FreeRASLibrary;
 
 implementation
@@ -1377,49 +1377,50 @@ var
   RASLibrary: THandle = 0;
   ReferenceCount: Integer = 0;
   Lock: TCriticalSection;
-  RasVer401 : Boolean = False;
+  RasVer401: Boolean = False;
 
-function RasGetStatusString (status : Integer) : string;
+function RasGetStatusString(status: Integer): string;
 begin
   case status of
-    RASCS_OpenPort            : result := 'Opening Port';
-    RASCS_PortOpened          : result := 'Port Opened';
-    RASCS_ConnectDevice       : result := 'Connecting to Device';
-    RASCS_DeviceConnected     : result := 'Device Connected';
-    RASCS_AllDevicesConnected : result := 'All Devices Connected';
-    RASCS_Authenticate        : result := 'Authenticating';
-    RASCS_AuthNotify          : result := 'Authenticating - Notify';
-    RASCS_AuthRetry           : result := 'Authenticating - Retry';
-    RASCS_AuthCallback        : result := 'Authenticating - Callback';
-    RASCS_AuthChangePassword  : result := 'Authenticating - Change Password';
-    RASCS_AuthProject         : result := 'Authenticating - Project';
-    RASCS_AuthLinkSpeed       : result := 'Authenticating - Link Speed';
-    RASCS_AuthAck             : result := 'Authenticating - Ack';
-    RASCS_ReAuthenticate      : result := 'Re-Authenticating';
-    RASCS_Authenticated       : result := 'Authenticated';
-    RASCS_PrepareForCallback  : result := 'Preparing Callback';
-    RASCS_WaitForModemReset   : result := 'Waiting for Modem Reset';
-    RASCS_WaitForCallback     : result := 'Waiting for Callback';
-    RASCS_Projected           : result := 'Projected';
+    RASCS_OpenPort            : Result := 'Opening Port';
+    RASCS_PortOpened          : Result := 'Port Opened';
+    RASCS_ConnectDevice       : Result := 'Connecting to Device';
+    RASCS_DeviceConnected     : Result := 'Device Connected';
+    RASCS_AllDevicesConnected : Result := 'All Devices Connected';
+    RASCS_Authenticate        : Result := 'Authenticating';
+    RASCS_AuthNotify          : Result := 'Authenticating - Notify';
+    RASCS_AuthRetry           : Result := 'Authenticating - Retry';
+    RASCS_AuthCallback        : Result := 'Authenticating - Callback';
+    RASCS_AuthChangePassword  : Result := 'Authenticating - Change Password';
+    RASCS_AuthProject         : Result := 'Authenticating - Project';
+    RASCS_AuthLinkSpeed       : Result := 'Authenticating - Link Speed';
+    RASCS_AuthAck             : Result := 'Authenticating - Ack';
+    RASCS_ReAuthenticate      : Result := 'Re-Authenticating';
+    RASCS_Authenticated       : Result := 'Authenticated';
+    RASCS_PrepareForCallback  : Result := 'Preparing Callback';
+    RASCS_WaitForModemReset   : Result := 'Waiting for Modem Reset';
+    RASCS_WaitForCallback     : Result := 'Waiting for Callback';
+    RASCS_Projected           : Result := 'Projected';
 
-    RASCS_StartAuthentication : result := 'Starting Authentication';
-    RASCS_CallbackComplete    : result := 'Callback Completed';
-    RASCS_LogonNetwork        : result := 'Network Logon';
-    RASCS_SubEntryConnected   : result := 'Sub-Entry Connected';
-    RASCS_SubEntryDisconnected: result := 'Syb-Entry Disconnected';
+    RASCS_StartAuthentication : Result := 'Starting Authentication';
+    RASCS_CallbackComplete    : Result := 'Callback Completed';
+    RASCS_LogonNetwork        : Result := 'Network Logon';
+    RASCS_SubEntryConnected   : Result := 'Sub-Entry Connected';
+    RASCS_SubEntryDisconnected: Result := 'Syb-Entry Disconnected';
 
-    RASCS_Interactive         : result := 'Paused - Interactive';
-    RASCS_RetryAuthentication : result := 'Retry Authentication';
-    RASCS_CallbackSetByCaller : result := 'Callback set by Caller';
-    RASCS_PasswordExpired     : result := 'Password Expired';
+    RASCS_Interactive         : Result := 'Paused - Interactive';
+    RASCS_RetryAuthentication : Result := 'Retry Authentication';
+    RASCS_CallbackSetByCaller : Result := 'Callback set by Caller';
+    RASCS_PasswordExpired     : Result := 'Password Expired';
 
-    RASCS_Connected           : result := 'Connected';
-    RASCS_Disconnected        : result := 'Disconnected';
-    else result := 'Unknown status ' + IntToStr (status);
+    RASCS_Connected           : Result := 'Connected';
+    RASCS_Disconnected        : Result := 'Disconnected';
+  else
+    Result := 'Unknown status ' + IntToStr(status);
   end
 end;
 
-function InitRasLibrary : boolean;
+function InitRasLibrary: Boolean;
 begin
   Lock.Enter;
   try
@@ -1449,9 +1450,9 @@ begin
         RasEnumEntriesA := GetProcAddress(RASLibrary, 'RasEnumEntriesA');
         RasEnumEntriesW := GetProcAddress(RASLibrary, 'RasEnumEntriesW');
 {$ifdef COMPILER12_UP}
-        RasEnumEntries := TfnRasEnumEntries (RasEnumEntriesW);
+        RasEnumEntries := TfnRasEnumEntries(RasEnumEntriesW);
 {$else}
-        RasEnumEntries := TfnRasEnumEntries (RasEnumEntriesA);
+        RasEnumEntries := TfnRasEnumEntries(RasEnumEntriesA);
 {$endif}
 
         RasGetConnectStatusA := GetProcAddress(RASLibrary, 'RasGetConnectStatusA');

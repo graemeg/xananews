@@ -23,29 +23,36 @@ unit unitExFileSettings;
 
 interface
 
-uses Windows, Sysutils, unitExSettings;
+uses
+  Windows, Sysutils, unitExSettings;
 
 type
-
-//-----------------------------------------------------------------------
-// TExFileSettings.
-//
-// Base class for derived classes that store application and other settings
-// in files - ini files, XML files, etc.
-TExFileSettings = class (TExSettings)
-private
-  fCustomPath: string;
-  procedure SetCustomPath(const Value: string);
-protected
-  function GetFileName(const ext: string): string;
-public
-  constructor CreateChild (AParent : TExSettings; const ASection : string); override;
-  property CustomPath : string read fCustomPath write SetCustomPath;
-end;
+  //-----------------------------------------------------------------------
+  // TExFileSettings.
+  //
+  // Base class for derived classes that store application and other settings
+  // in files - ini files, XML files, etc.
+  TExFileSettings = class(TExSettings)
+  private
+    fCustomPath: string;
+    procedure SetCustomPath(const Value: string);
+  protected
+    function GetFileName(const ext: string): string;
+  public
+    constructor CreateChild(AParent: TExSettings; const ASection: string); override;
+    property CustomPath: string read fCustomPath write SetCustomPath;
+  end;
 
 implementation
 
-uses ShFolder;
+uses
+  ShFolder;
+
+constructor TExFileSettings.CreateChild(AParent: TExSettings; const ASection: string);
+begin
+  inherited;
+  CustomPath := TExFileSettings(AParent).CustomPath;
+end;
 
 (*----------------------------------------------------------------------*
  | procedure TExFileSettings.GetFileName                                |
@@ -57,59 +64,46 @@ uses ShFolder;
  | For 'User' settings use the user's local appdata path, plus the      |
  | Application, Manufacturer and Version.                               |
  *----------------------------------------------------------------------*)
-constructor TExFileSettings.CreateChild(AParent: TExSettings;
-  const ASection: string);
-begin
-  inherited;
-
-  CustomPath := TExFileSettings (AParent).CustomPath
-end;
-
-function TExFileSettings.GetFileName(const ext : string) : string;
+function TExFileSettings.GetFileName(const ext: string): string;
 var
-  path : string;
+  path: string;
 begin
   if Application = '' then
-    Raise EExSettings.Create('Must specify an application');
+    raise EExSettings.Create('Must specify an application');
 
   if fCustomPath <> '' then
-    result := fCustomPath
+    Result := fCustomPath
   else
   begin
-    SetLength (path, MAX_PATH);
-    if (SettingsType = stMachine) or not SUCCEEDED (SHGetFolderPath(0, CSIDL_LOCAL_APPDATA, 0, 0, PChar (path)))  then
-      result := ExtractFilePath (ParamStr (0))
+    SetLength(path, MAX_PATH);
+    if (SettingsType = stMachine) or not SUCCEEDED(SHGetFolderPath(0, CSIDL_LOCAL_APPDATA, 0, 0, PChar(path)))  then
+      Result := ExtractFilePath(ParamStr(0))
     else
     begin
-      result := PChar(path);
-      result := result + '\';
+      Result := PChar(path);
+      Result := Result + '\';
 
       if Manufacturer <> '' then
-        result := result + Manufacturer + '\';
+        Result := Result + Manufacturer + '\';
 
       if Application <> '' then
-        result := result + Application + '\';
+        Result := Result + Application + '\';
 
-      if version <> '' then
-        result := result + Version + '\';
+      if Version <> '' then
+        Result := Result + Version + '\';
 
-      result := result + Application + ext;
-    end
-  end
+      Result := Result + Application + ext;
+    end;
+  end;
 end;
 
-(*----------------------------------------------------------------------*
- | procedure TExFileSettings.SetCustomPath                              |
- |                                                                      |
- | 'Set' method for the CustomPath property.                            |
- *---------------------------------------------------------------------*)
 procedure TExFileSettings.SetCustomPath(const Value: string);
 begin
   if Value <> fCustomPath then
   begin
     Close;
-    fCustomPath := Value
-  end
+    fCustomPath := Value;
+  end;
 end;
 
 end.
