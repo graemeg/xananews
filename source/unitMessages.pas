@@ -991,6 +991,7 @@ type
   end;
   pbmf = ^bmf;
 var
+  Buffer: Word;
   DecodedData: TMemoryStream;
   bmp: TBitmap;
   icon: HICON;
@@ -1000,6 +1001,7 @@ var
   x: DWORD;
   jpg: TJPegImage;
   p: pbmf;
+  spos: Int64;
   sz: DWORD;
 begin
   if not fGotGraphic then
@@ -1022,6 +1024,7 @@ begin
       end
       else
       begin
+        // Unknown format/extension draw an icon to represent the contents.
         fHasRawData := True;
         bmp := TBitmap.Create;
         bmp.Width := 32;
@@ -1085,6 +1088,7 @@ begin
         end;
 
         try
+          // "Correct" the biSizeImage member of the TBitmapInfoHeader.
           if fGraphic is TBitmap then
           begin
             p := pbmf(DecodedData.Memory);
@@ -1098,7 +1102,38 @@ begin
         try
           fGraphic.LoadFromStream(DecodedData);
         except
+          try
+            // hmmm, it failed... maybe the poster used the wrong extension
+            // for the graphic, try again based on some file header information...
+            FreeAndNil(fGraphic);
+            spos := DecodedData.Position;
+            try
+              DecodedData.Read(Buffer, SizeOf(Buffer));
+            finally
+              DecodedData.Position := spos;
+            end;
+
+            case Buffer of
+              $4947: gc := TGifImage;
+              $4D42: gc := TBitmap;
+              $5089: gc := TPngImage;
+              $D8FF: gc := TJPegImage;
+            else
+              gc := nil;
+            end;
+
+            if Assigned(gc) then
+            begin
+              fGraphic := gc.Create;
+              if fGraphic is TGifImage then
+                TGifImage(fGraphic).Animate := True;
+              fGraphic.OnProgress := Owner.DoOnProgress;
+              fGraphic.LoadFromStream(DecodedData);
+            end;
+          except
+          end;
         end;
+
       finally
         DecodedData.Free;
       end;
