@@ -172,10 +172,7 @@ begin
               begin
                 st := 'NEWSGROUPS: Invalid group recieved in thread "' +
                       Getter.GetterRootText + '" - ' + newGroups[i];
-                try
-                  LogMessage(st, True);
-                except
-                end;
+                LogMessage(st, True);
               end;
             end;
 
@@ -190,10 +187,7 @@ begin
         begin
           st := 'NEWSGROUPS: Error checking for new groups in thread "' +
                 Getter.GetterRootText + '" - ' + E.Message;
-          try
-            LogMessage(st, True);
-          except
-          end;
+          LogMessage(st, True);
         end;
       end;
     end;
@@ -317,10 +311,7 @@ begin
         State := tsPending;
 
         st := 'Error in thread "' + Getter.GetterRootText + '" - ' + fLastError;
-        try
-          LogMessage(st, True);
-        except
-        end;
+        LogMessage(st, True);
 
         if not gAppTerminating then
           Synchronize(NotifyError);
@@ -461,6 +452,8 @@ var
   gtr: TArticlesGetter;
   requests: TObjectList;
   needsRetry: Boolean;
+  ok: Boolean;
+  I: Integer;
 
   function GetXOverFMT: TStringList;
   begin
@@ -693,10 +686,14 @@ begin
   XOverFMT := GetXOVERFmt;
 
   requests := gtr.LockList;
+
+  for I := 0 to requests.Count - 1 do
+    TArticlesGetterRequest(requests[I]).Retry := False;
+
   try
-    while requests.Count > 0 do         // Group list will contain 1 or more
-                                        // TArticleGetterRequest requests
+    while requests.Count > 0 do
     begin
+      ok := True;
       needsRetry := False;
       request := TArticlesGetterRequest(requests[0]);
       try
@@ -724,118 +721,126 @@ begin
 
         // Danger!!! Can't call 'LastArticle' if the articles arent already
         // loaded because it's not thread safe.
-
         if fromArticle = -2 then
           fromArticle := gtr.CurrentGroup.TSGetLastArticle + 1;
-                                            // Select the group on the server
+
         gtr.Articles.Clear;
 
+        // Select the group on the server
         try
           NNTP.SelectGroup(gtr.CurrentGroup.Name);
         except
-          try
+          if request.Retry then
+          begin
+            needsRetry := True;
             LogMessage('Exception in SelectGroup - ' + gtr.CurrentGroup.Name);
-          except
-          end;
-          needsRetry := True;
-          raise;
-        end;
-
-        if fromArticle = -3 then
-        begin
-          fromArticle := GetFirstArticleNoSince(request.Since);
-          if fromArticle < 0 then
-            fromArticle := 0;
-          articleCount := 0;
-        end;
-
-                                            // Ensure the fromArticle and articleCount
-                                            // are valid for the group.
-        if fromArticle = 0 then
-          if articleCount > 0 then
-          begin
-            fromArticle := Integer(NNTP.MsgHigh) - articleCount + 1;
-            if fromArticle < Integer(NNTP.MsgLow) then
-              fromArticle := Integer(NNTP.MsgLow);
-          end;
-
-        if fromArticle > Integer(NNTP.MsgHigh) + 1 then
-          fromArticle := NNTP.MsgHigh + 1;
-
-        if fromArticle < Integer(NNTP.MsgLow) then
-          fromArticle := NNTP.MsgLow;
-
-        if articleCount > (Integer(NNTP.MsgHigh) - Integer(NNTP.MsgLow)) + 1 then
-          articleCount := (Integer(NNTP.MsgHigh) - Integer(NNTP.MsgLow)) + 1;
-
-        if (fromArticle = 0) or (fromArticle > Integer(NNTP.MsgHigh)) then
-          Continue;
-
-                                            // If we've been asked for headers only,
-                                            // and if the server supports it, use XOVER
-                                            // to get the headers.  It's quick.
-        gtr.CurrentMax := NNTP.MsgHigh;
-
-        if articleCount = 0 then
-          fExpectedArticles := Integer(NNTP.MsgHigh) - fromArticle
-        else
-          fExpectedArticles := articleCount;
-        fCurrentArticleNo := 0;
-
-        try
-          gtr.CurrentGroup.BeginLock;
-          if Assigned(XOverFMT) and (XOverFMT.Count > 0) and not gtr.CurrentFull then
-          begin
-            fIsXOver := True;
-            LogMessage(gtr.CurrentGroup.Name + ' - XOVER ' + IntToStr(fromArticle) + '-' + IntToStr(articleCount));
-            GetXOverHeaders(fromArticle, articleCount);
+            raise;
           end
           else
-          begin                               // XOver not supported, or we need full
-                                              // articles (not just headers)
+          begin
+            ok := False;
+            request.Retry := True;
+          end;
+        end;
 
-            fIsXOver := False;
-            if articleCount = 0 then
-              dest := NNTP.MsgHigh
-            else
+        if ok then
+        begin
+          if fromArticle = -3 then
+          begin
+            fromArticle := GetFirstArticleNoSince(request.Since);
+            if fromArticle < 0 then
+              fromArticle := 0;
+            articleCount := 0;
+          end;
+
+          // Ensure the fromArticle and articleCount are valid for the group.
+          if fromArticle = 0 then
+            if articleCount > 0 then
             begin
-              dest := fromArticle + articleCount - 1;
-              if dest > Integer(NNTP.MsgHigh) then
-                dest := NNTP.MsgHigh;
+              fromArticle := Integer(NNTP.MsgHigh) - articleCount + 1;
+              if fromArticle < Integer(NNTP.MsgLow) then
+                fromArticle := Integer(NNTP.MsgLow);
             end;
 
-            if NNTPaccount.UsePipelining then
+          if fromArticle > Integer(NNTP.MsgHigh) + 1 then
+            fromArticle := NNTP.MsgHigh + 1;
+
+          if fromArticle < Integer(NNTP.MsgLow) then
+            fromArticle := NNTP.MsgLow;
+
+          if articleCount > (Integer(NNTP.MsgHigh) - Integer(NNTP.MsgLow)) + 1 then
+            articleCount := (Integer(NNTP.MsgHigh) - Integer(NNTP.MsgLow)) + 1;
+
+          if (fromArticle = 0) or (fromArticle > Integer(NNTP.MsgHigh)) then
+            Continue;
+
+          // If we've been asked for headers only, and if the server supports it,
+          // use XOVER to get the headers. It's quick.
+          gtr.CurrentMax := NNTP.MsgHigh;
+
+          if articleCount = 0 then
+            fExpectedArticles := Integer(NNTP.MsgHigh) - fromArticle
+          else
+            fExpectedArticles := articleCount;
+          fCurrentArticleNo := 0;
+
+          try
+            gtr.CurrentGroup.BeginLock;
+            if Assigned(XOverFMT) and (XOverFMT.Count > 0) and not gtr.CurrentFull then
             begin
-              LogMessage(gtr.CurrentGroup.Name + ' - Pipeline get articles ' + IntToStr(fromArticle) + '-' + IntToStr(dest));
-              GetPipelineArticles(fromArticle, dest);
+              fIsXOver := True;
+              LogMessage(gtr.CurrentGroup.Name + ' - XOVER ' + IntToStr(fromArticle) + '-' + IntToStr(articleCount));
+              GetXOverHeaders(fromArticle, articleCount);
             end
             else
-              if gtr.CurrentFull then
-              begin
-                LogMessage(gtr.CurrentGroup.Name + ' - Get articles ' + IntToStr(fromArticle) + '-' + IntToStr(dest));
-                GetArticles(fromArticle, dest);
-              end
+            begin
+              // XOver not supported, or we need full articles (not just headers)
+              fIsXOver := False;
+              if articleCount = 0 then
+                dest := NNTP.MsgHigh
               else
               begin
-                LogMessage(gtr.CurrentGroup.Name + ' - Get headers ' + IntToStr(fromArticle) + '-' + IntToStr(dest));
-                GetHeaders(fromArticle, dest);
+                dest := fromArticle + articleCount - 1;
+                if dest > Integer(NNTP.MsgHigh) then
+                  dest := NNTP.MsgHigh;
               end;
-          end;
-        except
-          try
-            LogMessage('Exception in get articles or headers - ' + gtr.CurrentGroup.Name);
+
+              if NNTPaccount.UsePipelining then
+              begin
+                LogMessage(gtr.CurrentGroup.Name + ' - Pipeline get articles ' + IntToStr(fromArticle) + '-' + IntToStr(dest));
+                GetPipelineArticles(fromArticle, dest);
+              end
+              else
+                if gtr.CurrentFull then
+                begin
+                  LogMessage(gtr.CurrentGroup.Name + ' - Get articles ' + IntToStr(fromArticle) + '-' + IntToStr(dest));
+                  GetArticles(fromArticle, dest);
+                end
+                else
+                begin
+                  LogMessage(gtr.CurrentGroup.Name + ' - Get headers ' + IntToStr(fromArticle) + '-' + IntToStr(dest));
+                  GetHeaders(fromArticle, dest);
+                end;
+            end;
           except
+            LogMessage('Exception in get articles or headers - ' + gtr.CurrentGroup.Name);
+            needsRetry := True;
+            raise;
           end;
-          needsRetry := True;
-          raise;
         end;
 
       finally
         gtr.CurrentGroup.EndLock;
         requests := gtr.LockList;
-        if not needsRetry then
-          if (requests.Count > 0) and (requests[0] = request) then
-            requests.Delete(0);
+        if request.Retry then
+        begin
+          if requests.Count > 0 then
+            requests.Move(0, requests.Count - 1);
+        end
+        else
+          if not needsRetry then
+            if (requests.Count > 0) and (requests[0] = request) then
+              requests.Delete(0);
       end;
     end;
   finally

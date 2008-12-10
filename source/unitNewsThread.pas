@@ -187,6 +187,7 @@ type
     fFull: Boolean;
     fAbandon: Boolean;
     fBatchRef: Integer;
+    fRetry: Boolean;
     fSince: TDateTime;
   public
     constructor Create(AGroup: TSubscribedGroup; AFromArticle, AArticleCount: Integer; full: Boolean; ABatchRef: Integer; ASince: TDateTime);
@@ -196,6 +197,7 @@ type
     property ArticleCount: Integer read fArticleCount;
     property Abandon: Boolean read fAbandon write fAbandon;
     property BatchRef: Integer read fBatchRef;
+    property Retry: Boolean read fRetry write fRetry;
     property Since: TDateTime read fSince;
   end;
 

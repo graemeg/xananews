@@ -2926,10 +2926,7 @@ end;
 
 procedure TfmMain.ApplicationEvents1Exception(Sender: TObject; E: Exception);
 begin
-  try
-    LogMessage(E.Message, True);
-  except
-  end;
+  LogMessage(E.Message, True);
   if E is EidSocketError then
     if (EidSocketError(E).LastError = 10054) or (EidSocketError(E).LastError = 0) then
       MessageBeep($FFFF)       // WSACONNRESET.  Not really an error, but
@@ -4150,8 +4147,8 @@ procedure TfmMain.FormDestroy(Sender: TObject);
             tsBusy   : st := st + 'Busy';
             tsDone   : st := st + 'Done'
           end;
-          LogMessage(st)
-        end
+          LogMessage(st);
+        end;
       finally
         ThreadManager.UnlockGetterList;
       end;
@@ -4314,7 +4311,10 @@ begin
   end;
 
   pnlRight.Align := alClient;
-  ActiveControl := vstSubscribed;
+  if pnlLeft.HostDockSite is TCustomForm then
+    TForm(pnlLeft.HostDockSite).ActiveControl := vstSubscribed
+  else
+    ActiveControl := vstSubscribed;
   PostMessage(Handle, WM_SETUP, 0, 0);
 end;
 

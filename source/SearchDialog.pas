@@ -30,7 +30,7 @@ uses Windows, Messages, SysUtils, Classes, Graphics, Forms, Dialogs, Controls, S
 
 type
   TSearchableColumns = ftSubject..ftCrossposted;
-  TOnArticleFound = procedure (article : TArticleBase; bookmark : boolean; var continue : boolean) of object;
+  TOnArticleFound = procedure(article: TArticleBase; bookmark: Boolean; var continue: Boolean) of object;
   TdlgSearch = class(TForm)
     OKBtn: TButton;
     CancelBtn: TButton;
@@ -67,10 +67,8 @@ type
     edCrossposted: TEdit;
     Timer1: TTimer;
     cbInterestingMessagesOnly: TCheckBox;
-    procedure PersistentPosition1GetSettingsFile(Owner: TObject;
-      var fileName: string);
-    procedure PersistentPosition1GetSettingsClass(Owner: TObject;
-      var SettingsClass: TExSettingsClass);
+    procedure PersistentPosition1GetSettingsFile(Owner: TObject; var fileName: string);
+    procedure PersistentPosition1GetSettingsClass(Owner: TObject; var SettingsClass: TExSettingsClass);
     procedure Timer1Timer(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure CancelBtnClick(Sender: TObject);
@@ -81,37 +79,37 @@ type
     procedure edAuthorChange(Sender: TObject);
     procedure DateTimePicker1Change(Sender: TObject);
   private
-    fFilters : TNNTPFilters;
+    fFilters: TNNTPFilters;
     fArticle: TArticleBase;
     fOnArticleFound: TOnArticleFound;
     fCodePage: Integer;
     fGroups: TObjectList;
-    fLoading :boolean;
-    fCont : boolean;
-    fSearchToBookmark : boolean;
+    fLoading: Boolean;
+    fCont: Boolean;
+    fSearchToBookmark: Boolean;
     function GetFilters: TNNTPFilters;
-    function GetOperators(column : TNNTPFilterColumn): TComboBox;
+    function GetOperators(column: TNNTPFilterColumn): TComboBox;
     function GetEditors(column: TNNTPFilterColumn): TEdit;
     function GetEditorCtrls(column: TNNTPFilterColumn): TWinControl;
     function GetEnableds(column: TNNTPFilterColumn): TCheckBox;
   protected
     procedure UpdateActions; override;
-    procedure CreateParams (var params : TCreateParams); override;
+    procedure CreateParams(var params: TCreateParams); override;
     procedure LoadPreviousSettings;
     procedure SavePreviousSettings;
   public
-    constructor Create (AOwner : TComponent); override;
+    constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
-    property Filters : TNNTPFilters read GetFilters;
-    property Groups : TObjectList read fGroups write fGroups;
-    property Article : TArticleBase read fArticle write fArticle;
+    property Filters: TNNTPFilters read GetFilters;
+    property Groups: TObjectList read fGroups write fGroups;
+    property Article: TArticleBase read fArticle write fArticle;
 
-    property OnArticleFound : TOnArticleFound read fOnArticleFound write fOnArticleFound;
+    property OnArticleFound: TOnArticleFound read fOnArticleFound write fOnArticleFound;
 
-    property Operators [column : TNNTPFilterColumn] : TComboBox read GetOperators;
-    property Editors [column : TNNTPFilterColumn] : TEdit read GetEditors;
-    property EditorCtrls [column : TNNTPFilterColumn] : TWinControl read GetEditorCtrls;
-    property Enableds [column : TNNTPFilterColumn] : TCheckBox read GetEnableds;
+    property Operators[column: TNNTPFilterColumn]: TComboBox read GetOperators;
+    property Editors[column: TNNTPFilterColumn]: TEdit read GetEditors;
+    property EditorCtrls[column: TNNTPFilterColumn]: TWinControl read GetEditorCtrls;
+    property Enableds[column: TNNTPFilterColumn]: TCheckBox read GetEnableds;
   end;
 
 implementation
@@ -124,62 +122,61 @@ uses unitNewsReaderOptions, NewsGlobals, unitCharsetMap, unitSearchString, unitM
 
 destructor TdlgSearch.Destroy;
 var
-  i : Integer;
+  i: Integer;
 begin
-  FreeAndNil (fFilters);
+  FreeAndNil(fFilters);
   for i := 0 to Groups.Count - 1 do
-    TArticleContainer (Groups [i]).fSearching := False;
+    TArticleContainer(Groups[i]).fSearching := False;
 
   fGroups.Free;
 
-  inherited;
+  inherited Destroy;
 end;
 
 function TdlgSearch.GetFilters: TNNTPFilters;
 var
-  operator : TNNTPFilterOperator;
-  unread, caseSensitive, interesting: boolean;
-  col : TNNTPFilterColumn;
-  en : TCheckBox;
-  op : TComboBox;
-  ed : TEdit;
+  operator: TNNTPFilterOperator;
+  unread, caseSensitive, interesting: Boolean;
+  col: TNNTPFilterColumn;
+  en: TCheckBox;
+  op: TComboBox;
+  ed: TEdit;
 begin
-  if Assigned (fFilters) then
+  if Assigned(fFilters) then
   begin
     Result := fFilters;
-    exit
+    Exit;
   end;
 
-  fFilters := TNNTPFilters.Create (true);
+  fFilters := TNNTPFilters.Create(True);
 
   unread := cbUnreadMessagesOnly.Checked;
   caseSensitive := cbCaseSensitive.Checked;
   interesting := cbInterestingMessagesOnly.Checked;
 
-  for col := Low (TNNTPFilterColumn) to High (TNNTPFilterColumn) do
+  for col := Low(TNNTPFilterColumn) to High(TNNTPFilterColumn) do
   begin
-    en := Enableds [col];
-    if not Assigned (en) or not en.Checked then
+    en := Enableds[col];
+    if not Assigned(en) or not en.Checked then
       Continue;
 
-    op := Operators [col];
-    ed := Editors [col];
+    op := Operators[col];
+    ed := Editors[col];
 
-    getOperator (op.Text, operator);
+    getOperator(op.Text, operator);
 
     case col of
-      ftDate :
+      ftDate:
         fFilters.AddObject('', TNNTPFilter.Create('', col, operator, DateTimePicker1.DateTime, unread, interesting, caseSensitive));
       ftLines,
       ftCrossposted,
-      ftNumber :
-        fFilters.AddObject('', TNNTPFilter.Create('', col, operator, StrToIntDef (ed.Text, 0), unread, interesting, caseSensitive));
-
-      else
-        fFilters.AddObject ('', TNNTPFilter.Create('', col, operator, ed.Text, unread, interesting, caseSensitive))
-    end
+      ftNumber:
+        fFilters.AddObject('', TNNTPFilter.Create('', col, operator, StrToIntDef(ed.Text, 0), unread, interesting, caseSensitive));
+    else
+      fFilters.AddObject('', TNNTPFilter.Create('', col, operator, ed.Text, unread, interesting, caseSensitive))
+    end;
   end;
-  result := fFilters
+  Result := fFilters;
 end;
 
 procedure TdlgSearch.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -192,21 +189,21 @@ begin
   if fCont and fSearchToBookmark then
   begin
     fCont := False;
-    Timer1.Enabled := True
+    Timer1.Enabled := True;
   end
   else
-    Close
+    Close;
 end;
 
 procedure TdlgSearch.OKBtnClick(Sender: TObject);
 var
-  max : Integer;
-  cont : boolean;
-  found : boolean;
+  max: Integer;
+  cont: Boolean;
+  found: Boolean;
 begin
-  if not Assigned (Filters) then Exit;
+  if not Assigned(Filters) then Exit;
 
-  max := StrToIntDef (edMaxResults.Text, 200);
+  max := StrToIntDef(edMaxResults.Text, 200);
   if max <= 0 then max := MaxInt;
 
   SavePreviousSettings;
@@ -219,29 +216,29 @@ begin
   begin
     article := unitMessageBaseSearch.Search(article, fGroups, Filters);
 
-    if Assigned (article) then
+    if Assigned(article) then
     begin
       found := True;
 
-      if Assigned (OnArticleFound) then
-        OnArticleFound (article, fSearchToBookmark, cont);
+      if Assigned(OnArticleFound) then
+        OnArticleFound(article, fSearchToBookmark, cont);
 
       if fSearchToBookmark then
       begin
-        Dec (max);
+        Dec(max);
         if max < 0 then
-          cont := False  // 'Max' articles added to bookmark.  End
+          cont := False; // 'Max' articles added to bookmark.  End
       end
       else
-        cont := False    // Article found and not searching to bookmark. End.
+        cont := False;   // Article found and not searching to bookmark. End.
     end
     else
     begin
       if not found then
-        ShowMessage ('Could not find a matching article');
-      cont := False      // Article not found.  End
-    end
-  end
+        ShowMessage('Could not find a matching article');
+      cont := False;     // Article not found.  End
+    end;
+  end;
 end;
 
 procedure TdlgSearch.PersistentPosition1GetSettingsClass(Owner: TObject;
@@ -259,54 +256,54 @@ end;
 (*
 procedure TdlgSearch.OKBtnClick(Sender: TObject);
 var
-  found : boolean;
-  oldCursor : TCursor;
-  bmk : TBookmark;
-  ct : Integer;
-  frDate : string;
-  max : Integer;
+  found: Boolean;
+  oldCursor: TCursor;
+  bmk: TBookmark;
+  ct: Integer;
+  frDate: string;
+  max: Integer;
 begin
-  if not Assigned (Filters) then Exit;
-  max := StrToIntDef (edMaxResults.Text, 200);
+  if not Assigned(Filters) then Exit;
+  max := StrToIntDef(edMaxResults.Text, 200);
   if max <= 0 then
     max := MaxInt;
 
   if fArticleContainer = nil then
     if fGroups.Count > 0 then
-      fArticleContainer := TSubscribedGroup (fGroups [0]);
+      fArticleContainer := TSubscribedGroup(fGroups[0]);
 
   if article = nil then
   begin
     if fArticleContainer.ArticleCount > 0 then
     begin
       if fArticleContainer.ThreadOrder = toThreaded then
-        article := fArticleContainer.Threads [0]
+        article := fArticleContainer.Threads[0]
       else
-        article := fArticleContainer.ArticleBase [0];
+        article := fArticleContainer.ArticleBase[0];
     end
   end
   else
   begin
-    fArticleContainer := TSubscribedGroup (article.Owner);
+    fArticleContainer := TSubscribedGroup(article.Owner);
     article := article.Next;
-    if article = Nil then
+    if article = nil then
     begin
       ct := fGroups.IndexOf(fArticleContainer);
       if ct < fGroups.Count - 1 then
         while ct + 1 < fGroups.Count do
         begin
           ct := ct + 1;
-          fArticleContainer := TSubscribedGroup (fGroups [ct]);
+          fArticleContainer := TSubscribedGroup(fGroups[ct]);
           if fArticleContainer.ArticleCount > 0 then
             if fArticleContainer.ThreadOrder = toThreaded then
-              article := fArticleContainer.Threads [0]
+              article := fArticleContainer.Threads[0]
             else
-              article := fArticleContainer.ArticleBase [0];
-          if article <> Nil then
+              article := fArticleContainer.ArticleBase[0];
+          if article <> nil then
             break
         end
       else
-       fArticleContainer := Nil;
+       fArticleContainer := nil;
     end
   end;
 
@@ -320,16 +317,16 @@ begin
   try
     fCont := True;
     fSearchToBookmark := cbSearchToBookmark.Checked;
-    while Assigned (article) do
+    while Assigned(article) do
     begin
       if Filters.MatchesAll(article) then
       begin
         if fSearchToBookmark then
         begin
-          frDate := StringReplace (DateToStr (Now),'/', '-', [rfReplaceAll]);
-          frDate := StringReplace (frDate, '.', '-', [rfReplaceAll]);
+          frDate := StringReplace(DateToStr(Now),'/', '-', [rfReplaceAll]);
+          frDate := StringReplace(frDate, '.', '-', [rfReplaceAll]);
 
-          if not Assigned (fBookmark) then
+          if not Assigned(fBookmark) then
           begin
             fBookmark := fmMain.fBookmarkSet.CreateBookmark('Search Results ' + frDate);
             fBookmark.Clear;
@@ -346,34 +343,34 @@ begin
           end
         end
         else
-          bmk := Nil;
+          bmk := nil;
 
-        if Assigned (OnArticleFound) then
-          OnArticleFound (article, bmk, fCont);
+        if Assigned(OnArticleFound) then
+          OnArticleFound(article, bmk, fCont);
 
-        Inc (ct);
+        Inc(ct);
 
         found := True;
       end;
       article := article.Next;
-      if article = Nil then
+      if article = nil then
       begin
         ct := fGroups.IndexOf(fArticleContainer);
         if ct < fGroups.Count -1 then
           while ct + 1 < fGroups.Count do
           begin
             ct := ct + 1;
-            fArticleContainer := TSubscribedGroup (fGroups [ct]);
+            fArticleContainer := TSubscribedGroup(fGroups[ct]);
             if fArticleContainer.ArticleCount > 0 then
               if fArticleContainer.ThreadOrder = toThreaded then
-                article := fArticleContainer.Threads [0]
+                article := fArticleContainer.Threads[0]
               else
-                article := fArticleContainer.ArticleBase [0];
-            if article <> Nil then
+                article := fArticleContainer.ArticleBase[0];
+            if article <> nil then
               break
           end
         else
-          fArticleContainer := Nil;
+          fArticleContainer := nil;
       end;
       Application.ProcessMessages;
       if (not fCont) or (ct > max) then
@@ -385,43 +382,43 @@ begin
   end;
 
   if fCont and not Found then
-    ShowMessage ('Could not find a matching article')
+    ShowMessage('Could not find a matching article')
 end;
 *)
 
 procedure TdlgSearch.cbSubjectClick(Sender: TObject);
 var
-  col : TNNTPFilterColumn;
-  ctrl : TCheckBox;
-  op : TComboBox;
-  ed : TWinControl;
+  col: TNNTPFilterColumn;
+  ctrl: TCheckBox;
+  op: TComboBox;
+  ed: TWinControl;
 begin
   if not (sender is TCheckBox) then Exit;
   if not fLoading then
-    FreeAndNil (fFilters);
-  ctrl := TCheckBox (Sender);
-  col := TNNTPFilterColumn (ctrl.Tag);
+    FreeAndNil(fFilters);
+  ctrl := TCheckBox(Sender);
+  col := TNNTPFilterColumn(ctrl.Tag);
 
-  op := Operators [col];
-  ed := EditorCtrls [col];
+  op := Operators[col];
+  ed := EditorCtrls[col];
 
   op.Enabled := ctrl.Checked;
   if ctrl.Checked then
     op.Font.Color := clBlack
   else
     op.Font.Color := clGrayText;
-  ed.Enabled := ctrl.Checked
+  ed.Enabled := ctrl.Checked;
 end;
 
 procedure TdlgSearch.UpdateActions;
 var
-  somethingSelected : Boolean;
+  somethingSelected: Boolean;
 begin
   somethingSelected := cbSubject.Checked or cbAuthor.Checked or cbLines.Checked or cbDate.Checked or cbMessageBody.Checked or cbMessageID.Checked or cbHeaderLines.Checked or cbCrossposted.Checked;
 
 //  somethingSelected := somethingSelected and (cbSearchString.Text <> '');
 
-  OKBtn.Enabled := somethingSelected
+  OKBtn.Enabled := somethingSelected;
 end;
 
 procedure TdlgSearch.CreateParams(var params: TCreateParams);
@@ -433,45 +430,45 @@ end;
 
 procedure TdlgSearch.FormShow(Sender: TObject);
 var
-  i : Integer;
-  col : TNNTPFilterColumn;
-  op : TNNTPFilterOperator;
-  ed : TEdit;
-  cb : TComboBox;
-  en : TCheckBox;
+  i: Integer;
+  col: TNNTPFilterColumn;
+  op: TNNTPFilterOperator;
+  ed: TEdit;
+  cb: TComboBox;
+  en: TCheckBox;
 begin
-  AdjustFormConstraints (self);
+  AdjustFormConstraints(Self);
   for i := 0 to Groups.Count - 1 do
-    TSubscribedGroup (Groups [i]).fSearching := True;
+    TSubscribedGroup(Groups[i]).fSearching := True;
 
   if Groups.Count > 0 then
-    if (groups.Count = 1) and (Article <> Nil) then
+    if (groups.Count = 1) and (Article <> nil) then
       fCodePage := Article.CodePage
     else
     begin
-      fCodePage := TSubscribedGroup (fGroups [0]).DisplaySettings.DefaultCodePage;
-      Article := Nil
+      fCodePage := TSubscribedGroup(fGroups[0]).DisplaySettings.DefaultCodePage;
+      Article := nil;
     end
   else
     fCodePage := NNTPAccounts.DisplaySettings.DefaultCodepage;
 
-  for col := Low (TNNTPFilterColumn) to High (TNNTPFilterColumn) do
+  for col := Low(TNNTPFilterColumn) to High(TNNTPFilterColumn) do
   begin
-    en := Enableds [col];
-    ed := Editors [col];
-    if Assigned (ed) then
+    en := Enableds[col];
+    ed := Editors[col];
+    if Assigned(ed) then
       ed.Enabled := en.Checked;
 
-    cb := Operators [col];
-    if Assigned (cb) then
+    cb := Operators[col];
+    if Assigned(cb) then
     begin
       cb.Items.BeginUpdate;
       try
-        for op := Low (TNNTPFilterOperator) to High (TNNTPFilterOperator) do
-          if op in ValidOperators [col] then
-            cb.Items.Add(OperatorNames [op])
+        for op := Low(TNNTPFilterOperator) to High(TNNTPFilterOperator) do
+          if op in ValidOperators[col] then
+            cb.Items.Add(OperatorNames[op]);
       finally
-        cb.Items.EndUpdate
+        cb.Items.EndUpdate;
       end;
       if cb.Items.Count > 0 then
         cb.ItemIndex := 0;
@@ -481,53 +478,52 @@ begin
         cb.Font.Color := clBlack
       else
         cb.Font.Color := clGrayText;
-    end
+    end;
   end;
 
-  LoadPreviousSettings
+  LoadPreviousSettings;
 end;
 
 procedure TdlgSearch.LoadPreviousSettings;
 var
-  i : Integer;
-  s : string;
-  sl : TStringList;
-  col : TNNTPFilterColumn;
-  op : TNNTPFilterOperator;
-  en : TCheckBox;
-  opc : TComboBox;
-  ed : TEdit;
-
+  i: Integer;
+  s: string;
+  sl: TStringList;
+  col: TNNTPFilterColumn;
+  op: TNNTPFilterOperator;
+  en: TCheckBox;
+  opc: TComboBox;
+  ed: TEdit;
 begin
-  FreeAndNil (fFilters);
+  FreeAndNil(fFilters);
   fLoading := True;
   try
-    sl := Nil;
+    sl := nil;
     with CreateExSettings do
     try
       Section := 'Search';
-      if Open (true) then
+      if Open(True) then
       begin
         sl := TStringList.Create;
-        GetStrings ('S0', sl);
+        GetStrings('S0', sl);
 
         if sl.Count > 0 then
-          fFilters := TNNTPFilters.Create (True);
+          fFilters := TNNTPFilters.Create(True);
 
         for i := 0 to sl.Count - 1 do
         begin
-          s := sl [i];
-          if TextToNNTPFilter (s, col, op) then
+          s := sl[i];
+          if TextToNNTPFilter(s, col, op) then
           case col of
-            ftDate :
-              fFilters.AddObject('', TNNTPFilter.Create('', col, op, StrToDateTime (s), false, false, false));
+            ftDate:
+              fFilters.AddObject('', TNNTPFilter.Create('', col, op, StrToDateTime(s), False, False, False));
             ftLines,
             ftCrossposted,
-            ftNumber :
-              fFilters.AddObject('', TNNTPFilter.Create('', col, op, StrToIntDef (s, 0), false, false, false));
-            else
-              fFilters.AddObject('', TNNTPFilter.Create('', col, op, s, false, false, false));
-          end
+            ftNumber:
+              fFilters.AddObject('', TNNTPFilter.Create('', col, op, StrToIntDef(s, 0), False, False, False));
+          else
+            fFilters.AddObject('', TNNTPFilter.Create('', col, op, s, False, False, False));
+          end;
         end;
       end
     finally
@@ -535,47 +531,45 @@ begin
       Free
     end;
 
-    if Assigned (fFilters) then
+    if Assigned(fFilters) then
     begin
       for i := 0 to fFilters.Count - 1 do
       begin
-        col := fFilters [i].Column;
-        en := Enableds [col];
-        if Assigned (en) then
+        col := fFilters[i].Column;
+        en := Enableds[col];
+        if Assigned(en) then
         begin
           en.Checked := True;
-          opc := Operators [col];
-          opc.Text := OperatorNames [fFilters [i].Operator];
+          opc := Operators[col];
+          opc.Text := OperatorNames[fFilters[i].Operator];
 
           if col = ftDate then
-            DateTimePicker1.Date := StrToDateDef (fFilters [i].StrVal, Now)
+            DateTimePicker1.Date := StrToDateDef(fFilters[i].StrVal, Now)
           else
           begin
-            ed := Editors [col];
-            ed.Text := fFilters [i].StrVal
-          end
-        end
-      end
+            ed := Editors[col];
+            ed.Text := fFilters[i].StrVal;
+          end;
+        end;
+      end;
     end
     else
-    begin
-      Enableds [ftMessageBody].Checked := True;
-    end
+      Enableds[ftMessageBody].Checked := True;
   finally
     fLoading := False;
-    FreeAndNil (fFilters);
-  end
+    FreeAndNil(fFilters);
+  end;
 end;
 
 procedure TdlgSearch.SavePreviousSettings;
 var
-  i, idx : Integer;
-  reg : TExSettings;
-  s, sl1 : TStringList;
+  i, idx: Integer;
+  reg: TExSettings;
+  s, sl1: TStringList;
 begin
-  if not Assigned (fFilters) then Exit;
-  s := Nil;
-  sl1 := Nil;
+  if not Assigned(fFilters) then Exit;
+  s := nil;
+  sl1 := nil;
   reg := CreateExSettings;
   try
     reg.Section := 'Search';
@@ -589,23 +583,23 @@ begin
 
     for i := 9 downto 0 do
     begin
-      idx := s.IndexOf('S' + IntToStr (i));
+      idx := s.IndexOf('S' + IntToStr(i));
       if idx >= 0 then
       begin
-        reg.GetStrings ('S' + IntToStr (i), sl1);
-        reg.DeleteValue('S' + IntToStr (i));
-        reg.SetStrings('S' + IntToStr (i + 1), sl1);
+        reg.GetStrings('S' + IntToStr(i), sl1);
+        reg.DeleteValue('S' + IntToStr(i));
+        reg.SetStrings('S' + IntToStr(i + 1), sl1);
 
-        s.Delete (idx);
-      end
+        s.Delete(idx);
+      end;
     end;
 
     for i := 0 to s.Count - 1 do
-      reg.DeleteValue(s [i]);
+      reg.DeleteValue(s[i]);
 
     s.Clear;
     for i := 0 to Filters.Count - 1 do
-      s.Add(Filters [i].Text);
+      s.Add(Filters[i].Text);
 
     reg.SetStrings('S0', s);
 
@@ -613,101 +607,101 @@ begin
     reg.Free;
     s.Free;
     sl1.Free;
-  end
+  end;
 end;
 
 constructor TdlgSearch.Create(AOwner: TComponent);
 begin
   inherited;
   fGroups := TObjectList.Create;
-  fGroups.OwnsObjects := False
+  fGroups.OwnsObjects := False;
 end;
 
-function TdlgSearch.GetOperators(column : TNNTPFilterColumn): TComboBox;
+function TdlgSearch.GetOperators(column: TNNTPFilterColumn): TComboBox;
 begin
   case column of
-    ftSubject     : result := cbxSubject;
-    ftAuthor      : result := cbxAuthor;
-    ftDate        : result := cbxDate;
-    ftLines       : result := cbxLines;
-    ftMessageBody : result := cbxMessageBody;
-    ftMessageID   : result := cbxMessageId;
-    ftHeaderLines : result := cbxHeaderLines;
-    ftCrossposted : result := cbxCrossposted;
-    else
-      result := Nil
-  end
+    ftSubject    : Result := cbxSubject;
+    ftAuthor     : Result := cbxAuthor;
+    ftDate       : Result := cbxDate;
+    ftLines      : Result := cbxLines;
+    ftMessageBody: Result := cbxMessageBody;
+    ftMessageID  : Result := cbxMessageId;
+    ftHeaderLines: Result := cbxHeaderLines;
+    ftCrossposted: Result := cbxCrossposted;
+  else
+    Result := nil;
+  end;
 end;
 
 function TdlgSearch.GetEditors(column: TNNTPFilterColumn): TEdit;
 begin
   case column of
-    ftSubject     : result := edSubject;
-    ftAuthor      : result := edAuthor;
-    ftDate        : result := Nil;
-    ftLines       : result := edLines;
-    ftMessageBody : result := edMessageBody;
-    ftMessageID   : result := edMessageId;
-    ftHeaderLines : result := edHeaderLines;
-    ftCrossposted : result := edCrossposted;
-    else
-      result := Nil
-  end
+    ftSubject    : Result := edSubject;
+    ftAuthor     : Result := edAuthor;
+    ftDate       : Result := nil;
+    ftLines      : Result := edLines;
+    ftMessageBody: Result := edMessageBody;
+    ftMessageID  : Result := edMessageId;
+    ftHeaderLines: Result := edHeaderLines;
+    ftCrossposted: Result := edCrossposted;
+  else
+    Result := nil;
+  end;
 end;
 
 function TdlgSearch.GetEditorCtrls(column: TNNTPFilterColumn): TWinControl;
 begin
   case column of
-    ftSubject     : result := edSubject;
-    ftAuthor      : result := edAuthor;
-    ftDate        : result := DateTimePicker1;
-    ftLines       : result := edLines;
-    ftMessageBody : result := edMessageBody;
-    ftMessageID   : result := edMessageId;
-    ftHeaderLines : result := edHeaderLines;
-    ftCrossposted : result := edCrossposted;
-    else
-      result := Nil
-  end
+    ftSubject    : Result := edSubject;
+    ftAuthor     : Result := edAuthor;
+    ftDate       : Result := DateTimePicker1;
+    ftLines      : Result := edLines;
+    ftMessageBody: Result := edMessageBody;
+    ftMessageID  : Result := edMessageId;
+    ftHeaderLines: Result := edHeaderLines;
+    ftCrossposted: Result := edCrossposted;
+  else
+    Result := nil;
+  end;
 end;
 
 function TdlgSearch.GetEnableds(column: TNNTPFilterColumn): TCheckBox;
 begin
   case column of
-    ftSubject     : result := cbSubject;
-    ftAuthor      : result := cbAuthor;
-    ftDate        : result := cbDate;
-    ftLines       : result := cbLines;
-    ftMessageBody : result := cbMessageBody;
-    ftMessageID   : result := cbMessageId;
-    ftHeaderLines : result := cbHeaderLines;
-    ftCrossposted : result := cbCrossposted;
-    else
-      result := Nil
-  end
+    ftSubject    : Result := cbSubject;
+    ftAuthor     : Result := cbAuthor;
+    ftDate       : Result := cbDate;
+    ftLines      : Result := cbLines;
+    ftMessageBody: Result := cbMessageBody;
+    ftMessageID  : Result := cbMessageId;
+    ftHeaderLines: Result := cbHeaderLines;
+    ftCrossposted: Result := cbCrossposted;
+  else
+    Result := nil;
+  end;
 end;
 
 procedure TdlgSearch.cbxSubjectChange(Sender: TObject);
 begin
   if not fLoading then
-    FreeAndNil (fFilters);
+    FreeAndNil(fFilters);
 end;
 
 procedure TdlgSearch.edAuthorChange(Sender: TObject);
 begin
   if not fLoading then
-    FreeAndNil (fFilters)
+    FreeAndNil(fFilters);
 end;
 
 procedure TdlgSearch.DateTimePicker1Change(Sender: TObject);
 begin
   if not fLoading then
-    FreeAndNil (fFilters);
+    FreeAndNil(fFilters);
 end;
 
 procedure TdlgSearch.Timer1Timer(Sender: TObject);
 begin
-  Close
+  Close;
 end;
 
 end.

@@ -2,25 +2,23 @@ unit unitMessageBaseSearch;
 
 interface
 
-uses Windows, Classes, SysUtils, ConTnrs, unitNNTPServices, unitNNTPFilters;
+uses
+  Windows, Classes, SysUtils, ConTnrs, unitNNTPServices, unitNNTPFilters;
 
-function Search (from : TArticleBase; containers : TObjectList; filters : TNNTPFilters) : TArticleBase;
+function Search(from: TArticleBase; containers: TObjectList; filters: TNNTPFilters): TArticleBase;
 
 implementation
 
-(*----------------------------------------------------------------------*
- | function Search
- *----------------------------------------------------------------------*)
-function Search (from : TArticleBase; containers : TObjectList; filters : TNNTPFilters) : TArticleBase;
+function Search(from: TArticleBase; containers: TObjectList; filters: TNNTPFilters): TArticleBase;
 var
-  ctnr : TArticleContainer;
-  ctnrIdx : Integer;
-  art : TArticleBase;
+  ctnr: TArticleContainer;
+  ctnrIdx: Integer;
+  art: TArticleBase;
 begin
-  result := Nil;
-  if not Assigned (filters) then Exit;
+  Result := nil;
+  if not Assigned(filters) then Exit;
 
-  if Assigned (from) then
+  if Assigned(from) then
   begin
     ctnr := from.Owner;
     ctnrIdx := containers.IndexOf(ctnr);
@@ -28,40 +26,39 @@ begin
   else
   begin
     ctnrIdx := 0;
-    if Assigned (containers) and (containers.Count > 0) then
-      ctnr := TArticleContainer (containers [ctnrIdx])
+    if Assigned(containers) and (containers.Count > 0) then
+      ctnr := TArticleContainer(containers[ctnrIdx])
     else
-      ctnr := Nil
+      ctnr := nil;
   end;
 
-  if ctnr = Nil then Exit;
+  if ctnr = nil then Exit;
 
   art := from;
-  if art = Nil then art := ctnr.FirstArticle else art := art.Next;
+  if art = nil then art := ctnr.FirstArticle else art := art.Next;
 
-  while ctnr <> Nil do
+  while ctnr <> nil do
   begin
-    while art <> Nil do
-      if Filters.MatchesAll (art) then
-        break
+    while art <> nil do
+      if Filters.MatchesAll(art) then
+        Break
       else
         art := art.Next;
 
-    if art <> Nil then
-      break;
+    if art <> nil then
+      Break;
 
-    Inc (ctnrIdx);
-    if (containers <> Nil) and (ctnrIdx < containers.Count) then
+    Inc(ctnrIdx);
+    if (containers <> nil) and (ctnrIdx < containers.Count) then
     begin
-      ctnr := TArticleContainer (containers [ctnrIdx]);
-      art := ctnr.FirstArticle
+      ctnr := TArticleContainer(containers[ctnrIdx]);
+      art := ctnr.FirstArticle;
     end
     else
-      ctnr := Nil
+      ctnr := nil;
   end;
 
-  result := art
+  Result := art;
 end;
-
 
 end.

@@ -338,8 +338,8 @@ begin
   st := '';
   case fColumn of
     ftNumber : it := article.ArticleNo;
-    ftSubject: st := article.Subject;
-    ftAuthor: st := article.From;
+    ftSubject: st := DecodeSubject(article.Subject);
+    ftAuthor: st := article.FromName;
     ftMessageID: st := article.MessageId;
     ftDate: dt := article.Date;
     ftLines: it := article.Lines;

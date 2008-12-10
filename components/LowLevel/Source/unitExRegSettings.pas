@@ -416,7 +416,7 @@ begin
     st := st + sl[I] + #0;
   st := st + #0;
 
-  size := Length(st);
+  size := Length(st) * SizeOf(Char);
 
   SetLastError(RegSetValueEx(CurrentKey, PChar(valueName), 0, REG_MULTI_SZ, @st[1], size));
   if GetLastError <> ERROR_SUCCESS then
