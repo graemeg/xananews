@@ -286,7 +286,8 @@ begin
       else
         raise EExSettings.Create('String list expected')
     else
-      raise EExSettings.Create('Unable read MULTI_SZ value');
+      if rv <> ERROR_FILE_NOT_FOUND then
+        raise EExSettings.Create('Unable to read MULTI_SZ value');
   end;
   Result := sl.Count;
 end;

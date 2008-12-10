@@ -253,139 +253,6 @@ begin
   fileName := gExSettingsFile;
 end;
 
-(*
-procedure TdlgSearch.OKBtnClick(Sender: TObject);
-var
-  found: Boolean;
-  oldCursor: TCursor;
-  bmk: TBookmark;
-  ct: Integer;
-  frDate: string;
-  max: Integer;
-begin
-  if not Assigned(Filters) then Exit;
-  max := StrToIntDef(edMaxResults.Text, 200);
-  if max <= 0 then
-    max := MaxInt;
-
-  if fArticleContainer = nil then
-    if fGroups.Count > 0 then
-      fArticleContainer := TSubscribedGroup(fGroups[0]);
-
-  if article = nil then
-  begin
-    if fArticleContainer.ArticleCount > 0 then
-    begin
-      if fArticleContainer.ThreadOrder = toThreaded then
-        article := fArticleContainer.Threads[0]
-      else
-        article := fArticleContainer.ArticleBase[0];
-    end
-  end
-  else
-  begin
-    fArticleContainer := TSubscribedGroup(article.Owner);
-    article := article.Next;
-    if article = nil then
-    begin
-      ct := fGroups.IndexOf(fArticleContainer);
-      if ct < fGroups.Count - 1 then
-        while ct + 1 < fGroups.Count do
-        begin
-          ct := ct + 1;
-          fArticleContainer := TSubscribedGroup(fGroups[ct]);
-          if fArticleContainer.ArticleCount > 0 then
-            if fArticleContainer.ThreadOrder = toThreaded then
-              article := fArticleContainer.Threads[0]
-            else
-              article := fArticleContainer.ArticleBase[0];
-          if article <> nil then
-            break
-        end
-      else
-       fArticleContainer := nil;
-    end
-  end;
-
-  SavePreviousSettings;
-
-  ct := 0;
-  found := False;
-  oldCursor := Screen.Cursor;
-  screen.Cursor := crAppStart;
-  Application.ProcessMessages;
-  try
-    fCont := True;
-    fSearchToBookmark := cbSearchToBookmark.Checked;
-    while Assigned(article) do
-    begin
-      if Filters.MatchesAll(article) then
-      begin
-        if fSearchToBookmark then
-        begin
-          frDate := StringReplace(DateToStr(Now),'/', '-', [rfReplaceAll]);
-          frDate := StringReplace(frDate, '.', '-', [rfReplaceAll]);
-
-          if not Assigned(fBookmark) then
-          begin
-            fBookmark := fmMain.fBookmarkSet.CreateBookmark('Search Results ' + frDate);
-            fBookmark.Clear;
-            fmMain.PopulateBookmarkCombo;
-            fmMain.SetCurrentBookmark(fBookmark)
-          end;
-          bmk := fmMain.fCurrentBookmark;
-          if bmk = nil then
-          begin
-            bmk := fmMain.fBookmarkSet.CreateBookmark('Search Results ' + frDate);
-            fBookmark.Clear;
-            fmMain.PopulateBookmarkCombo;
-            fmMain.SetCurrentBookmark(fBookmark)
-          end
-        end
-        else
-          bmk := nil;
-
-        if Assigned(OnArticleFound) then
-          OnArticleFound(article, bmk, fCont);
-
-        Inc(ct);
-
-        found := True;
-      end;
-      article := article.Next;
-      if article = nil then
-      begin
-        ct := fGroups.IndexOf(fArticleContainer);
-        if ct < fGroups.Count -1 then
-          while ct + 1 < fGroups.Count do
-          begin
-            ct := ct + 1;
-            fArticleContainer := TSubscribedGroup(fGroups[ct]);
-            if fArticleContainer.ArticleCount > 0 then
-              if fArticleContainer.ThreadOrder = toThreaded then
-                article := fArticleContainer.Threads[0]
-              else
-                article := fArticleContainer.ArticleBase[0];
-            if article <> nil then
-              break
-          end
-        else
-          fArticleContainer := nil;
-      end;
-      Application.ProcessMessages;
-      if (not fCont) or (ct > max) then
-        break;
-    end;
-  finally
-    fSearchToBookmark := False;
-    screen.Cursor := oldCursor
-  end;
-
-  if fCont and not Found then
-    ShowMessage('Could not find a matching article')
-end;
-*)
-
 procedure TdlgSearch.cbSubjectClick(Sender: TObject);
 var
   col: TNNTPFilterColumn;
@@ -505,24 +372,28 @@ begin
       if Open(True) then
       begin
         sl := TStringList.Create;
-        GetStrings('S0', sl);
-
-        if sl.Count > 0 then
-          fFilters := TNNTPFilters.Create(True);
-
-        for i := 0 to sl.Count - 1 do
+        GetValueNames(sl);
+        if sl.IndexOf('S0') >= 0 then
         begin
-          s := sl[i];
-          if TextToNNTPFilter(s, col, op) then
-          case col of
-            ftDate:
-              fFilters.AddObject('', TNNTPFilter.Create('', col, op, StrToDateTime(s), False, False, False));
-            ftLines,
-            ftCrossposted,
-            ftNumber:
-              fFilters.AddObject('', TNNTPFilter.Create('', col, op, StrToIntDef(s, 0), False, False, False));
-          else
-            fFilters.AddObject('', TNNTPFilter.Create('', col, op, s, False, False, False));
+          GetStrings('S0', sl);
+
+          if sl.Count > 0 then
+            fFilters := TNNTPFilters.Create(True);
+
+          for i := 0 to sl.Count - 1 do
+          begin
+            s := sl[i];
+            if TextToNNTPFilter(s, col, op) then
+            case col of
+              ftDate:
+                fFilters.AddObject('', TNNTPFilter.Create('', col, op, StrToDateTime(s), False, False, False));
+              ftLines,
+              ftCrossposted,
+              ftNumber:
+                fFilters.AddObject('', TNNTPFilter.Create('', col, op, StrToIntDef(s, 0), False, False, False));
+            else
+              fFilters.AddObject('', TNNTPFilter.Create('', col, op, s, False, False, False));
+            end;
           end;
         end;
       end
@@ -563,7 +434,7 @@ end;
 
 procedure TdlgSearch.SavePreviousSettings;
 var
-  i, idx: Integer;
+  i: Integer;
   reg: TExSettings;
   s, sl1: TStringList;
 begin
@@ -581,20 +452,21 @@ begin
 
     s.Sorted := True;
 
-    for i := 9 downto 0 do
-    begin
-      idx := s.IndexOf('S' + IntToStr(i));
-      if idx >= 0 then
-      begin
-        reg.GetStrings('S' + IntToStr(i), sl1);
-        reg.DeleteValue('S' + IntToStr(i));
-        reg.SetStrings('S' + IntToStr(i + 1), sl1);
+// AFAICT this is no longer used.
+//    for i := 9 downto 0 do
+//    begin
+//      idx := s.IndexOf('S' + IntToStr(i));
+//      if idx >= 0 then
+//      begin
+//        reg.GetStrings('S' + IntToStr(i), sl1);
+//        reg.DeleteValue('S' + IntToStr(i));
+//        reg.SetStrings('S' + IntToStr(i + 1), sl1);
+//
+//        s.Delete(idx);
+//      end;
+//    end;
 
-        s.Delete(idx);
-      end;
-    end;
-
-    for i := 0 to s.Count - 1 do
+    for i := 1 to s.Count - 1 do
       reg.DeleteValue(s[i]);
 
     s.Clear;
