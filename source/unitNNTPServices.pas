@@ -3068,7 +3068,7 @@ begin
   begin
     msgFileName := gMessageBaseRoot + '\' + FixFileNameString(Owner.AccountName) + '\' + FixFileNameString(Name) + '\messages.dat';
     if FileExists(msgFileName) then
-      fMessageFile := TFileStream.Create(msgFileName, fmOpenReadWrite)
+      fMessageFile := TFileStream.Create(msgFileName, fmOpenReadWrite or fmShareDenyWrite)
     else
     begin
       ForceDirectories(ExtractFilePath(msgFileName));

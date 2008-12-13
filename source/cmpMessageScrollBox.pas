@@ -25,7 +25,8 @@ unit cmpMessageScrollBox;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Controls, Forms, Graphics, StrUtils, ComCtrls, ExtCtrls, unitMessages, CommDlg, cmpMessageDisplay,cmpThemedScrollBox;
+  Windows, Messages, SysUtils, Classes, Controls, Forms, Graphics, StrUtils,
+  ComCtrls, ExtCtrls, unitMessages, CommDlg, cmpMessageDisplay, cmpThemedScrollBox;
 
 type
 
@@ -35,99 +36,100 @@ type
   private
     fMsg: TmvMessage;
     fShowHeader: TShowHeader;
-    fHeaderText : TStrings;
-    fMessageDisplay : TMessageDisplay;
-    fRawMode: boolean;
-    fRawMessage: boolean;
-    fParsing : boolean;
-    fImagesOnly: boolean;
+    fHeaderText: TStrings;
+    fMessageDisplay: TMessageDisplay;
+    fRawMode: Boolean;
+    fRawMessage: Boolean;
+    fParsing: Boolean;
+    fImagesOnly: Boolean;
     fURLText: WideString;
     fFixedFont: string;
-    fAutoFit: boolean;
-    procedure SetAutoFit(const Value: boolean);
+    fAutoFit: Boolean;
+    procedure SetAutoFit(const Value: Boolean);
     procedure SetMsg(const Value: TmvMessage);
 
     procedure SetShowHeader(const Value: TShowHeader);
-    procedure SetRawMode(const Value: boolean);
-    procedure SetRawMessage(const Value: boolean);
+    procedure SetRawMode(const Value: Boolean);
+    procedure SetRawMessage(const Value: Boolean);
     function GetLineHeight: Integer;
     function GetSelLength: Integer;
 
-    procedure SetImagesOnly(const Value: boolean);
+    procedure SetImagesOnly(const Value: Boolean);
 
-    procedure DoOnURLClick (Sender : TObject; Button: TMouseButton; Shift: TShiftState; const url : WideString);
-    procedure DoOnDblClick (Sender : TObject);
+    procedure DoOnURLClick(Sender: TObject; Button: TMouseButton; Shift: TShiftState; const url: WideString);
+    procedure DoOnDblClick(Sender: TObject);
 
 
     { Private declarations }
   protected
     procedure Resize; override;
-    procedure PaintWindow (dc : HDC); override;
+    procedure PaintWindow(dc: HDC); override;
   public
-    fLastSize : Integer;
-    constructor Create (AOwner : TComponent); override;
+    fLastSize: Integer;
+    constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
-    property Msg : TmvMessage read fMsg write SetMsg;
-    property ShowHeader : TShowHeader read fShowHeader write SetShowHeader;
+    property Msg: TmvMessage read fMsg write SetMsg;
+    property ShowHeader: TShowHeader read fShowHeader write SetShowHeader;
     procedure ParseMessage;
     procedure Print;
-    function GetAttachmentAt (x, y : Integer) : TmvMessagePart;
-    function GetFocusedAttachment : TmvMessagePart;
-    procedure Refresh (erase : boolean; renew : boolean = False);
+    function GetAttachmentAt(x, y: Integer): TmvMessagePart;
+    function GetFocusedAttachment: TmvMessagePart;
+    procedure Refresh(erase: Boolean; renew: Boolean = False);
     procedure PageDown;
 
-    function GetSelectedText (var txt : WideString) : boolean;
-    procedure SetSelectedText (const st : WideString);
-    function GetText (var txt : WideString) : boolean;
-    function GetHTML (var HTML : string; rawFragment : boolean = false) : boolean;
-    function FindText (const SearchStr: WideString; NewSearch : Boolean; Options: TStringSearchOptions) : boolean;
-    property RawMessage : boolean read fRawMessage write SetRawMessage;
-    property ImagesOnly : boolean read fImagesOnly write SetImagesOnly;
-    property LineHeight : Integer read GetLineHeight;
+    function GetSelectedText(var txt: WideString): Boolean;
+    procedure SetSelectedText(const st: WideString);
+    function GetText(var txt: WideString): Boolean;
+    function GetHTML(var HTML: string; rawFragment: Boolean = False): Boolean;
+    function FindText(const SearchStr: WideString; NewSearch: Boolean; Options: TStringSearchOptions): Boolean;
+    property RawMessage: Boolean read fRawMessage write SetRawMessage;
+    property ImagesOnly: Boolean read fImagesOnly write SetImagesOnly;
+    property LineHeight: Integer read GetLineHeight;
 
-    property SelLength : Integer read GetSelLength;
-    property URLText : WideString read fURLText write fURLText;
-    property FixedFont : string read fFixedFont write fFixedFont;
-    property AutoFit : boolean read fAutoFit write SetAutoFit;
+    property SelLength: Integer read GetSelLength;
+    property URLText: WideString read fURLText write fURLText;
+    property FixedFont: string read fFixedFont write fFixedFont;
+    property AutoFit: Boolean read fAutoFit write SetAutoFit;
   published
-    property RawMode : boolean read fRawMode write SetRawMode;
+    property RawMode: Boolean read fRawMode write SetRawMode;
   end;
 
 implementation
 
-uses unitExSettings, unitMessageNNTPBinary, unitMessageMIME, IdGlobal, unitNNTPServices,
-     unitMessageYEncodedBinary, unitHTMLStringsDisplayObject, unitMailServices,
-     unitNewsStringsDisplayObject, unitNewsReaderOptions, NewsGlobals,
-     unitSavedArticles;
+uses
+  unitExSettings, unitMessageNNTPBinary, unitMessageMIME, IdGlobal, unitNNTPServices,
+  unitMessageYEncodedBinary, unitHTMLStringsDisplayObject, unitMailServices,
+  unitNewsStringsDisplayObject, unitNewsReaderOptions, NewsGlobals,
+  unitSavedArticles;
 
 type
-THeaderDisplayObjectLink = class (TNewsStringsDisplayObjectLink)
-end;
+  THeaderDisplayObjectLink = class(TNewsStringsDisplayObjectLink)
+  end;
 
 { TMessageScrollBox }
 
 function TMessageScrollBox.GetAttachmentAt(x, y: Integer): TmvMessagePart;
 var
-  i, m : Integer;
-  link : TDisplayObjectLink;
+  i, m: Integer;
+  link: TDisplayObjectLink;
 
 begin
-  result := Nil;
-  Inc (y, VertScrollBar.Position);
-  Inc (x, HorzScrollBar.Position);
+  Result := nil;
+  Inc(y, VertScrollBar.Position);
+  Inc(x, HorzScrollBar.Position);
 
   i := 0;
-  link := Nil;
+  link := nil;
   while i < fMessageDisplay.ObjectCount do
   begin
-    link := fMessageDisplay.Objects [i];
+    link := fMessageDisplay.Objects[i];
     if y < link.Height then
-      break;
-    Dec (y, link.Height);
-    Inc (i);
+      Break;
+    Dec(y, link.Height);
+    Inc(i);
   end;
 
-  if (i < fMessageDisplay.ObjectCount) and Assigned (link) then
+  if (i < fMessageDisplay.ObjectCount) and Assigned(link) then
     if (x >= link.Margin) and (x < link.Margin + link.Width) then
     begin
       m := 0;
@@ -136,33 +138,33 @@ begin
       begin
         if i = 1 then
         begin
-          result := Msg.MessageParts [m];
-          break
+          Result := Msg.MessageParts[m];
+          Break;
         end;
 
-        Dec (i);
-        Inc (m)
-      end
+        Dec(i);
+        Inc(m);
+      end;
     end;
 
-  if Assigned (Result) and not Result.Complete then
-    Result := Nil
+  if Assigned(Result) and not Result.Complete then
+    Result := nil;
 end;
 
-function GetArticleHeaderText (Msg : TmvMessage; ShowHeader : TShowHeader; raw : boolean) : string;
+function GetArticleHeaderText(Msg: TmvMessage; ShowHeader: TShowHeader; raw: Boolean): string;
 var
-  art : TArticleBase;
-  headst : string;
-  obj : TObject;
-  i : Integer;
-  sl : TStrings;
-  st : string;
-  dt : string;
-  from : string;
-  sub : string;
+  art: TArticleBase;
+  headst: string;
+  obj: TObject;
+  i: Integer;
+  sl: TStrings;
+  st: string;
+  dt: string;
+  from: string;
+  sub: string;
 begin
   obj := Msg.Obj;
-  if not Assigned (obj) then Exit;
+  if not Assigned(obj) then Exit;
 
   if raw then
     headst := ''
@@ -171,11 +173,11 @@ begin
 
   if (obj is TArticle) or (obj is TFolderArticle) then
   begin
-    art := TArticleBase (obj);
+    art := TArticleBase(obj);
 
-    dt := art.Header ['X-XanaOrigDate'];
+    dt := art.Header['X-XanaOrigDate'];
     if dt = '' then
-      dt := SafeDateTimeToInternetStr (art.Date, True);
+      dt := SafeDateTimeToInternetStr(art.Date, True);
 
     if raw then
     begin
@@ -189,25 +191,25 @@ begin
     end;
 
     Result :=
-      headst+'From: ' + from + #13#10 +
-      headst+'Subject: ' + sub + #13#10 +
-      headst+'Date: ' + dt + #13#10 +
-      headst+'Message-ID: ' + art.MessageId + #13#10;
+      headst + 'From: ' + from + #13#10 +
+      headst + 'Subject: ' + sub + #13#10 +
+      headst + 'Date: ' + dt + #13#10 +
+      headst + 'Message-ID: ' + art.MessageId + #13#10;
 
     if (ShowHeader in [shFull, shCustom]) and (art.References <> '') then
-      Result := Result + headst+'References: ' + art.References + #13#10;
+      Result := Result + headst + 'References: ' + art.References + #13#10;
 
     if art.Lines > 0 then
-      Result := Result + headst+'Lines: ' + IntToStr (art.Lines) + #13#10
+      Result := Result + headst + 'Lines: ' + IntToStr(art.Lines) + #13#10;
   end
   else
-    result := '';
+    Result := '';
 
   if not Msg.Updating then
     if ShowHeader in [shFull, shCustom] then
       for i := 0 to Msg.Header.Count - 1 do
-        if  Copy (msg.Header [i], 1, 14) <> 'X-XanaOrigDate' then
-          Result := Result + headst+ Msg.Header [i] + #13#10;
+        if Copy(msg.Header[i], 1, 14) <> 'X-XanaOrigDate' then
+          Result := Result + headst + Msg.Header[i] + #13#10;
 
 
   if ShowHeader = shCustom then
@@ -215,53 +217,53 @@ begin
     sl := TStringList.Create;
     try
       sl.NameValueSeparator := ':';
-      sl.Text := result;
+      sl.Text := Result;
 
       i := 0;
       while i < sl.Count do
       begin
-        st := sl.Names [i];
-        Delete (st, 1, Length (headst));
-        if XNOptions.ShowCustomHeaders.Values [st] <> '1' then
-          sl.Delete (i)
+        st := sl.Names[i];
+        Delete(st, 1, Length(headst));
+        if XNOptions.ShowCustomHeaders.Values[st] <> '1' then
+          sl.Delete(i)
         else
-          Inc (i)
+          Inc(i);
       end;
-      result := sl.Text
+      Result := sl.Text;
     finally
-      sl.Free
-    end
-  end
+      sl.Free;
+    end;
+  end;
 end;
 
 procedure TMessageScrollBox.ParseMessage;
 var
-  i,c, ct : Integer;
-  mp : TmvMessagePart;
-  XFace : TBitmap;
-  bo : TObject;
-  nsd : TNewsStringsDisplayObjectLink;
+  i, c, ct: Integer;
+  mp: TmvMessagePart;
+  XFace: TBitmap;
+  bo: TObject;
+  nsd: TNewsStringsDisplayObjectLink;
 
-  procedure AddOrReplaceObject (obj : TObject; XFace, header : boolean);
+  procedure AddOrReplaceObject(obj: TObject; XFace, header: Boolean);
   var
-    tp : TDisplayObjectLinkClass;
-    newObj : TDisplayObjectLink;
+    tp: TDisplayObjectLinkClass;
+    newObj: TDisplayObjectLink;
 
-    procedure AddOrReplaceTextObj (objNo : Integer);
+    procedure AddOrReplaceTextObj(objNo: Integer);
     var
-      textObj : TNewsStringsDisplayObjectLink;
+      textObj: TNewsStringsDisplayObjectLink;
     begin
-      textObj := TNewsStringsDisplayObjectLink (fMessageDisplay.Objects [objNo]);
+      textObj := TNewsStringsDisplayObjectLink(fMessageDisplay.Objects[objNo]);
       textObj.BeginUpdate;
       if textObj.TextObjectCount = ct then
         textObj.AddTextObject(obj)
       else
         textObj.SetTextObject(ct, obj);
-      if Assigned (mp) then
+      if Assigned(mp) then
         textObj.PercentDecoded := mp.PercentDecoded
       else
         textObj.PercentDecoded := 100;
-      Inc (ct)
+      Inc(ct);
     end;
 
   begin
@@ -270,83 +272,83 @@ var
     if not header and fImagesOnly and (tp <> TGraphicDisplayObjectLink) then
       Exit;
 
-    if (tp = TNewsStringsDisplayObjectLink) and ((TStrings (obj).Count = 0) or ((TStrings (obj).Count = 1) and (TStrings (obj) [0] = ''))) then
-      exit;
+    if (tp = TNewsStringsDisplayObjectLink) and ((TStrings(obj).Count = 0) or ((TStrings(obj).Count = 1) and (TStrings(obj)[0] = ''))) then
+      Exit;
 
     if (c = fMessageDisplay.ObjectCount) then
     begin
-      if (c > 0) and (tp = TNewsStringsDisplayObjectLink) and (fMessageDisplay.Objects [c - 1] is TNewsStringsDisplayObjectLink) then
-        AddOrReplaceTextObj (c - 1)
+      if (c > 0) and (tp = TNewsStringsDisplayObjectLink) and (fMessageDisplay.Objects[c - 1] is TNewsStringsDisplayObjectLink) then
+        AddOrReplaceTextObj(c - 1)
       else
       begin
         newObj := fMessageDisplay.InsertObject(c, obj, Msg.Codepage, tp);
         newObj.MessagePart := mp;
-        if Assigned (mp) then
+        if Assigned(mp) then
           newObj.PercentDecoded := mp.PercentDecoded
         else
           newObj.PercentDecoded := 100;
 
-         Inc (c);
+        Inc(c);
         if tp = TNewsStringsDisplayObjectLink then
         begin
-          with TNewsStringsDisplayObjectLink (newObj) do
+          with TNewsStringsDisplayObjectLink(newObj) do
           begin
             TruncateFrom := msg.TruncateFrom;
             StrictSigSeparator := msg.StrictSigSeparator;
-            nsd := TNewsStringsDisplayObjectLink (newObj);
-            XNOptions.Appearance [apHeadersInMessagePane].ApplyFontAndGetColor(nsd.RichEdit.HeaderFont, FixedFont);
-            XNOptions.Appearance [apLevel1Quotes].ApplyFontAndGetColor(nsd.RichEdit.Level1QuoteFont, FixedFont);
-            XNOptions.Appearance [apLevel2Quotes].ApplyFontAndGetColor(nsd.RichEdit.Level2QuoteFont, FixedFont);
-            XNOptions.Appearance [apLevel3Quotes].ApplyFontAndGetColor(nsd.RichEdit.Level3QuoteFont, FixedFont);
-            XNOptions.Appearance [apSignaturesInMessagePane].ApplyFontAndGetColor(nsd.RichEdit.SignatureFont, FixedFont);
-            RightMargin := XNOptions.WrapLines
+            nsd := TNewsStringsDisplayObjectLink(newObj);
+            XNOptions.Appearance[apHeadersInMessagePane].ApplyFontAndGetColor(nsd.RichEdit.HeaderFont, FixedFont);
+            XNOptions.Appearance[apLevel1Quotes].ApplyFontAndGetColor(nsd.RichEdit.Level1QuoteFont, FixedFont);
+            XNOptions.Appearance[apLevel2Quotes].ApplyFontAndGetColor(nsd.RichEdit.Level2QuoteFont, FixedFont);
+            XNOptions.Appearance[apLevel3Quotes].ApplyFontAndGetColor(nsd.RichEdit.Level3QuoteFont, FixedFont);
+            XNOptions.Appearance[apSignaturesInMessagePane].ApplyFontAndGetColor(nsd.RichEdit.SignatureFont, FixedFont);
+            RightMargin := XNOptions.WrapLines;
           end;
 
-          ct := 1
+          ct := 1;
         end
         else
-          ct := 0
-      end
+          ct := 0;
+      end;
     end
     else
-      if fMessageDisplay.Objects [c] is TNewsStringsDisplayObjectLink then
+      if fMessageDisplay.Objects[c] is TNewsStringsDisplayObjectLink then
       begin
         if tp = TNewsStringsDisplayObjectLink then
-          AddOrReplaceTextObj (c)
+          AddOrReplaceTextObj(c)
         else
         begin
-          Inc (c);
-          AddOrReplaceObject (obj, False, False)
-        end
+          Inc(c);
+          AddOrReplaceObject(obj, False, False);
+        end;
       end
       else
       begin
-        if fMessageDisplay.Objects [c].Obj <> Obj then
-          fMessageDisplay.Objects [c].Obj := Obj;
-        if Assigned (mp) then
-          fMessageDisplay.Objects [c].PercentDecoded := mp.PercentDecoded
+        if fMessageDisplay.Objects[c].Obj <> Obj then
+          fMessageDisplay.Objects[c].Obj := Obj;
+        if Assigned(mp) then
+          fMessageDisplay.Objects[c].PercentDecoded := mp.PercentDecoded
         else
-          fMessageDisplay.Objects [c].PercentDecoded := 100;
-        Inc (c);
+          fMessageDisplay.Objects[c].PercentDecoded := 100;
+        Inc(c);
         ct := 0;
-      end
+      end;
   end;
 
 begin
-  if not Assigned (Msg) then Exit;
+  if not Assigned(Msg) then Exit;
   if fParsing then Exit;
   fParsing := True;
 
   gNoHTML := XNOptions.NoHTML;
 
   if FixedFont = '' then
-    Font.Name := XNOptions.Appearance [apMessagePane].FontName
+    Font.Name := XNOptions.Appearance[apMessagePane].FontName
   else
     Font.Name := FixedFont;
 
   Msg.Lock;
-  if Assigned (Msg.Obj) then
-    fMessageDisplay.Subject := TArticleBase (Msg.Obj).Subject;
+  if Assigned(Msg.Obj) then
+    fMessageDisplay.Subject := TArticleBase(Msg.Obj).Subject;
 
   fMessageDisplay.BeginUpdate;
   try
@@ -355,63 +357,63 @@ begin
 
     c := 0;
     ct := 0;
-    mp := Nil;
+    mp := nil;
 
     if not XNOptions.NoXFaces then
     begin
       XFace := Msg.XFace;
-      if Assigned (XFace) then
-        AddOrReplaceObject (XFace, True, False)
+      if Assigned(XFace) then
+        AddOrReplaceObject(XFace, True, False);
     end;
 
     if (ShowHeader <> shNone) then
     begin
-      if not Assigned (fHeaderText) then
+      if not Assigned(fHeaderText) then
         fHeaderText := TStringList.Create
       else
         fHeaderText.Clear;
 
-      fHeaderText.Text := GetArticleHeaderText (Msg, ShowHeader, fMessageDisplay.RawMode);
+      fHeaderText.Text := GetArticleHeaderText(Msg, ShowHeader, fMessageDisplay.RawMode);
       if fHeaderText.Count = 0 then
-        fHeaderText.Add ('-')
+        fHeaderText.Add('-')
       else
         fHeaderText.Add('');
-      AddOrReplaceObject (fHeaderText, False, True)
+      AddOrReplaceObject(fHeaderText, False, True);
     end;
 
     bo := Msg.Body;
-    if not Assigned (Msg.MIMEHeader) or not Msg.MIMEHeader.IsMultipart then
-      if Assigned (bo) then
-        AddOrReplaceObject (bo, False, False);
+    if not Assigned(Msg.MIMEHeader) or not Msg.MIMEHeader.IsMultipart then
+      if Assigned(bo) then
+        AddOrReplaceObject(bo, False, False);
 
     i := 0;
 
     while i < Msg.AlternateMessagePartCount do
     begin
-      mp := Msg.AlternateMessagePart [i];
+      mp := Msg.AlternateMessagePart[i];
 
-      if Assigned (mp.Body) then
-        AddOrReplaceObject (mp.Body, False, False)
+      if Assigned(mp.Body) then
+        AddOrReplaceObject(mp.Body, False, False)
       else
-        if Assigned (mp.Graphic) then
-          AddOrReplaceObject (mp.Graphic, False, False);
+        if Assigned(mp.Graphic) then
+          AddOrReplaceObject(mp.Graphic, False, False);
 
       Inc(i);
-    end
+    end;
   finally
     try
       for i := 0 to fMessageDisplay.ObjectCount - 1 do
       try
-        if fMessageDisplay.Objects [i] is TNewsStringsDisplayObjectLink then
-          TNewsStringsDisplayObjectLink (fMessageDisplay.Objects [i]).EndUpdate;
+        if fMessageDisplay.Objects[i] is TNewsStringsDisplayObjectLink then
+          TNewsStringsDisplayObjectLink(fMessageDisplay.Objects[i]).EndUpdate;
       except
       end;
     finally
       fMessageDisplay.EndUpdate;
       fParsing := False;
-      fMsg.Unlock
-    end
-  end
+      fMsg.Unlock;
+    end;
+  end;
 end;
 
 procedure TMessageScrollBox.Resize;
@@ -425,8 +427,8 @@ procedure TMessageScrollBox.SetMsg(const Value: TmvMessage);
 begin
   if fParsing or fMessageDisplay.IsUpdating then
   begin
-    Windows.Beep (440, 10);
-    PostMessage (Application.MainForm.Handle, WM_RETRYSETMSG, 0, 0);
+    Windows.Beep(440, 10);
+    PostMessage(Application.MainForm.Handle, WM_RETRYSETMSG, 0, 0);
     Exit;       // This can't happen.  Unless fMessageDislay is parsing an HTML message -
                 // where application.ProcessMessages is effectively called (yeugh!).
                 //
@@ -436,38 +438,38 @@ begin
                 //      a new message is being downloaded - and 'Bang!'
   end;
 
-  if value <> fMsg then
+  if Value <> fMsg then
   begin
     fLastSize := 0;
-    if Assigned (fMsg) then
-      fMsg.BeingDisplayed :=false;
-    fMsg := value;
+    if Assigned(fMsg) then
+      fMsg.BeingDisplayed := False;
+    fMsg := Value;
     gCurrentMessage := fMsg;
-    if Assigned (fMsg) then
+    if Assigned(fMsg) then
     begin
       fMsg.RawMode := fRawMessage;
-      fMsg.BeingDisplayed :=true
+      fMsg.BeingDisplayed := True;
     end;
     VertScrollBar.Position := 0;
     HorzScrollBar.Position := 0;
     DisableAutoRange;
     try
       fMessageDisplay.Clear;
-      Refresh(false);
+      Refresh(False);
     finally
-      EnableAutoRange
-    end
-  end
+      EnableAutoRange;
+    end;
+  end;
 end;
 
-procedure TMessageScrollBox.Refresh (erase : boolean; renew : boolean);
+procedure TMessageScrollBox.Refresh(erase: Boolean; renew: Boolean);
 begin
-  if not Assigned (fMSg) then exit;
+  if not Assigned(fMSg) then Exit;
 
   if renew then
   begin
     fMessageDisplay.Clear;
-    fLastSize := 0
+    fLastSize := 0;
   end;
 
   if fMsg.RawData.Size <> fLastSize then
@@ -475,28 +477,28 @@ begin
     fLastSize := fMsg.RawData.Size;
     DisableAutoRange;
     try
-      ParseMessage
+      ParseMessage;
     finally
-      EnableAutoRange
-    end
+      EnableAutoRange;
+    end;
   end;
 
-  InvalidateRect (fMessageDisplay.Handle, Nil, erase or renew)
+  InvalidateRect(fMessageDisplay.Handle, nil, erase or renew);
 end;
 
-function TMessageScrollBox.GetSelectedText(var txt: WideString): boolean;
+function TMessageScrollBox.GetSelectedText(var txt: WideString): Boolean;
 begin
-  result := fMessageDisplay.GetSelectedText (txt);
+  Result := fMessageDisplay.GetSelectedText(txt);
 end;
 
-function TMessageScrollBox.FindText (const SearchStr: WideString; NewSearch : Boolean; Options: TStringSearchOptions): Boolean;
+function TMessageScrollBox.FindText(const SearchStr: WideString; NewSearch: Boolean; Options: TStringSearchOptions): Boolean;
 begin
   Result := fMessageDisplay.FindText(SearchStr, newSearch, Options);
 end;
 
 procedure TMessageScrollBox.SetShowHeader(const Value: TShowHeader);
 begin
-  if value <> fShowHeader then
+  if Value <> fShowHeader then
   begin
     fShowHeader := Value;
     fLastSize := 0;
@@ -505,12 +507,11 @@ begin
     DisableAutoRange;
     try
       fMessageDisplay.Clear;
-
-      Refresh (false);
+      Refresh(False);
     finally
-      EnableAutoRange
-    end
-  end
+      EnableAutoRange;
+    end;
+  end;
 end;
 
 procedure TMessageScrollBox.PaintWindow(dc: HDC);
@@ -519,8 +520,8 @@ end;
 
 constructor TMessageScrollBox.Create(AOwner: TComponent);
 var
-  reg : TExSettings;
-  TextWindowSizeK : Integer;
+  reg: TExSettings;
+  TextWindowSizeK: Integer;
 begin
   inherited;
   if not (csDesigning in ComponentState) then
@@ -532,20 +533,20 @@ begin
     reg := CreateEXSettings;
     try
       reg.Section := 'Message Pane';
-      if reg.Open (true) then
-        TextWindowSizeK := reg.GetIntegerValue('Text Window Size K', gDefaultWindowSizeK)
+      if reg.Open(True) then
+        TextWindowSizeK := reg.GetIntegerValue('Text Window Size K', gDefaultWindowSizeK);
     finally
-      reg.Free
+      reg.Free;
     end;
 
     fMessageDisplay.CreateWindowSizeH := TextWindowSizeK * 1024;
-    if TextWindowSizeK = 1024*1024 then
+    if TextWindowSizeK = 1024 * 1024 then
       fMessageDisplay.CreateWindowSizeW := fMessageDisplay.CreateWindowSizeH
     else
     begin
-      fMessageDisplay.CreateWindowSizeW := 1024*3;
+      fMessageDisplay.CreateWindowSizeW := 1024 * 3;
       if fMessageDisplay.CreateWindowSizeW > fMessageDisplay.CreateWindowSizeH then
-        fMessageDisplay.CreateWindowSizeW := fMessageDisplay.CreateWindowSizeH
+        fMessageDisplay.CreateWindowSizeW := fMessageDisplay.CreateWindowSizeH;
     end;
 
     fMessageDisplay.Parent := Self;
@@ -554,45 +555,44 @@ begin
     fMessageDisplay.PictureIndent := 10;
     fMessageDisplay.OnURLClick := DoOnURLClick;
     fMessageDisplay.OnDblClick := DoOnDblClick;
-  end
+  end;
 end;
 
 destructor TMessageScrollBox.Destroy;
 begin
   fHeaderText.Free;
-
-  inherited;
+  inherited Destroy;
 end;
 
-function TMessageScrollBox.GetFocusedAttachment : TmvMessagePart;
+function TMessageScrollBox.GetFocusedAttachment: TmvMessagePart;
 var
-  i : Integer;
+  i: Integer;
 begin
   i := fMessageDisplay.FocusedObject;
-  result := Nil;
+  Result := nil;
 
-  if  (i >= 0) and (i < fMessageDisplay.ObjectCount) then
-    result := TmvMessagePart (fMessageDisplay.Objects [i].MessagePart);
+  if (i >= 0) and (i < fMessageDisplay.ObjectCount) then
+    Result := TmvMessagePart(fMessageDisplay.Objects[i].MessagePart);
 
-  if Assigned (Result) and not Result.Complete then
-    Result := Nil
+  if Assigned(Result) and not Result.Complete then
+    Result := nil;
 end;
 
-procedure TMessageScrollBox.SetRawMode(const Value: boolean);
+procedure TMessageScrollBox.SetRawMode(const Value: Boolean);
 begin
-  if value <> fRawMode then
+  if Value <> fRawMode then
   begin
     fRawMode := Value;
-    fMessageDisplay.RawMode := value
-  end
+    fMessageDisplay.RawMode := Value;
+  end;
 end;
 
-procedure TMessageScrollBox.SetRawMessage(const Value: boolean);
+procedure TMessageScrollBox.SetRawMessage(const Value: Boolean);
 begin
-  if value <> fRawMessage then
+  if Value <> fRawMessage then
   begin
     fRawMessage := Value;
-    if Assigned (fMsg) then
+    if Assigned(fMsg) then
     begin
       fMsg.RawMode := fRawMessage;
       VertScrollBar.Position := 0;
@@ -601,56 +601,56 @@ begin
       try
         fMessageDisplay.RawMessage := fRawMessage;
         fLastSize := 0;
-        Refresh (false);
+        Refresh(False);
       finally
-        EnableAutoRange
-      end
-    end
-  end
+        EnableAutoRange;
+      end;
+    end;
+  end;
 end;
 
 function TMessageScrollBox.GetLineHeight: Integer;
 begin
-  result := fMessageDisplay.LineHeight
+  Result := fMessageDisplay.LineHeight;
 end;
 
-function TMessageScrollBox.GetText(var txt: WideString): boolean;
+function TMessageScrollBox.GetText(var txt: WideString): Boolean;
 begin
   txt := fMessageDisplay.Text;
-  result := txt <> ''
+  Result := txt <> ''
 end;
 
 function TMessageScrollBox.GetSelLength: Integer;
 begin
-  result := fMessageDisplay.SelLength
+  Result := fMessageDisplay.SelLength;
 end;
 
 procedure TMessageScrollBox.SetSelectedText(const st: WideString);
 begin
-  fMessageDisplay.SetSelectedText (st)
+  fMessageDisplay.SetSelectedText(st);
 end;
 
 procedure TMessageScrollBox.Print;
 begin
-  fMessageDisplay.Print
+  fMessageDisplay.Print;
 end;
 
-procedure TMessageScrollBox.SetAutoFit(const Value: boolean);
+procedure TMessageScrollBox.SetAutoFit(const Value: Boolean);
 begin
   if Value <> fAutoFit then
   begin
     fAutoFit := Value;
-    fMessageDisplay.AutoFit := fAutoFit
-  end
+    fMessageDisplay.AutoFit := fAutoFit;
+  end;
 end;
 
-procedure TMessageScrollBox.SetImagesOnly(const Value: boolean);
+procedure TMessageScrollBox.SetImagesOnly(const Value: Boolean);
 begin
-  if value <> fImagesOnly then
+  if Value <> fImagesOnly then
   begin
     fImagesOnly := Value;
-    Refresh (True, True)
-  end
+    Refresh(True, True);
+  end;
 end;
 
 procedure TMessageScrollBox.PageDown;
@@ -658,21 +658,21 @@ begin
   fMessageDisplay.PageDown;
 end;
 
-procedure TMessageScrollBox.DoOnURLClick (Sender : TObject; Button: TMouseButton; Shift: TShiftState; const url : WideString);
+procedure TMessageScrollBox.DoOnURLClick(Sender: TObject; Button: TMouseButton; Shift: TShiftState; const url: WideString);
 begin
   if Button = mbRight then fURLText := url;
 end;
 
-function TMessageScrollBox.GetHTML(var HTML: string; rawFragment : boolean = false): boolean;
+function TMessageScrollBox.GetHTML(var HTML: string; rawFragment: Boolean = False): Boolean;
 begin
   HTML := fMessageDisplay.GetHTML(rawFragment);
-  result := html <> ''
+  Result := html <> '';
 end;
 
 procedure TMessageScrollBox.DoOnDblClick(Sender: TObject);
 begin
-  if Assigned (OnDblClick) and not (csDestroying in ComponentState) then
-    OnDblClick (self);
+  if Assigned(OnDblClick) and not (csDestroying in ComponentState) then
+    OnDblClick(self);
 end;
 
 end.

@@ -109,7 +109,7 @@ resourcestring
   sContains = 'matches';
   sDoesntContain = 'doesn''t match';
   sLess = 'is less than';
-  sGreater = 'is greater or equal ';
+  sGreater = 'is greater or equal';
   sEqual = 'is equal to';
   sNotEqual = 'is not equal to';
   sMessageID = 'Message ID';
@@ -118,7 +118,7 @@ resourcestring
 
 const
   ColumnNames: array[TNNTPFilterColumn] of string = (sSubject, sAuthor, sDate, sLines, sMessageBody, sMessageID, sHeaderLines, sCrossposted, sNumber);
-  OperatorNames: array[TNNTPFilterOperator] of string = (sContains, sDoesntContain, sLEss, sGreater, sEqual, sNotEqual);
+  OperatorNames: array[TNNTPFilterOperator] of string = (sContains, sDoesntContain, sLess, sGreater, sEqual, sNotEqual);
   ValidOperators: array[TNNTPFilterColumn] of TNNTPValidOperators =
     ([opContains, opDoesntContain, opEqual, opNotEqual],
      [opContains, opDoesntContain, opEqual, opNotEqual],

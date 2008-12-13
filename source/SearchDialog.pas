@@ -24,7 +24,8 @@ unit SearchDialog;
 
 interface
 
-uses Windows, Messages, SysUtils, Classes, Graphics, Forms, Dialogs, Controls, StdCtrls,
+uses
+  Windows, Messages, SysUtils, Classes, Graphics, Forms, Dialogs, Controls, StdCtrls,
   Buttons, ExtCtrls, unitNNTPFilters, unitNNTPServices, unitBookmarks,
   cmpPersistentPosition, ConTnrs, ComCtrls, unitExSettings;
 
@@ -73,10 +74,10 @@ type
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure CancelBtnClick(Sender: TObject);
     procedure OKBtnClick(Sender: TObject);
-    procedure cbSubjectClick(Sender: TObject);
+    procedure cbClick(Sender: TObject);
     procedure FormShow(Sender: TObject);
-    procedure cbxSubjectChange(Sender: TObject);
-    procedure edAuthorChange(Sender: TObject);
+    procedure cbxChange(Sender: TObject);
+    procedure edChange(Sender: TObject);
     procedure DateTimePicker1Change(Sender: TObject);
   private
     fFilters: TNNTPFilters;
@@ -114,7 +115,8 @@ type
 
 implementation
 
-uses unitNewsReaderOptions, NewsGlobals, unitCharsetMap, unitSearchString, unitMessageBaseSearch;
+uses
+  unitNewsReaderOptions, NewsGlobals, unitCharsetMap, unitSearchString, unitMessageBaseSearch;
 
 {$R *.dfm}
 
@@ -163,11 +165,11 @@ begin
     op := Operators[col];
     ed := Editors[col];
 
-    getOperator(op.Text, operator);
+    GetOperator(op.Text, operator);
 
     case col of
       ftDate:
-        fFilters.AddObject('', TNNTPFilter.Create('', col, operator, DateTimePicker1.DateTime, unread, interesting, caseSensitive));
+        fFilters.AddObject('', TNNTPFilter.Create('', col, operator, DateTimePicker1.Date, unread, interesting, caseSensitive));
       ftLines,
       ftCrossposted,
       ftNumber:
@@ -253,7 +255,7 @@ begin
   fileName := gExSettingsFile;
 end;
 
-procedure TdlgSearch.cbSubjectClick(Sender: TObject);
+procedure TdlgSearch.cbClick(Sender: TObject);
 var
   col: TNNTPFilterColumn;
   ctrl: TCheckBox;
@@ -278,14 +280,17 @@ begin
 end;
 
 procedure TdlgSearch.UpdateActions;
-var
-  somethingSelected: Boolean;
 begin
-  somethingSelected := cbSubject.Checked or cbAuthor.Checked or cbLines.Checked or cbDate.Checked or cbMessageBody.Checked or cbMessageID.Checked or cbHeaderLines.Checked or cbCrossposted.Checked;
+  OKBtn.Enabled := cbSubject.Checked or cbAuthor.Checked or
+    cbLines.Checked or cbDate.Checked or cbMessageBody.Checked or
+    cbMessageID.Checked or cbHeaderLines.Checked or cbCrossposted.Checked;
+end;
 
-//  somethingSelected := somethingSelected and (cbSearchString.Text <> '');
-
-  OKBtn.Enabled := somethingSelected;
+constructor TdlgSearch.Create(AOwner: TComponent);
+begin
+  inherited;
+  fGroups := TObjectList.Create;
+  fGroups.OwnsObjects := False;
 end;
 
 procedure TdlgSearch.CreateParams(var params: TCreateParams);
@@ -348,12 +353,16 @@ begin
     end;
   end;
 
+  DateTimePicker1.Date := Date;
+  DateTimePicker1.Time := 0;
+
   LoadPreviousSettings;
 end;
 
 procedure TdlgSearch.LoadPreviousSettings;
 var
   i: Integer;
+  idx: Integer;
   s: string;
   sl: TStringList;
   col: TNNTPFilterColumn;
@@ -386,7 +395,7 @@ begin
             if TextToNNTPFilter(s, col, op) then
             case col of
               ftDate:
-                fFilters.AddObject('', TNNTPFilter.Create('', col, op, StrToDateTime(s), False, False, False));
+                fFilters.AddObject('', TNNTPFilter.Create('', col, op, StrToDate(s), False, False, False));
               ftLines,
               ftCrossposted,
               ftNumber:
@@ -412,7 +421,9 @@ begin
         begin
           en.Checked := True;
           opc := Operators[col];
-          opc.Text := OperatorNames[fFilters[i].Operator];
+          idx := opc.Items.IndexOf(OperatorNames[fFilters[i].Operator]);
+          if idx <> -1 then
+            opc.ItemIndex := idx;
 
           if col = ftDate then
             DateTimePicker1.Date := StrToDateDef(fFilters[i].StrVal, Now)
@@ -450,22 +461,8 @@ begin
 
     reg.GetValueNames(s);
 
+    // Clean-up unused entries from previous versions.
     s.Sorted := True;
-
-// AFAICT this is no longer used.
-//    for i := 9 downto 0 do
-//    begin
-//      idx := s.IndexOf('S' + IntToStr(i));
-//      if idx >= 0 then
-//      begin
-//        reg.GetStrings('S' + IntToStr(i), sl1);
-//        reg.DeleteValue('S' + IntToStr(i));
-//        reg.SetStrings('S' + IntToStr(i + 1), sl1);
-//
-//        s.Delete(idx);
-//      end;
-//    end;
-
     for i := 1 to s.Count - 1 do
       reg.DeleteValue(s[i]);
 
@@ -474,19 +471,11 @@ begin
       s.Add(Filters[i].Text);
 
     reg.SetStrings('S0', s);
-
   finally
     reg.Free;
     s.Free;
     sl1.Free;
   end;
-end;
-
-constructor TdlgSearch.Create(AOwner: TComponent);
-begin
-  inherited;
-  fGroups := TObjectList.Create;
-  fGroups.OwnsObjects := False;
 end;
 
 function TdlgSearch.GetOperators(column: TNNTPFilterColumn): TComboBox;
@@ -553,13 +542,13 @@ begin
   end;
 end;
 
-procedure TdlgSearch.cbxSubjectChange(Sender: TObject);
+procedure TdlgSearch.cbxChange(Sender: TObject);
 begin
   if not fLoading then
     FreeAndNil(fFilters);
 end;
 
-procedure TdlgSearch.edAuthorChange(Sender: TObject);
+procedure TdlgSearch.edChange(Sender: TObject);
 begin
   if not fLoading then
     FreeAndNil(fFilters);
