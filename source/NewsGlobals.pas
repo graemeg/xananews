@@ -263,9 +263,6 @@ begin
   begin
     s := hdrs[i];
 
-// TODO: remove (or make it user selectable *what* is logged)
-    LogMessage(S);
-
     if Length(s) = 0 then
       hdrs.Delete(i)
     else

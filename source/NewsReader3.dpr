@@ -121,7 +121,8 @@ uses
   unitMessageYEncodedBinary in 'unitMessageYEncodedBinary.pas',
   unitNewUserWizard in 'unitNewUserWizard.pas',
   XnCoderQuotedPrintable in 'XnCoderQuotedPrintable.pas',
-  XnCoderUUE in 'XnCoderUUE.pas';
+  XnCoderUUE in 'XnCoderUUE.pas',
+  unitCRC32 in 'unitCRC32.pas';
 
 {$R *.res}
 {$R I.RES}

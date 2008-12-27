@@ -421,7 +421,7 @@ begin
       getter.Paused := AllThreadsPaused;
     end;
 
-    getter.AddArticleToList(group, article);
+    getter.AddArticleToList(group, article, True);
 
     if getter.State <> tsBusy then
       getter.State := tsPending;
@@ -478,7 +478,7 @@ var
   procedure GetThreadBodies(article: TArticle);
   begin
     if not article.HasMsg then
-      getter.AddArticleToList(group, article);
+      getter.AddArticleToList(group, article, True);
 
     article := TArticle(article.Child);
 

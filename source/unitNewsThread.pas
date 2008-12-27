@@ -279,8 +279,8 @@ type
     procedure GotArticle;
     procedure FailArticle;
     procedure StartArticle;
-    procedure Update;
-    procedure AddArticleToList(group: TSubscribedGroup; article: TArticle; needsFullRefresh: Boolean = false);
+    procedure UpdateArticles;
+    procedure AddArticleToList(group: TSubscribedGroup; article: TArticle; needsFullRefresh: Boolean);
   end;
 
   TAttachment = class
@@ -1112,7 +1112,6 @@ end;
 procedure TArticlesGetter.UpdateArticles;
 begin
   CurrentGroup.ReSortArticles;
-
   CurrentGroup.SaveArticles(False);
 
   if Assigned(ThreadManager.OnArticlesChanged) then
@@ -1250,7 +1249,8 @@ end;
  *----------------------------------------------------------------------*)
 procedure TArticleGetter.FailArticle;
 begin
-  CurrentArticle.Msg.EndUpdate;
+  if Assigned(CurrentArticle.Msg) then
+    CurrentArticle.Msg.EndUpdate;
   if Assigned(ThreadManager.OnArticleFailed) then
     ThreadManager.OnArticleFailed(ThreadManager, CurrentArticle);
   CurrentArticle.RemoveMessage;
@@ -1403,9 +1403,12 @@ end;
  *----------------------------------------------------------------------*)
 procedure TArticleGetter.GotArticle;
 begin
-  CurrentArticle.Msg.EndUpdate;
-  CurrentArticle.Initialize(CurrentArticle.ArticleNo,CurrentArticle.Msg.Header);
-  CurrentArticle.SaveMessageBody;
+  if Assigned(CurrentArticle.Msg) then
+  begin
+    CurrentArticle.Msg.EndUpdate;
+    CurrentArticle.Initialize(CurrentArticle.ArticleNo, CurrentArticle.Msg.Header);
+    CurrentArticle.SaveMessageBody;
+  end;
   if Assigned(ThreadManager.OnArticleChanged) then
     ThreadManager.OnArticleChanged(ThreadManager, CurrentArticle);
 end;
@@ -1422,6 +1425,16 @@ begin
   CurrentArticle.Msg.BeginUpdate;
   if Assigned(ThreadManager.OnStartArticle) then
     ThreadManager.OnStartArticle(ThreadManager, CurrentArticle);
+end;
+
+procedure TArticleGetter.UpdateArticles;
+begin
+  CurrentGroup.ReSortArticles;
+  CurrentGroup.SaveArticles(False);
+
+  if Assigned(ThreadManager.OnArticlesChanged) then
+    ThreadManager.OnArticlesChanged(ThreadManager, CurrentGroup);
+  LogMessage(CurrentGroup.Name + ' - Updated');
 end;
 
 { TArticleGetterRequest }
@@ -2261,14 +2274,6 @@ end;
 procedure TTCPThread.UIUnlock;
 begin
   fUISync.Leave;
-end;
-
-procedure TArticleGetter.Update;
-begin
-  CurrentGroup.ReSortArticles;
-  CurrentGroup.SaveArticles(False);
-  if Assigned(ThreadManager.OnArticlesChanged) then
-    ThreadManager.OnArticlesChanged(ThreadManager, CurrentGroup);
 end;
 
 end.

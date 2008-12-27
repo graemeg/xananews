@@ -35,8 +35,20 @@ uses
 type
   TmvYEncodedBinary = class(TmvMessagePart)
   private
-    fGotBegin: Boolean;
+    fCrc32: DWord;
+    fDecodeErrorDescription: string;
+    fDecodeResult: Integer;
+    fFileCrc32: DWord;
     fFileName: string;
+    fFilePart: DWord;
+    fFileSize: DWord;
+    fGotBegin: Boolean;
+    fLineSize: DWord;
+    fPart: DWord;
+    fPartBegin: DWord;
+    fPartCrc32: DWord;
+    fPartEnd: DWord;
+    fPartSize: DWord;
     procedure ParseHeaderLine(const st: string);
   protected
     class function IsBoundary(const st: string; MIMEHeader: TMIMEHeader): Boolean; override;
@@ -47,9 +59,22 @@ type
     function GetDecodeType: TDecodeType; override;
   public
     procedure GetData(s: TStream); override;
+    property DecodeErrorDescription: string read fDecodeErrorDescription;
+    property DecodeResult: Integer read fDecodeResult;
+    property FileCrc32: DWord read fFileCrc32;
+    property FilePart: DWord read fFilePart;
+    property FileSize: DWord read fFileSize;
+    property Part: DWord read fPart;
+    property PartBegin: DWord read fPartBegin;
+    property PartCrc32: DWord read fPartCrc32;
+    property PartEnd: DWord read fPartEnd;
+    property PartSize: DWord read fPartSize;
   end;
 
 implementation
+
+uses
+  unitCRC32, unitLog, unitSearchString;
 
 { TmvYEncodedBinary }
 
@@ -71,7 +96,12 @@ var
   pDstStart: PByte;
 begin
   if not Assigned(fData) then
+  begin
+    fDecodeResult := -1;
     Exit;
+  end;
+
+  fDecodeResult := 0;
 
   pSrc := fData.Memory;
   pSrcEnd := pSrc + fData.Size - 1;
@@ -114,6 +144,53 @@ begin
 
       ms.Size := pDst - pDstStart;       // Re-adjust buffer stream size.
     end;
+    fCrc32 := $FFFFFFFF;
+    CalcCRC32FromStream(ms, 0, fCrc32);
+    fCrc32 := not fCrc32;
+
+    fDecodeResult := 1;
+
+    if (fPartBegin <> 0) and (fPartEnd <> 0) then
+    begin
+      if fPartSize = 0 then
+        fPartSize := Succ(fPartEnd - fPartBegin);
+
+      if Succ(fPartEnd - fPartBegin) <> fPartSize then
+      begin
+        fDecodeResult := -2;
+        fDecodeErrorDescription := Format('Begin/End values in header does not match with Size value in footer: begin=%u, end=%u, size=%u', [fPartBegin, fPartEnd, fPartSize]);
+      end;
+
+      if fPartSize <> ms.Size then
+      begin
+        fDecodeResult := -3;
+        fDecodeErrorDescription := Format('Size mismatch: begin=%u, end=%u, actual size=%u', [fPartBegin, fPartEnd, ms.Size]);
+      end;
+    end;
+
+    if fDecodeResult = 1 then
+    begin
+      if fPartCrc32 <> 0 then
+      begin
+        if fPartCrc32 <> fCrc32 then
+        begin
+          fDecodeResult := -4;
+          fDecodeErrorDescription := Format('Part CRC32 mismatch: pcrc32=%8.8X, actual=%8.8X', [fPartCrc32, fCrc32]);
+        end
+      end
+      else
+        if fFileCrc32 <> 0 then
+          if fFileCrc32 <> fCrc32 then
+          begin
+            fDecodeResult := -5;
+            fDecodeErrorDescription := Format('File CRC32 mismatch: crc32=%8.8X, actual=%8.8X', [fFileCrc32, fCrc32]);
+          end;
+    end;
+
+    // TODO: instead of logging, design a nicer way to report this to the user
+    if fDecodeResult <> 1 then
+      LogMessage(Format('yEnc failed File:%s Part:%d Description:%s', [fFileName, fPart, fDecodeErrorDescription]), True);
+
     s.CopyFrom(ms, 0);
   finally
     ms.Free;
@@ -188,10 +265,37 @@ end;
  |   const st: string           The string to check                     |
  *----------------------------------------------------------------------*)
 function TmvYEncodedBinary.IsBoundaryEnd(const st: string): Boolean;
+var
+  S: string;
+  yItem: string;
 begin
   Result := (Length(st) > 5) and
             (CompareText(Copy(st, 1, 5), '=yend') = 0) and
             (st[6] = ' ');
+
+//=yend size=640000 part=1 pcrc=1234abcd  (and/or crc32=1234abcd)
+
+  if Result then
+  begin
+    S := LowerCase(Copy(st, 7, 255));
+
+    if CompareText(SplitString('=', S), 'size') = 0 then
+      fPartSize := StrToIntDef(SplitString(' ', S), 0);
+
+    while S <> '' do
+    begin
+      yItem := SplitString('=', S);
+      if CompareText(yItem, 'part') = 0 then
+        fPart := StrToIntDef(SplitString(' ', S), 0)
+      else
+        if CompareText(yItem, 'pcrc32') = 0 then
+          fPartCrc32 := StrToInt64Def('$' + SplitString(' ', S), 0)
+        else
+          if CompareText(yItem, 'crc32') = 0 then
+            fFileCrc32 := StrToInt64Def('$' + SplitString(' ', S), 0);
+    end;
+  end;
+
 end;
 
 (*----------------------------------------------------------------------*
@@ -247,10 +351,31 @@ begin
           vValue := Trim(s1);
       end;
 
+//=ybegin part=1 line=128 size=50000000 name=FileName.part1.rar
+//=ypart begin=640001 end=1280000
+
       if (vName <> '') and (vValue <> '') then
       begin
-        if InPart then
         // Save size, lines, crc, etc.
+        if InPart then
+        begin
+          if CompareText(vName, 'begin') = 0 then
+            fPartBegin := StrToIntDef(vValue, 0)
+          else
+            if CompareText(vName, 'end') = 0 then
+              fPartEnd := StrToIntDef(vValue, 0)
+        end
+        else
+        begin
+          if CompareText(vName, 'part') = 0 then
+            fFilePart := StrToIntDef(vValue, 0)
+          else
+            if CompareText(vName, 'line') = 0 then
+              fLineSize := StrToIntDef(vValue, 0)
+            else
+              if CompareText(vName, 'size') = 0 then
+                fFileSize := StrToIntDef(vValue, 0)
+        end;
       end
       else
         Break;

@@ -53,6 +53,8 @@ type
   TThreadsafeMemoryStream = class(TMemoryStream)
   private
     fCriticalSection: TCriticalSection;
+  protected
+    function GetSize: Int64; override;
   public
     constructor Create;
     destructor Destroy; override;
@@ -704,6 +706,7 @@ end;
 procedure TmvMessage.Lock;
 begin
   fCS.Enter;
+  RawData.Lock;
 end;
 
 procedure TmvMessage.PartialDecode;
@@ -1261,6 +1264,16 @@ begin
   inherited Destroy;
 end;
 
+function TThreadsafeMemoryStream.GetSize: Int64;
+begin
+  Lock;
+  try
+    Result := inherited GetSize;
+  finally
+    Unlock;
+  end;
+end;
+
 procedure TThreadsafeMemoryStream.Lock;
 begin
   fCriticalSection.Enter;
@@ -1277,7 +1290,7 @@ begin
   // other threads from reading/writing while this thread is writing
   Lock;
   try
-    Result := inherited Write(buffer, count)
+    Result := inherited Write(buffer, count);
   finally
     Unlock;
   end;
@@ -1590,6 +1603,7 @@ end;
 
 procedure TmvMessage.Unlock;
 begin
+  RawData.Unlock;
   fCS.Leave;
 end;
 

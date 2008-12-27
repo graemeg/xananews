@@ -988,6 +988,7 @@ type
  {$ifend}
 {$endif}
 
+    procedure DisplayBookmarks(visible: Boolean);
     procedure PopulateSearchBarOpCombo;
 
     procedure CheckScheduledBatches;
@@ -1494,7 +1495,7 @@ end;
 procedure TfmMain.actArticleGetArticleExecute(Sender: TObject);
 begin
   // Get the selected articles from the news server.
-  ForEachSelectedArticle(DoGetArticleBody);
+  ForEachSelectedArticle(DoGetArticleBody, 0, False);
   vstArticles.Invalidate;
 end;
 
@@ -3275,6 +3276,25 @@ begin
   end
 end;
 
+procedure TfmMain.DisplayBookmarks(visible: Boolean);
+begin
+  pnlBookmark.Visible := visible;
+  actViewShowBookmarkPane.Checked := visible;
+  if visible then
+  begin
+    if pnlBookmark.Height > pnlRight.Height div 2 then
+      pnlBookmark.Height := pnlRight.Height div 2;
+    if pnlBookmark.Height + 120 > pnlArticles.Height then
+      pnlArticles.Height := pnlBookmark.Height + 120;
+
+    spltBookMark.Visible := visible;
+    ResizeBookmarkHeader;
+  end
+  else
+    spltBookMark.Visible := visible;
+  XNOptions.ShowBookmark := visible;
+end;
+
 procedure TfmMain.DoCancelArticle(article: TArticleBase; param: Integer; multiSelect: Boolean);
 begin
   // 'For each' handler.  Cancel activities for the selected article.
@@ -3839,10 +3859,16 @@ var
 begin
   node := vstArticles.GetFirstSelected;
   if vstArticles.SelectedCount = 1 then
-    multiSelect := expandedToo and not (vsExpanded in node^.States) and (vsHasChildren in node^.States)
+  begin
+    article := GetNodeArticle(node);
+    if Assigned(article) and article.Owner.GroupMultipartMessages then
+      multiSelect := expandedToo and (vsHasChildren in node^.States)
+    else
+      multiSelect := expandedToo and not (vsExpanded in node^.States) and (vsHasChildren in node^.States);
+  end
   else
     multiSelect := True;
-  node := vstArticles.GetFirstSelected;
+
   count := 0;
   fIteratorFailed := False;
   while not fIteratorFailed and Assigned(node) do
@@ -3853,7 +3879,7 @@ begin
       Inc(count);
       proc(article, param, multiSelect);
 
-      if expandedToo and not fIteratorFailed and not (vsExpanded in node^.States) then
+      if expandedToo and multiSelect and not fIteratorFailed then
       begin
         child := vstArticles.GetFirstChild(node);
         if Assigned(child) then
@@ -5294,7 +5320,7 @@ begin
       cw := vstArticles.ClientWidth;
       for i := 0 to Columns.Count - 2 do
       begin
-        w := unitNewsReaderOptions.XNOptions.ArticlesColumnPCs[i] * cw div 100;
+        w := XNOptions.ArticlesColumnPCs[i] * cw div 100;
         Columns[i].Width := w;
         if coVisible in Columns[i].Options then
           Inc(tot, w);
@@ -5313,7 +5339,7 @@ var
 begin
   if csDestroying in ComponentState then Exit;
   if not pnlBookmark.Visible then Exit;
-  Include(fColumnHeaderStatus, chAutoResize);
+  Include(fBookmarkHeaderStatus, chAutoResize);
   try
     tot := 0;
     with vstBookmark.Header do
@@ -5321,7 +5347,7 @@ begin
       cw := vstBookmark.ClientWidth;
       for i := 0 to Columns.Count - 2 do
       begin
-        w := unitNewsReaderOptions.XNOptions.BookmarkColumnPCs[i] * cw div 100;
+        w := XNOptions.BookmarkColumnPCs[i] * cw div 100;
         Columns[i].Width := w;
         if coVisible in Columns[i].Options then
           Inc(tot, w);
@@ -5330,7 +5356,7 @@ begin
       Columns[Columns.Count - 1].Width := cw - tot;
     end
   finally
-    Exclude(fColumnHeaderStatus, chAutoResize);
+    Exclude(fBookmarkHeaderStatus, chAutoResize);
   end;
 end;
 
@@ -5377,7 +5403,7 @@ begin
   cw := vstArticles.ClientWidth;
   with vstArticles.Header do
     for i := 0 to Columns.Count - 2 do
-      unitNewsReaderOptions.XNOptions.ArticlesColumnPCs[i] := (Columns[i].Width * 100 + cw div 2) div cw;
+      XNOptions.ArticlesColumnPCs[i] := (Columns[i].Width * 100 + cw div 2) div cw;
 end;
 
 procedure TfmMain.SaveArticleHeaderPositions;
@@ -5386,7 +5412,7 @@ var
 begin
   with vstArticles.Header do
     for i := 0 to Columns.Count - 1 do
-      unitNewsReaderOptions.XNOptions.ArticlesColumnPositions[i] := Columns[i].Position;
+      XNOptions.ArticlesColumnPositions[i] := Columns[i].Position;
 end;
 
 procedure TfmMain.SaveOutstandingPostings;
@@ -6131,7 +6157,9 @@ begin
   actArticleIgnoreBranch.Enabled := hasFocusedArticle;
   actArticleIgnore.Enabled := hasFocusedArticle;
   actArticleRetrieveParentMessages.Enabled := hasFocusedArticle;
-  actArticleCombineDecode.Enabled := selCount > 1
+  actArticleCombineDecode.Enabled := (selCount > 1) or
+    ((selCount = 1) and isNNTPArticle and FocusedArticle.Owner.GroupMultiPartMessages and
+     (FocusedArticle.MultipartFlags <> mfNotMultipart));
 end;
 
 procedure TfmMain.vstArticlesAfterItemErase(Sender: TBaseVirtualTree;
@@ -7424,10 +7452,13 @@ begin
     end;
 
   FillBatchComboBox(0);
+
   fBookmarkSet := TBookmarkSet.Create;
   PopulateBookmarkCombo;
   if fBookmarkSet.BookmarkCount > 0 then
     SetCurrentBookmark(TBookmark.Create(fBookmarkSet.BookmarkName[0]), True);
+  DisplayBookmarks(XNOptions.ShowBookmark);
+
   if XNOptions.AutoExpandGroupTree then
     vstSubscribed.FullExpand;
   PopulateSearchBarOpCombo;
@@ -8337,18 +8368,33 @@ end;
 
 procedure TfmMain.actViewGroupMultipartExecute(Sender: TObject);
 var
+  art: TArticleBase;
+  id: string;
   group: TSubscribedGroup;
+  oldCursor: TCursor;
 begin
   group := GetFocusedGroup;
 
   if Assigned(group) then
   begin
-    if group.ThreadOrder <> toChronological then
-      vstArticlesHeaderClick(vstArticles.Header, 0, mbLeft, [], 0, 0);
+    art := GetFocusedArticle;
+    if Assigned(art) and (art.ArticleNo > 0) then
+      id := art.UniqueID;
 
-    if group.ThreadSortOrder <> soSubject then
-      vstArticlesHeaderClick(vstArticles.Header, 2, mbLeft, [], 0, 0);
-  end
+    oldCursor := Screen.Cursor;
+    try
+      Screen.Cursor := crHourglass;
+      group.GroupMultipartMessages := True;
+      vstArticles.Header.SortColumn := 2;
+      vstArticles.Header.SortDirection := VirtualTrees.sdAscending;
+    finally
+      Screen.Cursor := oldCursor;
+    end;
+
+    vstArticles.RootNodeCount := group.ThreadCount;
+    Refresh_vstArticles;
+    GoToArticle(group.FindUniqueID(id));
+  end;
 end;
 
 procedure TfmMain.actToolsMailAccountsExecute(Sender: TObject);
@@ -8876,26 +8922,8 @@ begin
 end;
 
 procedure TfmMain.actViewShowBookmarkPaneExecute(Sender: TObject);
-var
-  visible: Boolean;
 begin
-  visible := pnlBookmark.Visible;
-  visible := not visible;
-
-  pnlBookmark.Visible := visible;
-  actViewShowBookmarkPane.Checked := visible;
-  if visible then
-  begin
-    if pnlBookmark.Height > pnlRight.Height div 2 then
-      pnlBookmark.Height := pnlRight.Height div 2;
-    if pnlBookmark.Height + 120 > pnlArticles.Height then
-      pnlArticles.Height := pnlBookmark.Height + 120;
-
-    spltBookMark.Visible := visible;
-    ResizeBookmarkHeader;
-  end
-  else
-    spltBookMark.Visible := visible;
+  DisplayBookmarks(not pnlBookmark.Visible);
 end;
 
 procedure TfmMain.vstBookmarkDragDrop(Sender: TBaseVirtualTree;
@@ -9896,11 +9924,8 @@ end;
 
 procedure TfmMain.DoAddArticleToList(article: TArticleBase; param: Integer;
   multiSelect: Boolean);
-var
-  list: TList;
 begin
-  list := TList(param);
-  list.Add(article);
+  TList(param).Add(article);
 end;
 
 procedure TfmMain.GoToNextArticle(markread: Boolean);
@@ -10079,7 +10104,7 @@ begin
   cw := vstBookmark.ClientWidth;
   with vstBookmark.Header do
     for i := 0 to Columns.Count - 2 do
-      unitNewsReaderOptions.XNOptions.BookmarkColumnPCs[i] := (Columns[i].Width * 100 + cw div 2) div cw;
+      XNOptions.BookmarkColumnPCs[i] := (Columns[i].Width * 100 + cw div 2) div cw;
 end;
 
 function TfmMain.ForEachSelectedBranch(proc: TArticleIteratorProc;
@@ -10242,34 +10267,6 @@ var
   mp: TmvMessagePart;
   art: TArticleBase;
 
-  procedure DecodeBody(f1: TStream; body: TStrings; decodeType: TDecodeType);
-  var
-    decoder: TidDecoder;
-    i: Integer;
-    st: string;
-  begin
-    decoder := nil;
-    case decodeType of
-      ttUUEncode: decoder := TXnDecoderUUE.Create(nil);
-      ttBase64  : decoder := TidDecoderMIME.Create(nil);
-      ttText    : body.SaveToStream(f1);
-    end;
-
-    if Assigned(decoder) then
-    try
-      decoder.DecodeBegin(f1);
-      for i := 0 to Body.Count - 1 do
-      begin
-        st := body[i];
-        if (decodeType = ttbase64) and ((Length(st) mod 4) <> 0) then
-          st := Copy(st, 1, (Length(st) div 4) * 4);
-        decoder.Decode(st);
-      end;
-    finally
-      decoder.Free;
-    end;
-  end;
-
   procedure GetMultipartData(f: TStream);
   var
     m: TmvMessage;
@@ -10282,7 +10279,7 @@ var
       if artNo < articles.Count then
       begin
         Result := TArticleBase(articles[artNo]);
-        Inc(artNo)
+        Inc(artNo);
       end
       else
         Result := nil;
@@ -10300,7 +10297,7 @@ var
       begin
         if (art.Msg <> nil) then
           if art.Msg.MessageParts.Count = 0 then
-            art.Msg.DecodeBody(f, ttyEnc)
+            art.Msg.DecodeBody(f, ttyEnc) // TODO: this does nothing, should it have done something?!?!
           else
             art.Msg.MessageParts[0].GetData(f);
       end;
@@ -10347,7 +10344,7 @@ begin
     art := TArticleBase(articles[0]);
     if Assigned(art.Msg) and (art.Msg.MessageParts.Count > 0) then
     begin
-      mp := TArticleBase(articles[0]).Msg.MessageParts[0];
+      mp := art.Msg.MessageParts[0];
       f := TFileStream.Create(fileName, fmCreate, fmShareDenyWrite);
 
       GetMultipartData(f);

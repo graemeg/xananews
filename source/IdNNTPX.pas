@@ -46,7 +46,7 @@ type
     FPipeLineCmd: string;
     FPipelineState: TPipelineState;
     FlMsgNo: Cardinal;
-    flMsgCount: Cardinal;
+    FlMsgCount: Cardinal;
     FlMsgLow: Cardinal;
     FlMsgHigh: Cardinal;
     fsMsgID: string;
@@ -505,6 +505,9 @@ begin
   FlMsgCount := IndyStrToInt(Fetch(s));
   FlMsgLow := IndyStrToInt(Fetch(s));
   FlMsgHigh := IndyStrToInt(Fetch(s));
+
+  LogMessage('Select group ' + AGroup +
+    '. Messages available ' + IntToStr(FlMsgLow) + ' - ' + IntToStr(FlMsgHigh));
 end;
 
 procedure TidNNTPX.Send(header, msg: TStrings);

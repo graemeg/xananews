@@ -64,9 +64,13 @@ type
     fAutoDisconnectOnIdle: Boolean;
     fAutoDisconnectOnExit: Boolean;
     fPanelLeft: Integer;
-    fArticlesHeight: Integer;
     fArticlesColumnPCs: TIntArray;
     fArticlesColumnPositions: TIntArray;
+    fArticlesHeight: Integer;
+    fBookmarkColumnPCs: TIntArray;
+    fBookmarkColumnPositions: TIntArray;
+    fBookmarkHeight: Integer;
+    fShowBookmark: Boolean;
     fShowHeader: TShowHeader;
     fAutoExpandThread: Boolean;
     fHideFolderIcons: Boolean;
@@ -102,8 +106,6 @@ type
     fHideIgnoredMessages: Boolean;
     fNoHTML: Boolean;
     fShowMessageCount: Boolean;
-    fBookmarkColumnPCs: TIntArray;
-    fBookmarkHeight: Integer;
     fAutoExpandGroupTree: Boolean;
     fAutoContractGroupTree: Boolean;
     fMagicUser: Boolean;
@@ -184,15 +186,17 @@ type
 
     property PanelLeftSplitter: Integer read fPanelLeftSplitter write fPanelLeftSplitter;
 
-    property ArticlesHeight: Integer read fArticlesHeight write fArticlesHeight;
-    property BookmarkHeight: Integer read fBookmarkHeight write fBookmarkHeight;
-    property QueuedRequestsHeight: Integer read fQueuedRequestsHeight write fQueuedRequestsHeight;
     property ArticlesColumnPCs: TIntArray read fArticlesColumnPCs;
-    property BookmarkColumnPCs: TIntArray read fBookmarkColumnPCs;
     property ArticlesColumnPositions: TIntArray read fArticlesColumnPositions;
+    property ArticlesHeight: Integer read fArticlesHeight write fArticlesHeight;
+    property BookmarkColumnPCs: TIntArray read fBookmarkColumnPCs;
+    property BookmarkColumnPositions: TIntArray read fBookmarkColumnPositions;
+    property BookmarkHeight: Integer read fBookmarkHeight write fBookmarkHeight;
+    property ShowBookmark: Boolean read fShowBookmark write fShowBookmark;
     property ShowHeader: TShowHeader read fShowHeader write fShowHeader;
     property ViewMode: TViewMode read fViewMode write fViewMode;
     property TextWindowSizeK: Integer read fTextWindowSizeK write fTextWindowSizeK;
+    property QueuedRequestsHeight: Integer read fQueuedRequestsHeight write fQueuedRequestsHeight;
 
     property TreeColumn: Integer read fTreeColumn write fTreeColumn;
     property UnreadFontStyle: TFontStyles read fUnreadFontStyle write fUnreadFontStyle;
@@ -203,8 +207,8 @@ type
     property ShowTooltips: Boolean read fShowTooltips write fShowTooltips;
     property CheckCrossposts: Integer read fCheckCrossposts write fCheckCrossposts;
     property AutoRemoveFromBin: Integer read fAutoRemoveFromBin write fAutOremoveFromBin;
-    property ShowInSystemTray: Boolean read fShowInSystemTray write fShowInSystemTray;
     property ShowDetailsBar: Boolean read fShowDetailsBar write fShowDetailsBar;
+    property ShowInSystemTray: Boolean read fShowInSystemTray write fShowInSystemTray;
     property CheckSpelling: Boolean read fCheckSpelling write fCheckSpelling;
     property SearchInternetURLStub: string read fSearchInternetURLStub write fSearchInternetURLStub;
     property TextInternetURLStub: string read fTextInternetURLStub write fTextInternetURLStub;
@@ -339,8 +343,9 @@ begin
 
   fShowHeader := shShort;
   SetLength(fArticlesColumnPCs, 5);
-  SetLength(fBookmarkColumnPCs, 5);
   SetLength(fArticlesColumnPositions, 6);
+  SetLength(fBookmarkColumnPCs, 5);
+  SetLength(fBookmarkColumnPositions, 6);
   fTreeColumn := 2;
   fFirstLineAsSubject := True;
   fUnreadFontStyle := [fsBold];
@@ -393,18 +398,25 @@ begin
   fArticlesColumnPCs[4] := 10;   // Date
                                  // remainder = lines
 
-  fBookmarkColumnPCs[0] := 25;   // Account/Group
-  fBookmarkColumnPCs[1] := 23;   // Subject
-  fBookmarkColumnPCs[2] := 25;   // From
-  fBookmarkColumnPCs[3] := 10;   // Date
-  fBookmarkColumnPCs[4] := 7;    // Lines
-                                 // remainder = bookmarked Date
   fArticlesColumnPositions[0] := 0;
   fArticlesColumnPositions[1] := 1;
   fArticlesColumnPositions[2] := 2;
   fArticlesColumnPositions[3] := 3;
   fArticlesColumnPositions[4] := 4;
   fArticlesColumnPositions[5] := 5;
+
+  fBookmarkColumnPCs[0] := 25;   // Account/Group
+  fBookmarkColumnPCs[1] := 23;   // Subject
+  fBookmarkColumnPCs[2] := 25;   // From
+  fBookmarkColumnPCs[3] := 10;   // Date
+  fBookmarkColumnPCs[4] := 7;    // Lines
+                                 // remainder = bookmarked Date
+  fBookmarkColumnPositions[0] := 0;
+  fBookmarkColumnPositions[1] := 1;
+  fBookmarkColumnPositions[2] := 2;
+  fBookmarkColumnPositions[3] := 3;
+  fBookmarkColumnPositions[4] := 4;
+  fBookmarkColumnPositions[5] := 5;
 
   try
     if OpenRegistry('General', True) then
@@ -453,6 +465,7 @@ begin
       fMainToolbarTop       := fReg.GetIntegerValue('Main Bar Top', fMainToolbarTop);
       fArticlesHeight       := fReg.GetIntegerValue('Articles Height', fArticlesHeight);
       fBookmarkHeight       := fReg.GetIntegerValue('Bookmark Height', fBookmarkHeight);
+      fShowBookmark         := fReg.GetBooleanValue('Show Bookmark', fShowBookmark);
       fShowHeader           := TShowHeader(fReg.GetIntegerValue('Show Header', Integer(fShowHeader)));
       fQueuedRequestsHeight := fReg.GetIntegerValue('Queued Requests Height', fQueuedRequestsHeight);
 
@@ -469,7 +482,6 @@ begin
         fQueuedRequestsHeight := 1;
 
       st := fReg.GetStringValue('Articles Column PCs', '');
-
       w := 0;
       repeat
         s := SplitString(',', st);
@@ -481,13 +493,34 @@ begin
       until s = '';
 
       st := fReg.GetStringValue('Articles Column Positions', '');
-
       w := 0;
       repeat
         s := SplitString(',', st);
         if s <> '' then
         begin
           fArticlesColumnPositions[w] := StrToInt(s);
+          Inc(w);
+        end;
+      until s = '';
+
+      st := fReg.GetStringValue('Bookmark Column PCs', '');
+      w := 0;
+      repeat
+        s := SplitString(',', st);
+        if s <> '' then
+        begin
+          fBookmarkColumnPCs[w] := StrToInt(s);
+          Inc(w);
+        end;
+      until s = '';
+
+      st := fReg.GetStringValue('Bookmark Column Positions', '');
+      w := 0;
+      repeat
+        s := SplitString(',', st);
+        if s <> '' then
+        begin
+          fBookmarkColumnPositions[w] := StrToInt(s);
           Inc(w);
         end;
       until s = '';
@@ -545,6 +578,7 @@ begin
       fHideReadMessages          := fReg.GetBooleanValue('Hide Read Messages', fHideReadMessages);
       fHideIgnoredMessages       := fReg.GetBooleanValue('Hide Ignored Messages', fHideIgnoredMessages);
     end;
+
     if OpenRegistry('Message Pane', True) then
     begin
       fTextWindowSizeK := fReg.GetIntegerValue('Text Window Size K', fTextWindowSizeK);
@@ -605,6 +639,7 @@ begin
     fReg.SetIntegerValue('Main Bar Top', fMainToolbarTop, 23);
     fReg.SetIntegerValue('Articles Height', fArticlesHeight, 0);
     fReg.SetIntegerValue('Bookmark Height', fBookmarkHeight, 0);
+    fReg.SetBooleanValue('Show Bookmark', fShowBookmark, False);
     fReg.SetIntegerValue('Queued Requests Height', fQueuedRequestsHeight, 0);
     fReg.SetIntegerValue('Show Header', Integer(fShowHeader), Integer(shShort));
 
@@ -626,6 +661,24 @@ begin
     end;
     fReg.SetStringValue('Articles Column Positions', st, '');
 
+    st := '';
+    for i := 0 to Length(fBookmarkColumnPCs) - 1 do
+    begin
+      st := st + IntToStr(fBookmarkColumnPCs[i]);
+      if i < Length(fBookmarkColumnPCs) - 1 then
+        st := st + ',';
+    end;
+    fReg.SetStringValue('Bookmark Column PCs', st, '');
+
+    st := '';
+    for i := 0 to Length(fBookmarkColumnPositions) - 1 do
+    begin
+      st := st + IntToStr(fBookmarkColumnPositions[i]);
+      if i < Length(fBookmarkColumnPositions) - 1 then
+        st := st + ',';
+    end;
+    fReg.SetStringValue('Bookmark Column Positions', st, '');
+
     for e := Low(TAppearanceEnum) to High(TAppearanceEnum) do
     begin
       OpenRegistry('Appearance\' + AppearanceKeyNames[e], False);
@@ -633,12 +686,10 @@ begin
     end;
 
     OpenRegistry('Connection', False);
-
     fReg.SetBooleanValue('Auto Disconnect On Idle', fAutoDisconnectOnIdle, False);
     fReg.SetBooleanValue('Auto Disconnect On Exit', fAutoDisconnectOnExit, True);
 
     OpenRegistry('Message Tree', False);
-
     fReg.SetBooleanValue('Auto Expand Thread', fAutoExpandThread, True);
     fReg.SetBooleanValue('Auto Expand All', fAutoExpandAll, False);
     fReg.SetBooleanValue('Hide Folder Icons', fHideFolderIcons, True);

@@ -37,7 +37,6 @@ type
     procedure UpdateActions; override;
   public
     Articles: TObjectList;
-    { Public declarations }
   end;
 
 var
@@ -191,7 +190,7 @@ begin
   article := TArticleBase(clbArticles.Items.Objects[0]);
 
   fileName := '';
-  if article.HasMsg then
+  if article.HasMsg and Assigned(article.Msg) then
     if article.Msg.MessageParts.Count > 0 then
       for i := 0 to article.Msg.MessageParts.Count - 1 do
       begin

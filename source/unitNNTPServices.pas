@@ -347,6 +347,8 @@ type
     function GetUnreadInterestingArticleCount: Integer;
     procedure SetHideIgnoredMessages(const Value: Boolean);
     procedure SetHideMessagesNotToMe(const Value: Boolean);
+    function GetGroupMultipartMessages: Boolean;
+    procedure SetGroupMultipartMessages(const Value: Boolean);
   protected
     fThreads: TList;                     // List of TArticleBase thread roots
     fUnreadArticleCount: Integer;
@@ -437,6 +439,7 @@ type
 
     property MessageFile: TFileStream read fMessageFile;
     property DisplaySettings: TDisplaySettings read GetDisplaySettings;
+    property GroupMultipartMessages: Boolean read GetGroupMultipartMessages write SetGroupMultipartMessages;
     property ThreadCount: Integer read GetThreadCount;
     property ThreadOrder: TThreadOrder read fThreadOrder write SetThreadOrder;
     property Threads[idx: Integer]: TArticleBase read GetThreads;
@@ -787,7 +790,7 @@ type
   // Controls how many messages are cached in memory
   //
   // Keeps a list of recent articles.  When an article drops of the list, it's
-  // 'Msg' is free-and-niled.  Next time the article is referenced, it's message
+  // 'Msg' is free-and-nilled.  Next time the article is referenced, it's message
   // will be reloaded from disk.
 
   TNNTPMessageCacheController = class(TObjectCache)
@@ -3725,6 +3728,8 @@ begin
 
   fMsg.RawData.Seek(0, soBeginning);
   fMsg.RawData.SaveToStream(fOwner.fMessageFile);
+
+  SetFlag(fgScannedAttachment, False);
 end;
 
 procedure TArticle.SetCodePage(const Value: Integer);
@@ -3787,7 +3792,7 @@ begin { GroupArticles }
     art := TArticle(fArticles[i]);
     art.fSibling := nil;
 
-    if (HideMessagesNotToMe and not art.IsMine) or (hideReadMessages and art.IsRead) or (hideIgnoredMessages and art.IsIgnore) or (Assigned(filters) and filters.HasFilters and filters.BlockArticle(art)) then
+    if(HideMessagesNotToMe and not art.IsMine) or (hideReadMessages and art.IsRead) or (hideIgnoredMessages and art.IsIgnore) or (Assigned(filters) and filters.HasFilters and filters.BlockArticle(art)) then
     begin
       Inc(i);
       Continue;
@@ -4071,30 +4076,35 @@ begin
   if not fArticlesLoaded then
     LoadArticles;
 
-  while headers.ReadLn(raw) do
-  begin
-    st := string(raw);
-    ParseXOVER(st, articleNo, subject, from, date, MessageID, references, bytes, lines, exd);
-    article := TArticle.Create(Self);
+  try
+    while headers.ReadLn(raw) do
+    begin
+      st := string(raw);
+      ParseXOVER(st, articleNo, subject, from, date, MessageID, references, bytes, lines, exd);
+      article := TArticle.Create(Self);
 
-    article.fArticleNo := articleNo;
-    article.fMessageID := Trim(MessageID);
-    article.fBytes := bytes;
-    article.fLines := lines;
-    article.fReferences := Trim(references);
-    article.fFrom := from;
-    article.fSubject := subject;
-    article.fDate := date;
+      article.fArticleNo := articleNo;
+      article.fMessageID := Trim(MessageID);
+      article.fBytes := bytes;
+      article.fLines := lines;
+      article.fReferences := Trim(references);
+      article.fFrom := from;
+      article.fSubject := subject;
+      article.fDate := date;
 
-    s := Fetch(exd, #9);
-    article.fFlags := IndyStrToInt(s) and $08FFFFFF;
-    if article.IsDeleted then
-      article.Owner.fNeedsPurge := True;
+      s := Fetch(exd, #9);
+      article.fFlags := IndyStrToInt(s) and $08FFFFFF;
+      if article.IsDeleted then
+        article.Owner.fNeedsPurge := True;
 
-    s := Fetch(exd, #9);
-    article.fMessageOffset := StrToInt64Def(s, -1);
+      s := Fetch(exd, #9);
+      article.fMessageOffset := StrToInt64Def(s, -1);
 
-    RawAddArticle(article);
+      RawAddArticle(article);
+    end;
+  except
+    fArticlesLoaded := False;
+    raise;
   end;
 
   NNTPAccounts.PerfCue(660, 'Added Article Headers');
@@ -4840,6 +4850,10 @@ begin
       Result := ArticleBase[0];
 end;
 
+function TArticleContainer.GetGroupMultipartMessages: Boolean;
+begin
+  Result := (fThreadOrder = toChronological) and (fThreadSortOrder = soSubject);
+end;
 
 function TArticleContainer.GetInterestingArticleCount: Integer;
 begin
@@ -5022,6 +5036,19 @@ begin
 // stub
 end;
 
+procedure TArticleContainer.SetGroupMultipartMessages(const Value: Boolean);
+begin
+  // for the moment only setting it to True does something.
+  if GroupMultipartMessages <> Value then
+    if Value then
+    begin
+      fThreadOrder := toChronological;
+      fThreadSortOrder := soSubject;
+      fThreadSortDirection := sdAscending;
+      SortArticles;
+    end;
+end;
+
 procedure TArticleContainer.SetHideIgnoredMessages(const Value: Boolean);
 begin
   if fHideIgnoredMessages <> Value then
@@ -5158,16 +5185,14 @@ begin
               l.fSibling := n;
               l.fMultipartFlags := mfNotMultipart;
               l := n;
-              if spamAddresses <> nil then
+
+              if (lastPostingHost = n.PostingHost) and (CompareText(Copy(lastAuthor, 1, 5), Copy(n.FromName, 1, 5)) <> 0) then
               begin
-                if (lastPostingHost = n.PostingHost) and (CompareText(Copy(lastAuthor, 1, 5), Copy(n.FromName, 1, 5)) <> 0) then
-                begin
-                  spamNames.Add(lastAuthor);
-                  spamAddresses.Add(lastPostingHost);
-                end;
-                lastPostingHost := n.PostingHost;
-                lastAuthor := n.FromName;
+                spamAddresses.Add(lastPostingHost);
+                spamNames.Add(lastAuthor);
               end;
+              lastPostingHost := n.PostingHost;
+              lastAuthor := n.FromName;
             end;
 
             l.fSibling := nil;
@@ -5272,7 +5297,7 @@ var
 begin
   fThreads.Sort(CompareThreads);
 
-  if (fThreads.Count > 0) and not ((ThreadOrder = toChronological) and (ThreadSortOrder = soSubject)) then
+  if (fThreads.Count > 0) and not GroupMultipartMessages then
   begin
     l := TArticle(fThreads[0]);
 
@@ -5929,7 +5954,7 @@ var
   mp: TmvMessagePart;
 begin
   gotHasAttachment := (flags and fgScannedAttachment) <> 0;
-  if HasMsg and not gotHasattachment then
+  if HasMsg and not gotHasAttachment then
   begin
     if Assigned(Msg) then
     begin
@@ -6398,7 +6423,7 @@ end;
 
 function TArticleBase.MsgDownloading: Boolean;
 begin
-  Result := Assigned(fMsg) and (fMessageOffset = -1);
+  Result := Assigned(fMsg) and ((fMessageOffset = -1) or fMsg.Updating);
 end;
 
 function TArticleBase.PeekAtMsgHdr(const hdr: string): string;
@@ -6557,7 +6582,7 @@ begin
                                     // Don't delete if the article's message is being
                                     // downloaded (fMsg exists but fMessageOffset is still -1)
                                     // or is being displayed.
-        if (article.fMessageOffset <> -1) and not article.fMsg.BeingDisplayed then
+        if not article.MsgDownloading and not article.fMsg.BeingDisplayed then
         begin
           Result := True;
           FreeAndNil(article.fMsg);

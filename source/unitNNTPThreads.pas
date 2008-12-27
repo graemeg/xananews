@@ -592,7 +592,6 @@ var
     NNTP.PipelineCommandAbortEvent := DoPipelineCommandCancelEvent;
     if fromArticle <= dest then
     try
-
       NNTP.BeginPipeline;
       try
         for msgNo := fromArticle to dest do
@@ -955,7 +954,7 @@ begin
   if cmd.Command = gmGroup then
   begin
     if gtr.CurrentGroup.NeedsUpdate then
-      Synchronize(gtr.Update);
+      Synchronize(gtr.UpdateArticles);
     gtr.CurrentGroup := TSubscribedGroup(cmd.Param);
   end
   else
@@ -1038,7 +1037,7 @@ begin
                   Inc(gtr.PipelinePos);
                   article := request.Article;
                   group := request.Group;
-                  group.NeedsUpdate := request.NeedsFullRefresh;
+                  group.NeedsUpdate := group.NeedsUpdate or request.NeedsFullRefresh;
                 finally
                   gtr.UnlockList;
                 end;
@@ -1070,7 +1069,7 @@ begin
     finally
       gtr.UnlockList;
       if Assigned(gtr.CurrentGroup) and (gtr.CurrentGroup.NeedsUpdate) then
-        Synchronize(gtr.Update);
+        Synchronize(gtr.UpdateArticles);
     end;
     Exit;
   end;
@@ -1090,7 +1089,7 @@ begin
         fUICurrentArticle := gtr.CurrentArticle;
         UIUnlock;
         group := request.Group;
-        group.NeedsUpdate := request.NeedsFullRefresh;
+        group.NeedsUpdate := group.NeedsUpdate or request.NeedsFullRefresh;
         requests.Delete(0);
       finally
         gtr.UnlockList;
@@ -1145,7 +1144,7 @@ begin
     UIUnlock;
     gtr.UnlockList;
     if Assigned(gtr.CurrentGroup) and (gtr.CurrentGroup.NeedsUpdate) then
-      Synchronize(gtr.Update);
+      Synchronize(gtr.UpdateArticles);
   end;
 end;
 
