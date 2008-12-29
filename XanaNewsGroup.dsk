@@ -1,29 +1,13 @@
 ﻿[Closed Files]
-File_0=TSourceModule,'C:\Projects\RapidSVN\XanaNews\trunk\components\MiscUnits\Source\cmpExplorerTree.pas',0,1,531,5,553,0,0,,
-File_1=TSourceModule,'C:\Projects\RapidSVN\XanaNews\trunk\components\LowLevel\Source\unitStreamTextReader.pas',0,1,398,1,410,0,0,,
-File_2=TSourceModule,'C:\Projects\RapidSVN\XanaNews\trunk\source\unitNNTPServices.pas',0,1,6290,1,6326,0,0,,
-File_3=TSourceModule,'C:\Projects\RapidSVN\XanaNews\trunk\source\NewsGlobals.pas',0,1,193,1,223,0,0,,
-File_4=TSourceModule,'C:\Projects\RapidSVN\XanaNews\trunk\source\XnCoderQuotedPrintable.pas',0,1,114,1,135,0,0,,
-File_5=TSourceModule,'d:\program files\codegear\rad studio\6.0\source\Indy\Indy10\Protocols\IdCoderMIME.pas',0,1,25,32,43,0,0,,
-File_6=TSourceModule,'d:\program files\codegear\rad studio\6.0\source\Indy\Indy10\Protocols\IdCoder3to4.pas',0,1,341,1,326,0,0,,
-File_7=TSourceModule,'d:\program files\codegear\rad studio\6.0\source\Win32\rtl\common\Classes.pas',0,1,5017,33,5028,0,0,,
-File_8=TSourceModule,'D:\Program Files\CodeGear\RAD Studio\6.0\source\Win32\rtl\sys\SysUtils.pas',0,1,2899,10,2923,0,0,,
-File_9=TSourceModule,'d:\program files\codegear\rad studio\6.0\source\Indy\Indy10\Protocols\IdCoderQuotedPrintable.pas',0,1,107,1,113,0,0,,
 
 [Modules]
 Module0=C:\Projects\RapidSVN\XanaNews\trunk\source\NewsReader3.dproj
-Module1=C:\Projects\RapidSVN\XanaNews\trunk\source\MainForm.pas
-Module2=default.htm
-Count=3
+Module1=default.htm
+Count=2
 EditWindowCount=1
 
 [C:\Projects\RapidSVN\XanaNews\trunk\source\NewsReader3.dproj]
 ModuleType=TBaseProject
-
-[C:\Projects\RapidSVN\XanaNews\trunk\source\MainForm.pas]
-ModuleType=TSourceModule
-FormState=0
-FormOnTop=0
 
 [default.htm]
 ModuleType=TURLModule
@@ -53,20 +37,23 @@ BorlandEditorCodeExplorer=BorlandEditorCodeExplorer@EditWindow0
 TopPanelSize=0
 LeftPanelSize=0
 LeftPanelClients=BorlandEditorCodeExplorer@EditWindow0
-LeftPanelData=0000080068680100000019000000426F726C616E64456469746F72436F64654578706C6F726572BA0C00000000000000E301000000000000FFFFFFFF
+LeftPanelData=0000080088880100000019000000426F726C616E64456469746F72436F64654578706C6F726572BA0C00000000000000E301000000000000FFFFFFFF
 RightPanelSize=0
 BottomPanelSize=1183
 BottomPanelClients=MessageView@EditWindow0
-BottomPanelData=0000080098980000000000000000000000000000000000000000000100000000000000000B0000004D65737361676556696577FFFFFFFF
+BottomPanelData=00000800E8E80000000000000000000000000000000000000000000100000000000000000B0000004D65737361676556696577FFFFFFFF
 BottomMiddlePanelSize=0
 BottomMiddlePanelClients=DockSite0,ToDo List
-BottomMiddelPanelData=0000080068680200000009000000446F636B53697465300E000000546F446F4C69737457696E646F778B1F00000000000002B707000000000000FFFFFFFF
+BottomMiddelPanelData=0000080098980200000009000000446F636B53697465300E000000546F446F4C69737457696E646F778B1F00000000000002B707000000000000FFFFFFFF
 
 [View0]
 CustomEditViewType=TWelcomePageView
 WelcomePageURL=bds:/default.htm
 
 [View1]
+CustomEditViewType=TDisassemblyEditView
+
+[View2]
 CustomEditViewType=TEditView
 Module=C:\Projects\RapidSVN\XanaNews\trunk\source\NewsReader3.dpr
 CursorX=1
@@ -76,17 +63,6 @@ LeftCol=1
 Elisions=
 Bookmarks=
 EditViewName=C:\Projects\RapidSVN\XanaNews\trunk\source\NewsReader3.dpr
-
-[View2]
-CustomEditViewType=TEditView
-Module=C:\Projects\RapidSVN\XanaNews\trunk\source\MainForm.pas
-CursorX=19
-CursorY=10547
-TopLine=10507
-LeftCol=1
-Elisions=
-Bookmarks=
-EditViewName=C:\Projects\RapidSVN\XanaNews\trunk\source\MainForm.pas
 
 [Watches]
 Count=0
@@ -113,10 +89,7 @@ Dockable=1
 StayOnTop=0
 
 [Breakpoints]
-Count=3
-Breakpoint0='C:\Projects\RapidSVN\XanaNews\trunk\components\LowLevel\Source\unitStreamTextReader.pas',250,'',0,1,'',1,0,0,'',1,'','','',0
-Breakpoint1='C:\Projects\RapidSVN\XanaNews\trunk\source\XnCoderQuotedPrintable.pas',130,'',0,1,'',1,0,0,'',1,'','','',0
-Breakpoint2='C:\Projects\RapidSVN\XanaNews\trunk\source\XnCoderQuotedPrintable.pas',154,'',0,1,'',1,0,0,'',1,'','','',0
+Count=0
 
 [AddressBreakpoints]
 Count=0
