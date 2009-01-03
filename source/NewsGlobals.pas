@@ -201,6 +201,7 @@ function GenerateMessageID(const product, stub, host: string): string;
 function EncodeHeader(const header: string; codepage: Integer; from: Boolean): string;
 procedure SetTempStatusMessage(const msg: string; pos, max: word);
 function SafeDateTimeToInternetStr(const Value: TDateTime; const AIsGMT: Boolean = False): string;
+function FixedGMTToLocalDateTime(S: string): TDateTime;
 function ComputerName: string;
 procedure ClearSynchronizedMethods;
 function FixFileNameString(const st: string): string;
@@ -221,11 +222,12 @@ implementation
 
 uses
   unitSearchString, idCoder, idCoderMIME, idCoderQuotedPrintable, unitCharsetMap,
-  IdGlobal, unitExFileSettings, XnCoderQuotedPrintable, unitLog;
+  IdGlobal, IdGlobalProtocols, unitExFileSettings, XnCoderQuotedPrintable, unitLog;
 
 var
   gLatestVersionSync: TCriticalSection = nil;
   gHTMLClipboardFormat: Integer = 0;
+  gOffsetFromUTC: TDateTime = 0.0;
 
 (*----------------------------------------------------------------------*
  | FixHeaders                                                           |
@@ -1241,9 +1243,108 @@ begin
   try
     Result := DateTimeToInternetStr(Value, AIsGMT);
   except
-    Result := 'Fri 17 Nov 1961 08:00:00 GMT';
+    Result := 'Fri, 17 Nov 1961 08:00:00 GMT';
   end;
 end;
+
+// Expects a string as saved by Indy's function DateTimeToInternetStr().
+// '%s, %.2d-%s-%.2d %s %s'
+function FixedStrInternetToDateTime(var Value: string): TDateTime;
+var
+  P: PChar;
+  Dt, Mo, Yr, Ho, Min, Sec: Word;
+
+  function NextItem(var S: string): PChar;
+  begin
+    Result := P;
+    if Result <> nil then
+    begin
+      while not (Result^ in [#0, ' ', ':']) do   {do not localize}
+        Inc(Result);
+
+      SetString(S, P, Result - P);
+      if Result^ <> #0 then
+        Inc(Result);
+    end
+    else
+      S := '';
+  end;
+
+  function NextItemStr: string;
+  begin
+    P := NextItem(Result);
+  end;
+
+begin
+  Result := 0.0;
+
+  if Length(Value) = 0 then
+    Exit;
+
+  P := PChar(Value);
+
+  try
+    NextItemStr;                       // Day of Week, not used
+    Dt  := StrToInt(NextItemStr);      // Day of Month
+    Mo  := StrToMonth(NextItemStr);    // Month
+    Yr  := StrToInt(NextItemStr);      // Year
+    Ho  := StrToInt(NextItemStr);      // Hours
+    Min := StrToInt(NextItemStr);      // Minutes
+    Sec := StrToInt(NextItemStr);      // Seconds
+
+    Value := string(P);                // Remainder is GMT offset
+
+    Result := EncodeDate(Yr, Mo, Dt) + EncodeTime(Ho, Min, Sec, 0);
+  except
+    Result := 0.0;
+  end;
+end;
+
+function FixedGMTOffsetStrToDateTime(const S: string): TDateTime;
+begin
+  Result := 0.0;
+  if Length(S) > 4 then
+  begin
+    if (s[1] = '-') or (s[1] = '+') then   {do not localize}
+    begin
+      try
+        Result := EncodeTime(StrToInt(Copy(s, 2, 2)), StrToInt(Copy(s, 4, 2)), 0, 0);
+        if s[1] = '-' then  {do not localize}
+          Result := -Result;
+      except
+        Result := 0.0;
+      end;
+    end;
+  end;
+end;
+
+
+// Expects a string as saved by Indy's function DateTimeToInternetStr().
+// '%s, %.2d-%s-%.2d %s %s'
+// Always returns date/time relative to GMT.
+function FixedGMTToLocalDateTime(S: string): TDateTime;
+var
+  DateTimeOffset: TDateTime;
+begin
+  if s = '' then
+    Result := 0
+  else
+  begin
+    Result := FixedStrInternetToDateTime(S);
+    if Length(S) < 5 then
+      DateTimeOffset := 0.0
+    else
+      DateTimeOffset := FixedGMTOffsetStrToDateTime(S);
+    // Apply GMT offset here
+    if DateTimeOffset < 0.0 then
+      Result := Result + Abs(DateTimeOffset)
+    else
+      Result := Result - DateTimeOffset;
+    // Apply local offset
+    Result := Result + gOffSetFromUTC;
+  end;
+end;
+
 
 var
   gComputerName: string = '';
@@ -1421,7 +1522,7 @@ begin
 end;
 
 initialization
-
+  gOffsetFromUTC := OffsetFromUTC;
 finalization
   FreeAndNil(gDecoderMIME);
   FreeAndNil(gDecoderQuotedPrintable);

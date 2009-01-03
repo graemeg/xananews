@@ -99,6 +99,12 @@ type
     fSibling: TArticleBase;
     fBlocked: Boolean;
 
+    fIsMultiPart: Boolean;
+    fPartCount: Integer;
+    fPartDecoded: Boolean;
+    fPartNo: Integer;
+    fPartSubject: string;
+
     function GetFromEmail: string;
     function GetFromName: string;
     function GetHasAttachment: Boolean;
@@ -144,6 +150,7 @@ type
     function GetIsRead: Boolean; virtual;
     function GetHeader(const name: string): string; virtual;
     procedure DecodeFromName;
+    function DecodedMultipartSubject: string;
     function GetMsg: TmvMessage; virtual; abstract;
     procedure SetMsg(const Value: TmvMessage); virtual;
     function GetIndex: Integer; virtual;
@@ -225,8 +232,6 @@ type
 
   TArticle = class(TArticleBase)
   private
-    fPartNo: Integer;
-
     fPostingHost: string;
 
     fInterestingMessageLine: string;
@@ -893,14 +898,14 @@ var
       code := 1;
   end;
 
-  function CompareSubject(s1, s2: string): Integer;
-  var
-    n, x: Integer;
-  begin
-    DecodeMultipartSubject(s1, n, x, True, False);
-    DecodeMultipartSubject(s2, n, x, True, False);
-    Result := CompareText(s1, s2);
-  end;
+//  function CompareSubject(s1, s2: string): Integer;
+//  var
+//    n, x: Integer;
+//  begin
+//    DecodeMultipartSubject(s1, n, x, True, False);
+//    DecodeMultipartSubject(s2, n, x, True, False);
+//    Result := CompareText(s1, s2);
+//  end;
 
   function CompareIPAddress(a1, a2: string): Integer;
   var
@@ -970,7 +975,13 @@ begin { CompareThreads }
              else
                if a1.fDate > a2.fDate then
                  Result := 1;
-    soSubject: Result := CompareSubject(a1.fSubject, a2.fSubject);
+//    soSubject: Result := CompareSubject(fSubject, a2.fSubject);
+    soSubject:
+      begin
+        Result := CompareText(a1.DecodedMultipartSubject, a2.DecodedMultipartSubject);
+        if Result = 0 then
+          Result := a1.fPartNo - a2.fPartNo;
+      end;
     soLines: if a1.fLines < a2.fLines then
                 Result := -1
               else
@@ -2842,12 +2853,11 @@ end;
  |                                                                      |
  | nb.  This is not intended to be thread safe.                         |
  |                                                                      |
- | It's called during LoadArticles, and after downloading article       |
- | headers.                                                             |
+ | It's called after downloading article headers.                       |
  |                                                                      |
  | Parameters:                                                          |
  |                                                                      |
- |   headers: TStringList      Headers to add                          |
+ |   headers: TStringList      Headers to add                           |
  *----------------------------------------------------------------------*)
 procedure TSubscribedGroup.AddRawHeaders(headers: TStringList; XOVERFmt: TStringList);
 var
@@ -2889,14 +2899,15 @@ begin
 
     n := 7;
 
-    if Assigned(XOverFMT) then while (n < XOverFMT.Count) and (exd <> '') do
-    begin
-      val := Fetch(exd, #9);
-      hdr := XOverFMT[n];
-      hdr := Fetch(hdr, ':');
-      Inc(n);
-      article.fTempExtraHeaders := article.fTempExtraHeaders + #9 + hdr + ':' + val;
-    end;
+    if Assigned(XOverFMT) then
+      while (n < XOverFMT.Count) and (exd <> '') do
+      begin
+        val := Fetch(exd, #9);
+        hdr := XOverFMT[n];
+        hdr := Fetch(hdr, ':');
+        Inc(n);
+        article.fTempExtraHeaders := article.fTempExtraHeaders + #9 + hdr + ':' + val;
+      end;
 
     if article.fTempExtraHeaders <> '' then
       Delete(article.fTempExtraHeaders, 1, 1);
@@ -2905,6 +2916,81 @@ begin
       RawAddArticle(article);
   end;
 
+  NNTPAccounts.PerfCue(660, 'Added Article Headers');
+  ReSortArticles;
+  NNTPAccounts.PerfCue(880, 'Sorted articles');
+  fArticlesLoaded := True;
+end;
+
+procedure TSubscribedGroup.AddRawHeaders(headers: TTextFileReader);
+var
+  P: PChar;
+  article: TArticle;
+  lastGoodDate: TDateTime;
+  raw: MessageString;
+
+  function NextItem(var S: string): PChar;
+  begin
+    Result := P;
+    if Result <> nil then
+    begin
+      while not (Result^ in [#0, #9]) do
+        Inc(Result);
+
+      SetString(S, P, Result - P);
+      if Result^ <> #0 then
+        Inc(Result);
+    end
+    else
+      S := '';
+  end;
+
+  function NextItemStr: string;
+  begin
+    P := NextItem(Result);
+  end;
+
+begin
+  if not fArticlesLoaded then
+    LoadArticles;
+
+  try
+    lastGoodDate := 0;
+    while headers.ReadLn(raw) do
+    begin
+      P := PChar(string(raw));
+
+      article := TArticle.Create(Self);
+      try
+        article.fArticleNo := StrToInt(NextItemStr);
+        P := NextItem(article.fSubject);
+        P := NextItem(article.fFrom);
+        try
+          article.fDate := FixedGMTToLocalDateTime(NextItemStr);
+          lastGoodDate := article.fDate;
+        except
+          article.fDate := lastGoodDate;
+        end;
+        P := NextItem(article.fMessageID);
+        P := NextItem(article.fReferences);
+        article.fBytes := StrToInt(NextItemStr);
+        article.fLines := StrToInt(NextItemStr);
+        article.fFlags := StrToInt(NextItemStr) and $08FFFFFF;
+        article.fMessageOffset := StrToInt64Def(NextItemStr, -1);
+
+        if article.IsDeleted then
+          article.Owner.fNeedsPurge := True;
+
+      except
+        article.Free;
+        raise;
+      end;
+      RawAddArticle(article);
+    end;
+  except
+    fArticlesLoaded := False;
+    raise;
+  end;
 
   NNTPAccounts.PerfCue(660, 'Added Article Headers');
   ReSortArticles;
@@ -3744,16 +3830,14 @@ var
   i: Integer;
   art, root, ap: TArticle;
   subject, lastSubject: string;
-  n, count, rootCount: Integer;
   filters: TFiltersCtnr;
-  multipart: Boolean;
 
   procedure CheckCompleteMultipart(root: TArticle);
   var
     c: Integer;
     p: TArticle;
   begin
-    if rootCount <= 1 then
+    if root.fPartCount <= 1 then
       root.fMultipartFlags := mfNotMultipart
     else
     begin
@@ -3769,7 +3853,7 @@ var
           p := TArticle(p.Sibling);
         end;
 
-        if (p <> nil) or (c - 1 <> rootCount) then
+        if (p <> nil) or (c - 1 <> root.fPartCount) then
           root.fMultipartFlags := mfPartialMultipart;
       end
       else
@@ -3798,20 +3882,17 @@ begin { GroupArticles }
       Continue;
     end;
 
-    subject := Trim(art.Subject);
-    multipart := DecodeMultipartSubject(subject, n, count, False, True);
-    if multipart then
+    subject := art.DecodedMultipartSubject;
+    if art.fIsMultiPart then
     begin
       art.fSibling := nil;
       art.fChild := nil;
-      art.fPartNo := n;
       if (subject <> lastSubject) or (root = nil) then
       begin
         if Assigned(root) then
           CheckCompleteMultipart(root);
         lastSubject := subject;
         root := art;
-        rootCount := count;
         fThreads.Add(art);
       end
       else
@@ -4028,7 +4109,7 @@ begin
 
       if (fgs and fgRead) = 0 then
       begin
-        Inc(funreadArticleCount);
+        Inc(fUnreadArticleCount);
         if (fgs and fgMine) <> 0 then
           Inc(fUnreadArticleToMeCount);
         if (fgs and fgXanaNews) <> 0 then
@@ -4057,60 +4138,6 @@ end;
 function TSubscribedGroup.GetDisplaySettings: TDisplaySettings;
 begin
   Result := fDisplaySettings;
-end;
-
-procedure TSubscribedGroup.AddRawHeaders(headers: TTextFileReader);
-var
-  articleNo: cardinal;
-  subject: string;
-  from: string;
-  date: TDateTime;
-  MessageID: string;
-  references: string;
-  Bytes: Cardinal;
-  lines: Cardinal;
-  exd, s, st: string;
-  article: TArticle;
-  raw: MessageString;
-begin
-  if not fArticlesLoaded then
-    LoadArticles;
-
-  try
-    while headers.ReadLn(raw) do
-    begin
-      st := string(raw);
-      ParseXOVER(st, articleNo, subject, from, date, MessageID, references, bytes, lines, exd);
-      article := TArticle.Create(Self);
-
-      article.fArticleNo := articleNo;
-      article.fMessageID := Trim(MessageID);
-      article.fBytes := bytes;
-      article.fLines := lines;
-      article.fReferences := Trim(references);
-      article.fFrom := from;
-      article.fSubject := subject;
-      article.fDate := date;
-
-      s := Fetch(exd, #9);
-      article.fFlags := IndyStrToInt(s) and $08FFFFFF;
-      if article.IsDeleted then
-        article.Owner.fNeedsPurge := True;
-
-      s := Fetch(exd, #9);
-      article.fMessageOffset := StrToInt64Def(s, -1);
-
-      RawAddArticle(article);
-    end;
-  except
-    fArticlesLoaded := False;
-    raise;
-  end;
-
-  NNTPAccounts.PerfCue(660, 'Added Article Headers');
-  ReSortArticles;
-  NNTPAccounts.PerfCue(880, 'Sorted articles');
-  fArticlesLoaded := True;
 end;
 
 procedure TArticle.SetCrossPostsFlag(flag: DWORD; value: Boolean);
@@ -5730,7 +5757,7 @@ begin
 end;
 
 (*----------------------------------------------------------------------*
- | procedure TArticleBase.DecodeMultipartSubject                        |
+ | procedure DecodeMultipartSubject                                     |
  |                                                                      |
  | Return True if the subject line has (eg.) (3/22) or [3/22] within it |
  | indicating that it's part of a multipart. If so, return 'n' = 3 and  |
@@ -5836,6 +5863,17 @@ begin
       end;
     end;
   end;
+end;
+
+function TArticleBase.DecodedMultipartSubject: string;
+begin
+  if not fPartDecoded then
+  begin
+    fPartSubject := fSubject;
+    fIsMultiPart := DecodeMultipartSubject(fPartSubject, fPartNo, fPartCount, False, True);
+    fPartDecoded := True;
+  end;
+  Result := fPartSubject;
 end;
 
 function TArticleBase.GetCodePage: Integer;

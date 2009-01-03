@@ -43,7 +43,7 @@ begin
           lf.Seek(0, soEnd);
         end;
 
-        msg := FormatDateTime('hh:nn:ss:zzzz', Now) + ' TID=' + IntToStr(GetCurrentThreadID) + '- ' + msg + #13#10;
+        msg := FormatDateTime('hh:nn:ss.zzz', Now) + ' TID=' + IntToStr(GetCurrentThreadID) + '- ' + msg + #13#10;
 
         raw := MessageString(msg);
         lf.Write(raw[1], Length(raw));
