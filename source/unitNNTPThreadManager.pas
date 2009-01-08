@@ -421,7 +421,16 @@ begin
       getter.Paused := AllThreadsPaused;
     end;
 
-    getter.AddArticleToList(group, article, True);
+    // Note: last parm has to be False.
+    // Otherwise it will go wrong when somebody uses "download headers only"
+    //   -and-
+    // uses "download body on click".
+    //   -and-
+    // has auto mark as read set to 0 half seconds.
+    //
+    // The then just downloaded post will be hidden straight away in
+    // TfmMain.DoOnArticleChanged() followed by TfmMain.DoOnArticlesChanged()
+    getter.AddArticleToList(group, article, False);
 
     if getter.State <> tsBusy then
       getter.State := tsPending;
@@ -478,7 +487,7 @@ var
   procedure GetThreadBodies(article: TArticle);
   begin
     if not article.HasMsg then
-      getter.AddArticleToList(group, article, True);
+      getter.AddArticleToList(group, article, False); // Note: last parm has to be False
 
     article := TArticle(article.Child);
 
