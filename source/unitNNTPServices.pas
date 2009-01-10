@@ -828,8 +828,14 @@ type
   end;
 
   TDontUnloadCache = class(TObjectCache)
+  private
+    fAlwaysRemove: Boolean;
   protected
+    function CanRemove(Obj: TObject): Boolean; override;
     procedure Notify(Ptr: Pointer; Action: TListNotification); override;
+  public
+    procedure Clear; override;
+    property AlwaysRemove: Boolean read fAlwaysRemove write fAlwaysRemove;
   end;
 
 function DecodeMultipartSubject(var s: string; var n, x: Integer; fixIt, blankIt: Boolean): Boolean;
@@ -3000,7 +3006,7 @@ end;
 
 procedure TSubscribedGroup.CloseMessageFile;
 begin
-  inherited;
+  inherited CloseMessageFile;
   FreeAndNil(fMessageFile);
 end;
 
@@ -3815,7 +3821,9 @@ begin
   fMsg.RawData.Seek(0, soBeginning);
   fMsg.RawData.SaveToStream(fOwner.fMessageFile);
 
-  SetFlag(fgScannedAttachment, False);
+  // Signal that the articles.dat file needs to be updated.
+  fOwner.fFlagsDirty := True;
+  fFlags := fFlags and not fgScannedAttachment;
 end;
 
 procedure TArticle.SetCodePage(const Value: Integer);
@@ -4633,7 +4641,12 @@ begin
   fThreads.Free;
   fSortBuf.Free;
   CloseMessageFile;
-  DontUnloadCache.Remove(Self);
+  DontUnloadCache.AlwaysRemove := True;
+  try
+    DontUnloadCache.Remove(Self);
+  finally
+    DontUnloadCache.AlwaysRemove := False;
+  end;
   inherited Destroy;
 end;
 
@@ -7183,6 +7196,40 @@ begin
 end;
 
 { TDontUnloadCache }
+
+function TDontUnloadCache.CanRemove(Obj: TObject): Boolean;
+var
+  group: TSubscribedGroup;
+begin
+  if fAlwaysRemove then
+  begin
+    Result := True;
+    Exit;
+  end;
+
+  try
+    if (Obj <> nil) and (Obj is TSubscribedGroup) then
+    begin
+      group := TSubscribedGroup(Obj);
+                                        // An article body is being downloaded
+      Result := not ThreadManager.GettingArticle(group, nil);
+    end
+    else
+      Result := True;
+  except
+    Result := True;
+  end;
+end;
+
+procedure TDontUnloadCache.Clear;
+begin
+  fAlwaysRemove := True;
+  try
+    inherited Clear;
+  finally
+    fAlwaysRemove := False;
+  end;
+end;
 
 procedure TDontUnloadCache.Notify(Ptr: Pointer; Action: TListNotification);
 begin
