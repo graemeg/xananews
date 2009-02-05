@@ -826,13 +826,11 @@ end;
 function TCustomExRichEdit.FindText(const SearchStr: string; StartPos,
   Length: Integer; Options: TSearchTypes): Integer;
 const
-  EM_FINDTEXTW = WM_USER + 123;
   FT_DOWN = 1;
   FT_FINDNEXT = 8;
 var
   Find: TFindText;
   Flags: Integer;
-  ws : WideString;
 begin
   with Find.chrg do
   begin
@@ -842,9 +840,8 @@ begin
   Flags := FT_DOWN;
   if stWholeWord in Options then Flags := Flags or FR_WHOLEWORD;
   if stMatchCase in Options then Flags := Flags or FR_MATCHCASE;
-  ws := SearchStr;
-  Find.lpstrText := PChar (SearchStr);
-  Result := SendMessage(Handle, EM_FINDTEXT, Flags, LongInt(@Find));
+  Find.lpstrText := PChar(SearchStr);
+  Result := SendMessage(Handle, EM_FINDTEXTW, Flags, LongInt(@Find));
 end;
 
 (*----------------------------------------------------------------------*
