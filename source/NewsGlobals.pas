@@ -1012,7 +1012,8 @@ var
   end;
 
 begin
-  st := product + Enc36(DateTimeToFileDate(now)) + Enc36(GetTickCount, 4) + Enc36(gmi, 3) + stub;
+  st := product + Enc36(DateTimeToFileDate(now)) +
+    Enc36(GetTickCount and MaxInt, 4) + Enc36(gmi, 3) + stub;
   Inc(gmi);
   if gmi >= 36 * 36 * 36 then
     gmi := 0;
