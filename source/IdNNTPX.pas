@@ -470,7 +470,7 @@ begin
   BeginWork(wmRead);
   try
     repeat
-      NewLine := IOHandler.ReadLn;
+      NewLine := IOHandler.ReadLn(); // TODO: enUTF8
       if NewLine = ADelim then begin
         Break;
       end else if Copy(NewLine, 1, 2) = '..' then
@@ -551,6 +551,10 @@ begin
   // NOTE: Responses must be passed as arrays so that the proper inherited SendCmd is called
   // and a stack overflow is not caused.
   Result := inherited SendCmd(AOut, [], AEncoding);
+
+  LogMessage('[tx] ' + AOut);
+  LogMessage('[rx] ' + IntToStr(LastCmdResult.NumericCode) + ' ' + LastCmdResult.Text.Text, False, False);
+
   if (Result = 480) or (Result = 450) then
   begin
     Result := inherited SendCmd('AuthInfo User ' + Username, [281, 381]);
@@ -566,7 +570,7 @@ end;
 procedure TidNNTPX.SendXOVER(const AParam: string; AResponse: TStrings);
 begin
   SendCmd('xover ' + AParam, 224);
-  IOHandler.Capture(AResponse);
+  IOHandler.Capture(AResponse); // TODO: enUTF8
 end;
 
 function TidNNTPX.SetArticle(const ACmd: string; const AMsgNo: Cardinal;

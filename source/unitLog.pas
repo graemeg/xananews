@@ -5,7 +5,7 @@ interface
 uses
   Windows, Classes, SysUtils, SyncObjs, XnClasses;
 
-procedure LogMessage(msg: string; Force: Boolean = False);
+procedure LogMessage(msg: string; Force: Boolean = False; AddCRLF: Boolean = True);
 
 implementation
 
@@ -16,7 +16,7 @@ var
   crit: TCriticalSection = nil;
   lf: TFileStream = nil;
 
-procedure LogMessage(msg: string; Force: Boolean = False);
+procedure LogMessage(msg: string; Force: Boolean = False; AddCRLF: Boolean = True);
 var
   dt: TDateTime;
   raw: MessageString;
@@ -43,7 +43,9 @@ begin
           lf.Seek(0, soEnd);
         end;
 
-        msg := FormatDateTime('hh:nn:ss.zzz', Now) + ' TID=' + IntToStr(GetCurrentThreadID) + '- ' + msg + #13#10;
+        msg := FormatDateTime('hh:nn:ss.zzz', Now) + ' TID=' + IntToStr(GetCurrentThreadID) + '- ' + msg;
+        if AddCRLF then
+          msg := msg +  #13#10;
 
         raw := MessageString(msg);
         lf.Write(raw[1], Length(raw));
