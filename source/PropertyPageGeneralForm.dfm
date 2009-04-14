@@ -4,44 +4,46 @@ inherited fmPropertyPageGeneral: TfmPropertyPageGeneral
   HelpKeyword = 'ProgramSettings'
   ActiveControl = cbShowInSystemTray
   Caption = 'Program Settings'
-  ClientHeight = 370
+  ClientHeight = 405
   ClientWidth = 397
   Constraints.MinHeight = 370
   Constraints.MinWidth = 397
   ExplicitLeft = 547
+  ExplicitWidth = 413
+  ExplicitHeight = 441
   PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel [0]
     Left = 12
-    Top = 144
+    Top = 176
     Width = 173
     Height = 13
     Caption = 'Check for Latest Version on Internet:'
   end
   object Label2: TLabel [1]
     Left = 16
-    Top = 256
+    Top = 288
     Width = 132
     Height = 13
     Caption = 'Find Message Id on Internet'
   end
   object Label3: TLabel [2]
     Left = 32
-    Top = 280
+    Top = 312
     Width = 50
     Height = 13
     Caption = 'URL Stub:'
   end
   object Label4: TLabel [3]
     Left = 16
-    Top = 312
+    Top = 344
     Width = 98
     Height = 13
     Caption = 'Find Text on Internet'
   end
   object Label5: TLabel [4]
     Left = 32
-    Top = 336
+    Top = 368
     Width = 50
     Height = 13
     Caption = 'URL Stub:'
@@ -81,29 +83,29 @@ inherited fmPropertyPageGeneral: TfmPropertyPageGeneral
   end
   object rbVersionAsk: TRadioButton
     Left = 28
-    Top = 192
+    Top = 224
     Width = 129
     Height = 17
     Caption = '&Ask Before Checking'
-    TabOrder = 8
+    TabOrder = 9
     OnClick = ControlClick
   end
   object rbVersionDont: TRadioButton
     Left = 28
-    Top = 168
+    Top = 200
     Width = 113
     Height = 17
     Caption = '&Don'#39't Check'
-    TabOrder = 7
+    TabOrder = 8
     OnClick = ControlClick
   end
   object rbVersionAlways: TRadioButton
     Left = 28
-    Top = 216
+    Top = 248
     Width = 113
     Height = 17
     Caption = 'Al&ways Check'
-    TabOrder = 9
+    TabOrder = 10
     OnClick = ControlClick
   end
   object cbHideDormantConnections: TCheckBox
@@ -135,11 +137,11 @@ inherited fmPropertyPageGeneral: TfmPropertyPageGeneral
   end
   object edSearchInternetURLStub: TEdit
     Left = 88
-    Top = 276
+    Top = 308
     Width = 294
     Height = 21
     Anchors = [akLeft, akTop, akRight]
-    TabOrder = 10
+    TabOrder = 11
     OnChange = edSearchInternetURLStubChange
   end
   object cbPlainTextPasswords: TCheckBox
@@ -153,11 +155,20 @@ inherited fmPropertyPageGeneral: TfmPropertyPageGeneral
   end
   object edTextInternetURLStub: TEdit
     Left = 88
-    Top = 332
+    Top = 364
     Width = 294
     Height = 21
     Anchors = [akLeft, akTop, akRight]
-    TabOrder = 11
+    TabOrder = 12
     OnChange = edTextInternetURLStubChange
+  end
+  object cbUseVistaExplorerTheme: TCheckBox
+    Left = 12
+    Top = 140
+    Width = 157
+    Height = 17
+    Caption = 'Use Vista Explorer Theme'
+    TabOrder = 7
+    OnClick = ControlClick
   end
 end

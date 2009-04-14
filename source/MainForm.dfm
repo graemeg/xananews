@@ -1,6 +1,6 @@
 object fmMain: TfmMain
-  Left = 128
-  Top = 156
+  Left = 682
+  Top = 153
   HelpType = htKeyword
   HelpKeyword = 'Workspace'
   ActiveControl = vstSubscribed
@@ -11,7 +11,7 @@ object fmMain: TfmMain
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Name = 'Tahoma'
   Font.Style = []
   KeyPreview = True
   OldCreateOrder = False
@@ -235,13 +235,14 @@ object fmMain: TfmMain
         DragHeight = 20
         DragMode = dmAutomatic
         Header.AutoSizeIndex = -1
+        Header.DefaultHeight = 17
         Header.Font.Charset = DEFAULT_CHARSET
         Header.Font.Color = clWindowText
         Header.Font.Height = -11
         Header.Font.Name = 'MS Sans Serif'
         Header.Font.Style = []
         Header.Height = 18
-        Header.Options = [hoColumnResize, hoDrag, hoOwnerDraw, hoShowSortGlyphs, hoVisible]
+        Header.Options = [hoColumnResize, hoDrag, hoHotTrack, hoOwnerDraw, hoShowSortGlyphs, hoVisible]
         HintMode = hmHint
         Images = ImageList1
         NodeDataSize = 4
@@ -251,7 +252,7 @@ object fmMain: TfmMain
         TabOrder = 0
         TreeOptions.AutoOptions = [toAutoDropExpand, toAutoTristateTracking]
         TreeOptions.MiscOptions = [toAcceptOLEDrop, toInitOnSave, toWheelPanning]
-        TreeOptions.PaintOptions = [toShowButtons, toShowRoot, toShowTreeLines, toShowVertGridLines, toThemeAware]
+        TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowRoot, toShowTreeLines, toThemeAware]
         TreeOptions.SelectionOptions = [toFullRowSelect, toMultiSelect]
         TreeOptions.StringOptions = [toAutoAcceptEditChange]
         OnAdvancedHeaderDraw = vstArticlesAdvancedHeaderDraw
@@ -334,6 +335,7 @@ object fmMain: TfmMain
           Anchors = [akLeft, akTop, akRight, akBottom]
           BevelInner = bvNone
           Header.AutoSizeIndex = 0
+          Header.DefaultHeight = 17
           Header.Font.Charset = DEFAULT_CHARSET
           Header.Font.Color = clWindowText
           Header.Font.Height = -11
@@ -342,6 +344,7 @@ object fmMain: TfmMain
           Header.Options = [hoColumnResize, hoDrag, hoVisible]
           NodeDataSize = 4
           TabOrder = 0
+          TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowRoot, toShowTreeLines, toThemeAware]
           TreeOptions.SelectionOptions = [toFullRowSelect, toMultiSelect, toCenterScrollIntoView]
           OnColumnResize = vstBookmarkColumnResize
           OnDragOver = vstBookmarkDragOver
@@ -466,7 +469,13 @@ object fmMain: TfmMain
       BevelInner = bvNone
       ChangeDelay = 100
       DragMode = dmAutomatic
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'Tahoma'
+      Font.Style = []
       Header.AutoSizeIndex = 0
+      Header.DefaultHeight = 17
       Header.Font.Charset = DEFAULT_CHARSET
       Header.Font.Color = clWindowText
       Header.Font.Height = -11
@@ -477,13 +486,14 @@ object fmMain: TfmMain
       HintMode = hmHint
       Images = ImageList1
       NodeDataSize = 4
+      ParentFont = False
       ParentShowHint = False
       PopupMenu = pomGroups
       ShowHint = True
       TabOrder = 1
       TreeOptions.AutoOptions = [toAutoDropExpand, toAutoScrollOnExpand, toAutoTristateTracking]
       TreeOptions.MiscOptions = [toAcceptOLEDrop, toEditable, toInitOnSave, toWheelPanning]
-      TreeOptions.PaintOptions = [toShowButtons, toShowRoot, toShowTreeLines, toThemeAware]
+      TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowRoot, toShowTreeLines, toThemeAware]
       TreeOptions.SelectionOptions = [toMultiSelect, toRightClickSelect]
       TreeOptions.StringOptions = [toAutoAcceptEditChange]
       OnAfterItemPaint = vstSubscribedAfterItemPaint
@@ -524,6 +534,7 @@ object fmMain: TfmMain
         HelpKeyword = 'Workspace'
         Align = alClient
         Header.AutoSizeIndex = -1
+        Header.DefaultHeight = 17
         Header.Font.Charset = DEFAULT_CHARSET
         Header.Font.Color = clWindowText
         Header.Font.Height = -11
@@ -537,6 +548,7 @@ object fmMain: TfmMain
         TabOrder = 0
         TreeOptions.AutoOptions = [toAutoDropExpand, toAutoExpand, toAutoScrollOnExpand, toAutoTristateTracking, toAutoDeleteMovedNodes]
         TreeOptions.MiscOptions = [toAcceptOLEDrop, toInitOnSave, toWheelPanning]
+        TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowRoot, toShowTreeLines, toThemeAware]
         TreeOptions.SelectionOptions = [toFullRowSelect, toMultiSelect, toRightClickSelect]
         OnGetText = vstQueuedRequestsGetText
         OnGetImageIndex = vstQueuedRequestsGetImageIndex
@@ -678,9 +690,9 @@ object fmMain: TfmMain
       end>
     EdgeBorders = []
     object pnlBatchBar: TPanel
-      Left = 12
+      Left = 11
       Top = 84
-      Width = 793
+      Width = 798
       Height = 22
       Alignment = taLeftJustify
       BevelOuter = bvNone
@@ -716,13 +728,13 @@ object fmMain: TfmMain
       end
     end
     object tbMain: TToolBar
-      Left = 12
+      Left = 11
       Top = 23
-      Width = 793
+      Width = 798
       Height = 36
       AutoSize = True
       ButtonHeight = 36
-      ButtonWidth = 75
+      ButtonWidth = 74
       Caption = 'tbMain'
       DisabledImages = ilDisabled
       Images = ilMain
@@ -738,7 +750,7 @@ object fmMain: TfmMain
         Action = actToolsReconnect
       end
       object ToolButton10: TToolButton
-        Left = 75
+        Left = 74
         Top = 0
         Width = 8
         Caption = 'ToolButton10'
@@ -746,13 +758,13 @@ object fmMain: TfmMain
         Style = tbsSeparator
       end
       object ToolButton11: TToolButton
-        Left = 83
+        Left = 82
         Top = 0
         Action = actNewsgroupGetMessages
         Caption = '&Get Messages'
       end
       object ToolButton23: TToolButton
-        Left = 158
+        Left = 156
         Top = 0
         Width = 8
         Caption = 'ToolButton23'
@@ -760,19 +772,19 @@ object fmMain: TfmMain
         Style = tbsSeparator
       end
       object ToolButton21: TToolButton
-        Left = 166
+        Left = 164
         Top = 0
         Action = actArticleGotoPrevious
         Caption = 'Previous'
       end
       object ToolButton22: TToolButton
-        Left = 241
+        Left = 238
         Top = 0
         Action = actArticleGoToNext
         Caption = 'Next'
       end
       object ToolButton12: TToolButton
-        Left = 316
+        Left = 312
         Top = 0
         Width = 8
         Caption = 'ToolButton12'
@@ -780,26 +792,26 @@ object fmMain: TfmMain
         Style = tbsSeparator
       end
       object ToolButton13: TToolButton
-        Left = 324
+        Left = 320
         Top = 0
         Action = actArticlePostNewMessage
         Caption = '&Post New'
       end
       object ToolButton14: TToolButton
-        Left = 399
+        Left = 394
         Top = 0
         Action = actArticleReplyToMessage
         Caption = '&Post Reply'
       end
       object ToolButton20: TToolButton
-        Left = 474
+        Left = 468
         Top = 0
         Action = actArticleReplyByMail
         Caption = 'Mail Reply'
         Enabled = False
       end
       object ToolButton15: TToolButton
-        Left = 549
+        Left = 542
         Top = 0
         Width = 8
         Caption = 'ToolButton15'
@@ -807,25 +819,25 @@ object fmMain: TfmMain
         Style = tbsSeparator
       end
       object ToolButton16: TToolButton
-        Left = 557
+        Left = 550
         Top = 0
         Action = actSearchFindInMessage
         Caption = '&Find'
       end
       object ToolButton17: TToolButton
-        Left = 632
+        Left = 624
         Top = 0
         Action = actSearchSearchMessages
         Caption = '&Search'
       end
       object ToolButton2: TToolButton
-        Left = 707
+        Left = 698
         Top = 0
         Action = actFilePrint
         Caption = '&Print'
       end
       object ToolButton18: TToolButton
-        Left = 782
+        Left = 772
         Top = 0
         Width = 8
         Caption = 'ToolButton18'
@@ -833,13 +845,13 @@ object fmMain: TfmMain
         Style = tbsSeparator
       end
       object ToolButton24: TToolButton
-        Left = 790
+        Left = 780
         Top = 0
         Action = actGetEverything
         Caption = 'Quick Get'
       end
       object ToolButton25: TToolButton
-        Left = 865
+        Left = 854
         Top = 0
         Width = 8
         Caption = 'ToolButton25'
@@ -847,16 +859,16 @@ object fmMain: TfmMain
         Style = tbsSeparator
       end
       object ToolButton19: TToolButton
-        Left = 873
+        Left = 862
         Top = 0
         Action = actMessageAddToBozoBin
         Caption = 'Bozo Author'
       end
     end
     object tbMenu: TToolBar
-      Left = 12
+      Left = 11
       Top = 0
-      Width = 793
+      Width = 798
       Height = 21
       AutoSize = True
       ButtonHeight = 21
@@ -892,7 +904,7 @@ object fmMain: TfmMain
         MenuItem = mnuView
       end
       object mnuBtnSearch: TToolButton
-        Left = 92
+        Left = 91
         Top = 0
         AutoSize = True
         Caption = '&Search'
@@ -900,7 +912,7 @@ object fmMain: TfmMain
         MenuItem = mnuSearch
       end
       object mnuBtnAccount: TToolButton
-        Left = 137
+        Left = 135
         Top = 0
         AutoSize = True
         Caption = '&Account'
@@ -908,7 +920,7 @@ object fmMain: TfmMain
         MenuItem = mnuAccount
       end
       object mnuBtnNewsgroup: TToolButton
-        Left = 188
+        Left = 185
         Top = 0
         AutoSize = True
         Caption = '&Newsgroup'
@@ -916,7 +928,7 @@ object fmMain: TfmMain
         MenuItem = mnuNewsgroup
       end
       object mnuBtnMessages: TToolButton
-        Left = 253
+        Left = 250
         Top = 0
         AutoSize = True
         Caption = '&Messages'
@@ -924,7 +936,7 @@ object fmMain: TfmMain
         MenuItem = mnuMessage
       end
       object mnuBtnBookmarks: TToolButton
-        Left = 312
+        Left = 308
         Top = 0
         AutoSize = True
         Caption = '&Bookmarks'
@@ -932,7 +944,7 @@ object fmMain: TfmMain
         MenuItem = mnuBookmarks
       end
       object mnuBtnTools: TToolButton
-        Left = 376
+        Left = 370
         Top = 0
         AutoSize = True
         Caption = '&Tools'
@@ -940,7 +952,7 @@ object fmMain: TfmMain
         MenuItem = mnuTools
       end
       object mnuBtnHelp: TToolButton
-        Left = 413
+        Left = 406
         Top = 0
         AutoSize = True
         Caption = '&Help'
@@ -949,9 +961,9 @@ object fmMain: TfmMain
       end
     end
     object pnlSearchBar: TPanel
-      Left = 12
+      Left = 11
       Top = 61
-      Width = 793
+      Width = 798
       Height = 21
       Alignment = taLeftJustify
       BevelOuter = bvNone
@@ -6265,10 +6277,6 @@ object fmMain: TfmMain
     OnDblClick = TrayIcon1DblClick
     Left = 704
     Top = 344
-  end
-  object XPManifest1: TXPManifest
-    Left = 638
-    Top = 333
   end
   object StandardSystemMenu1: TStandardSystemMenu
     Left = 406

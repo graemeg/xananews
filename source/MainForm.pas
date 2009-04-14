@@ -38,7 +38,7 @@ uses
   unitMessages, PostMessageForm, ReplyByMailForm, unitNewsReaderOptions,
   Buttons, {unitHTMLHelpViewer,} SearchDialog,
   ShellApi, NewsGlobals, CommCtrl,
-  ActiveX, unitNewsThread, DateUtils, XPMan,
+  ActiveX, unitNewsThread, DateUtils,
   cmpThemedScrollBox, unitSavedArticles, StdCtrls, MMSystem, unitBatches, unitSettings,
   ExportDialog,
 {$ifdef mad_except}
@@ -295,7 +295,6 @@ type
     N19: TMenuItem;
     Pause1: TMenuItem;
     TrayIcon1: TTrayIcon;
-    XPManifest1: TXPManifest;
     StandardSystemMenu1: TStandardSystemMenu;
     actArticleFlag: TAction;
     FlagInterestingMessages1: TMenuItem;
@@ -2027,7 +2026,7 @@ var
 begin
   newsgroup := GetFocusedGroup;
 
-  if Assigned(newsgroup) then          // Show delete dialog
+  if Assigned(newsgroup) then
   begin
     if vstSubscribed.SelectedCount < 2 then
       DoMarkArticlesAsRead(newsgroup, 0)
@@ -2580,7 +2579,7 @@ var
   settings: TDisplaySettings;
   acc: TNNTPAccount;
   grp: TSubscribedGroup;
-
+  st: TSystemTime;
 begin
   acc := GetFocusedAccount;
   grp := GetFocusedGroup;
@@ -2622,7 +2621,13 @@ begin
         begin
           dt := Trunc(dlg.DatePicker.DateTime);
           if dlg.TimePicker.Checked then
-            dt := dt + Frac(dlg.TimePicker.DateTime);
+          begin
+            // Workaround for Delphi's handling of an unchecked TDateTimePicker
+            // in Vista (also see QC55052)
+            // TODO: re-check when D2009 update 3 is out.
+            if DateTime_GetSystemtime(dlg.TimePicker.Handle, &st) = GDT_VALID then
+              dt := dt + Frac(dlg.TimePicker.DateTime);
+          end;
         end;
 
       filter := TNNTPFilter.Create('', ftDate, opLess, dt, False, False, False);
@@ -2999,6 +3004,21 @@ begin
 
     if fLastFocusedArticleContainer.HideMessagesNotToMe then
       actViewHideMessagesNotToMeExecute(Self);
+  end;
+
+  if XNOptions.UseVistaExplorerTheme then
+  begin
+     vstArticles.TreeOptions.PaintOptions := vstSubscribed.TreeOptions.PaintOptions + [toHotTrack, toUseExplorerTheme, toHideTreeLinesIfThemed];
+     vstBookmark.TreeOptions.PaintOptions := vstSubscribed.TreeOptions.PaintOptions + [toHotTrack, toUseExplorerTheme, toHideTreeLinesIfThemed];
+     vstSubscribed.TreeOptions.PaintOptions := vstSubscribed.TreeOptions.PaintOptions + [toHotTrack, toUseExplorerTheme, toHideTreeLinesIfThemed];
+     vstQueuedRequests.TreeOptions.PaintOptions := vstSubscribed.TreeOptions.PaintOptions + [toHotTrack, toUseExplorerTheme, toHideTreeLinesIfThemed];
+  end
+  else
+  begin
+     vstArticles.TreeOptions.PaintOptions := vstSubscribed.TreeOptions.PaintOptions - [toHotTrack, toUseExplorerTheme, toHideTreeLinesIfThemed];
+     vstBookmark.TreeOptions.PaintOptions := vstSubscribed.TreeOptions.PaintOptions - [toHotTrack, toUseExplorerTheme, toHideTreeLinesIfThemed];
+     vstSubscribed.TreeOptions.PaintOptions := vstSubscribed.TreeOptions.PaintOptions - [toHotTrack, toUseExplorerTheme, toHideTreeLinesIfThemed];
+     vstQueuedRequests.TreeOptions.PaintOptions := vstSubscribed.TreeOptions.PaintOptions - [toHotTrack, toUseExplorerTheme, toHideTreeLinesIfThemed];
   end;
 
   vstSubscribed.DefaultNodeHeight := Abs(vstSubscribed.Font.Height) + 7;
@@ -3539,6 +3559,7 @@ begin
       group.EndLock;
     end;
   end;
+
   if changed and not read then
     fSuppressSound := True;
   Result := False;
@@ -6176,7 +6197,7 @@ begin
   begin
     color := TargetCanvas.Brush.Color;
     rgb := ColorToRGB(color);
-    rgb := Windows.RGB(GetRValue(rgb) * 95 div 100, GetGValue(rgb) * 95 div 100, GetBValue(rgb * 95 div 100));
+    rgb := Windows.RGB(GetRValue(rgb) * 97 div 100, GetGValue(rgb) * 98 div 100, GetBValue(rgb * 99 div 100));
 
     TargetCanvas.Brush.Color := rgb;
     TargetCanvas.FillRect(ItemRect);
@@ -10530,7 +10551,8 @@ begin
              st := Article.InterestingMessageLine
          else
            st := Article.PostingHost;
-      3: st := Article.From;
+      3: st := '"' + Article.FromName + '" <' + Article.FromEmail + '>';
+//      3: st := Article.From;
       4: begin
            st := Article.Header['X-XanaOrigDate'];
            if st = '' then

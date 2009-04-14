@@ -132,6 +132,7 @@ type
     fPlainTextPasswords: Boolean;
     fDefaultBozoAction: TBozoAction;
     fAutofitImages: Boolean;
+    fUseVistaExplorerTheme: Boolean;
 
     function OpenRegistry(const subKey: string; readOnly: Boolean): Boolean;
     procedure CloseRegistry;
@@ -164,6 +165,7 @@ type
     property AutoContractGroupTree: Boolean read fAutoContractGroupTree write fAutoContractGroupTree;
     property StrictSigSep: Boolean read fStrictSigSep write fStrictSigSep;
     property AutofitImages: Boolean read fAutofitImages write fAutofitImages;
+    property UseVistaExplorerTheme: Boolean read fUseVistaExplorerTheme write fUseVistaExplorerTheme;
     property HideFolderIcons: Boolean read fHideFolderIcons write fHideFolderIcons;
     property AutoCentralizeMessage: Boolean read fAutoCentralizeMessage write fAutoCentralizeMessage;
     property AutoMarkAsRead: Boolean read fAutoMarkAsRead write fAutoMarkAsRead;
@@ -323,6 +325,7 @@ begin
   fAutoDisconnectOnExit := True;
   fAutoCentralizeMessage := True;
   fAutofitImages := True;
+  fUseVistaExplorerTheme := True;
   fHideFolderIcons := True;
   fShowTooltips := True;
   fPlainTextPasswords := False;
@@ -439,6 +442,7 @@ begin
       fAutoContractGroupTree:= fReg.GetBooleanValue('Auto Contract Group Tree', fAutoContractGroupTree);
       fStrictSigSep := fReg.GetBooleanValue('Strict Signature Separator', fStrictSigSep);
       fAutofitImages := fReg.GetBooleanValue('Autofit Images', fAutofitImages);
+      fUseVistaExplorerTheme:= fReg.GetBooleanValue('Use Vista Explorer Theme', fUseVistaExplorerTheme);
       fGroupsWithMessagesFontStyle := TFontStyles(Byte(fReg.GetIntegerValue('Groups With Messages Font Style', Byte(fGroupsWithMessagesFontStyle))));
       fMagicUser:= fReg.GetBooleanValue('Magic User', False);
       fDeservesMedal := fReg.GetBooleanValue('Deserves Medal', False);
@@ -740,6 +744,7 @@ begin
     fReg.SetIntegerValue('Show Interesting Markers', fShowInterestingMarkers, 0);
     fReg.SetBooleanValue('Deserves Medal', fDeservesMedal, False);
     fReg.SetBooleanValue('Autofit Images', fAutofitImages, True);
+    fReg.SetBooleanValue('Use Vista Explorer Theme', fUseVistaExplorerTheme, True);
 
     for i := 0 to 7 do
     begin
