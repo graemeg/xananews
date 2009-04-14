@@ -260,6 +260,13 @@ var
   ch, lastch: Char;
   inQuote: Boolean;
 begin
+// TODO: Remove test code <<
+//  LogMessage('');
+//  for i := 0 to hdrs.Count - 1 do
+//    LogMessage(hdrs[i]);
+//  LogMessage('');
+// >>
+
   i := 1;
   while i < hdrs.Count do              // Merge split lines (unfolding).
   begin
@@ -270,7 +277,7 @@ begin
     else
       if s[1] in [' ', #9] then        // If a line starts with a whitespace
       begin                            // then append it to the previous line.
-        hdrs[i - 1] := hdrs[i - 1] + Copy(s, 2, Length(s) - 1);
+        hdrs[i - 1] := hdrs[i - 1] + s;
         hdrs.Delete(i);
       end
       else
@@ -311,7 +318,10 @@ begin
 
     SetLength(s1, p - 1);
     if SameText(Copy(s1, 1, 11), 'References:') then
-      s1 := StringReplace(s1, '><', '> <', [rfReplaceAll]); // Fix dodgy references
+      s1 := StringReplace(s1, '><', '> <', [rfReplaceAll])  // Fix dodgy references
+    else if SameText(Copy(s1, 1, 5), 'Face:') then
+      s1 := StringReplace(S, ' ', '', [rfReplaceAll]);      // Remove folding spaces from Face headers
+
     hdrs[i] := Trim(s1);
   end;
 end;
