@@ -118,14 +118,18 @@ type
 
   TTextFileWriter = class(TBufferedFileWriter)
   public
-    procedure Write(const st: string);
-    procedure WriteLn(const st: string);
+    procedure Write(const st: string);  overload;
+    procedure WriteLn(const st: string);  overload;
+    procedure Write(const st: RawByteString); overload;
+    procedure WriteLn(const st: RawByteString);  overload;
   end;
 
   TTextStreamWriter = class(TBufferedStreamWriter)
   public
-    procedure Write(const st: string);
-    procedure WriteLn(const st: string);
+    procedure Write(const st: string);  overload;
+    procedure WriteLn(const st: string);  overload;
+    procedure Write(const st: RawByteString); overload;
+    procedure WriteLn(const st: RawByteString);  overload;
   end;
 
 implementation
@@ -494,6 +498,17 @@ begin
   Write(st + #13#10);
 end;
 
+procedure TTextFileWriter.Write(const st: RawByteString);
+begin
+  if st <> '' then
+    inherited Write(st[1], Length(st));
+end;
+
+procedure TTextFileWriter.WriteLn(const st: RawByteString);
+begin
+  Write(st + #13#10);
+end;
+
 { TBufferedFileWriter }
 
 constructor TBufferedFileWriter.Create(const AFileName: string);
@@ -647,6 +662,17 @@ begin
 end;
 
 procedure TTextStreamWriter.WriteLn(const st: string);
+begin
+  Write(st + #13#10);
+end;
+
+procedure TTextStreamWriter.Write(const st: RawByteString);
+begin
+  if st <> '' then
+    inherited Write(st[1], Length(st));
+end;
+
+procedure TTextStreamWriter.WriteLn(const st: RawByteString);
 begin
   Write(st + #13#10);
 end;

@@ -25,7 +25,7 @@
 		<PropertyGroup Condition="'$(Base)'!=''">
 			<DCC_WIDECHAR_REDUCED>false</DCC_WIDECHAR_REDUCED>
 			<DCC_ImageBase>00400000</DCC_ImageBase>
-			<DCC_DependencyCheckOutputName>C:\Documents and Settings\All Users\Documenten\RAD Studio\6.0\Bpl\MiscUnitsD2009.bpl</DCC_DependencyCheckOutputName>
+			<DCC_DependencyCheckOutputName>C:\Users\Public\Documents\RAD Studio\6.0\Bpl\MiscUnitsD2009.bpl</DCC_DependencyCheckOutputName>
 			<DCC_Description>Colin Wilson - Miscellaneous Components</DCC_Description>
 			<DesignOnlyPackage>false</DesignOnlyPackage>
 			<GenDll>true</GenDll>

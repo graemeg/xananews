@@ -76,7 +76,7 @@ type
     constructor Create (AOwner : TCustomExRichEdit);
     destructor Destroy; override;
     procedure GetWideString (var ws : WideString);
-    procedure GetString (var st : string);
+    procedure GetString (var st : AnsiString);
     property Owner : TCustomExRichEdit read fOwner;
     property ChunkStart : DWORD read fChunkStart write fChunkStart;
     property ChunkEnd : DWORD read fChunkEnd write fChunkEnd;
@@ -307,7 +307,7 @@ type
   end;
 
 //---------------------------------------------------------------------
-// TRichEdit1Provider.  Provider for RichEdit version 2 & 3.  They are
+// TRichEdit2_3Provider.  Provider for RichEdit version 2 & 3.  They are
 // so similar that it's worth providing this base class
   TRichEdit2_3Provider = class (TRichEditProvider)
   private
@@ -1580,10 +1580,10 @@ end;
  |                                                                      |
  | Get the buffer's text chunk                                          |
  *----------------------------------------------------------------------*)
-procedure TRichEditStream.GetString(var st: string);
+procedure TRichEditStream.GetString(var st: AnsiString);
 begin
-  SetLength (st, ChunkEnd - ChunkStart);
-  Move ((fBuffer + ChunkStart)^, PChar (st)^, (ChunkEnd - ChunkStart));
+  SetLength(st, ChunkEnd - ChunkStart);
+  Move((fBuffer + ChunkStart)^, PAnsiChar(st)^, (ChunkEnd - ChunkStart));
 end;
 
 procedure TRichEditStream.GetWideString(var ws: WideString);
@@ -1809,7 +1809,7 @@ var
   editStream : TEditStream;
   stream : TRichEditStream;
   flags : DWORD;
-  st : string;
+  st : AnsiString;
 begin
   flags := 0;
   if sel then
@@ -1835,7 +1835,7 @@ begin
     else
     begin
       stream.GetString (st);
-      result := st
+      result := string(st);
     end
   finally
     stream.Free

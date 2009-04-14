@@ -23,7 +23,7 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
-			<DCC_DependencyCheckOutputName>C:\Documents and Settings\All Users\Documenten\RAD Studio\6.0\Bpl\ImageTypesD2009.bpl</DCC_DependencyCheckOutputName>
+			<DCC_DependencyCheckOutputName>C:\Users\Public\Documents\RAD Studio\6.0\Bpl\ImageTypesD2009.bpl</DCC_DependencyCheckOutputName>
 			<DCC_ImageBase>00400000</DCC_ImageBase>
 			<DCC_Description>Image &amp; Graphics Classes for Delphi 2007</DCC_Description>
 			<RuntimeOnlyPackage>true</RuntimeOnlyPackage>
