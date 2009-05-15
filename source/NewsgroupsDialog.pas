@@ -107,6 +107,18 @@ begin
   fOrigSubscribedCounts := stSubscribedCounts.Caption;
   screen.Cursor := crHourglass;
   try
+    if Account.RefreshedGroupsList then
+    begin
+      lvNewsGroups.Column[0].Width := lvNewsGroups.Width - lvNewsGroups.Column[1].Width - 24;
+      lvNewsGroups.Column[0].AutoSize := True;
+    end
+    else
+    begin
+      lvNewsGroups.Columns.Delete(1);
+      lvNewsGroups.Column[0].Width := lvNewsGroups.Width;
+      lvNewsGroups.Column[0].AutoSize := True;
+    end;
+
     fRawData.LoadFromFile(account.FileName);
     s := '';
     requiresSorting := False;
@@ -349,6 +361,9 @@ begin
     ParseNewsGroup(fRawData[item.Index], st, hi, lo, stx, isNew);
 
   item.caption := st;
+  if Account.RefreshedGroupsList then
+    if hi >= lo then
+      item.SubItems.Add(IntToStr(hi - lo + 1));
 
   if account.IsSubscribedTo(st) then
     item.ImageIndex := 0

@@ -23,7 +23,8 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
-			<DCC_DependencyCheckOutputName>C:\Documents and Settings\All Users\Documenten\RAD Studio\6.0\Bpl\VirtualTreesD2009.bpl</DCC_DependencyCheckOutputName>
+			<DCC_StringChecks>off</DCC_StringChecks>
+			<DCC_DependencyCheckOutputName>C:\Users\Public\Documents\RAD Studio\6.0\Bpl\VirtualTreesD2009.bpl</DCC_DependencyCheckOutputName>
 			<DCC_ImageBase>30400000</DCC_ImageBase>
 			<DesignOnlyPackage>false</DesignOnlyPackage>
 			<DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>

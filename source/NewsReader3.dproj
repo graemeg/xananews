@@ -28,9 +28,10 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
+			<DCC_StringChecks>off</DCC_StringChecks>
 			<DCC_MapFile>3</DCC_MapFile>
 			<DCC_Define>madExcept;$(DCC_Define)</DCC_Define>
-			<DCC_UnitSearchPath>..\dcus;..\components\thirdparty\madCollection;..\components\LowLevel\Source;..\components\MiscUnits\Source;..\components\thirdparty\VirtualTreeView\Source;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+			<DCC_UnitSearchPath>..\dcus;..\components\thirdparty\madCollection;..\components\ImageTypes\Source;..\components\LowLevel\Source;..\components\MiscUnits\Source;..\components\thirdparty\VirtualTreeView\Source;..\components\thirdparty\Indy10\Core;..\components\thirdparty\Indy10\Protocols;..\components\thirdparty\Indy10\System;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<DCC_ExeOutput>..\bin</DCC_ExeOutput>
 			<DCC_DcuOutput>..\dcus</DCC_DcuOutput>
 			<DCC_UsePackage>vclx;vcl;dbrtl;Rave76VCL;bdertl;rtl;vclactnband;xmlrtl;vcldb;vcldbx;dsnap;dsnapcon;TeeUI;TeeDB;Tee;adortl;vclib;ibxpress;IndyCore;IndySystem;IndyProtocols;inet;intrawebdb_100_120;Intraweb_100_120;VclSmp;vclie;websnap;webdsnap;inetdbbde;inetdbxpress;soaprtl;vclribbon;DbxCommonDriver;DbxClientDriver;DBXInterBaseDriver;DBXMySQLDriver;dbexpress;dbxcds;RulerD2009;VirtualTreesD12;LismarD2009;VirtualTreesExD2009;madBasic_;madDisAsm_;madExcept_;MiscUnitsD2009;ImageTypesD2009;LowLevelD2009</DCC_UsePackage>
@@ -39,7 +40,6 @@
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1)'!=''">
 			<Version>7.0</Version>
-			<DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
 			<DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_2)'!=''">
@@ -316,7 +316,9 @@
 			<DCCReference Include="unitNewUserWizard.pas"/>
 			<DCCReference Include="XnCoderQuotedPrintable.pas"/>
 			<DCCReference Include="XnCoderUUE.pas"/>
-			<DCCReference Include="unitCRC32.pas"/>
+			<DCCReference Include="unitCRC32.pas">
+				<Form>$R *.res</Form>
+			</DCCReference>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>
@@ -352,7 +354,7 @@
 						<VersionInfo Name="MajorVer">1</VersionInfo>
 						<VersionInfo Name="MinorVer">19</VersionInfo>
 						<VersionInfo Name="Release">1</VersionInfo>
-						<VersionInfo Name="Build">168</VersionInfo>
+						<VersionInfo Name="Build">172</VersionInfo>
 						<VersionInfo Name="Debug">False</VersionInfo>
 						<VersionInfo Name="PreRelease">False</VersionInfo>
 						<VersionInfo Name="Special">False</VersionInfo>
@@ -364,7 +366,7 @@
 					<VersionInfoKeys>
 						<VersionInfoKeys Name="CompanyName">Colin Wilson</VersionInfoKeys>
 						<VersionInfoKeys Name="FileDescription">XanaNews News Reader</VersionInfoKeys>
-						<VersionInfoKeys Name="FileVersion">1.19.1.168</VersionInfoKeys>
+						<VersionInfoKeys Name="FileVersion">1.19.1.172</VersionInfoKeys>
 						<VersionInfoKeys Name="InternalName">XanaNews</VersionInfoKeys>
 						<VersionInfoKeys Name="LegalCopyright">Copyright (c) XanaNews 2009</VersionInfoKeys>
 						<VersionInfoKeys Name="LegalTrademarks">All Rights Reserved</VersionInfoKeys>

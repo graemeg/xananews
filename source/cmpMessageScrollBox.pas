@@ -187,7 +187,7 @@ begin
     else
     begin
       from := '"' + art.FromName + '" <' + art.FromEmail + '>';
-      sub  := DecodeSubject(art.Subject);
+      sub  := art.Subject;
     end;
 
     Result :=
@@ -209,7 +209,7 @@ begin
     if ShowHeader in [shFull, shCustom] then
       for i := 0 to Msg.Header.Count - 1 do
         if Copy(msg.Header[i], 1, 14) <> 'X-XanaOrigDate' then
-          Result := Result + headst + Msg.Header[i] + #13#10;
+          Result := Result + headst + string(Msg.Header[i]) + #13#10;
 
 
   if ShowHeader = shCustom then

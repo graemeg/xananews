@@ -25,7 +25,7 @@ interface
 uses
   Windows, Classes, SysUtils, Forms, syncobjs, IdNNTPX, ConTnrs, WinINet,
   unitNNTPServices, IdTCPClient, unitNewsThread, IdSSLOpenSSL, IdSMTP, IdMessage,
-  unitSettings;
+  unitSettings, XnClasses, XnRawByteStrings;
 
 type
   //---------------------------------------------------
@@ -78,7 +78,7 @@ type
     fIsXOver: Boolean;
     fCurrentArticleNo: Integer;     // For status bar - 0..fExpectedArticles
     fCurrentGetter: TArticlesGetter;
-    procedure DoPipeLineCommandStartEvent(cmd: TPipelineCommand; var headrs: TStrings; var body: TStream);
+    procedure DoPipeLineCommandStartEvent(cmd: TPipelineCommand; var headrs: TAnsiStrings; var body: TStream);
     procedure DoPipeLineCommandEndEvent(cmd: TPipelineCommand);
     procedure DoPipeLineCommandCancelEvent(cmd: TPipelineCommand; startCalled: Boolean);
   protected
@@ -90,7 +90,7 @@ type
   TNNTPArticleThread = class(TNNTPThread)
   private
     fUICurrentArticle: TArticle;
-    procedure DoPipeLineCommandStartEvent(cmd: TPipelineCommand; var headrs: TStrings; var body: TStream);
+    procedure DoPipeLineCommandStartEvent(cmd: TPipelineCommand; var headrs: TAnsiStrings; var body: TStream);
     procedure DoPipeLineCommandEndEvent(cmd: TPipelineCommand);
     procedure DoPipeLineCommandCancelEvent(cmd: TPipelineCommand; startCalled: Boolean);
   protected
@@ -274,7 +274,7 @@ begin
           NNTP.Mode := mtReader;
           NNTP.NewsAgent := ThreadManager.NewsAgent;
           NNTP.Connect;
-          NNTP.IOHandler.DefStringEncoding := en8Bit;
+          NNTP.IOHandler.DefStringEncoding := Indy8BitEncoding;
           fGreet := NNTP.Greeting.Text.Text;
           Synchronize(SetGreeting);
           if ServerSettings.AlwaysAuthenticate then
@@ -391,11 +391,10 @@ begin
   Inc(fCurrentArticleNo);
 end;
 
-procedure TNNTPArticlesThread.DoPipeLineCommandEndEvent(
-  cmd: TPipelineCommand);
+procedure TNNTPArticlesThread.DoPipeLineCommandEndEvent(cmd: TPipelineCommand);
 var
   gtr: TArticlesGetter;
-  st: string;
+  st: RawByteString;
   i: Integer;
 begin
   gtr := TArticlesGetter(cmd.Param);
@@ -411,17 +410,17 @@ begin
                     // Build a string containing headers in XOVER fmt
 
     for i := 0 to gtr.header.Count - 1 do
-      gtr.Header[i] := StringReplace(gtr.Header[i], ':', '=', []);
+      gtr.Header[i] := RawStringReplace(gtr.Header[i], ':', '=', []);
 
-    st := IntToStr(cmd.ArticleNo) + #9 +
-          Trim(gtr.Header.Values['Subject']) + #9 +
-          Trim(gtr.Header.Values['From']) + #9 +
-          Trim(gtr.Header.Values['Date']) + #9 +
-          Trim(gtr.Header.Values['Message-ID']) + #9 +
-          Trim(gtr.Header.Values['References']) + #9 +
-          Trim(gtr.Header.Values['Bytes']) + #9 +
-          Trim(gtr.Header.Values['Lines']) + #9 +
-          Trim(gtr.Header.Values['Xref']);
+    st := RawIntToStr(cmd.ArticleNo) + #9 +
+          RawTrim(gtr.Header.Values['Subject']) + #9 +
+          RawTrim(gtr.Header.Values['From']) + #9 +
+          RawTrim(gtr.Header.Values['Date']) + #9 +
+          RawTrim(gtr.Header.Values['Message-ID']) + #9 +
+          RawTrim(gtr.Header.Values['References']) + #9 +
+          RawTrim(gtr.Header.Values['Bytes']) + #9 +
+          RawTrim(gtr.Header.Values['Lines']) + #9 +
+          RawTrim(gtr.Header.Values['Xref']);
 
     TArticlesGetter(getter).Articles.Add(st);
   end;
@@ -429,7 +428,7 @@ begin
 end;
 
 procedure TNNTPArticlesThread.DoPipeLineCommandStartEvent(
-  cmd: TPipelineCommand; var headrs: TStrings; var body: TStream);
+  cmd: TPipelineCommand; var headrs: TAnsiStrings; var body: TStream);
 var
   gtr: TArticlesGetter;
 begin
@@ -490,8 +489,8 @@ var
   function GetFirstArticleNoSince(date: TDateTime): Integer;
   var
     nearest: Integer;
-    head: TStrings;
-    dtst: string;
+    head: TAnsiStrings;
+    dtst: RawByteString;
     dt: TDateTime;
 
     function CmpDate(d1, d2: TDateTime): Integer;
@@ -527,9 +526,9 @@ var
           end;
         end;
 
-        dtst := Trim(head.Values['Date']);
+        dtst := RawTrim(head.Values['Date']);
         if dtst <> '' then
-          dt := GMTToLocalDateTime(dtst)
+          dt := GMTToLocalDateTime(string(dtst))
         else
           dt := 0.0;
 
@@ -551,7 +550,7 @@ var
     end;
 
   begin
-    head := TStringList.Create;
+    head := TAnsiStringList.Create;
     try
       head.NameValueSeparator := ':';
       Result := NNTPSearch(NNTP.MsgLow - 1, NNTP.MsgHigh - 1);
@@ -644,7 +643,7 @@ var
   procedure GetHeaders(fromArticle, dest: Integer);
   var
     msgNo, i: Integer;
-    st: string;
+    st: RawByteString;
   begin
     LogMessage(gtr.CurrentGroup.Name + ' Get ' + IntToStr(fromArticle) + '-' + IntToStr(dest));
     try
@@ -656,17 +655,17 @@ var
         if NNTP.GetHeader(msgNo, '', gtr.Header) then
         begin
           for i := 0 to gtr.header.Count - 1 do
-            gtr.Header[i] := StringReplace(gtr.Header[i], ':', '=', []);
+            gtr.Header[i] := RawStringReplace(gtr.Header[i], ':', '=', []);
 
-          st := IntToStr(msgNo) + #9 +
-                Trim(gtr.Header.Values['Subject']) + #9 +
-                Trim(gtr.Header.Values['From']) + #9 +
-                Trim(gtr.Header.Values['Date']) + #9 +
-                Trim(gtr.Header.Values['Message-ID']) + #9 +
-                Trim(gtr.Header.Values['References']) + #9 +
-                Trim(gtr.Header.Values['Bytes']) + #9 +
-                Trim(gtr.Header.Values['Lines']) + #9 +
-                Trim(gtr.Header.Values['Xref']);
+          st := RawIntToStr(msgNo) + #9 +
+                RawTrim(gtr.Header.Values['Subject']) + #9 +
+                RawTrim(gtr.Header.Values['From']) + #9 +
+                RawTrim(gtr.Header.Values['Date']) + #9 +
+                RawTrim(gtr.Header.Values['Message-ID']) + #9 +
+                RawTrim(gtr.Header.Values['References']) + #9 +
+                RawTrim(gtr.Header.Values['Bytes']) + #9 +
+                RawTrim(gtr.Header.Values['Lines']) + #9 +
+                RawTrim(gtr.Header.Values['Xref']);
 
           TArticlesGetter(getter).Articles.Add(st);
         end;
@@ -946,7 +945,7 @@ begin
 end;
 
 procedure TNNTPArticleThread.DoPipeLineCommandStartEvent(
-  cmd: TPipelineCommand; var headrs: TStrings; var body: TStream);
+  cmd: TPipelineCommand; var headrs: TAnsiStrings; var body: TStream);
 var
   gtr: TArticleGetter;
 begin
@@ -1200,17 +1199,18 @@ var
   post: TPosterRequest;
   ok: Boolean;
   gtr: TPoster;
-  hdr, msg: TStrings;
+  hdr, msg: TAnsiStrings;
   hdrCreated: Boolean;
-  multipartBoundary: string;
+  multipartBoundary: RawByteString;
   maxLines: Integer;
   requests: TObjectList;
 
   procedure PostSplitMessage;
   var
-    subject, st: string;
+    subject:RawByteString;
+    st: string;
     n, m, c, x, i: Integer;
-    tmsg: TStrings;
+    tmsg: TAnsiStrings;
     generateMessageID: Boolean;
   begin
     subject := hdr.Values['Subject'];
@@ -1221,7 +1221,7 @@ var
 
     n := 0;
     x := msg.Count div maxLines;
-    tmsg := TStringList.Create;
+    tmsg := TAnsiStringList.Create;
     try
       c := 0;
       while n < msg.Count do
@@ -1234,7 +1234,7 @@ var
         for i := n to m - 1 do
           tmsg.Add(msg[i]);
 
-        hdr.Values['Subject'] := Format('%s [%d/%d]', [subject, c + 1, x + 1]);
+        hdr.Values['Subject'] := RawByteString(Format('%s [%d/%d]', [subject, c + 1, x + 1]));
         if (c > 0) and generateMessageID then
         begin
           if (gtr.Account.NNTPSettings.MessageIDDomain = '') or
@@ -1368,7 +1368,7 @@ begin
           else
             SMTP.Port := Settings.ServerPort;
           SMTP.Connect;
-          SMTP.IOHandler.DefStringEncoding := en8Bit;
+          SMTP.IOHandler.DefStringEncoding := Indy8BitEncoding;
           if Settings.SSLRequired then
           begin
 {$IFNDEF USEOPENSTRSEC}
@@ -1502,7 +1502,7 @@ begin
         TidAttachmentFile.Create(msg.MessageParts, att.PathName);
       end;
 
-      msg.MsgId := GenerateMessageID('XN', '', SMTP.Host);
+      msg.MsgId := string(GenerateMessageID('XN', '', SMTP.Host));
       msg.ExtraHeaders.Values['Message-Id'] := msg.MsgId;
 
       msg.References := request.MReplyTo;

@@ -4,7 +4,8 @@ interface
 
 uses
   Windows, Classes, SysUtils, IdTCPClient, IdGlobal, IdException,
-  IdAssignedNumbers, IdIOHandlerSocket, ConTnrs, IdReplyRFC, XnClasses;
+  IdAssignedNumbers, IdIOHandlerSocket, ConTnrs, IdReplyRFC,
+  XnClasses, XnRawByteStrings;
 
 type
   TModeType = (mtStream, mtIHAVE, mtReader);
@@ -35,7 +36,7 @@ type
     property IsGet: Boolean read GetIsGet;
   end;
 
-  TPipeLineCommandStartEvent = procedure(cmd: TPipelineCommand; var headrs: TStrings; var body: TStream) of object;
+  TPipeLineCommandStartEvent = procedure(cmd: TPipelineCommand; var headrs: TAnsiStrings; var body: TStream) of object;
   TPipeLineCommandEvent = procedure(cmd: TPipelineCommand) of object;
   TPipeLineCommandAbortEvent = procedure(cmd: TPipelineCommand; startCalled: Boolean) of object;
 
@@ -67,8 +68,9 @@ type
     FPipelineCommandAbortEvent: TPipelineCommandAbortEvent;
     FIsConnected: Boolean;
     function ConvertDateTimeDist(ADate: TDateTime; AGMT: Boolean; const ADistributions: string): string;
-    function Get(const ACmd: string; const AMsgNo: Cardinal; const AMsgID: string; AHdr: TStrings; ABody: TStream): Boolean;
-    function ReceiveHeader(AMsg: TStrings; const ADelim: string = ''): Boolean;
+    function Get(const ACmd: string; const AMsgNo: Cardinal; const AMsgID: string; AHdr: TAnsiStrings; ABody: TStream): Boolean;
+    function ReceiveHeader(AMsg: TAnsiStrings; const ADelim: RawByteString = ''): Boolean;
+    procedure ReceiveHeaders(AMsg: TAnsiStrings);
     procedure setConnectionResult(const Value: TConnectionResult);
     procedure SetModeResult(const Value: TModeSetResult);
     procedure SetModeType(const Value: TModeType);
@@ -87,8 +89,8 @@ type
     function Connected: Boolean; override;
     procedure Disconnect(ANotifyPeer: Boolean); override;
     function GetBody(const AMsgNo: Cardinal; const AMsgID: string; AMsg: TStream): Boolean;
-    function GetHeader(const AMsgNo: Cardinal; const AMsgID: string; AMsg: TStrings): Boolean;
-    function GetArticle(const AMsgNo: Cardinal; const AMsgID: string; AHdr: TStrings; ABody: TStream): Boolean;
+    function GetHeader(const AMsgNo: Cardinal; const AMsgID: string; AHdr: TAnsiStrings): Boolean;
+    function GetArticle(const AMsgNo: Cardinal; const AMsgID: string; AHdr: TAnsiStrings; ABody: TStream): Boolean;
 
     procedure BeginPipeline;
     procedure PipelineGetArticle(AMsgNo: Cardinal; const AMsgId: string; AParam: Integer);
@@ -104,9 +106,9 @@ type
     function SelectArticle(const AMsgNo: Cardinal): Boolean;
     procedure SelectGroup(const AGroup: string);
     function SendCmd(AOut: string; const AResponse: array of SmallInt;
-      const AEncoding: TIdEncoding = en7bit): SmallInt; override;
-    procedure SendXOVER(const AParam: string; AResponse: TStrings);
-    procedure Send(header, msg: TStrings);
+      AEncoding: TIdTextEncoding = nil): SmallInt; override;
+    procedure SendXOVER(const AParam: string; AResponse: TAnsiStrings);
+    procedure Send(header, msg: TAnsiStrings);
     procedure Authenticate;
 
     function IsServerException(E: Exception): Boolean;
@@ -140,12 +142,12 @@ type
 
   EIdNNTPConnectionRefused = class(EIdReplyRFCError);
 
-procedure ParseXOVER(const Aline: string; var AArticleIndex: Cardinal;
+procedure ParseXOVER(const Aline: RawByteString; var AArticleIndex: Cardinal;
   var ASubject,
-      AFrom: string;
+      AFrom: RawByteString;
   var ADate: TDateTime;
   var AMsgId,
-      AReferences: string;
+      AReferences: RawByteString;
   var AByteCount,
       ALineCount: Cardinal;
   var AExtraData: string);
@@ -162,17 +164,17 @@ uses
 var
   lastGoodDate: TDateTime = 0;
 
-procedure ParseXOVER(const Aline: string; var AArticleIndex: Cardinal;
+procedure ParseXOVER(const Aline: RawByteString; var AArticleIndex: Cardinal;
   var ASubject,
-      AFrom: string;
+      AFrom: RawByteString;
   var ADate: TDateTime;
   var AMsgId,
-      AReferences: string;
+      AReferences: RawByteString;
   var AByteCount,
       ALineCount: Cardinal;
   var AExtraData: string);
 
-  function NextItem(P: PChar; var S: string): PChar;
+  function NextItem(P: PAnsiChar; var S: RawByteString): PAnsiChar;
   begin
     Result := P;
     if Result <> nil then
@@ -197,25 +199,25 @@ procedure ParseXOVER(const Aline: string; var AArticleIndex: Cardinal;
       S := '';
   end;
 
-  function NextItemStr(var P: PChar): string;
+  function NextItemStr(var P: PAnsiChar): RawByteString;
   begin
     P := NextItem(P, Result);
   end;
 
 var
-  P: PChar;
+  P: PAnsiChar;
 begin
-  P := PChar(Aline);
+  P := PAnsiChar(Aline);
 
   {Article Index}
-  AArticleIndex := IndyStrToInt(NextItemStr(P));
+  AArticleIndex := RawStrToInt(NextItemStr(P));
   {Subject}
   P := NextItem(P, ASubject);
   {From}
   P := NextItem(P, AFrom);
   {Date}
   try
-    ADate := GMTToLocalDateTime(NextItemStr(P));
+    ADate := GMTToLocalDateTime(string(NextItemStr(P)));
     lastGoodDate := ADate;
   except
     ADate := LastGoodDate;
@@ -225,11 +227,11 @@ begin
   {References}
   P := NextItem(P, AReferences);
   {Byte Count}
-  AByteCount := IndyStrToInt(NextItemStr(P), 0);
+  AByteCount := RawStrToIntDef(NextItemStr(P), 0);
   {Line Count}
-  ALineCount := IndyStrToInt(NextItemStr(P), 0);
+  ALineCount := RawStrToIntDef(NextItemStr(P), 0);
   {Extra data}
-  AExtraData := P;
+  AExtraData := string(P^);
   if (AExtraData <> '') and (Pos(#9#8#9, AExtraData) > 0) then
     AExtraData := StringReplace(AExtraData, #9#8#9, #9, [rfReplaceAll]);
 end;
@@ -405,7 +407,7 @@ begin
 end;
 
 function TidNNTPX.Get(const ACmd: string; const AMsgNo: Cardinal;
-  const AMsgID: string; AHdr: TStrings; ABody: TStream): Boolean;
+  const AMsgID: string; AHdr: TAnsiStrings; ABody: TStream): Boolean;
 var
   LContinue: Boolean;
 begin
@@ -433,7 +435,7 @@ begin
 end;
 
 function TidNNTPX.GetArticle(const AMsgNo: Cardinal; const AMsgID: string;
-  AHdr: TStrings; ABody: TStream): Boolean;
+  AHdr: TAnsiStrings; ABody: TStream): Boolean;
 begin
   Result := Get('Article', AMsgNo, AMsgID, AHdr, ABody);
 end;
@@ -445,9 +447,9 @@ begin
 end;
 
 function TidNNTPX.GetHeader(const AMsgNo: Cardinal; const AMsgID: string;
-  AMsg: TStrings): Boolean;
+  AHdr: TAnsiStrings): Boolean;
 begin
-  Result := Get('Head', AMsgNo, AMsgID, AMsg, nil);
+  Result := Get('Head', AMsgNo, AMsgID, AHdr, nil);
 end;
 
 procedure TidNNTPX.GetNewsgroupList(AList: TStrings);
@@ -462,30 +464,73 @@ begin
   IOHandler.Capture(AResponse);
 end;
 
-function TidNNTPX.ReceiveHeader(AMsg: TStrings; const ADelim: string): Boolean;
+function TidNNTPX.ReceiveHeader(AMsg: TAnsiStrings; const ADelim: RawByteString): Boolean;
 var
-  NewLine: string;
+  L: Integer;
+  S: string;
+  Bytes: TIdBytes;
+  NewLine: RawByteString;
 begin
-  Result := true;
+  Result := True;
+
   BeginWork(wmRead);
   try
     repeat
-      NewLine := IOHandler.ReadLn(); // TODO: enUTF8
-      if NewLine = ADelim then begin
-        Break;
-      end else if Copy(NewLine, 1, 2) = '..' then
-        NewLine := '.'
-      else if newLine = '.' then
+      S := IOHandler.ReadLn();
+      Bytes := ToBytes(S, Indy8BitEncoding);
+      L := Length(Bytes);
+      if L > 0 then
+        SetString(NewLine, PAnsiChar(@Bytes[0]), L)
+      else
+        NewLine := '';
+
+      if NewLine = ADelim then
+        Break
+      else if Copy(NewLine, 1, 2) = '..' then
+        Delete(NewLine, 1, 1)
+      else if NewLine = '.' then
       begin
-        Result := false;
+        Result := False;
         Break;
       end;
       if Assigned(AMsg) then
-        AMsg.Append(NewLine);
+        AMsg.Add(NewLine);
     until False;
 
     if Assigned(AMsg) then
       FixHeaders(AMsg);
+  finally
+    EndWork(wmRead);
+  end;
+end;
+
+procedure TidNNTPX.ReceiveHeaders(AMsg: TAnsiStrings);
+var
+  L: Integer;
+  S: string;
+  Bytes: TIdBytes;
+  NewLine: RawByteString;
+begin
+  BeginWork(wmRead);
+  try
+    repeat
+      S := IOHandler.ReadLn();
+      Bytes := ToBytes(S, Indy8BitEncoding);
+      L := Length(Bytes);
+      if L > 0 then
+        SetString(NewLine, PAnsiChar(@Bytes[0]), L)
+      else
+        NewLine := '';
+
+      if NewLine = '.' then
+        Break
+      else if Copy(NewLine, 1, 2) = '..' then
+        Delete(NewLine, 1, 1);
+
+      if Assigned(AMsg) then
+        AMsg.Add(NewLine);
+    until False;
+
   finally
     EndWork(wmRead);
   end;
@@ -510,12 +555,11 @@ begin
     '. Messages available ' + IntToStr(FlMsgLow) + ' - ' + IntToStr(FlMsgHigh));
 end;
 
-procedure TidNNTPX.Send(header, msg: TStrings);
+procedure TidNNTPX.Send(header, msg: TAnsiStrings);
 var
   i: Integer;
-  name, val: string;
-  S: string;
-  Bytes: TBytes;
+  name, val: RawByteString;
+  S: RawByteString;
 begin
   SendCmd('Post', 340);
   BeginWork(wmWrite);
@@ -525,7 +569,7 @@ begin
       name := header.Names[i];
       val := header.ValueFromIndex[i];
       if name <> '' then
-        IOHandler.WriteLn(name + ': ' + val);
+        IOHandler.Write(BytesOf(name + ': ' + val + EOL));
     end;
 
     IOHandler.WriteLn;
@@ -536,8 +580,7 @@ begin
         S := '.' + msg[i] + EOL
       else
         S := msg[i] + EOL;
-      Bytes := TEncoding.Default.GetBytes(S);
-      IOHandler.Write(Bytes);
+      IOHandler.Write(BytesOf(S));
     end;
   finally
     EndWork(wmWrite);
@@ -546,7 +589,7 @@ begin
 end;
 
 function TidNNTPX.SendCmd(AOut: string; const AResponse: array of SmallInt;
-  const AEncoding: TIdEncoding = en7bit): SmallInt;
+  AEncoding: TIdTextEncoding = nil): SmallInt;
 begin
   // NOTE: Responses must be passed as arrays so that the proper inherited SendCmd is called
   // and a stack overflow is not caused.
@@ -567,10 +610,10 @@ begin
     Result := CheckResponse(Result, AResponse);
 end;
 
-procedure TidNNTPX.SendXOVER(const AParam: string; AResponse: TStrings);
+procedure TidNNTPX.SendXOVER(const AParam: string; AResponse: TAnsiStrings);
 begin
   SendCmd('xover ' + AParam, 224);
-  IOHandler.Capture(AResponse); // TODO: enUTF8
+  ReceiveHeaders(AResponse);
 end;
 
 function TidNNTPX.SetArticle(const ACmd: string; const AMsgNo: Cardinal;
@@ -775,7 +818,7 @@ procedure TidNNTPX.ProcessPipeline;
     pipelineCommand: TPipeLineCommand;
     resp: Integer;
     respOK: Boolean;
-    header: TStrings;
+    header: TAnsiStrings;
     body: TStream;
     seCalled, eeCalled: Boolean;
     artNo: Integer;

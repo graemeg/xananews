@@ -33,7 +33,7 @@ type
     fHeaderDecoded: Boolean;
     fHeader: TStringList;
     fImageClass: string;
-    fMIMEHeaderStrings: TStrings;
+    fMIMEHeaderStrings: TAnsiStrings;
     fForced: Boolean;
     fBody: TAnsiStrings;
     fGotBody: Boolean;
@@ -44,7 +44,7 @@ type
   protected
     class function IsBoundary(const s: string; MIMEHeader: TMIMEHeader): Boolean; override;
     function IsBoundaryEnd(const st: string): Boolean; override;
-    function ProcessHeaderLine(const st: string): Boolean; override;
+    function ProcessHeaderLine(const st: RawByteString): Boolean; override;
     function GetGraphic: TGraphic; override;
     function GetBody: TAnsiStrings; override;
     function GetFileName: string; override;
@@ -419,7 +419,7 @@ begin
     Result := False;
 end;
 
-function TmvMimeMessagePart.ProcessHeaderLine(const st: string): Boolean;
+function TmvMimeMessagePart.ProcessHeaderLine(const st: RawByteString): Boolean;
 begin
   if st = '' then
     Result := False
@@ -427,7 +427,7 @@ begin
   begin
     Result := True;
     if not Assigned(fMIMEHeaderStrings) then
-      fMIMEHeaderStrings := TStringList.Create;
+      fMIMEHeaderStrings := TAnsiStringList.Create;
     fMIMEHeaderStrings.Add(st);
   end;
 end;

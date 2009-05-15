@@ -1,9 +1,6 @@
 program NewsReader3;
 
 uses
-{$ifdef DEBUG}
-  FastMM4,
-{$endif}
   madListHardware,
   madListProcesses,
   madListModules,
@@ -13,10 +10,6 @@ uses
   Windows,
   SysUtils,
   SyncObjs,
-{$ifdef DEBUG}
-  IdGlobal,
-  IdThreadSafe,
-{$endif}
   HTMLHelpViewer,
   NewsGlobals in 'NewsGlobals.pas',
   MainForm in 'MainForm.pas' {fmMain},
@@ -149,10 +142,11 @@ begin
 end;
 
 begin
-{$ifdef DEBUG}
-  RegisterExpectedMemoryLeak(TIdThreadSafeInteger);  {In Indy 10.2.5 (D2009)}
-  RegisterExpectedMemoryLeak(TIdCriticalSection, 2); {In Indy 10.2.5 (D2009)}
-{$endif}
+  OutputDebugString('SAMPLING OFF');
+//{$ifdef DEBUG}
+//  RegisterExpectedMemoryLeak(TIdThreadSafeInteger);  {In Indy 10.2.5 (D2009)}
+//  RegisterExpectedMemoryLeak(TIdCriticalSection, 2); {In Indy 10.2.5 (D2009)}
+//{$endif}
   if TfmMain.CheckRunOnce then
   begin
     Application.Initialize;
@@ -161,6 +155,6 @@ begin
     Application.Title := 'XanaNews';
     Application.HelpFile := 'XanaNews.chm';
     Application.CreateForm(TfmMain, fmMain);
-    Application.Run
+  Application.Run
   end
 end.

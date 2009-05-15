@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, Buttons, CheckLst, Contnrs, unitNNTPServices, unitMessages,
-  Menus;
+  Menus, XnRawByteStrings;
 
 type
   TdlgCombineDecode = class(TForm)
@@ -63,13 +63,13 @@ end;
 function CompareArticlesSubjects(Item1, Item2: Pointer): Integer;
 var
   n, x: Integer;
-  S1, S2: string;
+  S1, S2: RawByteString;
 begin
-  S1 := TArticleBase(Item1).Subject;
-  S2 := TArticleBase(Item2).Subject;
+  S1 := TArticleBase(Item1).RawSubject;
+  S2 := TArticleBase(Item2).RawSubject;
   DecodeMultipartSubject(S1, n, x, True, False);
   DecodeMultipartSubject(S2, n, x, True, False);
-  Result := CompareText(S1, S2);
+  Result := RawCompareText(S1, S2);
 end;
 
 procedure TdlgCombineDecode.FormShow(Sender: TObject);

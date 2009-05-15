@@ -31,7 +31,7 @@ interface
 
 uses
   Windows, Messages, Classes, SysUtils, Forms, Ras, StrUtils, ActnList, ConTnrs, Dialogs, SyncObjs,
-  unitExSettings, unitExRegSettings, unitExXMLSettings, XnClasses;
+  unitExSettings, unitExRegSettings, unitExXMLSettings, XnClasses, XnRawByteStrings;
 
 const
   WM_SETUP = WM_APP + $400;
@@ -181,7 +181,7 @@ var
   gExSettingsClass: TExSettingsClass = TExRegSettings;
   gExSettingsFile: string = '';
 
-procedure FixHeaders(hdrs: TStrings);
+procedure FixHeaders(hdrs: TAnsiStrings);
 function ProductVersion: string;
 procedure UseXMLSettings(const fn: string);
 
@@ -194,14 +194,14 @@ function WideROT13(const st: WideString): WideString;
 function WideReverseString(const st: WideString): WideString;
 procedure LoadRASEntries;
 function HeaderCharset(h: string): string;
-procedure DecodeFromEMail(const from: string; var fromName, fromEMail: string; codePage: Integer = -1);
-function DecodeHeader(const header: string; codePage: PInteger = nil): string;
-function DecodeSubject(const subject: string): string;
-function GenerateMessageID(const product, stub, host: string): string;
-function EncodeHeader(const header: string; codepage: Integer; from: Boolean): string;
+procedure DecodeFromEMail(const from: RawByteString; var fromName, fromEMail: string; defCP: Integer);
+function DecodeHeader(const header: RawByteString; defCP: Integer = -1): string;
+function DecodeSubject(const subject: RawByteString; defCP: Integer): string;
+function GenerateMessageID(const product, stub, host: string): RawByteString;
+function EncodeHeader(const header: RawByteString; codepage: Integer; from: Boolean): RawByteString;
 procedure SetTempStatusMessage(const msg: string; pos, max: word);
 function SafeDateTimeToInternetStr(const Value: TDateTime; const AIsGMT: Boolean = False): string;
-function FixedGMTToLocalDateTime(S: string): TDateTime;
+function FixedGMTToLocalDateTime(S: RawByteString): TDateTime;
 function ComputerName: string;
 procedure ClearSynchronizedMethods;
 function FixFileNameString(const st: string): string;
@@ -253,18 +253,18 @@ var
  | ** TODO - Any text within brackets (including the brackets) is a     |
  |           comment.  Remove this                                      |
  *----------------------------------------------------------------------*)
-procedure FixHeaders(hdrs: TStrings);
+procedure FixHeaders(hdrs: TAnsiStrings);
 var
   i, j, p: Integer;
-  s, s1: string;
-  ch, lastch: Char;
+  s, s1: RawByteString;
+  ch, lastch: AnsiChar;
   inQuote: Boolean;
 begin
-// TODO: Remove test code <<
-//  LogMessage('');
-//  for i := 0 to hdrs.Count - 1 do
-//    LogMessage(hdrs[i]);
-//  LogMessage('');
+// TODO: Remove test code or make it a extra log option <<
+  LogMessage('');
+  for i := 0 to hdrs.Count - 1 do
+    LogMessage(string(hdrs[i]));
+  LogMessage('');
 // >>
 
   i := 1;
@@ -317,12 +317,12 @@ begin
     end;
 
     SetLength(s1, p - 1);
-    if SameText(Copy(s1, 1, 11), 'References:') then
-      s1 := StringReplace(s1, '><', '> <', [rfReplaceAll])  // Fix dodgy references
-    else if SameText(Copy(s1, 1, 5), 'Face:') then
-      s1 := StringReplace(S, ' ', '', [rfReplaceAll]);      // Remove folding spaces from Face headers
+    if RawSameText(Copy(s1, 1, 11), 'References:') then
+      s1 := RawStringReplace(s1, '><', '> <', [rfReplaceAll])  // Fix dodgy references
+    else if RawSameText(Copy(s1, 1, 5), 'Face:') then
+      s1 := RawStringReplace(S, ' ', '', [rfReplaceAll]);      // Remove folding spaces from Face headers
 
-    hdrs[i] := Trim(s1);
+    hdrs[i] := RawTrim(s1);
   end;
 end;
 
@@ -736,7 +736,7 @@ begin
     Result := ''
 end;
 
-function DequotedCString(const st: string): string;
+function DequotedCString(const st: RawByteString): RawByteString;
 var
   i, l: Integer;
 begin
@@ -771,41 +771,42 @@ begin
   end;
 end;
 
-procedure DecodeFromEMail(const from: string; var fromName, fromEMail: string; codePage: Integer = -1);
+procedure DecodeFromEMail(const from: RawByteString; var fromName, fromEMail: string; defCP: Integer);
 var
   p: Integer;
+  rawFrom, rawEMail: RawByteString;
 begin
-  p := Pos('<', from);
+  p := RawPos('<', from);
 
   if p > 0 then
   begin
-    fromEmail := from;
-    fromName := DequotedCString(SplitString('<', fromEmail));
-    if (Length(fromEmail) > 0) and (fromEmail[Length(fromEmail)] = '>') then
-      Delete(fromEmail, Length(fromEmail), 1);
+    rawEMail := from;
+    rawFrom := DequotedCString(RawSplitString('<', rawEMail));
+    if (Length(rawEMail) > 0) and (rawEMail[Length(rawEMail)] = '>') then
+      Delete(rawEMail, Length(rawEMail), 1);
   end
   else
   begin
-    p := Pos('(', from);
+    p := RawPos('(', from);
     if p > 0 then
     begin
-      fromName := from;
-      fromEmail := SplitString('(', fromName);
-      if (Length(fromName) > 0) and (fromName[Length(fromName)] = ')') then
-        Delete(fromName, Length(fromName), 1);
+      rawFrom := from;
+      rawEMail := RawSplitString('(', rawFrom);
+      if (Length(rawFrom) > 0) and (rawFrom[Length(rawFrom)] = ')') then
+        Delete(rawFrom, Length(rawFrom), 1);
     end
     else
     begin
-      fromName := from;
-      fromEmail := '';
+      rawFrom := from;
+      rawEMail := '';
     end;
   end;
 
-  // TODO: check for article codepage and/or user preference
-  fromName := DecodeHeader(fromName);
+  fromName := DecodeHeader(rawFrom, defCP);
+  fromEMail := string(rawEMail);
 
   if fromName = '' then
-    fromName := from;
+    fromName := string(from);
 end;
 
 { TActionDefault }
@@ -823,7 +824,7 @@ var
 // Searches Data for an RFC-1522 chunk, starting at cFrom.
 // If a chunk is found, cFrom and cTo contain positions of the first
 // and last character, respectively.
-function FindChunk(const Data: string; var cFrom, cTo: integer): Boolean;
+function FindChunk(const Data: RawByteString; var cFrom, cTo: integer): Boolean;
 const
   ChunkChars = ['A'..'Z'] + ['a'..'z'] + ['0'..'9'] + ['=', '?', '-', '_'];
 var
@@ -860,7 +861,7 @@ begin
          end
          else
            if Data[i] <> '?' then
-           State := 4;
+             State := 4;
     end;
     Inc(i);
   end;
@@ -877,18 +878,18 @@ end;
 
 // Decodes a RFC-1522 chunk into widestring.
 // Expects a single, pre-stripped chunk as input ('ISO-8859-1?q?data')
-function DecodeChunk(Input: string): Widestring;
+function DecodeChunk(Input: RawByteString): string;
 var
-  cp, data: string;
-  enc: Char;
+  data: string;
+  enc: AnsiChar;
   L, x, cpnum: Integer;
   AttachSpace: Boolean;
   DecodedStream: TMemoryStream;
   EncodedStream: TMemoryStream;
-  S: MessageString;
+  S: RawByteString;
 begin
   Result := '';
-  x := Pos('?', Input);
+  x := RawPos('?', Input);
   // Checks for encoding byte, '?', and at least one byte of data.
   if Length(Input) < x + 3 then
     Exit;
@@ -897,10 +898,9 @@ begin
   if Input[x + 2] <> '?' then
     Exit;
 
-  cp := LowerCase(Copy(Input, 1, x - 1));
-  cpnum := MIMECharsetNameToCodePage(cp);
+  cpnum := MIMECharsetNameToCodePage(string(Copy(Input, 1, x - 1)));
   enc := Input[x + 1];
-  data := Copy(Input, x + 3, maxint);
+  data := string(Copy(Input, x + 3, maxint));
 
   DecodedStream := TMemoryStream.Create;
   try
@@ -911,7 +911,7 @@ begin
         AttachSpace := False;
         with TidDecoderMIME.Create(nil) do
         begin
-          WriteStringToStream(EncodedStream, Data, en7Bit);
+          WriteStringToStream(EncodedStream, Data, TIdTextEncoding.ASCII);
           EncodedStream.Position := 0;
           try
             DecodeBegin(DecodedStream);
@@ -929,7 +929,7 @@ begin
         AttachSpace := data[Length(data)] = ' ';
         with TXnDecoderQuotedPrintable.Create(nil) do
         begin
-          WriteStringToStream(EncodedStream, Data, en7Bit);
+          WriteStringToStream(EncodedStream, Data, TIdTextEncoding.ASCII);
           EncodedStream.Position := 0;
           try
             DecodeBegin(DecodedStream);
@@ -962,43 +962,59 @@ begin
   end;
 end;
 
-function DecodeHeader(const header: string; codePage: PInteger = nil): string;
+function DecodeHeader(const header: RawByteString; defCP: Integer = -1): string;
 const
   CP_UTF_16 = 1200;
 var
+  bt8: Boolean;
+  I: Integer;
   chkStart, chkEnd, lastChkEnd: Integer;
 begin
-  Result := '';
-  lastChkEnd := 0;
-  chkStart := 1;
-  while FindChunk(Header, chkStart, chkEnd) do
+  // !!!!!!
+  // some clients use 8 bit "ascii" in the header, if thats' the case use the
+  // article codepage and if there is none, use the user's default setting.
+  bt8 := False;
+  for i := 1 to Length(header) do
+    if not (header[i] in [' '..'~']) then
+    begin
+      bt8 := True;
+      Break;
+    end;
+
+  if bt8 and (defCP <> -1) then
   begin
-    Result := Result +
-      Copy(Header, lastChkEnd + 1, chkStart - lastChkEnd - 1) +
-      DecodeChunk(Copy(Header, chkStart + 2, chkEnd - chkStart - 3));
-    lastChkEnd := chkEnd;
-    chkStart := chkEnd + 1;
-    // If a chunk is followed by ' =?', ignore it
-    if (Length(Header) > chkStart + 8) and (Header[chkStart] in [' ', #8]) and
-       (Header[chkStart+1] = '=') and (Header[chkStart+2] = '?') then
-      Inc(lastChkEnd);
+    Result := AnsiStringToWideString(header, defCP);
+  end
+  else
+  begin
+    Result := '';
+    lastChkEnd := 0;
+    chkStart := 1;
+    while FindChunk(header, chkStart, chkEnd) do
+    begin
+      Result := Result +
+        string(Copy(header, lastChkEnd + 1, chkStart - lastChkEnd - 1)) +
+        DecodeChunk(Copy(header, chkStart + 2, chkEnd - chkStart - 3));
+      lastChkEnd := chkEnd;
+      chkStart := chkEnd + 1;
+      // If a chunk is followed by ' =?', ignore it
+      if (Length(header) > chkStart + 8) and (header[chkStart] in [' ', #8]) and
+         (header[chkStart+1] = '=') and (header[chkStart+2] = '?') then
+        Inc(lastChkEnd);
+    end;
+    Result := Result + Copy(string(header), lastChkEnd + 1, MaxInt);
   end;
-  Result := Result + Copy(Header, lastChkEnd + 1, MaxInt);
-  // Not exactly clean, but this parameter seems not to be used anyway.
-  if Assigned(CodePage) then
-    CodePage^ := CP_UTF_16;
 end;
 
-function DecodeSubject(const subject: string): string;
+function DecodeSubject(const subject: RawByteString; defCP: Integer): string;
 begin
-  // TODO: check for article codepage and/or user preference
-  Result := DecodeHeader(subject);
+  Result := DecodeHeader(subject, defCP);
 end;
 
 var
   gmi: Integer = 0;
 
-function GenerateMessageID(const product, stub, host: string): string;
+function GenerateMessageID(const product, stub, host: string): RawByteString;
 var
   st, hs: string;
 
@@ -1031,7 +1047,7 @@ begin
     hs := 'xananews'
   else
     hs := host;
-  Result := '<' + st + '@' + hs + '>';
+  Result := RawByteString('<' + st + '@' + hs + '>');
 end;
 
 const
@@ -1045,18 +1061,18 @@ const
     'w','x','y','z','0','1','2','3',      {Do not Localize}
     '4','5','6','7','8','9','+','/');     {Do not Localize}
 
-function EncodeHeader1(const Header: MessageString; specials: CSET; HeaderEncoding: AnsiChar;
-  TransferHeader: TTransfer; MimeCharSet: MessageString): string;
+function EncodeHeader1(const Header: RawByteString; specials: CSET; HeaderEncoding: AnsiChar;
+  TransferHeader: TTransfer; MimeCharSet: RawByteString): RawByteString;
 const
   SPACES: set of Char = [' ', #9, #10, #13, '''', '"'];    {Do not Localize}
 var
-  S, T: MessageString;
+  S, T: RawByteString;
   L, P, Q, R: Integer;
   B0, B1, B2: Integer;
   InEncode: Integer;
   NeedEncode: Boolean;
   csNeedEncode, csReqQuote: CSET;
-  BeginEncode, EndEncode: MessageString;
+  BeginEncode, EndEncode: RawByteString;
   ch: AnsiChar;
 
   procedure EncodeWord(P: Integer);
@@ -1065,7 +1081,7 @@ var
   var
     Q: Integer;
     EncLen: Integer;
-    Enc1: MessageString;
+    Enc1: RawByteString;
     ac: AnsiChar;
   begin
     T := T + BeginEncode;
@@ -1086,7 +1102,7 @@ var
           if ac = ' ' then  {Do not Localize}
             Enc1 := '_'   {Do not Localize}
           else
-            Enc1 := '=' + MessageString(IntToHex(Ord(ac), 2));     {Do not Localize}
+            Enc1 := '=' + RawByteString(IntToHex(Ord(ac), 2));     {Do not Localize}
         end;
         if EncLen + Length(Enc1) > MaxEncLen then
         begin
@@ -1139,7 +1155,7 @@ begin
   {Suggested by Andrew P.Rybin for easy 8bit support}
   if HeaderEncoding = '8' then
   begin
-    Result := string(S);
+    Result := S;
     Exit;
   end;
   csNeedEncode := [#0..#31, #127..#255] + specials;
@@ -1190,12 +1206,12 @@ begin
   if InEncode <> 0 then
     EncodeWord(P);
 
-  Result := string(T);
+  Result := T;
 end;
 
-function EncodeHeader(const header: string; codePage: Integer; from: Boolean): string;
+function EncodeHeader(const header: RawByteString; codePage: Integer; from: Boolean): RawByteString;
 var
-  s1: string;
+  raw: RawByteString;
   i: Integer;
   ansi: Boolean;
   coder: TXnEncoderQuotedPrintable;
@@ -1207,10 +1223,10 @@ begin
       raise Exception.Create('Invalid from');
 
     i := 2;
-    s1 := '';
+    raw := '';
     while (header[i] <> '"') and (i < Length(header)) do
     begin
-      s1 := s1 + header[i];
+      raw := raw + header[i];
       if not (header[i] in [' '..'~', #9, #10, #13]) then
         ansi := False;
       Inc(i);
@@ -1230,13 +1246,15 @@ begin
   end;
 
   if ansi or not from then
-    Result := EncodeHeader1(MessageString(header), [], 'Q', bit7, MessageString(CodePageToMIMECharsetName(CodePage)))
+    Result := EncodeHeader1(header, [], 'Q', bit7, RawCodePageToMIMECharsetName(CodePage))
   else
   begin
     coder := TXnEncoderQuotedPrintable.Create(nil);
     try
-      Result := '=?' + CodePageToMIMECharsetName(CodePage) + '?Q?' + coder.Encode(s1) + '?= ' +
-        Trim(Copy(header, i + 2, MaxInt));
+      raw := RawByteString(coder.Encode(string(raw))); // !!!!!! when will it ever come here ??????
+
+      Result := '=?' + RawCodePageToMIMECharsetName(CodePage) + '?Q?' + raw + '?= ' +
+        RawTrim(Copy(header, i + 2, MaxInt));
     finally
       coder.Free;
     end;
@@ -1252,7 +1270,7 @@ end;
 function SafeDateTimeToInternetStr(const Value: TDateTime; const AIsGMT: Boolean = False): string;
 begin
   try
-    Result := DateTimeToInternetStr(Value, AIsGMT);
+    Result := LocalDateTimeToGMT(Value, AIsGMT);
   except
     Result := 'Fri, 17 Nov 1961 08:00:00 GMT';
   end;
@@ -1260,12 +1278,12 @@ end;
 
 // Expects a string as saved by Indy's function DateTimeToInternetStr().
 // '%s, %.2d-%s-%.2d %s %s'
-function FixedStrInternetToDateTime(var Value: string): TDateTime;
+function FixedStrInternetToDateTime(var Value: RawByteString): TDateTime;
 var
-  P: PChar;
+  P: PAnsiChar;
   Dt, Mo, Yr, Ho, Min, Sec: Word;
 
-  function NextItem(var S: string): PChar;
+  function NextItem(var S: RawByteString): PAnsiChar;
   begin
     Result := P;
     if Result <> nil then
@@ -1281,7 +1299,7 @@ var
       S := '';
   end;
 
-  function NextItemStr: string;
+  function NextItemStr: RawByteString;
   begin
     P := NextItem(Result);
   end;
@@ -1292,18 +1310,18 @@ begin
   if Length(Value) = 0 then
     Exit;
 
-  P := PChar(Value);
+  P := PAnsiChar(Value);
 
   try
-    NextItemStr;                       // Day of Week, not used
-    Dt  := StrToInt(NextItemStr);      // Day of Month
-    Mo  := StrToMonth(NextItemStr);    // Month
-    Yr  := StrToInt(NextItemStr);      // Year
-    Ho  := StrToInt(NextItemStr);      // Hours
-    Min := StrToInt(NextItemStr);      // Minutes
-    Sec := StrToInt(NextItemStr);      // Seconds
+    NextItemStr;                            // Day of Week, not used
+    Dt  := RawStrToInt(NextItemStr);        // Day of Month
+    Mo  := StrToMonth(string(NextItemStr)); // Month
+    Yr  := RawStrToInt(NextItemStr);        // Year
+    Ho  := RawStrToInt(NextItemStr);        // Hours
+    Min := RawStrToInt(NextItemStr);        // Minutes
+    Sec := RawStrToInt(NextItemStr);        // Seconds
 
-    Value := string(P);                // Remainder is GMT offset
+    Value := P;                             // Remainder is GMT offset
 
     Result := EncodeDate(Yr, Mo, Dt) + EncodeTime(Ho, Min, Sec, 0);
   except
@@ -1311,7 +1329,7 @@ begin
   end;
 end;
 
-function FixedGMTOffsetStrToDateTime(const S: string): TDateTime;
+function FixedGMTOffsetStrToDateTime(const S: RawByteString): TDateTime;
 begin
   Result := 0.0;
   if Length(S) > 4 then
@@ -1319,7 +1337,7 @@ begin
     if (s[1] = '-') or (s[1] = '+') then   {do not localize}
     begin
       try
-        Result := EncodeTime(StrToInt(Copy(s, 2, 2)), StrToInt(Copy(s, 4, 2)), 0, 0);
+        Result := EncodeTime(RawStrToInt(Copy(s, 2, 2)), RawStrToInt(Copy(s, 4, 2)), 0, 0);
         if s[1] = '-' then  {do not localize}
           Result := -Result;
       except
@@ -1333,7 +1351,7 @@ end;
 // Expects a string as saved by Indy's function DateTimeToInternetStr().
 // '%s, %.2d-%s-%.2d %s %s'
 // Always returns date/time relative to GMT.
-function FixedGMTToLocalDateTime(S: string): TDateTime;
+function FixedGMTToLocalDateTime(S: RawByteString): TDateTime;
 var
   DateTimeOffset: TDateTime;
 begin

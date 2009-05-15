@@ -46,7 +46,7 @@ uses
 {$endif}
   unitBookmarks, cmpSplitterPanel, unitNewsStringsDisplayObject,
   unitGetMessages1, unitMailServices, Tabs, ButtonGroup, CategoryButtons,
-  unitExSettings, XnClasses;
+  unitExSettings, XnClasses, XnRawByteStrings;
 
 type
 
@@ -949,10 +949,10 @@ type
     fModelessWindowList: TList;
     fPurgingGroupName: string;
     fPurgingAccountName: string;
-    fPurgingMessageID: string;
+    fPurgingMessageID: RawByteString;
     fPurgingFolder: Boolean;
     fReloadedList: TList;
-    fFolderArticleHeader: TStrings;
+    fFolderArticleHeader: TAnsiStrings;
     fDeferredCombineList: TObjectList;
     fSm: string;
     fSmMax: Word;
@@ -2394,7 +2394,7 @@ begin
               msg.Add(dlg.mmoCharter.Lines[i]);
           end;
 
-          ThreadManager.PostMessage(Account, header, msg.Text, nil, CP_USASCII, tpNNTP);
+          ThreadManager.PostMessage(Account, header.Text, msg.Text, nil, CP_USASCII, tpNNTP);
         finally
           header.Free;
           msg.Free;
@@ -2445,7 +2445,7 @@ begin
               msg.Add(dlg.mmoReason.Lines[i]);
           end;
 
-          ThreadManager.PostMessage(Account, header, msg.Text, nil, CP_USASCII, tpNNTP);
+          ThreadManager.PostMessage(Account, header.Text, msg.Text, nil, CP_USASCII, tpNNTP);
         finally
           header.Free;
           msg.Free;
@@ -2539,7 +2539,7 @@ procedure TfmMain.actToolsLoadTestMessageExecute(Sender: TObject);
 var
   s: TStream;
   reader: TStreamTextReader;
-  raw: MessageString;
+  raw: RawByteString;
 begin
   if Opendialog1.Execute then
   begin
@@ -2552,7 +2552,7 @@ begin
       reader := TStreamTextReader.Create(s);
       fTestMessage.Header.Clear;
       while reader.ReadLn(raw, ';') and (raw <> '') do
-        fTestMessage.Header.Add(string(raw));
+        fTestMessage.Header.Add(raw);
 
       FixHeaders(fTestMessage.Header);
 
@@ -3285,7 +3285,7 @@ begin
     cbCharset.ItemIndex := idx;
 
     MessageScrollBox1.Msg := article.Msg;
-    sub := DecodeSubject(article.subject);
+    sub := article.Subject;
     st := Format('  Message %d from %s.  %s', [article.ArticleNo, article.FromName, sub]);
     pnlDetailsBar.Caption := StringReplace(st, '&', '&&', [rfReplaceAll]);
   end
@@ -4821,12 +4821,13 @@ var
   st: string;
   accountName, MTo, MCC, MBCC, MSubject, MReplyTo: string;
   i, noHdrs, noMsgLines, noAttachments, codepage: Integer;
-  h, m: TStringList;
+  h: TAnsiStringList;
+  m: TStringList;
   account: TNNTPAccount;
   mailAccount: TMailAccount;
   ctnr: TServerAccount;
   attachments: TObjectList;
-  raw: MessageString;
+  raw: RawByteString;
   rok: Boolean;
 begin
    // Load unposted messages that were saved the last time XanaNews was run.
@@ -4841,7 +4842,7 @@ begin
       f := TFileStream.Create(fileName, fmOpenRead);
       try
         reader := TStreamTextReader.Create(f);
-        h := TStringList.Create;
+        h := TAnsiStringList.Create;
         m := TStringList.Create;
         rok := reader.ReadLn(raw);
         while rok do
@@ -4962,37 +4963,33 @@ begin
 
                 i := noHdrs;
                 rok := reader.ReadLn(raw);
-                st := string(raw);
                 while rok and (i > 0) do
                 begin
                   if h.Count > 0 then
-                    while rok and (Copy(st, 1, 1) = ' ') do
+                    while rok and (Copy(raw, 1, 1) = ' ') do
                     begin
-                      h[h.Count - 1] := h[h.Count - 1] + #13#10 + st;
+                      h[h.Count - 1] := h[h.Count - 1] + #13#10 + raw;
                       rok := reader.ReadLn(raw);
-                      st := string(raw);
                     end;
-                  h.Add(st);
+                  h.Add(raw);
                   rok := reader.ReadLn(raw);
-                  st := string(raw);
                   Dec(i);
                 end;
 
                 if h.Count > 0 then
-                  while rok and (Copy(st, 1, 1) = ' ') do
+                  while rok and (Copy(raw, 1, 1) = ' ') do
                   begin
-                    h[h.Count - 1] := h[h.Count - 1] + #13#10 + st;
+                    h[h.Count - 1] := h[h.Count - 1] + #13#10 + raw;
                     rok := reader.ReadLn(raw);
-                    st := string(raw);
                   end;
 
                 i := noMsgLines;
                 while rok and (i > 0) do
                 begin
+                  st := AnsiStringToWideString(raw, codepage);
                   m.Add(st);
                   Dec(i);
                   rok := reader.ReadLn(raw);
-                  st := AnsiStringToWideString(raw, codepage);
                 end;
 
                 i := noAttachments;
@@ -5002,12 +4999,11 @@ begin
                   while rok and (i > 0) do
                   begin
                     try
-                      attachments.Add(TAttachment.Create(st));
+                      attachments.Add(TAttachment.Create(string(raw)));
                     except // They might have deleted the file - ignore attachment
                     end;
                     Dec(i);
                     rok := reader.ReadLn(raw);
-                    st := string(raw);
                   end;
                 end
                 else
@@ -5096,7 +5092,7 @@ var
   node: PVirtualNode;
   article: TArticleBase;
   ctnr: TArticleContainer;
-  msgID: string;
+  msgID: RawByteString;
 begin
   node := vstArticles.GetFirstSelected;
   article := GetNodeArticle(node);
@@ -5445,7 +5441,8 @@ var
   getter: TTCPGetter;
   posterRequest: TPosterRequest;
   mailerRequest: TEMailerRequest;
-  h, m: TStrings;
+  h: TAnsiStrings;
+  m: TStrings;
   requests, getters: TObjectList;
 begin
   m := nil;
@@ -6432,7 +6429,7 @@ begin
   else
     if article is TFolderArticle then with TFolderArticle(article) do
     begin
-      stNumber := article.UniqueID; // OrigServer + ':' + ShortGroupName(OrigGroup) + ':' + IntToStr(ArticleNo); // + ' (' + IntToStr(Offset) + ')';
+      stNumber := string(article.UniqueID); // OrigServer + ':' + ShortGroupName(OrigGroup) + ':' + IntToStr(ArticleNo); // + ' (' + IntToStr(Offset) + ')';
       isRoot := True;
     end
     else
@@ -6446,7 +6443,7 @@ begin
       1: st := stNumber;
       2: if not fForensicMode then
            if isRoot or not XNOptions.FirstLineAsSubject then
-             st := DecodeSubject(article.Subject)
+             st := article.Subject
            else
              st := Article.InterestingMessageLine
          else
@@ -6465,7 +6462,7 @@ var
   ctnr: TArticleContainer;
   art: TArticleBase;
   oldCursor: TCursor;
-  id: string;
+  id: RawByteString;
   col1: Integer;
 
   procedure SetThreadSortOrder;
@@ -7675,19 +7672,19 @@ begin
       fReloadedList.Add(grp);
 
     if not Assigned(fFolderArticleHeader) then
-      fFolderArticleheader := TStringList.Create
+      fFolderArticleheader := TAnsiStringList.Create
     else
       fFolderArticleHeader.Clear;
 
-    fFolderArticleHeader.Add('Message-ID:' + article.MessageId);
-    fFolderArticleHeader.Add('Subject:' + article.Subject);
-    fFolderArticleHeader.Add('From:' + article.From);
-    fFolderArticleHeader.Add('Date:' + SafeDateTimeToInternetStr(article.Date, True));
-    fFolderArticleHeader.Add('Lines:' + IntToStr(article.Lines));
+    fFolderArticleHeader.Add('Message-ID:' + article.RawMessageId);
+    fFolderArticleHeader.Add('Subject:' + article.RawSubject);
+    fFolderArticleHeader.Add('From:' + article.RawFrom);
+    fFolderArticleHeader.Add('Date:' + RawByteString(SafeDateTimeToInternetStr(article.Date, True)));
+    fFolderArticleHeader.Add('Lines:' + RawIntToStr(article.Lines));
     if article.References <> '' then
-      fFolderArticleHeader.Add('References:' + article.References);
+      fFolderArticleHeader.Add('References:' + article.RawReferences);
 
-    fFolderArticleHeader.AddStrings(article.Msg.Header);
+    fFolderArticleHeader.AddAnsiStrings(article.Msg.Header);
 
     art := grp.AddArticle(article.ArticleNo, fFolderArticleHeader, article.Msg.RawData, False);
     if Assigned(art) then
@@ -8077,7 +8074,7 @@ begin
     if Copy(url, 1, 1) <> '<' then
       url := '<' + url + '>';
 
-    article := NNTPAccounts.FindMsgID(server, group, url);
+    article := NNTPAccounts.FindMsgID(server, group, RawByteSTring(url));
   end
   else                          // Find the article no in the specified group
     if Assigned(grp) then
@@ -8390,7 +8387,7 @@ end;
 procedure TfmMain.actViewGroupMultipartExecute(Sender: TObject);
 var
   art: TArticleBase;
-  id: string;
+  id: RawByteString;
   group: TSubscribedGroup;
   oldCursor: TCursor;
 begin
@@ -9334,7 +9331,7 @@ begin
     if reason <> '' then
       msg.Add(#13#10 + reason);
 
-    ThreadManager.PostMessage(Account, header, msg.Text, nil, CP_USASCII, tpNNTP);
+    ThreadManager.PostMessage(Account, header.Text, msg.Text, nil, CP_USASCII, tpNNTP);
     article.IsCancelled := True;
   finally
     header.Free;
@@ -9805,7 +9802,7 @@ procedure TfmMain.actFolderReindexExecute(Sender: TObject);
 var
   fldr: TArticleFolder;
   art: TArticleBase;
-  id: string;
+  id: RawByteString;
 begin
 
   fldr := GetFocusedArticleFolder;
@@ -9836,7 +9833,8 @@ var
   art: TFolderArticle;
   mart: TArticleBase;
   xref: string;
-  st, serverName, accountName, groupName, msgID: string;
+  st, serverName, accountName, groupName: string;
+  msgID: RawByteString;
   ctnr: TArticleContainer;
 begin
   mart := nil;
@@ -9849,7 +9847,7 @@ begin
     begin
       serverName := SplitString(' ', xref);
       st := art.Header['Newsgroups'];
-      msgID := art.MessageId;
+      msgID := art.RawMessageId;
       groupName := SplitString(',', st);
       accountName := NNTPAccounts.GetServerAccountName(serverName, groupName);
 
@@ -10327,7 +10325,7 @@ var
     begin
       m := TmvMessage.Create(nil);
       try
-        m.Header.AddStrings(art.Msg.Header);
+        m.Header.AddAnsiStrings(art.Msg.Header);
         m.AddData(art.Msg.RawData);
         Inc(artNo);
 
@@ -10529,7 +10527,7 @@ begin
     if article is TFolderArticle then
       with TFolderArticle(article) do
       begin
-        stNumber := article.UniqueID; // OrigServer + ':' + ShortGroupName(OrigGroup) + ':' + IntToStr(ArticleNo); // + ' (' + IntToStr(Offset) + ')';
+        stNumber := string(article.UniqueID); // OrigServer + ':' + ShortGroupName(OrigGroup) + ':' + IntToStr(ArticleNo); // + ' (' + IntToStr(Offset) + ')';
         isRoot := True;
       end
       else
@@ -10546,7 +10544,7 @@ begin
       1: st := stNumber;
       2: if not fForensicMode then
            if (isRoot) or (not XNOptions.FirstLineAsSubject) then
-             st := DecodeSubject(article.Subject)
+             st := article.Subject
            else
              st := Article.InterestingMessageLine
          else
@@ -10907,7 +10905,7 @@ begin
 
   if (mid <> '') and (Copy(mid, 1, 1) = '<') and (Copy(mid, Length(mid), 1) = '>') then
   else
-    mid := art.fMessageID;
+    mid := art.MessageID;
 
   if (GetKeyState(VK_CONTROL) and $80000000) <> 0 then
   begin
@@ -11003,14 +11001,14 @@ begin
     ma := TMarkedArticle(obj^);
     if Assigned(ma) then
     begin
-      art := NNTPAccounts.FindMsgID(ma.Account, ma.Group, ma.MessageID);
+      art := NNTPAccounts.FindMsgID(ma.Account, ma.Group, ma.RawMessageID);
       if not Assigned(art) then
       begin
         grp := GetFocusedGroup;
         if Assigned(grp) then
-          art := NNTPAccounts.FindMsgID(grp.Owner.AccountName, grp.Name, ma.MessageID);
+          art := NNTPAccounts.FindMsgID(grp.Owner.AccountName, grp.Name, ma.RawMessageID);
         if not Assigned(art) then
-          art := NNTPAccounts.FindMsgID('', '', ma.MessageID);
+          art := NNTPAccounts.FindMsgID('', '', ma.RawMessageID);
       end;
       GoToArticle(art);
     end;

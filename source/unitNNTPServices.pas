@@ -33,7 +33,7 @@ uses
   Windows, Classes, SysUtils, Forms, Dialogs, Controls, Contnrs, idGlobal,
   unitMessages, StrUtils, unitNNTPFilters, NewsGlobals, unitObjectCache,
   unitIdentities, unitSearchString, unitSettings, unitBatches, unitExSettings,
-  unitStreamTextReader, Shfolder, ShellAPI, SyncObjs, XnClasses;
+  unitStreamTextReader, Shfolder, ShellAPI, SyncObjs, XnClasses, XnRawByteStrings;
 
 //-----------------------------------------------------------------------
 // Constant definitions
@@ -51,10 +51,10 @@ const
   fgNew                   = $400;
   fgNotOnServer           = $800;
 
-  fgKeyPhrase0            = $1000;
-  fgKeyPhrase1            = $2000;
-  fgKeyPhrase2            = $4000;
-  fgKeyPhrase3            = $8000;
+  fgKeyPhrase0            = $01000;
+  fgKeyPhrase1            = $02000;
+  fgKeyPhrase2            = $04000;
+  fgKeyPhrase3            = $08000;
   fgKeyPhrase4            = $10000;
   fgKeyPhrase5            = $20000;
   fgKeyPhrase6            = $40000;
@@ -103,7 +103,7 @@ type
     fPartCount: Integer;
     fPartDecoded: Boolean;
     fPartNo: Integer;
-    fPartSubject: string;
+    fPartSubject: RawByteString;
 
     function GetFromEmail: string;
     function GetFromName: string;
@@ -127,18 +127,24 @@ type
     function GetIsNotOnServer: Boolean;
     procedure SetIsNotOnServer(const Value: Boolean);
     function GetSubjectIsReply: Boolean;
-    function GetSimplifiedSubject: string;
+    function GetSimplifiedSubject: RawByteString;
     function GetMessagesInThread: Integer;
     function GetUnreadMessagesInThread: Integer;
     function GetHasNoReplies: Boolean;
     function GetIsFromMe: Boolean;
+    function GetMessageID: string;
+    function GetSubject: string;
+    function GetFrom: string;
+    function GetReferences: string;
+    procedure SetSubject(const Value: string);
   protected
     fMsg: TmvMessage;
+    fMessageID: RawByteString;
     fBytes: Integer;
-    fReferences: string;
+    fReferences: RawByteString;
     fLines: Integer;
-    fFrom: string;
-    fSubject: string;
+    fFrom: RawByteString;
+    fSubject: RawByteString;
     fDate: TDateTime;
     fTo: string;
     fMessageOffset: Int64;        // Offset of message body in messages.dat
@@ -150,7 +156,7 @@ type
     function GetIsRead: Boolean; virtual;
     function GetHeader(const name: string): string; virtual;
     procedure DecodeFromName;
-    function DecodedMultipartSubject: string;
+    function DecodedMultipartSubject: RawByteString;
     function GetMsg: TmvMessage; virtual; abstract;
     procedure SetMsg(const Value: TmvMessage); virtual;
     function GetIndex: Integer; virtual;
@@ -159,32 +165,31 @@ type
     function GetCodePage: Integer; virtual;
     procedure SetCodePage(const Value: Integer); virtual;
     function PeekAtMsgHdr(const hdr: string): string; virtual;
+    function PeekAtMsgHdrFromFile(const hdr: RawByteString): RawByteString;
     procedure SetFlag(flag: DWORD; value: Boolean);
     function GetNext: TArticleBase; virtual;
     function GetMsgFromFile: TmvMessage;
     function GetCodePageFromFile: Integer;
-    function PeekAtMsgHdrFromFile(const hdr: string): string;
     procedure SetIsDeleted(const Value: Boolean); virtual;
-    function GetUniqueID: string; virtual;
+    function GetUniqueID: RawByteString; virtual;
     function GetCrosspostedTo: Integer;
   public
     fCodePage: Integer;
-    fMessageID: string;
     constructor Create(AOwner: TArticleContainer); virtual;
     procedure Assign(article: TArticleBase); virtual;
-    procedure Initialize(articleNo: Integer; header: TStrings);
+    procedure Initialize(articleNo: Integer; header: TAnsiStrings);
     function HasMsg: Boolean;
     function MsgDownloading: Boolean;
     procedure ReleaseMsg;
 
-    property Subject: string read fSubject write fSubject;
+    property Subject: string read GetSubject write SetSubject;
     property SubjectIsReply: Boolean read GetSubjectIsReply;
-    property SimplifiedSubject: string read GetSimplifiedSubject;
-    property From: string read fFrom;
+    property SimplifiedSubject: RawByteString read GetSimplifiedSubject;
+    property From: string read GetFrom;
     property Date: TDateTime read fDate;
-    property MessageId: string read fMessageID;
-    property UniqueID: string read GetUniqueID;
-    property References: string read fReferences;
+    property MessageId: string read GetMessageID;
+    property UniqueID: RawByteString read GetUniqueID;
+    property References: string read GetReferences;
     property _To: string read fTo;
     property Bytes: Integer read fBytes;
     property Lines: Integer read fLines;
@@ -225,6 +230,11 @@ type
     property MessagesInThread: Integer read GetMessagesInThread;
     property UnreadMessagesInThread: Integer read GetUnreadMessagesInThread;
     property IsFromMe: Boolean read GetIsFromMe;
+
+    property RawFrom: RawByteString read fFrom;
+    property RawMessageID: RawByteString read fMessageId write fMessageId;
+    property RawReferences: RawByteString read fReferences write fReferences;
+    property RawSubject: RawByteString read fSubject;
   end;
 
   //-----------------------------------------------------------------------
@@ -363,7 +373,7 @@ type
     fUnreadXananewsArticleCount: Integer;
     fInterestingArticleCount: Integer;
     fUnreadInterestingArticleCount: Integer;
-    fCursorArticleId: string;
+    fCursorArticleId: RawByteString;
     fFlagsDirty: Boolean;
     fMessageFile: TFileStream;
     fAdjustedArticleCount: Integer;
@@ -413,8 +423,8 @@ type
     function Locked: Boolean;
 
     function MarkOnLeave: Boolean; virtual;
-    function FindMsgID(const msgID: string): TArticleBase;
-    function FindUniqueID(const msgID: string): TArticleBase; virtual;
+    function FindMsgID(const msgID: RawByteString): TArticleBase;
+    function FindUniqueID(const msgID: RawByteString): TArticleBase; virtual;
 
     function FindArticleNo(cno: Integer): TArticleBase; virtual;
     function LoadGetArticleCount: Integer;
@@ -436,7 +446,7 @@ type
     property ArticleCount: Integer read GetArticleCount;
     property AdjustedArticleCount: Integer read GetAdjustedArticleCount;
     property ArticleBase[idx: Integer]: TArticleBase read GetArticleBase;
-    property CursorArticleID: string read fCursorArticleId write fCursorArticleId;
+    property CursorArticleID: RawByteString read fCursorArticleId write fCursorArticleId;
     property FlagsDirty: Boolean read fFlagsDirty;
     property FiltersCtnr: TFiltersCtnr read fFiltersCtnr;
     property DisplayFiltersCtnr: TFiltersCtnr read fDisplayFiltersCtnr;
@@ -536,9 +546,9 @@ type
     procedure LoadArticles; override;
     procedure LoadUnreadArticleCount;
 
-    procedure AddRawHeaders(headers: TStringList; XOVERFmt: TStringList); overload;
+    procedure AddRawHeaders(headers: TAnsiStringList; XOVERFmt: TStringList); overload;
     procedure AddRawHeaders(headers: TTextFileReader); overload;
-    function AddArticle(articleNo: Integer; header: TStrings; body: TStream; isNew: Boolean): TArticle;
+    function AddArticle(articleNo: Integer; header: TAnsiStrings; body: TStream; isNew: Boolean): TArticle;
     procedure SaveArticles(recreateMessageFile: Boolean); override;
     procedure LeaveGroup(clearMessages: Boolean = True); override;          // Save articles, and release memory
     function MarkOnLeave: Boolean; override;
@@ -574,6 +584,7 @@ type
     fMarkOnLeave: Boolean;
     fScanKeyPhrases: Boolean;
     fCheckedNewGroups: Boolean;
+    fRefreshedGroupsList: Boolean;
     fFiltersCtnr: TFiltersCtnr;
     fDisplayFiltersCtnr: TFiltersCtnr;
     fNNTPSettings: TNNTPSettings;
@@ -634,6 +645,7 @@ type
     property ScanKeyPhrases: Boolean read fScanKeyPhrases write SetScanKeyPhrases;
     property Next: TNNTPAccount read GetNext;
     property CheckedNewGroups: Boolean read fCheckedNewGroups write fCheckedNewGroups;
+    property RefreshedGroupsList: Boolean read fRefreshedGroupsList write fRefreshedGroupsList;
     property FileName: string read GetFileName;
     property SortIdx: Integer read fSortIdx write SetSortIdx;
 
@@ -748,7 +760,7 @@ type
     procedure AddBatch(batch: TNNTPBatch);
     procedure DeleteBatch(idx: Integer);
     function IndexOfBatch(batch: TNNTPBatch): Integer;
-    function FindMsgID(const accountName, groupName, MsgID: string): TArticleBase;
+    function FindMsgID(const accountName, groupName: string; MsgID: RawByteString): TArticleBase;
     function FindXRef(const XRef: string): TArticleBase;
     function NextArticle(options: TNextArticleOptions; firstArticle: TArticleBase): TArticleBase;
     function GetServerAccountName(const serverName, groupName: string): string;
@@ -838,7 +850,7 @@ type
     property AlwaysRemove: Boolean read fAlwaysRemove write fAlwaysRemove;
   end;
 
-function DecodeMultipartSubject(var s: string; var n, x: Integer; fixIt, blankIt: Boolean): Boolean;
+function DecodeMultipartSubject(var s: RawByteString; var n, x: Integer; fixIt, blankIt: Boolean): Boolean;
 
 //-----------------------------------------------------------------------
 // Global variables
@@ -903,15 +915,6 @@ var
     if v = -1 then
       code := 1;
   end;
-
-//  function CompareSubject(s1, s2: string): Integer;
-//  var
-//    n, x: Integer;
-//  begin
-//    DecodeMultipartSubject(s1, n, x, True, False);
-//    DecodeMultipartSubject(s2, n, x, True, False);
-//    Result := CompareText(s1, s2);
-//  end;
 
   function CompareIPAddress(a1, a2: string): Integer;
   var
@@ -981,13 +984,12 @@ begin { CompareThreads }
              else
                if a1.fDate > a2.fDate then
                  Result := 1;
-//    soSubject: Result := CompareSubject(fSubject, a2.fSubject);
     soSubject:
-      begin
-        Result := CompareText(a1.DecodedMultipartSubject, a2.DecodedMultipartSubject);
-        if Result = 0 then
-          Result := a1.fPartNo - a2.fPartNo;
-      end;
+     begin
+       Result := RawCompareText(a1.DecodedMultipartSubject, a2.DecodedMultipartSubject);
+       if Result = 0 then
+         Result := a1.fPartNo - a2.fPartNo;
+     end;
     soLines: if a1.fLines < a2.fLines then
                 Result := -1
               else
@@ -1246,8 +1248,8 @@ end;
  |                                                                      |
  | The function returns the TArticle that matches the group             |
  *----------------------------------------------------------------------*)
-function TNNTPAccounts.FindMsgID(const accountName, groupName,
-  MsgID: string): TArticleBase;
+function TNNTPAccounts.FindMsgID(const accountName, groupName: string;
+  MsgID: RawByteString): TArticleBase;
 var
   grp: TArticleContainer;
   acct: TNNTPAccount;
@@ -2797,7 +2799,7 @@ end;
 
 { TSubscribedGroup }
 
-function TSubscribedGroup.AddArticle(articleNo: Integer; header: TStrings; body: TStream; isNew: Boolean): TArticle;
+function TSubscribedGroup.AddArticle(articleNo: Integer; header: TAnsiStrings; body: TStream; isNew: Boolean): TArticle;
 var
   article: TArticle;
   filterIt, bozo: Boolean;
@@ -2865,15 +2867,15 @@ end;
  |                                                                      |
  |   headers: TStringList      Headers to add                           |
  *----------------------------------------------------------------------*)
-procedure TSubscribedGroup.AddRawHeaders(headers: TStringList; XOVERFmt: TStringList);
+procedure TSubscribedGroup.AddRawHeaders(headers: TAnsiStringList; XOVERFmt: TStringList);
 var
   i, n: Integer;
-  articleNo: cardinal;
-  subject: string;
-  from: string;
+  articleNo: Cardinal;
+  subject: RawByteString;
+  from: RawByteString;
   date: TDateTime;
-  MessageID: string;
-  references: string;
+  MessageID: RawByteString;
+  references: RawByteString;
   Bytes: Cardinal;
   lines: Cardinal;
   exd, val, hdr: string;
@@ -2893,10 +2895,10 @@ begin
     article := TArticle.Create(Self);
 
     article.fArticleNo := articleNo;
-    article.fMessageID := Trim(MessageID);
+    article.fMessageID := RawTrim(MessageID);
     article.fBytes := bytes;
     article.fLines := lines;
-    article.fReferences := Trim(references);
+    article.fReferences := RawTrim(references);
     article.fFrom := from;
     article.fSubject := subject;
     article.fDate := date;
@@ -2930,12 +2932,12 @@ end;
 
 procedure TSubscribedGroup.AddRawHeaders(headers: TTextFileReader);
 var
-  P: PChar;
+  P: PAnsiChar;
   article: TArticle;
   lastGoodDate: TDateTime;
-  raw: MessageString;
+  raw: RawByteString;
 
-  function NextItem(var S: string): PChar;
+  function NextItem(var S: RawByteString): PAnsiChar;
   begin
     Result := P;
     if Result <> nil then
@@ -2951,7 +2953,7 @@ var
       S := '';
   end;
 
-  function NextItemStr: string;
+  function NextItemStr: RawByteString;
   begin
     P := NextItem(Result);
   end;
@@ -2960,15 +2962,17 @@ begin
   if not fArticlesLoaded then
     LoadArticles;
 
+OutputDebugString('SAMPLING ON');
+
   try
     lastGoodDate := 0;
     while headers.ReadLn(raw) do
     begin
-      P := PChar(string(raw));
+      P := PAnsiChar(raw);
 
       article := TArticle.Create(Self);
       try
-        article.fArticleNo := StrToInt(NextItemStr);
+        article.fArticleNo := RawStrToInt(NextItemStr);
         P := NextItem(article.fSubject);
         P := NextItem(article.fFrom);
         try
@@ -2979,10 +2983,15 @@ begin
         end;
         P := NextItem(article.fMessageID);
         P := NextItem(article.fReferences);
-        article.fBytes := StrToInt(NextItemStr);
-        article.fLines := StrToInt(NextItemStr);
-        article.fFlags := StrToInt(NextItemStr) and $08FFFFFF;
-        article.fMessageOffset := StrToInt64Def(NextItemStr, -1);
+        article.fBytes := RawStrToInt(NextItemStr);
+        article.fLines := RawStrToInt(NextItemStr);
+        article.fFlags := RawStrToInt(NextItemStr) and $08FFFFFF;
+// TODO: next might help to recover from a partly broken articles.dat file <<
+//        article.fBytes := RawStrToIntDef(NextItemStr, 0);
+//        article.fLines := RawStrToIntDef(NextItemStr, 0);
+//        article.fFlags := RawStrToIntDef(NextItemStr, 0) and $08FFFFFF;
+// >>
+        article.fMessageOffset := RawStrToInt64Def(NextItemStr, -1);
 
         if article.IsDeleted then
           article.Owner.fNeedsPurge := True;
@@ -3002,6 +3011,9 @@ begin
   ReSortArticles;
   NNTPAccounts.PerfCue(880, 'Sorted articles');
   fArticlesLoaded := True;
+
+OutputDebugString('SAMPLING ON');
+
 end;
 
 procedure TSubscribedGroup.CloseMessageFile;
@@ -3179,7 +3191,7 @@ var
   i, j: Integer;
   article: Tarticle;
   st: string;
-  raw: MessageString;
+  raw: RawByteString;
   ms: TBufferedFileWriter;
   hasMessage, tmpMessage: Boolean;
   hLen: Word;
@@ -3242,7 +3254,7 @@ begin
             article.fArticleNo,
             article.fSubject,
             article.fFrom,
-            SafeDateTimeToInternetStr(article.fDate, True),
+            RawByteString(SafeDateTimeToInternetStr(article.fDate, True)),
             article.fMessageID,
             article.fReferences,
             article.Bytes,
@@ -3257,15 +3269,16 @@ begin
               st := st + #9 + IntToStr(article.fMessageOffset);
 
           w.WriteLn(st);
+//          w.WriteLn(UTF8Encode(st)); // TODO: experimental
 
           if hasMessage and recreateMessageFile then
           begin
-            raw := MessageString('X-Msg:' + IntToHex(article.fMsg.RawData.Size, 8));
+            raw := RawByteString('X-Msg:' + IntToHex(article.fMsg.RawData.Size, 8));
             ms.Write(raw[1], Length(raw));
 
             for j := 0 to article.fMsg.Header.Count - 1 do
             begin
-              raw := MessageString(article.fMsg.Header[j]);
+              raw := RawByteString(article.fMsg.Header[j]);
               hLen := Length(raw);
               ms.Write(hLen, SizeOf(hLen));
               ms.Write(raw[1], Length(raw));
@@ -3519,7 +3532,7 @@ var
   i, len: Integer;
   hLen: word;
   st: string;
-  raw: MessageString;
+  raw: RawByteString;
   r: TAnsiStrings;
   m: TMemoryStream;
   rCreated: Boolean;
@@ -3632,7 +3645,7 @@ begin
 
   st := Trim(st);
   if (st = '') or (st = '-- ') then
-    Result := DecodeSubject(Subject)
+    Result := Subject
   else
     Result := st;
 end;
@@ -3769,7 +3782,7 @@ end;
 
 function TArticle.PeekAtMsgHdr(const hdr: string): string;
 begin
-  Result := PeekAtMsgHDrFromFile(hdr);
+  Result := string(PeekAtMsgHDrFromFile(RawByteString(hdr)));
 end;
 
 procedure TArticle.RemoveMessage;
@@ -3797,19 +3810,19 @@ end;
  *----------------------------------------------------------------------*)
 procedure TArticle.SaveMessageBody;
 var
-  st: MessageString;
+  st: RawByteString;
   i: Integer;
   hLen: Word;
 begin
   fOwner.OpenMessageFile;
   fOwner.fMessageFile.Seek(0, soEnd);
   fMessageOffset := fOwner.fMessageFile.Position;
-  st := MessageString('X-Msg:' + IntToHex(fMsg.RawData.Size, 8));
+  st := RawByteString('X-Msg:' + IntToHex(fMsg.RawData.Size, 8));
   fOwner.fMessageFile.Write(st[1], Length(st));
 
   for i := 0 to fMsg.Header.Count - 1 do
   begin
-    st := MessageString(fMsg.Header[i]);
+    st := fMsg.Header[i];
     hLen := Length(st);
     fOwner.fMessageFile.Write(hLen, SizeOf(hLen));
     fOwner.fMessageFile.Write(st[1], Length(st));
@@ -3837,7 +3850,7 @@ procedure TSubscribedGroup.GroupArticles;
 var
   i: Integer;
   art, root, ap: TArticle;
-  subject, lastSubject: string;
+  subject, lastSubject: RawByteString;
   filters: TFiltersCtnr;
 
   procedure CheckCompleteMultipart(root: TArticle);
@@ -4060,7 +4073,7 @@ var
   pc, pc1: PChar;
   reader: TTextFileReader;
   n, l, fgs: Integer;
-  raw: MessageString;
+  raw: RawByteString;
 begin
   // Already LSSync-ed when this is called
   fileName := gMessageBaseRoot + '\' + FixFileNameString(Owner.AccountName) + '\' + FixFileNameString(Name) + '\articles.dat';
@@ -4541,7 +4554,7 @@ begin
     MsgID := SplitString('=', account);
     group := SplitString('=', account);
 
-    Result := NNTPAccounts.FindMsgID(account, group, MsgID);
+    Result := NNTPAccounts.FindMsgID(account, group, RawByteString(MsgID));
   end
   else
     Result := nil;
@@ -4575,7 +4588,7 @@ begin
 
     if accName <> '' then
     begin
-      st := article.MessageId + '=' + article.Owner.Name + '=' + accName;
+      st := string(article.MessageId) + '=' + article.Owner.Name + '=' + accName;
       if fList.IndexOf(st) = -1 then
         fList.Insert(0, st);
     end;
@@ -4689,20 +4702,20 @@ begin
   end;
 end;
 
-function TArticleContainer.FindMsgID(const msgID: string): TArticleBase;
+function TArticleContainer.FindMsgID(const msgID: RawByteString): TArticleBase;
 var
   i: Integer;
 begin
   Result := nil;
   for i := 0 to LoadGetArticleCount - 1 do
-    if ArticleBase[i].MessageId = msgID then
+    if ArticleBase[i].RawMessageId = msgID then
     begin
       Result := ArticleBase[i];
       Break;
     end;
 end;
 
-function TArticleContainer.FindUniqueID(const msgID: string): TArticleBase;
+function TArticleContainer.FindUniqueID(const msgID: RawByteString): TArticleBase;
 begin
   Result := FindMsgID(msgID);
 end;
@@ -4712,7 +4725,7 @@ var
   count: Integer;
   c, t, old, prev, rest, tail, newc: TArticleBase;
   subject_table: PPhashItem;
-  subj: string;
+  subj: RawByteString;
   hash: DWORD;
 begin
   subject_table := AllocHashTable;
@@ -5376,9 +5389,9 @@ end;
 procedure TArticleContainer.ThreadArticles;
 var
   i, j: Integer;
-  ps, pe, pss: PChar;
+  ps, pe, pss: PAnsiChar;
   len: Integer;
-  ref: string;
+  ref: RawByteString;
   article, refArticle, prevArticle, prev, rest, tempRoot: TArticleBase;
   id_table: PPhashItem;
   hash: DWORD;
@@ -5438,7 +5451,7 @@ begin
             article.fBlocked := True;
                                                 // Add it to hash of ignored msgs
             hash := HashOf(article.fMessageID);
-            if FindHashMessage(id_not_table, hash, article.MessageId) = nil then
+            if FindHashMessage(id_not_table, hash, article.fMessageId) = nil then
               Addhash(id_not_table, hash, article);
 
             Inc(i);
@@ -5485,7 +5498,7 @@ begin
           if article.fBlocked then          // It's been removed by
             Continue;                       // Hide Read Messages, etc.
 
-          ps := PChar(article.References);
+          ps := PAnsiChar(article.fReferences);
 
           prevArticle := nil;
 
@@ -5647,8 +5660,8 @@ begin
                                             // propogate its interesting and ignore
                                             // flags
 
-              pss := PChar(article.references);
-              pe := pss + Length(article.References) - 1;
+              pss := PAnsiChar(article.fReferences);
+              pe := pss + Length(article.fReferences) - 1;
 
               // Go thru each entry in 'References' - backwards this time because
               // we want to check the most recent one first.
@@ -5678,7 +5691,7 @@ begin
                 if (len <> 0) and (ref[1] = '<') and (ref[len] = '>') then
                 begin
                   if Assigned(article.Parent) and
-                     (article.Parent.MessageId = ref) and
+                     (article.Parent.fMessageId = ref) and
                      (article.Parent.ArticleNo <> 0) then
                     refArticle := article.Parent
                   else
@@ -5742,13 +5755,13 @@ end;
 
 procedure TArticleBase.Assign(article: TArticleBase);
 begin
-  Self.fMessageID := article.MessageId;
-  Self.fBytes := article.Bytes;
-  Self.fLines := article.Lines;
-  Self.fReferences := article.References;
-  Self.fFrom := article.From;
-  Self.fSubject := article.Subject;
-  Self.fDate := article.Date;
+  Self.fMessageID := article.fMessageId;
+  Self.fBytes := article.fBytes;
+  Self.fLines := article.fLines;
+  Self.fReferences := article.fReferences;
+  Self.fFrom := article.fFrom;
+  Self.fSubject := article.fSubject;
+  Self.fDate := article.fDate;
   Self.fTo := article.fTo;
 end;
 
@@ -5789,20 +5802,20 @@ end;
  | The function returns True if the subject indicates that it's part of |
  | a multipart.                                                         |
  *----------------------------------------------------------------------*)
-function DecodeMultipartSubject(var s: string; var n, x: Integer; fixIt, blankIt: Boolean): Boolean;
+function DecodeMultipartSubject(var s: RawByteString; var n, x: Integer; fixIt, blankIt: Boolean): Boolean;
 var
-  p, p1, p2: PChar;
+  p, p1, p2: PAnsiChar;
   l, l1, l2: Integer;
-  s1: string;
+  s1: RawByteString;
 begin
   Result := False;
   l := Length(s);
-  if l > 4 then                  // Can't be less than 5 charcters - eg. [1/3]
+  if l > 4 then                   // Can't be less than 5 charcters - eg. [1/3]
   begin
-    p := PChar(s) + l - 1;      // Start at the last character
+    p := PAnsiChar(s) + l - 1;    // Start at the last character
     p1 := nil;
 
-    while (p <> PChar(s)) do    // Find the final ']' or ')'
+    while (p <> PAnsiChar(s)) do  // Find the final ']' or ')'
       if (p^ = ')') or (p^ = ']') then
       begin
         p1 := p;
@@ -5811,7 +5824,7 @@ begin
       else
         Dec(p);
 
-    while (p <> PChar(s)) do   // Now find the matching ']' or ')'
+    while (p <> PAnsiChar(s)) do  // Now find the matching ']' or ')'
       if ((p1^ = ')') and (p^ = '(')) or ((p1^ = ']') and (p^ = '[')) then
         Break
       else
@@ -5840,8 +5853,8 @@ begin
 
           if l2 >= l1 then                      // Reallity check!
           begin
-            n := StrToIntDef(Copy(p, 1, l1), -1);
-            x := StrToIntDef(Copy(p2 + 1, 1, l2), -1);
+            n := RawStrToIntDef(Copy(p, 1, l1), -1);
+            x := RawStrToIntDef(Copy(p2 + 1, 1, l2), -1);
 
                                                 // Are bothe numbers valid?
             if (n <> -1) and (x <> -1) then
@@ -5852,17 +5865,17 @@ begin
                                                 // a string of '?' the same length
                                                 // as 'x' (for comparing)
               begin
-                l1 := p - PChar(s);
-                s := Copy(s, 1, l1) + StringOfChar('?', l2) + '/' + StringOfChar('?', l2) + (p1 + 1);
+                l1 := p - PAnsiChar(s);
+                s := Copy(s, 1, l1) + RawStringOfChar('?', l2) + '/' + RawStringOfChar('?', l2) + (p1 + 1);
               end
               else
                 if fixIt and (l1 <> l2) then    // Pad 'n' with zeros so it's the
                 begin                           // same length as 'x'
-                  l1 := p - PChar(s);
-                  s1 := IntToStr(n);
+                  l1 := p - PAnsiChar(s);
+                  s1 := RawIntToStr(n);
                   l := Length(s1);
                   if l < l2 then
-                    s1 := StringOfChar('0', l2 - l) + s1;
+                    s1 := RawStringOfChar('0', l2 - l) + s1;
                                                   // s1 now contains the 'n' string,
                                                   // padded to the same length as the
                                                   // 'x' string.
@@ -5878,7 +5891,7 @@ begin
   end;
 end;
 
-function TArticleBase.DecodedMultipartSubject: string;
+function TArticleBase.DecodedMultipartSubject: RawByteString;
 begin
   if not fPartDecoded then
   begin
@@ -5937,9 +5950,9 @@ begin
     // does not provide any clue about what the codepage might be.
     if fCodePage = CP_USASCII then
     begin
-      st := HeaderCharset(From);
+      st := HeaderCharset(string(fFrom));
       if st = '' then
-        st := HeaderCharset(Subject);
+        st := HeaderCharset(string(fSubject));
 
       if st <> '' then
         CodePage := MimeCharsetNameToCodePage(st)
@@ -5979,6 +5992,11 @@ begin
     if Result <= 0 then
       Result := 1;
   end;
+end;
+
+function TArticleBase.GetFrom: string;
+begin
+  Result := string(fFrom); // !!!!!!
 end;
 
 function TArticleBase.GetFromEmail: string;
@@ -6045,8 +6063,8 @@ begin
     Result := '';
     for i := 0 to Msg.Header.Count - 1 do
     begin
-      s := Msg.Header[i];
-      if CompareText(name, SplitString(':', s)) = 0 then
+      s := string(Msg.Header[i]);
+      if SameText(name, SplitString(':', s)) then
       begin
         Result := s;
         Break;
@@ -6078,7 +6096,7 @@ end;
 
 function TArticleBase.GetInterestingMessageLine: string;
 begin
-  Result := fSubject;
+  Result := Subject;
 end;
 
 function TArticleBase.GetIsCancelled: Boolean;
@@ -6226,6 +6244,11 @@ begin
   Result := (fFlags and fgXanaNews) <> 0;
 end;
 
+function TArticleBase.GetMessageID: string;
+begin
+  Result := string(fMessageId);
+end;
+
 function TArticleBase.GetMessagesInThread: Integer;
 var
   p: TArticlebase;
@@ -6247,7 +6270,7 @@ end;
 
 function TArticleBase.GetMsgFromFile: TmvMessage;
 var
-  st: MessageString;
+  st: RawByteString;
   len: DWORD;
   hLen: Word;
   cp: Integer;
@@ -6277,7 +6300,7 @@ begin
         begin
           SetLength(st, hLen);
           Owner.fMessageFile.Read(st[1], hLen);
-          fMsg.Header.Add(string(st));
+          fMsg.Header.Add(st);
           Owner.fMessageFile.Read(hLen, SizeOf(hLen));
         end;
 
@@ -6335,17 +6358,22 @@ begin
 // stub
 end;
 
-function TArticleBase.GetSimplifiedSubject: string;
+function TArticleBase.GetReferences: string;
+begin
+  Result := string(fReferences);
+end;
+
+function TArticleBase.GetSimplifiedSubject: RawByteString;
 var
   p: Integer;
   t: Boolean;
 begin
   t := False;
-  Result := Subject;
-  while (SameText(Copy(Result, 1, 2), 're')) do
+  Result := fSubject;
+  while (RawSameText(Copy(Result, 1, 2), 're')) do
   begin
     t := True;
-    p := Pos(':', Result);
+    p := RawPos(':', Result);
     if p = 0 then
       Break;
 
@@ -6356,7 +6384,13 @@ begin
     Delete(Result, 1, p);
   end;
   if t then
-    Result := Trim(Result);
+    Result := RawTrim(Result);
+end;
+
+function TArticleBase.GetSubject: string;
+begin
+  Result := DecodeSubject(fSubject, CodePage);
+//  Result := string(fSubject); // !!!!!! use codepage
 end;
 
 function TArticleBase.GetSubjectIsReply: Boolean;
@@ -6378,9 +6412,9 @@ begin
   end;
 end;
 
-function TArticleBase.GetUniqueID: string;
+function TArticleBase.GetUniqueID: RawByteString;
 begin
-  Result := MessageID;
+  Result := RawMessageID;
 end;
 
 function TArticleBase.GetUnreadMessagesInThread: Integer;
@@ -6420,20 +6454,20 @@ end;
  |   articleNo: Integer;                                                |
  |   header: TStrings        // nb in/out parameter                     |
  *----------------------------------------------------------------------*)
-procedure TArticleBase.Initialize(articleNo: Integer; header: TStrings);
+procedure TArticleBase.Initialize(articleNo: Integer; header: TAnsiStrings);
 var
-  hdrs: TStringList;
+  hdrs: TAnsiStringList;
   i: Integer;
-  dt: string;
+  dt: RawByteString;
 
-  function ProcessHeaderLine(const valueName: string): string;
+  function ProcessHeaderLine(const valueName: RawByteString): RawByteString;
   var
     idx: Integer;
   begin
     idx := hdrs.IndexOfName(valueName);
     if idx >= 0 then
     begin
-      Result := Trim(hdrs.Values[valueName]);
+      Result := RawTrim(hdrs.Values[valueName]);
       header.Delete(idx);
       hdrs.Delete(idx);
     end
@@ -6442,7 +6476,7 @@ var
   end;
 
 begin
-  hdrs := TStringList.Create;
+  hdrs := TAnsiStringList.Create;
   try
     hdrs.NameValueSeparator := ':';
     fCodePage := -1;
@@ -6452,20 +6486,20 @@ begin
     fArticleNo := articleNo;
 
     fMessageID := ProcessHeaderLine('Message-ID');
-    fBytes := StrToIntDef(ProcessHeaderLine('Bytes'), 0);
-    fLines := StrToIntDef(ProcessHeaderLine('Lines'), 0);
+    fBytes := RawStrToIntDef(ProcessHeaderLine('Bytes'), 0);
+    fLines := RawStrToIntDef(ProcessHeaderLine('Lines'), 0);
     fReferences := ProcessHeaderLine('References');
     fFrom := ProcessHeaderLine('From');
     fSubject := ProcessHeaderLine('Subject');
     dt := ProcessHeaderLine('Date');
-    fDate := GMTToLocalDateTime(dt);
-    if StrInternetToDateTime(dt) <> fDate then
+    fDate := GMTToLocalDateTime(string(dt));
+    if StrInternetToDateTime(string(dt)) <> fDate then
       header.Add('X-XanaOrigDate:' + dt);
 
-    if Pos('XanaNews', hdrs.Values['X-Newsreader']) > 0 then
+    if RawPos('XanaNews', hdrs.Values['X-Newsreader']) > 0 then
       fFlags := fFlags or fgXanaNews;
 
-    if Pos('XanaNews', hdrs.Values['User-Agent']) > 0 then
+    if RawPos('XanaNews', hdrs.Values['User-Agent']) > 0 then
       fFlags := fFlags or fgXanaNews;
   finally
     hdrs.Free;
@@ -6482,10 +6516,9 @@ begin
   Result := '';
 end;
 
-function TArticleBase.PeekAtMsgHdrFromFile(const hdr: string): string;
+function TArticleBase.PeekAtMsgHdrFromFile(const hdr: RawByteString): RawByteString;
 var
-  st: string;
-  raw: MessageString;
+  raw: RawByteString;
   hLen: Word;
 begin
   Result := '';
@@ -6499,9 +6532,8 @@ begin
 
     SetLength(raw, 5);         // Read XMsg: prefix
     Owner.fMessageFile.Read(raw[1], 5);
-    st := string(raw);
 
-    if st = 'X-Msg' then      // New style - contains extra header lines
+    if raw = 'X-Msg' then      // New style - contains extra header lines
     begin
       SetLength(raw, 9);
       Owner.fMessageFile.Read(raw[1], 9);
@@ -6511,11 +6543,10 @@ begin
       begin
         SetLength(raw, hLen);
         Owner.fMessageFile.read(raw[1], hLen);
-        st := string(raw);
 
-        if CompareText(SplitString(':', st), hdr) = 0 then
+        if RawCompareText(RawSplitString(':', raw), hdr) = 0 then
         begin
-          Result := Trim(st);
+          Result := RawTrim(raw);
           Exit;
         end;
         Owner.fMessageFile.Read(hLen, SizeOf(hLen));
@@ -6608,6 +6639,11 @@ end;
 procedure TArticleBase.SetMsg(const Value: TmvMessage);
 begin
 // stub
+end;
+
+procedure TArticleBase.SetSubject(const Value: string);
+begin
+  fSubject := RawByteString(Value); // !!!!!!
 end;
 
 { TNNTPMessageCacheController }

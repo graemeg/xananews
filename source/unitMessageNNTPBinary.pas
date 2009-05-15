@@ -13,7 +13,7 @@ unit unitMessageNNTPBinary;
 interface
 
 uses
-  Windows, Classes, SysUtils, unitMessages, Graphics, XnClasses;
+  Windows, Classes, SysUtils, unitMessages, Graphics, XnClasses, XnRawByteStrings;
 
 type
   TmvNNTPBinary = class(TmvMessagePart)
@@ -22,7 +22,7 @@ type
   protected
     class function IsBoundary(const st: string; MIMEHeader: TMIMEHeader): Boolean; override;
     function IsBoundaryEnd(const st: string): Boolean; override;
-    function ProcessHeaderLine(const st: string): Boolean; override;
+    function ProcessHeaderLine(const st: RawByteString): Boolean; override;
     function GetGraphic: TGraphic; override;
     function GetFileName: string; override;
     function GetDecodeType: TDecodeType; override;
@@ -113,16 +113,16 @@ begin
   Result := CompareText(Copy(st, 1, 3), 'end') = 0;
 end;
 
-function TmvNNTPBinary.ProcessHeaderLine(const st: string): Boolean;
+function TmvNNTPBinary.ProcessHeaderLine(const st: RawByteString): Boolean;
 var
   p: Integer;
-  s: string;
+  s: RawByteString;
 begin
-  p := Pos(' ', st);
+  p := RawPos(' ', st);
   if p > 0 then
   begin
     s := Copy(st, p + 1, MaxInt);
-    p := Pos(' ', s);
+    p := RawPos(' ', s);
     if p > 0 then
       s := Copy(s, p + 1, MaxInt)
     else
@@ -131,7 +131,7 @@ begin
   else
     s := '';
 
-  fFileName := s;
+  fFileName := string(s);
   Result := False;
 end;
 

@@ -338,7 +338,7 @@ begin
   st := '';
   case fColumn of
     ftNumber : it := article.ArticleNo;
-    ftSubject: st := DecodeSubject(article.Subject);
+    ftSubject: st := article.Subject;
     ftAuthor: st := article.FromName;
     ftMessageID: st := article.MessageId;
     ftDate: dt := article.Date;
@@ -359,7 +359,7 @@ begin
                     end;
 
     ftHeaderLines: if Assigned(article.Msg) and Assigned(article.Msg.Header) then
-                      st := article.Msg.Header.Text
+                      st := string(article.Msg.Header.Text)
                     else
                       if (article is TArticle) then
                         st := TArticle(article).TempExtraHeaders;

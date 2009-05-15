@@ -870,7 +870,6 @@ object fmMain: TfmMain
       Top = 0
       Width = 798
       Height = 21
-      AutoSize = True
       ButtonHeight = 21
       ButtonWidth = 61
       Caption = 'tbMenu'
@@ -963,9 +962,10 @@ object fmMain: TfmMain
     object pnlSearchBar: TPanel
       Left = 11
       Top = 61
-      Width = 798
+      Width = 609
       Height = 21
       Alignment = taLeftJustify
+      AutoSize = True
       BevelOuter = bvNone
       Caption = '   Search'
       TabOrder = 3

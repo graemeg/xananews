@@ -1,50 +1,298 @@
 ﻿[Closed Files]
+File_0=TSourceModule,'E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\Protocols\IdCoder3to4.pas',0,1,254,1,277,0,0,,
+File_1=TSourceModule,'c:\development tools\codegear\rad studio\6.0\SOURCE\WIN32\RTL\SYS\System.pas',0,1,17173,1,17196,0,0,,
+File_2=TSourceModule,'E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\Core\IdIOHandler.pas',0,1,1678,16,1705,0,0,,
+File_3=TSourceModule,'E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\Protocols\IdGlobalProtocols.pas',0,1,1171,3,1069,0,0,,
+File_4=TSourceModule,'E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\Core\IdTCPConnection.pas',0,1,673,1,696,0,0,,
+File_5=TSourceModule,'E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\Core\IdReplyRFC.pas',0,1,216,1,239,0,0,,
+File_6=TSourceModule,'c:\development tools\codegear\rad studio\6.0\SOURCE\WIN32\RTL\SYS\SysUtils.pas',0,1,5019,22,5044,0,0,,
+File_7=TSourceModule,'c:\development tools\codegear\rad studio\6.0\source\Win32\rtl\win\Windows.pas',0,1,30203,1,30224,0,0,,
+File_8=TSourceModule,'E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\Core\IdBuffer.pas',0,1,445,1,452,0,0,,
+File_9=TSourceModule,'E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\CheckCrosspostDialog.pas',0,1,1,3,10,0,0,,
 
 [Modules]
-Module0=C:\Projects\RapidSVN\XanaNews\trunk\source\NewsReader3.dproj
+Module0=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitMessages.pas
 Module1=default.htm
-Count=2
+Module2=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\NewsReader3.dproj
+Module3=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\NewsGlobals.pas
+Module4=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\IdNNTPX.pas
+Module5=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitNNTPServices.pas
+Module6=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\LowLevel\Source\XnRawByteStrings.pas
+Module7=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitArticleHash.pas
+Module8=C:\Development Tools\CodeGear\RAD Studio\6.0\source\Win32\rtl\common\AnsiStrings.pas
+Module9=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\MainForm.pas
+Module10=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\System\IdGlobal.pas
+Module11=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitNewsThread.pas
+Module12=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitNNTPThreads.pas
+Module13=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitNNTPThreadManager.pas
+Module14=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitBookmarks.pas
+Module15=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\ReplyByMailForm.pas
+Module16=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\PostFrame.pas
+Module17=c:\development tools\codegear\rad studio\6.0\source\Win32\rtl\win\Mapi.pas
+Module18=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\FindOnInternetDialog.pas
+Module19=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitLog.pas
+Module20=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\LowLevel\Source\XnClasses.pas
+Module21=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\LowLevel\Source\unitStreamTextReader.pas
+Module22=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\cmpMessageScrollBox.pas
+Module23=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitSavedArticles.pas
+Module24=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitNNTPFilters.pas
+Module25=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\LowLevel\Source\unitCharsetMap.pas
+Module26=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\PostMessageForm.pas
+Module27=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitMessageMime.pas
+Module28=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\Protocols\IdCoder.pas
+Module29=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\Protocols\IdCoderQuotedPrintable.pas
+Module30=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\XnCoderQuotedPrintable.pas
+Module31=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitSettings.pas
+Module32=c:\development tools\codegear\rad studio\6.0\source\Win32\rtl\common\Classes.pas
+Module33=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\NewsgroupStatisticsForm.pas
+Module34=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\Protocols\IdAttachmentFile.pas
+Module35=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitIdentities.pas
+Count=36
 EditWindowCount=1
 
-[C:\Projects\RapidSVN\XanaNews\trunk\source\NewsReader3.dproj]
-ModuleType=TBaseProject
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitMessages.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
 
 [default.htm]
 ModuleType=TURLModule
 
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\NewsReader3.dproj]
+ModuleType=TBaseProject
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\NewsGlobals.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\IdNNTPX.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitNNTPServices.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\LowLevel\Source\XnRawByteStrings.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitArticleHash.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[C:\Development Tools\CodeGear\RAD Studio\6.0\source\Win32\rtl\common\AnsiStrings.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\MainForm.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\System\IdGlobal.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitNewsThread.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitNNTPThreads.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitNNTPThreadManager.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitBookmarks.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\ReplyByMailForm.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\PostFrame.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[c:\development tools\codegear\rad studio\6.0\source\Win32\rtl\win\Mapi.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\FindOnInternetDialog.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitLog.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\LowLevel\Source\XnClasses.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\LowLevel\Source\unitStreamTextReader.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\cmpMessageScrollBox.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitSavedArticles.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitNNTPFilters.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\LowLevel\Source\unitCharsetMap.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\PostMessageForm.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitMessageMime.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\Protocols\IdCoder.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\Protocols\IdCoderQuotedPrintable.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\XnCoderQuotedPrintable.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitSettings.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[c:\development tools\codegear\rad studio\6.0\source\Win32\rtl\common\Classes.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\NewsgroupStatisticsForm.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\Protocols\IdAttachmentFile.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
+[E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitIdentities.pas]
+ModuleType=TSourceModule
+FormState=0
+FormOnTop=0
+
 [EditWindow0]
-ViewCount=3
-CurrentEditView=C:\Projects\RapidSVN\XanaNews\trunk\source\NewsReader3.dpr
+ViewCount=37
+CurrentEditView=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitMessages.pas
 View0=0
 View1=1
 View2=2
+View3=3
+View4=4
+View5=5
+View6=6
+View7=7
+View8=8
+View9=9
+View10=10
+View11=11
+View12=12
+View13=13
+View14=14
+View15=15
+View16=16
+View17=17
+View18=18
+View19=19
+View20=20
+View21=21
+View22=22
+View23=23
+View24=24
+View25=25
+View26=26
+View27=27
+View28=28
+View29=29
+View30=30
+View31=31
+View32=32
+View33=33
+View34=34
+View35=35
+View36=36
 PercentageSizes=1
 Create=1
 Visible=1
 Docked=0
 State=0
-Left=3380
-Top=772
-Width=4755
-Height=9117
+Left=3411
+Top=897
+Width=4802
+Height=9017
 MaxLeft=-5
 MaxTop=-9
-ClientWidth=4714
-ClientHeight=8825
+ClientWidth=4719
+ClientHeight=8709
 DockedToMainForm=0
 MessageView=MessageView@EditWindow0
 BorlandEditorCodeExplorer=BorlandEditorCodeExplorer@EditWindow0
 TopPanelSize=0
 LeftPanelSize=0
 LeftPanelClients=BorlandEditorCodeExplorer@EditWindow0
-LeftPanelData=0000080088880100000019000000426F726C616E64456469746F72436F64654578706C6F726572BA0C00000000000000E301000000000000FFFFFFFF
+LeftPanelData=00000800F8F80100000019000000426F726C616E64456469746F72436F64654578706C6F726572BA0C00000000000000E301000000000000FFFFFFFF
 RightPanelSize=0
-BottomPanelSize=1183
+BottomPanelSize=1192
 BottomPanelClients=MessageView@EditWindow0
-BottomPanelData=00000800E8E80000000000000000000000000000000000000000000100000000000000000B0000004D65737361676556696577FFFFFFFF
+BottomPanelData=0000080038380000000000000000000000000000000000000000000100000000000000000B0000004D65737361676556696577FFFFFFFF
 BottomMiddlePanelSize=0
 BottomMiddlePanelClients=DockSite0,ToDo List
-BottomMiddelPanelData=0000080098980200000009000000446F636B53697465300E000000546F446F4C69737457696E646F778B1F00000000000002B707000000000000FFFFFFFF
+BottomMiddelPanelData=0000080068680200000009000000446F636B53697465300E000000546F446F4C69737457696E646F778B1F00000000000002B707000000000000FFFFFFFF
 
 [View0]
 CustomEditViewType=TWelcomePageView
@@ -55,17 +303,396 @@ CustomEditViewType=TDisassemblyEditView
 
 [View2]
 CustomEditViewType=TEditView
-Module=C:\Projects\RapidSVN\XanaNews\trunk\source\NewsReader3.dpr
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\NewsReader3.dpr
 CursorX=1
-CursorY=1
+CursorY=146
+TopLine=138
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\NewsReader3.dpr
+
+[View3]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\MainForm.pas
+CursorX=1
+CursorY=6079
+TopLine=6050
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\MainForm.pas
+
+[View4]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitBookmarks.pas
+CursorX=27
+CursorY=264
+TopLine=234
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitBookmarks.pas
+
+[View5]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitNNTPThreadManager.pas
+CursorX=1
+CursorY=1019
+TopLine=996
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitNNTPThreadManager.pas
+
+[View6]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitNNTPServices.pas
+CursorX=59
+CursorY=5200
+TopLine=5176
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitNNTPServices.pas
+
+[View7]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitArticleHash.pas
+CursorX=16
+CursorY=281
+TopLine=273
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitArticleHash.pas
+
+[View8]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\System\IdGlobal.pas
+CursorX=1
+CursorY=4796
+TopLine=4798
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\System\IdGlobal.pas
+
+[View9]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\IdNNTPX.pas
+CursorX=13
+CursorY=502
+TopLine=491
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\IdNNTPX.pas
+
+[View10]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitNewsThread.pas
+CursorX=23
+CursorY=1701
+TopLine=1714
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitNewsThread.pas
+
+[View11]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\FindOnInternetDialog.pas
+CursorX=12
+CursorY=46
+TopLine=10
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\FindOnInternetDialog.pas
+
+[View12]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitSavedArticles.pas
+CursorX=18
+CursorY=1727
+TopLine=1704
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitSavedArticles.pas
+
+[View13]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitNNTPThreads.pas
+CursorX=20
+CursorY=1267
+TopLine=1248
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitNNTPThreads.pas
+
+[View14]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\cmpMessageScrollBox.pas
+CursorX=1
+CursorY=376
+TopLine=344
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\cmpMessageScrollBox.pas
+
+[View15]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitNNTPFilters.pas
+CursorX=12
+CursorY=107
+TopLine=84
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitNNTPFilters.pas
+
+[View16]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitSettings.pas
+CursorX=23
+CursorY=1359
+TopLine=1337
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitSettings.pas
+
+[View17]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\NewsGlobals.pas
+CursorX=15
+CursorY=1362
+TopLine=1339
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\NewsGlobals.pas
+
+[View18]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\PostFrame.pas
+CursorX=7
+CursorY=266
+TopLine=243
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\PostFrame.pas
+
+[View19]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitLog.pas
+CursorX=11
+CursorY=8
 TopLine=1
 LeftCol=1
 Elisions=
 Bookmarks=
-EditViewName=C:\Projects\RapidSVN\XanaNews\trunk\source\NewsReader3.dpr
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitLog.pas
+
+[View20]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\XnCoderQuotedPrintable.pas
+CursorX=11
+CursorY=174
+TopLine=166
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\XnCoderQuotedPrintable.pas
+
+[View21]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\Protocols\IdCoderQuotedPrintable.pas
+CursorX=8
+CursorY=111
+TopLine=274
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\Protocols\IdCoderQuotedPrintable.pas
+
+[View22]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\Protocols\IdCoder.pas
+CursorX=1
+CursorY=110
+TopLine=98
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\Protocols\IdCoder.pas
+
+[View23]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitMessageMime.pas
+CursorX=30
+CursorY=199
+TopLine=198
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitMessageMime.pas
+
+[View24]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitMessages.pas
+CursorX=14
+CursorY=640
+TopLine=615
+LeftCol=1
+Elisions=
+Bookmarks={1,639,1}
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitMessages.pas
+
+[View25]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\LowLevel\Source\unitCharsetMap.pas
+CursorX=52
+CursorY=290
+TopLine=266
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\LowLevel\Source\unitCharsetMap.pas
+
+[View26]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\PostMessageForm.pas
+CursorX=19
+CursorY=317
+TopLine=294
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\PostMessageForm.pas
+
+[View27]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitIdentities.pas
+CursorX=3
+CursorY=31
+TopLine=19
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\unitIdentities.pas
+
+[View28]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\Protocols\IdAttachmentFile.pas
+CursorX=4
+CursorY=104
+TopLine=59
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\thirdparty\Indy10\Protocols\IdAttachmentFile.pas
+
+[View29]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\ReplyByMailForm.pas
+CursorX=12
+CursorY=107
+TopLine=84
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\ReplyByMailForm.pas
+
+[View30]
+CustomEditViewType=TEditView
+Module=c:\development tools\codegear\rad studio\6.0\source\Win32\rtl\win\Mapi.pas
+CursorX=1
+CursorY=118
+TopLine=77
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=c:\development tools\codegear\rad studio\6.0\source\Win32\rtl\win\Mapi.pas
+
+[View31]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\NewsgroupStatisticsForm.pas
+CursorX=28
+CursorY=687
+TopLine=689
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\source\NewsgroupStatisticsForm.pas
+
+[View32]
+CustomEditViewType=TEditView
+Module=c:\development tools\codegear\rad studio\6.0\source\Win32\rtl\common\Classes.pas
+CursorX=1
+CursorY=4774
+TopLine=4752
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=c:\development tools\codegear\rad studio\6.0\source\Win32\rtl\common\Classes.pas
+
+[View33]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\LowLevel\Source\unitStreamTextReader.pas
+CursorX=1
+CursorY=122
+TopLine=98
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\LowLevel\Source\unitStreamTextReader.pas
+
+[View34]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\LowLevel\Source\XnClasses.pas
+CursorX=15
+CursorY=64
+TopLine=17
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\LowLevel\Source\XnClasses.pas
+
+[View35]
+CustomEditViewType=TEditView
+Module=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\LowLevel\Source\XnRawByteStrings.pas
+CursorX=1
+CursorY=241
+TopLine=229
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=E:\Projects (SVN)\XanaNews\XanaNews\trunk\components\LowLevel\Source\XnRawByteStrings.pas
+
+[View36]
+CustomEditViewType=TEditView
+Module=C:\Development Tools\CodeGear\RAD Studio\6.0\source\Win32\rtl\common\AnsiStrings.pas
+CursorX=1
+CursorY=2106
+TopLine=2092
+LeftCol=1
+Elisions=
+Bookmarks=
+EditViewName=C:\Development Tools\CodeGear\RAD Studio\6.0\source\Win32\rtl\common\AnsiStrings.pas
 
 [Watches]
-Count=0
+Count=5
+Watch0='hdr[1]',256,0,18,1,0,'Watches'
+Watch1='LastCmdResult.Text.Count',256,0,18,1,0,'Watches'
+Watch2='ArticleBase[i]',256,0,18,1,0,'Watches'
+Watch3='s',256,0,18,1,0,'Watches'
+Watch4='header[i]',256,0,18,1,0,'Watches'
 
 [WatchWindow]
 WatchColumnWidth=120
@@ -76,14 +703,14 @@ Visible=0
 Docked=0
 State=0
 Left=0
-Top=3508
+Top=3513
 Width=2625
-Height=1938
+Height=1940
 MaxLeft=-5
 MaxTop=-9
-ClientWidth=2583
-ClientHeight=1715
-TBDockHeight=163
+ClientWidth=2542
+ClientHeight=1650
+TBDockHeight=162
 LRDockWidth=2547
 Dockable=1
 StayOnTop=0
@@ -103,11 +730,11 @@ State=0
 Left=0
 Top=0
 Width=10000
-Height=738
+Height=769
 MaxLeft=-5
 MaxTop=-9
-ClientWidth=9958
-ClientHeight=446
+ClientWidth=9917
+ClientHeight=462
 BottomPanelSize=0
 
 [ProjectManager]
@@ -118,12 +745,12 @@ Docked=1
 State=0
 Left=0
 Top=0
-Width=1745
-Height=4623
+Width=1703
+Height=3872
 MaxLeft=-1
 MaxTop=-1
-ClientWidth=1745
-ClientHeight=4623
+ClientWidth=1703
+ClientHeight=3872
 TBDockHeight=274
 LRDockWidth=3729
 Dockable=1
@@ -135,40 +762,121 @@ Create=1
 Visible=1
 Docked=0
 State=0
-Left=8214
-Top=5943
-Width=1786
-Height=3954
+Left=8219
+Top=5274
+Width=1781
+Height=4598
 MaxLeft=-5
 MaxTop=-9
-ClientWidth=1745
-ClientHeight=3731
-TBDockHeight=5815
+ClientWidth=1698
+ClientHeight=4308
+TBDockHeight=5812
 LRDockWidth=1406
 Dockable=1
 StayOnTop=0
 
-[TemplateView]
+[DataExplorer]
+PercentageSizes=1
+Create=1
+Visible=1
+Docked=1
+State=0
+Left=0
+Top=0
+Width=1703
+Height=3872
+MaxLeft=-1
+MaxTop=-1
+ClientWidth=1703
+ClientHeight=3872
+TBDockHeight=4880
+LRDockWidth=7146
+Dockable=1
+StayOnTop=0
+
+[ToDo List]
+PercentageSizes=1
+Create=1
+Visible=0
+Docked=1
+State=0
+Left=0
+Top=0
+Width=3672
+Height=949
+MaxLeft=-1
+MaxTop=-1
+ClientWidth=3672
+ClientHeight=949
+TBDockHeight=949
+LRDockWidth=3672
+Dockable=1
+StayOnTop=0
+Column0Width=270
+Column1Width=30
+Column2Width=100
+Column3Width=70
+Column4Width=70
+SortOrder=4
+ShowHints=1
+ShowChecked=1
+
+[FindReferencsForm]
+PercentageSizes=1
+Create=1
+Visible=1
+Docked=1
+State=0
+Left=0
+Top=0
+Width=4385
+Height=1026
+MaxLeft=-1
+MaxTop=-1
+ClientWidth=4385
+ClientHeight=1026
+TBDockHeight=5077
+LRDockWidth=5302
+Dockable=1
+StayOnTop=0
+
+[RefactoringForm]
+PercentageSizes=1
+Create=1
+Visible=1
+Docked=1
+State=0
+Left=0
+Top=0
+Width=4385
+Height=1026
+MaxLeft=-1
+MaxTop=-1
+ClientWidth=4385
+ClientHeight=1026
+TBDockHeight=3838
+LRDockWidth=5302
+Dockable=1
+StayOnTop=0
+
+[TFileExplorerForm]
 PercentageSizes=1
 Create=1
 Visible=0
 Docked=0
 State=0
-Left=8214
-Top=5274
-Width=1786
-Height=4554
+Left=21
+Top=795
+Width=2156
+Height=6897
 MaxLeft=-5
 MaxTop=-9
-ClientWidth=1745
-ClientHeight=4331
-TBDockHeight=369
-LRDockWidth=271
+ClientWidth=2073
+ClientHeight=6607
+TBDockHeight=4581
+LRDockWidth=2276
 Dockable=1
 StayOnTop=0
-Name=120
-Description=334
-filter=1
 
 [DebugLogView]
 PercentageSizes=1
@@ -177,14 +885,14 @@ Visible=0
 Docked=0
 State=0
 Left=2625
-Top=7856
+Top=7863
 Width=3484
-Height=2144
+Height=2137
 MaxLeft=-5
 MaxTop=-9
-ClientWidth=3443
-ClientHeight=1921
-TBDockHeight=300
+ClientWidth=3401
+ClientHeight=1846
+TBDockHeight=299
 LRDockWidth=3625
 Dockable=1
 StayOnTop=0
@@ -196,14 +904,14 @@ Visible=0
 Docked=0
 State=0
 Left=0
-Top=7856
+Top=7863
 Width=2625
-Height=2144
+Height=2137
 MaxLeft=-5
 MaxTop=-9
-ClientWidth=2583
-ClientHeight=1921
-TBDockHeight=146
+ClientWidth=2542
+ClientHeight=1846
+TBDockHeight=145
 LRDockWidth=5422
 Dockable=1
 StayOnTop=0
@@ -219,14 +927,14 @@ Visible=0
 Docked=0
 State=0
 Left=0
-Top=5446
+Top=5444
 Width=2625
 Height=2410
 MaxLeft=-5
 MaxTop=-9
-ClientWidth=2583
-ClientHeight=2187
-TBDockHeight=206
+ClientWidth=2542
+ClientHeight=2120
+TBDockHeight=205
 LRDockWidth=2547
 Dockable=1
 StayOnTop=0
@@ -238,120 +946,39 @@ Visible=0
 Docked=0
 State=0
 Left=0
-Top=1166
+Top=1162
 Width=2625
-Height=2341
+Height=2342
 MaxLeft=-5
 MaxTop=-9
-ClientWidth=2583
-ClientHeight=2118
-TBDockHeight=163
+ClientWidth=2542
+ClientHeight=2051
+TBDockHeight=162
 LRDockWidth=2547
 Dockable=1
 StayOnTop=0
 
-[TFileExplorerForm]
+[TemplateView]
 PercentageSizes=1
 Create=1
 Visible=0
 Docked=0
 State=0
-Left=21
-Top=798
-Width=2156
-Height=6895
+Left=8214
+Top=5274
+Width=1786
+Height=4556
 MaxLeft=-5
 MaxTop=-9
-ClientWidth=2115
-ClientHeight=6672
-TBDockHeight=4580
-LRDockWidth=2276
+ClientWidth=1703
+ClientHeight=4265
+TBDockHeight=368
+LRDockWidth=271
 Dockable=1
 StayOnTop=0
-
-[FindReferencsForm]
-PercentageSizes=1
-Create=1
-Visible=1
-Docked=1
-State=0
-Left=0
-Top=0
-Width=4385
-Height=1029
-MaxLeft=-1
-MaxTop=-1
-ClientWidth=4385
-ClientHeight=1029
-TBDockHeight=5077
-LRDockWidth=5302
-Dockable=1
-StayOnTop=0
-
-[RefactoringForm]
-PercentageSizes=1
-Create=1
-Visible=1
-Docked=1
-State=0
-Left=0
-Top=0
-Width=4385
-Height=1029
-MaxLeft=-1
-MaxTop=-1
-ClientWidth=4385
-ClientHeight=1029
-TBDockHeight=3834
-LRDockWidth=5302
-Dockable=1
-StayOnTop=0
-
-[ToDo List]
-PercentageSizes=1
-Create=1
-Visible=0
-Docked=1
-State=0
-Left=653
-Top=1004
-Width=3672
-Height=952
-MaxLeft=-1
-MaxTop=-1
-ClientWidth=3672
-ClientHeight=952
-TBDockHeight=952
-LRDockWidth=3672
-Dockable=1
-StayOnTop=0
-Column0Width=270
-Column1Width=30
-Column2Width=100
-Column3Width=70
-Column4Width=70
-SortOrder=4
-ShowHints=1
-ShowChecked=1
-
-[DataExplorer]
-PercentageSizes=1
-Create=1
-Visible=1
-Docked=1
-State=0
-Left=0
-Top=0
-Width=1745
-Height=4623
-MaxLeft=-1
-MaxTop=-1
-ClientWidth=1745
-ClientHeight=4623
-TBDockHeight=4880
-LRDockWidth=7146
-Dockable=1
-StayOnTop=0
+Name=120
+Description=334
+filter=1
 
 [ModelViewTool]
 PercentageSizes=1
@@ -361,33 +988,14 @@ Docked=1
 State=0
 Left=0
 Top=0
-Width=1745
-Height=4623
+Width=1703
+Height=3872
 MaxLeft=-1
 MaxTop=-1
-ClientWidth=1745
-ClientHeight=4623
+ClientWidth=1703
+ClientHeight=3872
 TBDockHeight=4880
 LRDockWidth=5302
-Dockable=1
-StayOnTop=0
-
-[ClassBrowserTool]
-PercentageSizes=1
-Create=1
-Visible=0
-Docked=0
-State=0
-Left=0
-Top=0
-Width=1891
-Height=3268
-MaxLeft=-5
-MaxTop=-9
-ClientWidth=1849
-ClientHeight=3045
-TBDockHeight=3148
-LRDockWidth=1844
 Dockable=1
 StayOnTop=0
 
@@ -397,19 +1005,19 @@ Create=1
 Visible=1
 Docked=0
 State=0
-Left=1604
-Top=780
-Width=1760
-Height=9099
+Left=1651
+Top=897
+Width=1740
+Height=9000
 MaxLeft=-5
 MaxTop=-9
-ClientWidth=1719
-ClientHeight=8877
-TBDockHeight=5815
+ClientWidth=1656
+ClientHeight=8709
+TBDockHeight=5812
 LRDockWidth=1542
 Dockable=1
 StayOnTop=0
-SplitPos=139
+SplitPos=118
 
 [BreakpointWindow]
 PercentageSizes=1
@@ -418,14 +1026,14 @@ Visible=0
 Docked=0
 State=0
 Left=6115
-Top=7856
+Top=7863
 Width=3885
-Height=2144
+Height=2137
 MaxLeft=-5
 MaxTop=-9
-ClientWidth=3844
-ClientHeight=1921
-TBDockHeight=206
+ClientWidth=3802
+ClientHeight=1846
+TBDockHeight=205
 LRDockWidth=6396
 Dockable=1
 StayOnTop=0
@@ -442,15 +1050,15 @@ Create=1
 Visible=1
 Docked=0
 State=0
-Left=0
-Top=780
-Width=1578
-Height=9099
+Left=26
+Top=897
+Width=1583
+Height=8983
 MaxLeft=-5
 MaxTop=-9
-ClientWidth=1536
-ClientHeight=8877
-TBDockHeight=3465
+ClientWidth=1500
+ClientHeight=8692
+TBDockHeight=3470
 LRDockWidth=1672
 Dockable=1
 StayOnTop=0
@@ -463,13 +1071,13 @@ Docked=1
 State=0
 Left=0
 Top=23
-Width=4714
-Height=1021
+Width=4719
+Height=1026
 MaxLeft=-1
 MaxTop=-1
-ClientWidth=4714
-ClientHeight=1021
-TBDockHeight=1021
+ClientWidth=4719
+ClientHeight=1026
+TBDockHeight=1026
 LRDockWidth=2771
 Dockable=1
 StayOnTop=0
@@ -483,12 +1091,12 @@ State=0
 Left=0
 Top=0
 Width=1464
-Height=8268
+Height=8265
 MaxLeft=-1
 MaxTop=-1
 ClientWidth=1464
-ClientHeight=8268
-TBDockHeight=8268
+ClientHeight=8265
+TBDockHeight=8265
 LRDockWidth=1464
 Dockable=1
 StayOnTop=0
@@ -507,12 +1115,12 @@ State=0
 Left=0
 Top=0
 Width=4385
-Height=1244
+Height=1239
 MaxLeft=-1
 MaxTop=-1
 ClientWidth=4385
-ClientHeight=1244
-TBDockHeight=1244
+ClientHeight=1239
+TBDockHeight=1239
 LRDockWidth=4385
 Dockable=1
 StayOnTop=0
@@ -528,14 +1136,14 @@ Visible=1
 Docked=0
 State=0
 Left=8214
-Top=798
+Top=889
 Width=1786
-Height=5060
+Height=4376
 MaxLeft=-5
 MaxTop=-9
-ClientWidth=1745
-ClientHeight=4837
-TBDockHeight=3182
+ClientWidth=1703
+ClientHeight=4085
+TBDockHeight=3188
 LRDockWidth=1443
 Dockable=1
 StayOnTop=0

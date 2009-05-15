@@ -4,7 +4,8 @@ interface
 
 uses
   Windows, Classes, Graphics, SysUtils, ConTnrs, SyncObjs,
-  unitNNTPServices, unitMailServices, unitNewsThread, unitSettings, NewsGlobals;
+  unitCharsetMap, unitNNTPServices, unitMailServices, unitNewsThread, unitSettings,
+  NewsGlobals, XnClasses, XnRawByteStrings;
 
 type
   TThreadManagerState = (tmDormant, tmPending, tmBusy);
@@ -61,7 +62,8 @@ type
     procedure GetArticleThreadBodies(account: TNNTPAccount; group: TSubscribedGroup; article: TArticle);
     procedure JogThreads;
     procedure DisconnectAll(Done: Boolean);
-    procedure PostMessage(account: TNNTPAccount; hdr: TStrings; const msg: string; attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle);
+    procedure PostMessage(account: TNNTPAccount; hdr: TAnsiStrings; const msg: string; attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle); overload;
+    procedure PostMessage(account: TNNTPAccount; const hdr, msg: string; attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle); overload;
     procedure SendSMTPMail(articleContainer: TServerAccount; settings: TSMTPServerSettings; const sTo, sCC, sBCC, sSubject, sReplyTo, msg: string; attachments: TObjectList; ACodePage: Integer; AUseOutbasket: Boolean);
     property NewsAgent: string read fNewsAgent;
     procedure GetProgressNumbers(settings: TServerSettings; group: TSubscribedGroup; var min, max, pos: Integer);
@@ -843,8 +845,8 @@ begin
   end;
 end;
 
-procedure TNNTPThreadManager.PostMessage(account: TNNTPAccount; hdr: TStrings;
-  const msg: string; attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle);
+procedure TNNTPThreadManager.PostMessage(account: TNNTPAccount; hdr: TAnsiStrings; const msg: string;
+  attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle);
 var
   getter: TPoster;
   sentMessages: TSentMessages;
@@ -894,6 +896,20 @@ begin
   end;
 
   JogThreads;
+end;
+
+procedure TNNTPThreadManager.PostMessage(account: TNNTPAccount; const hdr, msg: string;
+  attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle);
+var
+  h: TAnsiStrings;
+begin
+  h := TAnsiStringList.Create;
+  try
+    h.Text := WideStringToAnsiString(hdr, ACodePage);
+    PostMessage(account, h, msg, attachments, ACodepage, ATextPartStyle);
+  finally
+    h.Free;
+  end;
 end;
 
 function TNNTPThreadManager.StopArticleDownloads(group: TSubscribedGroup): Boolean;
@@ -1190,7 +1206,7 @@ var
   getter: TArticleGetter;
   group: TSubscribedGroup;
   account: TNNTPAccount;
-  ref, id: string;
+  ref, id: RawByteString;
   art: TArticle;
   isNewArticle: Boolean;
 begin
@@ -1208,16 +1224,16 @@ begin
       getter.Paused := AllThreadsPaused;
     end;
 
-    ref := Article.References;
+    ref := Article.RawReferences;
     repeat
-      id := SplitString(' ', ref);
+      id := RawSplitString(' ', ref);
       art := group.FindMsgID(id) as TArticle;
 
       isNewArticle := False;
       if art = nil then
       begin
         art := TArticle.Create(group);
-        art.fMessageID := id;
+        art.RawMessageID := id;
         group.RawAddArticle(art);
         isNewArticle := True;
       end;

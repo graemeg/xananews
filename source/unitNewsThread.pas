@@ -16,7 +16,7 @@ interface
 uses
   Windows, Classes, Graphics, SysUtils, unitNNTPServices, unitMailServices,
   SyncObjs, IdTCPClient, ConTnrs, unitSettings, unitIdentities,
-  IdMessage, NewsGlobals, IdNNTPX, XnClasses
+  IdMessage, NewsGlobals, IdNNTPX, XnClasses, XnRawByteStrings
 {$IFDEF USEOPENSTRSEC}
 , SsTLSIdIOHandler
 {$ELSE}
@@ -88,10 +88,10 @@ type
     fTerminating: Boolean;
     function GetState: TNNTPThreadState;
     procedure SetState(const Value: TNNTPThreadState);
-    function GetOutstandingRequestText(idx: Integer): WideString; virtual;
+    function GetOutstandingRequestText(idx: Integer): string; virtual;
     function GetOutstandingRequestCount: Integer; virtual;
-    function GetStatusBarMessage(group: TServerAccount): WideString; virtual;
-    function GetGetterRootText: WideString; virtual;
+    function GetStatusBarMessage(group: TServerAccount): string; virtual;
+    function GetGetterRootText: string; virtual;
     procedure SetPaused(const Value: Boolean);
     function GetSettings: TServerSettings;
   protected
@@ -126,10 +126,10 @@ type
     property Settings: TServerSettings read GetSettings;
     property State: TNNTPThreadState read GetState write SetState;
     property OutstandingRequestCount: Integer read GetOutstandingRequestCount;
-    property OutstandingRequestText[idx: Integer]: WideString read GetOutstandingRequestText;
-    property StatusBarMessage[group: TServerAccount]: WideString read GetStatusBarMessage;
+    property OutstandingRequestText[idx: Integer]: string read GetOutstandingRequestText;
+    property StatusBarMessage[group: TServerAccount]: string read GetStatusBarMessage;
     property IsDoing[obj: TObject]: Boolean read GetIsDoing;
-    property GetterRootText: WideString read GetGetterRootText;
+    property GetterRootText: string read GetGetterRootText;
     procedure GetProgressNumbers(group: TServerAccount; var min, max, pos: Integer);
     property Group[idx: Integer]: TServerAccount read GetGroup;
   end;
@@ -168,9 +168,9 @@ type
   // Getter for newsgroup lists
   TNewsgroupGetter = class(TNewsGetter)
     fNewsgroups: TStringList;
-    function GetOutstandingRequestText(idx: Integer): WideString; override;
-    function GetStatusBarMessage(group: TServerAccount): WideString; override;
-    function GetGetterRootText: WideString; override;
+    function GetOutstandingRequestText(idx: Integer): string; override;
+    function GetStatusBarMessage(group: TServerAccount): string; override;
+    function GetGetterRootText: string; override;
   public
     constructor Create(ANNTPAccount: TNNTPAccount);
     destructor Destroy; override;
@@ -205,14 +205,14 @@ type
   // Getter for bulk article/header downloading
   TArticlesGetter = class(TMultiNewsGetter)
   private
-    fHeader: TStrings;
+    fHeader: TAnsiStrings;
     fBody: TMemoryStream;
-    fArticles: TStringList;
+    fArticles: TAnsiStringList;
 
     function GetOutstandingRequestCount: Integer; override;
-    function GetOutstandingRequestText(idx: Integer): WideString; override;
-    function GetStatusBarMessage(group: TServerAccount): WideString; override;
-    function GetGetterRootText: WideString; override;
+    function GetOutstandingRequestText(idx: Integer): string; override;
+    function GetStatusBarMessage(group: TServerAccount): string; override;
+    function GetGetterRootText: string; override;
 
   protected
     function GetIsDoing(obj: TObject): Boolean; override;
@@ -237,8 +237,8 @@ type
     procedure UpdateArticles;
     procedure UpdateHeaders;
 
-    property Articles: TStringList read fArticles;
-    property Header: TStrings read fHeader;
+    property Articles: TAnsiStringList read fArticles;
+    property Header: TAnsiStrings read fHeader;
     property Body: TMemoryStream read fBody;
   end;
 
@@ -259,9 +259,9 @@ type
   TArticleGetter = class(TMultiNewsGetter)
   private
     function GetOutstandingRequestCount: Integer; override;
-    function GetOutstandingRequestText(idx: Integer): WideString; override;
-    function GetStatusBarMessage(group: TServerAccount): WideString; override;
-    function GetGetterRootText: WideString; override;
+    function GetOutstandingRequestText(idx: Integer): string; override;
+    function GetStatusBarMessage(group: TServerAccount): string; override;
+    function GetGetterRootText: string; override;
   protected
     function GetIsDoing(obj: TObject): Boolean; override;
     function GetGroup(idx: Integer): TServerAccount; override;
@@ -306,31 +306,31 @@ type
   TPosterRequest = class
   private
     fOwner: TPoster;
-    fHdr: TStrings;
-    fMsg: MessageString;
-    fGroups: string;
-    fSubject: string;
+    fHdr: TAnsiStrings;
+    fMsg: RawByteString;
+    fGroups: RawByteString;
+    fSubject: RawByteString;
     fAttachments: TObjectList;
     fCodepage: Integer;
     fTextPartStyle: TTextPartStyle;
-    function GetGroups: string;
-    function GetSubject: string;
+    function GetGroups: RawByteString;
+    function GetSubject: RawByteString;
     procedure GetGroupAndSubject;
-    function MIMEHeaderRequired(Ahdr: TStrings): Boolean;
+    function MIMEHeaderRequired(): Boolean;
   public
-    constructor Create(AOwner: TPoster; AHdr: TStrings; const AMsg: string; attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle);
+    constructor Create(AOwner: TPoster; AHdr: TAnsiStrings; const AMsg: string; attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle);
     destructor Destroy; override;
     procedure Reset;
 
-    procedure CreateEncodedHeader(var hdr: TStrings; var hdrCreated: Boolean; var multipartBoundary: string);
-    procedure CreateEncodedMessage(var msg: TStrings; const multipartBoundary: string);
-    procedure AddAttachments(msg: TStrings; const multipartBoundary: string);
+    procedure CreateEncodedHeader(var hdr: TAnsiStrings; var hdrCreated: Boolean; var multipartBoundary: RawByteString);
+    procedure CreateEncodedMessage(var msg: TAnsiStrings; const multipartBoundary: RawByteString);
+    procedure AddAttachments(msg: TAnsiStrings; const multipartBoundary: RawByteString);
 
-    property Hdr: TStrings read fHdr;
-    property Msg: MessageString read fMsg write fMsg;
+    property Hdr: TAnsiStrings read fHdr;
+    property Msg: RawByteString read fMsg write fMsg;
 
-    property Groups: string read GetGroups;
-    property Subject: string read GetSubject;
+    property Groups: RawByteString read GetGroups;
+    property Subject: RawByteString read GetSubject;
 
     property Owner: TPoster read fOwner;
     property Attachments: TObjectList read fAttachments write fAttachments;
@@ -344,9 +344,9 @@ type
   private
     fUseOutbasket: Boolean;
     function GetOutstandingRequestCount: Integer; override;
-    function GetOutstandingRequestText(idx: Integer): WideString; override;
-    function GetGetterRootText: WideString; override;
-    function GetStatusBarMessage(group: TServerAccount): WideString; override;
+    function GetOutstandingRequestText(idx: Integer): string; override;
+    function GetGetterRootText: string; override;
+    function GetStatusBarMessage(group: TServerAccount): string; override;
   protected
   public
     constructor Create(AAccount: TNNTPAccount);
@@ -357,7 +357,7 @@ type
     procedure ResumeOutbasket;
     procedure Clear; override;
     procedure DeleteRequest(idx: Integer); override;
-    procedure AddPostToList(hdr: TStrings; const msg: string; attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle);
+    procedure AddPostToList(hdr: TAnsiStrings; const msg: string; attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle);
     property UseOutbasket: Boolean read fUseOutbasket;
   end;
 
@@ -402,9 +402,9 @@ type
     fOrigUseOutbasket: Boolean;
 
     function GetOutstandingRequestCount: Integer; override;
-    function GetOutstandingRequestText(idx: Integer): WideString; override;
-    function GetGetterRootText: WideString; override;
-    function GetStatusBarMessage(group: TServerAccount): WideString; override;
+    function GetOutstandingRequestText(idx: Integer): string; override;
+    function GetGetterRootText: string; override;
+    function GetStatusBarMessage(group: TServerAccount): string; override;
   protected
     function GetGroup(idx: Integer): TServerAccount; override;
   public
@@ -608,7 +608,7 @@ begin
   fThread.Client.Disconnect;
 end;
 
-function TTCPGetter.GetGetterRootText: WideString;
+function TTCPGetter.GetGetterRootText: string;
 begin
   Result := 'Unknown';
 end;
@@ -637,7 +637,7 @@ begin
 end;
 
 (*----------------------------------------------------------------------*
- | TTCPGetter.GetOutstandingRequestText                                |
+ | TTCPGetter.GetOutstandingRequestText                                 |
  |                                                                      |
  | Stub get method for the OutstandingRequestText property.  This is    |
  | overridden by descendant classes.                                    |
@@ -647,7 +647,7 @@ end;
  |                                                                      |
  | The function returns the string OutstandingRequestText               |
  *----------------------------------------------------------------------*)
-function TTCPGetter.GetOutstandingRequestText(idx: Integer): WideString;
+function TTCPGetter.GetOutstandingRequestText(idx: Integer): string;
 begin
   Result := ''; // Stub
 end;
@@ -689,7 +689,7 @@ end;
  |                                                                      |
  | The function returns the string StatusBarMessage                     |
  *----------------------------------------------------------------------*)
-function TTCPGetter.GetStatusBarMessage(group: TServerAccount): WideString;
+function TTCPGetter.GetStatusBarMessage(group: TServerAccount): string;
 begin
   case State of
     tsDormant: Result := rstOK;
@@ -807,7 +807,7 @@ begin
   inherited Destroy;
 end;
 
-function TNewsgroupGetter.GetGetterRootText: WideString;
+function TNewsgroupGetter.GetGetterRootText: string;
 begin
   if Assigned(Account) then
     Result := rstGetNewsgroupsFor + Account.AccountName
@@ -821,7 +821,7 @@ end;
  | A Newsgroup Getter can only contain one outstanding request.  Return |
  | the name of the account for which the list is being retrieved.       |
  *----------------------------------------------------------------------*)
-function TNewsgroupGetter.GetOutstandingRequestText(idx: Integer): WideString;
+function TNewsgroupGetter.GetOutstandingRequestText(idx: Integer): string;
 begin
   try
     Result := rstGetNewsgroupsFor + Account.AccountName;
@@ -834,7 +834,7 @@ end;
  |                                                                      |
  | Return a status bar message showing the account that's being listed. |
  *----------------------------------------------------------------------*)
-function TNewsgroupGetter.GetStatusBarMessage(group: TServerAccount): WideString;
+function TNewsgroupGetter.GetStatusBarMessage(group: TServerAccount): string;
 begin
   if Connected then
     Result := rstGettingNewsgroupsFor + Account.AccountName
@@ -867,6 +867,7 @@ begin
   fName := gMessageBaseRoot + '\' + FixFileNameString(Account.AccountName);
   CreateDir(fName);
   fNewsgroups.SaveToFile(fName + '\Newsgroups.dat');
+  Account.RefreshedGroupsList := True;
 end;
 
 { TArticlesGetter }
@@ -924,9 +925,9 @@ end;
 constructor TArticlesGetter.Create(ANNTPAccount: TNNTPAccount);
 begin
   inherited Create(TNNTPArticlesThread, ANNTPAccount);
-  fHeader := TStringList.Create;        // Temporary string list for getting headers
+  fHeader := TAnsiStringList.Create;    // Temporary string list for getting headers
   fBody := TMemoryStream.Create;        // Temporary string list for getting bodies
-  fArticles := TStringList.Create;      // Temporary string list containg article XOVER headers.
+  fArticles := TAnsiStringList.Create;  // Temporary string list containg article XOVER headers.
 end;
 
 procedure TArticlesGetter.DeleteRequest(idx: Integer);
@@ -957,7 +958,7 @@ begin
   inherited Destroy;
 end;
 
-function TArticlesGetter.GetGetterRootText: WideString;
+function TArticlesGetter.GetGetterRootText: string;
 begin
   if Assigned(Account) then
     Result := rstGetArticleListFor + account.AccountName
@@ -1019,7 +1020,7 @@ end;
  |                                                                      |
  | Get the text for outstanding request no. idx.                        |
  *----------------------------------------------------------------------*)
-function TArticlesGetter.GetOutstandingRequestText(idx: Integer): WideString;
+function TArticlesGetter.GetOutstandingRequestText(idx: Integer): string;
 var
   getterRequest: TArticlesGetterRequest;
 begin
@@ -1040,7 +1041,7 @@ end;
  |                                                                      |
  | Get status bar message                                               |
  *----------------------------------------------------------------------*)
-function TArticlesGetter.GetStatusBarMessage(group: TServerAccount): WideString;
+function TArticlesGetter.GetStatusBarMessage(group: TServerAccount): string;
 var
   req: TArticlesGetterRequest;
   gn: string;
@@ -1256,7 +1257,7 @@ begin
   CurrentArticle.RemoveMessage;
 end;
 
-function TArticleGetter.GetGetterRootText: WideString;
+function TArticleGetter.GetGetterRootText: string;
 begin
   if Assigned(Account) then
     Result := rstGetArticleBodyFrom + account.AccountName
@@ -1315,7 +1316,7 @@ end;
  |                                                                      |
  | Get the text for a message lined up for retrieval.                   |
  *----------------------------------------------------------------------*)
-function TArticleGetter.GetOutstandingRequestText(idx: Integer): WideString;
+function TArticleGetter.GetOutstandingRequestText(idx: Integer): string;
 var
   getterRequest: TArticleGetterRequest;
   requests: TObjectList;
@@ -1337,7 +1338,7 @@ end;
  |                                                                      |
  | Return the status-bar message text.                                  |
  *----------------------------------------------------------------------*)
-function TArticleGetter.GetStatusBarMessage(group: TServerAccount): WideString;
+function TArticleGetter.GetStatusBarMessage(group: TServerAccount): string;
 var
   req: TArticleGetterRequest;
   gn: string;
@@ -1462,7 +1463,7 @@ end;
 
 { TPoster }
 
-procedure TPoster.AddPostToList(hdr: TStrings; const msg: string;
+procedure TPoster.AddPostToList(hdr: TAnsiStrings; const msg: string;
   attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle);
 begin
   LockList;
@@ -1516,16 +1517,17 @@ end;
 
 { TPost }
 
-procedure TPosterRequest.AddAttachments(msg: TStrings;
-  const multipartBoundary: string);
+procedure TPosterRequest.AddAttachments(msg: TAnsiStrings;
+  const multipartBoundary: RawByteString);
 var
   i, chunkLen: Integer;
   attachment: TAttachment;
   f: TFileStream;
   encoder: TidEncoder;
-  s, contentType: string;
+  s: string;
+  contentType: RawByteString;
 
-  function GetMIMEContentType(const fileName: string): string;
+  function GetMIMEContentType(const fileName: string): RawByteString;
   var
     ext: string;
   begin
@@ -1546,7 +1548,7 @@ var
             Result := 'Application/Octet-Stream';
   end;
 
-  function FixFileName(const fileName: string): string;
+  function FixFileName(const fileName: string): RawByteString;
   var
     i: Integer;
     needsQuotes, cantQuote: Boolean;
@@ -1559,7 +1561,9 @@ var
     // 2.  Convert illegal characters to '_'
     //
     // 3.  If the string already contains '"', then don't quote it
-    Result := fileName;
+
+// !!!!!! filenames, check RFC?
+    Result := RawByteString(fileName);
 
     needsQuotes := False;
     cantQuote := False;
@@ -1585,6 +1589,7 @@ var
 begin
   if not Assigned(Attachments) then
     Exit;
+
   for i := 0 to Attachments.Count - 1 do
   begin
     attachment := TAttachment(attachments[i]);
@@ -1615,7 +1620,8 @@ begin
         while f.Position < f.Size do
         begin
           s := encoder.Encode(f, chunkLen);
-          msg.Add(s);
+          // TODO: needs to be improved
+          msg.Add(RawByteString(s));
         end;
 
         if multipartBoundary <> '' then
@@ -1633,28 +1639,29 @@ begin
     msg.Add('--' + multipartBoundary + '--');
 end;
 
-constructor TPosterRequest.Create(AOwner: TPoster; AHdr: TStrings; const AMsg: string; attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle);
+constructor TPosterRequest.Create(AOwner: TPoster; AHdr: TAnsiStrings; const AMsg: string;
+  attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle);
 begin
   fOwner := AOwner;
   fTextPartStyle := ATextPartStyle;
-  fHdr := TStringList.Create;
+  fHdr := TAnsiStringList.Create;
   fHdr.Assign(AHdr);
   fMsg := WideStringToAnsiString(AMsg, ACodePage);
   fAttachments := attachments;
   fCodepage := ACodepage;
 end;
 
-procedure TPosterRequest.CreateEncodedHeader(var hdr: TStrings;
-  var hdrCreated: Boolean; var multipartBoundary: string);
+procedure TPosterRequest.CreateEncodedHeader(var hdr: TAnsiStrings;
+  var hdrCreated: Boolean; var multipartBoundary: RawByteString);
 var
-  s, s1: string;
-  mimeCharsetName: string;
+  s, s1: RawByteString;
+  mimeCharsetName: RawByteString;
   i: Integer;
   bt8: Boolean;
 
-  function EncodeFace(S: string): string;
+  function EncodeFace(S: RawByteString): RawByteString;
   const
-    SPACES: set of Char = [' ', #9, #10, #13, '''', '"'];    {Do not Localize}
+    SPACES: set of AnsiChar = [' ', #9, #10, #13, '''', '"'];    {Do not Localize}
     MaxEncLen = 75;
   var
     I, L, Q: Integer;
@@ -1684,40 +1691,40 @@ var
     end;
   end;
 
-  function GenerateMultipartBoundary: string;
+  function GenerateMultipartBoundary: RawByteString;
   begin
     Result := 'Xananews.1.2.3';
   end;
 
 begin
   multipartBoundary := '';
-  hdrCreated := MimeHeaderRequired(Self.hdr);
+  hdrCreated := MimeHeaderRequired();
 
   if hdrCreated then
-    hdr := TStringList.Create
+    hdr := TAnsiStringList.Create
   else
     hdr := Self.Hdr;
 
   try
     if hdrCreated then
     begin
-      mimeCharsetName := CodepageToMIMECharsetName(fCodepage);
+      mimeCharsetName := RawCodepageToMIMECharsetName(fCodepage);
       if mimeCharsetName <> '' then
         for i := 0 to Self.hdr.Count - 1 do
         begin
           s := Self.Hdr[i];
-          if Pos('Face', s) = 1 then
+          if RawPos('Face', s) = 1 then
             hdr.Add(EncodeFace(s))
           else
-            if Pos('X-Face', s) = 1 then
+            if RawPos('X-Face', s) = 1 then
               hdr.Add(s)
             else
             begin
-              s1 := SplitString('=', s);
-              if Pos('Newsgroups', s1) = 1 then
+              s1 := RawSplitString('=', s);
+              if RawPos('Newsgroups', s1) = 1 then
                 hdr.Add(s1 + '=' + s)
               else
-                hdr.Add(s1 + '=' + EncodeHeader(s, CodePage, Pos('From', s1) = 1));
+                hdr.Add(s1 + '=' + EncodeHeader(s, CodePage, RawPos('From', s1) = 1));
             end;
         end
       else
@@ -1765,31 +1772,32 @@ begin
   end;
 end;
 
-procedure TPosterRequest.CreateEncodedMessage(var msg: TStrings; const multipartBoundary: string);
+procedure TPosterRequest.CreateEncodedMessage(var msg: TAnsiStrings; const multipartBoundary: RawByteString);
 var
   bt8: Boolean;
   i: Integer;
-  s: string;
-  mimeCharsetName: string;
+  s: RawByteString;
+  mimeCharsetName: RawByteString;
 
-  procedure AddMessageString(msg: TStrings; const st: AnsiString);
+  procedure AddMessageString(msg: TAnsiStrings; const st: AnsiString);
   var
-    m: TStrings;
+    m: TAnsiStrings;
     coder: TidEncoder;
   begin
-    m := TStringList.Create;
+    m := TAnsiStringList.Create;
     try
-      m.Text := string(st);
+      m.Text := st;
       if fTextPartStyle = tpQuotedPrintable then
       begin
-// TODO: WrapStrings is handling URLSs as well,
+// TODO: WrapStrings is handling URLs as well,
 //       is that really needed in this case? I don't think so!
 //
 //        WrapStrings(m, 75, fTextPartStyle, false, false)
         coder := TXnEncoderQuotedPrintable.Create(nil);
         TXnEncoderQuotedPrintable(coder).AddEOL := True;
         try
-          m.Text := coder.Encode(m.Text);
+          // TODO: needs to be improved
+          m.Text := RawByteString(coder.Encode(string(m.Text)));
         finally
           coder.Free;
         end;
@@ -1804,14 +1812,14 @@ var
             coder.Free;
           end;
         end;
-      msg.AddStrings(m);
+      msg.AddAnsiStrings(m);
     finally
       m.Free;
     end;
   end;
 
 begin
-  msg := TStringList.Create;
+  msg := TAnsiStringList.Create;
 
   try
     if multipartBoundary <> '' then
@@ -1820,7 +1828,7 @@ begin
       msg.Add('');  // Do we need this ??
       msg.Add('--' + multipartBoundary);
 
-      mimeCharsetName := CodepageToMIMECharsetName(fCodepage);
+      mimeCharsetName := RawCodepageToMIMECharsetName(fCodepage);
 
       s := 'Content-Type=text/plain';
       if mimeCharsetName <> '' then
@@ -1867,7 +1875,7 @@ begin
   inherited Destroy;
 end;
 
-function TPoster.GetGetterRootText: WideString;
+function TPoster.GetGetterRootText: string;
 begin
   Result := 'Post message(s) to ' + Settings.ServerName;
 end;
@@ -1877,27 +1885,27 @@ begin
   Result := Count;
 end;
 
-function TPoster.GetOutstandingRequestText(idx: Integer): WideString;
+function TPoster.GetOutstandingRequestText(idx: Integer): string;
 var
   post: TPosterRequest;
 begin
+  LockList;
   try
-    LockList;
     if idx < fRequests.Count then
     begin
       post := TPosterRequest(fRequests[idx]);
-      Result := post.Groups + ':';
-      Result := Result + AnsiStringToWideString(AnsiString(post.Subject), post.Codepage);
+      Result := string(post.Groups + ':');
+      Result := Result + AnsiStringToWideString(post.Subject, post.Codepage);
     end;
   finally
     UnlockList;
   end;
 end;
 
-function TPoster.GetStatusBarMessage(group: TServerAccount): WideString;
+function TPoster.GetStatusBarMessage(group: TServerAccount): string;
 var
   req: TPosterRequest;
-  s: WideString;
+  s: string;
 begin
   Result := inherited GetStatusBarMessage(group);
 
@@ -1909,8 +1917,8 @@ begin
       if Count > 0 then
       begin
         req := TPosterRequest(fRequests[0]);
-        s := req.Groups + ':';
-        s := s + req.Subject;
+        s := string(req.Groups + ':');
+        s := s + AnsiStringToWideString(req.Subject, req.Codepage);
       end;
     finally
       UnlockList;
@@ -1927,19 +1935,19 @@ end;
 procedure TPosterRequest.GetGroupAndSubject;
 var
   i: Integer;
-  s, s1: string;
+  s, s1: RawByteString;
 begin
   if (fGroups = '') or (fSubject = '') then
   begin
     for i := 0 to fHdr.Count - 1 do
     begin
       s := fHdr[i];
-      s1 := SplitString('=', s);
-      if CompareText(s1, 'Newsgroups') = 0 then
-        fGroups := Trim(s);
+      s1 := RawSplitString('=', s);
+      if RawCompareText(s1, 'Newsgroups') = 0 then
+        fGroups := RawTrim(s);
 
-      if CompareText(s1, 'Subject') = 0 then
-        fSubject := Trim(s);
+      if RawCompareText(s1, 'Subject') = 0 then
+        fSubject := RawTrim(s);
 
       if (fSubject <> '') and (fGroups <> '') then
         Break;
@@ -1947,19 +1955,19 @@ begin
   end;
 end;
 
-function TPosterRequest.GetGroups: string;
+function TPosterRequest.GetGroups: RawByteString;
 begin
   GetGroupAndSubject;
   Result := fGroups;
 end;
 
-function TPosterRequest.GetSubject: string;
+function TPosterRequest.GetSubject: RawByteString;
 begin
   GetGroupAndSubject;
   Result := fSubject;
 end;
 
-function TPosterRequest.MIMEHeaderRequired(Ahdr: TStrings): Boolean;
+function TPosterRequest.MIMEHeaderRequired(): Boolean;
 var
   i: Integer;
 begin
@@ -2049,7 +2057,7 @@ begin
   inherited Destroy;
 end;
 
-function TEMailer.GetGetterRootText: WideString;
+function TEMailer.GetGetterRootText: string;
 begin
   Result := 'Mail message(s) to ' + Settings.ServerName;
 end;
@@ -2064,7 +2072,7 @@ begin
   Result := fMessages.Count;
 end;
 
-function TEMailer.GetOutstandingRequestText(idx: Integer): WideString;
+function TEMailer.GetOutstandingRequestText(idx: Integer): string;
 var
   msg: TEMailerRequest;
 begin
@@ -2075,7 +2083,7 @@ begin
   end;
 end;
 
-function TEMailer.GetStatusBarMessage(group: TServerAccount): WideString;
+function TEMailer.GetStatusBarMessage(group: TServerAccount): string;
 var
   req: TEMailerRequest;
   s: string;

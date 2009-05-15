@@ -26,7 +26,7 @@ uses
   Dialogs, StdCtrls, ComCtrls, ExtCtrls, unitNNTPServices, unitNNTPThreads, unitNewsThread,
   Contnrs, Menus, cmpCWRichEdit,
   cmpRuler, unitSettings, unitIdentities, PostFrame, NewsGlobals,
-  cmpPersistentPosition, unitExSettings;
+  cmpPersistentPosition, unitExSettings, XnClasses, XnRawByteStrings;
 
 type
   TfmPostMessage = class(TForm)
@@ -124,13 +124,13 @@ begin
   begin
     fHeader := TStringList.Create;
     fHeader.CaseSensitive := False;
-    fHeader.Assign(fPosterRequest.Hdr);
+    fHeader.Text := AnsiStringToWideString(fPosterRequest.Hdr.Text, fPosterRequest.Codepage);
     fInitialText := AnsiStringToWideString(fPosterRequest.Msg, fPosterRequest.Codepage);
 
     codePageOverride := fPosterRequest.Codepage;
 
     groupName := fHeader.Values['Newsgroups'];
-    edSubject.Text := AnsiStringToWideString(AnsiString(fHeader.Values['Subject']), fPosterRequest.Codepage);
+    edSubject.Text := fHeader.Values['Subject'];
     cbGroup.Text := groupName;
     cbFollowupTo.Text := fHeader.Values['Followup-To'];
 
@@ -161,7 +161,8 @@ begin
   fPostingSettings.Assign(DefaultPostingSettings);
   fIdentity := NNTPSettings.Identity;
 
-  fmePost1.Initialize(fInitialText, fPostingSettings, fIdentity, ReplyToArticle, fPosterRequest, fAttachments, codePageOverride, NNTPSettings.SignatureOverride);
+  fmePost1.Initialize(fInitialText, fPostingSettings, fIdentity, ReplyToArticle,
+    fPosterRequest, fAttachments, codePageOverride, NNTPSettings.SignatureOverride);
 
   fIsReply := Assigned(ReplyToArticle);
   LoadPreviousGroups;
@@ -169,7 +170,7 @@ begin
   if fIsReply then
   begin
     groupName := ReplyToArticle.Owner.Name;
-    sub := DecodeSubject(ReplyToArticle.subject);
+    sub := ReplyToArticle.Subject;
     Caption := 'Reply to article from ' + ReplyToArticle.FromName + ' - ' + sub;
     sub := Trim(sub);
 
@@ -185,7 +186,7 @@ begin
     begin
       for i := 0 to ReplyToArticle.Msg.Header.Count - 1 do
       begin
-        st := ReplyToArticle.Msg.Header[i];
+        st := string(ReplyToArticle.Msg.Header[i]);
         if CompareText(Copy(st, 1, 12), 'Followup-To:') = 0 then
         begin
           groupName := Trim(Copy(st, 13, MaxInt));
@@ -304,8 +305,8 @@ begin
   begin
     fHeader := TStringList.Create;
     fHeader.CaseSensitive := False;
-    fHeader.Add('From="' + string(WideStringToAnsiString(fIdentity.UserName, fmePost1.CodePage)) + '" <' + fIdentity.EMailAddress + '>');
-    fHeader.Add('Subject=' + string(WideStringToAnsiString(edSubject.Text, fmePost1.CodePage)));
+    fHeader.Add('From="' + fIdentity.UserName + '" <' + fIdentity.EMailAddress + '>');
+    fHeader.Add('Subject=' + edSubject.Text);
     fHeader.Add('Newsgroups=' + cbGroup.Text);
     if (fIdentity.ReplyAddress <> '') and (fIdentity.ReplyAddress <> fIdentity.EMailAddress) then
       fHeader.Add('Reply-To="' + fIdentity.UserName + '" <' + fIdentity.ReplyAddress + '>');
@@ -319,7 +320,7 @@ begin
       fHeader.Add('Organization=' + fIdentity.Organization);
 
     if NNTPSettings.GenerateDateHeaders then
-      fHeader.Add('Date=' + DateTimeToInternetStr(Now));
+      fHeader.Add('Date=' + LocalDateTimeToGMT(Now));
 
     if NNTPSettings.GenerateMessageIDs then
     begin
@@ -327,7 +328,7 @@ begin
         st := LowerCase(Account.NNTPServerSettings.ServerName)
       else
         st := NNTPSettings.MessageIDDomain;
-      fHeader.Add('Message-ID='+GenerateMessageID('xn', NNTPSettings.MessageIDStub, st))
+      fHeader.Add('Message-ID=' + string(GenerateMessageID('xn', NNTPSettings.MessageIDStub, st)));
     end;
 
     AddHeader('User-Agent', ThreadManager.NewsAgent);
@@ -360,7 +361,7 @@ begin
   end
   else
   begin
-    fHeader.Values['Subject'] := string(WideStringToAnsiString(edSubject.Text, fmePost1.CodePage));
+    fHeader.Values['Subject'] := edSubject.Text;
     fHeader.Values['Newsgroups'] := cbGroup.Text;
     if cbFollowupTo.Text = '' then
     begin
@@ -534,7 +535,7 @@ begin
 
   if Assigned(fPosterRequest) then
   begin
-    fPosterRequest.Hdr.Assign(fHeader);
+    fPosterRequest.Hdr.Text := WideStringToAnsiString(fHeader.Text, fPosterRequest.CodePage);
     fPosterRequest.Msg := WideStringToAnsiString(st, fPosterRequest.CodePage);
     fPosterRequest.Reset;
     fPosterRequest.Owner.Paused := False;
@@ -544,7 +545,7 @@ begin
   end
   else
   begin
-    ThreadManager.PostMessage(Account, fHeader, st, fAttachments, codepage, fPostingSettings.TextPartStyle);
+    ThreadManager.PostMessage(Account, fHeader.Text, st, fAttachments, codepage, fPostingSettings.TextPartStyle);
     fAttachments := nil;
   end;
   SaveFollowUp;
@@ -660,28 +661,29 @@ begin
     dlg.PopupParent := Self;
     dlg.PopupMode := pmExplicit;
     MakeHeaderStringList;
+
     dlg.mmoAdvancedHeaders.Lines.BeginUpdate;
     try
       dlg.mmoAdvancedHeaders.Lines.Clear;
       for i := 0 to fHeader.Count - 1 do
         dlg.mmoAdvancedHeaders.Lines.Add(StringReplace(fHeader[i], '=', ':', []));
-
-      if dlg.ShowModal = mrOK then
-      begin
-        fHeader.Clear;
-        for i := 0 to dlg.mmoAdvancedHeaders.Lines.Count - 1 do
-          fHeader.Add(StringReplace(dlg.mmoAdvancedHeaders.Lines[i], ':', '=', []));
-
-        ValidateHeaderStringList;
-
-        edSubject.Text := fHeader.Values['Subject'];
-        cbGroup.Text := fHeader.Values['Newsgroups'];
-        cbFollowupTo.Text := fHeader.Values['Followup-To'];
-      end;
-
     finally
       dlg.mmoAdvancedHeaders.Lines.EndUpdate;
     end;
+
+    if dlg.ShowModal = mrOK then
+    begin
+      fHeader.Clear;
+      for i := 0 to dlg.mmoAdvancedHeaders.Lines.Count - 1 do
+        fHeader.Add(StringReplace(dlg.mmoAdvancedHeaders.Lines[i], ':', '=', []));
+
+      ValidateHeaderStringList;
+
+      edSubject.Text := fHeader.Values['Subject'];
+      cbGroup.Text := fHeader.Values['Newsgroups'];
+      cbFollowupTo.Text := fHeader.Values['Followup-To'];
+    end;
+
   finally
     dlg.Free;
   end;

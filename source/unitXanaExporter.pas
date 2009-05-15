@@ -30,14 +30,14 @@ procedure WriteLabelBlock(lab: string; size: Int64; strm: TStream);
 var
   len: Integer;
   blck: TLabelBlock;
-  raw: MessageString;
+  raw: RawByteString;
 begin
   lab := '~~XaNaFood~' + IntToHex(size, 16) + '~' + lab;
   FillChar(blck, SizeOf(blck), 0);
   len := Length(lab);
   if len > SizeOf(blck) then
     len := SizeOf(blck);
-  raw := MessageString(lab);
+  raw := RawByteString(lab);
   Move(raw[1], blck, len);
   strm.Write(blck[0], SizeOf(blck));
 end;

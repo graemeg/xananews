@@ -6,7 +6,7 @@ uses
   Windows, Messages, Classes, SysUtils, Variants, TypInfo, ActiveX;
 
 type
-  MessageString = type RawByteString;
+//  MessageString = type RawByteString;
 
   TAnsiStrings = class(TPersistent)
   private
@@ -1195,10 +1195,10 @@ end;
 
 function TAnsiStringList.CompareAnsiStrings(const S1, S2: AnsiString): Integer;
 begin
-//  if CaseSensitive then
+  if CaseSensitive then
     Result := AnsiStrComp(PAnsiChar(S1), PAnsiChar(S2))
-//  else
-//    Result := AnsiCompareText(S1, S2);
+  else
+    Result := AnsiStrIComp(PAnsiChar(S1), PAnsiChar(S2))
 end;
 
 constructor TAnsiStringList.Create;

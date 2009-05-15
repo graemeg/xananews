@@ -8,6 +8,8 @@ uses
   cmpCWRichEdit, unitSettings, PostFrame, unitIdentities, ConTnrs, NewsGlobals, unitNewsThread,
   cmpPersistentPosition, unitExSettings;
 
+// TODO: email (MAPI) vs Unicode!?
+
 type
   TfmReplyByMail = class(TForm)
     edSubject: TEdit;
@@ -127,7 +129,7 @@ begin
     ato := ReplyToArticle.Header ['Reply-To'];
     if ato = '' then
       ato := ReplyToArticle.From;
-    sub := Trim (DecodeSubject(ReplyToArticle.Subject));
+    sub := ReplyToArticle.Subject;
     Caption := 'Reply by mail to ' + ato + ' - ' + sub;
 
     fOrigMessageID := ReplyToArticle.MessageId;
@@ -250,7 +252,7 @@ begin
     SetLength (recips, mmsg.nRecipCount);
     mmsg.lpRecips := @recips [0];
 
-    DecodeFromEMail (edTo.Text, toName, toEMail);
+    DecodeFromEMail(RawByteString(edTo.Text), toName, toEMail, -1);
     FillChar (recips [0], mmsg.nRecipCount * sizeof (TMapiRecipDesc), 0);
     recips [0].ulRecipClass := MAPI_TO;
     recips [0].lpszName := PAnsiChar(AnsiString(toName));

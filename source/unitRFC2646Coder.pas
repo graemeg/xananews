@@ -1,8 +1,9 @@
 unit unitRFC2646Coder;
+// !!!!!!
 
 interface
 
-uses Windows, Classes, SysUtils, IdCoder, XnClasses;
+uses Windows, Classes, SysUtils, IdCoder, XnClasses, XnRawByteStrings;
 
 type
   TRFC2646Decoder = class(TidDecoder)
@@ -24,7 +25,7 @@ type
   public
     procedure InitComponent; override;
     procedure Encode(ASrcStream: TStream; ADestStream: TStream; const ABytes: Integer = -1); override;
-    procedure EncodeStrings(strings: TStrings);
+    procedure EncodeStrings(strings: TAnsiStrings);
 
     property MaxLineLength: Integer read fMaxLineLength write fMaxLineLength;
   end;
@@ -38,14 +39,14 @@ uses
 
 procedure TRFC2646Decoder.Decode(ASrcStream: TStream; const ABytes: Integer = -1);
 var
-  sl: TStringList;
+  sl: TAnsiStringList;
   i, l: Integer;
-  st, qs: string;
+  st, qs: RawByteString;
 
   procedure AnalyzeQuotes;
   var
     i, l, p: Integer;
-    st: string;
+    st: RawByteString;
   begin
     for i := 0 to sl.Count - 1 do
     begin
@@ -65,8 +66,8 @@ var
   end;
 
 begin
-  qs := StringOfChar('>', 80);
-  sl := TStringList.Create;
+  qs := RawStringOfChar('>', 80);
+  sl := TAnsiStringList.Create;
   try
     sl.LoadFromStream(ASrcStream);
     AnalyzeQuotes;        // Count quote markers (into sl.Objects[i]) and
@@ -98,7 +99,7 @@ begin
         (i + 1 < sl.Count) and (sl.Objects[i] = sl.Objects[i + 1]) then
       begin
         if sl[i + 1] = '' then
-          sl[i] := TrimRight(st)
+          sl[i] := RawTrimRight(st)
         else
           sl[i] := st + sl[i + 1];
         sl.Delete(i + 1);
@@ -122,15 +123,15 @@ end;
 
 { TRFC2646Encoder }
 
-procedure TRFC2646Encoder.EncodeStrings(strings: TStrings);
+procedure TRFC2646Encoder.EncodeStrings(strings: TAnsiStrings);
 var
   i, l, p, quoteDepth: Integer;
-  st, st1, qs: string;
+  st, st1, qs: RawByteString;
 
   procedure AnalyzeQuotes;
   var
     i, l, p, quoteDepth: Integer;
-    st: string;
+    st: RawByteString;
   begin
     for i := 0 to strings.Count - 1 do
     begin
@@ -159,7 +160,7 @@ var
 begin
   AnalyzeQuotes;
 
-  qs := StringOfChar('>', 80);
+  qs := RawStringOfChar('>', 80);
   i := 0;
   while i < strings.Count do
   begin
@@ -171,7 +172,7 @@ begin
     end;
 
                         // Always strip of trailing spaces
-    st := TrimRight(st);
+    st := RawTrimRight(st);
     l := Length(st);
     quoteDepth := Integer(strings.Objects[i]);
 

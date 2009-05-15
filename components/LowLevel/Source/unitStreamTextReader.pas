@@ -51,11 +51,11 @@ type
     constructor Create(AStream: TStream; blockSize: Integer = 1024);
     destructor Destroy; override;
     function GetChar: AnsiChar;
-    function ReadLn(var st: MessageString; continuationChar: AnsiChar = #0): Boolean; overload;
+    function ReadLn(var st: RawByteString; continuationChar: AnsiChar = #0): Boolean; overload;
     function ReadLn(ms: TMemoryStream; continuationChar: AnsiChar = #0): Boolean; overload;
     procedure ReadChunk(var chunk; offset, length: Integer);
     property Position: Int64 read GetPosition write SetPosition;
-    function Search(const st: MessageString): Integer;
+    function Search(const st: RawByteString): Integer;
     property Stream: TStream read fStream write SetStream;
   end;
 
@@ -91,7 +91,7 @@ type
   private
     fPosition: Int64;
   public
-    function ReadLn(var st: MessageString): Boolean;
+    function ReadLn(var st: RawByteString): Boolean;
   end;
 
   TBufferedStreamWriter = class
@@ -222,11 +222,11 @@ begin
   fStream.Read(chunk, length)
 end;
 
-function TStreamTextReader.ReadLn(var st: MessageString; continuationChar: AnsiChar = #0): Boolean;
+function TStreamTextReader.ReadLn(var st: RawByteString; continuationChar: AnsiChar = #0): Boolean;
 var
   L, lineStartPos: Integer;
   pch, pch1: PAnsiChar;
-  st1: MessageString;
+  st1: RawByteString;
   cont, scont: Boolean;
 begin
   lineStartPos := Position;
@@ -298,7 +298,7 @@ function TStreamTextReader.ReadLn(ms: TMemoryStream; continuationChar: AnsiChar 
 var
   L, lineStartPos: Integer;
   pch, pch1: PAnsiChar;
-  st1: MessageString;
+  st1: RawByteString;
   cont, scont: Boolean;
 begin
   lineStartPos := Position;
@@ -368,7 +368,7 @@ begin
     Result := True;
 end;
 
-function TStreamTextReader.Search(const st: MessageString): Integer;
+function TStreamTextReader.Search(const st: RawByteString): Integer;
 var
   p, p1: PAnsiChar;
 begin
@@ -451,7 +451,7 @@ end;
 
 { TTextFileReader }
 
-function TTextFileReader.ReadLn(var st: MessageString): Boolean;
+function TTextFileReader.ReadLn(var st: RawByteString): Boolean;
 var
   p, p1: PAnsiChar;
   L: Integer;
@@ -484,11 +484,11 @@ end;
 
 procedure TTextFileWriter.Write(const st: string);
 var
-  EncodedString: MessageString;
+  EncodedString: RawByteString;
 begin
   if st <> '' then
   begin
-    EncodedString := MessageString(st);
+    EncodedString := RawByteString(st);
     inherited Write(EncodedString[1], Length(EncodedString));
   end;
 end;
@@ -652,11 +652,11 @@ end;
 
 procedure TTextStreamWriter.Write(const st: string);
 var
-  EncodedString: MessageString;
+  EncodedString: RawByteString;
 begin
   if st <> '' then
   begin
-    EncodedString := MessageString(st);
+    EncodedString := RawByteString(st);
     inherited Write(EncodedString[1], Length(EncodedString));
   end;
 end;

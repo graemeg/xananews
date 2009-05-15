@@ -36,7 +36,7 @@ interface
 uses
   Windows, Classes, SysUtils, Forms, ConTnrs, unitNNTPServices, unitObjectCache,
   unitMessages, unitArticleHash, unitSettings, unitIdentities, unitBTree,
-  NewsGlobals, unitExSettings, XnClasses;
+  NewsGlobals, unitExSettings, XnClasses, XnRawByteStrings;
 
 type
   TFolderArticle = class;
@@ -101,7 +101,7 @@ type
     procedure EndAdd;
     procedure AddArticle(article: TArticleBase);
     procedure Clear;
-    function FindUniqueID(const msgID: string): TArticleBase; override;
+    function FindUniqueID(const msgID: RawByteString): TArticleBase; override;
     procedure LoadArticles; override;
     procedure RawDeleteArticle(cno: Integer); override;
     procedure RawRemoveArticle(article: TArticleBase); override;
@@ -126,14 +126,14 @@ type
     fOrigServer: string;
     fIDX: Integer;
     fOffset: Integer;
-    fExtraHeaders: TStrings;
+    fExtraHeaders: TAnsiStrings;
     fSeenMessage: Boolean;
     function PrimaryKey: string; virtual;
   protected
     function GetIndex: Integer; override;
     function GetMsg: TmvMessage; override;
     procedure SetIsDeleted(const Value: Boolean); override;
-    function GetUniqueID: string; override;
+    function GetUniqueID: RawByteString; override;
     function GetCodePage: Integer; override;
     procedure SetCodePage(const cp: Integer); override;
     function PeekAtMsgHdr(const hdr: string): string; override;
@@ -149,7 +149,7 @@ type
   private
     function PrimaryKey: string; override;
   public
-    constructor CreateInit(AOwner: TArticleFolder; ArticleNo: Integer; AHdr: TStrings; const AMsg: string; ACodePage: Integer; Attachments: TObjectList);
+    constructor CreateInit(AOwner: TArticleFolder; ArticleNo: Integer; AHdr: TAnsiStrings; const AMsg: string; ACodePage: Integer; Attachments: TObjectList);
   end;
 
   //----------------------------------------------------------------------
@@ -199,7 +199,7 @@ type
   private
     procedure AddSentArticle(article: TSentMessage; const body: string);
   public
-    procedure AddMessage(Account: TNNTPAccount; header: TStrings; const msg: string; attachments: TObjectList; codepage: Integer; ATextPartStyle: TTextPartStyle);
+    procedure AddMessage(Account: TNNTPAccount; header: TAnsiStrings; const msg: string; attachments: TObjectList; codepage: Integer; ATextPartStyle: TTextPartStyle);
   end;
 
 var
@@ -289,9 +289,9 @@ end;
  |                                                                      |
  | Convert a TDateTime into an 8 byte string that sorts correctly       |
  *----------------------------------------------------------------------*)
-function DateToByteStr(dt: TDateTime): MessageString;
+function DateToByteStr(dt: TDateTime): RawByteString;
 var
-  st: MessageString;
+  st: RawByteString;
   i: Integer;
 begin
   SetLength(st, SizeOf(dt));
@@ -306,18 +306,18 @@ end;
  |                                                                      |
  | Return the secondary key for an article.                             |
  *----------------------------------------------------------------------*)
-function SecondaryKey(art: TArticleBase; so: TThreadSortOrder): MessageString;
+function SecondaryKey(art: TArticleBase; so: TThreadSortOrder): RawByteString;
 var
   fromName: string;
   fromEMail: string;
 begin
   case so of
     soDate   : Result := DateToByteStr(art.Date);
-    soLines  : Result := MessageString(Format('%8.8d', [art.Lines]));
-    soSubject: Result := MessageString(art.Subject);
+    soLines  : Result := RawByteString(Format('%8.8d', [art.Lines]));
+    soSubject: Result := RawByteString(art.Subject);
     soAuthor : begin
-                 DecodeFromEMail(art.From, fromName, fromEMail, art.fCodePage);
-                 Result := MessageString(fromName);
+                 DecodeFromEMail(art.RawFrom, fromName, fromEMail, art.fCodePage);
+                 Result := RawByteString(fromName);
                end;
   end;
 
@@ -417,29 +417,29 @@ end;
  *----------------------------------------------------------------------*)
 procedure TArticleFolder.AddArticle(article: TArticleBase);
 var
-  header: TStrings;
-  s: string;
+  header: TAnsiStrings;
   p, artNo: Integer;
-  xnref: MessageString;
+  xnref: RawByteString;
   origRef, ref: string;
-  serverName, groupName, fixedBody: string;
+  serverName, groupName: string;
+  fixedBody: string;
   ok: Boolean;
   writer: TTextStreamWriter;
 begin
   if Assigned(article.Msg) then
   begin
     LoadArticles;
-    header := TStringList.Create;
+    header := TAnsiStringList.Create;
     try
-      header.Add('Message-ID:' + article.MessageId);
-      header.Add('Subject:' + article.Subject);
-      header.Add('From:' + article.From);
-      header.Add('Date:' + SafeDateTimeToInternetStr(article.Date, True));
-      header.Add('Lines:' + IntToStr(article.Lines));
+      header.Add('Message-ID:' + article.RawMessageId);
+      header.Add('Subject:' + article.RawSubject);
+      header.Add('From:' + article.RawFrom);
+      header.Add('Date:' + RawByteString(SafeDateTimeToInternetStr(article.Date, True)));
+      header.Add('Lines:' + RawIntToStr(article.Lines));
       if article.References <> '' then
-        header.Add('References:' + article.References);
+        header.Add('References:' + article.RawReferences);
 
-      header.AddStrings(article.Msg.Header);
+      header.AddAnsiStrings(article.Msg.Header);
 
       origRef := article.Header['XRef'];
 
@@ -464,7 +464,7 @@ begin
       begin                             // group name in an X-Ref header.  Sometimes
                                         // the existing XRef header is OK - sometime's it's not.
         header.NameValueSeparator := ':';
-        header.Values['X-Ref'] := ref;
+        header.Values['X-Ref'] := RawByteString(ref);
       end;
 
       fFileStream.Seek(0, soEnd);       // Position in text file to write to
@@ -472,7 +472,7 @@ begin
 
       if not fNoIndex then
       begin                             // Index on the server/group index & article no.
-        xnref := MessageString(IntToHex(gArticleFolders.GetXNRef(serverName, groupName), 4) + ':' + IntToHex(artNo, 8));
+        xnref := RawByteString(IntToHex(gArticleFolders.GetXNRef(serverName, groupName), 4) + ':' + IntToHex(artNo, 8));
         ok := fIndex.AddKey(xnref, p);
         if Assigned(fSecondaryIndex) then
         begin
@@ -487,8 +487,7 @@ begin
       begin
         writer := TTextStreamWriter.Create(fFileStream);
         try
-          s := header.Text + #13#10;
-          writer.Write(s);
+          writer.Write(header.Text + #13#10);
 
           SetString(fixedBody, PAnsiChar(article.Msg.RawData.Memory), article.Msg.RawData.Size);
           fixedBody := StringReplace(fixedBody, #13#10'.'#13#10, #13#10'..'#13#10, [rfReplaceAll]);
@@ -634,14 +633,14 @@ end;
  |                                                                      |
  | The function returns TArticleBase
  *----------------------------------------------------------------------*)
-function TArticleFolder.FindUniqueID(const msgID: string): TArticleBase;
+function TArticleFolder.FindUniqueID(const msgID: RawByteString): TArticleBase;
 var
   idx, dr: Integer;
-  xnr: MessageString;
+  xnr: RawByteString;
   t: TBTree;
   sd: TThreadSortDirection;
 begin
-  xnr := MessageString(msgID);
+  xnr := msgID;
   LoadArticles;
   idx := fIndex.GetIndexOfKey(xnr, dr);
   if idx >= 0 then
@@ -676,7 +675,7 @@ var
   f: TTextFileReader;
   fw: TTextFileWriter;
   st: string;
-  raw: MessageString;
+  raw: RawByteString;
 begin
   Deactivate;
 
@@ -728,7 +727,7 @@ function TArticleFolder.GetArticleBase(idx: Integer): TArticleBase;
 var
   res: TFolderArticle;
   pos: Integer;
-  key: MessageString;
+  key: RawByteString;
 begin
   LoadArticles;
 
@@ -748,7 +747,7 @@ begin
       if res = nil then
         MEssageBeep($ffff);
 
-      key := MessageString(res.PrimaryKey);    // Get primary key so we can
+      key := RawByteString(res.PrimaryKey);    // Get primary key so we can
                                                // check if it's been deleted.
     end
     else
@@ -862,9 +861,9 @@ function TArticleFolder.RawLoadArticleHeader(idx: Integer;
   var pos: Integer): TFolderArticle;
 var
   reader: TStreamTextReader;
-  s: TStringList;
+  s: TAnsiStringList;
   st: string;
-  raw: MessageString;
+  raw: RawByteString;
 begin
   if pos >= fFileStream.Size then
   begin
@@ -882,14 +881,14 @@ begin
     reader := TStreamTextReader.Create(fFileStream);
     try
       Result.fOffset := pos;
-      s := TStringList.Create;
+      s := TAnsiStringList.Create;
       s.NameValueSeparator := ':';
       reader.Position := pos;           // Go to position in the data file
 
 
                                         // Read the header lines into 's'
       while reader.ReadLn(raw) and (raw <> '') do
-        s.Add(string(raw));
+        s.Add(raw);
 
       if raw = '' then
       begin
@@ -902,9 +901,9 @@ begin
 
                                         // Get the server, group & article no from
                                         // the XRef or X-Ref header.
-        st := Trim(s.Values['X-Ref']);
+        st := string(RawTrim(s.Values['X-Ref']));
         if st = '' then
-          st := Trim(s.Values['XRef']);
+          st := string(RawTrim(s.Values['XRef']));
 
         if st <> '' then
         begin
@@ -914,7 +913,10 @@ begin
         end;
       end
       else
+      begin
+        s.Free;
         raise Exception.Create('Corrupt article in archive');
+      end;
     finally
       pos := reader.Search(#13#10'.'#13#10);
       pos := Reader.Position;
@@ -945,7 +947,7 @@ var
   lpc, articleStart, pc, ae, xr: Integer;
   reader: TStreamTextReader;
   idx: TBTree;
-  key: MessageString;
+  key: RawByteString;
   fromName, fromEMail: string;
   fn, st, fld, server, group: string;
   deleted, isMailAccount: Boolean;
@@ -954,10 +956,11 @@ var
   // Return the specified header field.
   function FindHeaderField(const field: string; var deleted, mail: Boolean; var date: TDateTime): string;
   var
-    st, st1, dtst: string;
+    st, st1: string;
+    dtst: string;
     l1: Boolean;
     gotDate, gotResult: Boolean;
-    raw: MessageString;
+    raw: RawByteString;
   begin
     deleted := False;
     mail := False;
@@ -994,7 +997,7 @@ var
       else
         if SameText(field, 'xref') and (SameText(st1, 'x-ref') or SameText(st1, 'x-uidl')) then
         begin
-          if sameText(st1, 'x-uidl') then
+          if SameText(st1, 'x-uidl') then
             mail := True;
           Result := st;
           gotResult := True;
@@ -1087,7 +1090,7 @@ begin  // ReCreateIndex
             soMessageNo:
               begin
                 if isMailAccount then
-                  key := MessageString(st)
+                  key := RawByteString(st)
                 else
                 begin
                   key := '';
@@ -1098,28 +1101,28 @@ begin  // ReCreateIndex
                   if isMailAccount or (xr <> -1) then
                   begin
                     if isMailAccount then
-                      key := MessageString(IntToHex(idx.RecordCount + 1, 8))
+                      key := RawByteString(IntToHex(idx.RecordCount + 1, 8))
                     else
-                      key := MessageString(IntToHex(xr, 8));
-                    key := MessageString(IntToHex(gArticleFolders.GetXNRef(server, group), 4) + ':') + key;
+                      key := RawByteString(IntToHex(xr, 8));
+                    key := RawByteString(IntToHex(gArticleFolders.GetXNRef(server, group), 4) + ':') + key;
                   end;
                 end;
               end;
             soDate: key := DateToByteStr(date);
             soLines:
               begin
-                key := MessageString(st);
+                key := RawByteString(st);
                 while Length(key) < 8 do
                   key := '0' + key;
                 key := key + DateToByteStr(date);
               end;
             soAuthor:
               begin
-                DecodeFromEMail(st, fromName, fromEMail);
-                key := MessageString(fromName) + DateToByteStr(date);
+                DecodeFromEMail(RawByteString(st), fromName, fromEMail, -1);
+                key := RawByteString(fromName) + DateToByteStr(date);
               end;
             else
-              key := MessageString(st) + DateToByteStr(date)
+              key := RawByteString(st) + DateToByteStr(date)
           end;
           if key <> '' then
             idx.AddKey(key, articleStart);
@@ -1133,7 +1136,7 @@ begin  // ReCreateIndex
       else
       begin
         fSecondaryIndex := idx;
-        fSecondaryIndex.ExtraData := MessageString(IntToStr(Ord(fThreadSortOrder)));
+        fSecondaryIndex.ExtraData := RawByteString(IntToStr(Ord(fThreadSortOrder)));
       end;
       reader.Free;
       SetTempStatusMessage('', 0, 0);
@@ -1371,7 +1374,7 @@ end;
 procedure TArticleFolder.RemoveDeletedMessages;
 var
   pos: Integer;
-  key: MessageString;
+  key: RawByteString;
   ch: AnsiChar;
 begin
   LoadArticles;
@@ -1386,14 +1389,14 @@ begin
   begin
     while fDeletedArticles.Count > 0 do
     begin
-      key := MessageString(fDeletedArticles[0]);
+      key := RawByteString(fDeletedArticles[0]);
       fDeletedArticles.Delete(0);
       if fIndex.Find(key, pos) and fIndex.DeleteKey(Key) then
       begin
         fFileStream.Position := pos;
         fFileStream.Read(ch, SizeOf(ch));
         fFileStream.Position := pos;
-        ch := MessageString(LowerCase(string(ch)))[1];
+        ch := RawByteString(LowerCase(string(ch)))[1];
         fFileStream.Write(ch, SizeOf(ch));
         Dec(fArticleCount);
       end;
@@ -1497,7 +1500,7 @@ end;
 function TFolderArticle.GetMsg: TmvMessage;
 var
   reader: TStreamTextReader;
-  raw: MessageString;
+  raw: RawByteString;
   st: string;
   ap, ae: Integer;
 begin
@@ -1509,7 +1512,7 @@ begin
 
       fMsg := TmvMessage.Create(Self);
       try
-        fMsg.Header.AddStrings(fExtraHeaders);
+        fMsg.Header.AddAnsiStrings(fExtraHeaders);
 
         ap := reader.Position;
         ae := reader.Search(#13#10'.'#13#10);
@@ -1520,7 +1523,7 @@ begin
 
           st := string(raw);
           st := StringReplace(st, #13#10'..'#13#10, #13#10'.'#13#10, [rfReplaceAll]);
-          raw := MessageString(st);
+          raw := RawByteString(st);
 
           fMsg.RawData.Write(raw[1], Length(raw));
         end;
@@ -1540,10 +1543,10 @@ begin
   Result := fMsg;
 end;
 
-function TFolderArticle.GetUniqueID: string;
+function TFolderArticle.GetUniqueID: RawByteString;
 begin
   Owner.LoadArticles;
-  Result := PrimaryKey
+  Result := RawByteString(PrimaryKey);
 end;
 
 function TFolderArticle.MsgValid: Boolean;
@@ -1553,7 +1556,7 @@ end;
 
 function TFolderArticle.PeekAtMsgHdr(const hdr: string): string;
 begin
-  Result := fExtraHeaders.Values[hdr];
+  Result := string(fExtraHeaders.Values[RawByteString(hdr)]);
 end;
 
 function TFolderArticle.PrimaryKey: string;
@@ -1572,7 +1575,7 @@ begin
     begin
       SplitString(':', st);
       artNo := StrToIntDef('$' + st, 0);
-      Result :=IntToHex(gArticleFolders.GetXNRef(OrigServer, OrigGroup), 4) + ':' + IntToHex(artNo, 8);
+      Result := IntToHex(gArticleFolders.GetXNRef(OrigServer, OrigGroup), 4) + ':' + IntToHex(artNo, 8);
     end;
   end;
 end;
@@ -1662,7 +1665,7 @@ end;
 { TSentMessages }
 
 procedure TSentMessages.AddMessage(Account: TNNTPAccount;
-  header: TStrings; const msg: string; attachments: TObjectList;
+  header: TAnsiStrings; const msg: string; attachments: TObjectList;
   codepage: Integer; ATextPartStyle: TTextPartStyle);
 var
   m: TSentMessage;
@@ -1685,7 +1688,7 @@ begin
   end;
 
   artNo := GetNextSentArticleNo;
-  header.Add('X-Ref=' + serverSt + ' ~XNS:' + IntToHex(artNo, 8));
+  header.Add(RawByteString('X-Ref=' + serverSt + ' ~XNS:' + IntToHex(artNo, 8)));
 
   m := TSentMessage.CreateInit(Self, artNo, header, msg, codepage, attachments);
   try
@@ -1708,24 +1711,23 @@ procedure TSentMessages.AddSentArticle(article: TSentMessage; const body: string
 var
   p: Integer;
   ok: Boolean;
-  xnref: MessageString;
-  s: string;
-  header: TStrings;
+  xnref: RawByteString;
+  header: TAnsiStrings;
   fixedBody: string;
   writer: TTextStreamWriter;
 begin
   LoadArticles;
-  header := TStringList.Create;
+  header := TAnsiStringList.Create;
   try
-    header.Add('Message-ID:' + article.MessageId);
-    header.Add('Subject:' + article.Subject);
-    header.Add('From:' + article.From);
-    header.Add('Date:' + SafeDateTimeToInternetStr(article.Date, True));
+    header.Add('Message-ID:' + article.fMessageId);
+    header.Add('Subject:' + article.fSubject);
+    header.Add('From:' + article.fFrom);
+    header.Add('Date:' + RawByteString(SafeDateTimeToInternetStr(article.Date, True)));
     if article.Lines <> 0 then
-      header.Add('Lines:' + IntToStr(article.Lines));
+      header.Add('Lines:' + RawIntToStr(article.Lines));
     if article.References <> '' then
-      header.Add('References:' + article.References);
-    header.AddStrings(article.fExtraHeaders);
+      header.Add('References:' + article.fReferences);
+    header.AddAnsiStrings(article.fExtraHeaders);
 
     fFileStream.Seek(0, soEnd);       // Position in text file to write to
     p := fFileStream.Position;
@@ -1741,8 +1743,7 @@ begin
     begin
       writer := TTextStreamWriter.Create(fFileStream);
       try
-        s := header.Text + #13#10;
-        writer.Write(s);
+        writer.Write(header.Text + #13#10);
 
         fixedBody := StringReplace(body, #13#10'.'#13#10, #13#10'..'#13#10, [rfReplaceAll]);
         writer.Write(fixedBody);
@@ -1762,18 +1763,18 @@ end;
 
 { TSentMessage }
 
-constructor TSentMessage.CreateInit(AOwner: TArticleFolder; ArticleNo: Integer; AHdr: TStrings; const AMsg: string;
+constructor TSentMessage.CreateInit(AOwner: TArticleFolder; ArticleNo: Integer; AHdr: TAnsiStrings; const AMsg: string;
   ACodePage: Integer; Attachments: TObjectList);
 var
-  hdr: TStrings;
+  hdr: TAnsiStrings;
   i: Integer;
 begin
   inherited Create(AOwner);
 
-  hdr := TStringList.Create;
-  hdr.AddStrings(AHdr);
+  hdr := TAnsiStringList.Create;
+  hdr.AddAnsiStrings(AHdr);
   for i := 0 to hdr.Count - 1 do
-    hdr[i] := StringReplace(hdr[i], '=', ':', []);
+    hdr[i] := RawStringReplace(hdr[i], '=', ':', []);
   fCodePage := ACodePage;
   Initialize(ArticleNo, hdr);
   fExtraHeaders := hdr;

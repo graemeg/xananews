@@ -23,8 +23,9 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
+			<DCC_StringChecks>off</DCC_StringChecks>
 			<DCC_WIDECHAR_REDUCED>false</DCC_WIDECHAR_REDUCED>
-			<DCC_DependencyCheckOutputName>C:\Documents and Settings\All Users\Documenten\RAD Studio\6.0\Bpl\LowLevelD2009.bpl</DCC_DependencyCheckOutputName>
+			<DCC_DependencyCheckOutputName>C:\Users\Public\Documents\RAD Studio\6.0\Bpl\LowLevelD2009.bpl</DCC_DependencyCheckOutputName>
 			<DCC_ImageBase>00400000</DCC_ImageBase>
 			<DCC_Description>Low Level support units for Delphi 2007</DCC_Description>
 			<RuntimeOnlyPackage>true</RuntimeOnlyPackage>
@@ -67,6 +68,7 @@
 			<DCCReference Include="unitExSettings.pas"/>
 			<DCCReference Include="unitExXMLSettings.pas"/>
 			<DCCReference Include="XnClasses.pas"/>
+			<DCCReference Include="XnRawByteStrings.pas"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>

@@ -322,7 +322,7 @@ var
   rdr: TStreamTextReader;
   idx: TList;
   st: string;
-  raw: MessageString;
+  raw: RawByteString;
   sig: string;
   useSigFile: Boolean;
 

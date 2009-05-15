@@ -36,7 +36,7 @@ interface
 
 uses
   Windows, Classes, SysUtils, ConTnrs, Graphics, forms, SyncObjs, ShellAPI,
-  StrUtils, XnClasses;
+  StrUtils, XnClasses, XnRawByteStrings;
 
 type
   TmvMessagePart = class;
@@ -79,7 +79,7 @@ type
     function GetIsMultipart: Boolean;
     function GetMultipartBoundary: string;
   public
-    class function CreateFromHeaderStrings(AHeader: TStrings; forceMIME: Boolean): TMimeHeader;
+    class function CreateFromHeaderStrings(AHeader: TAnsiStrings; forceMIME: Boolean): TMimeHeader;
     destructor Destroy; override;
 
     procedure Assign(const AHeader: TMimeHeader);
@@ -118,7 +118,7 @@ type
   private
     fData: TThreadsafeMemoryStream;
     fBody: TAnsiStrings;
-    fHeader: TStrings;
+    fHeader: TAnsiStrings;
     fXFace: TBitmap;
     fMessageParts: TmvMessageParts;
     fUpdating: Boolean;
@@ -135,7 +135,7 @@ type
     fCS: TCriticalSection;
     fCurrentLine: Integer;
     fCodePage: Integer;
-    procedure SetHeader(const Value: TStrings);
+    procedure SetHeader(const Value: TAnsiStrings);
     procedure Decode;
     procedure PartialDecode;
     function GetBody: TAnsiStrings;
@@ -145,7 +145,7 @@ type
     procedure SetRawMode(const Value: Boolean);
 
   protected
-    function GetLine(var st: MessageString): Boolean;
+    function GetLine(var st: RawByteString): Boolean;
     function TryCreateMessagePart(const st: string; hdr: TMimeHeader): TmvMessagePart;
   public
     constructor Create(AObject: TObject);
@@ -169,7 +169,7 @@ type
     property Updating: Boolean read fUpdating;
 
     property RawData: TThreadsafeMemoryStream read fData;
-    property Header: TStrings read fHeader write SetHeader;
+    property Header: TAnsiStrings read fHeader write SetHeader;
     property Codepage: Integer read GetCodePage write SetCodePage;
 
     property Body: TAnsiStrings read GetBody;
@@ -213,8 +213,8 @@ type
 
     class function IsBoundary(const st: string; MIMEHeader: TMIMEHeader): Boolean; virtual;
     function IsBoundaryEnd(const st: string): Boolean; virtual;
-    function ProcessHeaderLine(const st: string): Boolean; virtual; // Return False when header is complete
-    function AddLine(const st: MessageString): TAddLine; virtual;
+    function ProcessHeaderLine(const st: RawByteString): Boolean; virtual; // Return False when header is complete
+    function AddLine(const st: RawByteString): TAddLine; virtual;
     function GetGraphic: TGraphic; virtual;
     function GetBody: TAnsiStrings; virtual;
     procedure DecodeGraphic(gc: TGraphicClass);
@@ -244,7 +244,7 @@ type
   private
     fBody: TAnsiStrings;
   protected
-    function ProcessHeaderLine(const st: string): Boolean; override;
+    function ProcessHeaderLine(const st: RawByteString): Boolean; override;
     function GetBody: TAnsiStrings; override;
   public
     constructor Create(AOwner: TCollection); override;
@@ -351,7 +351,7 @@ begin
   fObject := AObject;
   fData := TThreadsafeMemoryStream.Create;
   fBody := TAnsiStringList.Create;
-  fHeader := TStringList.Create;
+  fHeader := TAnsiStringList.Create;
   fMessageParts := TmvMessageParts.Create(Self, TmvMessagePart);
   fAlternateHTML := True;
   fAlternateMessagePartCount := -1;
@@ -522,7 +522,7 @@ begin
   Result := (fDecodePos = 0) and (fDecodeSize = 0);
 end;
 
-function TmvMessage.GetLine(var st: MessageString): Boolean;
+function TmvMessage.GetLine(var st: RawByteString): Boolean;
 var
   pch, pch1: PAnsiChar;
   p, l: Integer;
@@ -624,6 +624,7 @@ var
   faceDecoder: TIdDecoderMIME;
   facePngStrm: TStream;
   png: TPngImage;
+  raw: RawByteString;
 begin
   if not fGotXFace then
   begin
@@ -632,9 +633,11 @@ begin
     face := False;
     for i := 0 to header.Count - 1 do
     begin
-      s := header[i];
+      s := string(header[i]);
       if CompareText(SplitString(':', s), 'Face') = 0 then
       try
+        s := StringReplace(s, ' ', '', [rfReplaceAll]);      // Remove folding spaces from Face headers
+        s := StringReplace(s, #9, '', [rfReplaceAll]);       // Buggy [PlethoraNews Engine v1.0 RC5c].
         facePngStrm := nil;
         png := nil;
         faceDecoder := TIdDecoderMIME.Create(nil);
@@ -663,15 +666,15 @@ begin
     if not face then
       for i := 0 to header.Count - 1 do
       begin
-        s := header[i];
-        if CompareText(SplitString(':', s), 'X-Face') = 0 then
+        raw := header[i];
+        if RawCompareText(RawSplitString(':', raw), 'X-Face') = 0 then
         begin
           fXFace := TBitmap.Create;
           try
             xFace.Width := 48;
             xFace.Height := 48;
             xFace.PixelFormat := pf1Bit;
-            if XFaceToBitmap(AnsiString(s), fXFace) < 0 then
+            if XFaceToBitmap(raw, fXFace) < 0 then
               FreeAndNil(fXFace);
           except
             FreeAndNil(fXFace);
@@ -708,11 +711,11 @@ end;
 
 procedure TmvMessage.PartialDecode;
 var
-  st: MessageString;
+  st: RawByteString;
   mp: TmvMessagePart;
   hdr: TMimeHeader;
 
-  procedure AddMessagePartLine(const st: MessageString);
+  procedure AddMessagePartLine(const st: RawByteString);
   var
     prevMessagePart: TmvMessagePart;
     pmp: TmvMIMEMessagePart;
@@ -747,7 +750,7 @@ var
             if Assigned(Hdr) then
               fCurrentMessagePart.InitMultipart(Hdr)
             else
-              if not fCurrentMessagePart.ProcessHeaderLine(string(st)) then
+              if not fCurrentMessagePart.ProcessHeaderLine(st) then
                                         // If this is the first and only header
                                         // line for the message part, create the
                                         // data area straight away - eg. begin 644
@@ -836,7 +839,7 @@ begin
               if Assigned(MimeHeader) and (MimeHeader.IsMultipart) then
                 fCurrentMessagePart.InitMultipart(MIMEHeader)
               else
-                if not fCurrentMessagePart.ProcessHeaderLine(string(st)) then
+                if not fCurrentMessagePart.ProcessHeaderLine(st) then
                                               // If this is the first and only header
                                               // line for the message part, create the
                                               // data area straight away - eg. begin 644
@@ -881,7 +884,7 @@ begin
     end;
 end;
 
-procedure TmvMessage.SetHeader(const Value: TStrings);
+procedure TmvMessage.SetHeader(const Value: TAnsiStrings);
 begin
   fHeader.Assign(Value);
 end;
@@ -919,9 +922,9 @@ end;
 
 { TmvMessagePart }
 
-function TmvMessagePart.AddLine(const st: MessageString): TAddLine;
+function TmvMessagePart.AddLine(const st: RawByteString): TAddLine;
 var
-  s: MessageString;
+  s: RawByteString;
   mp: TmvMIMEMessagePart;
   mpHeader: TMimeHeader;
 begin
@@ -959,11 +962,11 @@ begin
           Exit;
         end;
 
-      s := st + MessageString(#13#10);
+      s := st + #13#10;
       fData.Write(s[1], Length(s));
     end
     else                        // We're still in the header
-      if not ProcessHeaderLine(string(st)) then
+      if not ProcessHeaderLine(st) then
       begin
         if Assigned(mp) then
           mpHeader := mp.MimeHeader;
@@ -1234,7 +1237,7 @@ begin
   Result := False;
 end;
 
-function TmvMessagePart.ProcessHeaderLine(const st: string): Boolean;
+function TmvMessagePart.ProcessHeaderLine(const st: RawByteString): Boolean;
 begin
   Result := True;
 end;
@@ -1312,14 +1315,14 @@ begin
   Result := fBody;
 end;
 
-function TmvTextMessagePart.ProcessHeaderLine(const st: string): Boolean;
+function TmvTextMessagePart.ProcessHeaderLine(const st: RawByteString): Boolean;
 begin
   // There's no 'header/data' concept in non-mime text message parts so
   // this is a special case.  Stay in the header, but add each line to
   // the body.
   if not Assigned(fBody) then
     fBody := TAnsiStringList.Create;
-  fBody.Add(MessageString(st));
+  fBody.Add(st);
   Result := True;
 end;
 
@@ -1353,7 +1356,7 @@ begin
     FreeAndNil(fcontentDispositionAttributes);
 end;
 
-class function TMimeHeader.CreateFromHeaderStrings(AHeader: TStrings; forceMIME: Boolean): TMIMEHeader;
+class function TMimeHeader.CreateFromHeaderStrings(AHeader: TAnsiStrings; forceMIME: Boolean): TMIMEHeader;
 var
   i: Integer;
   s1, st: string;
@@ -1458,7 +1461,7 @@ begin
 
   for i := 0 to AHeader.Count - 1 do
   begin
-    st := AHeader[i];
+    st := string(AHeader[i]);
 
     s1 := SplitString(':', st);
 
@@ -1466,7 +1469,7 @@ begin
       if not Assigned(mimeHeader) then
         mimeHeader := TMimeHeader.Create;
 
-    if CompareText(s1, 'MIME-Version') = 0 then
+    if SameText(s1, 'MIME-Version') then
       ParseMIMEVersion(st)
     else
       if SameText(s1, 'X-RFC2646') then

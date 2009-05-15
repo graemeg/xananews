@@ -970,7 +970,7 @@ begin
 
     Stat := TStatistic.Create;
     Stat.fNumber := GetThreadHeight(bart);
-    fThreads.AddObject(DecodeSubject(bart.Subject), Stat);
+    fThreads.AddObject(bart.Subject, Stat);
   end;
 
   fThreads.CustomSort(CompareStatisticNumbers);

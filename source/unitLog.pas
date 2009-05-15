@@ -19,7 +19,7 @@ var
 procedure LogMessage(msg: string; Force: Boolean = False; AddCRLF: Boolean = True);
 var
   dt: TDateTime;
-  raw: MessageString;
+  raw: RawByteString;
 begin
   if (Force or gLogFlag) and Assigned(crit) then
   begin
@@ -47,7 +47,7 @@ begin
         if AddCRLF then
           msg := msg +  #13#10;
 
-        raw := MessageString(msg);
+        raw := RawByteString(msg);
         lf.Write(raw[1], Length(raw));
       finally
         crit.Leave;

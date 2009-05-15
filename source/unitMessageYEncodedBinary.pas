@@ -53,7 +53,7 @@ type
   protected
     class function IsBoundary(const st: string; MIMEHeader: TMIMEHeader): Boolean; override;
     function IsBoundaryEnd(const st: string): Boolean; override;
-    function ProcessHeaderLine(const st: string): Boolean; override;
+    function ProcessHeaderLine(const st: RawByteString): Boolean; override;
     function GetGraphic: TGraphic; override;
     function GetFileName: string; override;
     function GetDecodeType: TDecodeType; override;
@@ -395,17 +395,17 @@ end;
  |                                                                      |
  | The function returns False if it was a data line.                    |
  *----------------------------------------------------------------------*)
-function TmvYEncodedBinary.ProcessHeaderLine(const st: string): Boolean;
+function TmvYEncodedBinary.ProcessHeaderLine(const st: RawByteString): Boolean;
 begin
   Result := Copy(st, 1, 2) = '=y';
   if not Result then
   begin
     fData := TMemoryStream.Create;
-    AddLine(AnsiString(st));
+    AddLine(st);
     Exit;
   end;
 
-  ParseHeaderLine(st);
+  ParseHeaderLine(string(st)); // !!!!!!
 end;
 
 initialization

@@ -48,6 +48,7 @@ function IsWideCharAlnum(ch: WideChar): Boolean;
 procedure FontToCharFormat(font: TFont; codePage: Integer; var Format: TCharFormatW);
 function WideStringToUTF8(const ws: WideString): AnsiString;
 function UTF8ToWideString(const st: AnsiString): WideString;
+function RawCodepageToMIMECharsetName(codepage: Integer): RawByteString;
 
 var
   gIMultiLanguage: IMultiLanguage = nil;
@@ -282,6 +283,11 @@ begin
       Result := CharsetMap[i].MIMECharsetName;
       Break;
     end;
+end;
+
+function RawCodepageToMIMECharsetName(codepage: Integer): RawByteString; inline;
+begin
+  Result := RawByteString(CodepageToMIMECharsetName(codepage));
 end;
 
 function CodepageToCharsetName(codepage: Integer): string;

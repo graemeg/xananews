@@ -198,8 +198,8 @@ begin
   SetLength(CurrentLine, 255);
   //ie while not eof
   LSourceSize := ASrcStream.Size;
-  while ASrcStream.Position < LSourceSize do begin                // en8Bit !
-    SourceLine := AnsiString(ReadLnFromStream(ASrcStream, -1, False, en8Bit)); // explicit convert to Ansi
+  while ASrcStream.Position < LSourceSize do begin
+    SourceLine := AnsiString(ReadLnFromStream(ASrcStream, -1, False, Indy8BitEncoding)); // explicit convert to Ansi
     CurrentPos := 1;
     for i := 1 to Length(SourceLine) do begin
       if not (SourceLine[i] in SafeChars) then
