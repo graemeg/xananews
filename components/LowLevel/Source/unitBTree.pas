@@ -484,7 +484,7 @@ end;
  | constructor for TRawBTree                                            |
  |                                                                      |
  | Parameters:                                                          |
- |   const AFileName: RawByteString    The index file name                     |
+ |   const AFileName: RawByteString    The index file name              |
  *----------------------------------------------------------------------*)
 constructor TRawBTree.Create(const AFileName: string);
 begin
@@ -757,7 +757,7 @@ end;
  | Find a key                                                           |
  |                                                                      |
  | Parameters:                                                          |
- |   key: RawByteString;               The key to find                         |
+ |   key: RawByteString;        The key to find                         |
  |   var DataRec: Integer       Returns the associated data rec         |
  |                                                                      |
  | The function returns True if the key was found.                      |
@@ -1721,7 +1721,7 @@ end;
  | Iterate to the last node in the index and return it's data           |
  |                                                                      |
  | Parameters:                                                          |
- |   var key: RawByteString;           Returns the key of the last node        |
+ |   var key: RawByteString;    Returns the key of the last node        |
  |   var value: Integer         Returns the DataRec associated with the |
  |                              key                                     |
  |                                                                      |
@@ -1759,7 +1759,7 @@ end;
  | Iterate to the next node in the index and return it's data.          |
  |                                                                      |
  | Parameters:                                                          |
- |   var key: RawByteString;           Returns the key of the next node        |
+ |   var key: RawByteString;    Returns the key of the next node        |
  |   var value: Integer         Returns the DataRec associated with the |
  |                              key                                     |
  |                                                                      |
@@ -1838,7 +1838,7 @@ end;
  | Iterate to the previous node in the index and return it's data.      |
  |                                                                      |
  | Parameters:                                                          |
- |   var key: RawByteString;           Returns the key of the previous node    |
+ |   var key: RawByteString;    Returns the key of the previous node    |
  |   var value: Integer         Returns the DataRec associated with the |
  |                              key                                     |
  |                                                                      |

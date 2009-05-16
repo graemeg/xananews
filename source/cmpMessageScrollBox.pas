@@ -58,9 +58,6 @@ type
 
     procedure DoOnURLClick(Sender: TObject; Button: TMouseButton; Shift: TShiftState; const url: WideString);
     procedure DoOnDblClick(Sender: TObject);
-
-
-    { Private declarations }
   protected
     procedure Resize; override;
     procedure PaintWindow(dc: HDC); override;
@@ -100,7 +97,7 @@ uses
   unitExSettings, unitMessageNNTPBinary, unitMessageMIME, IdGlobal, unitNNTPServices,
   unitMessageYEncodedBinary, unitHTMLStringsDisplayObject, unitMailServices,
   unitNewsStringsDisplayObject, unitNewsReaderOptions, NewsGlobals,
-  unitSavedArticles;
+  unitSavedArticles, unitCharsetMap;
 
 type
   THeaderDisplayObjectLink = class(TNewsStringsDisplayObjectLink)
@@ -181,8 +178,10 @@ begin
 
     if raw then
     begin
-      from := art.From;
-      sub  := art.Subject;
+      // "ISO 8859-1" (codepage 28591), treats codeunits $00-$FF as-is, and
+      // seems to be just as widely supported as codepage 1252 on most systems.
+      from := AnsiStringToWideString(art.RawFrom, 28591);
+      sub  := AnsiStringToWideString(art.RawSubject, 28591);
     end
     else
     begin
@@ -209,7 +208,10 @@ begin
     if ShowHeader in [shFull, shCustom] then
       for i := 0 to Msg.Header.Count - 1 do
         if Copy(msg.Header[i], 1, 14) <> 'X-XanaOrigDate' then
-          Result := Result + headst + string(Msg.Header[i]) + #13#10;
+          if (obj is TArticleBase) and not raw then
+            Result := Result + headst + AnsiStringToWideString(Msg.Header[i], TArticleBase(obj).CodePage) + #13#10
+          else
+            Result := Result + headst + AnsiStringToWideString(Msg.Header[i], 28591) + #13#10;
 
 
   if ShowHeader = shCustom then

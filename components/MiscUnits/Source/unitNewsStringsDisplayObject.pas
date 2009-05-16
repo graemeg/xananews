@@ -637,10 +637,13 @@ begin
     if TObject(fTextObjects[i]) is TAnsiStrings then
     begin
       if Owner.RawMessage then
-        cp := CP_ACP
+      begin
+        // "ISO 8859-1" (codepage 28591), treats codeunits $00-$FF as-is, and
+        // seems to be just as widely supported as codepage 1252 on most systems.
+        cp := 28591
+      end
       else
       begin
-//        cp := ctrl.CodePage; // TODO: check again later if using codepage from object is OK.
         cp := CodePage;
         if cp = 1252 then
           cp := CP_ACP;
