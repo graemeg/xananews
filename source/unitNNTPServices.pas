@@ -2962,8 +2962,6 @@ begin
   if not fArticlesLoaded then
     LoadArticles;
 
-OutputDebugString('SAMPLING ON');
-
   try
     lastGoodDate := 0;
     while headers.ReadLn(raw) do
@@ -3011,9 +3009,6 @@ OutputDebugString('SAMPLING ON');
   ReSortArticles;
   NNTPAccounts.PerfCue(880, 'Sorted articles');
   fArticlesLoaded := True;
-
-OutputDebugString('SAMPLING ON');
-
 end;
 
 procedure TSubscribedGroup.CloseMessageFile;
