@@ -9,6 +9,7 @@ function RawCompareStr(const S1, S2: RawByteString): Integer;
 function RawCompareText(const S1, S2: RawByteString): Integer;
 function RawFetch(var AInput: RawByteString; const ADelim: RawByteString = ' '; const ADelete: Boolean = True): RawByteString;
 function RawIntToStr(Value: Integer): RawByteString;
+function RawLowerCase(S: RawByteString): RawByteString;
 function RawPos(const substr, str: RawByteString): Integer;
 function RawSameText(const S1, S2: RawByteString): Boolean;
 function RawSplitString(const search: RawByteString; var s: RawByteString): RawByteString;
@@ -25,7 +26,7 @@ function RawTrimRight(const S: RawByteString): RawByteString;
 implementation
 
 uses
-  RTLConsts, SysConst;
+  AnsiStrings, RTLConsts, SysConst;
 
 procedure ConvertErrorFmt(ResString: PResStringRec; const Args: array of const); local;
 begin
@@ -225,10 +226,126 @@ begin
 end;
 
 
-// !!!!!!
+const
+  TwoDigitLookup : packed array[0..99] of array[1..2] of AnsiChar =
+    ('00','01','02','03','04','05','06','07','08','09',
+     '10','11','12','13','14','15','16','17','18','19',
+     '20','21','22','23','24','25','26','27','28','29',
+     '30','31','32','33','34','35','36','37','38','39',
+     '40','41','42','43','44','45','46','47','48','49',
+     '50','51','52','53','54','55','56','57','58','59',
+     '60','61','62','63','64','65','66','67','68','69',
+     '70','71','72','73','74','75','76','77','78','79',
+     '80','81','82','83','84','85','86','87','88','89',
+     '90','91','92','93','94','95','96','97','98','99');
+
+// IntToStr32_JOH_IA32_6 from John O'Harrow as found at the FastCode project.
 function RawIntToStr(Value: Integer): RawByteString;
+asm
+  push   ebx
+  push   edi
+  push   esi
+  mov    ebx, eax                {Value}
+  sar    ebx, 31                 {0 for +ve Value or -1 for -ve Value}
+  xor    eax, ebx
+  sub    eax, ebx                {ABS(Value)}
+  mov    esi, 10                 {Max Digits in Result}
+  mov    edi, edx                {@Result}
+  cmp    eax, 10
+  sbb    esi, 0
+  cmp    eax, 100
+  sbb    esi, 0
+  cmp    eax, 1000
+  sbb    esi, 0
+  cmp    eax, 10000
+  sbb    esi, 0
+  cmp    eax, 100000
+  sbb    esi, 0
+  cmp    eax, 1000000
+  sbb    esi, 0
+  cmp    eax, 10000000
+  sbb    esi, 0
+  cmp    eax, 100000000
+  sbb    esi, 0
+  cmp    eax, 1000000000
+  sbb    esi, ebx                {Digits (Including Sign Character)}
+  mov    ecx, [edx]              {Result}
+  test   ecx, ecx
+  je     @@NewStr                {Create New String for Result}
+  cmp    dword ptr [ecx-8], 1
+  jne    @@ChangeStr             {Reference Count <> 1}
+  cmp    esi, [ecx-4]
+  je     @@LengthOk              {Existing Length = Required Length}
+  sub    ecx, 8                  {Allocation Address}
+  push   eax                     {ABS(Value)}
+  push   ecx
+  mov    eax, esp
+  lea    edx, [esi+9]            {New Allocation Size}
+  call   system.@ReallocMem      {Reallocate Result String}
+  pop    ecx
+  pop    eax                     {ABS(Value)}
+  add    ecx, 8                  {Result}
+  mov    [ecx-4], esi            {Set New Length}
+  mov    byte ptr [ecx+esi], 0   {Add Null Terminator}
+  mov    [edi], ecx              {Set Result Address}
+  jmp    @@LengthOk
+@@ChangeStr:
+  mov     edx, dword ptr [ecx-8]  {Reference Count}
+  add     edx, 1
+  jz      @@NewStr                {RefCount = -1 (String Constant)}
+  lock    dec dword ptr [ecx-8]   {Decrement Existing Reference Count}
+@@NewStr:
+  push   eax                     {ABS(Value)}
+  mov    eax, esi                {Length}
+  call   system.@NewAnsiString
+  mov    [edi], eax              {Set Result Address}
+  mov    ecx, eax                {Result}
+  pop    eax                     {ABS(Value)}
+@@LengthOk:
+  mov    byte ptr [ecx], '-'     {Store '-' Character (May be Overwritten)}
+  add    esi, ebx                {Digits (Excluding Sign Character)}
+  sub    ecx, ebx                {Destination of 1st Digit}
+  sub    esi, 2                  {Digits (Excluding Sign Character) - 2}
+  jle    @@FinalDigits           {1 or 2 Digit Value}
+  cmp    esi, 8                  {10 Digit Value?}
+  jne    @@SetResult             {Not a 10 Digit Value}
+  sub    eax, 2000000000         {Digit 10 must be either '1' or '2'}
+  mov    dl, '2'
+  jnc    @@SetDigit10            {Digit 10 = '2'}
+  mov    dl, '1'                 {Digit 10 = '1'}
+  add    eax, 1000000000
+@@SetDigit10:
+  mov    [ecx], dl               {Save Digit 10}
+  mov    esi, 7                  {9 Digits Remaining}
+  add    ecx, 1                  {Destination of 2nd Digit}
+@@SetResult:
+  mov    edi, $28F5C29           {((2^32)+100-1)/100}
+@@Loop:
+  mov    ebx, eax                {Dividend}
+  mul    edi                     {EDX = Dividend DIV 100}
+  mov    eax, edx                {Set Next Dividend}
+  imul   edx, -200               {-2 * (100 * Dividend DIV  100)}
+  movzx  edx, word ptr [TwoDigitLookup+ebx*2+edx] {Dividend MOD 100 in ASCII}
+  mov    [ecx+esi], dx
+  sub    esi, 2
+  jg     @@Loop                  {Loop Until 1 or 2 Digits Remaining}
+@@FinalDigits:
+  pop    esi
+  pop    edi
+  pop    ebx
+  jnz    @@LastDigit
+  movzx  eax, word ptr [TwoDigitLookup+eax*2]
+  mov    [ecx], ax               {Save Final 2 Digits}
+  ret
+@@LastDigit:
+  or     al , '0'                {Ascii Adjustment}
+  mov    [ecx], al               {Save Final Digit}
+end;
+
+
+function RawLowerCase(S: RawByteString): RawByteString; inline;
 begin
-  Result := RawByteString(IntToStr(Value));
+  Result := AnsiStrings.LowerCase(S);
 end;
 
 
@@ -263,18 +380,16 @@ begin
 end;
 
 
-// !!!!!!
-function RawStringOfChar(ch: AnsiChar; count: Integer): RawByteString;
+function RawStringOfChar(ch: AnsiChar; count: Integer): RawByteString; inline;
 begin
-  Result := RawByteString(StringOfChar(ch, count));
+  Result := StringOfChar(ch, count);
 end;
 
 
-// !!!!!!
 function RawStringReplace(const S, OldPattern, NewPattern: RawByteString;
-  Flags: TReplaceFlags): RawByteString;
+  Flags: TReplaceFlags): RawByteString; inline;
 begin
-  Result := RawByteString(StringReplace(string(S), string(OldPattern), string(NewPattern), Flags));
+  Result := AnsiStrings.StringReplace(S, OldPattern, NewPattern, Flags);
 end;
 
 
@@ -584,7 +699,7 @@ asm
 end;
 
 
-// !!!!!!
+// TODO: see if this can/need be improved in the future
 function RawStrToIntDef(const S: RawByteString; Default: Integer): Integer;
 var
   E: Integer;
@@ -594,7 +709,7 @@ begin
 end;
 
 
-// !!!!!!
+// TODO: see if this can/need be improved in the future
 function RawStrToInt64(const S: RawByteString): Int64;
 var
   E: Integer;
@@ -605,7 +720,7 @@ begin
 end;
 
 
-// !!!!!!
+// TODO: see if this can/need be improved in the future
 function RawStrToInt64Def(const S: RawByteString; const Default: Int64): Int64;
 var
   E: Integer;
@@ -622,10 +737,15 @@ var
 begin
   L := Length(S);
   I := 1;
-  while (I <= L) and (S[I] <= ' ') do Inc(I);
-  if I > L then Result := '' else
+  while (I <= L) and (S[I] <= ' ') do
+    Inc(I);
+
+  if I > L then
+    Result := ''
+  else
   begin
-    while S[L] <= ' ' do Dec(L);
+    while S[L] <= ' ' do
+      Dec(L);
     Result := Copy(S, I, L - I + 1);
   end;
 end;
@@ -636,7 +756,8 @@ var
   I: Integer;
 begin
   I := Length(S);
-  while (I > 0) and (S[I] <= ' ') do Dec(I);
+  while (I > 0) and (S[I] <= ' ') do
+    Dec(I);
   Result := Copy(S, 1, I);
 end;
 
