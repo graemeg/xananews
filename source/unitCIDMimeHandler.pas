@@ -143,7 +143,7 @@ var
   sink: IInternetProtocolSink;
   cid: string;
   mp: TmvMessagePart;
-  w, wc: WideString;
+  w, wc: string;
 begin
   fURL := szURL;
 

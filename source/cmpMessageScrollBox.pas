@@ -42,7 +42,7 @@ type
     fRawMessage: Boolean;
     fParsing: Boolean;
     fImagesOnly: Boolean;
-    fURLText: WideString;
+    fURLText: string;
     fFixedFont: string;
     fAutoFit: Boolean;
     procedure SetAutoFit(const Value: Boolean);
@@ -56,7 +56,7 @@ type
 
     procedure SetImagesOnly(const Value: Boolean);
 
-    procedure DoOnURLClick(Sender: TObject; Button: TMouseButton; Shift: TShiftState; const url: WideString);
+    procedure DoOnURLClick(Sender: TObject; Button: TMouseButton; Shift: TShiftState; const url: string);
     procedure DoOnDblClick(Sender: TObject);
   protected
     procedure Resize; override;
@@ -74,17 +74,17 @@ type
     procedure Refresh(erase: Boolean; renew: Boolean = False);
     procedure PageDown;
 
-    function GetSelectedText(var txt: WideString): Boolean;
-    procedure SetSelectedText(const st: WideString);
-    function GetText(var txt: WideString): Boolean;
+    function GetSelectedText(var txt: string): Boolean;
+    procedure SetSelectedText(const st: string);
+    function GetText(var txt: string): Boolean;
     function GetHTML(var HTML: string; rawFragment: Boolean = False): Boolean;
-    function FindText(const SearchStr: WideString; NewSearch: Boolean; Options: TStringSearchOptions): Boolean;
+    function FindText(const SearchStr: string; NewSearch: Boolean; Options: TStringSearchOptions): Boolean;
     property RawMessage: Boolean read fRawMessage write SetRawMessage;
     property ImagesOnly: Boolean read fImagesOnly write SetImagesOnly;
     property LineHeight: Integer read GetLineHeight;
 
     property SelLength: Integer read GetSelLength;
-    property URLText: WideString read fURLText write fURLText;
+    property URLText: string read fURLText write fURLText;
     property FixedFont: string read fFixedFont write fFixedFont;
     property AutoFit: Boolean read fAutoFit write SetAutoFit;
   published
@@ -488,12 +488,12 @@ begin
   InvalidateRect(fMessageDisplay.Handle, nil, erase or renew);
 end;
 
-function TMessageScrollBox.GetSelectedText(var txt: WideString): Boolean;
+function TMessageScrollBox.GetSelectedText(var txt: string): Boolean;
 begin
   Result := fMessageDisplay.GetSelectedText(txt);
 end;
 
-function TMessageScrollBox.FindText(const SearchStr: WideString; NewSearch: Boolean; Options: TStringSearchOptions): Boolean;
+function TMessageScrollBox.FindText(const SearchStr: string; NewSearch: Boolean; Options: TStringSearchOptions): Boolean;
 begin
   Result := fMessageDisplay.FindText(SearchStr, newSearch, Options);
 end;
@@ -616,7 +616,7 @@ begin
   Result := fMessageDisplay.LineHeight;
 end;
 
-function TMessageScrollBox.GetText(var txt: WideString): Boolean;
+function TMessageScrollBox.GetText(var txt: string): Boolean;
 begin
   txt := fMessageDisplay.Text;
   Result := txt <> ''
@@ -627,7 +627,7 @@ begin
   Result := fMessageDisplay.SelLength;
 end;
 
-procedure TMessageScrollBox.SetSelectedText(const st: WideString);
+procedure TMessageScrollBox.SetSelectedText(const st: string);
 begin
   fMessageDisplay.SetSelectedText(st);
 end;
@@ -660,7 +660,7 @@ begin
   fMessageDisplay.PageDown;
 end;
 
-procedure TMessageScrollBox.DoOnURLClick(Sender: TObject; Button: TMouseButton; Shift: TShiftState; const url: WideString);
+procedure TMessageScrollBox.DoOnURLClick(Sender: TObject; Button: TMouseButton; Shift: TShiftState; const url: string);
 begin
   if Button = mbRight then fURLText := url;
 end;

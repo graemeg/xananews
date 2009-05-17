@@ -36,7 +36,7 @@ type
     procedure FormResize(Sender: TObject);
   private
     fReplyToArticle: TArticleBase;
-    fInitialText: WideString;
+    fInitialText: string;
     fGroup: TSubscribedGroup;
     fPostingSettings : TPostingSettings;
     fAttachments : TObjectList;
@@ -54,7 +54,7 @@ type
     property ReplyToArticle : TArticleBase read fReplyToArticle write fReplyToArticle;
     property ArticleContainer : TServerAccount read fArticleContainer write fArticleContainer;
     property Group : TSubscribedGroup read fGroup write fGroup;
-    property InitialText : WideString read fInitialText write fInitialText;
+    property InitialText : string read fInitialText write fInitialText;
     property EMailerRequest : TEMailerRequest read fEMailerRequest write fEMailerRequest;
   end;
 

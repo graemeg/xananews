@@ -65,7 +65,7 @@ type
     fDefaultPostingSettings: TPostingSettings;
     fReplyToArticle: TArticleBase;
     fAccount: TNNTPAccount;
-    fInitialText: WideString;
+    fInitialText: string;
     fGroupName: string;
     fCodePageOverride: Integer;
     fSubject: string;
@@ -90,7 +90,7 @@ type
     property ReplyToArticle: TArticleBase read fReplyToArticle write fReplyToArticle;
     property Account: TNNTPAccount read fAccount write fAccount;
     property GroupName: string read fGroupName write fGroupName;
-    property InitialText: WideString read fInitialText write fInitialText;
+    property InitialText: string read fInitialText write fInitialText;
     property PosterRequest: TPosterRequest read fPosterRequest write fPosterRequest;
     property Subject: string read fSubject write fSubject;
     constructor Create(AOwner: TComponent); override;

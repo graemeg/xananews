@@ -57,7 +57,7 @@ type
     procedure mnuPasteSelectedClick(Sender: TObject);
     procedure cbIdentityChange(Sender: TObject);
   private
-    fInitialText: WideString;
+    fInitialText: string;
     fInitialIdentity: string;
     fInitialP: Integer;
     fCodePage: Integer;
@@ -79,7 +79,7 @@ type
     procedure PasteQuote(const quote: string);
     procedure ApplySignature(Identity: TIdentity; const signatureOverride: string);
   public
-    procedure Initialize(const InitialText: WideString; PostingSettings: TPostingSettings; identity: TIdentity; ReplyTOArticle: TArticleBase; Request: TObject; attachments: TObjectList; codePageOverride: Integer; const signatureOverride: string);
+    procedure Initialize(const InitialText: string; PostingSettings: TPostingSettings; identity: TIdentity; ReplyTOArticle: TArticleBase; Request: TObject; attachments: TObjectList; codePageOverride: Integer; const signatureOverride: string);
     procedure UpdateActions(okOK: Boolean);
     procedure DoResize;
     property AttachmentCount: Integer read GetAttachmentCount;
@@ -156,7 +156,7 @@ begin
   end;
 end;
 
-procedure TfmePost.Initialize(const InitialText: WideString; PostingSettings: TPostingSettings;identity: TIdentity; ReplyTOArticle: TArticleBase; Request: TObject; attachments: TObjectList; codePageOverride: Integer; const signatureOverride: string);
+procedure TfmePost.Initialize(const InitialText: string; PostingSettings: TPostingSettings;identity: TIdentity; ReplyTOArticle: TArticleBase; Request: TObject; attachments: TObjectList; codePageOverride: Integer; const signatureOverride: string);
 var
   sub: string;
   i, idx: Integer;
@@ -446,7 +446,7 @@ end;
 
 procedure TfmePost.mnuPasteSelectedClick(Sender: TObject);
 var
-  ws: WideString;
+  ws: string;
 begin
   fmMain.MessageScrollBox1.GetSelectedText(ws);
   if ws <> '' then
@@ -497,7 +497,7 @@ end;
 
 procedure TfmePost.ApplySignature(Identity: TIdentity; const signatureOverride: string);
 var
-  wst, sig: WideString;
+  wst, sig: string;
   p: Integer;
 begin
   if Identity = nil then Exit;

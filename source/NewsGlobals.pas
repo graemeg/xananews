@@ -190,8 +190,8 @@ procedure FixQuotes(s: TStrings; wrap: Boolean; maxLineLen: Integer; const quote
 procedure PurgeDirectory(const dirName: string);
 function ShortGroupName(const groupName: string): string;
 function FairlyShortGroupName(const groupName: string): string;
-function WideROT13(const st: WideString): WideString;
-function WideReverseString(const st: WideString): WideString;
+function WideROT13(const st: string): string;
+function WideReverseString(const st: string): string;
 procedure LoadRASEntries;
 function HeaderCharset(h: string): string;
 procedure DecodeFromEMail(const from: RawByteString; var fromName, fromEMail: string; defCP: Integer);
@@ -656,7 +656,7 @@ begin
 end;
 
 
-function WideROT13(const st: WideString): WideString;
+function WideROT13(const st: string): string;
 var
   i, l: Integer;
   ch: WideChar;
@@ -677,7 +677,7 @@ begin
   end;
 end;
 
-function WideReverseString(const st: WideString): WideString;
+function WideReverseString(const st: string): string;
 var
   i, l: Integer;
 begin
@@ -867,7 +867,7 @@ begin
   end;
 end;
 
-procedure ControlsToSpaces(var Str: widestring);
+procedure ControlsToSpaces(var Str: string);
 var
   x: Integer;
 begin
@@ -876,7 +876,7 @@ begin
       Str[x] := ' ';
 end;
 
-// Decodes a RFC-1522 chunk into widestring.
+// Decodes a RFC-1522 chunk into string.
 // Expects a single, pre-stripped chunk as input ('ISO-8859-1?q?data')
 function DecodeChunk(Input: RawByteString): string;
 var
@@ -970,8 +970,7 @@ var
   I: Integer;
   chkStart, chkEnd, lastChkEnd: Integer;
 begin
-  // !!!!!!
-  // some clients use 8 bit "ascii" in the header, if thats' the case use the
+  // Some clients use 8 bit "ascii" in the header, if thats' the case use the
   // article codepage and if there is none, use the user's default setting.
   bt8 := False;
   for i := 1 to Length(header) do

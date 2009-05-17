@@ -79,18 +79,18 @@ type
     function GetTextObjectCount: Integer;
     function GetRightMargin: Integer;
     procedure SetRightMargin(const Value: Integer);
-    procedure SetTruncateFrom(const Value: WideString);
-    function GetTruncateFrom: WideString;
+    procedure SetTruncateFrom(const Value: string);
+    function GetTruncateFrom: string;
     procedure DoOnURLMouseDown (Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     function GetStrictSigSeparator: boolean;
     procedure SetStrictSigSeparator(const Value: boolean);
 
   protected
     class function DisplaysObject (obj : TObject) : Boolean; override;
-    procedure GetSelectedText (var txt : WideString); override;
-    procedure SetSelectedText (const txt : WideString); override;
+    procedure GetSelectedText (var txt : string); override;
+    procedure SetSelectedText (const txt : string); override;
     function GetSelLength : Integer; override;
-    procedure GetText (var txt : WideString); override;
+    procedure GetText (var txt : string); override;
     procedure GetHTML (var txt : string; rawFragment : boolean = false); override;
     procedure Refresh; override;
     function GetHeight : Integer; override;
@@ -117,7 +117,7 @@ type
     property RichEdit : TNewsRichEditX read GetRichEdit;
 
     property RightMargin : Integer read GetRightMargin write SetRightMargin;
-    property TruncateFrom : WideString read GetTruncateFrom write SetTruncateFrom;
+    property TruncateFrom : string read GetTruncateFrom write SetTruncateFrom;
     property StrictSigSeparator : boolean read GetStrictSigSeparator write SetStrictSigSeparator;
   end;
 
@@ -282,7 +282,7 @@ begin
   result := RichEdit.RightMargin
 end;
 
-procedure TNewsStringsDisplayObjectLink.GetSelectedText(var txt: WideString);
+procedure TNewsStringsDisplayObjectLink.GetSelectedText(var txt: string);
 begin
   Txt := GetRichEdit.SelText
 end;
@@ -297,7 +297,7 @@ begin
   result := GetRichEdit.StrictSigSeparator
 end;
 
-procedure TNewsStringsDisplayObjectLink.GetText(var txt: WideString);
+procedure TNewsStringsDisplayObjectLink.GetText(var txt: string);
 begin
   txt := GetRichEdit.Text
 end;
@@ -307,7 +307,7 @@ begin
   result := fTextObjects.Count
 end;
 
-function TNewsStringsDisplayObjectLink.GetTruncateFrom: WideString;
+function TNewsStringsDisplayObjectLink.GetTruncateFrom: string;
 begin
   result := GetRichEdit.TruncateFrom;
 end;
@@ -689,7 +689,7 @@ begin
   RichEdit.RightMargin := Value
 end;
 
-procedure TNewsStringsDisplayObjectLink.SetSelectedText(const txt: WideString);
+procedure TNewsStringsDisplayObjectLink.SetSelectedText(const txt: string);
 begin
   GetRichEdit.SelText := txt
 end;
@@ -708,7 +708,7 @@ begin
 end;
 
 procedure TNewsStringsDisplayObjectLink.SetTruncateFrom(
-  const Value: WideString);
+  const Value: string);
 begin
   GetRichEdit.TruncateFrom := Value;
 end;

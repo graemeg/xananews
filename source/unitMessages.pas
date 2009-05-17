@@ -106,7 +106,7 @@ type
     fDefaultCodePage: Integer;
     fAlternateHTML: Boolean;
     fAlternateMessagePartCount: Integer;
-    fTruncateFrom: WideString;
+    fTruncateFrom: string;
     fStrictSigSeparator: Boolean;
     function GetMIMEHeader: TMIMEHeader;
     function GetCodePage: Integer;
@@ -187,7 +187,7 @@ type
     property AlternateHTML: Boolean read fAlternateHTML write fAlternateHTML;
     property AlternateMessagePartCount: Integer read GetAlternateMessagePartCount;
     property AlternateMessagePart[idx: Integer]: TmvMessagePart read GetAlternateMessagePart;
-    property TruncateFrom: WideString read fTruncateFrom write fTruncateFrom;
+    property TruncateFrom: string read fTruncateFrom write fTruncateFrom;
     property StrictSigSeparator: Boolean read fStrictSigSeparator write fStrictSigSeparator;
   end;
 

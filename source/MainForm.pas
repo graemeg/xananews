@@ -1112,7 +1112,7 @@ type
     procedure SaveMultipartAttachment(const fileName: string; articles: TList);
     procedure FocusArticleContainer(ctnr: TArticleContainer);
     procedure SyncContainerTree(ctnr: TArticleContainer);
-    function GetQuoteText(article: TArticleBase): WideString;
+    function GetQuoteText(article: TArticleBase): string;
     function CheckSaveOutboxMessages: Boolean;
     procedure SaveOutstandingPostings;
     procedure LoadUnpostedMessages;
@@ -2829,7 +2829,7 @@ procedure TfmMain.actViewFindTextOnInternetExecute(Sender: TObject);
 var
   art: TArticleBase;
   txt, url: string;
-  wtxt: WideString;
+  wtxt: string;
 begin
   art := GetFocusedArticle;
   if not Assigned(art) then Exit;
@@ -4603,10 +4603,10 @@ begin
   end;
 end;
 
-function TfmMain.GetQuoteText(article: TArticleBase): WideString;
+function TfmMain.GetQuoteText(article: TArticleBase): string;
 var
   s: TStringList;
-  st: WideString;
+  st: string;
   sx: string;
   quoteLineMarker: string;
   wrap, trimSig: Boolean;
@@ -4883,30 +4883,30 @@ begin
 
 
                 rok := reader.ReadLn(raw);
-                MTo := string(raw);
+                MTo := AnsiStringToWideString(raw, codepage);
 
                 if rok then
                 begin
                   rok := reader.ReadLn(raw);
-                  MCC := string(raw);
+                  MCC := AnsiStringToWideString(raw, codepage);
                 end;
 
                 if rok then
                 begin
                   rok := reader.ReadLn(raw);
-                  MBCC := string(raw);
+                  MBCC := AnsiStringToWideString(raw, codepage);
                 end;
 
                 if rok then
                 begin
                   rok := reader.ReadLn(raw);
-                  MSubject := string(raw);
+                  MSubject := AnsiStringToWideString(raw, codepage);
                 end;
 
                 if rok then
                 begin
                   rok := reader.ReadLn(raw);
-                  MReplyTo := string(raw);
+                  MReplyTo := AnsiStringToWideString(raw, codepage);
                 end;
 
                 i := noMsgLines;
@@ -4914,7 +4914,7 @@ begin
                 while rok and (i > 0) do
                 begin
                   rok := reader.ReadLn(raw);
-                  if rok then m.Add(string(raw));
+                  if rok then m.Add(AnsiStringToWideString(raw, codepage));
                   Dec(i);
                 end;
 
@@ -5009,7 +5009,8 @@ begin
                 else
                   attachments := nil;
 
-                ThreadManager.PostMessage(account, h, m.Text, attachments, codepage, tpNNTP);
+                raw := WideStringToAnsiString(m.Text, codepage);
+                ThreadManager.PostMessage(account, h, raw, attachments, codepage, tpNNTP);
               end;
             end;
           end;
@@ -5442,7 +5443,7 @@ var
   posterRequest: TPosterRequest;
   mailerRequest: TEMailerRequest;
   h: TAnsiStrings;
-  m: TStrings;
+  m: TAnsiStrings;
   requests, getters: TObjectList;
 begin
   m := nil;
@@ -5450,7 +5451,7 @@ begin
   try
     writer := TTextStreamWriter.Create(f);
     try
-      m := TStringList.Create;
+      m := TAnsiStringList.Create;
       getters := ThreadManager.LockGetterList;
       try
         for i := 0 to getters.Count - 1 do
@@ -5469,7 +5470,7 @@ begin
                 else
                   attachCount := 0;
 
-                m.Text := string(posterRequest.Msg);
+                m.Text := posterRequest.Msg;
                 h := posterRequest.Hdr;
 
                 st := TPoster(getter).Account.AccountName + #9 +
@@ -5504,7 +5505,7 @@ begin
                 else
                   attachCount := 0;
 
-                m.Text := mailerRequest.Msg;
+                m.Text := RawByteString(mailerRequest.Msg);
                 if mailerRequest.ArticleContainer is TSubscribedGroup then
                   st := '&&' + TSubscribedGroup(mailerRequest.ArticleContainer).Owner.AccountName + ':'
                 else
@@ -5518,11 +5519,11 @@ begin
 
                 writer.WriteLn(st);
 
-                writer.WriteLn(mailerRequest.MTo);
-                writer.WriteLn(mailerRequest.MCC);
-                writer.WriteLn(mailerRequest.MBCC);
-                writer.WriteLn(mailerRequest.MSubject);
-                writer.WriteLn(mailerRequest.MReplyTo);
+                writer.WriteLn(WideStringToAnsiString(mailerRequest.MTo, mailerRequest.Codepage));
+                writer.WriteLn(WideStringToAnsiString(mailerRequest.MCC, mailerRequest.Codepage));
+                writer.WriteLn(WideStringToAnsiString(mailerRequest.MBCC, mailerRequest.Codepage));
+                writer.WriteLn(WideStringToAnsiString(mailerRequest.MSubject, mailerRequest.Codepage));
+                writer.WriteLn(WideStringToAnsiString(mailerRequest.MReplyTo, mailerRequest.Codepage));
 
                 for k := 0 to m.Count - 1 do
                   writer.WriteLn(m[k]);
@@ -7913,7 +7914,7 @@ end;
 
 procedure TfmMain.actROT13Execute(Sender: TObject);
 var
-  st: WideString;
+  st: string;
 begin
   if MessageScrollBox1.GetSelectedText(st) then
     MessageScrollBox1.SetSelectedText(WideROT13(st));
@@ -9086,7 +9087,7 @@ end;
 
 procedure TfmMain.actReverseSelectedTextExecute(Sender: TObject);
 var
-  st: WideString;
+  st: string;
 begin
   if MessageScrollBox1.GetSelectedText(st) then
     MessageScrollBox1.SetSelectedText(WideReverseString(st));
@@ -10434,7 +10435,7 @@ end;
 
 procedure TfmMain.GotoSelectedURL1Click(Sender: TObject);
 var
-  st: WideString;
+  st: string;
   s: string;
   sl: TStringList;
   i: Integer;
@@ -10884,7 +10885,7 @@ var
   art: TArticleBase;
   dlg: TdlgFindMessageOnInternet;
   mid: string;
-  wmid: WideString;
+  wmid: string;
 begin
   art := GetFocusedArticle;
   if not Assigned(art) then Exit;
