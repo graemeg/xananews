@@ -62,7 +62,7 @@ type
     procedure GetArticleThreadBodies(account: TNNTPAccount; group: TSubscribedGroup; article: TArticle);
     procedure JogThreads;
     procedure DisconnectAll(Done: Boolean);
-    procedure PostMessage(account: TNNTPAccount; hdr: TAnsiStrings; const msg: string; attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle); overload;
+    procedure PostMessage(account: TNNTPAccount; hdr: TAnsiStrings; const msg: RawByteString; attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle); overload;
     procedure PostMessage(account: TNNTPAccount; const hdr, msg: string; attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle); overload;
     procedure SendSMTPMail(articleContainer: TServerAccount; settings: TSMTPServerSettings; const sTo, sCC, sBCC, sSubject, sReplyTo, msg: string; attachments: TObjectList; ACodePage: Integer; AUseOutbasket: Boolean);
     property NewsAgent: string read fNewsAgent;
@@ -845,7 +845,7 @@ begin
   end;
 end;
 
-procedure TNNTPThreadManager.PostMessage(account: TNNTPAccount; hdr: TAnsiStrings; const msg: string;
+procedure TNNTPThreadManager.PostMessage(account: TNNTPAccount; hdr: TAnsiStrings; const msg: RawByteString;
   attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle);
 var
   getter: TPoster;
@@ -902,11 +902,13 @@ procedure TNNTPThreadManager.PostMessage(account: TNNTPAccount; const hdr, msg: 
   attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle);
 var
   h: TAnsiStrings;
+  m: RawByteString;
 begin
   h := TAnsiStringList.Create;
   try
     h.Text := WideStringToAnsiString(hdr, ACodePage);
-    PostMessage(account, h, msg, attachments, ACodepage, ATextPartStyle);
+    m := WideStringToAnsiString(msg, ACodePage);
+    PostMessage(account, h, m, attachments, ACodepage, ATextPartStyle);
   finally
     h.Free;
   end;

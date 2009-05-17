@@ -3264,7 +3264,6 @@ begin
               st := st + #9 + IntToStr(article.fMessageOffset);
 
           w.WriteLn(st);
-//          w.WriteLn(UTF8Encode(st)); // TODO: experimental
 
           if hasMessage and recreateMessageFile then
           begin
@@ -3273,7 +3272,7 @@ begin
 
             for j := 0 to article.fMsg.Header.Count - 1 do
             begin
-              raw := RawByteString(article.fMsg.Header[j]);
+              raw := article.fMsg.Header[j];
               hLen := Length(raw);
               ms.Write(hLen, SizeOf(hLen));
               ms.Write(raw[1], Length(raw));
@@ -6385,7 +6384,6 @@ end;
 function TArticleBase.GetSubject: string;
 begin
   Result := DecodeSubject(fSubject, CodePage);
-//  Result := string(fSubject); // !!!!!! use codepage
 end;
 
 function TArticleBase.GetSubjectIsReply: Boolean;
@@ -6474,13 +6472,13 @@ begin
   hdrs := TAnsiStringList.Create;
   try
     hdrs.NameValueSeparator := ':';
-    fCodePage := -1;
     for i := 0 to header.Count - 1 do
       hdrs.Add(header[i]);
 
     fArticleNo := articleNo;
 
     fMessageID := ProcessHeaderLine('Message-ID');
+    fCodePage := RawStrToIntDef(ProcessHeaderLine('CodePage'), -1);
     fBytes := RawStrToIntDef(ProcessHeaderLine('Bytes'), 0);
     fLines := RawStrToIntDef(ProcessHeaderLine('Lines'), 0);
     fReferences := ProcessHeaderLine('References');
@@ -6638,7 +6636,7 @@ end;
 
 procedure TArticleBase.SetSubject(const Value: string);
 begin
-  fSubject := RawByteString(Value); // !!!!!!
+  fSubject := WideStringToAnsiString(Value, CodePage);
 end;
 
 { TNNTPMessageCacheController }

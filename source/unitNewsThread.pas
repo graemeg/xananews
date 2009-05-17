@@ -318,7 +318,7 @@ type
     procedure GetGroupAndSubject;
     function MIMEHeaderRequired(): Boolean;
   public
-    constructor Create(AOwner: TPoster; AHdr: TAnsiStrings; const AMsg: string; attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle);
+    constructor Create(AOwner: TPoster; AHdr: TAnsiStrings; const AMsg: RawByteString; attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle);
     destructor Destroy; override;
     procedure Reset;
 
@@ -357,7 +357,7 @@ type
     procedure ResumeOutbasket;
     procedure Clear; override;
     procedure DeleteRequest(idx: Integer); override;
-    procedure AddPostToList(hdr: TAnsiStrings; const msg: string; attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle);
+    procedure AddPostToList(hdr: TAnsiStrings; const msg: RawByteString; attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle);
     property UseOutbasket: Boolean read fUseOutbasket;
   end;
 
@@ -384,8 +384,8 @@ type
     property MCC: string read fCC write fCC;
     property MBCC: string read fBCC write fBCC;
     property MSubject: string read fSubject write fSubject;
-    property Msg: string read fMsg write fMsg;
     property MReplyTo: string read fReplyTo;
+    property Msg: string read fMsg write fMsg;
 
     property Owner: TEMailer read fOwner;
     property Attachments: TObjectList read fAttachments write fAttachments;
@@ -1463,7 +1463,7 @@ end;
 
 { TPoster }
 
-procedure TPoster.AddPostToList(hdr: TAnsiStrings; const msg: string;
+procedure TPoster.AddPostToList(hdr: TAnsiStrings; const msg: RawByteString;
   attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle);
 begin
   LockList;
@@ -1639,14 +1639,14 @@ begin
     msg.Add('--' + multipartBoundary + '--');
 end;
 
-constructor TPosterRequest.Create(AOwner: TPoster; AHdr: TAnsiStrings; const AMsg: string;
+constructor TPosterRequest.Create(AOwner: TPoster; AHdr: TAnsiStrings; const AMsg: RawByteString;
   attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle);
 begin
   fOwner := AOwner;
   fTextPartStyle := ATextPartStyle;
   fHdr := TAnsiStringList.Create;
   fHdr.Assign(AHdr);
-  fMsg := WideStringToAnsiString(AMsg, ACodePage);
+  fMsg := AMsg;
   fAttachments := attachments;
   fCodepage := ACodepage;
 end;
@@ -1779,7 +1779,7 @@ var
   s: RawByteString;
   mimeCharsetName: RawByteString;
 
-  procedure AddMessageString(msg: TAnsiStrings; const st: AnsiString);
+  procedure AddMessageString(msg: TAnsiStrings; const st: RawByteString);
   var
     m: TAnsiStrings;
     coder: TidEncoder;
@@ -1796,7 +1796,7 @@ var
         coder := TXnEncoderQuotedPrintable.Create(nil);
         TXnEncoderQuotedPrintable(coder).AddEOL := True;
         try
-          // TODO: needs to be improved
+          // TODO: needs to be improved !!!!!!
           m.Text := RawByteString(coder.Encode(string(m.Text)));
         finally
           coder.Free;
