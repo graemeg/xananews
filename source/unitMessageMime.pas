@@ -25,7 +25,7 @@ unit unitMessageMime;
 interface
 
 uses
-  Windows, Classes, SysUtils, Graphics, unitMessages, XnClasses;
+  Windows, Classes, SysUtils, Graphics, unitMessages, XnClasses, XnRawByteStrings;
 
 type
   TmvMimeMessagePart = class(TmvMessagePart)
@@ -93,12 +93,11 @@ end;
 procedure DecodeQuotedPrintable(const ins: TStream; outs: TAnsiStrings);
 var
   ch, ch1, ch2: AnsiChar;
-  st: AnsiString;
-  s: TStringStream;
-  raw: AnsiString;
+  s: TMemoryStream;
+  raw: RawByteString;
 begin
   // Decode a 'quoted-printable' stream to a string list
-  s := TStringStream.Create(st);
+  s := TMemoryStream.Create;
   try
     while ins.Read(ch, SizeOf(ch)) = SizeOf(ch) do
     begin
@@ -114,7 +113,7 @@ begin
         // '=' means that the next two characters are hex digits for the
         // character.
         raw := AnsiChar('$') + ch1 + ch2;
-        ch := AnsiChar(StrToIntDef(string(raw), 0));
+        ch := AnsiChar(RawStrToIntDef(raw, 0));
 
         if ch = #0 then
           Continue;

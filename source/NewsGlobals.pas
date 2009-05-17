@@ -1214,6 +1214,7 @@ var
   i: Integer;
   ansi: Boolean;
   coder: TXnEncoderQuotedPrintable;
+  sl: TAnsiStringList;
 begin
   ansi := True;
   if from then
@@ -1248,10 +1249,17 @@ begin
     Result := EncodeHeader1(header, [], 'Q', bit7, RawCodePageToMIMECharsetName(CodePage))
   else
   begin
+    // !!!!!! when will it ever come here ??????
     coder := TXnEncoderQuotedPrintable.Create(nil);
     try
-      raw := RawByteString(coder.Encode(string(raw))); // !!!!!! when will it ever come here ??????
-
+      sl := TAnsiStringList.Create;
+      try
+        sl.Text := raw;
+        coder.EncodeStrings(sl);
+        raw := sl.Text;
+      finally
+        sl.Free;
+      end;
       Result := '=?' + RawCodePageToMIMECharsetName(CodePage) + '?Q?' + raw + '?= ' +
         RawTrim(Copy(header, i + 2, MaxInt));
     finally

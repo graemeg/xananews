@@ -5,7 +5,8 @@ unit XnCoderQuotedPrintable;
 interface
 
 uses
-  Classes, IdCoder, IdCoderQuotedPrintable;
+  Classes, IdCoder, IdCoderQuotedPrintable,
+  unitStreamTextReader, XnClasses;
 
 type
   TXnDecoderQuotedPrintable = class(TIdDecoder)
@@ -18,6 +19,7 @@ type
     FAddEOL: Boolean;
   public
     procedure Encode(ASrcStream, ADestStream: TStream; const ABytes: Integer = -1); override;
+    procedure EncodeStrings(strings: TAnsiStrings);
     property AddEOL: Boolean read FAddEOL write FAddEOL;
   end;
 
@@ -163,8 +165,9 @@ var
   // this is a shortstring for performance reasons.
   // the lines may never get longer than 76, so even if I go a bit
   // further, they won't go longer than 80 or so
-  SourceLine: AnsiString;
+  SourceLine: RawByteString;
   CurrentPos: Integer;
+  reader: TStreamTextReader;
 
   procedure WriteToString(const s: AnsiString);
   var
@@ -193,38 +196,67 @@ var
 
 var
   I: Integer;
-  LSourceSize: Integer;
 begin
   SetLength(CurrentLine, 255);
-  //ie while not eof
-  LSourceSize := ASrcStream.Size;
-  while ASrcStream.Position < LSourceSize do begin
-    SourceLine := AnsiString(ReadLnFromStream(ASrcStream, -1, False, Indy8BitEncoding)); // explicit convert to Ansi
-    CurrentPos := 1;
-    for i := 1 to Length(SourceLine) do begin
-      if not (SourceLine[i] in SafeChars) then
+
+  reader := TStreamTextReader.Create(ASrcStream);
+  try
+    while reader.ReadLn(SourceLine) do
+    begin
+      CurrentPos := 1;
+      for i := 1 to Length(SourceLine) do
       begin
-        if (SourceLine[i] in HalfSafeChars) then begin
-          if i = Length(SourceLine) then begin
+        if not (SourceLine[i] in SafeChars) then
+        begin
+          if (SourceLine[i] in HalfSafeChars) then
+          begin
+            if i = Length(SourceLine) then
+              WriteToString(CharToHex(SourceLine[i]))
+            else
+              WriteToString(SourceLine[i]);
+          end
+          else
             WriteToString(CharToHex(SourceLine[i]));
-          end else begin
+        end
+        else
+        begin
+          if ((CurrentPos = 1) or (CurrentPos = 71)) and (SourceLine[i] = '.') then {do not localize}
+            WriteToString(CharToHex(SourceLine[i]))
+          else
             WriteToString(SourceLine[i]);
-          end;
-        end else begin
-          WriteToString(CharToHex(SourceLine[i]));
         end;
-      end
-      else if ((CurrentPos = 1) or (CurrentPos = 71)) and (SourceLine[i] = '.') then begin {do not localize}
-        WriteToString(CharToHex(SourceLine[i]));
-      end else begin
-        WriteToString(SourceLine[i]);
+        if CurrentPos > 70 then
+        begin
+          WriteToString('=');  {Do not Localize}
+          FinishLine;
+        end;
       end;
-      if CurrentPos > 70 then begin
-        WriteToString('=');  {Do not Localize}
-        FinishLine;
-      end;
+      FinishLine(FAddEOL);
     end;
-    FinishLine(FAddEOL);
+  finally
+    reader.Free;
+  end;
+end;
+
+procedure TXnEncoderQuotedPrintable.EncodeStrings(strings: TAnsiStrings);
+var
+  DecodedStream: TMemoryStream;
+  EncodedStream: TMemoryStream;
+begin
+  DecodedStream := TMemoryStream.Create;
+  try
+    EncodedStream := TMemoryStream.Create;
+    try
+      strings.SaveToStream(DecodedStream);
+      DecodedStream.Position := 0;
+      Encode(DecodedStream, EncodedStream, DecodedStream.Size);
+      EncodedStream.Position := 0;
+      strings.LoadFromStream(EncodedStream);
+    finally
+      EncodedStream.Free;
+    end;
+  finally
+    DecodedStream.Free;
   end;
 end;
 

@@ -1796,8 +1796,7 @@ var
         coder := TXnEncoderQuotedPrintable.Create(nil);
         TXnEncoderQuotedPrintable(coder).AddEOL := True;
         try
-          // TODO: needs to be improved !!!!!!
-          m.Text := RawByteString(coder.Encode(string(m.Text)));
+          TXnEncoderQuotedPrintable(coder).EncodeStrings(m);
         finally
           coder.Free;
         end;

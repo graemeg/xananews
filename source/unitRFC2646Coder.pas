@@ -220,8 +220,6 @@ begin
     if quoteDepth > 0 then
       strings[i] := Copy(qs, 1, quoteDepth) + strings[i];
   end;
-
-  st := strings.Text;
 end;
 
 procedure TRFC2646Encoder.Encode(ASrcStream: TStream; ADestStream: TStream; const ABytes: Integer = -1);
