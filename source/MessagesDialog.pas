@@ -66,39 +66,40 @@ type
     procedure rbGetAllMessagesClick(Sender: TObject);
   private
     fGroup: TSubscribedGroup;
-    fShowRange: boolean;
+    fShowRange: Boolean;
     fAccount: TNNTPAccount;
     fAction: TBatchAction;
-    procedure EnableEditBoxes (next, last : boolean);
-    procedure EnableFirstSection(enable: boolean);
-    procedure EnableNextSection(enable: boolean);
+    procedure EnableEditBoxes(next, last: Boolean);
+    procedure EnableFirstSection(enable: Boolean);
+    procedure EnableNextSection(enable: Boolean);
   public
     procedure UpdateAct;
-    property group :TSubscribedGroup read fGroup write fGroup;
-    property Action : TBatchAction read fAction write fAction;
-    property ShowRange : boolean read fShowRange write fShowRange;
-    property Account : TNNTPAccount read fAccount write fAccount;
+    property Group:TSubscribedGroup read fGroup write fGroup;
+    property Action: TBatchAction read fAction write fAction;
+    property ShowRange: Boolean read fShowRange write fShowRange;
+    property Account: TNNTPAccount read fAccount write fAccount;
     { Public declarations }
   end;
 
 var
   dlgGetMessages: TdlgGetMessages;
 
-function DoDefaultActionDialog (const defaultAction : string) : string;
+function DoDefaultActionDialog(const defaultAction : string) : string;
 
 implementation
 
-uses unitNewsreaderOptions;
+uses
+  unitNewsreaderOptions;
 
 {$R *.dfm}
 
-procedure TdlgGetMessages.EnableEditBoxes(next, last : boolean);
+procedure TdlgGetMessages.EnableEditBoxes(next, last : Boolean);
 begin
   edGetNextMessages.Enabled := next;
   edGetLastMessages.Enabled := last;
 end;
 
-procedure TdlgGetMessages.EnableFirstSection (enable : boolean);
+procedure TdlgGetMessages.EnableFirstSection(enable : Boolean);
 begin
   rbMarkAsRead.Enabled := enable;
   rbDelete.Enabled := enable;
@@ -110,7 +111,7 @@ begin
   stOld.Enabled := enable;
 end;
 
-procedure TdlgGetMessages.EnableNextSection (enable : boolean);
+procedure TdlgGetMessages.EnableNextSection(enable : Boolean);
 begin
   rbGetAllNewMessages.Enabled := enable;
   rbGetAllMessages.Enabled := enable;
@@ -121,36 +122,36 @@ begin
   stLastMessages.Enabled := enable;
 
   if enable then
-    EnableEditBoxes (rbGetNextMessages.Checked, rbGetLastMessages.Checked)
+    EnableEditBoxes(rbGetNextMessages.Checked, rbGetLastMessages.Checked)
   else
-    EnableEditBoxes (false, false)
+    EnableEditBoxes(False, False);
 end;
 
 procedure TdlgGetMessages.FormShow(Sender: TObject);
 var
-  act : TbatchAction;
+  act: TbatchAction;
 begin
   act := Action;
-  if not Assigned (act) then
-    if Assigned (group) then
+  if not Assigned(act) then
+    if Assigned(group) then
     begin
       act := group.NNTPSettings.DefaultAction;
-      Caption := Caption + ' - ' + group.Name
+      Caption := Caption + ' - ' + group.Name;
     end
     else
-      if Assigned (account) then
+      if Assigned(account) then
       begin
         act := account.NNTPSettings.DefaultAction;
-        Caption := Caption + ' - All groups in ' + account.AccountName
+        Caption := Caption + ' - All groups in ' + account.AccountName;
       end;
 
-  if Assigned (act) then
+  if Assigned(act) then
   begin
     cbFirst.Checked := act.ManagementOption <> bmoNone;
-    EnableFirstSection (cbFirst.Checked);
+    EnableFirstSection(cbFirst.Checked);
     case act.ManagementType of
       bmtMarkAsRead : rbMarkAsRead.Checked := True;
-      bmtDelete     : rbDelete.Checked := True
+      bmtDelete     : rbDelete.Checked := True;
     end;
 
     if (act.ManagementOption = bmoAll) or (act.ManagementOption = bmoNone) then
@@ -158,15 +159,15 @@ begin
     else
       rbMessagesMoreThan.Checked := True;
 
-    edMoreThan.Text := IntToStr (act.ManagementCount);
+    edMoreThan.Text := IntToStr(act.ManagementCount);
 
     if act.ManagementOption in [bmoDay, bmoWeek, bmoMonth] then
-      cbDaysWeeksMonths.ItemIndex := Integer (act.ManagementOption) - Integer (bmoDay)
+      cbDaysWeeksMonths.ItemIndex := Integer(act.ManagementOption) - Integer(bmoDay)
     else
       cbDaysWeeksMonths.ItemIndex := 0;
 
     cbNext.Checked := (act.ActionType <> batNone);
-    EnableNextSection (cbNext.Checked);
+    EnableNextSection(cbNext.Checked);
     case act.ActionType of
       batAllNew : rbGetAllNewMessages.Checked := True;
       batAll    : rbGetAllMessages.Checked := True;
@@ -176,27 +177,27 @@ begin
 
     cbGetHeadersOnly.Checked := act.HeadersOnly;
 
-    edGetNextMessages.Text := IntToStr (act.MessageCount);
-    edGetLastMessages.Text := IntToStr (act.MessageCount)
-  end
+    edGetNextMessages.Text := IntToStr(act.MessageCount);
+    edGetLastMessages.Text := IntToStr(act.MessageCount);
+  end;
 end;
 
 procedure TdlgGetMessages.rbAddFromClick(Sender: TObject);
 begin
-  EnableEditBoxes (False, False);
+  EnableEditBoxes(False, False);
 end;
 
 procedure TdlgGetMessages.UpdateAct;
 var
-  act : TBatchAction;
+  act: TBatchAction;
 begin
   act := Action;
 
-  if not Assigned (act) then
-    if Assigned (group) then
+  if not Assigned(act) then
+    if Assigned(group) then
       act := group.NNTPSettings.DefaultAction
     else
-      if Assigned (account) then
+      if Assigned(account) then
         act := account.NNTPSettings.DefaultAction;
 
   Act.MessageCount := 0;
@@ -211,14 +212,13 @@ begin
     if rbAllMessages.Checked then
       Act.ManagementOption := bmoAll
     else
-      Act.ManagementOption := TBatchManagementOption (cbDaysWeeksMonths.ItemIndex + Integer (bmoDay));
+      Act.ManagementOption := TBatchManagementOption(cbDaysWeeksMonths.ItemIndex + Integer(bmoDay));
 
     if Act.ManagementOption in [bmoDay, bmoMonth, bmoWeek] then
-    begin
       Act.ManagementCount := udMoreThan.Position;
-    end;
+
     if rbDelete.Checked then
-      Act.ManagementType := bmtDelete
+      Act.ManagementType := bmtDelete;
   end;
 
   if cbNext.Checked then
@@ -232,37 +232,34 @@ begin
         if rbGetNextMessages.Checked then
         begin
           Act.ActionType := batNextN;
-          Act.MessageCount := StrToIntDef (edGetNextMessages.Text, 300)
+          Act.MessageCount := StrToIntDef(edGetNextMessages.Text, 300);
         end
         else
           if rbGetLastMessages.Checked then
           begin
             Act.ActionType := batLastN;
-            Act.MessageCount := StrToIntDef (edGetLastMessages.Text, 300)
+            Act.MessageCount := StrToIntDef(edGetLastMessages.Text, 300);
           end;
     Act.HeadersOnly := cbGetHeadersOnly.Checked;
 
     if ((Act.ActionType = batAll) or (Act.ActionType = batLastN)) then
     begin
       Act.ManagementType := bmtDelete;
-      Act.ManagementOption := bmoAll
-    end
+      Act.ManagementOption := bmoAll;
+    end;
   end;
-  if ShowRange and Assigned (group) and not Assigned (Action) then
-  begin
-  end
 end;
 
-function DoDefaultActionDialog (const defaultAction : string) : string;
+function DoDefaultActionDialog(const defaultAction: string): string;
 var
   dlg : TdlgGetMessages;
   action : TBatchAction;
 begin
-  result := defaultAction;
-  dlg := Nil;
+  Result := defaultAction;
+  dlg := nil;
   Action := TBatchAction.Create;
   try
-    Action.ActionText := result;
+    Action.ActionText := Result;
 
     Application.CreateForm(TdlgGetMessages, dlg);
     dlg.ShowRange := False;
@@ -271,41 +268,41 @@ begin
     if dlg.ShowModal = mrOK then
     begin
       dlg.UpdateAct;
-      result := Action.ActionText
-    end
+      Result := Action.ActionText;
+    end;
   finally
-    action.Free
-  end
+    action.Free;
+  end;
 end;
 
 procedure TdlgGetMessages.cbFirstClick(Sender: TObject);
 begin
-  EnableFirstSection (cbFirst.Checked);
+  EnableFirstSection(cbFirst.Checked);
 end;
 
 procedure TdlgGetMessages.cbNextClick(Sender: TObject);
 begin
-  EnableNextSection (cbNext.Checked);
+  EnableNextSection(cbNext.Checked);
 end;
 
 procedure TdlgGetMessages.rbGetNextMessagesClick(Sender: TObject);
 begin
-  EnableEditBoxes (True, False);
+  EnableEditBoxes(True, False);
 end;
 
 procedure TdlgGetMessages.rbGetLastMessagesClick(Sender: TObject);
 begin
-  EnableEditBoxes (False, True);
+  EnableEditBoxes(False, True);
 end;
 
 procedure TdlgGetMessages.rbGetAllNewMessagesClick(Sender: TObject);
 begin
-  EnableEditBoxes (false, false);
+  EnableEditBoxes(False, False);
 end;
 
 procedure TdlgGetMessages.rbGetAllMessagesClick(Sender: TObject);
 begin
-  EnableEditBoxes (false, false);
+  EnableEditBoxes(False, False);
 end;
 
 end.

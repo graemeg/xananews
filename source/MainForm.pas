@@ -10721,6 +10721,7 @@ var
   h: THandle;
   p: PChar;
 begin
+  // TODO: check if this still works.
   if MessageScrollBox1.GetHTML(html, True) then
   begin
     origHTML := html;
@@ -10787,6 +10788,7 @@ var
   s: TStringList;
   html: string;
 begin
+  // TODO: check if this still works.
   if MessageScrollBox1.GetHTML(html, False) and dlgSaveHTML.Execute then
   begin
     s := TStringList.Create;

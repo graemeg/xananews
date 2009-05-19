@@ -1,6 +1,7 @@
 program NewsReader3;
 
 uses
+  FastMM4,
   madListHardware,
   madListProcesses,
   madListModules,
@@ -10,6 +11,8 @@ uses
   Windows,
   SysUtils,
   SyncObjs,
+  IdGlobal,
+  IdThreadSafe,
   HTMLHelpViewer,
   NewsGlobals in 'NewsGlobals.pas',
   MainForm in 'MainForm.pas' {fmMain},
@@ -143,10 +146,8 @@ end;
 
 begin
   OutputDebugString('SAMPLING OFF');
-//{$ifdef DEBUG}
-//  RegisterExpectedMemoryLeak(TIdThreadSafeInteger);  {In Indy 10.2.5 (D2009)}
-//  RegisterExpectedMemoryLeak(TIdCriticalSection, 2); {In Indy 10.2.5 (D2009)}
-//{$endif}
+  RegisterExpectedMemoryLeak(TIdThreadSafeInteger);  {In Indy 10.5.5 (D2009)}
+  RegisterExpectedMemoryLeak(TIdCriticalSection, 2); {In Indy 10.5.5 (D2009)}
   if TfmMain.CheckRunOnce then
   begin
     Application.Initialize;
