@@ -1992,7 +1992,7 @@ begin
     fUseOutbasket := Account.PostingSettings.DelayPosting;
 
   if not fUseOutbasket then
-    inherited;
+    inherited Resume;
 end;
 
 procedure TPoster.ResumeOutbasket;
@@ -2003,7 +2003,7 @@ end;
 
 procedure TPoster.WorkDone;
 begin
-  inherited;
+  inherited WorkDone;
   fUseOutbasket := Account.PostingSettings.DelayPosting;
 end;
 
@@ -2230,7 +2230,7 @@ begin
   end;
 
   if ok then
-    inherited;
+    inherited Resume;
 end;
 
 procedure TNewsGetter.SetAccount(const Value: TNNTPAccount);
