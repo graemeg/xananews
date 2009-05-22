@@ -119,11 +119,26 @@ type
 
   EExSettings = class(Exception);
 
+function MakeCStringConst(const s: string): string;
+
 implementation
 
 uses
   unitStreamTextReader, unitSearchString;
 
+
+function MakeCStringConst(const s: string): string;
+var
+  i: Integer;
+begin
+  Result := '';
+  for i := 1 to Length(s) do
+  begin
+    if s[i] in ['\', '"'] then
+      Result := Result + '\';
+    Result := Result + s[i];
+  end;
+end;
 
 { TExSettings }
 

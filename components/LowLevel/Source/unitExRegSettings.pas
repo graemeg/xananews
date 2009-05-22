@@ -168,19 +168,6 @@ begin
     Result := 0;
 end;
 
-function MakeCStringConst(const s: string): string;
-var
-  i: Integer;
-begin
-  Result := '';
-  for i := 1 to Length(s) do
-  begin
-    if s[i] in ['\', '"'] then
-      Result := Result + '\';
-    Result := Result + s[i];
-  end;
-end;
-
 function TExRegSettings.GetExportValue(const valueName: string): string;
 var
   tp: DWORD;

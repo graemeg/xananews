@@ -71,6 +71,7 @@ type
     procedure RenameValue(const oldValue, newValue: string); override;
 
     function GetStringValue(const valueName: string; const deflt: string = ''): string; override;
+    function GetExportValue(const valueName: string): string; override;
   end;
 
 implementation
@@ -329,6 +330,11 @@ begin
     fDoc.Save(GetFileName('.xml'));
     fDirty := False;
   end;
+end;
+
+function TExXMLSettings.GetExportValue(const valueName: string): string;
+begin
+  Result := '"' + valueName + '"="' + MakeCStringConst(StringValue[valueName]) + '"';
 end;
 
 procedure TExXMLSettings.GetSectionNames(names: TStrings);
