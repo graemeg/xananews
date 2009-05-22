@@ -3562,14 +3562,14 @@ begin
           SetLength(raw, 9);
           Owner.fMessageFile.Read(raw[1], 9);
           raw[1] := '$';
-          len := StrToInt(string(raw));
+          len := RawStrToInt(raw);
 
           Owner.fMessageFile.Read(hLen, SizeOf(hLen));
 
           while hLen > 0 do
           begin
             SetLength(raw, hLen);
-            Owner.fMessageFile.read(raw[1], hLen);
+            Owner.fMessageFile.Read(raw[1], hLen);
             Owner.fMessageFile.Read(hLen, SizeOf(hLen));
           end;
 
@@ -3589,7 +3589,7 @@ begin
       i := 0;
       while i < r.Count do
       begin
-        st := string(r[i]);
+        st := AnsiStringToWideString(r[i], CodePage);
 
         if st <> '' then
         begin
