@@ -453,6 +453,7 @@ var
   needsRetry: Boolean;
   ok: Boolean;
   I: Integer;
+  st: string;
 
   function GetXOverFMT: TStringList;
   begin
@@ -728,16 +729,22 @@ begin
         try
           NNTP.SelectGroup(gtr.CurrentGroup.Name);
         except
-          if request.Retry then
+          on E: Exception do
           begin
-            needsRetry := True;
-            LogMessage('Exception in SelectGroup - ' + gtr.CurrentGroup.Name);
-            raise;
-          end
-          else
-          begin
-            ok := False;
-            request.Retry := True;
+            st := 'GROUP: Error selecting group in thread "' +
+                  gtr.CurrentGroup.Name + '" - ' + E.Message;
+            LogMessage(st, True);
+
+            if request.Retry then
+            begin
+              needsRetry := True;
+              raise;
+            end
+            else
+            begin
+              ok := False;
+              request.Retry := True;
+            end;
           end;
         end;
 

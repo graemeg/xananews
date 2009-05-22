@@ -544,12 +544,18 @@ end;
 procedure TidNNTPX.SelectGroup(const AGroup: string);
 var
   s: string;
+  group: string;
 begin
   SendCmd('Group ' + AGroup, [211]);
   s := LastCmdResult.Text[0];
   FlMsgCount := IndyStrToInt(Fetch(s));
   FlMsgLow := IndyStrToInt(Fetch(s));
   FlMsgHigh := IndyStrToInt(Fetch(s));
+  group := Fetch(s);
+
+  if (group <> '') and not SameText(AGroup, group) then
+    raise Exception.Create('Selected group: ' + group +
+      ' does not match with the requested group: ' + AGroup);
 
   LogMessage('Select group ' + AGroup +
     '. Messages available ' + IntToStr(FlMsgLow) + ' - ' + IntToStr(FlMsgHigh));
