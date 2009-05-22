@@ -5824,7 +5824,7 @@ begin
 
   if Assigned(MessageScrollBox1.Msg) and
     MessageScrollBox1.Msg.Updating then
-      MessageScrollBox1.Refresh(False);
+      MessageScrollBox1.Refresh(False, False);
 
   if (fTickCount mod 8) = 0 then
   begin
@@ -8174,8 +8174,7 @@ begin
     Windows.Beep(880, 10);
     for i := 1 to 10 do
     begin
-      MessageScrollBox1.fLastSize := 0;
-      MessageScrollBox1.Refresh(False);
+      MessageScrollBox1.Refresh(False, True);
       MessageDelay(500);
     end;
     Windows.Beep(440, 10);

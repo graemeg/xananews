@@ -45,6 +45,7 @@ type
     fURLText: string;
     fFixedFont: string;
     fAutoFit: Boolean;
+    fLastSize: Integer;
     procedure SetAutoFit(const Value: Boolean);
     procedure SetMsg(const Value: TmvMessage);
 
@@ -62,7 +63,6 @@ type
     procedure Resize; override;
     procedure PaintWindow(dc: HDC); override;
   public
-    fLastSize: Integer;
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     property Msg: TmvMessage read fMsg write SetMsg;
@@ -71,7 +71,7 @@ type
     procedure Print;
     function GetAttachmentAt(x, y: Integer): TmvMessagePart;
     function GetFocusedAttachment: TmvMessagePart;
-    procedure Refresh(erase: Boolean; renew: Boolean = False);
+    procedure Refresh(erase, renew: Boolean);
     procedure PageDown;
 
     function GetSelectedText(var txt: string): Boolean;
@@ -442,7 +442,6 @@ begin
 
   if Value <> fMsg then
   begin
-    fLastSize := 0;
     if Assigned(fMsg) then
       fMsg.BeingDisplayed := False;
     fMsg := Value;
@@ -456,36 +455,36 @@ begin
     HorzScrollBar.Position := 0;
     DisableAutoRange;
     try
-      fMessageDisplay.Clear;
-      Refresh(False);
+      Refresh(False, True);
     finally
       EnableAutoRange;
     end;
   end;
 end;
 
-procedure TMessageScrollBox.Refresh(erase: Boolean; renew: Boolean);
+procedure TMessageScrollBox.Refresh(erase, renew: Boolean);
 begin
-  if not Assigned(fMSg) then Exit;
-
   if renew then
   begin
     fMessageDisplay.Clear;
-    fLastSize := 0;
+    fLastSize := -1;
   end;
 
-  if fMsg.RawData.Size <> fLastSize then
+  if Assigned(fMSg) then
   begin
-    fLastSize := fMsg.RawData.Size;
-    DisableAutoRange;
-    try
-      ParseMessage;
-    finally
-      EnableAutoRange;
+    if fMsg.RawData.Size <> fLastSize then
+    begin
+      fLastSize := fMsg.RawData.Size;
+      DisableAutoRange;
+      try
+        ParseMessage;
+      finally
+        EnableAutoRange;
+      end;
     end;
-  end;
 
-  InvalidateRect(fMessageDisplay.Handle, nil, erase or renew);
+    InvalidateRect(fMessageDisplay.Handle, nil, erase or renew);
+  end;
 end;
 
 function TMessageScrollBox.GetSelectedText(var txt: string): Boolean;
@@ -503,13 +502,11 @@ begin
   if Value <> fShowHeader then
   begin
     fShowHeader := Value;
-    fLastSize := 0;
     VertScrollBar.Position := 0;
     HorzScrollBar.Position := 0;
     DisableAutoRange;
     try
-      fMessageDisplay.Clear;
-      Refresh(False);
+      Refresh(False, True);
     finally
       EnableAutoRange;
     end;
@@ -602,8 +599,7 @@ begin
       DisableAutoRange;
       try
         fMessageDisplay.RawMessage := fRawMessage;
-        fLastSize := 0;
-        Refresh(False);
+        Refresh(False, True);
       finally
         EnableAutoRange;
       end;
