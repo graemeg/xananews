@@ -437,9 +437,10 @@ type
     procedure ResetBozoFlags;
     procedure LeaveGroup(clearMessages: Boolean = True); virtual;
 
+    procedure RawAddArticle(article: TArticleBase); virtual; abstract;
     procedure RawDeleteArticle(cno: Integer); virtual; abstract;
+    procedure RawInsertArticle(index: Integer; article: TArticleBase); virtual;
     procedure RawRemoveArticle(article: TArticleBase); virtual; abstract;
-    procedure RawAddArticle(article: TarticleBase); virtual; abstract;
 
     function IndexOf(article: TArticleBase): Integer; virtual;
 
@@ -498,6 +499,7 @@ type
 
     procedure RawAddArticle(article: TArticleBase); override;
     procedure RawDeleteArticle(cno: Integer); override;
+    procedure RawInsertArticle(index: Integer; article: TArticleBase); override;
     procedure RawRemoveArticle(article: TArticleBase); override;
 
     procedure SaveArticles(recreateMessageFile: Boolean); virtual; abstract;
@@ -4836,9 +4838,10 @@ begin
             else
             begin
               newc := TArticle.Create(Self);
+              newc.Assign(old);
               newc.fArticleNo := old.fArticleNo;
               newc.fMessageOffset := old.fMessageOffset;
-              newc.Assign(old);
+              newc.fFlags := old.fFlags;
 
               newc.fChild := old.fChild;
               tail := newc.fChild;
@@ -4848,9 +4851,14 @@ begin
                 tail := tail.fSibling;
               end;
 
+              // "new" one is inserted at the place of the "old" one, the later will
+              // be deleted when the file is saved. This is done to keep the order
+              // of the posts in the file the same.
+              RawInsertArticle(IndexOf(old), newc);
               old.fArticleNo := 0;
               old.fMessageOffset := -1;
               old.fChild := nil;
+
               c.fParent := old;
               newc.fParent := old;
               old.fChild := c;
@@ -5045,6 +5053,11 @@ begin
     else
       next := p.fSibling;
   end;
+end;
+
+procedure TArticleContainer.RawInsertArticle(index: Integer; article: TArticleBase);
+begin
+// stub
 end;
 
 procedure TArticleContainer.RawSortArticles;
@@ -6951,6 +6964,11 @@ end;
 procedure TArticleObjectContainer.RawDeleteArticle(cno: Integer);
 begin
   fArticles.Delete(cno);
+end;
+
+procedure TArticleObjectContainer.RawInsertArticle(index: Integer; article: TArticleBase);
+begin
+  fArticles.Insert(index, article);
 end;
 
 procedure TArticleObjectContainer.RawRemoveArticle(article: TArticleBase);
