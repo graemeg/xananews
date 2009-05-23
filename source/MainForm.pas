@@ -5701,6 +5701,11 @@ begin
   if gAppTerminating then
     Exit;
 
+  // If a timer was just disabled, it still possible that this event fires, because
+  // KillTimer does not remove WM_TIMER messages already posted to the message queue.
+  if not (Sender as TTimer).Enabled then
+    Exit;
+
   if not Assigned(ThreadManager) then
     Exit;
 
@@ -5756,7 +5761,6 @@ begin
       end;
     end;
   end;
-
 (* End Dave Nottage Mod *)
 
   if fTickCount < 4 then
