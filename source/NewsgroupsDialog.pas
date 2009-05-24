@@ -335,7 +335,7 @@ begin
       itm := lvNewsgroups.GetNextItem(itm, sdAll, [isSelected]);
       if canSubscribe and canUnsubscribe then
         Break;
-    end ;
+    end;
   end
   else
     if lvNewsgroups.SelCount = 1 then

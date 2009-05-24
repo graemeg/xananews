@@ -208,6 +208,10 @@ begin
           mStream.CopyFrom(expander, size);
           mStream.Seek(0, soBeginning);
           reg.ImportFromRegStream(mStream);
+          reg.Section := '';
+          st := ExpandFileName(reg.GetStringValue('Messagebase Directory', ''));
+          if st <> '' then
+            gMessagebaseRoot := st;
         finally
           mStream.Free;
           reg.Free;

@@ -250,8 +250,8 @@ begin
     end
     else
       ANewsgroup := Fetch(ALine, ' ');
-    AHi := IndyStrToInt(Fetch(Aline, ' '));
-    ALo := IndyStrToInt(Fetch(ALine, ' '));
+    AHi := IndyStrToInt(Fetch(Aline, ' '), 0);
+    ALo := IndyStrToInt(Fetch(ALine, ' '), 0);
     AStatus := Fetch(ALine, ' ');
 
     if LowerCase(Trim(ALine)) = '*' then

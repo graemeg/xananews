@@ -2092,9 +2092,11 @@ end;
 
 procedure TfmMain.actNewsgroupUnsubscribeExecute(Sender: TObject);
 var
+  I: Integer;
   st: string;
   c: Integer;
   grp: TSubscribedGroup;
+  groups: TList;
 begin
   c := vstSubscribed.SelectedCount;
   grp := GetFocusedGroup;
@@ -2105,6 +2107,23 @@ begin
 
     if MessageDlg(Format(rstConfirmUnsubscribe, [st]), mtConfirmation, [mbYes, mbNo], 0) = idYes then
     begin
+      groups := TList.Create;
+      try
+        ForEachSelectedGroup(DoAddGroupToList, False, Integer(groups));
+        for i := 0 to groups.Count - 1 do
+        begin
+          if TSubscribedGroup(Groups[i]) = FLastFocusedArticleContainer then
+          begin
+            vstArticles.RootNodeCount := 0;
+            DisplayArticleBody(nil);
+            FLastFocusedArticleContainer := nil;
+            Break;
+          end;
+        end;
+      finally
+        groups.Free;
+      end;
+
       ForEachSelectedGroup(Unsubscribe, False, 1);
       vstSubscribed.ClearSelection;
       fPrevArticle := nil;
@@ -3937,7 +3956,7 @@ var
   i: Integer;
   unsubscribed: Boolean;
 begin
- // Rurns the number of affected articles.
+ // Runs the number of affected articles.
  // nb. the order is quite important, so don't use vstSubscribed.FirstSelectedNode/GetNextSelectedNode
 
   groups := nil;
@@ -5914,12 +5933,6 @@ begin
   try
     ThreadManager.Cancel(group.Owner.NNTPServerSettings, group, nil);
 
-    if group = fLastFocusedArticleContainer then
-    begin
-      vstArticles.RootNodeCount := 0;
-      DisplayArticleBody(nil);
-      fLastFocusedArticleContainer := nil;
-    end;
     if param = 1 then
       group.Owner.UnsubscribeTo(group.Name, True)
     else
@@ -7490,23 +7503,29 @@ end;
 procedure TfmMain.WmUnsubscribe(var Msg: TMessage);
 var
   I: Integer;
-  obj: TObject;
+  list: TObjectList;
 begin
-  obj := TObject(Msg.wParam);
+  list := TObjectList(Msg.wParam);
 
-  if Assigned(obj) then
+  if Assigned(list) then
   begin
-    if obj is TObjectList then
+    for I := 0 to list.Count - 1 do
     begin
-      try
-        for I := 0 to TObjectList(obj).Count - 1 do
-          Unsubscribe(TSubscribedGroup(TObjectList(obj)[I]), 0);
-      finally
-        NNTPAccounts.SaveToRegistry(nil);
+      if TSubscribedGroup(list[I]) = FLastFocusedArticleContainer then
+      begin
+        vstArticles.RootNodeCount := 0;
+        DisplayArticleBody(nil);
+        FLastFocusedArticleContainer := nil;
+        Break;
       end;
-    end
-    else
-      Unsubscribe(TSubscribedGroup(obj), 1);
+    end;
+
+    try
+      for I := 0 to list.Count - 1 do
+        Unsubscribe(TSubscribedGroup(list[I]), 0);
+    finally
+      NNTPAccounts.SaveToRegistry(nil);
+    end;
   end;
   Refresh_vstSubscribed;
 end;
@@ -10426,7 +10445,7 @@ var
 begin
   list := TList(param);
   list.Add(group);
-  Result := True;
+  Result := False;
 end;
 
 procedure TfmMain.SplitterPanel3DockDrop(Sender: TObject;
