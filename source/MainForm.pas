@@ -46,7 +46,7 @@ uses
 {$endif}
   unitBookmarks, cmpSplitterPanel, unitNewsStringsDisplayObject,
   unitGetMessages1, unitMailServices, Tabs, ButtonGroup, CategoryButtons,
-  unitExSettings, XnClasses, XnRawByteStrings;
+  unitExSettings, XnClasses, XnRawByteStrings, CaptionedDockTree;
 
 type
 
@@ -9627,7 +9627,10 @@ begin
   begin
     pnlLeft.Width := fPanelLeftWidth;
     pnlLeft.Height := fPanelLeftHeight;
-  end;
+    SplitterPanel1.Width := fPanelLeftWidth;
+  end
+  else
+    SplitterPanel1.Width := 4;
 end;
 
 procedure TfmMain.actViewToolbarCaptionsExecute(Sender: TObject);
