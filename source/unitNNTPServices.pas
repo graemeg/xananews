@@ -585,7 +585,7 @@ type
 
     fMarkOnLeave: Boolean;
     fScanKeyPhrases: Boolean;
-    fCheckedNewGroups: Boolean;
+    fLastCheckForNewGroups: TDateTime;
     fRefreshedGroupsList: Boolean;
     fFiltersCtnr: TFiltersCtnr;
     fDisplayFiltersCtnr: TFiltersCtnr;
@@ -646,7 +646,7 @@ type
 
     property ScanKeyPhrases: Boolean read fScanKeyPhrases write SetScanKeyPhrases;
     property Next: TNNTPAccount read GetNext;
-    property CheckedNewGroups: Boolean read fCheckedNewGroups write fCheckedNewGroups;
+    property LastCheckForNewGroups: TDateTime read fLastCheckForNewGroups write fLastCheckForNewGroups;
     property RefreshedGroupsList: Boolean read fRefreshedGroupsList write fRefreshedGroupsList;
     property FileName: string read GetFileName;
     property SortIdx: Integer read fSortIdx write SetSortIdx;

@@ -112,6 +112,7 @@ type
 implementation
 
 uses
+  DateUtils,
   IdException, unitNNTPThreadManager, unitNewsReaderOptions, unitMessages,
   unitCharsetMap, unitMailServices, unitLog, unitSearchString, NewsGlobals,
   IdGlobal, IdReplyRFC, IdStack, IdGlobalProtocols, IdExceptionCore,
@@ -127,7 +128,7 @@ var
   i: Integer;
   st: string;
 begin
-  if NNTPAccount.CheckedNewGroups then Exit;
+  if HoursBetween(Now, NNTPAccount.LastCheckForNewGroups) < 6 then Exit;
 
   newGroups := nil;
   groups := nil;
@@ -170,8 +171,8 @@ begin
               end
               else
               begin
-                st := 'NEWSGROUPS: Invalid group recieved in thread "' +
-                      Getter.GetterRootText + '" - ' + newGroups[i];
+                st := 'NEWSGROUPS: Invalid new group recieved for account: "' +
+                      NNTPAccount.AccountName + '" - ' + newGroups[i];
                 LogMessage(st, True);
               end;
             end;
@@ -180,13 +181,12 @@ begin
 
           Synchronize(DoNotifyNewGroups);
         end;
-        NNTPAccount.CheckedNewGroups := True;
 
       except
         on E: Exception do
         begin
-          st := 'NEWSGROUPS: Error checking for new groups in thread "' +
-                Getter.GetterRootText + '" - ' + E.Message;
+          st := 'NEWSGROUPS: Error checking for new groups for account: "' +
+                NNTPAccount.AccountName + '" - ' + E.Message;
           LogMessage(st, True);
         end;
       end;
@@ -194,6 +194,7 @@ begin
   finally
     newGroups.Free;
     groups.Free;
+    NNTPAccount.LastCheckForNewGroups := Now;
   end;
 end;
 
@@ -284,8 +285,7 @@ begin
 
       if not Terminated and NNTP.Connected then
       begin
-        if not NNTPAccount.CheckedNewGroups then
-          CheckNewGroups;
+        CheckNewGroups;
 
         Getter.ClearWork;
         DoWork;
