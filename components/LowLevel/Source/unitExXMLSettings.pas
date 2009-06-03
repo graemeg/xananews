@@ -210,14 +210,14 @@ begin
 end;
 
 const
-  specialChars: set of char = ['$', '_', '%', '+', '!', '"', '£', '^', '&'];
+  specialChars: set of Char = ['!'..',', ';'..'@', '['..'_', '`', '{'..#127, '£'];
   specialFirstChars = ['0'..'9', '.'];
 
 (*----------------------------------------------------------------------*
  | procedure TExXMLSettings.EncodeNodeNames                             |
  |                                                                      |
  | Node names can't contain certian characters, and in addition they    |
- | can't start with numbers and dots.                                   |         |
+ | can't start with numbers and dots.                                   |
  |                                                                      |
  | If a special character occurs, we escape it by replacing it with     |
  | '-', followed by the character's ordinal value in 2 hex digits.      |
