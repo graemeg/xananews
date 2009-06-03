@@ -374,7 +374,7 @@ begin
         Delete(st, 1, 1);
         if st[1] = ' ' then
           Delete(st, 1, 1);
-        Result := IsSigSep(st, strct, false);
+        Result := IsSigSep(st, strct, False);
       end;
     end
     else
@@ -560,7 +560,7 @@ begin
   sigLine := -1;
   if trimSig then
     for i := 0 to s.Count - 1 do
-      if IsSigSep(s[i], strictSigSep, true) then
+      if IsSigSep(s[i], strictSigSep, True) then
       begin
         sigLine := i;
         Break;
@@ -1238,7 +1238,7 @@ begin
     while i < Length(header) do
       if not (header[i] in [' '..'~', #9, #10, #13]) then
       begin
-        ansi := false;
+        ansi := False;
         Break;
       end
       else
@@ -1249,12 +1249,13 @@ begin
     Result := EncodeHeader1(header, [], 'Q', bit7, RawCodePageToMIMECharsetName(CodePage))
   else
   begin
-    // !!!!!! when will it ever come here ??????
+    // It concerns a from name with non-ansi characters.
     coder := TXnEncoderQuotedPrintable.Create(nil);
     try
       sl := TAnsiStringList.Create;
       try
         sl.Text := raw;
+        sl.LineBreak := '';
         coder.EncodeStrings(sl);
         raw := sl.Text;
       finally
