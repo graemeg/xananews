@@ -80,11 +80,11 @@ type
   private
     fAgent: string;
   protected
-    function GetHeader(const name: string): string; override;
     function GetMsg: TmvMessage; override;
   public
     constructor Create(AOwner: TArticleContainer); override;
     procedure Assign(article: TArticleBase); override;
+    property Agent: string read fAgent;
   end;
 
   TfmNewsgroupStatistics = class(TForm)
@@ -682,25 +682,23 @@ procedure TStatisticArticle.Assign(article: TArticleBase);
 begin
   inherited;
 
-  Self.fFlags := article.Flags;
-  Self.fArticleNo := article.ArticleNo;
-  Self.fAgent := article.Header['X-NewsReader'];
-  if Self.fAgent = '' then
-    Self.fAgent := article.Header['User-Agent'];
+  fFlags := article.Flags;
+  fArticleNo := article.ArticleNo;
+  fAgent := article.Header['X-NewsReader'];
+  if fAgent = '' then
+    fAgent := article.Header['User-Agent'];
+  if fAgent = '' then
+    fAgent := article.Header['X-HHTP-UserAgent'];
+  if fAgent = '' then
+    fAgent := article.Header['X-Mailer'];
+  if fAgent = '' then
+    fAgent := article.Header['X-Newsposter'];
 end;
 
 constructor TStatisticArticle.Create(AOwner: TArticleContainer);
 begin
   inherited;
   fCodePage := CP_ACP;
-end;
-
-function TStatisticArticle.GetHeader(const name: string): string;
-begin
-  if SameText(name, 'User-Agent') or SameText(name, 'X-NewsReader') then
-    Result := fAgent
-  else
-    Result := ''
 end;
 
 function TStatisticArticle.GetMsg: TmvMessage;
@@ -719,8 +717,6 @@ var
 begin
   inherited Create('', nil, nil);
   Name := AGroup.Name;
-  ThreadSortOrder := soDate;
-  ThreadOrder := toChronological;
 
   endDate := Int(endDate) + 1;
 
@@ -742,7 +738,11 @@ begin
   fUnloadedArticleCount := -1;
   fArticlesLoaded := True;
   GetUnreadArticleCount;
-  ThreadOrder := toThreaded;
+
+  fCurrentThreadOrder := toChronological; // To force sorting.
+  fThreadSortOrder := soDate;
+  fThreadOrder := toThreaded;
+  SortArticles;
 end;
 
 function TStatisticContainer.GetMessagebaseSize: Int64;
@@ -824,19 +824,17 @@ end;
 constructor TStatistics.Create(AGroup: TArticleContainer; MaxResults: Integer);
 var
   i, j, ida, idp, idr: Integer;
-  article: TArticleBase;
+  article: TStatisticArticle;
   bart: TArticleBase;
   agent, poster, reader: string;
   Stat: TStatistic;
   obj: TObject;
 
-  function GetAgent(article: TArticleBase): string;
+  function GetAgent(article: TStatisticArticle): string;
   var
     p, idx: Integer;
   begin
-    Result := article.Header['X-Newsreader'];
-    if Result = '' then
-      Result := article.Header['User-Agent'];
+    Result := article.Agent;
 
     if Result <> '' then
     begin
@@ -880,7 +878,7 @@ begin
 
   for i := 0 to fGroup.ArticleCount - 1 do
   begin
-    article := fGroup.ArticleBase[i];
+    article := TStatisticArticle(fGroup.ArticleBase[i]);
     if article.ArticleNo <> 0 then
     begin
       Inc(fNonDummyArticleCount);
