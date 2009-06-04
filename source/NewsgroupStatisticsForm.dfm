@@ -131,7 +131,7 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
             Width = 150
           end
           item
-            Caption = 'Last Reader'
+            Caption = 'Most Used Newsreader'
             Width = 150
           end>
         GridLines = True

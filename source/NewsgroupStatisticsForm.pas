@@ -30,17 +30,20 @@ uses
   unitSettings, unitMessages, cmpPersistentPosition, unitExSettings, PostMessageForm;
 
 type
-  TStatistic = class
+  TStatistic = class(TObject)
   private
     fNumber: Integer;
     fRanking: Integer;
-    fDataString: string;
+    fDataStrings: TStringList;
     fDataInteger: Integer;
-    fLastString: string;
+    function GetDataString: string;
   public
+    constructor Create; virtual;
+    destructor Destroy; override;
     property Number: Integer read fNumber;
     property Ranking: Integer read fRanking;
-    property DataString: string read fDataString;
+    property DataString: string read GetDataString;
+    property DataStrings: TStringList read fDataStrings;
     property DataInteger: Integer read fDataInteger;
   end;
 
@@ -172,6 +175,15 @@ resourcestring
 
 {$R *.dfm}
 
+
+function CompareAgents(list: TStringList; idx1, idx2: Integer): Integer;
+var
+  i1, i2: Integer;
+begin
+  i1 := Integer(list.Objects[idx1]);
+  i2 := Integer(list.Objects[idx2]);
+  Result := i2 - i1;
+end;
 
 function ComparePosters(list: TStringList; idx1, idx2: Integer): Integer;
 var
@@ -424,8 +436,8 @@ begin
 
   Report.Add('Top Posters');
   Report.Add('');
-  Report.Add('Ranking  Articles  Name                        Last Reader');
-  Report.Add('-------  --------  --------------------------  -----------');
+  Report.Add('Ranking  Articles  Name                        Most Used Newsreader');
+  Report.Add('-------  --------  --------------------------  --------------------');
 
   for I := 0 to fStatistics.fPosters.Count - 1 do
   begin
@@ -786,17 +798,37 @@ procedure TStatisticContainer.SaveArticles(recreateMessageFile: Boolean);
 begin
 end;
 
+{ TStatistic }
+
+constructor TStatistic.Create;
+begin
+  inherited Create;
+  fDataStrings := TStringList.Create;
+end;
+
+destructor TStatistic.Destroy;
+begin
+  fDataStrings.Free;
+end;
+
+function TStatistic.GetDataString: string;
+begin
+  if fDataStrings.Count > 0 then
+    Result := fDataStrings[0]
+  else
+    Result := '';
+end;
+
 { TStatistics }
 
 constructor TStatistics.Create(AGroup: TArticleContainer; MaxResults: Integer);
 var
-  i, j, idx: Integer;
+  i, j, ida, idp, idr: Integer;
   article: TArticleBase;
   bart: TArticleBase;
-  agent, poster: string;
+  agent, poster, reader: string;
   Stat: TStatistic;
   obj: TObject;
-  sl: TStringList;
 
   function GetAgent(article: TArticleBase): string;
   var
@@ -860,95 +892,64 @@ begin
       if agent = '' then
         agent := rsUnspecifiedReader;
 
-      idx := fReaders.IndexOf(agent);
-      if idx = -1 then
+      idr := fReaders.IndexOf(agent);
+      if idr = -1 then
       begin
         Stat := TStatistic.Create;
         fReaders.AddObject(agent, Stat);
       end
       else
-        Stat := TStatistic(fReaders.Objects[idx]);
+        Stat := TStatistic(fReaders.Objects[idr]);
       Inc(Stat.fNumber);
 
       poster := article.FromName;
       if poster <> '' then
       begin
-        idx := -1;
+        idp := -1;
         for j := fPosters.Count - 1 downto 0 do
           if SameText(fPosters[j], poster) then
           begin
             obj := fPosters.Objects[j];
-            if SameText(TStatistic(obj).fDataString, agent) then
+            with TStatistic(obj).DataStrings do
             begin
-              idx := j;
-              Break;
-            end
-            else
-              TStatistic(obj).fLastString := agent;
+              ida := IndexOf(agent);
+              idp := j;
+              if ida >= 0 then
+                Objects[ida] := TObject(Integer(Objects[ida]) + 1)
+              else
+                AddObject(agent, TObject(1));
+            end;
+            Break;
           end;
 
-        if idx = -1 then
+        if idp = -1 then
         begin
           Stat := TStatistic.Create;
+          Stat.DataStrings.AddObject(agent, TObject(1));
           fPosters.AddObject(poster, Stat);
         end
         else
-          Stat := TStatistic(fPosters.Objects[idx]);
+          Stat := TStatistic(fPosters.Objects[idp]);
         Inc(Stat.fNumber);
-        Stat.fDataString := agent;
       end;
     end;
   end;
 
-  // Totalize newsreaders per poster & agent
+  // Sort newsreaders per poster (most used newsreader will be in [0])
   for i := 0 to fPosters.Count - 1 do
   begin
     Stat := TStatistic(fPosters.Objects[i]);
-    if Stat.fDataString <> '' then
-    begin
-      idx := fReaders.IndexOf(Stat.fDataString);
-      if idx >= 0 then
-      begin
-        Stat := TStatistic(fReaders.Objects[idx]);
-        Inc(Stat.fDataInteger);
-      end;
-    end;
+    Stat.DataStrings.CustomSort(CompareAgents);
   end;
 
-  // Recreate list of posters (independent of the used newsreader).
-  sl := TStringList.Create;
-  try
-    sl.CaseSensitive := False;
-    sl.Duplicates := dupError;
-
-    for I := 0 to fPosters.Count - 1 do
-    begin
-      poster := fPosters[I];
-      idx := sl.IndexOf(poster);
-      if idx = -1 then
-      begin
-        Stat := TStatistic.Create;
-        sl.AddObject(poster, Stat);
-      end
-      else
-        Stat := TStatistic(sl.Objects[idx]);
-      Inc(Stat.fNumber, TStatistic(fPosters.Objects[i]).fNumber);
-
-      obj := fPosters.Objects[i];
-      if TStatistic(obj).fLastString <> '' then
-        Stat.fDataString := TStatistic(obj).fLastString
-      else
-        Stat.fDataString := TStatistic(obj).fDataString;
-    end;
-
-    for i := 0 to fPosters.Count - 1 do
-      fPosters.Objects[i].Free;
-    fPosters.Clear;
-
-    for i := 0 to sl.Count - 1 do
-      fPosters.AddObject(sl[i], sl.Objects[I]);
-  finally
-    sl.Free;
+  // Totalize newsreaders per poster & agent
+  for i := 0 to fReaders.Count - 1 do
+  begin
+    reader := fReaders[i];
+    Stat := TStatistic(fReaders.Objects[i]);
+    for j := 0 to fPosters.Count - 1 do
+      if TStatistic(fPosters.Objects[j]).DataStrings.IndexOf(reader) >= 0 then
+        Inc(Stat.fDataInteger);
   end;
 
   gReverseSort := True;
@@ -958,8 +959,8 @@ begin
 
   gReverseSort := True;
   fReaders.CustomSort(CompareStatisticNumbers);
-  for idx := 0 to fReaders.Count - 1 do
-    TStatistic(fReaders.Objects[idx]).fRanking := idx + 1;
+  for i := 0 to fReaders.Count - 1 do
+    TStatistic(fReaders.Objects[i]).fRanking := i + 1;
 
   for i := 0 to fGroup.ThreadCount - 1 do
   begin
@@ -974,8 +975,8 @@ begin
   end;
 
   fThreads.CustomSort(CompareStatisticNumbers);
-  for idx := 0 to fThreads.Count - 1 do
-    TStatistic(fThreads.Objects[idx]).fRanking := idx + 1;
+  for i := 0 to fThreads.Count - 1 do
+    TStatistic(fThreads.Objects[i]).fRanking := i + 1;
 
   for i := fPosters.Count - 1 downto MaxResults do
   begin
