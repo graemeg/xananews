@@ -37,6 +37,7 @@ type
     fDataStrings: TStringList;
     fDataInteger: Integer;
     function GetDataString: string;
+    function GetHintString: string;
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -45,6 +46,7 @@ type
     property DataString: string read GetDataString;
     property DataStrings: TStringList read fDataStrings;
     property DataInteger: Integer read fDataInteger;
+    property HintString: string read GetHintString;
   end;
 
   TStatistics = class
@@ -133,6 +135,7 @@ type
     procedure lvThreadsData(Sender: TObject; Item: TListItem);
     procedure PersistentPosition1GetSettingsClass(Owner: TObject; var SettingsClass: TExSettingsClass);
     procedure PersistentPosition1GetSettingsFile(Owner: TObject; var fileName: string);
+    procedure lvPostersInfoTip(Sender: TObject; Item: TListItem; var InfoTip: string);
   private
     fGroup: TSubscribedGroup;
 
@@ -172,6 +175,7 @@ var
 
 resourcestring
   rsUnspecifiedReader = '<not specified>';
+  rsJivesWebForum = 'Jives Web Forum';
 
 {$R *.dfm}
 
@@ -482,6 +486,8 @@ begin
       Sender.Canvas.Font.Color := $00C000 // halfway between clGreen and clLime
     else if SameText(S, rsUnspecifiedReader) then
       Sender.Canvas.Font.Color := $0000C0 // halfway between clMaroon and clRed
+    else if SameText(S, rsJivesWebForum) then
+      Sender.Canvas.Font.Color := $C00000 // halfway between clBlue and clNavy
     else
       Sender.Canvas.Font.Color := GetSysColor(COLOR_WINDOWTEXT);
   end;
@@ -570,6 +576,20 @@ begin
     Item.SubItems.Add(IntToStr(Statistic.Number));
     Item.SubItems.Add(fStatistics.fPosters[idx]);
     Item.SubItems.Add(Statistic.DataString);
+  end;
+end;
+
+procedure TfmNewsgroupStatistics.lvPostersInfoTip(Sender: TObject;
+  Item: TListItem; var InfoTip: string);
+var
+  idx: Integer;
+  Statistic: TStatistic;
+begin
+  idx := Item.Index;
+  if idx < fStatistics.fPosters.Count then
+  begin
+    Statistic := TStatistic(fStatistics.fPosters.Objects[idx]);
+    InfoTip := Statistic.HintString;
   end;
 end;
 
@@ -693,6 +713,9 @@ begin
     fAgent := article.Header['X-Mailer'];
   if fAgent = '' then
     fAgent := article.Header['X-Newsposter'];
+  if fAgent = '' then
+    if SameText(article.Header['X-Source-Client'], 'web') then
+      fAgent := rsJivesWebForum
 end;
 
 constructor TStatisticArticle.Create(AOwner: TArticleContainer);
@@ -817,6 +840,16 @@ begin
     Result := fDataStrings[0]
   else
     Result := '';
+end;
+
+function TStatistic.GetHintString: string;
+var
+  I: Integer;
+begin
+  Result := '';
+  for I := 0 to fDataStrings.Count - 1 do
+    Result := Result + fDataStrings[I] + ' (' + IntToStr(Integer(fDataStrings.Objects[I])) + ')'#13;
+  Delete(Result, Length(Result), 1);
 end;
 
 { TStatistics }

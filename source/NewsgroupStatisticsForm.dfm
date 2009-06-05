@@ -77,6 +77,8 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
     Height = 193
     ActivePage = tsThreads
     Anchors = [akLeft, akTop, akRight, akBottom]
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 1
     object tsThreads: TTabSheet
       Caption = 'Threads'
@@ -112,6 +114,10 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
     object tsPosters: TTabSheet
       Caption = 'Posters'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object lvPosters: TListView
         Left = 0
         Top = 0
@@ -143,11 +149,16 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
         OnColumnClick = lvPostersColumnClick
         OnCustomDrawSubItem = lvCustomDrawSubItem
         OnData = lvPostersData
+        OnInfoTip = lvPostersInfoTip
       end
     end
     object tsNewsreaders: TTabSheet
       Caption = 'Newsreaders'
       ImageIndex = 2
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object lvNewsreaders: TListView
         Left = 0
         Top = 0
