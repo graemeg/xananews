@@ -325,7 +325,7 @@ begin
   fAutoDisconnectOnExit := True;
   fAutoCentralizeMessage := True;
   fAutofitImages := True;
-  fUseVistaExplorerTheme := True;
+  fUseVistaExplorerTheme := (Win32MajorVersion >= 6);
   fHideFolderIcons := True;
   fShowTooltips := True;
   fPlainTextPasswords := False;
