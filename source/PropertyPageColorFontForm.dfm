@@ -10,6 +10,8 @@ inherited fmPropertyPageColorFont: TfmPropertyPageColorFont
   Constraints.MinWidth = 389
   ExplicitLeft = 590
   ExplicitTop = 199
+  ExplicitWidth = 397
+  ExplicitHeight = 417
   DesignSize = (
     381
     381)
@@ -260,12 +262,12 @@ inherited fmPropertyPageColorFont: TfmPropertyPageColorFont
     Top = 229
     Width = 149
     Height = 66
-    Anchors = [akLeft, akRight, akBottom]
+    Anchors = [akLeft, akBottom]
     Caption = 'Font Effects'
     TabOrder = 3
     object cbBold: TCheckBox
       Left = 12
-      Top = 16
+      Top = 18
       Width = 61
       Height = 17
       Caption = '&Bold'
@@ -275,7 +277,7 @@ inherited fmPropertyPageColorFont: TfmPropertyPageColorFont
     object cbUnderline: TCheckBox
       Tag = 2
       Left = 77
-      Top = 16
+      Top = 18
       Width = 68
       Height = 17
       Caption = '&Underline'
@@ -285,7 +287,7 @@ inherited fmPropertyPageColorFont: TfmPropertyPageColorFont
     object cbStrikeout: TCheckBox
       Tag = 3
       Left = 77
-      Top = 36
+      Top = 42
       Width = 68
       Height = 17
       Caption = '&Strikeout'
@@ -295,7 +297,7 @@ inherited fmPropertyPageColorFont: TfmPropertyPageColorFont
     object cbItalic: TCheckBox
       Tag = 1
       Left = 12
-      Top = 36
+      Top = 42
       Width = 61
       Height = 17
       Caption = '&Italic'
@@ -308,41 +310,46 @@ inherited fmPropertyPageColorFont: TfmPropertyPageColorFont
     Top = 229
     Width = 209
     Height = 66
-    Anchors = [akRight, akBottom]
+    Anchors = [akLeft, akRight, akBottom]
     Caption = 'Font &Colours:'
     TabOrder = 4
-    object Label7: TLabel
+    DesignSize = (
+      209
+      66)
+    object Label2: TLabel
       Left = 12
-      Top = 16
+      Top = 43
       Width = 54
       Height = 13
       Caption = 'Foreground'
     end
-    object Label5: TLabel
+    object Label1: TLabel
       Left = 12
-      Top = 38
+      Top = 19
       Width = 58
       Height = 13
       Caption = '&Background'
     end
     object clrFont: TColorBox
       Left = 80
-      Top = 9
+      Top = 38
       Width = 121
       Height = 22
       Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor, cbPrettyNames]
+      Anchors = [akLeft, akTop, akRight]
       ItemHeight = 16
-      TabOrder = 0
+      TabOrder = 1
       OnChange = clrFontChange
     end
     object clrBackground: TColorBox
       Left = 80
-      Top = 35
+      Top = 14
       Width = 121
       Height = 22
       Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor, cbPrettyNames]
+      Anchors = [akLeft, akTop, akRight]
       ItemHeight = 16
-      TabOrder = 1
+      TabOrder = 0
       OnChange = clrBackgroundChange
     end
   end

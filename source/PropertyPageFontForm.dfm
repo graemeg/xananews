@@ -8,6 +8,8 @@ inherited fmPropertyPageFont: TfmPropertyPageFont
   ClientWidth = 381
   ExplicitLeft = 242
   ExplicitTop = 200
+  ExplicitWidth = 397
+  ExplicitHeight = 417
   PixelsPerInch = 96
   TextHeight = 13
   object Bevel2: TBevel [0]
@@ -95,12 +97,12 @@ inherited fmPropertyPageFont: TfmPropertyPageFont
     Top = 229
     Width = 149
     Height = 66
-    Anchors = [akLeft, akRight, akBottom]
+    Anchors = [akLeft, akBottom]
     Caption = 'Font Effects'
     TabOrder = 3
     object cbBold: TCheckBox
       Left = 12
-      Top = 16
+      Top = 18
       Width = 61
       Height = 17
       Caption = '&Bold'
@@ -110,7 +112,7 @@ inherited fmPropertyPageFont: TfmPropertyPageFont
     object cbUnderline: TCheckBox
       Tag = 2
       Left = 77
-      Top = 16
+      Top = 18
       Width = 68
       Height = 17
       Caption = '&Underline'
@@ -120,7 +122,7 @@ inherited fmPropertyPageFont: TfmPropertyPageFont
     object cbStrikeout: TCheckBox
       Tag = 3
       Left = 77
-      Top = 36
+      Top = 42
       Width = 68
       Height = 17
       Caption = '&Strikeout'
@@ -130,7 +132,7 @@ inherited fmPropertyPageFont: TfmPropertyPageFont
     object cbItalic: TCheckBox
       Tag = 1
       Left = 12
-      Top = 36
+      Top = 42
       Width = 61
       Height = 17
       Caption = '&Italic'
@@ -321,25 +323,47 @@ inherited fmPropertyPageFont: TfmPropertyPageFont
     Top = 229
     Width = 209
     Height = 66
-    Anchors = [akRight, akBottom]
+    Anchors = [akLeft, akRight, akBottom]
     Caption = 'Font &Colours:'
     TabOrder = 4
-    object Label5: TLabel
+    DesignSize = (
+      209
+      66)
+    object Label1: TLabel
       Left = 12
-      Top = 38
+      Top = 19
       Width = 58
       Height = 13
       Caption = '&Background'
     end
+    object Label2: TLabel
+      Left = 12
+      Top = 43
+      Width = 60
+      Height = 13
+      Caption = '&Alternate BG'
+    end
     object clrBackground: TColorBox
       Left = 80
-      Top = 35
+      Top = 14
       Width = 121
       Height = 22
       Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor, cbPrettyNames]
+      Anchors = [akLeft, akTop, akRight]
       ItemHeight = 16
       TabOrder = 0
       OnChange = clrBackgroundChange
+    end
+    object clrAlternateBG: TColorBox
+      Left = 80
+      Top = 38
+      Width = 121
+      Height = 22
+      Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor, cbPrettyNames]
+      Anchors = [akLeft, akTop, akRight]
+      ItemHeight = 16
+      TabOrder = 1
+      OnChange = clrAlternateBGChange
     end
   end
 end

@@ -8,20 +8,20 @@ uses
   ComCtrls, unitFontDetails;
 
 type
-  TPropertyPageColorFontData = class (TPropertyPageData)
+  TPropertyPageColorFontData = class(TPropertyPageData)
   private
-    fFontSize : Integer;
-    fFontStyle : TFontStyles;
-    fFontname : string;
-    fFontColor : TColor;
-    fBackgroundColor : TColor;
+    fFontSize: Integer;
+    fFontStyle: TFontStyles;
+    fFontname: string;
+    fFontColor: TColor;
+    fBackgroundColor: TColor;
   protected
     function GetCaption: string; override;
-    function GetHelpText : string; override;
+    function GetHelpText: string; override;
   public
-    function Apply : boolean; override;
+    function Apply: Boolean; override;
     procedure Initialize; override;
-    procedure AssignFontData (const AName : string; ASize : Integer; AStyle : TFontStyles; ABkColor : TColor);
+    procedure AssignFontData(const AName: string; ASize: Integer; AStyle: TFontStyles; ABkColor: TColor);
   end;
 
   TfmPropertyPageColorFont = class(TfmPropertyPage)
@@ -35,30 +35,27 @@ type
     cbStrikeout: TCheckBox;
     cbItalic: TCheckBox;
     gbFontColors: TGroupBox;
-    Label7: TLabel;
+    Label2: TLabel;
     clrFont: TColorBox;
     clrBackground: TColorBox;
-    Label5: TLabel;
+    Label1: TLabel;
     lvSizes: TListView;
     procedure lvFontsData(Sender: TObject; Item: TListItem);
-    procedure lvFontsChange(Sender: TObject; Item: TListItem;
-      Change: TItemChange);
+    procedure lvFontsChange(Sender: TObject; Item: TListItem; Change: TItemChange);
     procedure lvFontsResize(Sender: TObject);
     procedure lvSizesData(Sender: TObject; Item: TListItem);
-    procedure lvSizesChange(Sender: TObject; Item: TListItem;
-      Change: TItemChange);
+    procedure lvSizesChange(Sender: TObject; Item: TListItem; Change: TItemChange);
     procedure cbBoldClick(Sender: TObject);
     procedure clrFontChange(Sender: TObject);
     procedure clrBackgroundChange(Sender: TObject);
   private
-    fData : TPropertyPageColorFontData;
-    procedure PopulateSizes (fontNo, fontSize : Integer);
-    function FontDetails (i : Integer) : TFontDetails;
+    fData: TPropertyPageColorFontData;
+    procedure PopulateSizes(fontNo, fontSize: Integer);
+    function FontDetails(i: Integer): TFontDetails;
     procedure PopulatePreview;
-
   public
-    class function GetDataClass : TPropertyPageDataClass; override;
-    procedure PopulateControls (AData : TPropertyPageData); override;
+    class function GetDataClass: TPropertyPageDataClass; override;
+    procedure PopulateControls(AData: TPropertyPageData); override;
   end;
 
 var
@@ -71,7 +68,7 @@ uses ConTnrs, NewsGlobals;
 {$R *.dfm}
 
 var
-  ColorFontPageNames : array [TAppearanceEnum] of string = (
+  ColorFontPageNames: array[TAppearanceEnum] of string = (
     rstRegularMessages,
     rstMessagesToMe,
     rstMyMessages,
@@ -94,7 +91,7 @@ const
   sTilde = '~';
   sTilde1 = '~1';
 var
-  ColorFontHelpText : array [TAppearanceEnum] of string = (
+  ColorFontHelpText: array[TAppearanceEnum] of string = (
     sTilde,
     sTilde,
     sTilde,
@@ -118,39 +115,39 @@ var
 function TfmPropertyPageColorFont.FontDetails(i: Integer): TFontDetails;
 begin
   if (i >= 0) and (i < gFontDetails.Count) then
-    result := TFontDetails (gFontDetails.Objects [i])
+    Result := TFontDetails(gFontDetails.Objects[i])
   else
-    result := Nil
+    Result := nil;
 end;
 
 class function TfmPropertyPageColorFont.GetDataClass: TPropertyPageDataClass;
 begin
-  result := TPropertyPageColorFontData
+  Result := TPropertyPageColorFontData
 end;
 
 procedure TfmPropertyPageColorFont.lvFontsChange(Sender: TObject;
   Item: TListItem; Change: TItemChange);
 var
-  sel : TListItem;
+  sel: TListItem;
 begin
   if Populating then Exit;
   sel := lvFonts.ItemFocused;
-  if Assigned (sel) then
+  if Assigned(sel) then
   begin
     fData.fFontname := sel.Caption;
-    PopulateSizes (sel.Index, rePreview.Font.Size);
-    PopulatePreview
-  end
+    PopulateSizes(sel.Index, rePreview.Font.Size);
+    PopulatePreview;
+  end;
 end;
 
 procedure TfmPropertyPageColorFont.lvFontsData(Sender: TObject;
   Item: TListItem);
 var
-  st : string;
-  details : TFontDetails;
+  st: string;
+  details: TFontDetails;
 begin
-  details := FontDetails (Item.Index);
-  if Assigned (details) then
+  details := FontDetails(Item.Index);
+  if Assigned(details) then
   begin
     Item.Caption := details.Name;
     if details.Fixed then
@@ -162,52 +159,52 @@ begin
       st := '*'
     else
       st := '';
-    Item.SubItems.Add(st)
-  end
+    Item.SubItems.Add(st);
+  end;
 end;
 
 procedure TfmPropertyPageColorFont.lvFontsResize(Sender: TObject);
 var
-  hasScrollBar : boolean;
-  offset : Integer;
+  hasScrollBar: Boolean;
+  offset: Integer;
 begin
-  hasScrollBar := (GetWindowLong (lvFonts.Handle, GWL_STYLE) and WS_VSCROLL) <> 0;
+  hasScrollBar := (GetWindowLong(lvFonts.Handle, GWL_STYLE) and WS_VSCROLL) <> 0;
   if not hasScrollBar then
-    offset := GetSystemMetrics (SM_CXVSCROLL)
+    offset := GetSystemMetrics(SM_CXVSCROLL)
   else
     offset := 0;
 
-  lvFonts.Columns [0].Width := lvFonts.ClientWidth - lvFonts.Columns [1].Width - lvFonts.Columns [2].Width - 2 - offset;
+  lvFonts.Columns[0].Width := lvFonts.ClientWidth - lvFonts.Columns[1].Width - lvFonts.Columns[2].Width - 2 - offset;
 end;
 
 procedure TfmPropertyPageColorFont.lvSizesChange(Sender: TObject;
   Item: TListItem; Change: TItemChange);
 var
-  sel : TListItem;
+  sel: TListItem;
 begin
   if Populating then Exit;
   sel := lvSizes.ItemFocused;
-  if Assigned (sel) then
+  if Assigned(sel) then
   begin
-    fData.fFontSize := StrToInt (sel.Caption);
-    PopulatePreview
-  end
+    fData.fFontSize := StrToInt(sel.Caption);
+    PopulatePreview;
+  end;
 end;
 
 procedure TfmPropertyPageColorFont.lvSizesData(Sender: TObject;
   Item: TListItem);
 var
-  details : TFontDetails;
+  details: TFontDetails;
 begin
-  details := FontDetails (lvFonts.ItemIndex);
-  if Assigned (details) then
-    Item.Caption := IntToStr (details.Size [Item.Index]);
+  details := FontDetails(lvFonts.ItemIndex);
+  if Assigned(details) then
+    Item.Caption := IntToStr(details.Size[Item.Index]);
 end;
 
-procedure TfmPropertyPageColorFont.PopulateControls (AData : TPropertyPageData);
+procedure TfmPropertyPageColorFont.PopulateControls(AData: TPropertyPageData);
 var
-  i, n : Integer;
-  details : TFontDetails;
+  i, n: Integer;
+  details: TFontDetails;
 begin
   inherited;
   fData := AData as TPropertyPageColorFontData;
@@ -227,21 +224,21 @@ begin
 
   for i := 0 to gFontDetails.Count - 1 do
   begin
-    details := TFontDetails (gFontDetails.Objects [i]);
+    details := TFontDetails(gFontDetails.Objects[i]);
 
-    if Assigned (details) then
-      if SameText (details.Name, fData.fFontName) then
+    if Assigned(details) then
+      if SameText(details.Name, fData.fFontName) then
       begin
         lvFonts.ItemIndex := i;
         n := i + 3;
         if n >= gFontDetails.Count then
           n := gFontDetails.Count - 1;
-        lvFonts.Items [n].MakeVisible(false);
-        PopulateSizes (i, fData.fFontSize);
-      end
+        lvFonts.Items[n].MakeVisible(False);
+        PopulateSizes(i, fData.fFontSize);
+      end;
   end;
 
-  PopulatePreview
+  PopulatePreview;
 end;
 
 procedure TfmPropertyPageColorFont.PopulatePreview;
@@ -256,46 +253,46 @@ end;
 
 procedure TfmPropertyPageColorFont.PopulateSizes(fontNo, fontSize: Integer);
 var
-  details : TFontDetails;
-  j, n : Integer;
-  size : Integer;
+  details: TFontDetails;
+  j, n: Integer;
+  size: Integer;
 begin
   if fontNo >= gFontDetails.Count then Exit;
 
-  details := FontDetails (fontNo);
+  details := FontDetails(fontNo);
 
-  if Assigned (details) then
+  if Assigned(details) then
   begin
     lvSizes.Items.Count := details.SizeCount;
     lvSizes.Invalidate;
 
     for j := 0 to details.SizeCount - 1 do
     begin
-      size := details.Size [j];
+      size := details.Size[j];
       if size = fontSize then
       begin
         lvSizes.ItemIndex := j;
         n := j + 3;
         if n >= details.SizeCount then
           n := details.SizeCount - 1;
-        lvSizes.Items [n].MakeVisible(false);
-        break
-      end
-    end
-  end
+        lvSizes.Items[n].MakeVisible(False);
+        Break;
+      end;
+    end;
+  end;
 end;
 
 { TPropertyPageColorFontData }
 
-function TPropertyPageColorFontData.Apply : boolean;
+function TPropertyPageColorFontData.Apply: Boolean;
 var
-  appn : TAppearanceEnum;
-  app : TAppearanceSettings;
+  appn: TAppearanceEnum;
+  app: TAppearanceSettings;
 begin
-  result := True;
-  appn := TAppearanceEnum (Param);
+  Result := True;
+  appn := TAppearanceEnum(Param);
 
-  app := XNOptions.Appearance [appn];
+  app := XNOptions.Appearance[appn];
 
   app.FontName := fFontName;
   app.FontSize := fFontSize;
@@ -305,46 +302,45 @@ begin
 end;
 
 procedure TPropertyPageColorFontData.AssignFontData(const AName: string;
-  ASize: Integer; AStyle: TFontStyles; ABkColor : TColor);
+  ASize: Integer; AStyle: TFontStyles; ABkColor: TColor);
 begin
   fFontName := AName;
   fFontSize := ASize;
   fFontStyle := AStyle;
   fBackgroundColor := ABkColor;
-
 end;
 
 function TPropertyPageColorFontData.GetCaption: string;
 var
-  appn : TAppearanceEnum;
+  appn: TAppearanceEnum;
 begin
-  appn := TAppearanceEnum (Param);
+  appn := TAppearanceEnum(Param);
 
-  result := ColorFontPageNames [appn];
+  Result := ColorFontPageNames[appn];
 end;
 
 function TPropertyPageColorFontData.GetHelpText: string;
 var
-  appn : TAppearanceEnum;
+  appn: TAppearanceEnum;
 begin
-  appn := TAppearanceEnum (Param);
+  appn := TAppearanceEnum(Param);
 
-  result := ColorFontHelpText [appn];
-  if result = sTilde then
-    result := Format (rstStandardHelp, [ColorFontPageNames [appn]])
+  Result := ColorFontHelpText[appn];
+  if Result = sTilde then
+    Result := Format(rstStandardHelp, [ColorFontPageNames[appn]])
   else
-    if result = sTilde1 then
-      result := Format (rstStandardHelp1, [ColorFontPageNames [appn]])
+    if Result = sTilde1 then
+      Result := Format(rstStandardHelp1, [ColorFontPageNames[appn]]);
 end;
 
 procedure TPropertyPageColorFontData.Initialize;
 var
-  appn : TAppearanceEnum;
-  app : TAppearanceSettings;
+  appn: TAppearanceEnum;
+  app: TAppearanceSettings;
 begin
-  appn := TAppearanceEnum (Param);
+  appn := TAppearanceEnum(Param);
 
-  app := XNOptions.Appearance [appn];
+  app := XNOptions.Appearance[appn];
 
   fFontSize := app.FontSize;
   fFontName := app.FontName;
@@ -355,12 +351,12 @@ end;
 
 procedure TfmPropertyPageColorFont.cbBoldClick(Sender: TObject);
 var
-  cb : TCheckBox;
-  style : TFontStyle;
+  cb: TCheckBox;
+  style: TFontStyle;
 begin
   if Populating then Exit;
   if not (Sender is TCheckBox) then Exit;
-  cb := TCheckbox (Sender);
+  cb := TCheckbox(Sender);
 
   if Sender = cbBold then
     style := fsBold
@@ -377,19 +373,19 @@ begin
     with fData do fFontStyle := fFontStyle + [style]
   else
     with fData do fFontStyle := fFontStyle - [style];
-  PopulatePreview
+  PopulatePreview;
 end;
 
 procedure TfmPropertyPageColorFont.clrFontChange(Sender: TObject);
 begin
   fData.fFontColor := clrFont.Selected;
-  PopulatePreview
+  PopulatePreview;
 end;
 
 procedure TfmPropertyPageColorFont.clrBackgroundChange(Sender: TObject);
 begin
   fData.fBackgroundColor := clrBackground.Selected;
-  PopulatePreview
+  PopulatePreview;
 end;
 
 end.

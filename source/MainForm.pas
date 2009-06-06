@@ -981,6 +981,7 @@ type
     fAutoGetMessages: Boolean;
 //    fOldMonitorWindowProc: TWndMethod;
     fDontMarkOnLeave: Boolean;
+    fOptionsFormActive: Boolean;
 {$ifdef ConditionalExpressions}
  {$if CompilerVersion = 18.5}
     fIsIconized: Boolean;
@@ -2718,25 +2719,30 @@ begin
     if (not NNTPAccounts.ShowSecrets) and (ctnr.Secret or ((ctnr is TSubscribedGroup) and (TSubscribedGroup(ctnr).Owner.Secret))) then
       ctnr := nil;
 
-  fm := TfmOptions.Create(Self);
+  fOptionsFormActive := True;
   try
-    if fm.ShowModal = mrOK then
-    begin
-      XNOptions.Save;
-      NNTPAccounts.SaveToRegistry;
+    fm := TfmOptions.Create(Self);
+    try
+      if fm.ShowModal = mrOK then
+      begin
+        XNOptions.Save;
+        NNTPAccounts.SaveToRegistry;
 
-      vstSubscribed.RootNodeCount := 0;
-      Reinit_vstSubscribed(True);
-      ApplyControlOptions;
+        vstSubscribed.RootNodeCount := 0;
+        Reinit_vstSubscribed(True);
+        ApplyControlOptions;
 
-      fPrevArticle := nil;
-      FocusArticleContainer(ctnr);
-      SyncContainerTree(ctnr);
-    end
-    else
-      SetControlOptions;
+        fPrevArticle := nil;
+        FocusArticleContainer(ctnr);
+        SyncContainerTree(ctnr);
+      end
+      else
+        SetControlOptions;
+    finally
+      fm.Free;
+    end;
   finally
-    fm.Free;
+    fOptionsFormActive := False;
   end;
 end;
 
@@ -5785,37 +5791,40 @@ begin
   if fTickCount < 4 then
     Exit;
 
-  lv := GetLatestVersion;
-  if (lv <> '~') and (lv <> '') then
+  if not fOptionsFormActive then
   begin
-    if VersionCompare(lv, ProductVersion) then
+    lv := GetLatestVersion;
+    if (lv <> '~') and (lv <> '') then
     begin
-      StatusBar.Panels[StatusBar.Panels.Count - 1].Text := Format(rstVersionAvailable, [lv]);
-      NewVersion := lv;
-      FormResize(nil);
+      if VersionCompare(lv, ProductVersion) then
+      begin
+        StatusBar.Panels[StatusBar.Panels.Count - 1].Text := Format(rstVersionAvailable, [lv]);
+        NewVersion := lv;
+        FormResize(nil);
+      end;
+      SetLatestVersion('~');
     end;
-    SetLatestVersion('~');
-  end;
 
-  lv := GetDeserveMedals;
-  if (lv <> '~') and (lv <> '') then
-  begin
-    fDeservesMedals := lv;
-    sl := TStringList.Create;
-    try
-      sl.CaseSensitive := False;
-      sl.Text := lv;
-      sl.Sort;
+    lv := GetDeserveMedals;
+    if (lv <> '~') and (lv <> '') then
+    begin
+      fDeservesMedals := lv;
+      sl := TStringList.Create;
+      try
+        sl.CaseSensitive := False;
+        sl.Text := lv;
+        sl.Sort;
 
-      XNOptions.DeservesMedal := sl.Find(NNTPAccounts.Identities.DefaultIdentity.UserName, i);
+        XNOptions.DeservesMedal := sl.Find(NNTPAccounts.Identities.DefaultIdentity.UserName, i);
 
-      if Assigned(fMedal) then
-        fMedal.Visible := XNOptions.DeservesMedal;
-      XNOptions.Save;
-    finally
-      sl.Free;
+        if Assigned(fMedal) then
+          fMedal.Visible := XNOptions.DeservesMedal;
+        XNOptions.Save;
+      finally
+        sl.Free;
+      end;
+      SetDeserveMedals('~');
     end;
-    SetDeserveMedals('~');
   end;
 
   ct := ThreadManager.LockGetterList.Count;
@@ -6202,19 +6211,13 @@ procedure TfmMain.vstArticlesAfterItemErase(Sender: TBaseVirtualTree;
   TargetCanvas: TCanvas; Node: PVirtualNode; ItemRect: TRect);
 var
   article: TArticleBase;
-  color: TColor;
-  rgb: LongInt;
 begin
   // Draw the odd/even background colour.
   article := GetNodeArticle(node);
 
   if Assigned(article) and article.IsOdd then
   begin
-    color := TargetCanvas.Brush.Color;
-    rgb := ColorToRGB(color);
-    rgb := Windows.RGB(GetRValue(rgb) * 97 div 100, GetGValue(rgb) * 98 div 100, GetBValue(rgb * 99 div 100));
-
-    TargetCanvas.Brush.Color := rgb;
+    TargetCanvas.Brush.Color := XNOptions.Appearance[apMessageHeaders].AlternateBGColor;;
     TargetCanvas.FillRect(ItemRect);
   end;
 end;

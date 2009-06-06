@@ -35,16 +35,16 @@ type
     fFontStyle: TFontStyles;
     fFontSize: Integer;
     fBackgroundColor: TColor;
-
+    fAlternateBGColor: TColor;
     procedure Load(reg: TExSettings);
     procedure Save(reg: TExSettings);
-
   public
     property FontName: string read fFontName write fFontName;
     property FontColor: TColor read fFontColor write fFontColor;
     property FontStyle: TFontStyles read fFontStyle write fFontStyle;
     property FontSize: Integer read fFontSize write fFontSize;
     property BackgroundColor: TColor read fBackgroundColor write fBackgroundColor;
+    property AlternateBGColor: TColor read fAlternateBGColor write fAlternateBGColor;
 
     function ApplyFontAndGetColor(font: TFont; FixedFont: string = ''): TColor;
     procedure Init(font: TFont; bkColor: TColor);
@@ -887,6 +887,7 @@ begin
   fFontColor := source.fFontColor;
   fFontStyle := source.fFontStyle;
   fBackgroundColor := source.fBackgroundColor;
+  fAlternateBGColor := source.fAlternateBGColor;
   fFontSize := source.fFontSize;
 end;
 
@@ -901,6 +902,7 @@ begin
               (fFontSize = source.fFontSize) and
               (fFontStyle = source.fFontStyle) and
               (fBackgroundColor = source.fBackgroundColor) and
+              (fAlternateBGColor = source.fAlternateBGColor) and
               (fFontName = source.fFontName);
   end
   else
@@ -916,6 +918,15 @@ begin
   fBackgroundColor := bkColor;
 end;
 
+function CalcAlternateColor(Background: TColor): TColor;
+begin
+  Result := ColorToRGB(Background);
+  if Win32MajorVersion >= 6 then // Vista or above
+    Result := Windows.RGB(GetRValue(Result) * 97 div 100, GetGValue(Result) * 98 div 100, GetBValue(Result * 99 div 100))
+  else
+    Result := Windows.RGB(GetRValue(Result) * 95 div 100, GetGValue(Result) * 95 div 100, GetBValue(Result * 95 div 100));
+end;
+
 procedure TAppearanceSettings.Load(reg: TExSettings);
 begin
   fFontName  := reg.GetStringValue('Font Name', fFontName);
@@ -923,6 +934,7 @@ begin
   fFontStyle := TFontStyles(Byte(reg.GetIntegerValue('Font Style', Byte(fFontStyle))));
   fFontSize  := reg.GetIntegerValue('Font Size', fFontSize);
   fBackgroundColor := reg.GetIntegerValue('Background Color', fBackgroundColor);
+  fAlternateBGColor := reg.GetIntegerValue('Alternate Background Color', CalcAlternateColor(fBackgroundColor));
 end;
 
 procedure TAppearanceSettings.Save(reg: TExSettings);
@@ -932,6 +944,7 @@ begin
   reg.SetIntegerValue('Font Style', Byte(FontStyle));
   reg.SetIntegerValue('Font Size', FontSize);
   reg.SetIntegerValue('Background Color', BackgroundColor);
+  reg.SetIntegerValue('Alternate Background Color', AlternateBGColor, CalcAlternateColor(BackgroundColor));
 end;
 
 initialization
