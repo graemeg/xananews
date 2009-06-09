@@ -174,8 +174,8 @@ var
   gReverseSort: Boolean = False;
 
 resourcestring
-  rsUnspecifiedReader = '<not specified>';
-  rsJivesWebForum = 'Jives Web Forum';
+  rsUnspecifiedReader = '<unknown>';
+  rsJivesWebForum = 'Jive Web Forum';
 
 {$R *.dfm}
 
@@ -835,11 +835,18 @@ begin
 end;
 
 function TStatistic.GetDataString: string;
+var
+  I: Integer;
 begin
-  if fDataStrings.Count > 0 then
-    Result := fDataStrings[0]
-  else
-    Result := '';
+  // Find the Most Used Reader (ignoring the case where the real Most Used Reader
+  // might be unknown because the user didn't download *all* full articles).
+  Result := '';
+  for I := 0 to fDataStrings.Count - 1 do
+    if fDataStrings[I] <> rsUnspecifiedReader then
+    begin
+      Result := fDataStrings[I];
+      Break;
+    end
 end;
 
 function TStatistic.GetHintString: string;
