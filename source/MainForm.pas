@@ -874,7 +874,8 @@ type
     procedure vstArticlesColumnResize(Sender: TVTHeader; Column: TColumnIndex);
     procedure vstArticlesDblClick(Sender: TObject);
     procedure vstArticlesFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex);
-    procedure vstArticlesHeaderClick(Sender: TVTHeader; Column: TColumnIndex; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+    procedure vstArticlesHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
+//    procedure vstArticlesHeaderClick(Sender: TVTHeader; Column: TColumnIndex; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure vstArticlesHeaderMouseUp(Sender: TVTHeader; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
     procedure vstArticlesGetImageIndex(Sender: TBaseVirtualTree; Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var Index: Integer);
     procedure vstArticlesGetHint(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; var LineBreakStyle: TVTTooltipLineBreakStyle; var HintText: string);
@@ -5670,8 +5671,8 @@ begin
   SaveArticleHeaderPositions;
 
   XNOptions.Appearance[apMessageHeaders].Init(vstArticles.Font, vstArticles.Color);
-  XNOptions.Appearance[apMessagePane].Init(MessageScrollBox1.Font, MessageScrollBox1.Color);
-
+  if MessageScrollBox1.FixedFont = '' then
+    XNOptions.Appearance[apMessagePane].Init(MessageScrollBox1.Font, MessageScrollBox1.Color);
   XNOptions.Appearance[apSubscribedGroups].Init(vstSubscribed.Font, vstSubscribed.Color);
 end;
 
@@ -6477,8 +6478,9 @@ begin
   end
 end;
 
-procedure TfmMain.vstArticlesHeaderClick(Sender: TVTHeader; Column: TColumnIndex;
-  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+procedure TfmMain.vstArticlesHeaderClick(Sender: TVTHeader; HitInfo: TVTHeaderHitInfo);
+//procedure TfmMain.vstArticlesHeaderClick(Sender: TVTHeader; Column: TColumnIndex;
+//  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 var
   ctnr: TArticleContainer;
   art: TArticleBase;
@@ -6488,7 +6490,7 @@ var
 
   procedure SetThreadSortOrder;
   begin
-    if (ssCtrl in Shift) and (col1 = 4) then
+    if (ssCtrl in HitInfo.Shift) and (col1 = 4) then
       col1 := 6;
     if col1 = fHeaderSortCol then
       if ctnr.ThreadSortDirection = sdDescending then
@@ -6514,7 +6516,7 @@ var
   end;
 
 begin
-  col1 := column;
+  col1 := HitInfo.Column;
   art := GetFocusedArticle;
   if Assigned(art) and (art.ArticleNo = 0) then
     art := nil;
@@ -6534,7 +6536,7 @@ begin
     oldCursor := Screen.Cursor;
     Screen.Cursor := crHourglass;
     try
-      if column = 0 then
+      if HitInfo.Column = 0 then
                                   // Column 0 (flags) clicked.  Switch between
                                   // chronological and threaded views.
         if ctnr.ThreadOrder = toChronological then
@@ -6548,9 +6550,9 @@ begin
     end;
   end;
 
-  if (column <> 0) or (ctnr is TArticleFolder) then
+  if (HitInfo.Column <> 0) or (ctnr is TArticleFolder) then
   begin
-    vstArticles.Header.SortColumn := column;
+    vstArticles.Header.SortColumn := HitInfo.Column;
     fHeaderSortCol := col1;
     if Assigned(ctnr) then
       vstArticles.Header.SortDirection := TSortDirection(ctnr.ThreadSortDirection)
