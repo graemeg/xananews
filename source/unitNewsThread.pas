@@ -1662,13 +1662,13 @@ var
   function EncodeFace(S: RawByteString): RawByteString;
   const
     SPACES: set of AnsiChar = [' ', #9, #10, #13, '''', '"'];    {Do not Localize}
-    MaxEncLen = 75;
+    MaxEncLen = 76;
   var
     I, L, Q: Integer;
   begin
-    Result := 'Face= ';
+    Result := 'Face=';
     I := 6;
-    Q := 6;
+    Q := 5;
     L := Length(S);
 
     // Skip spaces at the beginning of the original Face data.
@@ -1677,17 +1677,16 @@ var
 
     while I < L do
     begin
-      Result := Result + S[I];
-      Inc(I);
-      Result := Result + S[I];
-      Inc(I);
-      if Q >= 76 then
+      if Q > MaxEncLen then
       begin
         Q := 2;
-        Result := Result + #13#10#9;
-      end
-      else
-        Inc(Q, 2);
+        Result := Result + #13#10' ';
+      end;
+      Result := Result + S[I];
+      Inc(I);
+      Result := Result + S[I];
+      Inc(I);
+      Inc(Q, 2);
     end;
   end;
 
