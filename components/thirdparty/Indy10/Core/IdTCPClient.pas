@@ -258,10 +258,16 @@ end;
 procedure TIdTCPClientCustom.Connect;
 begin
   // Do not call Connected here, it will call CheckDisconnect
-  EIdAlreadyConnected.IfTrue(Connected, RSAlreadyConnected);
+  if Connected then begin
+    EIdAlreadyConnected.Toss(RSAlreadyConnected);
+  end;
 
-  EIdHostRequired.IfTrue(Host='');
-  EIdPortRequired.IfTrue(Port=0);
+  if Host = '' then begin
+    EIdHostRequired.Toss('');
+  end;
+  if Port = 0 then begin
+    EIdPortRequired.Toss('');
+  end;
 
   if IOHandler = nil then begin
     IOHandler := MakeImplicitClientHandler;

@@ -186,7 +186,7 @@ type
   TIdStackDotNet = class(TIdStack)
   protected
     //Stuff for ICMPv6
-    {$IFNDEF DOTNET1_1}
+    {$IFDEF DOTNET_2_OR_ABOVE}
     procedure QueryRoute(s : TIdStackSocketHandle; const AIP: String;
       const APort: TIdPort; var VSource, VDest : TIdBytes);
     procedure WriteChecksumIPv6(s: TIdStackSocketHandle;
@@ -267,7 +267,7 @@ type
       const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION); override;
     procedure AddLocalAddressesToList(AAddresses: TStrings); override;
   end;
- {$IFDEF DOTNET1_1}
+ {$IFDEF DOTNET_1_1}
   EIdNotSupportedInMicrosoftNET11 = class(EIdStackError);
  {$ENDIF}
 
@@ -473,10 +473,10 @@ begin
     'Resolve is obsoleted for this type, please use GetHostEntry instead.
     http://go.microsoft.com/fwlink/?linkid=14202'
     }
-    {$IFDEF DOTNET2_OR_ABOVE}
+    {$IFDEF DOTNET_2_OR_ABOVE}
     LIP := Dns.GetHostEntry(AHostName).AddressList;
     {$ENDIF}
-    {$IFDEF DOTNET1_1}
+    {$IFDEF DOTNET_1_1}
     LIP := Dns.Resolve(AHostName).AddressList;
     {$ENDIF}
     for a := Low(LIP) to High(LIP) do begin
@@ -497,10 +497,10 @@ function TIdStackDotNet.HostByAddress(const AAddress: string;
   const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION): string;
 begin
   try
-    {$IFDEF DOTNET2_OR_ABOVE}
+    {$IFDEF DOTNET_2_OR_ABOVE}
     Result := Dns.GetHostEntry(AAddress).HostName;
     {$ENDIF}
-    {$IFDEF DOTNET1_1}
+    {$IFDEF DOTNET_1_1}
     Result := Dns.GetHostByAddress(AAddress).HostName;
     {$ENDIF}
   except
@@ -979,26 +979,26 @@ begin
   'SupportsIPv6 is obsoleted for this type, please use OSSupportsIPv6 instead.
   http://go.microsoft.com/fwlink/?linkid=14202'
   }
-  {$IFDEF DOTNET2_OR_ABOVE}
+  {$IFDEF DOTNET_2_OR_ABOVE}
   Result := Socket.OSSupportsIPv6;
   {$ENDIF}
-  {$IFDEF DOTNET1_1}
+  {$IFDEF DOTNET_1_1}
   Result := Socket.SupportsIPv6;
   {$ENDIF}
 end;
 
 procedure TIdStackDotNet.AddLocalAddressesToList(AAddresses: TStrings);
 var
-  {$IFDEF DOTNET1_1}
+  {$IFDEF DOTNET_1_1}
   LAddr : IPAddress;
   {$ENDIF}
   LHost : IPHostEntry;
   i : Integer;
 begin
-  {$IFDEF DOTNET2_OR_ABOVE}
+  {$IFDEF DOTNET_2_OR_ABOVE}
   LHost := DNS.GetHostEntry(DNS.GetHostName);
   {$ENDIF}
-  {$IFDEF DOTNET1_1}
+  {$IFDEF DOTNET_1_1}
   LAddr := IPAddress.Any;
   LHost := DNS.GetHostByAddress(LAddr);
   {$ENDIF}
@@ -1079,7 +1079,7 @@ function TIdStackDotNet.ReceiveMsg(ASocket: TIdStackSocketHandle;
   var VBuffer: TIdBytes; APkt: TIdPacketInfo;
   const AIPVersion: TIdIPVersion): LongWord;
 var
-  {$IFDEF DOTNET1_1}
+  {$IFDEF DOTNET_1_1}
   LIP : String;
   LPort : TIdPort;
   {$ELSE}
@@ -1088,7 +1088,7 @@ var
   LPki : IPPacketInformation;
   {$ENDIF}
 begin
-  {$IFDEF DOTNET1_1}
+  {$IFDEF DOTNET_1_1}
   Result := ReceiveFrom(ASocket, VBuffer, LIP, LPort, AIPVersion);
   APkt.SourceIP := LIP;
   APkt.SourcePort := LPort;
@@ -1118,7 +1118,7 @@ begin
   {$ENDIF}
 end;
 
-{$IFNDEF DOTNET1_1}
+{$IFDEF DOTNET_2_OR_ABOVE}
 const
   SIO_ROUTING_INTERFACE_QUERY = 3355443220;
 
@@ -1127,7 +1127,7 @@ This extracts an IP address as a series of bytes from a TIdBytes that contains
 one SockAddress structure.
 }
 procedure SockAddrToIPBytes(const ASockAddr : TIdBytes; var VIPAddr : TIdBytes);
-{$IFDEF USEINLINE}inline;{$ENDIF}
+{$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
   case IdGlobal.BytesToWord(ASockAddr,0) of
     23 : //AddressFamily.InterNetworkV6 :
@@ -1269,7 +1269,7 @@ begin
     CopyTIdWord(CalcCheckSum(VBuffer), VBuffer, AOffset);
   end else
   begin
-    {$IFDEF DOTNET1_1}
+    {$IFDEF DOTNET_1_1}
     {This is a todo because to do a checksum for ICMPv6, you need to obtain
     the address for the IP the packet will come from (query the network interfaces).
     You then have to make a IPv6 pseudo header.  About the only other alternative is
@@ -1297,7 +1297,7 @@ begin
   Result := 0;
 end;
 
-{$IFDEF DOTNET2_OR_ABOVE}
+{$IFDEF DOTNET_2_OR_ABOVE}
 function ServeFile(ASocket: TIdStackSocketHandle; const AFileName: string): Int64;
 var
   LFile : FileInfo;
@@ -1310,7 +1310,7 @@ end;
 
 initialization
   GSocketListClass := TIdSocketListDotNet;
-  {$IFDEF DOTNET2_OR_ABOVE}
+  {$IFDEF DOTNET_2_OR_ABOVE}
   GServeFileProc := ServeFile;
   {$ENDIF}
 end.

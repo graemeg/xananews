@@ -255,6 +255,7 @@ interface
 //here to flip FPC into Delphi mode
 
 uses
+  Windows,
   Classes,
   IdBaseComponent, 
   IdComponent,IdContext, IdGlobal, IdException,
@@ -402,6 +403,11 @@ type
 implementation
 
 uses
+  {$IFDEF VCL2010ORABOVE}
+    {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  Windows,
+    {$ENDIF}
+  {$ENDIF}
   IdGlobalCore,
   IdResourceStringsCore, IdReplyRFC,
   IdSchedulerOfThreadDefault, IdStack,
@@ -606,7 +612,9 @@ begin
   // RLebeau - is this really needed?  What should happen if this
   // gets called by Notification() if the Scheduler is freed while
   // the server is still Active?
-  EIdException.IfTrue(Active, RSTCPServerSchedulerAlreadyActive);
+  if Active then begin
+    EIdException.Toss(RSTCPServerSchedulerAlreadyActive);
+  end;
 
   // If implicit one already exists free it
   // Free the default Thread manager
@@ -739,10 +747,10 @@ begin
   end;
 end;
 
-{$IFDEF UNICODESTRING}
-//This is an ugly hack that's required because a short does not seem to be acceptable
-//to Tiburon's Assert function.
-procedure AssertClassName(const ABool : Boolean; AString : String); inline;
+{$IFDEF STRING_IS_UNICODE}
+//This is an ugly hack that's required because a ShortString does not seem
+//to be acceptable to D2009's Assert function.
+procedure AssertClassName(const ABool : Boolean; const AString : String); inline;
 begin
   Assert(ABool, AString);
 end;
@@ -763,7 +771,7 @@ begin
       for i := 0 to Count - 1 do begin
         LContext := TIdContext(Items[i]);
         Assert(LContext<>nil);
-        {$IFDEF UNICODESTRING}
+        {$IFDEF STRING_IS_UNICODE}
         AssertClassName(LContext.Connection<>nil, LContext.ClassName);
         {$ELSE}
         Assert(LContext.Connection<>nil, LContext.ClassName);

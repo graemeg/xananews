@@ -191,10 +191,7 @@ type
 
   //This error method came from the POP3 Protocol reply exceptions
   // SendCmd / GetResponse
-  EIdReplyIMAP4Error = class(EIdReplyError)
-  public
-    constructor CreateError(const AReplyMessage: string); {reintroduce; virtual;}
-  end;
+  EIdReplyIMAP4Error = class(EIdReplyError);
 
 implementation
 
@@ -242,7 +239,7 @@ end;
 
 procedure TIdReplyIMAP4.RaiseReplyError;
 begin
-  raise EIdReplyIMAP4Error.CreateError('Default RaiseReply error'); {do not localize}
+  raise EIdReplyIMAP4Error.Create('Default RaiseReply error'); {do not localize}
 end;
 
 {CC: The following decides if AValue is a valid command sequence number like C41...}
@@ -504,7 +501,7 @@ begin
   if AnOffendingLine <> '' then begin
     LMsg := LMsg + ', offending line: ' + AnOffendingLine;  {do not localize}
   end;
-  raise EIdReplyIMAP4Error.CreateError(LMsg);
+  raise EIdReplyIMAP4Error.Create(LMsg);
 end;
 
 { TIdRepliesIMAP4 }
@@ -512,13 +509,6 @@ end;
 constructor TIdRepliesIMAP4.Create(AOwner: TPersistent);
 begin
   inherited Create(AOwner, TIdReplyIMAP4);
-end;
-
-{ EIdReplyIMAP4Error }
-
-constructor EIdReplyIMAP4Error.CreateError(const AReplyMessage: string);
-begin
-  inherited Create(AReplyMessage);
 end;
 
 end.

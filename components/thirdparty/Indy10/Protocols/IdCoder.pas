@@ -101,17 +101,17 @@ uses
 type
   TIdEncoder = class(TIdBaseComponent)
   public
-    function Encode(const AIn: string): string; overload;
-    procedure Encode(const AIn: string; ADestStrings: TStrings); overload;
-    procedure Encode(const AIn: string; ADestStream: TStream); overload;
+    function Encode(const AIn: string; AEncoding: TIdTextEncoding = nil): string; overload;
+    procedure Encode(const AIn: string; ADestStrings: TStrings; AEncoding: TIdTextEncoding = nil); overload;
+    procedure Encode(const AIn: string; ADestStream: TStream; AEncoding: TIdTextEncoding = nil); overload;
 
     function Encode(ASrcStream: TStream; const ABytes: Integer = -1): string; overload;
     procedure Encode(ASrcStream: TStream; ADestStrings: TStrings; const ABytes: Integer = -1); overload;
     procedure Encode(ASrcStream: TStream; ADestStream: TStream; const ABytes: Integer = -1); overload; virtual; abstract;
 
-    class function EncodeString(const AIn: string): string; overload;
-    class procedure EncodeString(const AIn: string; ADestStrings: TStrings); overload;
-    class procedure EncodeString(const AIn: string; ADestStream: TStream); overload;
+    class function EncodeString(const AIn: string; AEncoding: TIdTextEncoding = nil): string; overload;
+    class procedure EncodeString(const AIn: string; ADestStrings: TStrings; AEncoding: TIdTextEncoding = nil); overload;
+    class procedure EncodeString(const AIn: string; ADestStream: TStream; AEncoding: TIdTextEncoding = nil); overload;
 
     class function EncodeBytes(const ABytes: TIdBytes): string;
   end;
@@ -218,14 +218,17 @@ end;
 
 { TIdEncoder }
 
-function TIdEncoder.Encode(const AIn: string): string;
+function TIdEncoder.Encode(const AIn: string; AEncoding: TIdTextEncoding = nil): string;
 var
   LStream: TMemoryStream;
 begin
   if AIn <> '' then begin
     LStream := TMemoryStream.Create;
     try
-      WriteStringToStream(LStream, AIn, Indy8BitEncoding);
+      if AEncoding = nil then begin
+        AEncoding := Indy8BitEncoding;
+      end;
+      WriteStringToStream(LStream, AIn, AEncoding);
       LStream.Position := 0;
       Result := Encode(LStream);
     finally
@@ -236,13 +239,16 @@ begin
   end;
 end;
 
-procedure TIdEncoder.Encode(const AIn: string; ADestStrings: TStrings);
+procedure TIdEncoder.Encode(const AIn: string; ADestStrings: TStrings; AEncoding: TIdTextEncoding = nil);
 var
   LStream: TMemoryStream;
 begin
   LStream := TMemoryStream.Create;
   try
-    IdGlobal.WriteStringToStream(LStream, AIn, Indy8BitEncoding);
+    if AEncoding = nil then begin
+      AEncoding := Indy8BitEncoding;
+    end;
+    WriteStringToStream(LStream, AIn, AEncoding);
     LStream.Position := 0;
     Encode(LStream, ADestStrings);
   finally
@@ -250,13 +256,16 @@ begin
   end;
 end;
 
-procedure TIdEncoder.Encode(const AIn: string; ADestStream: TStream);
+procedure TIdEncoder.Encode(const AIn: string; ADestStream: TStream; AEncoding: TIdTextEncoding = nil);
 var
   LStream: TMemoryStream;
 begin
   LStream := TMemoryStream.Create;
   try
-    IdGlobal.WriteStringToStream(LStream, AIn, Indy8BitEncoding);
+    if AEncoding = nil then begin
+      AEncoding := Indy8BitEncoding;
+    end;
+    WriteStringToStream(LStream, AIn, AEncoding);
     LStream.Position := 0;
     Encode(LStream, ADestStream);
   finally
@@ -272,7 +281,7 @@ begin
   try
     Encode(ASrcStream, LStream, ABytes);
     LStream.Position := 0;
-    Result := IdGlobal.ReadStringFromStream(LStream, -1, Indy8BitEncoding);
+    Result := ReadStringFromStream(LStream, -1, Indy8BitEncoding);
   finally
     FreeAndNil(LStream);
   end;
@@ -293,31 +302,31 @@ begin
   end;
 end;
 
-class function TIdEncoder.EncodeString(const AIn: string): string;
+class function TIdEncoder.EncodeString(const AIn: string; AEncoding: TIdTextEncoding = nil): string;
 begin
   with Create(nil) do
   try
-    Result := Encode(AIn);
+    Result := Encode(AIn, AEncoding);
   finally
     Free;
   end;
 end;
 
-class procedure TIdEncoder.EncodeString(const AIn: string; ADestStrings: TStrings);
+class procedure TIdEncoder.EncodeString(const AIn: string; ADestStrings: TStrings; AEncoding: TIdTextEncoding = nil);
 begin
   with Create(nil) do
   try
-    Encode(AIn, ADestStrings);
+    Encode(AIn, ADestStrings, AEncoding);
   finally
     Free;
   end;
 end;
 
-class procedure TIdEncoder.EncodeString(const AIn: string; ADestStream: TStream);
+class procedure TIdEncoder.EncodeString(const AIn: string; ADestStream: TStream; AEncoding: TIdTextEncoding = nil);
 begin
   with Create(nil) do
   try
-    Encode(AIn, ADestStream);
+    Encode(AIn, ADestStream, AEncoding);
   finally
     Free;
   end;
@@ -330,7 +339,7 @@ begin
   if ABytes <> nil then begin
     LStream := TMemoryStream.Create;
     try
-      IdGlobal.WriteTIdBytesToStream(LStream, ABytes);
+      WriteTIdBytesToStream(LStream, ABytes);
       LStream.Position := 0;
       with Create(nil) do
       try

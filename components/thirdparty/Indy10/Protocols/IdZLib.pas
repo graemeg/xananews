@@ -200,7 +200,7 @@ const
     (Z_NO_COMPRESSION, Z_BEST_SPEED, Z_DEFAULT_COMPRESSION, Z_BEST_COMPRESSION);
 
 function CCheck(code: Integer): Integer;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := code;
   if code < 0 then begin
@@ -209,7 +209,7 @@ begin
 end;
 
 function DCheck(code: Integer): Integer;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := code;
   if code < 0 then begin
@@ -253,7 +253,7 @@ begin
 end;
 
 function DMAOfStream(AStream: TStream; out Available: TIdC_UINT): Pointer;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   if AStream is TCustomMemoryStream then begin
     Result := TCustomMemoryStream(AStream).Memory;
@@ -266,7 +266,7 @@ begin
   if Result <> nil then
   begin
     //handle integer overflow
-    {$IFDEF SIZE64STREAM}
+    {$IFDEF STREAM_SIZE_64}
     Available := TIdC_UINT(IndyMin(AStream.Size - AStream.Position, High(TIdC_UINT)));
     // TODO: account for a 64-bit position in a 32-bit environment
     Inc(PtrInt(Result), AStream.Position);
@@ -280,7 +280,7 @@ begin
 end;
 
 function CanResizeDMAStream(AStream: TStream): boolean;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := (AStream is TCustomMemoryStream) or
             (AStream is TStringStream);
@@ -439,7 +439,7 @@ begin
     //direct memory access if available!
     buf := Pointer(BackObj.InMem);
     //handle integer overflow
-    {$IFDEF SIZE64STREAM}
+    {$IFDEF STREAM_SIZE_64}
     Result := TIdC_UNSIGNED(IndyMin(S.Size - S.Position, High(TIdC_UNSIGNED)));
     {$ELSE}
     Result := S.Size - S.Position;
@@ -556,7 +556,7 @@ type
   TMemStreamAccess = class(TMemoryStream);
 
 function ExpandStream(AStream: TStream; const ACapacity : TIdStreamSize): Boolean;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := True;
   AStream.Size := ACapacity;

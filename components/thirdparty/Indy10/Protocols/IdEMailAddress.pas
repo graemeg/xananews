@@ -843,13 +843,18 @@ var
 begin
   if Assigned(AStrings) then
   begin
-    AStrings.Clear;
-    for i := 0 to Count-1 do
-    begin
-      LCurDom := LowerCase(Items[i].Domain);
-      if AStrings.IndexOf(LCurDom) = -1 then begin
-        AStrings.Add(LCurDom);
+    AStrings.BeginUpdate;
+    try
+      AStrings.Clear;
+      for i := 0 to Count-1 do
+      begin
+        LCurDom := LowerCase(Items[i].Domain);
+        if AStrings.IndexOf(LCurDom) = -1 then begin
+          AStrings.Add(LCurDom);
+        end;
       end;
+    finally
+      AStrings.EndUpdate;
     end;
   end;
 end;

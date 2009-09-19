@@ -357,16 +357,13 @@ end;
 
 procedure TIdPOP4ServerContext.SetPipeLining(const AValue: Boolean);
 begin
-  if AValue and (PipeLining = False) then
+  if AValue and (not PipeLining) then
   begin
     Connection.IOHandler.WriteBufferOpen;
   end
-  else
+  else if (not AValue) and PipeLining then
   begin
-    if (AValue=False) and PipeLining then
-    begin
-      Connection.IOHandler.WriteBufferClose;
-    end;
+    Connection.IOHandler.WriteBufferClose;
   end;
   FPipeLining := AValue;
 end;

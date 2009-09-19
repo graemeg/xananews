@@ -661,6 +661,7 @@ will chop off a connection instead of closing it causing TIdFTP to wait forever 
   DEF_Id_FTP_UseHOST = True;
   DEF_Id_FTP_PassiveUseControlHost = False;
   DEF_Id_FTP_AutoIssueFEAT = True;
+  DEF_Id_FTP_AutoLogin = True;
 
 type
   //Added by SP
@@ -814,6 +815,7 @@ type
     procedure SendInternalPassive(const ACmd : String; var VIP: string; var VPort: TIdPort);
     procedure SendCPassive(var VIP: string; var VPort: TIdPort);
     function FindAuthCmd : String;
+    //
     function GetReplyClass: TIdReplyClass; override;
     //
     procedure ParseFTPList;
@@ -858,7 +860,7 @@ type
     procedure SetProxySettings(const Value: TIdFtpProxySettings);
     procedure SetClientInfo(const AValue: TIdFTPClientIdentifier);
     procedure SetCompressor(AValue: TIdZLibCompressorBase);
-    procedure SendTransferType;
+    procedure SendTransferType(AValue: TIdFTPTransferType);
     procedure SetTransferType(AValue: TIdFTPTransferType);
     procedure DoBeforeGet; virtual;
     procedure DoBeforePut(AStream: TStream); virtual;
@@ -883,7 +885,7 @@ type
     function CheckAccount: Boolean;
     function IsAccountNeeded : Boolean;
     function GetSupportsVerification : Boolean;
-    {$IFDEF DOTNET1_1}
+    {$IFNDEF DOTNET_2_OR_ABOVE}
     //
     // holger: .NET compatibility change
     //
@@ -892,6 +894,8 @@ type
     //
     {$ENDIF}
   public
+    procedure GetInternalResponse(AEncoding: TIdTextEncoding = nil); override;
+
     function IsExtSupported(const ACmd : String):Boolean;
     procedure ExtractFeatFacts(const ACmd : String; AResults : TStrings);
     //this function transparantly handles OTP based on the Last command response
@@ -936,7 +940,7 @@ type
     procedure SiteToSiteUpload(const AToSite : TIdFTP; const ASourceFile : String; const ADestFile : String = '');
     procedure SiteToSiteDownload(const AFromSite: TIdFTP; const ASourceFile : String; const ADestFile : String = '');
     procedure DisconnectNotifyPeer; override;
-    procedure Quit; //deprecated;
+    procedure Quit; {$IFDEF HAS_DEPRECATED}deprecated{$IFDEF HAS_DEPECATED_MSG} 'Use Disconnect() instead'{$ENDIF};{$ENDIF}
     function  Quote(const ACommand: String): SmallInt;
     procedure RemoveDir(const ADirName: string);
     procedure Rename(const ASourceFile, ADestFile: string);
@@ -966,7 +970,6 @@ type
     //listed in the FEAT reply.
     function IsServerMDTZAndListTForm : Boolean;
     //
-    property AutoIssueFEAT : Boolean read FAutoIssueFEAT write FAutoIssueFEAT default DEF_Id_FTP_AutoIssueFEAT;
     property SupportsVerification : Boolean read GetSupportsVerification;
     property CanResume: Boolean read ResumeSupported;
     property DirectoryListing: TIdFTPListItems read GetDirectoryListing;
@@ -982,10 +985,11 @@ type
     property UsingSFTP : Boolean read FUsingSFTP;
     property CurrentTransferMode : TIdFTPTransferMode read FCurrentTransferMode write TransferMode;
   published
-    {$IFNDEF DOTNET1_1}
+    {$IFDEF DOTNET_2_OR_ABOVE}
     property IPVersion;
     {$ENDIF}
-    property AutoLogin: Boolean read FAutoLogin write FAutoLogin;
+    property AutoIssueFEAT : Boolean read FAutoIssueFEAT write FAutoIssueFEAT default DEF_Id_FTP_AutoIssueFEAT;
+    property AutoLogin: Boolean read FAutoLogin write FAutoLogin default DEF_Id_FTP_AutoLogin;
     // This is an object that can compress and decompress FTP Deflate encoding
     property Compressor : TIdZLibCompressorBase read FCompressor write SetCompressor;
     property Host;
@@ -1069,12 +1073,12 @@ implementation
 uses
   //facilitate inlining only.
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
-     {$IFDEF USEINLINE}
+    {$IFDEF USE_INLINE}
   Windows,
-     {$ENDIF}
+    {$ENDIF}
   {$ENDIF}
   {$IFDEF DOTNET}
-    {$IFDEF USEINLINE}
+    {$IFDEF USE_INLINE}
   System.IO,
   System.Threading,
     {$ENDIF}
@@ -1100,7 +1104,7 @@ procedure TIdFTP.InitComponent;
 begin
   inherited InitComponent;
   //
-  FAutoLogin := True;
+  FAutoLogin := DEF_Id_FTP_AutoLogin;
   FRegularProtPort := IdPORT_FTP;
   FImplicitTLSProtPort := IdPORT_ftps;
   //
@@ -1222,11 +1226,11 @@ begin
     // whatever ftp.microsoft.com is running returns 504.
     if UseHOST then begin
       if FHost = Socket.Binding.PeerIP then begin
-        IOHandler.WriteLn('HOST [' + FHost + ']');
+        LBuf := 'HOST [' + FHost + ']';
       end else begin
-        IOHandler.WriteLn('HOST ' + FHost);
+        LBuf := 'HOST ' + FHost;
       end;
-      if GetResponse = 220 then begin
+      if SendCmd(LBuf) = 220 then begin
         FGreeting.Assign(LastCmdResult);
       end;
     end;
@@ -1275,7 +1279,7 @@ begin
         end;
       end;
 
-      SendTransferType;
+      SendTransferType(FTransferType);
       DoStatus(ftpReady, [RSFTPStatusReady]);
     end
     else
@@ -1305,24 +1309,23 @@ begin
   if AValue <> FTransferType then begin
     if not Assigned(FDataChannel) then begin
       if Connected then begin
-        SendTransferType;
+        SendTransferType(AValue);
       end;
       FTransferType := AValue;
     end;
   end;
 end;
 
-procedure TIdFTP.SendTransferType;
+procedure TIdFTP.SendTransferType(AValue: TIdFTPTransferType);
 var
   s: string;
 begin
   s := '';
-  case TransferType of
+  case AValue of
     ftAscii: s := 'A';      {do not localize}
     ftBinary: s := 'I';     {do not localize}
-  end;
-  if s = '' then begin
-    raise EIdFTPUnsupportedTransferType.Create(RSFTPUnsupportedTransferType);
+    else
+      raise EIdFTPUnsupportedTransferType.Create(RSFTPUnsupportedTransferType);
   end;
   SendCmd('TYPE ' + s, 200); {do not localize}
 end;
@@ -1428,10 +1431,11 @@ begin
     ExtListDir(ADest);
     Exit;
   end;
-  //Note that for LIST, it might be best to put the connection in ASCII
-  //mode because some old servers such as TOPS20 might require this.  We restore it
-  //if the original mode was not ASCII.  It's a good idea to do this anyway
-  //because some clients still do this such as WS_FTP Pro and Microsoft's FTP Client.
+  // Note that for LIST, it might be best to put the connection in ASCII mode
+  // because some old servers such as TOPS20 might require this.  We restore
+  // it if the original mode was not ASCII.  It's a good idea to do this
+  // anyway because some clients still do this such as WS_FTP Pro and
+  // Microsoft's FTP Client.
   LTrans := TransferType;
   if LTrans <> ftASCII then begin
     Self.TransferType := ftASCII;
@@ -1442,7 +1446,7 @@ begin
       InternalGet(Trim(iif(ADetails, 'LIST', 'NLST') + ' ' + ASpecifier), LDest); {do not localize}
       FreeAndNil(FDirectoryListing);
       LDest.Position := 0;
-      {$IFDEF TEncoding}
+      {$IFDEF HAS_TEncoding}
       FListResult.LoadFromStream(LDest, IOHandler.DefStringEncoding);
       {$ELSE}
       FListResult.Text := ReadStringFromStream(LDest, -1, IOHandler.DefStringEncoding);
@@ -1748,12 +1752,11 @@ begin
         if AResume then begin
           Self.SendCmd('REST ' + IntToStr(ADest.Position), [350]);   {do not localize}
         end;
-        Self.IOHandler.WriteLn(ACommand);
         // APR: Ericsson Switch FTP
         //
         // RLebeau: some servers send 450 when no files are
         // present, so do not read the stream in that case
-        if Self.GetResponse([125, 150, 154, 450]) <> 450 then
+        if Self.SendCmd(ACommand, [125, 150, 154, 450]) <> 450 then
         begin
           if (FDataPortProtection = ftpdpsPrivate) then begin
             TIdSSLIOHandlerSocketBase(FDataChannel.IOHandler).Passthrough := False;
@@ -1921,7 +1924,9 @@ end;
 
 procedure TIdFTP.Put(const ASource: TStream; const ADestFile: string; const AAppend: Boolean = False);
 begin
-  EIdFTPUploadFileNameCanNotBeEmpty.IfTrue(ADestFile = '', RSFTPFileNameCanNotBeEmpty);
+  if ADestFile = '' then begin
+    EIdFTPUploadFileNameCanNotBeEmpty.Toss(RSFTPFileNameCanNotBeEmpty);
+  end;
   DoBeforePut(ASource); //APR);
   if AAppend then begin
     InternalPut('APPE ' + ADestFile, ASource, false);  {Do not localize}
@@ -1938,7 +1943,7 @@ var
 begin
   LDestFileName := ADestFile;
   if LDestFileName = '' then begin
-   LDestFileName := ExtractFileName(ASourceFile);
+    LDestFileName := ExtractFileName(ASourceFile);
   end;
   LSourceStream := TIdReadFileNonExclusiveStream.Create(ASourceFile);
   try
@@ -2560,7 +2565,7 @@ Connection: close}
     IssueFEAT;
   end;
 
-  SendTransferType;
+  SendTransferType(FTransferType);
 end;
 
 procedure TIdFTP.DoAfterLogin;
@@ -2650,7 +2655,9 @@ end;
 procedure TIdFTP.SetIOHandler(AValue: TIdIOHandler);
 begin
   inherited SetIOHandler(AValue);
-  EIdFTPWrongIOHandler.IfTrue((AValue <> nil) and (not (AValue is TIdIOHandlerSocket)), RSFTPIOHandlerWrong); // RS + EXCEPTION {do not localize}
+  if (AValue <> nil) and (not (AValue is TIdIOHandlerSocket)) then begin
+    EIdFTPWrongIOHandler.Toss(RSFTPIOHandlerWrong); // RS + EXCEPTION {do not localize}
+  end;
   if AValue <> nil then begin
     // UseExtensionDataPort must be true for IPv6 connections.
     // PORT and PASV can not communicate IPv6 Addresses
@@ -2662,8 +2669,12 @@ end;
 
 procedure TIdFTP.SetUseExtensionDataPort(const AValue: Boolean);
 begin
-  EIdFTPMustUseExtWithIPv6.IfTrue((not AValue) and (IPVersion = Id_IPv6), RSFTPMustUseExtWithIPv6);
-  EIdFTPMustUseExtWithNATFastTrack.IfTrue(TryNATFastTrack, RSFTPMustUseExtWithNATFastTrack);
+  if (not AValue) and (IPVersion = Id_IPv6) then begin
+    EIdFTPMustUseExtWithIPv6.Toss(RSFTPMustUseExtWithIPv6);
+  end;
+  if TryNATFastTrack then begin
+    EIdFTPMustUseExtWithNATFastTrack.Toss(RSFTPMustUseExtWithNATFastTrack);
+  end;
   FUseExtensionDataPort := AValue;
 end;
 
@@ -2739,7 +2750,9 @@ end;
 
 procedure TIdFTP.SetPassive(const AValue: Boolean);
 begin
-  EIdFTPPassiveMustBeTrueWithNATFT.IfTrue((not AValue) and (TryNATFastTrack), RSFTPFTPPassiveMustBeTrueWithNATFT);
+  if (not AValue) and TryNATFastTrack then begin
+    EIdFTPPassiveMustBeTrueWithNATFT.Toss(RSFTPFTPPassiveMustBeTrueWithNATFT);
+  end;
   FPassive := AValue;
 end;
 
@@ -2773,16 +2786,31 @@ procedure TIdFTP.ExtListDir(ADest: TStrings = nil; const ADirectory: string = ''
 var
   LDest: TMemoryStream;
 begin
+  // RLebeau 6/4/2009: According to RFC 3659 Section 7.2:
+  //
+  // The data connection opened for a MLSD response shall be a connection
+  // as if the "TYPE L 8", "MODE S", and "STRU F" commands had been given,
+  // whatever FTP transfer type, mode and structure had actually been set,
+  // and without causing those settings to be altered for future commands.
+  // That is, this transfer type shall be set for the duration of the data
+  // connection established for this command only.  While the content of
+  // the data sent can be viewed as a series of lines, implementations
+  // should note that there is no maximum line length defined.
+  // Implementations should be prepared to deal with arbitrarily long
+  // lines.
+
   LDest := TMemoryStream.Create;
   try
     InternalGet(Trim('MLSD ' + ADirectory), LDest);  {do not localize}
     FreeAndNil(FDirectoryListing);
     DoOnRetrievedDir;
     LDest.Position := 0;
-    {$IFDEF TEncoding}
-    FListResult.LoadFromStream(LDest, IOHandler.DefStringEncoding);
+    // RLebeau: using Indy8BitEncoding() here.  TIdFTPListParseBase will
+    // decode UTF-8 sequences later on...
+    {$IFDEF HAS_TEncoding}
+    FListResult.LoadFromStream(LDest, Indy8BitEncoding);
     {$ELSE}
-    FListResult.Text := ReadStringFromStream(LDest, -1, IOHandler.DefStringEncoding);
+    FListResult.Text := ReadStringFromStream(LDest, -1, Indy8BitEncoding);
     {$ENDIF}
     with TIdFTPListResult(FListResult) do begin
       FDetails := True;
@@ -3083,6 +3111,46 @@ begin
   end;
 end;
 
+procedure TIdFTP.GetInternalResponse(AEncoding: TIdTextEncoding = nil);
+var
+  LLine: string;
+  LResponse: TStringList;
+  LReplyCode: string;
+begin
+  CheckConnected;
+  LResponse := TStringList.Create;
+  try
+    // Some servers with bugs send blank lines before reply. Dont remember
+    // which ones, but I do remember we changed this for a reason
+    //
+    // RLebeau 9/14/06: this can happen in between lines of the reply as well
+
+    // RLebeau 3/9/09: according to RFC 959, when reading a multi-line reply,
+    // we are supposed to look at the first line's reply code and then keep
+    // reading until that specific reply code is encountered again, and
+    // everything in between is the text.  So, do not just look for arbitrary
+    // 3-digit values on each line, but instead look for the specific reply
+    // code...
+
+    LLine := IOHandler.ReadLnWait(MaxInt, AEncoding);
+    LResponse.Add(LLine);
+
+    if CharEquals(LLine, 4, '-') then
+    begin
+      LReplyCode := Copy(LLine, 1, 3);
+      repeat
+        LLine := IOHandler.ReadLnWait(MaxInt, AEncoding);
+        LResponse.Add(LLine);
+      until TIdReplyFTP(FLastCmdResult).IsEndReply(LReplyCode, LLine);
+    end;
+
+    //Note that FormattedReply uses an assign in it's property set method.
+    FLastCmdResult.FormattedReply := LResponse;
+  finally
+    FreeAndNil(LResponse);
+  end;
+end;
+
 function TIdFTP.GetReplyClass: TIdReplyClass;
 begin
   Result := TIdReplyFTP;
@@ -3194,14 +3262,24 @@ The following is required:
 }
 begin
   if ATargetUsesPasv then begin
-    EIdFTPSToSNATFastTrack.IfTrue(AToSite.UsingNATFastTrack, RSFTPNoSToSWithNATFastTrack);
+    if AToSite.UsingNATFastTrack then begin
+      EIdFTPSToSNATFastTrack.Toss(RSFTPNoSToSWithNATFastTrack);
+    end;
   end else begin
-    EIdFTPSToSNATFastTrack.IfTrue(AFromSite.UsingNATFastTrack, RSFTPNoSToSWithNATFastTrack);
+    if AFromSite.UsingNATFastTrack then begin
+      EIdFTPSToSNATFastTrack.Toss(RSFTPNoSToSWithNATFastTrack);
+    end;
   end;
 
-  EIdFTPStoSIPProtoMustBeSame.IfTrue(AFromSite.IPVersion <> AToSite.IPVersion, RSFTPSToSProtosMustBeSame);
-  EIdFTPSToSTransModesMustBeSame.IfTrue(AFromSite.CurrentTransferMode <> AToSite.CurrentTransferMode, RSFTPSToSTransferModesMusbtSame);
-  EIdFTPSToSNoDataProtection.IfTrue(AFromSite.FUsingSFTP <> AToSite.FUsingSFTP, RSFTPSToSNoDataProtection);
+  if AFromSite.IPVersion <> AToSite.IPVersion then begin
+    EIdFTPStoSIPProtoMustBeSame.Toss(RSFTPSToSProtosMustBeSame);
+  end;
+  if AFromSite.CurrentTransferMode <> AToSite.CurrentTransferMode then begin
+    EIdFTPSToSTransModesMustBeSame.Toss(RSFTPSToSTransferModesMusbtSame);
+  end;
+  if AFromSite.FUsingSFTP <> AToSite.FUsingSFTP then begin
+    EIdFTPSToSNoDataProtection.Toss(RSFTPSToSNoDataProtection);
+  end;
 
   Result := AFromSite.FUsingSFTP and AToSite.FUsingSFTP;
   if Result then begin
@@ -3210,9 +3288,13 @@ begin
       // be sent
       if AToSite.IPVersion = Id_IPv4 then begin
         if ATargetUsesPasv then begin
-          EIdFTPSToSNATFastTrack.IfFalse(AToSite.IsExtSupported('CPSV'), RSFTPSToSSSCNNotSupported); {do not localize}
+          if not AToSite.IsExtSupported('CPSV') then begin {do not localize}
+            EIdFTPSToSNATFastTrack.Toss(RSFTPSToSSSCNNotSupported);
+          end;
         end else begin
-          EIdFTPSToSNATFastTrack.IfFalse(AFromSite.IsExtSupported('CPSV'), RSFTPSToSSSCNNotSupported); {do not localize}
+          if not AFromSite.IsExtSupported('CPSV') then begin {do not localize}
+            EIdFTPSToSNATFastTrack.Toss(RSFTPSToSSSCNNotSupported);
+          end;
         end;
       end;
     end;
@@ -3589,8 +3671,12 @@ begin
     Exit;
   end;
   if FDataPortProtection <> AValue then begin
-    EIdFTPNoDataPortProtectionWOEncryption.IfTrue(FUseTLS=utNoTLSSupport, RSFTPNoDataPortProtectionWOEncryption);
-    EIdFTPNoDataPortProtectionAfterCCC.IfTrue(FUsingCCC, RSFTPNoDataPortProtectionAfterCCC);
+    if FUseTLS = utNoTLSSupport then begin
+      EIdFTPNoDataPortProtectionWOEncryption.Toss(RSFTPNoDataPortProtectionWOEncryption);
+    end;
+    if FUsingCCC then begin
+      EIdFTPNoDataPortProtectionAfterCCC.Toss(RSFTPNoDataPortProtectionAfterCCC);
+    end;
     FDataPortProtection := AValue;
   end;
 end;
@@ -3602,8 +3688,12 @@ begin
     Exit;
   end;
   if FAUTHCmd <> AValue then begin
-    EIdFTPNoAUTHWOSSL.IfTrue(FUseTLS = utNoTLSSupport, RSFTPNoAUTHWOSSL);
-    EIdFTPCanNotSetAUTHCon.IfTrue(FUsingSFTP, RSFTPNoAUTHCon);
+    if FUseTLS = utNoTLSSupport then begin
+      EIdFTPNoAUTHWOSSL.Toss(RSFTPNoAUTHWOSSL);
+    end;
+    if FUsingSFTP then begin
+      EIdFTPCanNotSetAUTHCon.Toss(RSFTPNoAUTHCon);
+    end;
     FAUTHCmd := AValue;
   end;
 end;
@@ -3623,8 +3713,8 @@ end;
 
 procedure TIdFTP.SetUseCCC(const AValue: Boolean);
 begin
-  if not IsLoading then begin
-    EIdFTPNoCCCWOEncryption.IfTrue(FUseTLS = utNoTLSSupport, RSFTPNoCCCWOEncryption);
+  if (not IsLoading) and (FUseTLS = utNoTLSSupport) then begin
+    EIdFTPNoCCCWOEncryption.Toss(RSFTPNoCCCWOEncryption);
   end;
   FUseCCC := AValue;
 end;

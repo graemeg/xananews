@@ -261,11 +261,90 @@ type
     property Cookie[const AName: string]: TIdCookieRFC2109 read GetCookie;
   end;
 
+function EffectiveHostName(const AHost: String): String;
+function IsDomainMatch(const AHost, ADomain: String): Boolean;
+
 implementation
 
 uses
   IdAssignedNumbers;
   
+function EffectiveHostName(const AHost: String): String;
+begin
+  if Pos('.', AHost) = 0 then begin {Do not Localize}
+    Result := AHost + '.local'; {Do not Localize}
+  end else begin
+    Result := AHost;
+  end;
+end;
+
+function IsDomainMatch(const AHost, ADomain: String): Boolean;
+var
+  S: String;
+begin
+  {
+  Per RFC 2109:
+
+  Hosts names can be specified either as an IP address or a FQHN
+  string.  Sometimes we compare one host name with another.  Host A's
+  name domain-matches host B's if
+
+  * both host names are IP addresses and their host name strings match
+    exactly; or
+
+  * both host names are FQDN strings and their host name strings match
+    exactly; or
+
+  * A is a FQDN string and has the form NB, where N is a non-empty name
+    string, B has the form .B', and B' is a FQDN string.  (So, x.y.com
+    domain-matches .y.com but not y.com.)
+
+  Note that domain-match is not a commutative operation: a.b.c.com
+  domain-matches .c.com, but not the reverse.
+  }  
+
+  {
+  Per RFC 2965:
+  
+  Host names can be specified either as an IP address or a HDN string.
+  Sometimes we compare one host name with another.  (Such comparisons
+  SHALL be case-insensitive.)  Host A's name domain-matches host B's if
+
+    * their host name strings string-compare equal; or
+
+    * A is a HDN string and has the form NB, where N is a non-empty
+      name string, B has the form .B', and B' is a HDN string.  (So,
+      x.y.com domain-matches .Y.com but not Y.com.)
+
+  Note that domain-match is not a commutative operation: a.b.c.com
+  domain-matches .c.com, but not the reverse.
+  }
+  
+  if IsValidIP(AHost) then
+  begin
+    Result := TextIsSame(AHost, ADomain);
+  end
+  else if IsHostName(AHost) then
+  begin
+    if CharEquals(ADomain, 1, '.') then {do not localize}
+    begin
+      S := Copy(ADomain, 2, MaxInt);
+      if TextEndsWith(AHost, ADomain) then
+      begin
+        Result := IsHostName(S) and (Length(AHost) > Length(ADomain));
+        Exit;
+      end;
+    end else
+    begin
+      S := ADomain;
+    end;
+    Result := TextIsSame(AHost, S);
+  end else
+  begin
+    Result := False;
+  end;
+end;
+
 { base functions used for construction of Cookie text }
 
 function AddCookieProperty(const AProperty, AValue, ACookie: String): String;
@@ -472,11 +551,18 @@ begin
   if Length(AValue) > 0 then
   begin
     try
-      // If you see an exception here then that means the HTTP server has returned an invalid expires
-      // date/time value. The correct format is Wdy, DD-Mon-YY HH:MM:SS GMT
+      if IsNumeric(AValue) then
+      begin
+        // This is happening when expires is an integer number in seconds
+        FMax_Age := IndyStrToInt64(AValue);
+      end else
+      begin
+        // If you see an exception here then that means the HTTP server has returned an invalid expires
+        // date/time value. The correct format is Wdy, DD-Mon-YY HH:MM:SS GMT
 
-      // AValue := StringReplace(AValue, '-', ' ', [rfReplaceAll]);    {Do not Localize}
-      FMax_Age := Trunc((GMTToLocalDateTime(AValue) - Now) * MSecsPerDay / 1000);
+        // AValue := StringReplace(AValue, '-', ' ', [rfReplaceAll]);    {Do not Localize}
+        FMax_Age := Trunc((GMTToLocalDateTime(AValue) - Now) * MSecsPerDay / 1000);
+      end;
     except end;
   end;
   inherited SetExpires(AValue);
@@ -711,17 +797,19 @@ end;
 
 procedure TIdCookies.AddCookie(ACookie: TIdCookieRFC2109);
 var
+  LDomain: string;
   LList: TIdCookieList;
   LIndex: Integer;
 begin
+  LDomain := EffectiveHostName(ACookie.Domain);
   with LockCookieListByDomain(caReadWrite) do
   try
-    LIndex := IndexOf(ACookie.Domain);
+    LIndex := IndexOf(LDomain);
     if LIndex = -1 then
     begin
       LList := TIdCookieList.Create;
       try
-        AddObject(ACookie.Domain, LList);
+        AddObject(LDomain, LList);
       except
         FreeAndNil(LList);
         raise;
@@ -848,7 +936,7 @@ begin
   Result := -1;
   for i := FirstIndex to Count - 1 do
   begin
-    if TextIsSame(Items[i].CookieName, AName) and TextIsSame(Items[i].Domain, ADomain) then
+    if IsDomainMatch(EffectiveHostName(ADomain), Items[i].Domain) and TextIsSame(Items[i].CookieName, AName) then
     begin
       Result := i;
       Exit;

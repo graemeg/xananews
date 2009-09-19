@@ -100,10 +100,10 @@ var
   LLen: Integer;
   StartTime: Cardinal;
 begin
-  {$IFDEF DOTNET_OR_UNICODESTRING}
+  {$IFDEF STRING_IS_UNICODE}
   LEncoding := TIdTextEncoding.Unicode;
   {$ELSE}
-  LEncoding := Indy8BitEncoding;
+  LEncoding := TIdTextEncoding.Default;
   {$ENDIF}
   {Send time monitoring}
   LBuffer := ToBytes(AText, LEncoding);

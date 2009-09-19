@@ -20,6 +20,7 @@ interface
 
 {$WRITEABLECONST OFF}
 
+{$UNDEF STATICLOAD_ZLIB}
 {$IFNDEF FPC}
   {$IFDEF WIN32}
 {
@@ -32,7 +33,7 @@ the C++ objects are compiled appropriately.
 
 The only things that still are cdecl are the callback functions.
 }
-    {$DEFINE STATICLOAD}
+    {$DEFINE STATICLOAD_ZLIB}
   {$ELSE}
     {$IFDEF LINUX}
       // ???
@@ -46,9 +47,9 @@ The only things that still are cdecl are the callback functions.
 
 uses
   IdCTypes
-{$IFNDEF STATICLOAD}
+  {$IFNDEF STATICLOAD_ZLIB}
   , IdException
-{$ENDIF};
+  {$ENDIF};
 
 const
   ZLIB_VERSION = '1.2.3';
@@ -159,21 +160,21 @@ const
   DEF_MEM_LEVEL = 8; { if MAX_MEM_LEVEL > 8 }
   
 function inflateInit(var strm: z_stream): TIdC_INT;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 function inflateBackInit(var strm: z_stream;
                          windowBits: TIdC_INT; window: PAnsiChar): TIdC_INT;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 function inflateInit2(var strm: z_stream; windowBits: TIdC_INT): TIdC_INT;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 function deflateInit(var strm: z_stream; level: TIdC_INT): TIdC_INT;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 function deflateInit2(var strm: z_stream; level, method, windowBits,
                       memLevel, strategy: TIdC_INT): TIdC_INT;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 function deflateInitEx(var strm: z_stream; level: TIdC_INT; streamtype: TZStreamType = zsZLib): TIdC_INT;
 function inflateInitEx(var strm: z_stream; streamtype: TZStreamType = zsZLib): TIdC_INT;
 
-{$IFNDEF STATICLOAD}
+{$IFNDEF STATICLOAD_ZLIB}
 type
   EIdZLibStubError = class(EIdException)
   protected
@@ -383,7 +384,7 @@ implementation
 
 uses
   SysUtils
-  {$IFNDEF STATICLOAD}
+  {$IFNDEF STATICLOAD_ZLIB}
   , IdZLibConst
   {$ENDIF}
   {$IFDEF KYLIX}
@@ -401,7 +402,7 @@ uses
   , Windows
   {$ENDIF};
 
-{$IFDEF STATICLOAD}
+{$IFDEF STATICLOAD_ZLIB}
 {$L adler32.obj}
 {$L compress.obj}
 {$L crc32.obj}
@@ -465,7 +466,7 @@ const
   libzlib = 'libz';
   libvers : array [0..3] of string = ('.1','','.3','.2');
   {$ENDIF}
-  {$ifdef netware}  {zlib.nlm comes with netware6}
+  {$IFDEF NETWARE}  {zlib.nlm comes with netware6}
   libzlib = 'zlib';
   {$ENDIF}
   {$IFDEF WIN32}
@@ -872,7 +873,7 @@ begin
   FreeMem(Block);
 end;
 
-{$IFDEF STATICLOAD}
+{$IFDEF STATICLOAD_ZLIB}
 function Load : Boolean;
 begin
   Result := True;
@@ -923,7 +924,7 @@ begin
 end;
 {$ENDIF}
 
-{$IFNDEF STATICLOAD}
+{$IFNDEF STATICLOAD_ZLIB}
 initialization
   InitializeStubs;
   Load;

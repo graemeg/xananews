@@ -62,13 +62,13 @@ interface
 
 uses
   Classes,
-{$IFDEF WIDGETKYLIX}
+{$IFDEF WIDGET_KYLIX}
   QActnList, QStdCtrls, QForms, QExtCtrls, QControls, QComCtrls, QGraphics, Qt,
 {$ENDIF}
-{$IFDEF WIDGETVCLLIKE}
+{$IFDEF WIDGET_VCL_LIKE}
   ActnList, StdCtrls, Buttons, ExtCtrls, Graphics, Controls, ComCtrls, Forms, Dialogs,
 {$ENDIF}
-{$IFDEF VCL6ORABOVE}
+{$IFDEF VCL6_OR_ABOVE}
   Types,
 {$ENDIF}
 {$IFDEF WIN32_OR_WIN64_OR_WINCE}
@@ -101,7 +101,7 @@ uses
 
 type
   TIdDsnPropEdBindingVCL = class(TForm)
-   {$IFDEF USETBITBTN}
+   {$IFDEF USE_TBitBtn}
     btnOk: TBitBtn;
     btnCancel: TBitBtn;
   {$ELSE}
@@ -286,14 +286,14 @@ var
   i : Integer;
 begin
   inherited CreateNew(AOwner, 0);
-  {$IFNDEF WIDGETKYLIX}
+  {$IFNDEF WIDGET_KYLIX}
   Borderstyle := bsDialog;
   {$ENDIF}
   BorderIcons := [biSystemMenu];
  // Width := 480;
  // Height := 252;
   ClientWidth  := 472;
-  {$IFDEF USETBITBTN}
+  {$IFDEF USE_TBitBtn}
   ClientHeight := 230;
   {$ELSE}
   ClientHeight := 225;
@@ -317,7 +317,7 @@ begin
   edtPort := TComboBox.Create(Self);
   rdoBindingType := TRadioGroup.Create(Self);
 
-  {$IFDEF USETBITBTN}
+  {$IFDEF USE_TBitBtn}
   btnOk := TBitBtn.Create(Self);
   btnCancel := TBitBtn.Create(Self);
   {$ELSE}
@@ -474,7 +474,7 @@ begin
     Left := 306;
     Top := 193;
     Width := 75;
-    {$IFDEF USETBITBTN}
+    {$IFDEF USE_TBitBtn}
     Height := 30;
     Kind := bkOk;
     {$ELSE}
@@ -494,7 +494,7 @@ begin
     Left := 386;
     Top := 193;
     Width := 75;
-    {$IFDEF USETBITBTN}
+    {$IFDEF USE_TBitBtn}
     Height := 30;
     Kind := bkCancel;
     {$ELSE}
@@ -532,7 +532,7 @@ begin
 
   AutoScroll := False;
   Caption := RSBindingFormCaption;
-  {$IFDEF WIDGETVCL}
+  {$IFDEF WIDGET_VCL}
   Scaled := False;
   {$ENDIF}
   Font.Color := clBtnText;
@@ -617,7 +617,7 @@ begin
   begin
     edtIPAddress.Text := '';
     //in LCL, the line below caused an index out of range error.
-    {$IFDEF WIDGETVCL}
+    {$IFDEF WIDGET_VCL}
     edtPort.ItemIndex := -1; //-2;
     {$ENDIF}
     edtPort.Text := '';
@@ -628,13 +628,13 @@ begin
   lblPort.Enabled := Assigned(FCurrentHandle);
   edtPort.Enabled := Assigned(FCurrentHandle);
   rdoBindingType.Enabled := Assigned(FCurrentHandle);
-  {$IFDEF WIDGETKYLIX}
+  {$IFDEF WIDGET_KYLIX}
   //WOrkaround for CLX quirk that might be Kylix 1
   for i := 0 to rdoBindingType.ControlCount -1 do begin
     rdoBindingType.Controls[i].Enabled := Assigned(FCurrentHandle);
   end;
   {$ENDIF}
-  {$IFDEF WIDGETVCLLIKE}
+  {$IFDEF WIDGET_VCL_LIKE}
   //The Win32 VCL does not change the control background to a greyed look
   //when controls are disabled.  This quirk is not present in CLX.
   if Assigned(FCurrentHandle) then

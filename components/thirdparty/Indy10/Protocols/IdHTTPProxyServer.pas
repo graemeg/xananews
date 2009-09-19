@@ -180,7 +180,7 @@ type
 implementation
 
 uses
-  IdResourceStrings, IdReplyRFC, IdTCPClient, IdURI, IdGlobalProtocols, IdTCPStream, SysUtils;
+  IdResourceStrings, IdReplyRFC, IdTCPClient, IdURI, IdGlobalProtocols, IdStack, IdTCPStream, SysUtils;
 
 constructor TIdHTTPProxyServerContext.Create(AConnection: TIdTCPConnection;
   AYarn: TIdYarn; AList: TThreadList = nil);
@@ -344,57 +344,99 @@ end;
 
 procedure TIdHTTPProxyServer.CommandCONNECT(ASender: TIdCommand);
 var
-  LRemoteHost, S: string;
+  LRemoteHost: string;
   LContext: TIdHTTPProxyServerContext;
+  LReadList, LDataAvailList: TIdSocketList;
+  LClientToServerStream, LServerToClientStream: TStream;
 begin
+  // RLebeau 7/31/09: we can't make any assumptions about the contents of
+  // the data being exchanged after the connection has been established.
+  // It may not (and likely will not) be HTTP data at all.  We must pass
+  // it along as-is in both directions, in as near-realtime as we can...
+
   ASender.PerformReply := False;
 
   LContext := TIdHTTPProxyServerContext(ASender.Context);
   LContext.FCommand := ASender.CommandHandler.Command;
 
-  LContext.Headers.Clear;
-  LContext.Connection.IOHandler.Capture(LContext.Headers, '');
-
   LContext.FOutboundClient := TIdTCPClient.Create(nil);
   try
-    LRemoteHost := ASender.Params.Strings[0];
-    TIdTCPClient(LContext.FOutboundClient).Host := Fetch(LRemoteHost, ':', True);
-    TIdTCPClient(LContext.FOutboundClient).Port := IndyStrToInt(LRemoteHost, 443);
-
-    LContext.FTransferMode := FDefTransferMode;
-    LContext.FTransferSource := tsClient;
-    DoHTTPBeforeCommand(LContext);
-
-    TIdTCPClient(LContext.FOutboundClient).Connect;
+    LClientToServerStream := nil;
+    LServerToClientStream := nil;
     try
-      LContext.Connection.IOHandler.WriteLn('HTTP/1.0 200 Connection established'); {do not localize}
-      LContext.Connection.IOHandler.WriteLn('Proxy-agent: Indy-Proxy/1.1'); {do not localize}
-      LContext.Connection.IOHandler.WriteLn;
+      LClientToServerStream := TIdTCPStream.Create(LContext.FOutboundClient);
+      LServerToClientStream := TIdTCPStream.Create(LContext.Connection);
 
-      LContext.Connection.IOHandler.ReadTimeout := 100;
-      LContext.FOutboundClient.IOHandler.ReadTimeout := 100;
+      LRemoteHost := ASender.Params.Strings[0];
+      TIdTCPClient(LContext.FOutboundClient).Host := Fetch(LRemoteHost, ':', True);
+      TIdTCPClient(LContext.FOutboundClient).Port := IndyStrToInt(LRemoteHost, 443);
 
-      while LContext.Connection.Connected and LContext.FOutboundClient.Connected do
-      begin
-        S := LContext.Connection.IOHandler.ReadLn;
-        LContext.FCommand := Fetch(S);
+      LContext.Headers.Clear;
+      LContext.Connection.IOHandler.Capture(LContext.Headers, '');
+      LContext.FTransferMode := FDefTransferMode;
+      LContext.FTransferSource := tsClient;
+      DoHTTPBeforeCommand(LContext);
 
-        LContext.Headers.Clear;
-        LContext.Connection.IOHandler.Capture(LContext.Headers, '');
-        LContext.FTransferMode := FDefTransferMode;
-        LContext.FTransferSource := tsClient;
-        DoHTTPBeforeCommand(LContext);
-        TransferData(LContext, LContext.Connection, LContext.FOutboundClient);
+      LReadList := nil;
+      LDataAvailList := nil;
+      try
+        LReadList := TIdSocketList.CreateSocketList;
+        LDataAvailList := TIdSocketList.CreateSocketList;
 
-        LContext.Headers.Clear;
-        LContext.FOutboundClient.IOHandler.Capture(LContext.Headers, '');
-        LContext.FTransferMode := FDefTransferMode;
-        LContext.FTransferSource := tsServer;
-        DoHTTPResponse(LContext);
-        TransferData(LContext, LContext.FOutboundClient, LContext.Connection);
+        TIdTCPClient(LContext.FOutboundClient).Connect;
+        try
+          LReadList.Add(LContext.Connection.Socket.Binding.Handle);
+          LReadList.Add(LContext.FOutboundClient.Socket.Binding.Handle);
+
+          LContext.Connection.IOHandler.WriteLn('HTTP/1.0 200 Connection established'); {do not localize}
+          LContext.Connection.IOHandler.WriteLn('Proxy-agent: Indy-Proxy/1.1'); {do not localize}
+          LContext.Connection.IOHandler.WriteLn;
+
+          LContext.Connection.IOHandler.ReadTimeout := 100;
+          LContext.FOutboundClient.IOHandler.ReadTimeout := 100;
+
+          while LContext.Connection.Connected and LContext.FOutboundClient.Connected do
+          begin
+            if LReadList.SelectReadList(LDataAvailList, IdTimeoutInfinite) then
+            begin
+              if LDataAvailList.ContainsSocket(LContext.Connection.Socket.Binding.Handle) then
+              begin
+                LContext.Connection.IOHandler.CheckForDataOnSource(0);
+              end;
+              if LDataAvailList.ContainsSocket(LContext.FOutboundClient.Socket.Binding.Handle) then
+              begin
+                LContext.FOutboundClient.IOHandler.CheckForDataOnSource(0);
+              end;
+
+              if not LContext.Connection.IOHandler.InputBufferIsEmpty then
+              begin
+                LContext.Connection.IOHandler.ReadStream(LClientToServerStream, -1, True);
+              end;
+              if not LContext.FOutboundClient.IOHandler.InputBufferIsEmpty then
+              begin
+                LContext.FOutboundClient.IOHandler.ReadStream(LServerToClientStream, -1, True);
+              end;
+            end;        
+          end;
+
+          if LContext.FOutboundClient.Connected and (not LContext.Connection.IOHandler.InputBufferIsEmpty) then
+          begin
+            LContext.Connection.IOHandler.ReadStream(LClientToServerStream, -1, True);
+          end;
+          if LContext.Connection.Connected and (not LContext.FOutboundClient.IOHandler.InputBufferIsEmpty) then
+          begin
+            LContext.FOutboundClient.IOHandler.ReadStream(LServerToClientStream, -1, True);
+          end;
+        finally
+          LContext.FOutboundClient.Disconnect;
+        end;
+      finally
+        FreeAndNil(LDataAvailList);
+        FreeAndNil(LReadList);
       end;
     finally
-      LContext.FOutboundClient.Disconnect;
+      FreeAndNil(LClientToServerStream);
+      FreeAndNil(LServerToClientStream);
     end;
   finally
     FreeAndNil(LContext.FOutboundClient);

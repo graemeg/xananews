@@ -365,17 +365,17 @@ var
   LAddrInfo: PAddrInfo;
   {$ENDIF}
   LRetVal: Integer;
-  {$IFDEF UNICODESTRING}
+  {$IFDEF STRING_IS_UNICODE}
   LAStr: AnsiString;
   {$ENDIF}
 begin
   case AIPVersion of
     Id_IPv4: begin
-      {$IFDEF UNICODESTRING}
-      LAStr := AHostName; // convert to Ansi
+      {$IFDEF STRING_IS_UNICODE}
+      LAStr := AnsiString(AHostName); // explicit convert to Ansi
       {$ENDIF}
       LHost := Libc.gethostbyname(
-        PAnsiChar({$IFDEF UNICODESTRING}LAStr{$ELSE}AHostName{$ENDIF}));
+        PAnsiChar({$IFDEF STRING_IS_UNICODE}LAStr{$ELSE}AHostName{$ENDIF}));
       if LHost <> nil then begin
         Lpa := LHost^.h_addr_list^;
         Lsa.S_un_b.s_b1 := Ord(Lpa[0]);
@@ -394,11 +394,11 @@ begin
       LHints.ai_socktype := Integer(SOCK_STREAM);
       LAddrInfo := nil;
 
-      {$IFDEF UNICODESTRING}
-      LAStr := AHostName; // convert to Ansi
+      {$IFDEF STRING_IS_UNICODE}
+      LAStr := AnsiString(AHostName); // explicit convert to Ansi
       {$ENDIF}
       LRetVal := getaddrinfo(
-        PAnsiChar({$IFDEF UNICODESTRING}LAStr{$ELSE}AHostName{$ENDIF}),
+        PAnsiChar({$IFDEF STRING_IS_UNICODE}LAStr{$ELSE}AHostName{$ENDIF}),
         nil, @LHints, {$IFDEF KYLIX}LAddrInfo{$ELSE}@LAddrInfo{$ENDIF});
       if LRetVal <> 0 then begin
         if LRetVal = EAI_SYSTEM then begin
@@ -644,15 +644,15 @@ end;
 function TIdStackLinux.WSGetServByName(const AServiceName: string): TIdPort;
 var
   Lps: PServEnt;
-  {$IFDEF UNICODESTRING}
+  {$IFDEF STRING_IS_UNICODE}
   LAStr: AnsiString;
   {$ENDIF}
 begin
-  {$IFDEF UNICODESTRING}
-  LAStr := AServiceName; // convert to Ansi
+  {$IFDEF STRING_IS_UNICODE}
+  LAStr := AnsiString(AServiceName); // explicit convert to Ansi
   {$ENDIF}
   Lps := Libc.getservbyname(
-    PAnsiChar({$IFDEF UNICODESTRING}LAStr{$ELSE}AServiceName{$ENDIF},
+    PAnsiChar({$IFDEF STRING_IS_UNICODE}LAStr{$ELSE}AServiceName{$ENDIF},
     nil);
   if Lps <> nil then begin
     Result := ntohs(Lps^.s_port);
@@ -781,15 +781,15 @@ end;
 function TIdStackLinux.HostByAddress(const AAddress: string;
   const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION): string;
 var
-{$IFDEF KYLIX}
+  {$IFDEF KYLIX}
   LHints: TAddressInfo;
   LAddrInfo: PAddressInfo;
-{$ELSE}
+  {$ELSE}
   LHints: AddrInfo; //The T is no omission - that's what I found in the header
   LAddrInfo: PAddrInfo;
-{$ENDIF}
+  {$ENDIF}
   LRetVal: integer;
-  {$IFDEF UNICODESTRING}
+  {$IFDEF STRING_IS_UNICODE}
   LAStr: AniString;
   {$ENDIF}
 begin
@@ -801,11 +801,11 @@ begin
       LHints.ai_flags := AI_CANONNAME or AI_NUMERICHOST;
       LAddrInfo := nil;
 
-      {$IFDEF UNICODESTRING}
-      LAStr := AAddress; // Convert to Ansi
+      {$IFDEF STRING_IS_UNICODE}
+      LAStr := AnsiString(AAddress); // explicit convert to Ansi
       {$ENDIF}
       LRetVal := getaddrinfo(
-        PAnsiChar({$IFDEF UNICODESTRING}LAStr{$ELSE}AAddress{$ENDIF}),
+        PAnsiChar({$IFDEF STRING_IS_UNICODE}LAStr{$ELSE}AAddress{$ENDIF}),
         nil, @LHints, {$IFDEF KYLIX}LAddrInfo{$ELSE}@LAddrInfo{$ENDIF});
       if LRetVal <> 0 then begin
         if LRetVal = EAI_SYSTEM then begin

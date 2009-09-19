@@ -266,7 +266,7 @@ implementation
 uses
   //facilitate inlining only.
   {$IFDEF DOTNET}
-    {$IFDEF USEINLINE}
+    {$IFDEF USE_INLINE}
   System.Threading,
     {$ENDIF}
   {$ENDIF}
@@ -416,7 +416,7 @@ begin
   // Most things BEFORE inherited - inherited creates the actual thread and if
   // not suspended will start before we initialize
   inherited Create(ACreateSuspended);
-    {$IFNDEF VCL6ORABOVE}
+    {$IFNDEF VCL_6_OR_ABOVE}
     // Delphi 6 and above raise an exception when an error occures while
     // creating a thread (eg. not enough address space to allocate a stack)
     // Delphi 5 and below don't do that, which results in a TIdThread
@@ -604,18 +604,33 @@ type
 {$ENDIF}
   
 initialization
-  SetThreadName('Main');  {do not localize}
+  // RLebeau 7/19/09: According to RAID #271221:
+  //
+  // "Indy always names the main thread. It should not name the main thread,
+  // it should only name threads that it creates. This basically means that
+  // any app that uses Indy will end up with the main thread named "Main".
+  //
+  // The IDE currently names it's main thread, but because Indy is used by
+  // the dcldbx140.bpl package which gets loaded by the IDE, the name used
+  // for the main thread always ends up being overwritten with the name
+  // Indy gives it."
+  //
+  // So, DO NOT uncomment the following line...
+  // SetThreadName('Main');  {do not localize}
+
   GThreadCount := TIdThreadSafeInteger.Create;
-  {$IFDEF REGISTER_EXPECTED_MEMORY_LEAK}
+  {$IFNDEF FREE_ON_FINAL}
+    {$IFDEF REGISTER_EXPECTED_MEMORY_LEAK}
   IndyRegisterExpectedMemoryLeak(GThreadCount);
   IndyRegisterExpectedMemoryLeak(TIdThreadSafeIntegerAccess(GThreadCount).FCriticalSection);
+    {$ENDIF}
   {$ENDIF}
 finalization
   // This call hangs if not all threads have been properly destroyed.
   // But without this, bad threads can often have worse results. Catch 22.
 //  TIdThread.WaitAllThreadsTerminated;
 
-  {$IFDEF IDFREEONFINAL}
+  {$IFDEF FREE_ON_FINAL}
   //only enable this if you know your code exits thread-clean
   FreeAndNil(GThreadCount);
   {$ENDIF}

@@ -88,7 +88,7 @@ uses
 {$ENDIF}
 
 type
-  {$IFNDEF NOREDECLARE}
+  {$IFNDEF NO_REDECLARE}
   Psockaddr = ^sockaddr;
   {$ENDIF}
 
@@ -202,7 +202,7 @@ type
     procedure AddLocalAddressesToList(AAddresses: TStrings); override;
   end;
 
-  {$IFNDEF NOREDECLARE}
+  {$IFNDEF NO_REDECLARE}
   TLinger = record
     l_onoff: Word;
     l_linger: Word;
@@ -244,7 +244,7 @@ word to an 8 bit byteee and an 8 bit byte feild named sa_len was added.
 
 }
 procedure InitSockaddr(var VSock : Sockaddr);
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   FillChar(VSock, SizeOf(Sockaddr), 0);
   VSock.sin_family := PF_INET;
@@ -254,7 +254,7 @@ begin
 end;
 
 procedure InitSockAddr_in6(var VSock : SockAddr_in6);
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   FillChar(VSock, SizeOf(SockAddr_in6), 0);
   {$IFDEF SOCK_HAS_SINLEN}

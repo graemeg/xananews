@@ -450,7 +450,6 @@ function IsSubDirContentsBanner(const AData: String): Boolean;
 {***
 Quoted strings
 ***}
-function UnquotedStr(const AStr : String): String;
 procedure ParseQuotedArgs(const AParams : String; AStrings : TStrings);
 
 {**
@@ -581,51 +580,51 @@ const
 
 {Some stuff for internationalization provided by Craig Peterson}
 const
-{$IFNDEF UNICODESTRING}
+{$IFDEF STRING_IS_ANSI}
   // These are the CJK "month", "day", and "year" characters, which appear after
   // a number in the listings.  Constants are UTF-8.  According to
   // www.FileFormat.info the characters for KoreanTotal, KoreanMonth, and
   // KoreanDay aren't valid Unicode, but that's what appears in the listing.
-  KoreanTotal = #$EC#$B4#$9D;   // #$CD1D
-  KoreanMonth = #$EC#$9B#$94;   // #$C6D4 Hangul Syllable Ieung Weo Rieul
-  KoreanDay = #$EC#$9D#$BC;     // #$C77C Hangul Syllable Ieung I Rieul
+  KoreanTotal = #$EC#$B4#$9D;    // #$CD1D
+  KoreanMonth = #$EC#$9B#$94;    // #$C6D4 Hangul Syllable Ieung Weo Rieul
+  KoreanDay = #$EC#$9D#$BC;      // #$C77C Hangul Syllable Ieung I Rieul
   KoreanEUCMonth = #$EB#$BF#$B9; //#$BFF9
   ChineseTotal = #$E6#$80#$BB + #$E6#$95#$B0;
-                                // #$603B CJK Unified Ideograph Collect/Overall +
-                                // #$6570 CJK Unified Ideograph Number/Several/Count
-  ChineseMonth = #$E6#$9C#$88;  // #$6708 CJK Unified Ideograph Month
-  ChineseDay = #$E6#$97#$A5;    // #$65E5 CJK Unified Ideograph Day
-  ChineseYear = #$E5#$B9#$B4;   // #$5E74 CJK Unified Ideograph Year
+                                 // #$603B CJK Unified Ideograph Collect/Overall +
+                                 // #$6570 CJK Unified Ideograph Number/Several/Count
+  ChineseMonth = #$E6#$9C#$88;   // #$6708 CJK Unified Ideograph Month
+  ChineseDay = #$E6#$97#$A5;     // #$65E5 CJK Unified Ideograph Day
+  ChineseYear = #$E5#$B9#$B4;    // #$5E74 CJK Unified Ideograph Year
 
   JapaneseTotal = #$E5#$90#$88 + #$E8#$A8#$88;
-                                  //@$5408
-                                  //
-  JapaneseMonth = #$E8#$B2#$8E;   // #$8c8e Japanse Month symbol
-  JapaneseDay = #$E9#$8F#$BA;   //93fa - Japanese Day Symbol - not valid Unicode
-  JapaneseYear = #$E9#$91#$8E;    //944e - Japanese Year symbol = not valid Unicode
+                                 //@$5408
+                                 //
+  JapaneseMonth = #$E8#$B2#$8E;  // #$8c8e Japanse Month symbol
+  JapaneseDay = #$E9#$8F#$BA;    //93fa - Japanese Day Symbol - not valid Unicode
+  JapaneseYear = #$E9#$91#$8E;   //944e - Japanese Year symbol = not valid Unicode
 
 {$ELSE}
   //These are in Unicode since the parsers receive data in Unicode form
-  KoreanTotal = #$CD1D;   // #$CD1D
-  KoreanMonth = #$C6D4;   // #$C6D4 Hangul Syllable Ieung Weo Rieul
-  KoreanDay = #$C77C;     // #$C77C Hangul Syllable Ieung I Rieul
-  KoreanEUCMonth = #$BFF9;   // #$BFF9  EUC-KR Same as #$C6#$D4
+  KoreanTotal = #$CD1D;    // #$CD1D
+  KoreanMonth = #$C6D4;    // #$C6D4 Hangul Syllable Ieung Weo Rieul
+  KoreanDay = #$C77C;      // #$C77C Hangul Syllable Ieung I Rieul
+  KoreanEUCMonth = #$BFF9; // #$BFF9  EUC-KR Same as #$C6#$D4
   ChineseTotal = #$603B + #$6570;
-                                // #$603B CJK Unified Ideograph Collect/Overall +
-                                // #$6570 CJK Unified Ideograph Number/Several/Count
-  ChineseMonth = #$6708;  // #$6708 CJK Unified Ideograph Month
-  ChineseDay = #$65E5;    // #$65E5 CJK Unified Ideograph Day
-  ChineseYear = #$5E74;   // #$5E74 CJK Unified Ideograph Year
+                           // #$603B CJK Unified Ideograph Collect/Overall +
+                           // #$6570 CJK Unified Ideograph Number/Several/Count
+  ChineseMonth = #$6708;   // #$6708 CJK Unified Ideograph Month
+  ChineseDay = #$65E5;     // #$65E5 CJK Unified Ideograph Day
+  ChineseYear = #$5E74;    // #$5E74 CJK Unified Ideograph Year
 
-  JapaneseTotal = #$5408 + #$8a08;
-                            //#$5408
-                            //#$8a08
-  JapaneseMonth = #$8c8e;   // #$8c8e Japanse Day symbol
-  JapaneseDay = #$93fa;   //93fa - Japanese Day Symbol - not valid Unicode
-  JapaneseYear = #$944e;    //944e - Japanese Year symbol = not valid Unicode
+  JapaneseTotal = #$5408 + #$8A08;
+                           //#$5408
+                           //#$8a08
+  JapaneseMonth = #$8C8E;  // #$8c8e Japanse Day symbol
+  JapaneseDay = #$93FA;    //93fa - Japanese Day Symbol - not valid Unicode
+  JapaneseYear = #$944E;   //944e - Japanese Year symbol = not valid Unicode
 {$ENDIF}
 
-procedure DeleteSuffix(var VStr : String; const ASuffix : String); {$IFDEF USEINLINE}inline; {$ENDIF}
+procedure DeleteSuffix(var VStr : String; const ASuffix : String); {$IFDEF USE_INLINE}inline;{$ENDIF}
 
 implementation
 
@@ -963,25 +962,15 @@ function IsTotalLine(const AData: String): Boolean;
 begin
   //just in case someone is doing a recursive listing and there's a dir with the name total
   Result := (not TextEndsWith(AData, ':')) and
-	(TextStartsWith(AData, 'TOTAL') or
-	 TextStartsWith(AData, 'GESAMT') or // German
-	 TextStartsWith(AData, 'INSGESAMT') or // German HPUX
-	 (IndyPos(KoreanTotal, AData) = 1) or // Korean (Unicode)
-	 (IndyPos(ChineseTotal, AData) = 1) or // Chinese (Unicode)
+   (TextStartsWith(AData, 'TOTAL') or
+   TextStartsWith(AData, 'GESAMT') or // German
+   TextStartsWith(AData, 'INSGESAMT') or // German HPUX
+   (IndyPos(KoreanTotal, AData) = 1) or // Korean (Unicode)
+   (IndyPos(ChineseTotal, AData) = 1) or // Chinese (Unicode)
    TextStartsWith(AData, JapaneseTotal));
 end;
 
 {Quoted strings}
-
-
-function UnquotedStr(const AStr : String): String;
-begin
-  Result := AStr;
-  if TextStartsWith(Result, '"') then begin
-    IdDelete(Result, 1, 1);
-    Result := Fetch(Result, '"');
-  end;
-end;
 
 procedure ParseQuotedArgs(const AParams : String; AStrings : TStrings);
 var

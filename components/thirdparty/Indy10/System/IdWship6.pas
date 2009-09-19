@@ -129,7 +129,7 @@ const
 type
   // RLebeau: find a better place for this
   {$IFNDEF FPC}
-    {$IFNDEF VCL2006ORABOVE}
+    {$IFNDEF VCL_2006_OR_ABOVE}
   {$EXTERNALSYM UINT64}
   UINT64 = Int64;
     {$ENDIF}

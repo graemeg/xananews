@@ -198,6 +198,10 @@ interface
 {$TYPEDADDRESS OFF}
 
 uses
+  //facilitate inlining only.
+  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  Windows,
+  {$ENDIF}
   Classes,
   IdBuffer,
   IdCTypes,
@@ -221,6 +225,7 @@ uses
 
 type
   TIdSSLVersion = (sslvSSLv2, sslvSSLv23, sslvSSLv3, sslvTLSv1);
+  TIdSSLVersions = set of TIdSSLVersion;
   TIdSSLMode = (sslmUnassigned, sslmClient, sslmServer, sslmBoth);
   TIdSSLVerifyMode = (sslvrfPeer, sslvrfFailIfNoPeerCert, sslvrfClientOnce);
   TIdSSLVerifyModeSet = set of TIdSSLVerifyMode;
@@ -229,6 +234,7 @@ type
 
 const
   DEF_SSLVERSION = sslvTLSv1;
+  DEF_SSLVERSIONS = [sslvTLSv1];
   
 type
   TIdX509 = class;
@@ -253,29 +259,37 @@ type
 
   TIdSSLIOHandlerSocketOpenSSL = class;
   TIdSSLCipher = class;
-
   TCallbackEvent  = procedure(const AMsg: String) of object;
+  TCallbackExEvent = procedure(ASender : TObject;
+    const AsslSocket: PSSL;
+    const AWhere, Aret: TIdC_INT; const AType, AMsg : String ) of object;
   TPasswordEvent  = procedure(var Password: AnsiString) of object;
   TVerifyPeerEvent  = function(Certificate: TIdX509; AOk: Boolean; ADepth: Integer): Boolean of object;
   TIOHandlerNotify = procedure(ASender: TIdSSLIOHandlerSocketOpenSSL) of object;
 
   TIdSSLOptions = class(TPersistent)
   protected
-    fsRootCertFile, fsCertFile, fsKeyFile: String;
+    fsRootCertFile,
+    fsCertFile,
+    fsKeyFile: String;
     fMethod: TIdSSLVersion;
+    fSSLVersions : TIdSSLVersions;
     fMode: TIdSSLMode;
     fVerifyDepth: Integer;
     fVerifyMode: TIdSSLVerifyModeSet;
     //fVerifyFile,
     fVerifyDirs, fCipherList: AnsiString;
     procedure AssignTo(ASource: TPersistent); override;
+    procedure SetSSLVersions(const AValue : TIdSSLVersions);
+    procedure SetMethod(const AValue : TIdSSLVersion);
   public
     constructor Create;
   published
     property RootCertFile: String read fsRootCertFile write fsRootCertFile;
     property CertFile: String read fsCertFile write fsCertFile;
     property KeyFile: String read fsKeyFile write fsKeyFile;
-    property Method: TIdSSLVersion read fMethod write fMethod default DEF_SSLVERSION;
+    property Method: TIdSSLVersion read fMethod write SetMethod default DEF_SSLVERSION;
+    property SSLVersions : TIdSSLVersions read fSSLVersions write SetSSLVersions default DEF_SSLVERSIONS;
     property Mode: TIdSSLMode read fMode write fMode;
     property VerifyMode: TIdSSLVerifyModeSet read fVerifyMode write fVerifyMode;
     property VerifyDepth: Integer read fVerifyDepth write fVerifyDepth;
@@ -289,6 +303,7 @@ type
   TIdSSLContext = class(TObject)
   protected
     fMethod: TIdSSLVersion;
+    fSSLVersions : TIdSSLVersions;
     fMode: TIdSSLMode;
     fsRootCertFile, fsCertFile, fsKeyFile: AnsiString;
     fVerifyDepth: Integer;
@@ -320,6 +335,7 @@ type
     property VerifyOn: Boolean read fVerifyOn write fVerifyOn;
 //THese can't be published in a TObject without a compiler warning.
  // published
+    property SSLVersions : TIdSSLVersions read fSSLVersions write fSSLVersions;
     property Method: TIdSSLVersion read fMethod write fMethod;
     property Mode: TIdSSLMode read fMode write fMode;
     property RootCertFile: AnsiString read fsRootCertFile write fsRootCertFile;
@@ -362,6 +378,7 @@ type
     fSSLSocket: TIdSSLSocket;
     //fPeerCert: TIdX509;
     fOnStatusInfo: TCallbackEvent;
+    FOnStatusInfoEx : TCallbackExEvent;
     fOnGetPassword: TPasswordEvent;
     fOnVerifyPeer: TVerifyPeerEvent;
     fSSLLayerClosed: Boolean;
@@ -372,6 +389,8 @@ type
     procedure SetPassThrough(const Value: Boolean); override;
     procedure DoBeforeConnect(ASender: TIdSSLIOHandlerSocketOpenSSL); virtual;
     procedure DoStatusInfo(const AMsg: String); virtual;
+    procedure DoStatusInfoEx(const AsslSocket: PSSL;
+    const AWhere, Aret: TIdC_INT; const AWhereStr, ARetStr : String );
     procedure DoGetPassword(var Password: AnsiString); virtual;
     function DoVerifyPeer(Certificate: TIdX509; AOk: Boolean; ADepth: Integer): Boolean; virtual;
     function RecvEnc(var VBuffer: TIdBytes): Integer; override;
@@ -381,6 +400,8 @@ type
     //some overrides from base classes
     procedure InitComponent; override;
     procedure ConnectClient; override;
+    function CheckForError(ALastResult: Integer): Integer; override;
+    procedure RaiseError(AError: Integer); override;
   public
     destructor Destroy; override;
     function Clone :  TIdSSLIOHandlerSocketBase; override;
@@ -394,6 +415,7 @@ type
   published
     property SSLOptions: TIdSSLOptions read fxSSLOptions write fxSSLOptions;
     property OnStatusInfo: TCallbackEvent read fOnStatusInfo write fOnStatusInfo;
+    property OnStatusInfoEx: TCallbackExEvent read fOnStatusInfoEx write fOnStatusInfoEx;
     property OnGetPassword: TPasswordEvent read fOnGetPassword write fOnGetPassword;
     property OnVerifyPeer: TVerifyPeerEvent read fOnVerifyPeer write fOnVerifyPeer;
   end;
@@ -403,6 +425,7 @@ type
     fxSSLOptions: TIdSSLOptions;
     fSSLContext: TIdSSLContext;
     fOnStatusInfo: TCallbackEvent;
+    FOnStatusInfoEx : TCallbackExEvent;
     fOnGetPassword: TPasswordEvent;
     fOnVerifyPeer: TVerifyPeerEvent;
     //
@@ -410,6 +433,8 @@ type
     //procedure CreateSSLContext;
     //
     procedure DoStatusInfo(const AMsg: String); virtual;
+    procedure DoStatusInfoEx(const AsslSocket: PSSL;
+      const AWhere, Aret: TIdC_INT; const AWhereStr, ARetStr : String );
     procedure DoGetPassword(var Password: AnsiString); virtual;
     function DoVerifyPeer(Certificate: TIdX509; AOk: Boolean; ADepth: Integer): Boolean; virtual;
     procedure InitComponent; override;
@@ -430,6 +455,7 @@ type
   published
     property SSLOptions: TIdSSLOptions read fxSSLOptions write fxSSLOptions;
     property OnStatusInfo: TCallbackEvent read fOnStatusInfo write fOnStatusInfo;
+    property OnStatusInfoEx: TCallbackExEvent read fOnStatusInfoEx write fOnStatusInfoEx;
     property OnGetPassword: TPasswordEvent read fOnGetPassword write fOnGetPassword;
     property OnVerifyPeer: TVerifyPeerEvent read fOnVerifyPeer write fOnVerifyPeer;
   end;
@@ -561,24 +587,19 @@ http://csrc.nist.gov/CryptoToolkit/tkhash.html
     property Bits: Integer read GetBits;
     property Version: String read GetVersion;
   end;
-
-
   EIdOSSLCouldNotLoadSSLLibrary = class(EIdOpenSSLError);
   EIdOSSLModeNotSet             = class(EIdOpenSSLError);
   EIdOSSLGetMethodError         = class(EIdOpenSSLError);
   EIdOSSLCreatingContextError   = class(EIdOpenSSLError);
-  
-
   EIdOSSLLoadingRootCertError = class(EIdOpenSSLAPICryptoError);
   EIdOSSLLoadingCertError = class(EIdOpenSSLAPICryptoError);
   EIdOSSLLoadingKeyError = class(EIdOpenSSLAPICryptoError);
-
   EIdOSSLSettingCipherError = class(EIdOpenSSLError);
   EIdOSSLFDSetError = class(EIdOpenSSLAPISSLError);
   EIdOSSLDataBindingError = class(EIdOpenSSLAPISSLError);
   EIdOSSLAcceptError = class(EIdOpenSSLAPISSLError);
   EIdOSSLConnectError = class(EIdOpenSSLAPISSLError);
-
+  
 function LogicalAnd(A, B: Integer): Boolean;
 
 function LoadOpenSSLLibrary: Boolean;
@@ -604,8 +625,6 @@ var
   LockVerifyCB: TIdCriticalSection = nil;
   CallbackLockList: TThreadList = nil;
 
-
-
 function PasswordCallback(buf: PAnsiChar; size: TIdC_INT; rwflag: TIdC_INT; userdata: Pointer): TIdC_INT; cdecl;
 var
   Password: AnsiString;
@@ -630,11 +649,120 @@ begin
   end;
 end;
 
+procedure GetStateVars(const sslSocket: PSSL; AWhere, Aret: TIdC_INT; var VTypeStr, VMsg : String);
+  {$IFDEF USEINLINE}inline;{$ENDIF}
+begin
+  case AWhere of
+    OPENSSL_SSL_CB_ALERT :
+    begin
+      VTypeStr := IndyFormat( RSOSSLAlert,[IdSslAlertTypeStringLong(Aret)]);
+      VMsg := String(IdSslAlertTypeStringLong(Aret));
+    end;
+    OPENSSL_SSL_CB_READ_ALERT :
+    begin
+      VTypeStr := IndyFormat(RSOSSLReadAlert,[IdSslAlertTypeStringLong(Aret)]);
+      VMsg := String(IdSslAlertDescStringLong(Aret));
+    end;
+    OPENSSL_SSL_CB_WRITE_ALERT :
+    begin
+      VTypeStr := IndyFormat(RSOSSLWriteAlert,[IdSslAlertTypeStringLong(Aret)]);
+      VMsg := String( IdSslAlertDescStringLong(Aret));
+    end;
+    OPENSSL_SSL_CB_ACCEPT_LOOP :
+    begin
+      VTypeStr :=  RSOSSLAcceptLoop;
+      VMsg := String( IdSslStateStringLong(sslSocket));
+    end;
+    OPENSSL_SSL_CB_ACCEPT_EXIT :
+    begin
+      if ARet < 0  then begin
+        VTypeStr := RSOSSLAcceptError;
+      end else begin
+        if ARet = 0 then begin
+          VTypeStr := RSOSSLAcceptFailed;
+        end else begin
+          VTypeStr := RSOSSLAcceptExit;
+        end;
+      end;
+      VMsg := String( IdSslStateStringLong(sslSocket) );
+    end;
+    OPENSSL_SSL_CB_CONNECT_LOOP :
+    begin
+      VTypeStr := RSOSSLConnectLoop;
+      VMsg := String( IdSslStateStringLong(sslSocket) );
+    end;
+  OPENSSL_SSL_CB_CONNECT_EXIT :
+    begin
+      if ARet < 0  then begin
+        VTypeStr := RSOSSLConnectError;
+      end else begin
+        if ARet = 0 then begin
+          VTypeStr := RSOSSLConnectFailed
+        end else begin
+          VTypeStr := RSOSSLConnectExit;
+        end;
+      end;
+      VMsg := String( IdSslStateStringLong(sslSocket) );
+    end;
+  OPENSSL_SSL_CB_HANDSHAKE_START :
+    begin
+      VTypeStr :=  RSOSSLHandshakeStart;
+      VMsg := String( IdSslStateStringLong(sslSocket) );
+    end;
+  OPENSSL_SSL_CB_HANDSHAKE_DONE :
+    begin
+      VTypeStr := RSOSSLHandshakeDone;
+      VMsg := String( IdSslStateStringLong(sslSocket) );
+    end;
+  end;
+{var LW : TIdC_INT;
+begin
+  VMsg := '';
+  LW := Awhere and (not OPENSSL_SSL_ST_MASK);
+  if (LW and OPENSSL_SSL_ST_CONNECT) > 0 then begin
+    VWhereStr :=   'SSL_connect:';
+  end else begin
+    if (LW and OPENSSL_SSL_ST_ACCEPT) > 0 then begin
+      VWhereStr := ' SSL_accept:';
+    end else begin
+      VWhereStr := '  undefined:';
+    end;
+  end;
+//  IdSslStateStringLong
+  if (Awhere and OPENSSL_SSL_CB_LOOP) > 0 then begin
+       VMsg := IdSslStateStringLong(sslSocket);
+  end else begin
+    if (Awhere and OPENSSL_SSL_CB_ALERT) > 0 then begin
+       if (Awhere and OPENSSL_SSL_CB_READ > 0) then begin
+         VWhereStr := VWhereStr + ' read:'+ IdSslAlertTypeStringLong(Aret);
+       end else begin
+         VWhereStr := VWhereStr + 'write:'+ IdSslAlertTypeStringLong(Aret);
+       end;;
+       VMsg := IdSslAlertDescStringLong(Aret);
+    end else begin
+       if (Awhere and OPENSSL_SSL_CB_EXIT) > 0 then begin
+         if ARet = 0 then begin
+
+          VWhereStr := VWhereStr +'failed';
+          VMsg := IdSslStateStringLong(sslSocket);
+         end else begin
+           if ARet < 0  then  begin
+               VWhereStr := VWhereStr +'error';
+               VMsg := IdSslStateStringLong(sslSocket);
+           end;
+         end;
+       end;
+    end;
+  end;          }
+end;
+
 procedure InfoCallback(const sslSocket: PSSL; where, ret: TIdC_INT); cdecl;
 var
   IdSSLSocket: TIdSSLSocket;
   StatusStr : String;
+  LMsg : String;
   LErr : Integer;
+
 begin
 {
 You have to save the value of WSGetLastError as some Operating System API
@@ -652,9 +780,18 @@ JPM.
       StatusStr := IndyFormat(RSOSSLStatusString, [StrPas(IdSslStateStringLong(sslSocket))]);
       if (IdSSLSocket.fParent is TIdSSLIOHandlerSocketOpenSSL) then begin
         TIdSSLIOHandlerSocketOpenSSL(IdSSLSocket.fParent).DoStatusInfo(StatusStr);
+//GetStateVars
+        if Assigned(TIdSSLIOHandlerSocketOpenSSL(IdSSLSocket.fParent).fOnStatusInfoEx) then begin
+          GetStateVars(sslSocket,where,ret,StatusStr,LMsg);
+          TIdSSLIOHandlerSocketOpenSSL(IdSSLSocket.fParent).DoStatusInfoEx(sslSocket,where,ret,StatusStr,LMsg);
+        end;
       end;
       if (IdSSLSocket.fParent is TIdServerIOHandlerSSLOpenSSL) then begin
         TIdServerIOHandlerSSLOpenSSL(IdSSLSocket.fParent).DoStatusInfo(StatusStr);
+        if Assigned(TIdServerIOHandlerSSLOpenSSL(IdSSLSocket.fParent).fOnStatusInfoEx) then begin
+          GetStateVars(sslSocket,where,ret,StatusStr,LMsg);
+          TIdServerIOHandlerSSLOpenSSL(IdSSLSocket.fParent).DoStatusInfoEx(sslSocket,where,ret,StatusStr,LMsg);
+        end;
       end;
     finally
       LockInfoCB.Leave;
@@ -683,17 +820,20 @@ begin
   Result := RSA;
 end;}
 
-function AddMins (const DT: TDateTime; const Mins: Extended): TDateTime;  {$IFDEF USEINLINE} inline; {$ENDIF}
+function AddMins (const DT: TDateTime; const Mins: Extended): TDateTime;
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := DT + Mins / (60 * 24)
 end;
 
-function AddHrs (const DT: TDateTime; const Hrs: Extended): TDateTime;  {$IFDEF USEINLINE} inline; {$ENDIF}
+function AddHrs (const DT: TDateTime; const Hrs: Extended): TDateTime;
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := DT + Hrs / 24.0;
 end;
 
-function GetLocalTime (const DT: TDateTime): TDateTime;   {$IFDEF USEINLINE} inline; {$ENDIF}
+function GetLocalTime (const DT: TDateTime): TDateTime;
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := DT - TimeZoneBias{ / (24 * 60)};
 end;
@@ -753,19 +893,19 @@ begin
 end;
 {$ENDIF}
 
-{$IFDEF IDOPENSSLMEMORY}
-function IdMalloc(num:Cardinal):Pointer cdecl;
+{$IFDEF OPENSSL_SET_MEMORY_FUNCS}
+function IdMalloc(num: Cardinal): Pointer cdecl;
 begin
-  Result:=AllocMem(num);
+  Result := AllocMem(num);
 end;
 
-function IdRealloc(addr:Pointer;num:Cardinal):Pointer cdecl;
+function IdRealloc(addr: Pointer; num: Cardinal): Pointer cdecl;
 begin
-  Result:=addr;
-  ReallocMem(Result,num);
+  Result := addr;
+  ReallocMem(Result, num);
 end;
 
-procedure IdFree(addr:Pointer) cdecl;
+procedure IdFree(addr: Pointer) cdecl;
 begin
   FreeMem(addr);
 end;
@@ -778,7 +918,7 @@ var
  r: Integer;
 begin
  r := IdSslCryptoSetMemFunctions(@IdMalloc, @IdRealloc, @IdFree);
- Assert(r<>0);
+ Assert(r <> 0);
 end;
 {$ENDIF}
 
@@ -797,7 +937,7 @@ begin
     begin
       Exit;
     end;
-    {$IFDEF IDOPENSSLMEMORY}
+    {$IFDEF OPENSSL_SET_MEMORY_FUNCS}
     //has to be done before anything that uses memory
     IdSslCryptoMallocInit;
     {$ENDIF}
@@ -865,7 +1005,8 @@ begin
 end;
 
 //Note that I define UCTTime as  PASN1_STRING
-function UTCTime2DateTime(UCTTime: PASN1_UTCTIME):TDateTime; {$IFDEF USEINLINE} inline; {$ENDIF}
+function UTCTime2DateTime(UCTTime: PASN1_UTCTIME):TDateTime;
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 var
   year  : Word;
   month : Word;
@@ -885,7 +1026,8 @@ begin
   end;
 end;
 
-function TranslateInternalVerifyToSSL(Mode: TIdSSLVerifyModeSet): Integer;  {$IFDEF USEINLINE} inline; {$ENDIF}
+function TranslateInternalVerifyToSSL(Mode: TIdSSLVerifyModeSet): Integer;
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := OPENSSL_SSL_VERIFY_NONE;
   if sslvrfPeer in Mode then 
@@ -903,13 +1045,13 @@ begin
 end;
 
 function LogicalAnd(A, B: Integer): Boolean;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := (A and B) = B;
 end;
 
 function BytesToHexString(APtr : Pointer; ALen : Integer) : String;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 var
   i : PtrInt;
 begin
@@ -925,7 +1067,7 @@ begin
 end;
 
 function MDAsString(const AMD : TEVP_MD) : String;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 var
   I : Integer;
 begin
@@ -1006,7 +1148,42 @@ end;
 constructor TIdSSLOptions.Create;
 begin
   inherited Create;
-  Method := DEF_SSLVERSION;
+  fMethod := DEF_SSLVERSION;
+  fSSLVersions := DEF_SSLVERSIONS;
+end;
+
+procedure TIdSSLOptions.SetMethod(const AValue: TIdSSLVersion);
+begin
+  fMethod := AValue;
+  case AValue of
+    sslvSSLv2 : fSSLVersions := [sslvSSLv2];
+    sslvSSLv23 : fSSLVersions := [sslvSSLv2,sslvSSLv3,sslvTLSv1];
+    sslvSSLv3 : fSSLVersions := [sslvSSLv3];
+    sslvTLSv1 : fSSLVersions := [sslvTLSv1];
+  end;
+end;
+
+procedure TIdSSLOptions.SetSSLVersions(const AValue: TIdSSLVersions);
+begin
+  fSSLVersions := AValue;
+  if fSSLVersions = [sslvSSLv2] then begin
+    fMethod := sslvSSLv2;
+  end
+  else if fSSLVersions = [sslvSSLv3] then begin
+    fMethod := sslvSSLv3;
+  end
+  else if fSSLVersions = [sslvTLSv1] then begin
+    fMethod := sslvTLSv1;
+  end
+  else begin
+    fMethod := sslvSSLv23;
+    if sslvSSLv23 in fSSLVersions then begin
+      Exclude(fSSLVersions, sslvSSLv23);
+      if fSSLVersions = [] then begin
+        fSSLVersions := [sslvSSLv2,sslvSSLv3,sslvTLSv1];
+      end;
+    end;
+  end;
 end;
 
 procedure TIdSSLOptions.AssignTo(ASource: TPersistent);
@@ -1017,6 +1194,7 @@ begin
       CertFile := Self.CertFile;
       KeyFile := Self.KeyFile;
       Method := Self.Method;
+      SSLVersions := Self.SSLVersions;
       Mode := Self.Mode;
       VerifyMode := Self.VerifyMode;
       VerifyDepth := Self.VerifyDepth;
@@ -1053,7 +1231,7 @@ begin
   fSSLContext := TIdSSLContext.Create;
   with fSSLContext do begin
     Parent := Self;
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     // explicit convert to Ansi
     RootCertFile := AnsiString(SSLOptions.RootCertFile);
     CertFile := AnsiString(SSLOptions.CertFile);
@@ -1069,10 +1247,12 @@ begin
     fVerifyDirs := String(SSLOptions.fVerifyDirs);
     fCipherList := AnsiString(SSLOptions.fCipherList);
     VerifyOn := Assigned(fOnVerifyPeer);
-    StatusInfoOn := Assigned(fOnStatusInfo);
+    StatusInfoOn := Assigned(fOnStatusInfo) or Assigned(FOnStatusInfoEx);
     //PasswordRoutineOn := Assigned(fOnGetPassword);
     fMethod :=  SSLOptions.Method;
     fMode := SSLOptions.Mode;
+    fSSLVersions := SSLOptions.SSLVersions;
+
     fSSLContext.InitContext(sslCtxServer);
   end;
 end;
@@ -1105,6 +1285,14 @@ procedure TIdServerIOHandlerSSLOpenSSL.DoStatusInfo(const AMsg: String);
 begin
   if Assigned(fOnStatusInfo) then begin
     fOnStatusInfo(AMsg);
+  end;
+end;
+
+procedure TIdServerIOHandlerSSLOpenSSL.DoStatusInfoEx(const AsslSocket: PSSL;
+  const AWhere, Aret: TIdC_INT; const AWhereStr, ARetStr: String);
+begin
+  if Assigned(FOnStatusInfoEx) then begin
+    FOnStatusInfoEx(Self,AsslSocket,AWhere,Aret,AWHereStr,ARetStr);
   end;
 end;
 
@@ -1184,7 +1372,7 @@ end;
 
 procedure TIdSSLIOHandlerSocketOpenSSL.InitComponent;
 begin
-  inherited;
+  inherited InitComponent;
   IsPeer := False;
   fxSSLOptions := TIdSSLOptions.Create;
   fSSLLayerClosed := True;
@@ -1308,7 +1496,7 @@ begin
     fSSLContext := TIdSSLContext.Create;
     with fSSLContext do begin
       Parent := Self;
-      {$IFDEF UNICODESTRING}
+      {$IFDEF STRING_IS_UNICODE}
       // explicit convert to Ansi
       RootCertFile := AnsiString(SSLOptions.RootCertFile);
       CertFile := AnsiString(SSLOptions.CertFile);
@@ -1324,10 +1512,12 @@ begin
       fVerifyDirs := String(SSLOptions.fVerifyDirs);
       fCipherList := AnsiString(SSLOptions.fCipherList);
       VerifyOn := Assigned(fOnVerifyPeer);
-      StatusInfoOn := Assigned(fOnStatusInfo);
+      StatusInfoOn := Assigned(fOnStatusInfo) or Assigned(fOnStatusInfoEx);
       //PasswordRoutineOn := Assigned(fOnGetPassword);
       fMethod :=  SSLOptions.Method;
+      fSSLVersions := SSLOptions.SSLVersions;
       fMode := SSLOptions.Mode;
+
       fSSLContext.InitContext(sslCtxClient);
     end;
   end;
@@ -1338,6 +1528,15 @@ procedure TIdSSLIOHandlerSocketOpenSSL.DoStatusInfo(const AMsg: String);
 begin
   if Assigned(fOnStatusInfo) then begin
     fOnStatusInfo(AMsg);
+  end;
+end;
+
+procedure TIdSSLIOHandlerSocketOpenSSL.DoStatusInfoEx(
+  const AsslSocket: PSSL; const AWhere, Aret: TIdC_INT; const AWhereStr,
+  ARetStr: String);
+begin
+  if Assigned(FOnStatusInfoEx) then begin
+    FOnStatusInfoEx(Self,AsslSocket,AWhere,Aret,AWHereStr,ARetStr);
   end;
 end;
 
@@ -1403,6 +1602,38 @@ begin
   Result := LIO;
 end;
 
+function TIdSSLIOHandlerSocketOpenSSL.CheckForError(ALastResult: Integer): Integer;
+//var
+//  err: Integer;
+begin
+  if PassThrough then begin
+    Result := inherited CheckForError(ALastResult);
+  end else
+  begin
+    Result := fSSLSocket.GetSSLError(ALastResult);
+    if Result = OPENSSL_SSL_ERROR_NONE then
+    begin
+      Result := 0;
+      Exit;
+    end;
+    if Result = OPENSSL_SSL_ERROR_SYSCALL then
+    begin
+      Result := inherited CheckForError(Id_SOCKET_ERROR);
+      Exit;
+    end;
+    EIdOpenSSLAPISSLError.RaiseException(fSSLSocket.fSSL, Result, '');
+  end;
+end;
+
+procedure TIdSSLIOHandlerSocketOpenSSL.RaiseError(AError: Integer);
+begin
+  if (PassThrough) or (AError = Id_WSAESHUTDOWN) or (AError = Id_WSAECONNABORTED) then begin
+    inherited RaiseError(AError);
+  end else begin
+    EIdOpenSSLAPISSLError.RaiseException(fSSLSocket.fSSL, AError, '');
+  end;
+end;
+
 { TIdSSLContext }
 
 constructor TIdSSLContext.Create;
@@ -1454,6 +1685,16 @@ begin
   fContext := IdSslCtxNew(SSLMethod);
   if fContext = nil then begin
     raise EIdOSSLCreatingContextError.Create(RSSSLCreatingContextError);
+  end;
+  //set SSL Versions we will use
+  if not (sslvSSLv2 in SSLVersions) then begin
+    IdSslCtxSetOptions(fContext, OPENSSL_SSL_OP_NO_SSLv2);
+  end;
+  if not (sslvSSLv3 in SSLVersions) then begin
+    IdSslCtxSetOptions(fContext,OPENSSL_SSL_OP_NO_SSLv3);
+  end;
+  if not (sslvTLSv1 in SSLVersions) then begin
+    IdSslCtxSetOptions(fContext,OPENSSL_SSL_OP_NO_TLSv1);
   end;
   IdSslCtxSetMode(fContext,OPENSSL_SSL_MODE_AUTO_RETRY);
   // assign a password lookup routine
@@ -1547,23 +1788,20 @@ begin
       case fMode of
         sslmServer : Result := IdSslMethodServerV2;
         sslmClient : Result := IdSslMethodClientV2;
-        sslmBoth   : Result := IdSslMethodV2;
       else
         Result := IdSslMethodV2;
       end;
     sslvSSLv23:
-      case fMode of
-        sslmServer : Result := IdSslMethodServerV23;
-        sslmClient : Result := IdSslMethodClientV23;
-        sslmBoth   : Result := IdSslMethodV23;
-      else
-        Result := IdSslMethodV23;
-      end;
+        case fMode of
+          sslmServer : Result := IdSslMethodServerV23;
+          sslmClient : Result := IdSslMethodClientV23;
+        else
+          Result := IdSslMethodV23;
+        end;
     sslvSSLv3:
       case fMode of
         sslmServer : Result := IdSslMethodServerV3;
         sslmClient : Result := IdSslMethodClientV3;
-        sslmBoth   : Result := IdSslMethodV3;
       else
         Result := IdSslMethodV3;
       end;
@@ -1571,7 +1809,6 @@ begin
       case fMode of
         sslmServer : Result := IdSslMethodServerTLSV1;
         sslmClient : Result := IdSslMethodClientTLSV1;
-        sslmBoth   : Result := IdSslMethodTLSV1;
       else
         Result := IdSslMethodTLSV1;
       end;
@@ -1625,6 +1862,7 @@ begin
 //    property PasswordRoutineOn: Boolean read fPasswordRoutineOn write fPasswordRoutineOn;
   Result.VerifyOn := VerifyOn;
   Result.Method := Method;
+  Result.SSLVersions := SSLVersions;
   Result.Mode := Mode;
   Result.RootCertFile := RootCertFile;
   Result.CertFile := CertFile;
@@ -1774,22 +2012,22 @@ end;
 
 function TIdSSLSocket.Recv(var ABuffer: TIdBytes): Integer;
 var
-  err: Integer;
+  ret, err: Integer;
 begin
   repeat
-    err := IdSslRead(fSSL, @ABuffer[0], Length(ABuffer));
-    if err > 0 then begin
-      Result := err;
+    ret := IdSslRead(fSSL, @ABuffer[0], Length(ABuffer));
+    if ret > 0 then begin
+      Result := ret;
       Exit;
     end;
-    err := GetSSLError(err);
+    err := GetSSLError(ret);
     if (err = OPENSSL_SSL_ERROR_WANT_READ) or (err = OPENSSL_SSL_ERROR_WANT_WRITE) then begin
       Continue;
     end;
     if err = OPENSSL_SSL_ERROR_ZERO_RETURN then begin
       Result := 0;
     end else begin
-      Result := -1;
+      Result := ret;
     end;
     Exit;
   until False;
@@ -1797,27 +2035,31 @@ end;
 
 function TIdSSLSocket.Send(const ABuffer: TIdBytes; AOffset, ALength: Integer): Integer;
 var
-  err: Integer;
+  ret, err: Integer;
 begin
   Result := 0;
   repeat
-    err := IdSslWrite(fSSL, @ABuffer[AOffset], ALength);
-    if err < 1 then begin
-      err := GetSSLError(err);
-      if (err = OPENSSL_SSL_ERROR_WANT_READ) or (err = OPENSSL_SSL_ERROR_WANT_WRITE) then begin
-        Continue;
+    ret := IdSslWrite(fSSL, @ABuffer[AOffset], ALength);
+    if ret > 0 then begin
+      Inc(Result, ret);
+      Inc(AOffset, ret);
+      Dec(ALength, ret);
+      if ALength < 1 then begin
+        Exit;
       end;
-      if err = OPENSSL_SSL_ERROR_ZERO_RETURN then begin
-        Result := 0;
-      end else begin
-        Result := -1;
-      end;
-      Exit;
+      Continue;
     end;
-    Inc(Result, err);
-    Inc(AOffset, err);
-    Dec(ALength, err);
-  until ALength < 1;
+    err := GetSSLError(ret);
+    if (err = OPENSSL_SSL_ERROR_WANT_READ) or (err = OPENSSL_SSL_ERROR_WANT_WRITE) then begin
+      Continue;
+    end;
+    if err = OPENSSL_SSL_ERROR_ZERO_RETURN then begin
+      Result := 0;
+    end else begin
+      Result := ret;
+    end;
+    Exit;
+  until False;
 end;
 
 function TIdSSLSocket.GetPeerCert: TIdX509;
@@ -2080,9 +2322,10 @@ begin
 end;
 
 procedure DumpCert(AOut : TStrings; AX509 : PX509);
-  {$IFDEF USEINLINE} inline; {$ENDIF}
-  {$IFNDEF OPENSSL_NO_BIO}
-var LMem : pBIO;
+{$IFDEF USE_INLINE} inline; {$ENDIF}
+{$IFNDEF OPENSSL_NO_BIO}
+var
+  LMem : pBIO;
   LBuf,s : AnsiString;
   LRes : TIdC_INT;
 const

@@ -100,9 +100,15 @@ type
     function GetPathAndParams: String;
     class procedure NormalizePath(var APath: string);
     class function URLDecode(ASrc: string): string;
-    class function URLEncode(const ASrc: string): string;
-    class function ParamsEncode(const ASrc: string): string;
-    class function PathEncode(const ASrc: string): string;
+    class function URLEncode(const ASrc: string; ATextEncoding: TIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+      ): string;
+    class function ParamsEncode(const ASrc: string; ATextEncoding: TIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+      ): string;
+    class function PathEncode(const ASrc: string; ATextEncoding: TIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+      ): string;
     //
     property Bookmark : string read FBookmark write FBookMark;
     property Document: string read FDocument write FDocument;
@@ -118,8 +124,8 @@ type
   end;
 
   EIdURIException = class(EIdException);
-  {$IFNDEF TCharacter}
-  //for Tiburon, we simply use TCharacter.ConvertToUtf32
+  {$IFNDEF HAS_TCharacter}
+  //for D2009+, we simply use TCharacter.ConvertToUtf32
   EIdUTF16Exception = class(EIdException);
   EIdUTF16IndexOutOfRange = class(EIdUTF16Exception);
   EIdUTF16InvalidHighSurrogate = class(EIdUTF16Exception);
@@ -130,44 +136,69 @@ type
 implementation
 
 uses
-  IdResourceStringsProtocols, IdGlobalProtocols
-  {$IFDEF TCharacter},Character{$ENDIF}, SysUtils;
+  IdGlobalProtocols, IdResourceStringsProtocols,
+  {$IFDEF HAS_TCharacter}Character,{$ENDIF}
+  SysUtils;
 
-{$IFDEF UNICODESTRING}
 // calculates character length, including surrogates
-function CalcUTF16CharLength(const AStr: string; const AIndex: Integer): Integer;
-{$IFDEF TCharacter}
-  {$IFDEF USEINLINE}inline;{$ENDIF}
+function CalcUTF16CharLength(const AStr: {$IFDEF STRING_IS_UNICODE}string{$ELSE}TIdWideChars{$ENDIF}; const AIndex: Integer): Integer;
+{$IFDEF HAS_TCharacter}
+  {$IFDEF USE_INLINE}inline;{$ENDIF}
 {$ELSE}
 var
-  W1, W2: WideChar;
+  W: WideChar;
 {$ENDIF}
 begin
-  {$IFDEF TCharacter}
+  {$IFDEF HAS_TCharacter}
   TCharacter.ConvertToUtf32(AStr, AIndex, Result);
   {$ELSE}
-  if (AIndex > Length(AStr)) or (AIndex < 1) then begin
+    {$IFDEF STRING_IS_UNICODE}
+  if (AIndex > Length(AStr)) or (AIndex < 1) then
+    {$ELSE}
+  if (AIndex >= Length(AStr)) or (AIndex < 0) then
+    {$ENDIF}
+  begin
+    {$IFDEF DOTNET}
+    raise EIdUTF16IndexOutOfRange.Create(IndyFormat(RSUTF16IndexOutOfRange, [AIndex, Length(AStr)]));
+    {$ELSE}
     raise EIdUTF16IndexOutOfRange.CreateResFmt(@RSUTF16IndexOutOfRange, [AIndex, Length(AStr)]);
+    {$ENDIF}
   end;
   Result := 1;
-  W1 := AStr[AIndex];
-  if (W1 >= $D800) and (W1 <= $DFFF) then begin
+  W := AStr[AIndex];
+  if (W >= #$D800) and (W <= #$DFFF) then
   begin
-    if W1 > $DBFF then begin
+    if W > #$DBFF then begin
+      {$IFDEF DOTNET}
+      raise EIdUTF16InvalidHighSurrogate.Create(IndyFormat(RSUTF16InvalidHighSurrogate, [AIndex]));
+      {$ELSE}
       raise EIdUTF16InvalidHighSurrogate.CreateResFmt(@RSUTF16InvalidHighSurrogate, [AIndex]);
+      {$ENDIF}
     end;
-    if AIndex > Length(AStr) - 1 then begin
-      raise EIdUTF16MissingLowSurrogate.CreateResFmt(@RSUTF16MissingLowSurrogate);
+    {$IFDEF STRING_IS_UNICODE}
+    if AIndex = Length(AStr) then
+    {$ELSE}
+    if AIndex = (Length(AStr)-1) then
+    {$ENDIF}
+    begin
+      {$IFDEF DOTNET}
+      raise EIdUTF16MissingLowSurrogate.Create(RSUTF16MissingLowSurrogate);
+      {$ELSE}
+      raise EIdUTF16MissingLowSurrogate.CreateRes(@RSUTF16MissingLowSurrogate);
+      {$ENDIF}
     end;
-    W2 := AStr[AIndex+1];
-    if (W2 < $DC00) or (W2 > $DFFF) then begin
+    W := AStr[AIndex+1];
+    if (W < #$DC00) or (W > #$DFFF) then begin
+      {$IFDEF DOTNET}
+      raise EIdUTF16InvalidLowSurrogate.Create(IndyFormat(RSUTF16InvalidLowSurrogate, [AIndex+1]));
+      {$ELSE}
       raise EIdUTF16InvalidLowSurrogate.CreateResFmt(@RSUTF16InvalidLowSurrogate, [AIndex+1]);
+      {$ENDIF}
     end;
     Inc(Result);
   end;
   {$ENDIF}
 end;
-{$ENDIF}
 
 { TIdURI }
 
@@ -186,9 +217,10 @@ begin
   // Normalize the directory delimiters to follow the UNIX syntax
   i := 1;
   while i <= Length(APath) do begin
+    {$IFDEF STRING_IS_ANSI}
     if IsLeadChar(APath[i]) then begin
       inc(i, 2)
-    end else if APath[i] = '\' then begin    {Do not Localize}
+    end else {$ENDIF} if APath[i] = '\' then begin    {Do not Localize}
       APath[i] := '/';    {Do not Localize}
       inc(i, 1);
     end else begin
@@ -337,27 +369,78 @@ begin
         Inc(i, 5); // Then skip it.
         try
           CharCode := IndyStrToInt('$' + ESC);  {do not localize}
-          Result := Result + {$IFDEF UNICODESTRING}Char{$ELSE}WideChar{$ENDIF}(CharCode);
+          Result := Result + TIdUnicodeChar(CharCode);
         except end;
       end;
     end;
   end;
 end;
 
-class function TIdURI.ParamsEncode(const ASrc: string): string;
+// RLebeau: local version of CharIsInSet(), but specific to Unicode
+function CharSetContains(const ASet: TIdUnicodeString; const AChar: WideChar): Boolean;
+{$IFDEF DOTNET}
+  {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$ELSE}
+var
+  I: Integer;
+{$ENDIF}
+begin
+  {$IFDEF DOTNET}
+  Result := ASet.IndexOf(AChar) > -1;
+  {$ELSE}
+  // RLebeau 5/8/08: Calling Pos() with a Char as input creates a temporary
+  // String.  Normally this is fine, but profiling reveils this to be a big
+  // bottleneck for code that makes a lot of calls to CharIsInSet(), so need
+  // to scan through ASet looking for the character without a conversion...
+  //
+  // Result := IndyPos(AString[ACharPos], ASet);
+  //
+  Result := False;
+  for I := 1 to Length(ASet) do begin
+    if ASet[I] = AChar then begin
+      Result := True;
+      Exit;
+    end;
+  end;
+  {$ENDIF}
+end;
+
+class function TIdURI.ParamsEncode(const ASrc: string; ATextEncoding: TIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+  ): string;
 const
   UnsafeChars = '*#%<> []';  {do not localize}
 var
-  I: Integer;
-  {$IFDEF UNICODESTRING}
-  J, Len: Integer;
-  U: UTF8String;
+  I, J, Len: Integer;
+  Buf: TIdBytes;
+  {$IFDEF STRING_IS_ANSI}
+  LChars: TIdWideChars;
   {$ENDIF}
+  LChar: WideChar;
 begin
   Result := '';    {Do not Localize}
-  I := 1;
-  while I <= Length(ASrc) do
+
+  // keep the compiler happy
+  Buf := nil;
+  {$IFDEF STRING_IS_ANSI}
+  LChars := nil;
+  {$ENDIF}
+
+  if ASrc = '' then begin
+    Exit;
+  end;
+
+  EnsureEncoding(ATextEncoding, encUTF8);
+  {$IFDEF STRING_IS_ANSI}
+  EnsureEncoding(ASrcEncoding, encOSDefault);
+  LChars := ASrcEncoding.GetChars(RawToBytes(ASrc[1], Length(ASrc)));
+  {$ENDIF}
+
+  I := 0;
+  while I < Length({$IFDEF STRING_IS_UNICODE}ASrc{$ELSE}LChars{$ENDIF}) do
   begin
+    LChar := {$IFDEF STRING_IS_UNICODE}ASrc[I+1]{$ELSE}LChars[I]{$ENDIF};
+
     // S.G. 27/11/2002: Changed the parameter encoding: Even in parameters, a space
     // S.G. 27/11/2002: is much more likely to be meaning "space" than "this is
     // S.G. 27/11/2002: a new parameter"
@@ -369,63 +452,98 @@ begin
     // Unicode codepoint value, depending on the codepage used for the source code.
     // For instance, #128 may become #$20AC...
 
-    if CharIsInSet(ASrc, I, UnsafeChars) or (not CharIsInSet(ASrc, I, CharRange(#33, Char(128)))) then begin {do not localize}
-      {$IFDEF UNICODESTRING}
-      Len := CalcUTF16CharLength(ASrc, I); // calculate length including surrogates
-      U := UTF8String(Copy(ASrc, I, Len)); // explicit Unicode->UTF8 conversion
-      Inc(I, Len);
-      for J := 1 to Length(U) do begin
-        Result := Result + '%' + IntToHex(Ord(U[J]), 2);  {do not localize}
-      end;
+    if CharSetContains(UnsafeChars, LChar) or (Ord(LChar) < 33) or (Ord(LChar) > 128) then
+    begin
+      {$IFDEF STRING_IS_UNICODE}
+      Len := CalcUTF16CharLength(ASrc, I+1); // calculate length including surrogates
+      Buf := ATextEncoding.GetBytes(Copy(ASrc, I+1, Len)); // explicit Unicode->Ansi conversion
       {$ELSE}
-      Result := Result + '%' + IntToHex(Ord(ASrc[I]), 2);  {do not localize}
-      Inc(I);
+      Len := CalcUTF16CharLength(LChars, I); // calculate length including surrogates
+      Buf := ATextEncoding.GetBytes(Copy(LChars, I, Len)); // explicit Unicode->Ansi conversion
       {$ENDIF}
-    end else begin
-      Result := Result + ASrc[I];
+      for J := 0 to Length(Buf)-1 do begin
+        Result := Result + '%' + IntToHex(Ord(Buf[J]), 2);  {do not localize}
+      end;
+      Inc(I, Len);
+    end else
+    begin
+      Result := Result + Char(LChar);
       Inc(I);
     end;
   end;
 end;
 
-class function TIdURI.PathEncode(const ASrc: string): string;
+class function TIdURI.PathEncode(const ASrc: string; ATextEncoding: TIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+  ): string;
 const
   UnsafeChars = '*#%<>+ []';  {do not localize}
 var
-  I: Integer;
-  {$IFDEF UNICODESTRING}
-  J, Len: Integer;
-  U: UTF8String;
+  I, J, Len: Integer;
+  Buf: TIdBytes;
+  {$IFDEF STRING_IS_ANSI}
+  LChars: TIdWideChars;
   {$ENDIF}
+  LChar: WideChar;
 begin
   Result := '';    {Do not Localize}
-  I := 1;
-  while I <= Length(ASrc) do begin
-    if CharIsInSet(ASrc, I, UnsafeChars) or (not CharIsInSet(ASrc, I, CharRange(#32, #127))) then begin
-      {$IFDEF UNICODESTRING}
-      Len := CalcUTF16CharLength(ASrc, I); // calculate length including surrogates
-      U := UTF8String(Copy(ASrc, I, Len)); // explicit Unicode->UTF8 conversion
-      Inc(I, Len);
-      for J := 1 to Length(U) do begin
-        Result := Result + '%' + IntToHex(Ord(U[J]), 2);  {do not localize}
-      end;
+
+  // keep the compiler happy
+  Buf := nil;
+  {$IFDEF STRING_IS_ANSI}
+  LChars := nil;
+  {$ENDIF}
+
+  if ASrc = '' then begin
+    Exit;
+  end;
+
+  EnsureEncoding(ATextEncoding, encUTF8);
+  {$IFDEF STRING_IS_ANSI}
+  EnsureEncoding(ASrcEncoding, encOSDefault);
+  LChars := ASrcEncoding.GetChars(RawToBytes(ASrc[1], Length(ASrc)));
+  {$ENDIF}
+
+  I := 0;
+  while I < Length({$IFDEF STRING_IS_UNICODE}ASrc{$ELSE}LChars{$ENDIF}) do
+  begin
+    LChar := {$IFDEF STRING_IS_UNICODE}ASrc[I+1]{$ELSE}LChars[I]{$ENDIF};
+
+    if CharSetContains(UnsafeChars, LChar) or (Ord(LChar) < 32) or (Ord(LChar) > 127) then
+    begin
+      {$IFDEF STRING_IS_UNICODE}
+      Len := CalcUTF16CharLength(ASrc, I+1); // calculate length including surrogates
+      Buf := ATextEncoding.GetBytes(Copy(ASrc, I+1, Len)); // explicit Unicode->Ansi conversion
       {$ELSE}
-      Result := Result + '%' + IntToHex(Ord(ASrc[I]), 2);  {do not localize}
-      Inc(I);
+      Len := CalcUTF16CharLength(LChars, I); // calculate length including surrogates
+      Buf := ATextEncoding.GetBytes(Copy(LChars, I, Len)); // explicit Unicode->Ansi conversion
       {$ENDIF}
-    end else begin
-      Result := Result + ASrc[I];
+      for J := 0 to Length(Buf)-1 do begin
+        Result := Result + '%' + IntToHex(Ord(Buf[J]), 2);  {do not localize}
+      end;
+      Inc(I, Len);
+    end else
+    begin
+      Result := Result + Char(LChar);
       Inc(I);
     end;
   end;
 end;
 
-class function TIdURI.URLEncode(const ASrc: string): string;
+class function TIdURI.URLEncode(const ASrc: string; ATextEncoding: TIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+  ): string;
 begin
   with TIdURI.Create(ASrc) do try
-    Path := PathEncode(Path);
-    Document := PathEncode(Document);
-    Params := ParamsEncode(Params);
+    Path := PathEncode(Path, ATextEncoding
+      {$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF}
+      );
+    Document := PathEncode(Document, ATextEncoding
+      {$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF}
+      );
+    Params := ParamsEncode(Params, ATextEncoding
+      {$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF}
+      );
     Result := URI;
   finally Free; end;
 end;

@@ -307,7 +307,9 @@ begin
   LOrgPos := AInStream.Position;
   TIdStreamHelper.ReadBytes(AInStream, LBCmp, 1);
   TIdStreamHelper.ReadBytes(AInStream, LFlags, 1);
-  EIdException.IfFalse(((LBCmp[0] * 256)+LFlags[0] ) mod 31 = 0,'Error - invalid header'); {do not localize}
+  if (((LBCmp[0] * 256) + LFlags[0]) mod 31) <> 0 then begin
+    EIdException.Toss('Error - invalid header'); {do not localize}
+  end;
   TIdStreamHelper.ReadBytes(AInStream, LDict, 4);
   AInStream.Position := LOrgPos;
   InflateStream(AInStream, AOutStream);

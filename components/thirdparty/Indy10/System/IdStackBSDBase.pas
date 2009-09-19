@@ -154,7 +154,7 @@ interface
 
 {$I IdCompilerDefines.inc}
 
-{$IFDEF DotNet}
+{$IFDEF DOTNET}
 Improper compile.
 This unit must NOT be linked into DotNet applications.
 {$ENDIF}

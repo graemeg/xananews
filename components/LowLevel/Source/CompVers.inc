@@ -1,22 +1,23 @@
-{******************************************************************************}
-{ FileName............: CompVers.inc
-{ Project.............: library
-{ Author(s)...........: PZ
-{ Version.............: 1.7.0.0
-{------------------------------------------------------------------------------}
-{ General include file for Delphi version depended handling.
-{
-{ Version   Date   Comment
-{ 1.0.0.0 20001204 - First release.
-{ 1.1.0.0 20020630 - Added Delphi 6 compiler directives
-{ 1.2.0.0 20021117 - Added Delphi 7 compiler directives
-{ 1.3.0.0 20031106 - Added general COMPILERv_UP directives.
-{ 1.4.0.0 20041125 - Added Delphi 2005 compiler directives.
-{ 1.5.0.0 20051211 - Added Delphi 2006 compiler directives.
-{ 1.6.0.0 20080413 - Added Delphi 2007 compiler directives.
-{                  - Added FPC compiler directives.
-{ 1.7.0.0 20080916 - Added Delphi 2009 compiler directives.
-{******************************************************************************}
+{*******************************************************************************
+ FileName............: CompVers.inc
+ Project.............: library
+ Author(s)...........: PZ
+ Version.............: 1.8.0.0
+ -------------------------------------------------------------------------------
+ General include file for Delphi version depended handling.
+
+ Version   Date   Comment
+ 1.0.0.0 20001204 - First release.
+ 1.1.0.0 20020630 - Added Delphi 6 compiler directives
+ 1.2.0.0 20021117 - Added Delphi 7 compiler directives
+ 1.3.0.0 20031106 - Added general COMPILERv_UP directives.
+ 1.4.0.0 20041125 - Added Delphi 2005 compiler directives.
+ 1.5.0.0 20051211 - Added Delphi 2006 compiler directives.
+ 1.6.0.0 20080413 - Added Delphi 2007 compiler directives.
+                  - Added FPC compiler directives.
+ 1.7.0.0 20080924 - Added Delphi 2009 compiler directives.
+ 1.8.0.0 20090918 - Added Delphi 2010 compiler directives.
+*******************************************************************************}
 
 {$B-} { Boolean shortcut evaluation. }
 
@@ -118,9 +119,15 @@
   {$DEFINE DELPHI}
 {$ENDIF}
 
-{******************************************************************************}
-{ Free Pascal Compiler definitions
-{******************************************************************************}
+{$IFDEF VER210}
+  {$DEFINE COMPILER14}
+  {$DEFINE DELPHI14}
+  {$DEFINE DELPHI}
+{$ENDIF}
+
+{*******************************************************************************
+  Free Pascal Compiler definitions
+*******************************************************************************}
 
 {$IFDEF FPC}
   {$DEFINE COMPILER10}
@@ -129,9 +136,9 @@
 {$ENDIF}
 
 
-{******************************************************************************}
-{ COMPILERx_UP definitions
-{******************************************************************************}
+{*******************************************************************************
+  COMPILERx_UP definitions
+*******************************************************************************}
 
 {$IFDEF COMPILER1}
   {$DEFINE COMPILER1_UP}
@@ -247,10 +254,26 @@
   {$DEFINE COMPILER1_UP}
 {$ENDIF}
 
+{$IFDEF COMPILER14}
+  {$DEFINE COMPILER14_UP}
+  {$DEFINE COMPILER12_UP}
+  {$DEFINE COMPILER11_UP}
+  {$DEFINE COMPILER10_UP}
+  {$DEFINE COMPILER9_UP}
+  {$DEFINE COMPILER7_UP}
+  {$DEFINE COMPILER35_UP}
+  {$DEFINE COMPILER6_UP}
+  {$DEFINE COMPILER5_UP}
+  {$DEFINE COMPILER4_UP}
+  {$DEFINE COMPILER3_UP}
+  {$DEFINE COMPILER2_UP}
+  {$DEFINE COMPILER1_UP}
+{$ENDIF}
 
-{******************************************************************************}
-{ DELPHIx_UP definitions for Delphi
-{******************************************************************************}
+
+{*******************************************************************************
+  DELPHIx_UP definitions for Delphi
+*******************************************************************************}
 
 {$IFDEF DELPHI1}
   {$DEFINE DELPHI1_UP}
@@ -351,10 +374,25 @@
   {$DEFINE DELPHI1_UP}
 {$ENDIF}
 
+{$IFDEF DELPHI14}
+  {$DEFINE DELPHI14_UP}
+  {$DEFINE DELPHI12_UP}
+  {$DEFINE DELPHI11_UP}
+  {$DEFINE DELPHI10_UP}
+  {$DEFINE DELPHI9_UP}
+  {$DEFINE DELPHI7_UP}
+  {$DEFINE DELPHI6_UP}
+  {$DEFINE DELPHI5_UP}
+  {$DEFINE DELPHI4_UP}
+  {$DEFINE DELPHI3_UP}
+  {$DEFINE DELPHI2_UP}
+  {$DEFINE DELPHI1_UP}
+{$ENDIF}
 
-{******************************************************************************}
-{ BCBx_UP definitions for C++ Builder
-{******************************************************************************}
+
+{*******************************************************************************
+  BCBx_UP definitions for C++ Builder
+*******************************************************************************}
 
 {$IFDEF BCB3}
   {$DEFINE BCB3_UP}

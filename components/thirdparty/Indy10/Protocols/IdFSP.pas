@@ -342,7 +342,7 @@ causes that directory can be listable even it do not have
     //packet size.  We also do not want to eat CPU cycles excessively which I've noticed
     //with previous code.
     procedure SendCmdOnce(ACmdPacket, ARecvPacket : TIdFSPPacket; var VTempBuf : TIdBytes; const ARaiseException : Boolean=True); overload;
-    procedure SendCmdOnce(const ACmd : Byte; const AData, AExtraData : TIdBYtes;
+    procedure SendCmdOnce(const ACmd : Byte; const AData, AExtraData : TIdBytes;
       const AFilePosition : Int64; //in case FSP 3.0 does support more than 4GB
       var VData, VExtraData : TIdBytes; const ARaiseException : Boolean=True);  overload;
 
@@ -407,12 +407,12 @@ implementation
 uses
   //facilitate inlining only.
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
-     {$IFDEF USEINLINE}
+    {$IFDEF USE_INLINE}
   Windows,
-     {$ENDIF}
+    {$ENDIF}
   {$ENDIF}
   {$IFDEF DOTNET}
-    {$IFDEF USEINLINE}
+    {$IFDEF USE_INLINE}
   System.IO,
   System.Threading,
     {$ENDIF}
@@ -1036,7 +1036,7 @@ begin
 end;
 
 procedure TIdFSP.SendCmdOnce(const ACmd: Byte; const AData,
-  AExtraData: TIdBYtes; const AFilePosition: Int64; var VData,
+  AExtraData: TIdBytes; const AFilePosition: Int64; var VData,
   VExtraData: TIdBytes; const ARaiseException: Boolean);
 var
   LSendPacket : TIdFSPPacket;

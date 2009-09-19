@@ -51,12 +51,12 @@ uses
 
 type
   {$IFDEF DOTNET}
-  ProtocolArray = array [1..8] of Char;
+  ProtocolArray = array [1..8] of AnsiChar;
   padArray2 = array[0..1] of Byte;
   padArray3 = Array[0..2] of Byte;
   padArray7 = Array[0..6] of Byte;
   padArray8 = Array[0..7] of Byte;
-  nonceArray = Array[1..8] of Char;
+  nonceArray = Array[1..8] of Byte;
 
   ntlm_base = class(TIdStruct)
   protected
@@ -103,26 +103,35 @@ type
   type_2_message_header = class(ntlm_base)
   protected
     f_type : Byte;
-    fPad : padArray7;
-    fmsg_len : Word;
-    fPad2 : padArray2;
-    fflags : Word;
-    fPad3 : padArray2;
-    fnonce : nonceArray;
-    fpad4 : padArray8;
+    fPad: padArray3;
+    fhost_len1: Word;
+    fhost_len2: Word;
+    fhost_off: LongWord;
+    fflags: Word;
+    fPad2: padArray2;
+    fnonce: nonceArray;
+    freserved: padArray8;
+    finfo_len1: Word;
+    finfo_len2: Word;
+    finfo_off: LongWord;
+
     function GetBytesLen: LongWord; override;
   public
     procedure ReadStruct(const ABytes : TIdBytes; var VIndex : LongWord); override;
     procedure WriteStruct(var VBytes : TIdBytes; var VIndex : LongWord);  override;
 
     property _type: Byte read f_type write f_type;       // $2
-    property Pad  : padArray7 read fPad write fPad; //packed Array[1..7] of byte;          // 0x0
-    property msg_len: Word read fmsg_len write fmsg_len;                              // 0x28
-    property Pad2 : padArray2 read fPad2 write fPad2;    // 0x0
-    property flags: word read fflags write fflags;                                // 0x8201
-    property Pad3: padArray2 read fPad3 write fPad3;          // 0x0
-    property nonce: nonceArray read fnonce write fnonce;      // nonce
-    property pad4: padArray8 read fpad4 write fpad4;            // 0x0
+    property pad: padArray3 read fPad wrie fPad;
+    property host_len1: Word read fhost_len1 write fhost_len1;
+    property host_len2: Word read fhost_len2 write fhost_len2;
+    property host_off: LongWord read fhost_off write fhost_off;
+    property flags: Word read fflags write fflags;
+    property pad2: padArray2 read fflags write fflags;
+    property nonce: nonceArray read fnonce write fnonce;
+    property reserved: padArray8 read freserved write freserved;
+    property info_len1: Word read finfo_len1 write finfo_len1;
+    property info_len2: Word read finfo_len2 write finfo_len2;
+    property info_off: LongWord read finfo_off write finfo_off;
   end;
 
   type_3_message_header = class(ntlm_base)
@@ -143,8 +152,9 @@ type
     fhost_len1: Word;
     fhost_len2: Word;
     fhost_off: LongWord;
-    fzero: LongWord;
-    fmsg_len: LongWord;
+    fkey_len1: Word;
+    fkey_len2: Word;
+    fkey_off: LonWord;
     fflags: LongWord;
     function GetBytesLen: LongWord; override;
   public
@@ -172,9 +182,10 @@ type
     property host_len1: Word read fhost_len1 write fhost_len1;                    // host string length
     property host_len2: Word read fhost_len2 write fhost_len2;                    // host string length
     property host_off: LongWord read fhost_off write fhost_off;                 // host string offset
-    property zero: LongWord read fzero write fzero;
 
-    property msg_len: LongWord read fmsg_len write fmsg_len;                  // message length
+    property key_len1: Word read fkey_len1 write fkey_len1;                     // session key length
+    property key_len2: Word read fkey_len2 write fkey_len2;                     // session key length
+    property key_off: LongWord read fkey_off write fkey_off;                      // session key offset
 
     property flags: LongWord read fflags write fflags;                    // 0xA0808205
   end;
@@ -197,13 +208,17 @@ type
   type_2_message_header = packed record
     protocol: packed array [1..8] of AnsiChar;  // 'N', 'T', 'L', 'M', 'S', 'S', 'P', #0    {Do not Localize}
     _type: Byte;                                // $2
-    Pad  : packed Array[1..7] of Byte;          // 0x0
-    msg_len: Word;                              // 0x28
-    Pad2 : packed Array [1..2] of Byte;         // 0x0
-    flags: word;                                // 0x8201
-    Pad3: Packed array [1..2] of Byte;          // 0x0
-    nonce: Array[1..8] of char;                 // nonce
-    pad4: packed Array[1..8] of Byte            // 0x0
+    Pad: packed Array[1..3] of Byte;
+    host_len1: Word;
+    host_len2: Word;
+    host_off: LongWord;
+    flags: Word;
+    Pad2: packed Array[1..2] of Byte;
+    nonce: packed Array[1..8] of Byte;
+    reserved: packed Array[1..8] of Byte;
+    info_len1: Word;
+    info_len2: Word;
+    info_off: LongWord;
   end;
 
   type_3_message_header = packed record
@@ -229,17 +244,18 @@ type
     host_len1: Word;                    // host string length
     host_len2: Word;                    // host string length
     host_off: LongWord;                 // host string offset
-    zero: LongWord;
 
-    msg_len: LongWord;                  // message length
-
+    key_len1: Word;                     // session key length
+    key_len2: Word;                     // session key length
+    key_off: LongWord;                  // session key offset
+    
     flags: LongWord;                    // 0xA0808205
   end;
 
   Pdes_key_schedule = ^des_key_schedule;
 
 function BuildType1Message(const ADomain, AHost: String): String;
-function BuildType3Message(const ADomain, AHost, AUsername: {$IFDEF UNICODESTRING}UnicodeString{$ELSE}WideString{$ENDIF}; APassword, ANonce: String): String;
+function BuildType3Message(const ADomain, AHost, AUsername: TIdUnicodeString; const APassword: String; const ANonce: TIdBytes): String;
 {$ENDIF}
 
 function NTLMFunctionsLoaded : Boolean;
@@ -256,23 +272,14 @@ const
   //was $A000B207;     //b203;
   //JPM - note that this value has to be little endian.  We precalculate
   //this for big endian machines.
-  MSG1_FLAGS : Word = {$IFDEF ENDIAN_LITTLE}$b207 {$ELSE}$07B2 {$ENDIF};
-  MSG1_HOST_OFFS : LongWord =  {$IFDEF ENDIAN_LITTLE}$20 {$ELSE} $20000000{$ENDIF};
-  // S.G. 12/7/2002: was: Length(lm_password);  (from BugID 577895)
-  //JPM - ditto for this.
-  MSG3_LM_RESP_LEN : Word = {$IFDEF ENDIAN_LITTLE}$18 {$ELSE}$1800 {$ENDIF};
-  // S.G. 12/7/2002: was: Length(nt_password);  (from BugID 577895)
-  //JPM - ditto for this.
-  MSG3_NT_RESP_LEN : Word = {$IFDEF ENDIAN_LITTLE}$18 {$ELSE}$1800 {$ENDIF};
-  MSG3_DOM_OFFS : LongWord = {$IFDEF ENDIAN_LITTLE}$40 {$ELSE}$40000000 {$ENDIF};
+  MSG1_FLAGS : Word = $b207;
   // S.G. 12/7/2002: was: flags := $A0808205;  (from BugID 577895 and packet trace)
-  MSG3_FLAGS : LongWord =  {$IFDEF ENDIAN_LITTLE}$018205 {$ELSE}$05820100 {$ENDIF};
-  MSG3_TYPE : LongWord = {$IFDEF ENDIAN_LITTLE} 3 {$ELSE} $03000000 {$ENDIF};
+  MSG3_FLAGS : LongWord =  $018205;
 
 implementation
 
 uses
-  {$IFDEF UNICODESTRING}
+  {$IFDEF STRING_IS_UNICODE}
   AnsiStrings,
   {$ENDIF}
   SysUtils,
@@ -287,7 +294,7 @@ const
   cProtocolStr: AnsiString = 'NTLMSSP'#0; {Do not Localize}
 
 procedure GetDomain(const AUserName : String; var VUserName, VDomain : String);
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 var
   i: Integer;
 begin
@@ -305,7 +312,7 @@ end;
 
 {$IFDEF DOTNET}
 function NTLMFunctionsLoaded : Boolean;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := True;
 end;
@@ -348,13 +355,13 @@ end;
  * 8 byte plaintext is encrypted with each key and the resulting 24
  * bytes are stored in the results array.
  */}
-procedure calc_resp(keys: PDES_cblock; const ANonce: AnsiString; results: Pdes_key_schedule);
+procedure calc_resp(keys: PDES_cblock; const ANonce: TIdBytes; results: Pdes_key_schedule);
 Var
   ks: des_key_schedule;
   nonce: des_cblock;
 begin
   setup_des_key(keys^, ks);
-  Move(ANonce[1], nonce, 8);
+  Move(ANonce[0], nonce, 8);
   iddes_ecb_encrypt(@nonce, Pconst_DES_cblock(results), ks, OPENSSL_DES_ENCRYPT);
 
   setup_des_key(PDES_cblock(PtrUInt(keys) + 7)^, ks);
@@ -368,7 +375,7 @@ Const
   Magic: des_cblock = ($4B, $47, $53, $21, $40, $23, $24, $25 );
 
 //* setup LanManager password */
-function SetupLanManagerPassword(const APassword, ANonce: AnsiString): TIdBytes;
+function SetupLanManagerPassword(const APassword: String; const ANonce: TIdBytes): TIdBytes;
 var
   lm_hpw: array[1..21] of AnsiChar;
   lm_pw: array[1..14] of AnsiChar;
@@ -377,7 +384,12 @@ var
   lm_resp: array [1..24] of AnsiChar;
   lPassword: AnsiString;
 begin
-  lPassword := Copy(UpperCase(APassword), 1, 14);
+  {$IFDEF STRING_IS_UNICODE}
+  lPassword := AnsiString(UpperCase(APassword)); // explicit convert to Ansi
+  {$ELSE}
+  lPassword := UpperCase(APassword);
+  {$ENDIF}
+  lPassword := Copy(lPassword, 1, 14);
   len := Length(lPassword);
   if len > 0 then begin
     Move(lPassword[1], lm_pw, len);
@@ -405,7 +417,7 @@ begin
 end;
 
 function BuildUnicode(const S: String): TIdBytes;
-{$IFNDEF UNICODESTRING}
+{$IFDEF STRING_IS_ANSI}
 var
   i: integer;
 {$ENDIF}
@@ -415,7 +427,7 @@ begin
     Exit;
   end;
   SetLength(Result, Length(S) * SizeOf(WideChar));
-  {$IFDEF UNICODESTRING}
+  {$IFDEF STRING_IS_UNICODE}
   Move(S[1], Result[0], Length(Result));
   {$ELSE}
   for i := 0 to Length(S)-1 do begin
@@ -426,7 +438,7 @@ begin
 end;
 
 //* create NT hashed password */
-function CreateNTPassword(const APassword, ANonce: String): TIdBytes;
+function CreateNTPassword(const APassword: String; const ANonce: TIdBytes): TIdBytes;
 var
   nt_hpw: array [1..21] of AnsiChar;
   nt_hpw128: TIdBytes;
@@ -434,7 +446,7 @@ var
 begin
   with TIdHashMessageDigest4.Create do
   try
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     nt_hpw128 := HashString(APassword);
     {$ELSE}
     nt_hpw128 := HashBytes(BuildUnicode(APassword));
@@ -446,13 +458,7 @@ begin
   Move(nt_hpw128[0], nt_hpw[1], 16);
   FillChar(nt_hpw[17], 5, 0);
 
-  calc_resp(pdes_cblock(@nt_hpw[1]),
-    {$IFDEF UNICODESTRING}
-    AnsiString(ANonce), // explicit convert to Ansi
-    {$ELSE}
-    ANonce,
-    {$ENDIF}
-    Pdes_key_schedule(@nt_resp[1]));
+  calc_resp(pdes_cblock(@nt_hpw[1]), ANonce, Pdes_key_schedule(@nt_resp[1]));
 
   SetLength(Result, SizeOf(nt_resp));
   Move(nt_resp[1], Result[0], SizeOf(nt_resp));
@@ -474,28 +480,36 @@ begin
   begin
     StrPLCopy(@protocol[1], cProtocolStr, 8);
     _type := 1;
+
     // S.G. 12/7/2002: Changed the flag to $B207 (from BugID 577895 and packet trace)
     flags := MSG1_FLAGS; //was $A000B207;     //b203;
 
-    dom_len1 := HostToLittleEndian(Word(Length(lDomain)));
-    dom_len2 := dom_len1;
+    dom_len1 := Word(Length(lDomain));
     // dom_off := 0;
-    dom_off := HostToLittleEndian(LongWord(Length(lHost) + 32));
+    dom_off := 32;
 
-    host_len1 := HostToLittleEndian(Word(Length(lHost)));
+    host_len1 := Word(Length(lHost));
+    host_off := LongWord(dom_off + dom_len1);
+
+    _type := HostToLittleEndian(_type);
+    flags := HostToLittleEndian(flags);
+    dom_len1 := HostToLittleEndian(dom_len1);
+    dom_len2 := dom_len1;
+    dom_off := HostToLittleEndian(dom_off);
+    host_len1 := HostToLittleEndian(host_len1);
     host_len2 := host_len1;
-    host_off := MSG1_HOST_OFFS;
+    host_off := HostToLittleEndian(host_off);
   end;
 
   buf := RawToBytes(Type_1_Message, SizeOf(Type_1_Message));
-  AppendBytes(buf, lHost);
   AppendBytes(buf, lDomain);
+  AppendBytes(buf, lHost);
 
   Result := TIdEncoderMIME.EncodeBytes(buf);
 end;
 
-function BuildType3Message(const ADomain, AHost, AUsername: {$IFDEF UNICODESTRING}UnicodeString{$ELSE}WideString{$ENDIF};
-  APassword, ANonce: String): String;
+function BuildType3Message(const ADomain, AHost, AUsername: TIdUnicodeString;
+  const APassword: String; const ANonce: TIdBytes): String;
 var
   type3: type_3_message_header;
   buf: TIdBytes;
@@ -505,13 +519,7 @@ var
   lHost: TIdBytes;
   lUsername: TIdBytes;
 begin
-  lm_password := SetupLanManagerPassword(
-    {$IFDEF UNICODESTRING}
-    AnsiString(APassword), AnsiString(ANonce) // explicit convert to Ansi
-    {$ELSE}
-    APassword, ANonce
-    {$ENDIF}
-  );
+  lm_password := SetupLanManagerPassword(APassword, ANonce);
   nt_password := CreateNTPassword(APassword, ANonce);
 
   lDomain := BuildUnicode(UpperCase(ADomain));
@@ -520,38 +528,56 @@ begin
 
   with Type3 do begin
     StrPLCopy(@protocol[1], cProtocolStr, 8);
-    _type := MSG3_TYPE;
-    lm_resp_len1 := MSG3_LM_RESP_LEN;
-    lm_resp_len2 := MSG3_LM_RESP_LEN;
-    lm_resp_off := HostToLittleEndian(LongWord(Length(lDomain) + Length(lUsername) + Length(lHost) + $40));
+    _type := 3;
 
-    nt_resp_len1 := MSG3_NT_RESP_LEN;// S.G. 12/7/2002: was: Length(nt_password);  (from BugID 577895)
-    nt_resp_len2 := MSG3_NT_RESP_LEN;// S.G. 12/7/2002: was: Length(nt_password);  (from BugID 577895)
-    nt_resp_off := HostToLittleEndian(LongWord(Length(lDomain) + Length(lUsername) + Length(lHost) + Length(lm_password) + $40));
+    lm_resp_len1 := Word(Length(lm_password));
+    lm_resp_off := $40;
 
-    dom_len1 := HostToLittleEndian(Word(Length(lDomain)));
-    dom_len2 := dom_len1;
-    dom_off :=  MSG3_DOM_OFFS;
+    nt_resp_len1 := Word(Length(nt_password));
+    nt_resp_off := LongWord(lm_resp_off + lm_resp_len1);
 
-    user_len1 := HostToLittleEndian(Word(Length(lUsername)));
-    user_len2 := user_len1;
-    user_off := HostToLittleEndian(LongWord(Length(lDomain) + $40));
+    dom_len1 := Word(Length(lDomain));
+    dom_off :=  LongWord(nt_resp_off + nt_resp_len1);
 
-    host_len1 := HostToLittleEndian(Word(Length(lHost)));
-    host_len2 := host_len1;
-    host_off := HostToLittleEndian(LongWord(Length(lDomain) + Length(lUsername) + $40));
-    zero := 0;
+    user_len1 := Word(Length(lUsername));
+    user_off := LongWord(dom_off + dom_len1);
 
-    msg_len := HostToLittleEndian(LongWord(SizeOf(Type3) + Length(lDomain) + Length(lUsername) + Length(lHost) + Length(lm_password) + Length(nt_password)));
+    host_len1 := Word(Length(lHost));
+    host_off := LongWord(user_off + user_len1);
+
+    key_len1 := 0;
+    key_off := LongWord(user_len1 + host_len1);
+
     flags := MSG3_FLAGS;
+
+    _type := HostToLittleEndian(_type);
+    lm_resp_len1 := HostToLittleEndian(lm_resp_len1);
+    lm_resp_len2 := lm_resp_len1;
+    lm_resp_off := HostToLittleEndian(lm_resp_off);
+    nt_resp_len1 := HostToLittleEndian(nt_resp_len1);
+    nt_resp_len2 := nt_resp_len1;
+    nt_resp_off := HostToLittleEndian(nt_resp_off);
+    dom_len1 := HostToLittleEndian(dom_len1);
+    dom_len2 := dom_len1;
+    dom_off := HostToLittleEndian(dom_off);
+    user_len1 := HostToLittleEndian(user_len1);
+    user_len2 := user_len1;
+    user_off := HostToLittleEndian(user_off);
+    host_len1 := HostToLittleEndian(host_len1);
+    host_len2 := host_len1;
+    host_off := HostToLittleEndian(host_off);
+    key_len1 := HostToLittleEndian(key_len1);
+    key_len2 := key_len1;
+    key_off := HostToLittleEndian(key_off);
+    flags := HostToLittleEndian(flags);
   end;
 
   buf := RawToBytes(Type3, SizeOf(Type3));
+  AppendBytes(buf, lm_password);
+  AppendBytes(buf, nt_password);
   AppendBytes(buf, lDomain);
   AppendBytes(buf, lUsername);
   AppendBytes(buf, lHost);
-  AppendBytes(buf, lm_password);
-  AppendBytes(buf, nt_password);
 
   Result := TIdEncoderMIME.EncodeBytes(buf);
 end;
@@ -621,23 +647,10 @@ end;
 
 function type_1_message_header.GetBytesLen: LongWord;
 begin
-  Result := 32;
+  Result := inherited GetByesLen() + 24;
 end;
 
 procedure type_1_message_header.ReadStruct(const ABytes : TIdBytes; var VIndex : LongWord);
-{
-var
-  f_type : Byte;
-  fpad : padArray3;
-  fflags : Word;
-  fpad2 : padArray2;
-  fdom_len1 : Word;
-  fdom_len2 : Word;
-  fdom_off : LongWord;
-  fhost_len1 : Word;
-  fhost_len2 : Word;
-  fhost_off : LongWord;
-}
 begin
   inherited ReadStruct(ABytes, VIndex);
   f_type := ABytes[VIndex];
@@ -689,6 +702,7 @@ end;
 
 function type_2_message_header.GetBytesLen: LongWord;
 begin
+  Result := inherited GetBytesLen() + 40;
 end;
 
 procedure type_2_message_header.ReadStruct(const ABytes : TIdBytes; var VIndex : LongWord);
@@ -698,18 +712,26 @@ begin
   Inc(VIndex);
   BytesToByteArray(ABytes, fpad, VIndex);
   Inc(VIndex, Length(fpad));
-  fmsg_len := IdGlobal.BytesToWord(ABytes, VIndex);
+  fhost_len1 := IdGlobal.BytesToWord(ABytes, VIndex);
+  Inc(VIndex, 2);
+  fhost_len2 := IdGlobal.BytesToWord(ABytes, VIndex);
+  Inc(VIndex, 2);
+  fhost_off := IdGlobal.BytesToLongWord(ABytes, VIndex);
+  Inc(VIndex, 4);
+  fflags := IdGlobal.BytesToWord(ABytes, VIndex);
   Inc(VIndex, 2);
   BytesToByteArray(ABytes, fPad2, VIndex);
   Inc(VIndex, Length(fpad2));
-  fflags := IdGlobal.BytesToWord(ABytes, VIndex);
-  Inc(VIndex, 2);
-  BytesToByteArray(ABytes, fPad3, VIndex);
-  Inc(VIndex, Length(fpad3));
-  BytesToCharArray(ABytes, fnonce, VIndex);
+  BytesToByteArray(ABytes, fnonce, VIndex);
   Inc(VIndex, Length(fnonce));
-  BytesToByteArray(ABytes, fPad4, VIndex);
-  Inc(VIndex, Length(fpad4));
+  BytesToByteArray(ABytes, freserved, VIndex);
+  Inc(VIndex, Length(freserved));
+  finfo_len1 := IdGlobal.BytesToWord(ABytes, VIndex);
+  Inc(VIndex, 2);
+  finfo_len2 := IdGlobal.BytesToWord(ABytes, VIndex);
+  Inc(VIndex, 2);
+  finfo_off := IdGlobal.BytesToLongWord(ABytes, VIndex);
+  Inc(VIndex, 4);
 end;
 
 procedure type_2_message_header.WriteStruct(var VBytes : TIdBytes; var VIndex : LongWord);
@@ -719,22 +741,31 @@ begin
   Inc(VIndex);
   ByteArrayToBytes(fPad, VBytes, VIndex);
   Inc(VIndex, Length(fpad));
-  CopyTIdWord(fmsg_len, VBytes, VIndex);
+  CopyTIdWord(fhost_len1, VBytes, VIndex);
+  Inc(VIndex, 2);
+  CopyTIdWord(fhost_len2, VBytes, VIndex);
+  Inc(VIndex, 2);
+  CopyTIdLongWord(fhost_off, VBytes, VIndex);
+  Inc(VIndex, 4);
+  CopyTIdWord(fflags, VBytes, VIndex);
   Inc(VIndex, 2);
   ByteArrayToBytes(fPad2, VBytes, VIndex);
   Inc(VIndex, Length(fPad2));
-  CopyTIdWord(fflags, VBytes, VIndex);
-  Inc(VIndex, 2);
-  ByteArrayToBytes(fPad3, VBytes, VIndex);
-  Inc(VIndex, Length(fPad3));
-  CharArrayToBytes(fnonce, VBytes, VIndex);
+  ByteArrayToBytes(fnonce, VBytes, VIndex);
   Inc(VIndex, Length(fnonce));
-  ByteArrayToBytes(fPad4, VBytes, VIndex);
-  Inc(VIndex, Length(fPad4));
+  ByteArrayToBytes(freserved, VBytes, VIndex);
+  Inc(VIndex, Length(freserved));
+  CopyTIdWord(finfo_len1, VBytes, VIndex);
+  Inc(VIndex, 2);
+  CopyTIdWord(finfo_len2, VBytes, VIndex);
+  Inc(VIndex, 2);
+  CopyTIdLongWord(finfo_off, VBytes, VIndex);
+  Inc(VIndex, 4);
 end;
 
 function type_3_message_header.GetBytesLen: LongWord;
 begin
+  Result := inherited GetByteLen() + ? ;
 end;
 
 procedure type_3_message_header.ReadStruct(const ABytes : TIdBytes; var VIndex : LongWord);

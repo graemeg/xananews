@@ -115,7 +115,7 @@ implementation
 uses
   //facilitate inlining only.
   {$IFDEF DOTNET}
-    {$IFDEF USEINLINE}
+    {$IFDEF USE_INLINE}
   System.Threading,
     {$ENDIF}
   {$ENDIF}
@@ -127,6 +127,10 @@ type
   // This is a bit more code in the end, but its source compatible and does not
   // rely on Indy directly accessing any OS APIs and performance is still more
   // than acceptable, especially considering Notifications are low priority.
+
+  // TODO: use new TThread functionality introduced in D2009 so this thread
+  // is no longer needed...
+
   TIdNotifyThread = class(TIdThread)
   protected
     FEvent: TIdLocalEvent;

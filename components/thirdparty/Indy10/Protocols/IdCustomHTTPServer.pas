@@ -475,7 +475,7 @@ implementation
 
 uses
   {$IFDEF DOTNET}
-    {$IFDEF USEINLINE}
+    {$IFDEF USE_INLINE}
   System.IO,
   System.Threading,
     {$ENDIF}
@@ -722,7 +722,6 @@ var
     LResponseNo: Integer;
     LResponseText, LContentText, S: String;
     LMajor, LMinor: Integer;
-    LBufferingStarted: Boolean;
   begin
     // let the user decide if the request headers are acceptable
     Result := DoHeadersAvailable(AContext, LRequestInfo.RawHeaders);
@@ -777,24 +776,7 @@ var
     if Pos('100-continue', LowerCase(S)) > 0 then begin  {Do not Localize}
       // the client requested a '100-continue' expectation so send
       // a '100 Continue' reply now before the request body can be read
-      with AContext.Connection.IOHandler do begin
-        LBufferingStarted := not WriteBufferingActive;
-        if LBufferingStarted then begin
-          WriteBufferOpen;
-        end;
-        try
-          WriteLn(LRequestInfo.Version + ' 100 ' + RSHTTPContinue);    {Do not Localize}
-          WriteLn;
-          if LBufferingStarted then begin
-            WriteBufferClose;
-          end;
-        except
-          if LBufferingStarted then begin
-            WriteBufferCancel;
-          end;
-          raise;
-        end;
-      end;
+      AContext.Connection.IOHandler.WriteLn(LRequestInfo.Version + ' 100 ' + RSHTTPContinue + EOL);    {Do not Localize}
     end;
   end;
 
@@ -858,6 +840,31 @@ begin
                 Break;
               end;
 
+              // GET data - may exist with POSTs also
+              LRequestInfo.QueryParams := LInputLine;
+              LInputLine := Fetch(LRequestInfo.FQueryParams, '?');    {Do not Localize}
+
+              // Host
+              // the next line is done in TIdHTTPRequestInfo.ProcessHeaders()...
+              // LRequestInfo.FHost := LRequestInfo.Headers.Values['host'];    {Do not Localize}
+
+              // Parse the document input line
+              if LInputLine = '*' then begin    {Do not Localize}
+                LRequestInfo.FDocument := '*';    {Do not Localize}
+              end else begin
+                LURI := TIdURI.Create(LInputLine);
+                try
+                  // SG 29/11/01: Per request of Doychin
+                  // Try to fill the "host" parameter
+                  LRequestInfo.FDocument := TIdURI.URLDecode(LURI.Path) + TIdURI.URLDecode(LURI.Document);
+                  if (Length(LURI.Host) > 0) and (Length(LRequestInfo.FHost) = 0) then begin
+                    LRequestInfo.FHost := LURI.Host;
+                  end;
+                finally
+                  FreeAndNil(LURI);
+                end;
+              end;
+
               // retreive the base ContentType with attributes omitted
               LContentType := ExtractHeaderItem(LRequestInfo.ContentType);
 
@@ -899,10 +906,6 @@ begin
                 end;
               end;
 
-              // GET data - may exist with POSTs also
-              LRequestInfo.QueryParams := LInputLine;
-              LInputLine := Fetch(LRequestInfo.FQueryParams, '?');    {Do not Localize}
-
               // glue together parameters passed in the URL and those
               //
               // RLebeau: should we really be doing this?  For a GET, it might
@@ -932,27 +935,7 @@ begin
               // Cookies
               ReadCookiesFromRequestHeader;
 
-              // Host
-              // the next line is done in TIdHTTPRequestInfo.ProcessHeaders()...
-              // LRequestInfo.FHost := LRequestInfo.Headers.Values['host'];    {Do not Localize}
-
-              // Parse the document input line
-              if LInputLine = '*' then begin    {Do not Localize}
-                LRequestInfo.FDocument := '*';    {Do not Localize}
-              end else begin
-                LURI := TIdURI.Create(LInputLine);
-                try
-                  // SG 29/11/01: Per request of Doychin
-                  // Try to fill the "host" parameter
-                  LRequestInfo.FDocument := TIdURI.URLDecode(LURI.Path) + TIdURI.URLDecode(LURI.Document);
-                  if (Length(LURI.Host) > 0) and (Length(LRequestInfo.FHost) = 0) then begin
-                    LRequestInfo.FHost := LURI.Host;
-                  end;
-                finally
-                  FreeAndNil(LURI);
-                end;
-              end;
-
+              // Authentication
               s := LRequestInfo.RawHeaders.Values['Authorization'];    {Do not Localize}
               LRequestInfo.FAuthExists := (Length(s) > 0);
               if LRequestInfo.AuthExists then begin
@@ -1335,8 +1318,11 @@ begin
     begin
       ResponseNo := 401;
       Values['WWW-Authenticate'] := 'Basic realm="' + AuthRealm + '"';    {Do not Localize}
-      Values['Content-Type'] := 'text/html';    {Do not Localize}
-      FContentText := '<HTML><BODY><B>' + IntToStr(ResponseNo) + ' ' + RSHTTPUnauthorized + '</B></BODY></HTML>';    {Do not Localize}
+      if (Length(FContentText) = 0) and not Assigned(FContentStream) then
+      begin
+        Values['Content-Type'] := 'text/html';    {Do not Localize}
+        FContentText := '<HTML><BODY><B>' + IntToStr(ResponseNo) + ' ' + RSHTTPUnauthorized + '</B></BODY></HTML>';    {Do not Localize}
+      end;
     end;
   end;
 end;
@@ -1482,7 +1468,9 @@ var
   LEncoding: TIdTextEncoding;
   LBufferingStarted: Boolean;
 begin
-  EIdHTTPHeaderAlreadyWritten.IfTrue(HeaderHasBeenWritten, RSHTTPHeaderAlreadyWritten);
+  if HeaderHasBeenWritten then begin
+    EIdHTTPHeaderAlreadyWritten.Toss(RSHTTPHeaderAlreadyWritten);
+  end;
   FHeaderHasBeenWritten := True;
 
   if ContentLength = -1 then begin

@@ -463,9 +463,8 @@ end;
 constructor TCopierThread.Create(AOwner: TFileCopier);
 begin
   fOwner := AOwner;
-  inherited Create(True);
+  inherited Create(False);
   FreeOnTerminate := True;
-  Resume;
 end;
 
 procedure TCopierThread.Execute;

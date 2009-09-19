@@ -360,7 +360,7 @@ uses
     {$ENDIF}
   {$ENDIF}
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
-    {$IFDEF USEINLINE}
+    {$IFDEF USE_INLINE}
  //   Windows,
     {$ENDIF}
   IdStackWindows,
@@ -586,8 +586,12 @@ begin
   GStackCriticalSection.Acquire;
   try
     if GInstanceCount = 0 then begin
-      EIdException.IfTrue(GStack <> nil, RSStackAlreadyCreated);
-      EIdException.IfTrue(GStackClass = nil, RSStackClassUndefined);
+      if GStack <> nil then begin
+        EIdException.Toss(RSStackAlreadyCreated);
+      end;
+      if GStackClass = nil then begin
+        EIdException.Toss(RSStackClassUndefined);
+      end;
       GStack := GStackClass.Create;
     end;
     Inc(GInstanceCount);
@@ -876,7 +880,7 @@ initialization
       {$IFDEF KYLIXCOMPAT}
       TIdStackLinux;
       {$ENDIF}
-      {$IFDEF USEBASEUNIX}
+      {$IFDEF USE_BASEUNIX}
       TIdStackUnix;
       {$ENDIF}
     {$ENDIF}
@@ -895,7 +899,7 @@ initialization
 finalization
   // Dont Free. If shutdown is from another Init section, it can cause GPF when stack
   // tries to access it. App will kill it off anyways, so just let it leak
-  {$IFDEF IDFREEONFINAL}
+  {$IFDEF FREE_ON_FINAL}
   FreeAndNil(GStackCriticalSection);
   {$ENDIF}
 end.

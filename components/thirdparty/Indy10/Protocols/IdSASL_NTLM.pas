@@ -16,7 +16,6 @@ type
     FLMCompatibility : LongWord;
     procedure InitComponent; override;
   public
-
     class function ServiceName: TIdSASLServiceName; override;
     function StartAuthenticate(const AChallenge, AHost, AProtocolName:string) : String; override;
     function ContinueAuthenticate(const ALastResponse, AHost, AProtocolName: String): string; override;
@@ -59,18 +58,7 @@ var LMsg : TIdBytes;
   LFlags : LongWord;
   LDomain, LUserName : String;
   LLen : Integer;
-{var
-  LType2: type_2_message_header;
-  s : String;
-  LDomain, LUserName : String;
-begin
-  s := ALastResponse;
-  Move(S[1], Ltype2, SizeOf(Ltype2));
-  Delete(S, 1, SizeOf(Ltype2));
-  GetDomain(GetUsername,LDomain,LUsername);
-//  S := LType2.Nonce;
-  Result := BuildType3Message(LDomain, AHost,LUserName, GetPassword, LType2.Nonce);
-//  Result := 'NTLM ' + S;    {do not localize}
+
 begin
   LLen := Length(ALastResponse);
   SetLength(LMsg,LLen);
@@ -111,10 +99,9 @@ begin
   begin
     LDomain := FDomain;
   end;
-  Result := BytesToString(
+  Result := String(BytesToString(
     IdNTLMv2.BuildType1Msg(LDomain,LDomain,FLMCompatibility),
-    Indy8BitEncoding);
-//  Result := BuildType1Message(LDomain,AHost);
+    Indy8BitEncoding));
 end;
 
 end.

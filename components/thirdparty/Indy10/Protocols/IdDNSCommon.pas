@@ -590,9 +590,9 @@ type
     constructor Create;
   end;
 
-{$IFDEF UNICODESTRING}
-function DomainNameToDNSStr(const ADomain : UnicodeString): TIdBytes; overload;
+{$IFDEF STRING_IS_UNICODE}
 function DomainNameToDNSStr(const ADomain : AnsiString): TIdBytes; overload;
+function DomainNameToDNSStr(const ADomain : TIdUnicodeString): TIdBytes; overload;
 {$ELSE}
 function DomainNameToDNSStr(const ADomain : String): TIdBytes;
 {$ENDIF}
@@ -634,15 +634,17 @@ begin
   Inc(VDestIndex, SizeOf(LongWord));
 end;
 
-{$IFDEF UNICODESTRING}
+{$IFDEF STRING_IS_UNICODE}
 function DomainNameToDNSStr(const ADomain : AnsiString): TIdBytes;
-{$IFDEF USEINLINE}inline;{$ENDIF}
+{$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
-  Result := DomainNameToDNSStr(UnicodeString(ADomain));
+  Result := DomainNameToDNSStr(TIdUnicodeString(ADomain));
 end;
-{$ENDIF}
 
-function DomainNameToDNSStr(const ADomain : {$IFDEF UNICODESTRING}UnicodeString{$ELSE}String{$ENDIF}): TIdBytes;
+function DomainNameToDNSStr(const ADomain : TIdUnicodeString): TIdBytes;
+{$ELSE}
+function DomainNameToDNSStr(const ADomain : string): TIdBytes;
+{$ENDIF}
 var
   BufStr, LDomain : String;
   LIdx : Integer;
@@ -1253,7 +1255,7 @@ end;
 
 function TIdTextModeResourceRecord.GetValue(const AName: String): AnsiString;
 begin
-  {$IFDEF UNICODESTRING}
+  {$IFDEF STRING_IS_UNICODE}
   Result := AnsiString(RRDatas.Values[AName]); // explicit convert to Ansi
   {$ELSE}
   Result := RRDatas.Values[AName];
@@ -1262,7 +1264,7 @@ end;
 
 procedure TIdTextModeResourceRecord.SetValue(const AName: String; const AValue: AnsiString);
 begin
-  {$IFDEF UNICODESTRING}
+  {$IFDEF STRING_IS_UNICODE}
   RRDatas.Values[AName] := String(AValue); // explicit convert to Unicode
   {$ELSE}
   RRDatas.Values[AName] := AValue;
@@ -1384,7 +1386,7 @@ end;
 function TIdRR_CName.TextRecord(AFullName: string): string;
 begin
   Result := FormatQNameFull(AFullName) + Chr(9) + 'IN' + Chr(9) + 'CNAME' + Chr(9)  {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(CName) // explicit convert to Unicode
     {$ELSE}
     + CName
@@ -1399,7 +1401,7 @@ var
   RRData: TIdBytes;
 begin
   if Length(FAnswer) = 0 then begin
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     // explicit convert to Unicode
     RRData := NormalStrToDNSStr(String(CPU));
     AppendBytes(RRData, NormalStrToDNSStr(String(OS)));
@@ -1442,13 +1444,13 @@ end;
 function TIdRR_HINFO.TextRecord(AFullName: string): string;
 begin
   Result := FormatQNameFull(AFullName) + Chr(9) + 'IN' + Chr(9) + 'HINFO' + Chr(9) + '"' {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(CPU) // explicit convert to Unicode
     {$ELSE}
     + CPU
     {$ENDIF}
     + '" "' {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(OS) // explicit convert to Unicode
     {$ELSE}
     + OS
@@ -1489,7 +1491,7 @@ end;
 function TIdRR_MB.TextRecord(AFullName: string): string;
 begin
   Result := FormatQNameFull(AFullName) + Chr(9) + 'IN' + Chr(9) + 'MB' + Chr(9)  {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(MADName) // explicit convert to Unicode
     {$ELSE}
     + MADName
@@ -1530,7 +1532,7 @@ end;
 function TIdRR_MG.TextRecord(AFullName: string): string;
 begin
   Result := FormatQNameFull(AFullName) + Chr(9) + 'IN' + Chr(9) + 'MG' + Chr(9)  {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(MGMName) // explicit convert to Unicode
     {$ELSE}
     + MGMName
@@ -1592,13 +1594,13 @@ end;
 function TIdRR_MINFO.TextRecord(AFullName: string): string;
 begin
   Result := FormatQNameFull(AFullName) + Chr(9) + 'IN' + Chr(9) + 'MINFO' + Chr(9)  {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(Responsible_Mail) // explicit convert to Unicode
     {$ELSE}
     + Responsible_Mail
     {$ENDIF}
     + ' '  {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(ErrorHandle_Mail) // explicit convert to Unicode
     {$ELSE}
     + ErrorHandle_Mail
@@ -1639,7 +1641,7 @@ end;
 function TIdRR_MR.TextRecord(AFullName: string): string;
 begin
   Result := FormatQNameFull(AFullName) + Chr(9) + 'IN' + Chr(9) + 'MR' + Chr(9)  {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(NewName) // explicit convert to Unicode
     {$ELSE}
     + NewName
@@ -1657,7 +1659,7 @@ begin
   Tmp := nil; // keep the compiler happy
   if Length(FAnswer) = 0 then begin
     Pref := IndyStrToInt(
-      {$IFDEF UNICODESTRING}
+      {$IFDEF STRING_IS_UNICODE}
       String(Preference) // explicit convert to Unicode
       {$ELSE}
       Preference
@@ -1666,7 +1668,7 @@ begin
     RRData := ToBytes(SmallInt(Pref));
     Tmp := DomainNameToDNSStr(
       FormatQName(
-        {$IFDEF UNICODESTRING}
+        {$IFDEF STRING_IS_UNICODE}
         String(Exchange), // explicit convert to Unicode
         {$ELSE}
         Exchange,
@@ -1708,13 +1710,13 @@ end;
 function TIdRR_MX.TextRecord(AFullName: string): string;
 begin
   Result := FormatQNameFull(AFullName) + Chr(9) + 'IN' + Chr(9) + 'MX' + Chr(9) {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(Preference) // explicit convert to Unicode
     {$ELSE}
     + Preference
     {$ENDIF}
     + ' ' {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(Exchange) // explicit convert to Unicode
     {$ELSE}
     + Exchange
@@ -1755,7 +1757,7 @@ end;
 function TIdRR_NS.TextRecord(AFullName: string): string;
 begin
   Result := FormatQNameFull(AFullName) + Chr(9) + 'IN' + Chr(9) + 'NS' + Chr(9)  {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(NSDName) // explicit convert to Unicode
     {$ELSE}
     + NSDName
@@ -1796,7 +1798,7 @@ end;
 function TIdRR_PTR.TextRecord(AFullName: string): string;
 begin
   Result := FormatQNameFull(AFullName) + Chr(9) + 'IN' + Chr(9) + 'PTR' + Chr(9)  {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(PTRDName) // explicit convert to Unicode
     {$ELSE}
     + PTRDName
@@ -1826,7 +1828,7 @@ begin
     IdBytesCopyBytes(LMName, RRData, LIdx);
     IdBytesCopyBytes(LRName, RRData, LIdx);
 
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     // explicit convert to Unicode
     IdBytesCopyWord(GStack.HostToNetwork(Word(IndyStrToInt(String(Serial)))), RRData, LIdx);
     IdBytesCopyWord(GStack.HostToNetwork(Word(IndyStrToInt(String(Refresh)))), RRData, LIdx);
@@ -1941,43 +1943,43 @@ end;
 function TIdRR_SOA.TextRecord(AFullName: string): string;
 begin
   Result := FormatQNameFull(AFullName) + Chr(9) + 'IN' + Chr(9) + 'SOA' + Chr(9) {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(MName) // explicit convert to Unicode
     {$ELSE}
     + MName
     {$ENDIF}
     + ' ' {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(RName) // explicit convert to Unicode
     {$ELSE}
     + RName
     {$ENDIF}
     + ' ' {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(Serial) // explicit convert to Unicode
     {$ELSE}
     + Serial
     {$ENDIF}
     + ' ' {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(Refresh) // explicit convert to Unicode
     {$ELSE}
     + Refresh
     {$ENDIF}
     + ' ' {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(Retry) // explicit convert to Unicode
     {$ELSE}
     + Retry
     {$ENDIF}
     + ' ' {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(Expire) // explicit convert to Unicode
     {$ELSE}
     + Expire
     {$ENDIF}
     + ' ' {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(Minimum) // explicit convert to Unicode
     {$ELSE}
     + Minimum
@@ -1994,7 +1996,7 @@ begin
   RRData := nil; // keep the compiler happy
   if Length(Self.FAnswer) = 0 then begin
     RRData := IPAddrToDNSStr(
-      {$IFDEF UNICODESTRING}
+      {$IFDEF STRING_IS_UNICODE}
       String(Address) // explicit convert to Unicode
       {$ELSE}
       Address
@@ -2024,7 +2026,7 @@ end;
 function TIdRR_A.TextRecord(AFullName: string): string;
 begin
   Result := FormatQNameFull(AFullName) + Chr(9) + 'IN' + Chr(9) + 'A' + Chr(9) {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(Address) // explicit convert to Unicode
     {$ELSE}
     + Address
@@ -2041,7 +2043,7 @@ begin
   RRData := nil; // keep the compiler happy
   if Length(FAnswer) = 0 then begin
     RRData := IPv6AAAAToDNSStr(
-      {$IFDEF UNICODESTRING}
+      {$IFDEF STRING_IS_UNICODE}
       String(Address) // explicit convert to Unicode
       {$ELSE}
       Address
@@ -2071,7 +2073,7 @@ end;
 function TIdRR_AAAA.TextRecord(AFullName: string): string;
 begin
   Result := FormatQNameFull(AFullName) + Chr(9) + 'IN' + Chr(9) + 'AAAA' + Chr(9)  {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(Address) // explicit convert to Unicode
     {$ELSE}
     + Address
@@ -2090,7 +2092,7 @@ begin
     //Fix here, make the RRData being DNSStr.
     //Fixed in 2005 Jan 25.
     RRData := NormalStrToDNSStr(
-      {$IFDEF UNICODESTRING}
+      {$IFDEF STRING_IS_UNICODE}
       String(TXT) // explicit convert to Unicode
       {$ELSE}
       TXT
@@ -2120,7 +2122,7 @@ end;
 function TIdRR_TXT.TextRecord(AFullName: string): string;
 begin
   Result := FormatQNameFull(AFullName) + Chr(9) + 'IN' + Chr(9) + 'TXT' + Chr(9) + '"' {do not localize}
-    {$IFDEF UNICODESTRING}
+    {$IFDEF STRING_IS_UNICODE}
     + String(TXT) // explicit convert to Unicode
     {$ELSE}
     + TXT

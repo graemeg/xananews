@@ -444,10 +444,10 @@ var
   LAddrInfo: pAddrInfo;
   {$ENDIF}
   RetVal: Integer;
-  {$IFDEF UNICODESTRING}
+  {$IFDEF STRING_IS_UNICODE}
   LTemp: AnsiString;
   {$ELSE}
-    {$IFDEF UNICODE_BUT_NO_UNICODESTRING}
+    {$IFDEF UNICODE_BUT_STRING_IS_ANSI}
   LTemp: WideString;
     {$ENDIF}
   {$ENDIF}
@@ -464,10 +464,10 @@ begin
     case AIPVersion of
       Id_IPv4:
         begin
-          {$IFDEF UNICODESTRING}
-          LTemp := AnsiString(AAddress); // convert to Ansi
+          {$IFDEF STRING_IS_UNICODE}
+          LTemp := AnsiString(AAddress); // explicit convert to Ansi
           {$ENDIF}
-          LAddr := inet_addr(PAnsiChar({$IFDEF UNICODESTRING}LTemp{$ELSE}AAddress{$ENDIF}));
+          LAddr := inet_addr(PAnsiChar({$IFDEF STRING_IS_UNICODE}LTemp{$ELSE}AAddress{$ENDIF}));
           Host := gethostbyAddr(@LAddr, SIZE_TADDRINFO, AF_INET);
           if Host = nil then begin
             CheckForSocketError(SOCKET_ERROR);
@@ -493,28 +493,28 @@ begin
   Hints.ai_flags := AI_CANONNAME;
   LAddrInfo := nil;
 
-  {$IFDEF UNICODE_BUT_NO_UNICODESTRING}
-  LTemp := AAddress; // convert to Unicode
+  {$IFDEF UNICODE_BUT_STRING_IS_ANSI}
+  LTemp := WideString(AAddress); // explicit convert to Unicode
   {$ENDIF}
 
   RetVal := getaddrinfo(
-    {$IFDEF UNICODE_BUT_NO_UNICODESTRING}PWideChar(LTemp){$ELSE}PChar(AAddress){$ENDIF},
+    {$IFDEF UNICODE_BUT_STRING_IS_ANSI}PWideChar(LTemp){$ELSE}PChar(AAddress){$ENDIF},
     nil, @Hints, @LAddrInfo);
   if RetVal <> 0 then begin
     RaiseSocketError(gaiErrorToWsaError(RetVal));
   end;
   try
     SetLength(
-      {$IFDEF UNICODE_BUT_NO_UNICODESTRING}LTemp{$ELSE}Result{$ENDIF},
+      {$IFDEF UNICODE_BUT_STRING_IS_ANSI}LTemp{$ELSE}Result{$ENDIF},
       NI_MAXHOST);
     RetVal := getnameinfo(
       LAddrInfo.ai_addr, LAddrInfo.ai_addrlen,
-      {$IFDEF UNICODE_BUT_NO_UNICODESTRING}PWideChar(LTemp){$ELSE}PChar(Result){$ENDIF},
+      {$IFDEF UNICODE_BUT_STRING_IS_ANSI}PWideChar(LTemp){$ELSE}PChar(Result){$ENDIF},
       NI_MAXHOST, nil, 0, NI_NAMEREQD);
     if RetVal <> 0 then begin
       RaiseSocketError(gaiErrorToWsaError(RetVal));
     end;
-    Result := {$IFDEF UNICODE_BUT_NO_UNICODESTRING}PWideChar(LTemp){$ELSE}PChar(Result){$ENDIF};
+    Result := {$IFDEF UNICODE_BUT_STRING_IS_ANSI}PWideChar(LTemp){$ELSE}PChar(Result){$ENDIF};
   finally
     freeaddrinfo(LAddrInfo);
   end;
@@ -522,13 +522,14 @@ end;
 
 function TIdStackWindows.ReadHostName: string;
 var
+  // Note that there is no Unicode version of gethostname.
   LStr: AnsiString;
 begin
   SetLength(LStr, SIZE_HOSTNAME);
   gethostname(PAnsiChar(LStr), SIZE_HOSTNAME);
-  //we have to specifically type cast a PAnsiChar to a string for Tiburon.
+  //we have to specifically type cast a PAnsiChar to a string for D2009+.
   //otherwise, we will get a warning about implicit typecast from AnsiString
-  //to string   Note that there is no Unicode version of gethostname.
+  //to string
   Result := String(PAnsiChar(LStr));
 end;
 
@@ -654,15 +655,15 @@ end;
 function TIdStackWindows.WSGetServByName(const AServiceName: string): TIdPort;
 var
   ps: PServEnt;
-  {$IFDEF UNICODESTRING}
+  {$IFDEF STRING_IS_UNICODE}
   LTemp: AnsiString;
   {$ENDIF}
 begin
-  {$IFDEF UNICODESTRING}
-  LTemp := AnsiString(AServiceName); // convert to Ansi
+  {$IFDEF STRING_IS_UNICODE}
+  LTemp := AnsiString(AServiceName); // explicit convert to Ansi
   {$ENDIF}
   ps := getservbyname(
-    PAnsiChar({$IFDEF UNICODESTRING}LTemp{$ELSE}AServiceName{$ENDIF}),
+    PAnsiChar({$IFDEF STRING_IS_UNICODE}LTemp{$ELSE}AServiceName{$ENDIF}),
     nil);
   if ps <> nil then begin
     Result := ntohs(ps^.s_port);
@@ -679,6 +680,7 @@ end;
 
 function TIdStackWindows.WSGetServByPort(const APortNumber: TIdPort): TStrings;
 type
+  // Note that there is no Unicode version of getservbyport.
   PPAnsiCharArray = ^TPAnsiCharArray;
   TPAnsiCharArray = packed array[0..(MaxLongint div SizeOf(PAnsiChar))-1] of PAnsiChar;
 var
@@ -691,9 +693,9 @@ begin
     ps := getservbyport(htons(APortNumber), nil);
     if ps <> nil then
     begin
-  //we have to specifically type cast a PAnsiChar to a string for Tiburon.
-  //otherwise, we will get a warning about implicit typecast from AnsiString
-  //to string   Note that there is no Unicode version of getservbyport.
+      //we have to specifically type cast a PAnsiChar to a string for D2009+.
+      //otherwise, we will get a warning about implicit typecast from AnsiString
+      //to string
       Result.Add(String(PAnsiChar(ps^.s_name)));
       i := 0;
       p := Pointer(ps^.s_aliases);
@@ -774,23 +776,24 @@ var
   {$ENDIF}
   RetVal: Integer;
   LHostName: String;
-  {$IFDEF UNICODESTRING}
+  {$IFDEF STRING_IS_UNICODE}
   LTemp: AnsiString;
   {$ELSE}
-    {$IFDEF UNICODE_BUT_NO_UNICODESTRING}
+    {$IFDEF UNICODE_BUT_STRING_IS_ANSI}
   LTemp: WideString;
     {$ENDIF}
   {$ENDIF}
 begin
   LHostName := HostName;
+
   {$IFNDEF WINCE}
   if not GIdIPv6FuncsAvailable then
   begin
-    {$IFDEF UNICODESTRING}
-    LTemp := AnsiString(LHostName); // convert to Ansi
+    {$IFDEF STRING_IS_UNICODE}
+    LTemp := AnsiString(LHostName); // explicit convert to Ansi
     {$ENDIF}
     AHost := gethostbyname(
-      PAnsiChar({$IFDEF UNICODESTRING}LTemp{$ELSE}LHostName{$ENDIF}));
+      PAnsiChar({$IFDEF STRING_IS_UNICODE}LTemp{$ELSE}LHostName{$ENDIF}));
     if AHost = nil then begin
       RaiseLastSocketError;
     end;
@@ -810,17 +813,18 @@ begin
     Exit;
   end;
   {$ENDIF}
+
   ZeroMemory(@Hints, SIZE_TADDRINFO);
-  Hints.ai_family := Id_PF_INET4;
+  Hints.ai_family := Id_PF_INET4; // TODO: support IPv6 addresses
   Hints.ai_socktype := SOCK_STREAM;
   LAddrInfo := nil;
 
-  {$IFDEF UNICODE_BUT_NO_UNICODESTRING}
-  LTemp := LHostName; // convert to Unicode
+  {$IFDEF UNICODE_BUT_STRING_IS_ANSI}
+  LTemp := WideString(LHostName); // explicit convert to Unicode
   {$ENDIF}
 
   RetVal := getaddrinfo(
-    {$IFDEF UNICODE_BUT_NO_UNICODESTRING}PWideChar(LTemp){$ELSE}PChar(LHostName){$ENDIF},
+    {$IFDEF UNICODE_BUT_STRING_IS_ANSI}PWideChar(LTemp){$ELSE}PChar(LHostName){$ENDIF},
     nil, @Hints, @LAddrInfo);
   if RetVal <> 0 then begin
     RaiseSocketError(gaiErrorToWsaError(RetVal));
@@ -1129,7 +1133,6 @@ var
   {$IFNDEF WINCE}
   LHost: PHostEnt;
   {$ENDIF}
-
   {$IFDEF UNICODE}
   LAddrInfo: pAddrInfoW;
   Hints: TAddrInfoW;
@@ -1138,10 +1141,10 @@ var
   Hints: TAddrInfo;
   {$ENDIF}
   RetVal: Integer;
-  {$IFDEF UNICODESTRING}
+  {$IFDEF STRING_IS_UNICODE}
   LTemp: AnsiString;
   {$ELSE}
-    {$IFDEF UNICODE_BUT_NO_UNICODESTRING}
+    {$IFDEF UNICODE_BUT_STRING_IS_ANSI}
   LTemp: WideString;
     {$ENDIF}
   {$ENDIF}
@@ -1158,11 +1161,11 @@ begin
     case AIPVersion of
       Id_IPv4:
         begin
-          {$IFDEF UNICODESTRING}
-          LTemp := AnsiString(AHostName); // convert to Ansi
+          {$IFDEF STRING_IS_UNICODE}
+          LTemp := AnsiString(AHostName); // explicit convert to Ansi
           {$ENDIF}
           LHost := IdWinsock2.gethostbyname(
-	    PAnsiChar({$IFDEF UNICODESTRING}LTemp{$ELSE}AHostName{$ENDIF}));
+            PAnsiChar({$IFDEF STRING_IS_UNICODE}LTemp{$ELSE}AHostName{$ENDIF}));
           if LHost = nil then begin
             RaiseLastSocketError;
           end;
@@ -1182,20 +1185,22 @@ begin
     Exit;
   end;
   {$ENDIF}
+
   if not (AIPVersion in [Id_IPv4, Id_IPv6]) then begin
     IPVersionUnsupported;
   end;
+
   ZeroMemory(@Hints, SIZE_TADDRINFO);
   Hints.ai_family := IdIPFamily[AIPVersion];
   Hints.ai_socktype := SOCK_STREAM;
   LAddrInfo := nil;
 
-  {$IFDEF UNICODE_BUT_NO_UNICODESTRING}
-  LTemp := AHostName; // convert to Unicode
+  {$IFDEF UNICODE_BUT_STRING_IS_ANSI}
+  LTemp := WideString(AHostName); // explicit convert to Unicode
   {$ENDIF}
 
   RetVal := getaddrinfo(
-    {$IFDEF UNICODE_BUT_NO_UNICODESTRING}PWideChar(LTemp){$ELSE}PChar(AHostName){$ENDIF},
+    {$IFDEF UNICODE_BUT_STRING_IS_ANSI}PWideChar(LTemp){$ELSE}PChar(AHostName){$ENDIF},
     nil, @Hints, @LAddrInfo);
   if RetVal <> 0 then begin
     RaiseSocketError(gaiErrorToWsaError(RetVal));
@@ -1352,7 +1357,11 @@ var
   LAddr : TSockAddrIn6;
   Bytes : LongWord;
 begin
-//  EIdIPv6Unavailable.IfFalse(GIdIPv6FuncsAvailable, RSIPv6Unavailable);
+  {
+  if not GIdIPv6FuncsAvailable then begin
+    EIdIPv6Unavailable.Toss(RSIPv6Unavailable);
+  end;
+  }
   //make our LAddrInfo structure
   FillChar(LAddr, SizeOf(LAddr), 0);
   with LAddr do
@@ -1571,18 +1580,18 @@ function ServeFile(ASocket: TIdStackSocketHandle; const AFileName: string): Int6
 var
   LFileHandle: THandle;
   LSize: LARGE_INTEGER;
-  {$IFDEF UNICODE_BUT_NO_UNICODESTRING}
+  {$IFDEF UNICODE_BUT_STRING_IS_ANSI}
   LTemp: WideString;
   {$ENDIF}
 begin
   Result := 0;
 
-  {$IFDEF UNICODE_BUT_NO_UNICODESTRING}
-  LTemp := AFileName; // convert to Unicode
+  {$IFDEF UNICODE_BUT_STRING_IS_ANSI}
+  LTemp := WideString(AFileName); // explicit convert to Unicode
   {$ENDIF}
 
   LFileHandle := CreateFile(
-    {$IFDEF UNICODE_BUT_NO_UNICODESTRING}PWideChar(LTemp){$ELSE}PChar(AFileName){$ENDIF},
+    {$IFDEF UNICODE_BUT_STRING_IS_ANSI}PWideChar(LTemp){$ELSE}PChar(AFileName){$ENDIF},
     GENERIC_READ, FILE_SHARE_READ, nil, OPEN_EXISTING,
     FILE_ATTRIBUTE_NORMAL or FILE_FLAG_SEQUENTIAL_SCAN, 0);
 

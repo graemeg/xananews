@@ -69,7 +69,7 @@ interface
 {$i IdCompilerDefines.inc}
 
 uses
-  IdBaseComponent, IdThread, IdTask, IdYarn, IdThreadSafe;
+  Windows, IdBaseComponent, IdThread, IdTask, IdYarn, IdThreadSafe;
 
 type
   TIdScheduler = class(TIdBaseComponent)
@@ -97,7 +97,7 @@ implementation
 uses
   //facilitate inlining only.
   {$IFDEF DOTNET}
-    {$IFDEF USEINLINE}
+    {$IFDEF USE_INLINE}
   System.Threading,
     {$ENDIF}
   {$ENDIF}
@@ -133,7 +133,7 @@ begin
   Assert(FActiveYarns<>nil);
 
   while True do begin
-    // Must unlock each time to allow yarns that are temrinating to remove themselves from the list
+    // Must unlock each time to allow yarns that are terminating to remove themselves from the list
     with FActiveYarns.LockList do try
       if Count = 0 then begin
         Break;

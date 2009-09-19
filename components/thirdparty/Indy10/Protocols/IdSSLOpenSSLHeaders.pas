@@ -204,8 +204,8 @@ interface
 
 //THe OpenSSL developers use a IF 0 and an IF 1 convention for selectively
 //enabling or disabling things.
-{$DEFINE USETHIS}
-{.$DEFINE OMITTHIS}
+{$DEFINE USE_THIS}
+{.$DEFINE OMIT_THIS}
 {
 IMPORTANT!!!!
 
@@ -636,7 +636,7 @@ my $default_depflags = " -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_CAPIENG -DOPENSSL_NO
   {$DEFINE MD5_ASM}
   {$DEFINE SHA1_ASM}
   {$DEFINE RMD160_ASM}
-   {$DEFINE OPENSSL_NO_CMS}
+  {$DEFINE OPENSSL_NO_CMS}
   {$DEFINE OPENSSL_NO_GMP}
   {$DEFINE OPENSSL_NO_CAMELLIA}
   {$DEFINE OPENSSL_NO_RC5}
@@ -665,7 +665,7 @@ my $default_depflags = " -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_CAPIENG -DOPENSSL_NO
   {$DEFINE OPENSSL_NO_DYNAMIC_ENGINE}
 
   {$DEFINE EXPORT_VAR_AS_FN}
-   {$DEFINE OPENSSL_NO_RFC3779}
+  {$DEFINE OPENSSL_NO_RFC3779}
   {$DEFINE OPENSSL_NO_SEED}
   {$DEFINE OPENSSL_NO_CAPIENG}
   {$DEFINE OPENSSL_NO_JPAKE}
@@ -695,7 +695,7 @@ my $default_depflags = " -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_CAPIENG -DOPENSSL_NO
 
   {$DEFINE EXPORT_VAR_AS_FN}
   {$DEFINE OPENSSL_NO_GMP}
- {$DEFINE OPENSSL_NO_RFC3779}   
+  {$DEFINE OPENSSL_NO_RFC3779}
   {$DEFINE OPENSSL_NO_SEED}
   {$DEFINE OPENSSL_NO_CAPIENG}
   {$DEFINE OPENSSL_NO_JPAKE}
@@ -3600,19 +3600,21 @@ const
   OPENSSL_SSL_AD_CERTIFICATE_UNOBTAINABLE = OPENSSL_TLS1_AD_CERTIFICATE_UNOBTAINABLE;
   OPENSSL_SSL_AD_UNRECOGNIZED_NAME = OPENSSL_TLS1_AD_UNRECOGNIZED_NAME;
   OPENSSL_SSL_AD_BAD_CERTIFICATE_STATUS_RESPONSE = OPENSSL_TLS1_AD_BAD_CERTIFICATE_STATUS_RESPONSE;
-  OPENSSL_SSL_CB_EXIT = $02;
-  OPENSSL_SSL_CB_ACCEPT_EXIT = OPENSSL_SSL_ST_ACCEPT or OPENSSL_SSL_CB_EXIT;
+
   OPENSSL_SSL_CB_LOOP = $01;
-  OPENSSL_SSL_CB_ACCEPT_LOOP = OPENSSL_SSL_ST_ACCEPT or OPENSSL_SSL_CB_LOOP;
-  OPENSSL_SSL_CB_ALERT = $4000;
-  OPENSSL_SSL_CB_CONNECT_EXIT = OPENSSL_SSL_ST_CONNECT or OPENSSL_SSL_CB_EXIT;
-  OPENSSL_SSL_CB_CONNECT_LOOP = OPENSSL_SSL_ST_CONNECT or OPENSSL_SSL_CB_LOOP;
-  OPENSSL_SSL_CB_HANDSHAKE_DONE = $20;
-  OPENSSL_SSL_CB_HANDSHAKE_START = $10;
+  OPENSSL_SSL_CB_EXIT = $02;
   OPENSSL_SSL_CB_READ = $04;
-  OPENSSL_SSL_CB_READ_ALERT = OPENSSL_SSL_CB_ALERT or OPENSSL_SSL_CB_READ;
   OPENSSL_SSL_CB_WRITE = $08;
+  OPENSSL_SSL_CB_ALERT = $4000;
+  OPENSSL_SSL_CB_READ_ALERT = OPENSSL_SSL_CB_ALERT or OPENSSL_SSL_CB_READ;
   OPENSSL_SSL_CB_WRITE_ALERT = OPENSSL_SSL_CB_ALERT or OPENSSL_SSL_CB_WRITE;
+  OPENSSL_SSL_CB_ACCEPT_LOOP = OPENSSL_SSL_ST_ACCEPT or OPENSSL_SSL_CB_LOOP;
+  OPENSSL_SSL_CB_ACCEPT_EXIT = OPENSSL_SSL_ST_ACCEPT or OPENSSL_SSL_CB_EXIT;
+  OPENSSL_SSL_CB_CONNECT_LOOP = OPENSSL_SSL_ST_CONNECT or OPENSSL_SSL_CB_LOOP;
+  OPENSSL_SSL_CB_CONNECT_EXIT = OPENSSL_SSL_ST_CONNECT or OPENSSL_SSL_CB_EXIT;
+  OPENSSL_SSL_CB_HANDSHAKE_START = $10;
+  OPENSSL_SSL_CB_HANDSHAKE_DONE = $20;
+
   OPENSSL_SSL_CTRL_NEED_TMP_RSA = 1;
   OPENSSL_SSL_CTRL_SET_TMP_RSA = 2;
   OPENSSL_SSL_CTRL_SET_TMP_DH = 3;
@@ -4782,7 +4784,7 @@ const
   OPENSSL_ERR_R_MISSING_ASN1_EOS = 63;
   OPENSSL_DTLS1_VERSION = $FEFF;
   OPENSSL_DTLS1_BAD_VER = $0100;
-{$IFNDEF USETHIS}
+{$IFNDEF USE_THIS}
 //* this alert description is not specified anywhere... */
  DTLS1_AD_MISSING_HANDSHAKE_MESSAGE = 110;
 {$endif}
@@ -4804,7 +4806,7 @@ type
   PUInteger       =^UInteger;
   PFunction       = Pointer;
   {$IFNDEF FPC}
-	 {$IFNDEF VCL2007ORABOVE}
+    {$IFNDEF VCL_2007_OR_ABOVE}
   // Kudzu - CB3,4 dont like this. I think its a typo anyways. I dont think they
   // intended a pointer to a pointer to an integer.
   //PInteger  =^PInteger;
@@ -4819,7 +4821,7 @@ type
   PULong    =^LongWord;
   PUShort   =^Word;
   {$IFNDEF FPC}
-     {$IFNDEF VCL2007ORABOVE}
+     {$IFNDEF VCL_2007_OR_ABOVE}
   PPAnsiChar    =^PAnsiChar;
      {$ENDIF}
   {$ENDIF}
@@ -4983,7 +4985,7 @@ type
 #else
 	BN_ULONG n0;   /* least significant word of Ni */
 #endif}
-    {$IFNDEF USETHIS}
+    {$IFNDEF USE_THIS}
     //* OpenSSL 0.9.9 preview: */
     n0 : array [0..1] of BN_ULONG;
     {$ELSE}
@@ -7789,7 +7791,7 @@ _des_cblock = DES_cblock
     // Default generate session ID callback.
     generate_session_id : PGEN_SESSION_CB;
     param : PX509_VERIFY_PARAM;
-    {$IFDEF OMITTHIS}
+    {$IFDEF OMIT_THIS}
     purpose : TIdC_INT;  // Purpose setting
     trust : TIdC_INT;    // Trust setting
     {$ENDIF}
@@ -7888,7 +7890,7 @@ _des_cblock = DES_cblock
     msg_callback_arg : Pointer;
     hit : TIdC_INT;    //* reusing a previous session */
     param : PX509_VERIFY_PARAM;
-    {$IFDEF OMITTHIS}
+    {$IFDEF OMIT_THIS}
     purpose : TIdC_INT; // Purpose setting
     trust : TIdC_INT;   // Trust setting
     {$ENDIF}
@@ -8368,6 +8370,9 @@ var
   IdSslCtxUseCertificateFile : function(ctx: PSSL_CTX; const _file: PAnsiChar; _type: TIdC_INT): TIdC_INT cdecl = nil;
   IdSslLoadErrorStrings : procedure cdecl = nil;
   IdSslStateStringLong : function(s: PSSL): PAnsiChar cdecl = nil;
+  IdSslAlertDescStringLong : function(value : TIdC_INT) : PAnsiChar cdecl = nil;
+  IdSslAlertTypeStringLong : function(value : TIdC_INT) : PAnsiChar cdecl = nil;
+
   IdSslGetPeerCertificate : function(s: PSSL): PX509 cdecl = nil;
   IdSslCtxSetVerify : procedure(ctx: PSSL_CTX; mode: TIdC_INT; callback: TSSL_CTX_set_verify_callback) cdecl = nil;
   IdSslCtxSetVerifyDepth : procedure(ctx: PSSL_CTX; depth: TIdC_INT) cdecl = nil;
@@ -8519,6 +8524,10 @@ procedure IdSslCtxSetInfoCallback(ctx: PSSL_CTX; cb: PSSL_CTX_info_callback);
 function IdSslCtxSetOptions(ctx: PSSL_CTX; op: TIdC_LONG): TIdC_LONG;
 function IdSslCtxSetMode(ctx : PSSL_CTX; op : TIdC_LONG) : TIdC_LONG;
 function IdSslCtxGetMode(ctx : PSSL_CTX) : TIdC_LONG;
+
+function IdSslSetOptions(ssl: PSSL; op : TIdC_LONG): TIdC_LONG;
+
+
 function IdSslSetMtu(ssl : PSSL; mtu : TIdC_LONG) : TIdC_LONG;
 function IdSslCtxSessNumber(ctx : PSSL_CTX) : TIdC_LONG;
 function IdSslCtxSessConnect(ctx : PSSL_CTX) : TIdC_LONG;
@@ -8621,7 +8630,8 @@ uses
   , Windows
   {$ENDIF};
 
-function GetErrorMessage(const AErr : TIdC_ULONG) : AnsiString;  {$IFDEF USEINLINE} inline; {$ENDIF}
+function GetErrorMessage(const AErr : TIdC_ULONG) : AnsiString;
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 var
   LErrMsg: array [0..160] of AnsiChar;
 begin
@@ -8774,7 +8784,7 @@ them in case we use them later.}
   {CH fn_NCONF_new = 'NCONF_new'; } {Do not localize}
   {CH fn_NCONF_default = 'NCONF_default'; } {Do not localize}
   {CH fn_NCONF_WIN32 = 'NCONF_WIN32'; } {Do not localize}
-{$IFDEF OMITTHIS} //* Just to give you an idea of what I have in mind */
+{$IFDEF OMIT_THIS} //* Just to give you an idea of what I have in mind */
   {CH fn_NCONF_XML = 'NCONF_XML''; } {Do not localize}
 {$ENDIF}
   {CH fn_NCONF_free = 'NCONF_free'; } {Do not localize}
@@ -9104,7 +9114,7 @@ them in case we use them later.}
   {CH fn_des_ede3_cbcm_encrypt = 'DES_ede3_cbcm_encrypt'; }  {Do not localize}
   {CH fn_des_ede3_cfb64_encrypt = 'DES_ede3_cfb64_encrypt'; }  {Do not localize}
   {CH fn_des_ede3_ofb64_encrypt = 'DES_ede3_ofb64_encrypt'; }  {Do not localize}
-  {$IFDEF USETHIS}
+  {$IFDEF USE_THIS}
   {CH fn_des_xwhite_in2out = 'DES_xwhite_in2out'; }  {Do not localize}
   {$ENDIF}
   {CH fn_des_enc_read = 'DES_enc_read'; }  {Do not localize}
@@ -9147,7 +9157,7 @@ them in case we use them later.}
   {CH fn__ossl_old_des_ede3_cbc_encrypt = '_ossl_old_des_ede3_cbc_encrypt'; {Do not localize}
   {CH fn__ossl_old_des_ede3_cfb64_encrypt = '_ossl_old_des_ede3_cfb64_encrypt'; {Do not localize}
   {CH fn__ossl_old_des_ede3_ofb64_encrypt = '_ossl_old_des_ede3_ofb64_encrypt'; {Do not localize}
-    {$IFDEF USETHIS}
+    {$IFDEF USE_THIS}
   {CH fn__ossl_old_des_xwhite_in2out = '_ossl_old_des_xwhite_in2out'; {Do not localize}
     {$ENDIF}
   {CH fn__ossl_old_des_enc_read = '_ossl_old_des_enc_read'; {Do not localize}
@@ -11160,9 +11170,9 @@ them in case we use them later.}
   fn_SSL_shutdown = 'SSL_shutdown';  {Do not localize}
   {CH fn_SSL_get_ssl_method = 'SSL_get_ssl_method'; }  {Do not localize}
   {CH fn_SSL_set_ssl_method = 'SSL_set_ssl_method'; }  {Do not localize}
-  {CH fn_SSL_alert_type_string_long = 'SSL_alert_type_string_long'; }  {Do not localize}
+   fn_SSL_alert_type_string_long = 'SSL_alert_type_string_long';   {Do not localize}
   {CH fn_SSL_alert_type_string = 'SSL_alert_type_string'; }  {Do not localize}
-  {CH fn_SSL_alert_desc_string_long = 'SSL_alert_desc_string_long'; }  {Do not localize}
+  fn_SSL_alert_desc_string_long = 'SSL_alert_desc_string_long';   {Do not localize}
   {CH fn_SSL_alert_desc_string = 'SSL_alert_desc_string'; }  {Do not localize}
   {CH fn_SSL_set_client_CA_list = 'SSL_set_client_CA_list'; }  {Do not localize}
   fn_SSL_CTX_set_client_CA_list = 'SSL_CTX_set_client_CA_list';  {Do not localize}
@@ -11229,7 +11239,6 @@ them in case we use them later.}
   // RLebeau: because it is not an actual function of its own to begin with.
   // It is a precompiler macro that maps to another function
   fn_SSLeay_add_ssl_algorithms = 'SSL_library_init';   {Do not localize}
-  //fn_SSL_CTX_set_info_callback = 'SSL_CTX_set_info_callback_indy'; // GREGOR  {Do not localize}
   fn_SSL_SESSION_get_id = 'SSL_SESSION_get_id';  {Do not localize}
   {CH fn_SSL_is_init_finished = 'mi_SSL_is_init_finished'; }  {Do not localize}
   {CH fn_SSL_in_init = 'mi_SSL_in_init'; }  {Do not localize}
@@ -11608,7 +11617,7 @@ begin
     Exit;
   end;
       {$ENDIF}
-      {$IFDEF USEBASEUNIX}
+      {$IFDEF USE_BASEUNIX}
   if hIdCrypto = 0 then begin
    hIdCrypto := HMODULE(HackLoad(SSLCLIB_DLL_name, SSLDLLVers));
   end;
@@ -11645,6 +11654,9 @@ begin
   @IdSslCtxUseCertificateFile := LoadFunction(fn_SSL_CTX_use_certificate_file);
   @IdSslLoadErrorStrings := LoadFunction(fn_SSL_load_error_strings);
   @IdSslStateStringLong := LoadFunction(fn_SSL_state_string_long);
+  @IdSslAlertDescStringLong := LoadFunction(fn_SSL_alert_desc_string_long);
+  @IdSslAlertTypeStringLong := LoadFunction(fn_SSL_alert_type_string_long);
+
   @IdSslGetPeerCertificate := LoadFunction(fn_SSL_get_peer_certificate);
   @IdSslCtxSetVerify := LoadFunction(fn_SSL_CTX_set_verify);
   @IdSslCtxSetVerifyDepth := LoadFunction(fn_SSL_CTX_set_verify_depth);
@@ -11948,12 +11960,14 @@ begin
   end;
 end;
 
-function IdSslSetAppData(s: PSSL; arg: Pointer): TIdC_INT; {$IFDEF USEINLINE} inline; {$ENDIF}
+function IdSslSetAppData(s: PSSL; arg: Pointer): TIdC_INT;
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSSL_set_ex_data(s, 0, arg);
 end;
 
-function IdSslGetAppData(s: PSSL): Pointer;  {$IFDEF USEINLINE} inline; {$ENDIF}
+function IdSslGetAppData(s: PSSL): Pointer;
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSSL_get_ex_data(s, 0);
 end;
@@ -11968,43 +11982,43 @@ begin
 end;
 
 function IdSslMASN1StringLength(x : PASN1_STRING): TIdC_INT;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := x^.length;
 end;
 
 procedure IdSslMASN1StringLengthSet(x : PASN1_STRING; n : TIdC_INT);
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   x^.length := n;
 end;
 
 function IdSslMASN1StringType(x : PASN1_STRING) : TIdC_INT;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := x^._type;
 end;
 
 function IdSslMASN1StringData(x : PASN1_STRING) : PAnsiChar;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := x^.data;
 end;
 
 function IdSslX509StoreCtxGetAppData(ctx: PX509_STORE_CTX):Pointer;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslX509StoreCtxGetExData(ctx, 0);
 end;
 
 function IdSslX509GetVersion(x : PX509): TIdC_LONG;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslAsn1IntegerGet(x^.cert_info^.version);
 end;
 
 function IdSslX509GetSignatureType(x : PX509) : TIdC_INT;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 {
 http://groups.google.com/group/mailing.openssl.dev/browse_thread/thread/c1ab56fc4fb7af6a/98a2e94fe893aecf?lnk=st&q=X509_get_signature_type+&rnum=1&hl=en#98a2e94fe893aecf
 
@@ -12045,7 +12059,7 @@ begin
 end;
 
 function IdSslX509ReqGetSubjectName(x:PX509_REQ):PX509_NAME;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Assert(x<>nil);
   Result := x^.req_info^.subject;
@@ -12053,7 +12067,7 @@ end;
 
 //function IdSslX509GetNotBefore(x509: PX509):PASN1_UTCTIME;
 function IdSslX509GetNotBefore(x509: PX509):PASN1_TIME;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Assert(x509<>nil);
   Result := x509.cert_info.validity.notBefore;
@@ -12061,50 +12075,50 @@ end;
 
 //function IdSslX509GetNotAfter(x509: PX509):PASN1_UTCTIME;
 function IdSslX509GetNotAfter(x509: PX509):PASN1_TIME;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Assert(x509<>nil);
   Result := x509.cert_info.validity.notAfter;
 end;
 
 function IdX509ReqGetVersion(x : PX509_REQ): TIdC_LONG;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslASN1IntegerGet(x^.req_info^.version);
 end;
 
 function IdSslX509CRLGetVersion(x : PX509_CRL) : TIdC_LONG;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslASN1IntegerGet(x^.crl^.version);
 end;
 
 function IdSslX509CRLGetLastUpdate(x : PX509_CRL) : PASN1_TIME;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := x^.crl^.lastUpdate;
 end;
 
 function IdSslX509CRLGetNextUpdate(x : PX509_CRL) : PASN1_TIME;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := x^.crl^.nextUpdate;
 end;
 
 function IdX509CRLGetIssuer(x : PX509_CRL) : PX509_NAME;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := x^.crl^.issuer
 end;
 
 function IdSslCRLGetRevoked(x : PX509_CRL) : PSTACK_OF_X509_REVOKED;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := x^.crl^.revoked;
 end;
 
 procedure IdSslCtxSetInfoCallback(ctx: PSSL_CTX; cb: PSSL_CTX_info_callback);
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Assert(ctx<>nil);
   ctx.info_callback := cb;
@@ -12114,7 +12128,7 @@ end;
 // * they cannot be used to clear bits. */
 
 function IdSslCtxSetOptions(ctx: PSSL_CTX; op: TIdC_LONG):TIdC_LONG;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_OPTIONS, op, nil);
 end;
@@ -12122,14 +12136,14 @@ end;
 //#define SSL_CTX_get_options(ctx) \
 //	SSL_CTX_ctrl((ctx),SSL_CTRL_OPTIONS,0,NULL)
 function IdSslCtxGetOptions(ctx: PSSL_CTX) : TIdC_LONG;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_OPTIONS,0,nil);
 end;
 //#define SSL_set_options(ssl,op) \
 //	SSL_ctrl((ssl),SSL_CTRL_OPTIONS,(op),NULL)
 function IdSslSetOptions(ssl: PSSL; op : TIdC_LONG): TIdC_LONG;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtrl(ssl,OPENSSL_SSL_CTRL_OPTIONS,op,nil);
 end;
@@ -12138,7 +12152,7 @@ end;
 //        SSL_ctrl((ssl),SSL_CTRL_OPTIONS,0,NULL)
 
 function IdSslGetOptions(ssl : PSSL): TIdC_LONG;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtrl(ssl,OPENSSL_SSL_CTRL_OPTIONS,0,nil);
 end;
@@ -12146,7 +12160,7 @@ end;
 //#define SSL_CTX_set_mode(ctx,op) \
 //	SSL_CTX_ctrl((ctx),SSL_CTRL_MODE,(op),NULL)
 function IdSslCtxSetMode(ctx : PSSL_CTX; op : TIdC_LONG) : TIdC_LONG;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_MODE, op,nil);
 end;
@@ -12154,7 +12168,7 @@ end;
 //#define SSL_CTX_get_mode(ctx) \
 //	SSL_CTX_ctrl((ctx),SSL_CTRL_MODE,0,NULL)
 function IdSslCtxGetMode(ctx : PSSL_CTX) : TIdC_LONG;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_MODE,0,nil);
 end;
@@ -12162,7 +12176,7 @@ end;
 //#define SSL_set_mtu(ssl, mtu) \
 //        SSL_ctrl((ssl),SSL_CTRL_SET_MTU,(mtu),NULL)
 function IdSslSetMtu(ssl : PSSL; mtu : TIdC_LONG) : TIdC_LONG;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtrl(ssl,OPENSSL_SSL_CTRL_SET_MTU,mtu,nil);
 end;
@@ -12171,7 +12185,7 @@ end;
 //#define SSL_CTX_sess_number(ctx) \
 //	SSL_CTX_ctrl(ctx,SSL_CTRL_SESS_NUMBER,0,NULL)
 function IdSslCtxSessNumber(ctx : PSSL_CTX) : TIdC_LONG;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx,OPENSSL_SSL_CTRL_SESS_NUMBER,0,nil);
 end;
@@ -12179,7 +12193,7 @@ end;
 //#define SSL_CTX_sess_connect(ctx) \
 //	SSL_CTX_ctrl(ctx,SSL_CTRL_SESS_CONNECT,0,NULL)
 function IdSslCtxSessConnect(ctx : PSSL_CTX) : TIdC_LONG;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_SESS_CONNECT, 0,nil);
 end;
@@ -12187,7 +12201,7 @@ end;
 //#define SSL_CTX_sess_connect_good(ctx) \
 //	SSL_CTX_ctrl(ctx,SSL_CTRL_SESS_CONNECT_GOOD,0,NULL)
 function IdSslCtxSessConnectionGood(ctx : PSSL_CTX): TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_SESS_CONNECT_GOOD, 0, nil);
 end;
@@ -12195,7 +12209,7 @@ end;
 //#define SSL_CTX_sess_connect_renegotiate(ctx) \
 //	SSL_CTX_ctrl(ctx,SSL_CTRL_SESS_CONNECT_RENEGOTIATE,0,NULL)
 function IdSslCtxSessConnectionRenegotiate(ctx : PSSL_CTX): TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_SESS_CONNECT_RENEGOTIATE, 0, nil);
 end;
@@ -12203,7 +12217,7 @@ end;
 //#define SSL_CTX_sess_accept(ctx) \
 //	SSL_CTX_ctrl(ctx,SSL_CTRL_SESS_ACCEPT,0,NULL)
 function IdSslCtxSessAccept(ctx : PSSL_CTX) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_SESS_ACCEPT, 0, nil);
 end;
@@ -12211,7 +12225,7 @@ end;
 //#define SSL_CTX_sess_accept_renegotiate(ctx) \
 //	SSL_CTX_ctrl(ctx,SSL_CTRL_SESS_ACCEPT_RENEGOTIATE,0,NULL)
 function IdSslCtxSessAcceptRenegotiate(ctx : PSSL_CTX) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_SESS_ACCEPT_RENEGOTIATE, 0, nil);
 end;
@@ -12219,7 +12233,7 @@ end;
 //#define SSL_CTX_sess_accept_good(ctx) \
 //	SSL_CTX_ctrl(ctx,SSL_CTRL_SESS_ACCEPT_GOOD,0,NULL)
 function IdSslCtxSessAcceptGood(ctx : PSSL_CTX) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_SESS_ACCEPT_GOOD, 0, nil);
 end;
@@ -12227,7 +12241,7 @@ end;
 //#define SSL_CTX_sess_hits(ctx) \
 //	SSL_CTX_ctrl(ctx,SSL_CTRL_SESS_HIT,0,NULL)
 function IdSslCtxSessBits(ctx : PSSL_CTX) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_SESS_HIT, 0, nil);
 end;
@@ -12235,7 +12249,7 @@ end;
 //#define SSL_CTX_sess_cb_hits(ctx) \
 //	SSL_CTX_ctrl(ctx,SSL_CTRL_SESS_CB_HIT,0,NULL)
 function IdSslCtxSessCbBit(ctx : PSSL_CTX) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_SESS_CB_HIT, 0, nil);
 end;
@@ -12243,7 +12257,7 @@ end;
 //#define SSL_CTX_sess_misses(ctx) \
 //	SSL_CTX_ctrl(ctx,SSL_CTRL_SESS_MISSES,0,NULL)
 function IdSslCtxSessMisses(ctx : PSSL_CTX) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_SESS_MISSES, 0, nil);
 end;
@@ -12251,7 +12265,7 @@ end;
 //#define SSL_CTX_sess_timeouts(ctx) \
 //	SSL_CTX_ctrl(ctx,SSL_CTRL_SESS_TIMEOUTS,0,NULL)
 function IdSslCtxSessTimeouts(ctx : PSSL_CTX) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_SESS_TIMEOUTS, 0, nil);
 end;
@@ -12259,7 +12273,7 @@ end;
 //#define SSL_CTX_sess_cache_full(ctx) \
 //	SSL_CTX_ctrl(ctx,SSL_CTRL_SESS_CACHE_FULL,0,NULL)
 function IdSslCtxSessCacheFull(ctx : PSSL_CTX) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_SESS_CACHE_FULL, 0, nil);
 end;
@@ -12267,7 +12281,7 @@ end;
 //#define SSL_CTX_sess_set_cache_size(ctx,t) \
 //	SSL_CTX_ctrl(ctx,SSL_CTRL_SET_SESS_CACHE_SIZE,t,NULL)
 function IdSslCtxSessSetCacheSize(ctx : PSSL_CTX; t : TIdC_LONG) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_SESS_CACHE_FULL, t, nil);
 end;
@@ -12275,7 +12289,7 @@ end;
 //#define SSL_CTX_sess_get_cache_size(ctx) \
 //	SSL_CTX_ctrl(ctx,SSL_CTRL_GET_SESS_CACHE_SIZE,0,NULL)
 function IdSslCtxSessGetCacheSize(ctx : PSSL_CTX) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_GET_SESS_CACHE_SIZE, 0, nil);
 end;
@@ -12283,7 +12297,7 @@ end;
 //#define SSL_CTX_set_session_cache_mode(ctx,m) \
 //	SSL_CTX_ctrl(ctx,SSL_CTRL_SET_SESS_CACHE_MODE,m,NULL)
 function IdSslCtxSetSessionCacheMode(ctx : PSSL_CTX; m : TIdC_LONG) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_SET_SESS_CACHE_MODE, m, nil);
 end;
@@ -12291,7 +12305,7 @@ end;
 //#define SSL_CTX_get_session_cache_mode(ctx) \
 //	SSL_CTX_ctrl(ctx,SSL_CTRL_GET_SESS_CACHE_MODE,0,NULL)
 function IdSslCtxGetSessionCacheMode(ctx : PSSL_CTX) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_GET_SESS_CACHE_MODE, 0, nil);
 end;
@@ -12299,7 +12313,7 @@ end;
 //#define SSL_CTX_get_read_ahead(ctx) \
 //	SSL_CTX_ctrl(ctx,SSL_CTRL_GET_READ_AHEAD,0,NULL)
 function IdSslCtxGetReadAhead(ctx : PSSL_CTX) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_GET_READ_AHEAD,0,nil);
 end;
@@ -12307,7 +12321,7 @@ end;
 //#define SSL_CTX_set_read_ahead(ctx,m) \
 //	SSL_CTX_ctrl(ctx,SSL_CTRL_SET_READ_AHEAD,m,NULL)
 function IdSslCtxSetReadAhead(ctx : PSSL_CTX; m : TIdC_LONG) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_SET_READ_AHEAD, m,nil);
 end;
@@ -12315,7 +12329,7 @@ end;
 //#define SSL_CTX_get_max_cert_list(ctx) \
 //	SSL_CTX_ctrl(ctx,SSL_CTRL_GET_MAX_CERT_LIST,0,NULL)
 function IdSSlCtxGetMaxCertList(ctx : PSSL_CTX) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
    Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_GET_MAX_CERT_LIST,0,nil);
 end;
@@ -12323,7 +12337,7 @@ end;
 //#define SSL_CTX_set_max_cert_list(ctx,m) \
 //	SSL_CTX_ctrl(ctx,SSL_CTRL_SET_MAX_CERT_LIST,m,NULL)
 function IdSslCtxSetMaxCertList(ctx : PSSL_CTX; m : TIdC_LONG) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
    Result := IdSslCtxCtrl(ctx, OPENSSL_SSL_CTRL_GET_MAX_CERT_LIST,m,nil);
 end;
@@ -12331,7 +12345,7 @@ end;
 //#define SSL_get_max_cert_list(ssl) \
 //	SSL_ctrl(ssl,SSL_CTRL_GET_MAX_CERT_LIST,0,NULL)
 function IdSslGetMaxCertList(ssl : PSSL) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtrl(ssl, OPENSSL_SSL_CTRL_GET_MAX_CERT_LIST, 0, nil);
 end;
@@ -12339,7 +12353,7 @@ end;
 //#define SSL_set_max_cert_list(ssl,m) \
 //	SSL_ctrl(ssl,SSL_CTRL_SET_MAX_CERT_LIST,m,NULL)
 function IdSslSetMaxCertList(ssl : PSSL; m : TIdC_LONG) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtrl(ssl, OPENSSL_SSL_CTRL_SET_MAX_CERT_LIST, m, nil);
 end;
@@ -12348,7 +12362,7 @@ end;
 //#define SSL_set_tlsext_host_name(s,name) \
 //SSL_ctrl(s,SSL_CTRL_SET_TLSEXT_HOSTNAME,TLSEXT_NAMETYPE_host_name,(char *)name)
 function IdSslSetTlsExtHostName(s : PSSL; name : AnsiString) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtrl(s, OPENSSL_SSL_CTRL_SET_TLSEXT_HOSTNAME, OPENSSL_TLSEXT_NAMETYPE_host_name,PAnsiChar(name));
 end;
@@ -12357,7 +12371,7 @@ end;
 //SSL_callback_ctrl(ssl,SSL_CTRL_SET_TLSEXT_DEBUG_CB,(void (*)(void))cb)
 
 function IdSslSetTlsExtDebugCallback(ssl : PSSL; cb : SSL_callback_ctrl_fp) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCallbackCtrl(ssl,OPENSSL_SSL_CTRL_SET_TLSEXT_DEBUG_CB,cb);
 end;
@@ -12365,7 +12379,7 @@ end;
 //#define SSL_set_tlsext_debug_arg(ssl, arg) \
 //SSL_ctrl(ssl,SSL_CTRL_SET_TLSEXT_DEBUG_ARG,0, (void *)arg)
 function IdSslSetTlsExtDebugArg(ssl : PSSL; arg : Pointer) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtrl(ssl, OPENSSL_SSL_CTRL_SET_TLSEXT_DEBUG_ARG,0,arg);
 end;
@@ -12373,7 +12387,7 @@ end;
 //#define SSL_set_tlsext_status_type(ssl, type) \
 //SSL_ctrl(ssl,SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE,type, NULL)
 function IdSslSetTlsExtStatusType(ssl : PSSL; _type : TIdC_LONG):TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtrl(ssl, OPENSSL_SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE,_type,nil);
 end;
@@ -12381,7 +12395,7 @@ end;
 //#define SSL_get_tlsext_status_exts(ssl, arg) \
 //SSL_ctrl(ssl,SSL_CTRL_GET_TLSEXT_STATUS_REQ_EXTS,0, (void *)arg)
 function IdSslGetTlsExtStatusExts(ssl : PSSL; arg : Pointer): TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtrl(ssl, OPENSSL_SSL_CTRL_GET_TLSEXT_STATUS_REQ_EXTS,0,arg);
 end;
@@ -12389,7 +12403,7 @@ end;
 //#define SSL_set_tlsext_status_exts(ssl, arg) \
 //SSL_ctrl(ssl,SSL_CTRL_SET_TLSEXT_STATUS_REQ_EXTS,0, (void *)arg)
 function IdSslSetTlsExtStatusExts(ssl : PSSL; arg : Pointer):TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtrl(ssl, OPENSSL_SSL_CTRL_SET_TLSEXT_STATUS_REQ_EXTS, 0, arg);
 end;
@@ -12397,7 +12411,7 @@ end;
 //#define SSL_get_tlsext_status_ids(ssl, arg) \
 //SSL_ctrl(ssl,SSL_CTRL_GET_TLSEXT_STATUS_REQ_IDS,0, (void *)arg)
 function IdSslGetTlsextStatusIds(ssl : PSSL; arg : Pointer) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtrl(ssl, OPENSSL_SSL_CTRL_GET_TLSEXT_STATUS_REQ_IDS,0, arg);
 end;
@@ -12405,7 +12419,7 @@ end;
 //#define SSL_set_tlsext_status_ids(ssl, arg) \
 //SSL_ctrl(ssl,SSL_CTRL_SET_TLSEXT_STATUS_REQ_IDS,0, (void *)arg)
 function IdSslSetTlsExtStatusIds(ssl : PSSL; arg : Pointer) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtrl(ssl, OPENSSL_SSL_CTRL_SET_TLSEXT_STATUS_REQ_IDS,0,arg);
 end;
@@ -12413,7 +12427,7 @@ end;
 //#define SSL_get_tlsext_status_ocsp_resp(ssl, arg) \
 //SSL_ctrl(ssl,SSL_CTRL_GET_TLSEXT_STATUS_REQ_OCSP_RESP,0, (void *)arg)
 function IdSslGetTlsExtStatusOcspResp(ssl : PSSL; arg : Pointer) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtrl(ssl, OPENSSL_SSL_CTRL_GET_TLSEXT_STATUS_REQ_OCSP_RESP,0,arg);
 end;
@@ -12421,7 +12435,7 @@ end;
 //#define SSL_set_tlsext_status_ocsp_resp(ssl, arg, arglen) \
 //SSL_ctrl(ssl,SSL_CTRL_SET_TLSEXT_STATUS_REQ_OCSP_RESP,arglen, (void *)arg)
 function IdSslSetTlsExtStatusOcspResp(ssl : PSSL; arg : Pointer; arglen : TIdC_LONG) : TIdC_LONG;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslCtrl(ssl, OPENSSL_SSL_CTRL_SET_TLSEXT_STATUS_REQ_OCSP_RESP,arglen,arg);
 end;
@@ -12436,7 +12450,7 @@ end;
 {$ENDIF}
 //
 {function IdSslSessionGetIdCtx(s: PSSL_SESSION; id: PPAnsiChar; length: PIdC_INT) : TIdC_UINT;
-{$IFDEF USEINLINE inline; {$ENDIF
+{$IFDEF USE_INLINE inline; {$ENDIF
 begin
   Assert(s<>nil);
   id^ := @s.sid_ctx;
@@ -12445,38 +12459,38 @@ begin
 end;             }
 
 function IdSslCtxGetVersion(ctx: PSSL_CTX):TIdC_INT;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Assert(ctx<>nil);
   Result := ctx^.method^.version;
 end;
 
 function IdSslBioSetClose(b: PBIO; c: TIdC_LONG): TIdC_LONG;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslBioCtrl(b, OPENSSL_BIO_CTRL_SET_CLOSE, c, nil);
 end;
 
 procedure IdSslBioGetMemPtr(b: PBIO; pp: Pointer);
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   IdSslBioCtrl(b, OPENSSL_BIO_C_GET_BUF_MEM_PTR, 0, pp);
 end;
 
 function IdSslBioPending(b: PBIO): TIdC_LONG;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslBioCtrl(b, OPENSSL_BIO_CTRL_PENDING, 0, nil);
 end;
 
 function IdSslPemReadBio(bp: PBIO; x: Pointer; cb: ppem_password_cb; u: PAnsiChar): PX509;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslPemAsn1ReadBio(@IdSslD2iX509, OPENSSL_PEM_STRING_X509, bp, x, nil, nil);
 end;
 
 function IdSslPemWriteBio(b: PBIO; x: PAnsiChar): TIdC_INT;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Assert(b<>nil);
   Assert(x<>nil);
@@ -12485,14 +12499,14 @@ begin
 end;
 
 function IdSslMalloc(aSize:TIdC_INT):Pointer;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 //can also use CRYPTO_mem_leaks(bio)
 begin
   Result := IdSslCryptoMalloc(aSize, '', 0);
 end;
 
 procedure IdSslMemCheck(const aEnabled: Boolean);
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 //compile openssl with -DCRYPTO_MDEBUG
 var
   r:Integer;
@@ -12507,14 +12521,14 @@ end;
 
 {$IFNDEF OPENSSL_NO_RSA}
 function IdSslEvpPKeyAssignRsa(pkey: PEVP_MD; rsa: PAnsiChar): TIdC_INT;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IdSslEvpPKeyAssign(pkey, OPENSSL_EVP_PKEY_RSA, rsa);
 end;
 {$ENDIF}
 
 procedure IdSslX509V3SetCtxNoDb(ctx: X509V3_CTX);
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   ctx.db := nil;
 end;

@@ -255,7 +255,9 @@ begin
           LChar := Byte(LLine[LLinePos]);
           if LChar = B_EQUALS then begin
             // invalid file, escape character may not appear at end of line
-            EIdMessageYencCorruptionException.IfTrue(LLinePos = Length(LLine), RSYencFileCorrupted);
+            if LLinePos = Length(LLine) then begin
+              EIdMessageYencCorruptionException.Toss(RSYencFileCorrupted);
+            end;
             Inc(LLinePos);
             LChar := Byte(LLine[LLinePos]) - 42 - 64;
           end else begin
@@ -271,13 +273,17 @@ begin
     LH.HashEnd(LHash);
 
     FlushOutputBuffer;
-    EIdMessageYencInvalidSizeException.IfTrue(LPartSize <> LBytesDecoded, RSYencInvalidSize);
+    if LPartSize <> LBytesDecoded then begin
+      EIdMessageYencInvalidSizeException.Toss(RSYencInvalidSize);
+    end;
 
     LCrc32 := LowerCase(GetStrValue(LLine, 'crc32', $FFFF)); {Do not Localize}
     if LCrc32 <> '' then begin
       //done this way because values can be computed faster than strings and we don't
       //have to mess with charactor case.
-      EIdMessageYencInvalidCRCException.IfTrue(IndyStrToInt64('$' + LCrc32) <> LHash, RSYencInvalidCRC);
+      if IndyStrToInt64('$' + LCrc32) <> LHash then begin
+        EIdMessageYencInvalidCRCException.Toss(RSYencInvalidCRC);
+      end;
     end;
   finally
     FreeAndNil(LH);

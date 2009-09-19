@@ -811,34 +811,27 @@ function TCustomSSPIConnectionContext.UpdateAndGenerateReply
   (const aFromPeerToken: string; var aToPeerToken: string): Boolean;
 var
   fOutBuff: SecBuffer;
-  {$IFDEF UNICODESTRING}
+  {$IFDEF STRING_IS_UNICODE}
   lFromToken, lToToken: AnsiString;
   {$ENDIF}
 begin
   Result := False;
 
-  {$IFDEF UNICODESTRING}
-  lFromToken := aFromPeerToken;
-  lToToken := aToPeerToken;
+  {$IFDEF STRING_IS_UNICODE}
+  lFromToken := AnsiString(aFromPeerToken); // explicit convert to Ansi
+  lToToken := AnsiString(aToPeerToken); // explicit convert to Ansi
   {$ENDIF}
 
   { check credentials }
   CheckCredentials;
   { prepare input buffer }
 
-  {$IFDEF UNICODESTRING}
-  fInBuff.cbBuffer := Length(lFromToken);
-  {$ELSE}
-  fInBuff.cbBuffer := Length(aFromPeerToken);
-  {$ENDIF}
+  {$IFDEF STRING_IS_UNICODE}
+  fInBuff.cbBuffer := Length({$IFDEF STRING_IS_UNICODE}lFromToken{$ELSE}aFromPeerToken{$ENDIF});
 
   //Assert(Length(aFromPeerToken)>0);
   if fInBuff.cbBuffer > 0 then begin
-    {$IFDEF UNICODESTRING}
-    fInBuff.pvBuffer := @lFromToken[1];
-    {$ELSE}
-    fInBuff.pvBuffer := @aFromPeerToken[1];
-    {$ENDIF}
+    fInBuff.pvBuffer := @{$IFDEF STRING_IS_UNICODE}lFromToken{$ELSE}aFromPeerToken{$ENDIF}[1];
   end;
 
   { prepare output buffer }
@@ -871,9 +864,9 @@ begin
       (fOutBuff.cbBuffer > 0);
     if Result then begin
       with fOutBuff do begin
-        {$IFDEF UNICODESTRING}
+        {$IFDEF STRING_IS_UNICODE}
         SetString(lToToken, PAnsiChar(pvBuffer), cbBuffer);
-        aToPeerToken := lToToken;
+        aToPeerToken := string(lToToken); // expicit convert to Unicode
         {$ELSE}
         SetString(aToPeerToken, PAnsiChar(pvBuffer), cbBuffer);
         {$ENDIF}
@@ -922,17 +915,17 @@ end;
 function TSSPIClientConnectionContext.DoUpdateAndGenerateReply
   (var aIn, aOut: SecBufferDesc;
   const aErrorsToIgnore: array of SECURITY_STATUS): SECURITY_STATUS;
-{$IFDEF UNICODESTRING}
+{$IFDEF STRING_IS_UNICODE}
 var
   lTargetName: AnsiString;
 {$ENDIF}
 begin
-  {$IFDEF UNICODESTRING}
-  lTargetName := fTargetName;
-  Result := DoInitialize(PAnsiChar(lTargetName), aIn, aOut, []);
-  {$ELSE}
-  Result := DoInitialize(PAnsiChar(fTargetName), aIn, aOut, []);
+  {$IFDEF STRING_IS_UNICODE}
+  lTargetName := AnsiString(fTargetName); // explcit convert to Ansi
   {$ENDIF}
+  Result := DoInitialize(
+    PAnsiChar({$IFDEF STRING_IS_UNICODE}lTargetName{$ELSE}fTargetName{$ENDIF}),
+    aIn, aOut, []);
 end;
 
 function TSSPIClientConnectionContext.GenerateInitialChallenge

@@ -5,10 +5,10 @@ interface
 {$i IdCompilerDefines.inc}
 
 uses
-  Classes;
+  Classes, IdException;
 
 type
-  TIdHeaderCodingNeededEvent = procedure(const ACharSet, AData: String; var VResult: String) of object;
+  TIdHeaderCodingNeededEvent = procedure(const ACharSet, AData: String; var VResult: String; var VHandled: Boolean) of object;
 
   TIdHeaderCoder = class(TObject)
   public
@@ -19,20 +19,22 @@ type
 
   TIdHeaderCoderClass = class of TIdHeaderCoder;
 
-  function HeaderCoderByCharSet(const ACharSet: String): TIdHeaderCoderClass;
-  function DecodeHeaderData(const ACharSet, AData: String): String;
-  function EncodeHeaderData(const ACharSet, AData: String): String;
-  procedure RegisterHeaderCoder(const ACoder: TIdHeaderCoderClass);
-  procedure UnregisterHeaderCoder(const ACoder: TIdHeaderCoderClass);
+  EIdHeaderEncodeError = class(EIdException);
 
 var
   GHeaderEncodingNeeded: TIdHeaderCodingNeededEvent = nil;
   GHeaderDecodingNeeded: TIdHeaderCodingNeededEvent = nil;
 
+function HeaderCoderByCharSet(const ACharSet: String): TIdHeaderCoderClass;
+function DecodeHeaderData(const ACharSet, AData: String; var VResult: String): Boolean;
+function EncodeHeaderData(const ACharSet, AData: String): String;
+procedure RegisterHeaderCoder(const ACoder: TIdHeaderCoderClass);
+procedure UnregisterHeaderCoder(const ACoder: TIdHeaderCoderClass);
+
 implementation
 
 uses
-  SysUtils;
+  SysUtils, IdResourceStringsProtocols;
 
 type
   TIdHeaderCoderList = class(TList)
@@ -87,34 +89,46 @@ begin
   end;
 end;
 
-function DecodeHeaderData(const ACharSet, AData: String): String;
+function DecodeHeaderData(const ACharSet, AData: String; var VResult: String): Boolean;
 var
   LCoder: TIdHeaderCoderClass;
 begin
   LCoder := HeaderCoderByCharSet(ACharSet);
   if LCoder <> nil then begin
-    Result := LCoder.Decode(ACharSet, AData);
+    VResult := LCoder.Decode(ACharSet, AData);
+    Result := True;
   end else
   begin
-    Result := '';
+    VResult := '';
+    Result := False;
     if Assigned(GHeaderDecodingNeeded) then begin
-      GHeaderDecodingNeeded(ACharSet, AData, Result);
+      GHeaderDecodingNeeded(ACharSet, AData, VResult, Result);
     end;
+    { RLebeau: TODO - enable this?
+    if not LDecoded then begin
+      raise EIdHeaderDecodeError.Create(RSHeaderDecodeError, [ACharSet]);
+    end;
+    }
   end;
 end;
 
 function EncodeHeaderData(const ACharSet, AData: String): String;
 var
   LCoder: TIdHeaderCoderClass;
+  LEncoded: Boolean;
 begin
   LCoder := HeaderCoderByCharSet(ACharSet);
   if LCoder <> nil then begin
     Result := LCoder.Encode(ACharSet, AData);
   end else
   begin
-    Result := AData;
+    Result := '';
+    LEncoded := False;
     if Assigned(GHeaderEncodingNeeded) then begin
-      GHeaderEncodingNeeded(ACharSet, AData, Result);
+      GHeaderEncodingNeeded(ACharSet, AData, Result, LEncoded);
+    end;
+    if not LEncoded then begin
+      raise EIdHeaderEncodeError.CreateFmt(RSHeaderEncodeError, [ACharSet]);
     end;
   end;
 end;

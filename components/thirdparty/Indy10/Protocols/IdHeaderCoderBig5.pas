@@ -20,13 +20,13 @@ implementation
 class function TIdHeaderCoderBig5.Decode(const ACharSet, AData: String): String;
 begin
   Result := '';
-  ToDo;
+  ToDo('Decode() method of TIdHeaderCoderBig5 class is not implemented yet'); {do not localize}
 end;
 
 class function TIdHeaderCoderBig5.Encode(const ACharSet, AData: String): String;
 begin
   Result := '';
-  ToDo;
+  ToDo('Encode() method of TIdHeaderCoderBig5 class is not implemented yet'); {do not localize}
 end;
 
 class function TIdHeaderCoderBig5.CanHandle(const ACharSet: String): Boolean;

@@ -250,9 +250,13 @@ begin
   end;
 
   //did we get the initial colon?
-  EIdMissingColon.IfFalse(LCopyToPos <> -1, 'Block passed to TIdDecoderBinHex4.Decode is missing a starting colon :');    {Do not Localize}
+  if LCopyToPos = -1 then begin
+    EIdMissingColon.Toss('Block passed to TIdDecoderBinHex4.Decode is missing a starting colon :');    {Do not Localize}
+  end;
   //did we get the terminating colon?
-  EIdMissingColon.IfFalse(LCopyToPos = -2, 'Block passed to TIdDecoderBinHex4.Decode is missing a terminating colon :'); {Do not Localize}
+  if LCopyToPos <> -2 then begin
+    EIdMissingColon.Toss('Block passed to TIdDecoderBinHex4.Decode is missing a terminating colon :'); {Do not Localize}
+  end;
 
   if Length(LIn) = 0 then begin
     Exit;
@@ -379,12 +383,14 @@ var
   LCRC: word;
   LRemainder: integer;
 begin
-  EIdMissingFileName.IfTrue(FFileName='', 'Data passed to TIdEncoderBinHex4.Encode is missing a filename');    {Do not Localize}
+  if FFileName = '' then begin
+    EIdMissingFileName.Toss('Data passed to TIdEncoderBinHex4.Encode is missing a filename');    {Do not Localize}
+  end;
   //Read in the attachment first...
   LSSize := IndyLength(ASrcStream, ABytes);
   //BinHex4.0 allows filenames to be only 255 bytes long (because the length
   //is stored in a byte), so truncate the filename to 255 bytes...
-  {$IFDEF UNICODESTRING}
+  {$IFDEF STRING_IS_UNICODE}
   LFileName := AnsiString(FFileName); // explicit convert to Ansi
   {$ELSE}
   LFileName := FFileName;

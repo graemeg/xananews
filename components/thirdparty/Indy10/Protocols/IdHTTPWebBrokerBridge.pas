@@ -91,13 +91,13 @@ type
     function TranslateURI(const URI: string): string; override;
     function WriteClient(var ABuffer; ACount: Integer): Integer; override;
 
-    {$IFDEF VCL6ORABOVE}
-    {$DEFINE VCL6ORABOVEORCLR}
+    {$IFDEF VCL_6_OR_ABOVE}
+      {$DEFINE VCL_6_OR_ABOVE_OR_CLR}
     {$ENDIF}
     {$IFDEF CLR}
-    {$DEFINE VCL6ORABOVEORCLR}
+      {$DEFINE VCL_6_OR_ABOVE_OR_CLR}
     {$ENDIF}
-    {$IFDEF VCL6ORABOVEORCLR}
+    {$IFDEF VCL_6_OR_ABOVE_OR_CLR}
     function WriteHeaders(StatusCode: Integer; const ReasonString, Headers: AnsiString): Boolean; override;
     {$ENDIF}
     function WriteString(const AString: AnsiString): Boolean; override;
@@ -150,7 +150,7 @@ implementation
 
 uses
   IdBuffer, IdHTTPHeaderInfo, IdGlobal, IdGlobalProtocols, IdCookie, IdStream,
-  {$IFDEF DOTNET_OR_UNICODESTRING}IdCharsets,{$ENDIF}
+  {$IFDEF STRING_IS_UNICODE}IdCharsets,{$ENDIF}
   SysUtils, Math;
 
 //TODO:  Not sure where these really should go.  They should not be in the main packages
@@ -343,7 +343,7 @@ begin
           Result := AnsiString(BytesToString(LBytes, Indy8BitEncoding));
           {$ELSE}
           SetString(Result, PAnsiChar(LBytes), Length(LBytes));
-            {$IFDEF UNICODESTRING}
+            {$IFDEF VCL_2009_OR_ABOVE}
           SetCodePage(PRawByteString(@Result)^, CharsetToCodePage(FRequestInfo.CharSet), False);
             {$ENDIF}
           {$ENDIF}
@@ -396,7 +396,7 @@ begin
   Result := AnsiString(BytesToString(LBytes, Indy8BitEncoding));
   {$ELSE}
   SetString(Result, PAnsiChar(LBytes), Length(LBytes));
-    {$IFDEF UNICODESTRING}
+    {$IFDEF VCL_2009_OR_ABOVE}
   SetCodePage(PRawByteString(@Result)^, CharsetToCodePage(FRequestInfo.CharSet), False);
     {$ENDIF}
   {$ENDIF}
@@ -409,7 +409,7 @@ begin
   Result := URI;
 end;
 
-{$IFDEF VCL6ORABOVEORCLR}
+{$IFDEF VCL_6_OR_ABOVE_OR_CLR}
 function TIdHTTPAppRequest.WriteHeaders(StatusCode: Integer; const ReasonString, Headers: AnsiString): Boolean;
 begin
   FResponseInfo.ResponseNo := StatusCode;
@@ -461,13 +461,13 @@ begin
 end;
 
 function TIdHTTPAppResponse.GetContent: AnsiString;
-{$IFDEF DOTNET_OR_UNICODESTRING}
+{$IFDEF STRING_IS_UNICODE}
 var
   LEncoding: TIdTextEncoding;
   LBytes: TIdBytes;
 {$ENDIF}
 begin
-  {$IFDEF DOTNET_OR_UNICODESTRING}
+  {$IFDEF STRING_IS_UNICODE}
   // RLebeau 2/21/2009: encode the content using the specified charset.
   // Also, the AnsiString payload should have the proper codepage assigned
   // to it as well so it can be converted correctly if assigned to other
@@ -486,7 +486,9 @@ begin
     Result := AnsiString(BytesToString(LBytes, Indy8BitEncoding));
     {$ELSE}
     SetString(Result, PAnsiChar(LBytes), Length(LBytes));
+      {$IFDEF VCL_2009_OR_ABOVE}
     SetCodePage(PRawByteString(@Result)^, CharsetToCodePage(FResponseInfo.CharSet), False);
+      {$ENDIF}
     {$ENDIF}
     {$IFNDEF DOTNET}
   finally
@@ -675,18 +677,21 @@ var
   LRequest: TIdHTTPAppRequest;
   LResponse: TIdHTTPAppResponse;
   LWebModule: TCustomWebDispatcher;
-  {$IFDEF VCL6ORABOVE}
+  {$IFDEF VCL_6_OR_ABOVE}
   WebRequestHandler: IWebRequestHandler;
   {$ENDIF}
   Handled: Boolean;
 begin
-  LRequest := TIdHTTPAppRequest.Create(AThread, ARequestInfo, AResponseInfo); try
-    LResponse := TIdHTTPAppResponse.Create(LRequest, AThread, ARequestInfo, AResponseInfo); try
+  LRequest := TIdHTTPAppRequest.Create(AThread, ARequestInfo, AResponseInfo);
+  try
+    LResponse := TIdHTTPAppResponse.Create(LRequest, AThread, ARequestInfo, AResponseInfo);
+	try
       // WebBroker will free it and we cannot change this behaviour
       AResponseInfo.FreeContentStream := False;
       // There are better ways in D6, but this works in D5
-      LWebModule := FWebModuleClass.Create(nil) as TCustomWebDispatcher; try
-        {$IFDEF VCL6ORABOVE}
+      LWebModule := FWebModuleClass.Create(nil) as TCustomWebDispatcher;
+	  try
+        {$IFDEF VCL_6_OR_ABOVE}
         if Supports(LWebModule, IWebRequestHandler, WebRequestHandler) then begin
           try
             Handled := WebRequestHandler.HandleRequest(LRequest, LResponse);
@@ -702,9 +707,15 @@ begin
         if Handled and (not LResponse.Sent) then begin
           LResponse.SendResponse;
         end;
-      finally FreeAndNil(LWebModule); end;
-    finally FreeAndNil(LResponse); end;
-  finally FreeAndNil(LRequest); end;
+      finally
+	    FreeAndNil(LWebModule);
+	  end;
+    finally
+	  FreeAndNil(LResponse);
+	end;
+  finally
+    FreeAndNil(LRequest);
+  end;
 end;
 
 procedure TIdHTTPWebBrokerBridge.RegisterWebModuleClass(AClass: TComponentClass);

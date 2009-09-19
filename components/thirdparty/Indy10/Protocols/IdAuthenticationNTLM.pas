@@ -151,7 +151,8 @@ begin
         finally Free; end;
         BytesToRaw(buf, Type2, SizeOf(Type2));
 
-        Result := 'NTLM ' + BuildType3Message(FDomain, FHost, FUser, Password, Type2.Nonce); {do not localize}
+        buf := RawToBytes(Type2.Nonce, SizeOf(Type2.Nonce));
+        Result := 'NTLM ' + BuildType3Message(FDomain, FHost, FUser, Password, buf); {do not localize}
 
         FCurrentStep := 2;
       end;
@@ -169,23 +170,12 @@ begin
 end;
 
 procedure TIdNTLMAuthentication.SetUserName(const Value: String);
-var
- i: integer;
 begin
- if Value <> Username then
- begin
-   inherited SetUserName(Value);
-   i := Pos('\', Username);
-   if i > -1 then
-   begin
-     FDomain := Copy(Username, 1, i - 1);
-     FUser := Copy(Username, i + 1, Length(UserName));
-   end else
-   begin
-     FDomain := ' ';         {do not localize}
-     FUser := UserName;
-   end;
- end;
+  if Value <> Username then
+  begin
+    inherited SetUserName(Value);
+    GetDomain(Username, FUser, FDomain);
+  end;
 end;
 
 initialization

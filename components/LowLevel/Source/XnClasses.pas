@@ -6,6 +6,15 @@ uses
   Windows, Messages, Classes, SysUtils, Variants, TypInfo, ActiveX;
 
 type
+  TXnThread = class(TThread)
+  public
+{$ifdef ConditionalExpressions}
+ {$if CompilerVersion < 21.0}
+    procedure Start;
+ {$ifend}
+{$endif}
+  end;
+
 //  MessageString = type RawByteString;
 
   TAnsiStrings = class(TPersistent)
@@ -177,6 +186,17 @@ implementation
 
 uses
   Character, RTLConsts, SysConst, Types;
+
+{ TxnThread }
+
+{$ifdef ConditionalExpressions}
+ {$if CompilerVersion < 21.0}
+procedure TXnThread.Start;
+begin
+  Resume;
+end;
+ {$ifend}
+{$endif}
 
 
 { TAnsiStrings }

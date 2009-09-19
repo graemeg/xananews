@@ -189,10 +189,9 @@ end;
 function TIdSchedulerOfThread.NewThread: TIdThreadWithTask;
 begin
   Assert(FThreadClass<>nil);
-
-  EIdSchedulerMaxThreadsExceeded.IfTrue(
-   (FMaxThreads <> 0) and (not ActiveYarns.IsCountLessThan(FMaxThreads + 1))
-   , RSchedMaxThreadEx);
+  if (FMaxThreads <> 0) and (not ActiveYarns.IsCountLessThan(FMaxThreads + 1)) then begin
+    EIdSchedulerMaxThreadsExceeded.Toss(RSchedMaxThreadEx);
+  end;
   Result := FThreadClass.Create(nil, IndyFormat('%s User', [Name])); {do not localize}
   if ThreadPriority <> tpNormal then begin
     IndySetThreadPriority(Result, ThreadPriority);
@@ -201,7 +200,9 @@ end;
 
 function TIdSchedulerOfThread.NewYarn(AThread: TIdThreadWithTask): TIdYarnOfThread;
 begin
-  EIdException.IfNotAssigned(AThread, RSThreadSchedulerThreadRequired);
+  if not Assigned(AThread) then begin
+    EIdException.Toss(RSThreadSchedulerThreadRequired);
+  end;
   // Create Yarn
   Result := TIdYarnOfThread.Create(Self, AThread);
 end;

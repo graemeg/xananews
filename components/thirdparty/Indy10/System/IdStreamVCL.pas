@@ -102,12 +102,12 @@ end;
 
 class function TIdStreamHelperVCL.Seek(const AStream: TStream; const AOffset: TIdStreamSize;
   const AOrigin: TSeekOrigin): TIdStreamSize;
-{$IFNDEF SIZE64STREAM}
+{$IFNDEF STREAM_SIZE_64}
 const
   cOrigins: array[TSeekOrigin] of Word = (soFromBeginning, soFromCurrent, soFromEnd);
 {$ENDIF}
 begin
-  {$IFDEF SIZE64STREAM}
+  {$IFDEF STREAM_SIZE_64}
   Result := AStream.Seek(AOffset, AOrigin);
   {$ELSE}
   Result := AStream.Seek(AOffset, cOrigins[AOrigin]);

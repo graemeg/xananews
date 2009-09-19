@@ -266,5 +266,7 @@ end;
 
 initialization
   RegisterAuthenticationMethod('Digest', TIdDigestAuthentication); {do not localize}
+finalization
+  UnregisterAuthenticationMethod('Digest');                        {do not localize}
 end.
 

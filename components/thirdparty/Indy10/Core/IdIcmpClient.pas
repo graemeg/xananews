@@ -153,7 +153,7 @@ type
     FOnReply: TOnReplyEvent;
     FReplydata: String;
     //
-    {$IFNDEF DOTNET1_1}
+    {$IFDEF DOTNET_2_OR_ABOVE}
     function DecodeIPv6Packet(BytesRead: LongWord): Boolean;
     {$ENDIF}
     function DecodeIPv4Packet(BytesRead: LongWord): Boolean;
@@ -161,7 +161,7 @@ type
     procedure DoReply; virtual;
     procedure GetEchoReply;
     procedure InitComponent; override;
-    {$IFNDEF DOTNET1_1}
+    {$IFDEF DOTNET_2_OR_ABOVE}
     procedure PrepareEchoRequestIPv6(const ABuffer: String);
     {$ENDIF}
     procedure PrepareEchoRequestIPv4(const ABuffer: String);
@@ -192,7 +192,7 @@ type
     property ReplyStatus;
   published
     property Host;
-    {$IFNDEF DOTNET1_1}
+    {$IFDEF DOTNET_2_OR_ABOVE}
     property IPVersion;
     {$ENDIF}
     property PacketSize;
@@ -205,9 +205,9 @@ implementation
 uses
   //facilitate inlining only.
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
-     {$IFDEF USEINLINE}
+    {$IFDEF USE_INLINE}
   Windows,
-     {$ENDIF}
+    {$ENDIF}
   {$ENDIF}
   IdExceptionCore, IdRawHeaders, IdResourceStringsCore,
   IdStack, IdStruct, SysUtils;
@@ -216,7 +216,7 @@ uses
 
 procedure TIdCustomIcmpClient.PrepareEchoRequest(const ABuffer: String);
 begin
-  {$IFNDEF DOTNET1_1}
+  {$IFDEF DOTNET_2_OR_ABOVE}
   if IPVersion = Id_IPv6 then begin
     PrepareEchoRequestIPv6(ABuffer);
     Exit;
@@ -305,7 +305,7 @@ begin
   end else
   begin
     FReplyStatus.ReplyStatusType := rsError;
-    {$IFNDEF DOTNET1_1}
+    {$IFDEF DOTNET_2_OR_ABOVE}
     if IPVersion = Id_IPv6 then begin
       Result := DecodeIPv6Packet(BytesRead);
       Exit;
@@ -368,7 +368,7 @@ begin
   inherited InitComponent;
   FReplyStatus:= TReplyStatus.Create;
   FProtocol := Id_IPPROTO_ICMP;
-  {$IFNDEF DOTNET1_1}
+  {$IFDEF DOTNET_2_OR_ABOVE}
   ProtocolIPv6 := Id_IPPROTO_ICMPv6;
   {$ENDIF}
   wSeqNo := 3489; // SG 25/1/02: Arbitrary Constant <> 0
@@ -623,7 +623,7 @@ begin
   end;
 end;
 
-{$IFNDEF DOTNET1_1}
+{$IFDEF DOTNET_2_OR_ABOVE}
 procedure TIdCustomIcmpClient.PrepareEchoRequestIPv6(const ABuffer: String);
 var
   LIcmp : TIdicmp6_hdr;

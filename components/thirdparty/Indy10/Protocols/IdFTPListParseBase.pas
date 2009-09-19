@@ -212,9 +212,7 @@ implementation
 
 uses
   IdFTPCommon, IdFTPListTypes, IdGlobal, IdGlobalProtocols,
-  {$IFNDEF UNICODESTRING}
   IdHeaderCoderUTF,  //here so we can decode UTF... filenames
-  {$ENDIF}
   IdResourceStringsProtocols, IdStrings, SysUtils;
 
 type
@@ -324,11 +322,11 @@ begin
   VFormat := '';
   ADir.Clear;
 
-  // RLebeau 9/17/07: if something other than NLST was used, check to see
-  // that the user has included any of the IdFTPListParse... units in the
+  // RLebeau 9/17/07: if something other than NLST or MLST was used, check to
+  // see that the user has included any of the IdFTPListParse... units in the
   // app's uses clause.  If the user forgot to include any, warn them.
   // Otherwise, just move on and assume they know what they are doing...
-  
+
   if ADetails then begin
     HasExtraParsers := False;
     for I := 0 to Count-1 do
@@ -495,13 +493,7 @@ begin
   LI := AItem as TIdMLSTFTPListItem;
   LFacts := TStringList.Create;
   try
-
-    LI.FileName :=
-      {$IFDEF UNICODESTRING}
-      ParseFacts(AItem.Data, LFacts);
-      {$ELSE}
-      TIdHeaderCoderUTF.Decode('UTF-8', ParseFacts(AItem.Data, LFacts));
-      {$ENDIF}
+    LI.FileName := TIdHeaderCoderUTF.Decode('UTF-8', ParseFacts(AItem.Data, LFacts));
     LI.LocalFileName := AItem.FileName;
 
     LBuffer := LFacts.Values['type']; {do not localize}

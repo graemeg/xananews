@@ -595,6 +595,7 @@ resourcestring
   RSInvalidSyslogPacketSize = 'Invalid Syslog message: packet too large (%d bytes)';
   RSInvalidHostName = 'Invalid host name. A SYSLOG host name cannot contain any space ("%s")+';
 
+  {$IFDEF USE_OPENSSL}
   {IdOpenSSL}
   RSOSSLModeNotSet = 'Mode has not been set.';
   RSOSSLCouldNotLoadSSLLibrary = 'Could not load SSL library.';
@@ -602,6 +603,21 @@ resourcestring
   RSOSSLConnectionDropped = 'SSL connection has dropped.';
   RSOSSLCertificateLookup = 'SSL certificate request error.';
   RSOSSLInternal = 'SSL library internal error.';
+  //callback where strings
+  RSOSSLAlert =  '%s Alert';
+  RSOSSLReadAlert =  '%s Read Alert';
+  RSOSSLWriteAlert =  '%s Write Alert';
+  RSOSSLAcceptLoop = 'Accept Loop';
+  RSOSSLAcceptError = 'Accept Error';
+  RSOSSLAcceptFailed = 'Accept Failed';
+  RSOSSLAcceptExit =  'Accept Exit';
+  RSOSSLConnectLoop =  'Connect Loop';
+  RSOSSLConnectError = 'Connect Error';
+  RSOSSLConnectFailed = 'Connect Failed';
+  RSOSSLConnectExit =  'Connect Exit';
+  RSOSSLHandshakeStart = 'Handshake Start';
+  RSOSSLHandshakeDone =  'Handshake Done';
+  {$ENDIF}
 
   {IdWinsockStack}
   RSWSockStack = 'Winsock stack';
@@ -892,13 +908,6 @@ resourcestring
   { TIdURI exceptions }
   RSURINoProto                 = 'Protocol field is empty';
   RSURINoHost                  = 'Host field is empty';
-  {$IFNDEF TCharacter}
-  RSUTF16IndexOutOfRange       = 'UTF16 Index Out Of Range';
-  RSUTF16InvalidHighSurrogate  = 'UTF16 Invalid High Surrogate';
-
-  RSUTF16InvalidLowSurrogate   = 'UTF16 Invalid Low Surrogate';
-  RSUTF16MissingLowSurrogate   = 'UTF16 Missing Low Surrogate';
-  {$ENDIF}
 
   { TIdIOHandlerThrottle}
   RSIHTChainedNotAssigned      = 'You must chain this component to another I/O Handler before using it';
@@ -962,20 +971,24 @@ resourcestring
   RSFTPFSysErrMsg = 'Permission Denied';
   RSOTPUnknownMethod = 'Unknown OTP method';
 
-  {$IFDEF DOTNET2_OR_ABOVE}
+  {$IFDEF DOTNET_2_OR_ABOVE}
   RSSSLNETNotAuthenticated = 'Not authenticated';
   RSSSLNETCertificateRequired = 'Certificate required for servers';
   {$ENDIF}
 
   // TIdURI
-  {$IFDEF UNICODESTRING}
-  {$IFNDEF TCharacter}
+  {$IFNDEF HAS_TCharacter}
   RSUTF16IndexOutOfRange = 'Character Index %d out of Range, Length = %d';
   RSUTF16InvalidHighSurrogate = 'Character at Index %d is not a valid UTF-16 High Surrogate';
   RSUTF16InvalidLowSurrogate = 'Character at Index %d is not a valid UTF-16 Low Surrogate';
   RSUTF16MissingLowSurrogate = 'Missing a Low Surrogate in UTF-16 sequence';
   {$ENDIF}
-  {$ENDIF}
+
+  // Message Header Encoding
+  RSHeaderEncodeError = 'Could not encode header data using charset "%s"';
+  // message builder strings
+  rsHtmlViewerNeeded = 'An HTML viewer is required to see this message';
+  rsRtfViewerNeeded = 'An RTF viewer is required to see this message';  
   
 implementation
 

@@ -49,11 +49,15 @@ type
 
   { -WELCOME- }
   TIdIRCServerMsgEvent = procedure(ASender: TIdContext; const AMsg: String) of object;
+  TIdIRCMyInfoEvent = procedure(ASender: TIdContext; const AServer, AVersion, AUserModes, AChanModes, AExtra: String) of object;
+  TIdIRCBounceEvent = procedure(ASender: TIdContext; const AHost: String; APort: Integer; const AInfo: String) of object;
+  TIdIRCISupportEvent = procedure(ASender: TIdContext; AParameters: TStrings) of object;
+  { -PING- }
   TIdIRCPingPongEvent = procedure(ASender: TIdContext) of object;
   { -MESSAGE- }
-  TIdIRCPrivMessageEvent = procedure(ASender: TIdContext; const ANicknameFrom, AHost, ANicknameTo, AMessage: String) of object;
+  TIdIRCPrivMessageEvent = procedure(ASender: TIdContext; const ANickname, AHost, ATarget, AMessage: String) of object;
   { -NOTICE- }
-  TIdIRCNoticeEvent = procedure(ASender: TIdContext; const ANicknameFrom, AHost, ANicknameTo, ANotice: String) of object;
+  TIdIRCNoticeEvent = procedure(ASender: TIdContext; const ANickname, AHost, ATarget, ANotice: String) of object;
   { -REHASH- }
   TIdIRCRehashEvent = procedure(ASender: TIdContext; const ANickname, AHost: String) of object;
   { -SUMMON- }
@@ -67,7 +71,7 @@ type
   { -JOIN- }
   TIdIRCJoinEvent = procedure(ASender: TIdContext; const ANickname, AHost, AChannel: String) of object;
   { -PART- }
-  TIdIRCPartEvent = procedure(ASender: TIdContext; const ANickname, AHost, AChannel: String) of object;
+  TIdIRCPartEvent = procedure(ASender: TIdContext; const ANickname, AHost, AChannel, APartMessage: String) of object;
   { -TOPIC- }
   TIdIRCTopicEvent = procedure(ASender: TIdContext; const ANickname, AHost, AChannel, ATopic: String) of object;
   { -KICK- }
@@ -80,7 +84,7 @@ type
   TIdIRCOpEvent = procedure(ASender: TIdContext; const ANickname, AChannel, AHost: String) of object;
   { -INV- }
   TIdIRCInvitingEvent = procedure(ASender: TIdContext; const ANickname, AHost: String) of object;
-  TIdIRCInviteEvent = procedure(ASender: TIdContext; const ANicknameFrom, AHost, ANicknameTo, AChannel: String) of object;
+  TIdIRCInviteEvent = procedure(ASender: TIdContext; const ANickname, AHost, ATarget, AChannel: String) of object;
   { -LIST- }
   TIdIRCChanBANListEvent = procedure(ASender: TIdContext; const AChannel: String; ABanList: TStrings) of object;
   TIdIRCChanEXCListEvent = procedure(ASender: TIdContext; const AChannel: String; AExceptList: TStrings) of object;
@@ -99,11 +103,11 @@ type
   TIdIRCWhoIsEvent = procedure(ASender: TIdContext; AWhoIsResults: TStrings) of object;
   TIdIRCWhoWasEvent = procedure(ASender: TIdContext; AWhoWasResults: TStrings) of object;
   { Mode }
-  TIdIRCChanModeEvent = procedure(ASender: TIdContext) of object;
-  TIdIRCUserModeEvent = procedure(ASender: TIdContext; const ANickname, AHost, AUserMode: String) of object;
+  TIdIRCChanModeEvent = procedure(ASender: TIdContext; const ANickname, AHost, AChannel, AMode, AParams: String) of object;
+  TIdIRCUserModeEvent = procedure(ASender: TIdContext; const ANickname, AHost, AMode: String) of object;
   { -CTCP- }
-  TIdIRCCTCPQueryEvent = procedure(ASender: TIdContext; const ANicknameFrom, AHost, ANicknameTo, AChannel, ACommand, AParams: String) of object;
-  TIdIRCCTCPReplyEvent = procedure(ASender: TIdContext; const ANicknameFrom, AHost, ANicknameTo, AChannel, ACommand, AParams: String) of object;
+  TIdIRCCTCPQueryEvent = procedure(ASender: TIdContext; const ANickname, AHost, ATarget, AChannel, ACommand, AParams: String) of object;
+  TIdIRCCTCPReplyEvent = procedure(ASender: TIdContext; const ANickname, AHost, ATarget, AChannel, ACommand, AParams: String) of object;
   { -DCC- }
   TIdIRCDCCChatEvent = procedure(ASender: TIdContext; const ANickname, AHost: String; APort: Integer) of object;
   TIdIRCDCCSendEvent = procedure(ASender: TIdContext; const ANickname, AHost, AFilename: String; APort, AFileSize: Integer) of object;
@@ -115,8 +119,9 @@ type
   TIdIRCKillErrorEvent = procedure(ASender: TIdContext) of object;
   { Other }
   TIdIRCNicknameChangedEvent = procedure(ASender: TIdContext; const AOldNickname, AHost, ANewNickname: String) of object;
-  TIdIRCKillEvent = procedure(ASender: TIdContext; const ANicknameFrom, AHost, ANicknameTo, AReason: String) of object;
+  TIdIRCKillEvent = procedure(ASender: TIdContext; const ANickname, AHost, ATargetNickname, AReason: String) of object;
   TIdIRCQuitEvent = procedure(ASender: TIdContext; const ANickname, AHost, AReason: String) of object;
+  TIdIRCSvrQuitEvent = procedure(ASender: TIdContext; const ANickname, AHost, AServer, AReason: String) of object;
   TIdIRCSvrTimeEvent = procedure(ASender: TIdContext; const AHost, ATime: String) of object;
   TIdIRCServiceEvent = procedure(ASender: TIdContext) of object;
   TIdIRCSvrVersionEvent = procedure(ASender: TIdContext; const AVersion, AHost, AComments: String) of object;
@@ -153,12 +158,26 @@ type
     //
     FSenderNick: String;
     FSenderHost: String;
-    FTmp: TStrings;
+    //
+    FBans: TStrings;
+    FExcepts: TStrings;
+    FInvites: TStrings;
+    FLinks: TStrings;
+    FMotd: TStrings;
+    FNames: TStrings;
+    FWho: TStrings;
     FWhoIs: TStrings;
     FWhoWas: TStrings;
     FSvrList: TStrings;
+    FUsers: TStrings;
     //
     FOnSWelcome: TIdIRCServerMsgEvent;
+    FOnYourHost: TIdIRCServerMsgEvent;
+    FOnSCreated: TIdIRCServerMsgEvent;
+    FOnMyInfo: TIdIRCMyInfoEvent;
+    FOnBounce: TIdIRCBounceEvent;
+    FOnISupport: TIdIRCISupportEvent;
+    FOnSError: TIdIRCServerMsgEvent;
     FOnPingPong: TIdIRCPingPongEvent;
     FOnPrivMessage: TIdIRCPrivMessageEvent;
     FOnNotice: TIdIRCNoticeEvent;
@@ -203,6 +222,7 @@ type
     FOnNickChange: TIdIRCNicknameChangedEvent;
     FOnKill: TIdIRCKillEvent;
     FOnQuit: TIdIRCQuitEvent;
+    FOnSvrQuit: TIdIRCSvrQuitEvent;
     FOnSvrTime: TIdIRCSvrTimeEvent;
     FOnService: TIdIRCServiceEvent;
     FOnSvrVersion: TIdIRCSvrVersionEvent;
@@ -219,6 +239,7 @@ type
     //Command handlers
     procedure DoBeforeCmd(ASender: TIdCommandHandlers; var AData: string; AContext: TIdContext);
     procedure DoReplyUnknownCommand(AContext: TIdContext; ALine: string); override;
+    procedure DoBounce(ASender: TIdCommand; ALegacy: Boolean);
     procedure CommandPRIVMSG(ASender: TIdCommand);
     procedure CommandNOTICE(ASender: TIdCommand);
     procedure CommandJOIN(ASender: TIdCommand);
@@ -227,15 +248,18 @@ type
     procedure CommandMODE(ASender: TIdCommand);
     procedure CommandNICK(ASender: TIdCommand);
     procedure CommandQUIT(ASender: TIdCommand);
+    procedure CommandSQUIT(ASender: TIdCommand);
     procedure CommandINVITE(ASender: TIdCommand);
     procedure CommandKILL(ASender: TIdCommand);
     procedure CommandPING(ASender: TIdCommand);
+    procedure CommandERROR(ASender: TIdCommand);
     procedure CommandWALLOPS(ASender: TIdCommand);
     procedure CommandTOPIC(ASender: TIdCommand);
     procedure CommandWELCOME(ASender: TIdCommand);
     procedure CommandYOURHOST(ASender: TIdCommand);
     procedure CommandCREATED(ASender: TIdCommand);
     procedure CommandMYINFO(ASender: TIdCommand);
+    procedure CommandISUPPORT(ASender: TIdCommand);
     procedure CommandBOUNCE(ASender: TIdCommand);
     procedure CommandUSERHOST(ASender: TIdCommand);
     procedure CommandISON(ASender: TIdCommand);
@@ -243,30 +267,43 @@ type
     procedure CommandENDOFWHOIS(ASender: TIdCommand);
     procedure CommandWHOWAS(ASender: TIdCommand);
     procedure CommandENDOFWHOWAS(ASender: TIdCommand);
+    procedure CommandLISTSTART(ASender: TIdCommand);
     procedure CommandLIST(ASender: TIdCommand);
     procedure CommandLISTEND(ASender: TIdCommand);
     procedure CommandAWAY(ASender: TIdCommand);
     procedure CommandINVITING(ASender: TIdCommand);
     procedure CommandSUMMONING(ASender: TIdCommand);
+    procedure CommandINVITELIST(ASender: TIdCommand);
     procedure CommandENDOFINVITELIST(ASender: TIdCommand);
+    procedure CommandEXCEPTLIST(ASender: TIdCommand);
     procedure CommandENDOFEXCEPTLIST(ASender: TIdCommand);
+    procedure CommandWHOREPLY(ASender: TIdCommand);
     procedure CommandENDOFWHO(ASender: TIdCommand);
+    procedure CommandNAMEREPLY(ASender: TIdCommand);
     procedure CommandENDOFNAMES(ASender: TIdCommand);
+    procedure CommandLINKS(ASender: TIdCommand);
     procedure CommandENDOFLINKS(ASender: TIdCommand);
+    procedure CommandBANLIST(ASender: TIdCommand);
     procedure CommandENDOFBANLIST(ASender: TIdCommand);
+    procedure CommandINFO(ASender: TIdCommand);
     procedure CommandENDOFINFO(ASender: TIdCommand);
+    procedure CommandMOTD(ASender: TIdCommand);
     procedure CommandENDOFMOTD(ASender: TIdCommand);
     procedure CommandREHASHING(ASender: TIdCommand);
+    procedure CommandUSERSSTART(ASender: TIdCommand);
+    procedure CommandUSERS(ASender: TIdCommand);
     procedure CommandENDOFUSERS(ASender: TIdCommand);
     procedure CommandENDOFSTATS(ASender: TIdCommand);
+    procedure CommandSERVLIST(ASender: TIdCommand);
     procedure CommandSERVLISTEND(ASender: TIdCommand);
-    procedure CommandSTIME(ASender: TIdCommand);
+    procedure CommandTIME(ASender: TIdCommand);
     procedure CommandSERVICE(ASender: TIdCommand);
-    procedure CommandSVERSION(ASender: TIdCommand);
+    procedure CommandVERSION(ASender: TIdCommand);
     procedure CommandCHANMODE(ASender: TIdCommand);
     procedure CommandOPER(ASender: TIdCommand);
     //
     procedure AssignIRCClientCommands;
+    function GetCmdHandlerClass: TIdCommandHandlerClass; override;
     procedure SetIOHandler(AValue: TIdIOHandler); override;
     procedure InitComponent; override;
   public
@@ -286,7 +323,7 @@ type
     procedure CTCPReply(const ATarget, ACTCP, AReply: String);
     procedure Join(const AChannel: String; const AKey: String ='');
     procedure Part(const AChannel: String; const AReason: String = '');
-    procedure Kick(const AChannel, ANickname, AReason: String);
+    procedure Kick(const AChannel, ANickname: String; const AReason: String = '');
     procedure SetChannelMode(const AChannel, AMode: String; const AParams: String = '');
     procedure SetUserMode(const ANickname, AMode: String);
     procedure GetChannelTopic(const AChannel: String);
@@ -308,11 +345,11 @@ type
     procedure GetServerStatus(AQuery: TIdIRCStat; const ATarget: String = '');
     procedure ListKnownServerNames(const ARemoteHost: String = ''; const AHostMask: String = '');
     procedure QueryServerTime(const ATarget: String = '');
-    procedure RequestServerConnect(const ATarget, AHost: String; APort: Integer; const ARemoteHost: String = '');
+    procedure RequestServerConnect(const ATargetHost: String; APort: Integer; const ARemoteHost: String = '');
     procedure TraceServer(const ATarget: String = '');
     procedure GetAdminInfo(const ATarget: String = '');
     procedure GetServerInfo(const ATarget: String = '');
-    procedure ListNetworkServices(const AHostMask: String; const AType: String = '');
+    procedure ListNetworkServices(const AHostMask: String = ''; const AType: String = '');
     procedure QueryService(const AServiceName, AMessage: String);
     procedure Who(const AMask: String; AOnlyAdmins: Boolean);
     procedure WhoIs(const AMask: String; const ATarget: String = '');
@@ -328,7 +365,9 @@ type
     procedure ListServerUsers(const ATarget: String = '');
     procedure SayWALLOPS(const AMessage: String);
     procedure GetUserInfo(const ANickname: String);
-    procedure IsOnIRC(const ANickname: String);
+    procedure GetUsersInfo(const ANicknames: array of String);
+    procedure IsOnIRC(const ANickname: String); overload;
+    procedure IsOnIRC(const ANicknames: array of String); overload;
     procedure BecomeOp(const ANickname, APassword: String);
     procedure SQuit(const AHost, AComment: String);
     procedure SetChannelLimit(const AChannel: String; ALimit: Integer);
@@ -341,10 +380,16 @@ type
     property Username: String read FUsername write SetUsername;
     property RealName: String read FRealName write FRealName;
     property Password: String read FPassword write FPassword;
+    property Port default IdPORT_IRC;
     property Replies: TIdIRCReplies read FReplies write SetIdIRCReplies;
     property UserMode: TIdIRCUserModes read FUserMode write SetIdIRCUserMode;
     { Events }
-    property OnServerWelcome:TIdIRCServerMsgEvent read FOnSWelcome write FOnSWelcome;
+    property OnServerWelcome: TIdIRCServerMsgEvent read FOnSWelcome write FOnSWelcome;
+    property OnYourHost: TIdIRCServerMsgEvent read FOnYourHost write FOnYourHost;
+    property OnServerCreated: TIdIRCServerMsgEvent read FOnSCreated write FOnSCreated;
+    property OnMyInfo: TIdIRCMyInfoEvent read FOnMyInfo write FOnMyInfo;
+    property OnBounce: TIdIRCBounceEvent read FOnBounce write FOnBounce;
+    property OnISupport: TIdIRCISupportEvent read FOnISupport write FOnISupport;
     property OnPingPong: TIdIRCPingPongEvent read FOnPingPong write FOnPingPong;
     property OnPrivateMessage: TIdIRCPrivMessageEvent read FOnPrivMessage write FOnPrivMessage;
     property OnNotice: TIdIRCNoticeEvent read FOnNotice write FOnNotice;
@@ -389,11 +434,11 @@ type
     property OnNicknameChange: TIdIRCNicknameChangedEvent read FOnNickChange write FOnNickChange;
     property OnKill: TIdIRCKillEvent read FOnKill write FOnKill;
     property OnQuit: TIdIRCQuitEvent read FOnQuit write FOnQuit;
+    property OnServerQuit: TIdIRCSvrQuitEvent read FOnSvrQuit write FOnSvrQuit;
     property OnServerTime: TIdIRCSvrTimeEvent read FOnSvrTime write FOnSvrTime;
     property OnService: TIdIRCServiceEvent read FOnService write FOnService;
     property OnServerVersion: TIdIRCSvrVersionEvent read FOnSvrVersion write FOnSvrVersion;
     property OnRaw: TIdIRCRawEvent read FOnRaw write FOnRaw;
-    property Port default IdPORT_IRC;
   end;
 
 implementation
@@ -402,7 +447,7 @@ uses
   IdGlobalProtocols, IdResourceStringsProtocols, IdSSL,
   IdStack, IdBaseComponent, SysUtils;
 
-const 
+const
   IdIRCCTCP: array[0..9] of String = ('ACTION', 'SOUND', 'PING', 'FINGER', {do not localize}
     'USERINFO', 'VERSION', 'CLIENTINFO', 'TIME', 'ERROR', 'DCC');  {do not localize}
 
@@ -449,13 +494,30 @@ begin
   end;
 end;
 
+type
+  TIdIRCCommandHandler = class(TIdCommandHandler)
+  public
+    procedure DoParseParams(AUnparsedParams: string; AParams: TStrings); override;
+  end;
+
+procedure TIdIRCCommandHandler.DoParseParams(AUnparsedParams: string; AParams: TStrings);
+begin
+  AParams.Clear;
+  while AUnparsedParams <> '' do begin
+    AParams.Add(FetchIRCParam(AUnparsedParams));
+  end;
+end;
+
+function TIdIRC.GetCmdHandlerClass: TIdCommandHandlerClass;
+begin
+  Result := TIdIRCCommandHandler;
+end;
 
 procedure TIdIRC.InitComponent;
 begin
   inherited InitComponent;
   //
   FReplies := TIdIRCReplies.Create;
-  FTmp := TStringList.Create;
   Port := IdPORT_IRC;
   FUserMode := [];
 
@@ -466,7 +528,7 @@ begin
   CommandHandlers.PerformReplies := False;
 
   // RLebeau 3/11/08: most of the command handlers should parse parameters by default
-  CommandHandlers.ParseParamsDefault := False;
+  CommandHandlers.ParseParamsDefault := True;
 
   if not IsDesignTime then begin
     AssignIRCClientCommands;
@@ -476,10 +538,17 @@ end;
 destructor TIdIRC.Destroy;
 begin
   FreeAndNil(FReplies);
-  FreeAndNil(FTmp);
+  FreeAndNil(FBans);
+  FreeAndNil(FExcepts);
+  FreeAndNil(FInvites);
+  FreeAndNil(FLinks);
+  FreeAndNil(FMotd);
+  FreeAndNil(FNames);
+  FreeAndNil(FWho);
   FreeAndNil(FWhoIs);
   FreeAndNil(FWhoWas);
   FreeAndNil(FSvrList);
+  FreeAndNil(FUsers);
   inherited Destroy;
 end;
 
@@ -548,12 +617,14 @@ begin
   begin
     Command := 'PRIVMSG'; {do not localize}
     OnCommand := CommandPRIVMSG;
+    ParseParams := False;
   end;
   //NOTICE Nickname/#channel :message
   with CommandHandlers.Add do
   begin
     Command := 'NOTICE';  {do not localize}
     OnCommand := CommandNOTICE;
+    ParseParams := False;
   end;
   //JOIN #channel
   with CommandHandlers.Add do
@@ -578,8 +649,9 @@ begin
   begin
     Command := 'MODE';  {do not localize}
     OnCommand := CommandMODE;
+    ParseParams := False;
   end;
-  //Nickname newNickname
+  //NICK newNickname
   with CommandHandlers.Add do
   begin
     Command := 'NICK';  {do not localize}
@@ -590,6 +662,12 @@ begin
   begin
     Command := 'QUIT';  {do not localize}
     OnCommand := CommandQUIT;
+  end;
+  //SQUIT server :reason
+  with CommandHandlers.Add do
+  begin
+    Command := 'SQUIT';  {do not localize}
+    OnCommand := CommandSQUIT;
   end;
   //INVITE Nickname :#channel
   with CommandHandlers.Add do
@@ -614,6 +692,7 @@ begin
   begin
     Command := 'WALLOPS'; {do not localize}
     OnCommand := CommandWALLOPS;
+    ParseParams := False;
   end;
   //TOPIC
   with CommandHandlers.Add do
@@ -621,13 +700,21 @@ begin
     Command := 'TOPIC'; {do not localize}
     OnCommand := CommandTOPIC;
   end;
+  //ERROR message
+  with CommandHandlers.Add do
+  begin
+    Command := 'ERROR'; {do not localize}
+    OnCommand := CommandERROR;
+    ParseParams := False;
+  end;
 
-  { Numeric commands }
+  { Numeric commands, refer to http://www.alien.net.au/irc/irc2numerics.html }
   //RPL_WELCOME
   with CommandHandlers.Add do
   begin
     Command := '001'; {do not localize}
     OnCommand := CommandWELCOME;
+    ParseParams := False;
   end;
   //RPL_YOURHOST
   with CommandHandlers.Add do
@@ -646,205 +733,605 @@ begin
   begin
     Command := '004'; {do not localize}
     OnCommand := CommandMYINFO;
+    ParseParams := False;
   end;
-  //ENDOFSTATS
+  //RPL_BOUNCE (deprecated), RPL_ISUPPORT (new)
+  with CommandHandlers.Add do
+  begin
+    Command := '005'; {do not localize}
+    //OnCommand := CommandBOUNCE; // deprecated
+    OnCommand := CommandISUPPORT;
+  end;
+  { TODO:
+  008  RPL_SNOMASK  ircu   Server notice mask (hex)
+  009  RPL_STATMEMTOT  ircu
+  014  RPL_YOURCOOKIE  Hybrid?
+  042  RPL_YOURID  IRCnet
+  043  RPL_SAVENICK  IRCnet  :<info>  Sent to the client when their nickname was forced to change due to a collision
+  050  RPL_ATTEMPTINGJUNC  aircd
+  051  RPL_ATTEMPTINGREROUTE  aircd
+  200  RPL_TRACELINK  RFC1459  Link <version>[.<debug_level>] <destination> <next_server> [V<protocol_version> <link_uptime_in_seconds> <backstream_sendq> <upstream_sendq>]  See RFC
+  201  RPL_TRACECONNECTING  RFC1459  Try. <class> <server>  See RFC
+  202  RPL_TRACEHANDSHAKE  RFC1459  H.S. <class> <server>  See RFC
+  203  RPL_TRACEUNKNOWN  RFC1459  ???? <class> [<connection_address>]  See RFC
+  204  RPL_TRACEOPERATOR  RFC1459  Oper <class> <nick>  See RFC
+  205  RPL_TRACEUSER  RFC1459  User <class> <nick>  See RFC
+  206  RPL_TRACESERVER  RFC1459  Serv <class> <int>S <int>C <server> <nick!user|*!*>@<host|server> [V<protocol_version>]  See RFC
+  207  RPL_TRACESERVICE  RFC2812  Service <class> <name> <type> <active_type>  See RFC
+  208  RPL_TRACENEWTYPE  RFC1459  <newtype> 0 <client_name>  See RFC
+  209  RPL_TRACECLASS  RFC2812  Class <class> <count>  See RFC
+  210  RPL_TRACERECONNECT  RFC2812
+  210  RPL_STATS  aircd   Used instead of having multiple stats numerics
+  211  RPL_STATSLINKINFO  RFC1459  <linkname> <sendq> <sent_msgs> <sent_bytes> <recvd_msgs> <rcvd_bytes> <time_open>  Reply to STATS (See RFC)
+  212  RPL_STATSCOMMANDS  RFC1459  <command> <count> [<byte_count> <remote_count>]  Reply to STATS (See RFC)
+  213  RPL_STATSCLINE  RFC1459  C <host> * <name> <port> <class>  Reply to STATS (See RFC)
+  214  RPL_STATSNLINE  RFC1459  N <host> * <name> <port> <class>  Reply to STATS (See RFC), Also known as RPL_STATSOLDNLINE (ircu, Unreal)
+  215  RPL_STATSILINE  RFC1459  I <host> * <host> <port> <class>  Reply to STATS (See RFC)
+  216  RPL_STATSKLINE  RFC1459  K <host> * <username> <port> <class>  Reply to STATS (See RFC)
+  217  RPL_STATSQLINE  RFC1459
+  217  RPL_STATSPLINE  ircu
+  218  RPL_STATSYLINE
+  }
+  // RPL_BOUNCE (new)
+  with CommandHandlers.Add do
+  begin
+    Command := '010'; {do not localize}
+    OnCommand := CommandBOUNCE;
+  end;
+  //RPL_ENDOFSTATS
   with CommandHandlers.Add do
   begin
     Command := '219'; {do not localize}
     OnCommand := CommandENDOFSTATS;
   end;
-  //SERVLISTEND
+  {TODO:
+  221  RPL_UMODEIS  RFC1459  <user_modes> [<user_mode_params>]  Information about a user's own modes. Some daemons have extended the mode command and certain modes take parameters (like channel modes).
+  }
+  //RPL_SERVLIST
+  with CommandHandlers.Add do
+  begin
+    Command := '234'; {do not localize}
+    OnCommand := CommandSERVLIST;
+  end;
+  //RPL_SERVLISTEND
   with CommandHandlers.Add do
   begin
     Command := '235'; {do not localize}
     OnCommand := CommandSERVLISTEND;
   end;
-  //AWAY
+  {TODO:
+  236  RPL_STATSVERBOSE  ircu   Verbose server list?
+  237  RPL_STATSENGINE  ircu   Engine name?
+  239  RPL_STATSIAUTH  IRCnet
+  241  RPL_STATSLLINE  RFC1459  L <hostmask> * <servername> <maxdepth>  Reply to STATS (See RFC)
+  242  RPL_STATSUPTIME  RFC1459  :Server Up <days> days <hours>:<minutes>:<seconds>  Reply to STATS (See RFC)
+  243  RPL_STATSOLINE  RFC1459  O <hostmask> * <nick> [:<info>]  Reply to STATS (See RFC); The info field is an extension found in some IRC daemons, which returns info such as an e-mail address or the name/job of an operator
+  244  RPL_STATSHLINE  RFC1459  H <hostmask> * <servername>  Reply to STATS (See RFC)
+  245  RPL_STATSSLINE  Bahamut, IRCnet, Hybrid
+  250  RPL_STATSCONN  ircu, Unreal    
+  251  RPL_LUSERCLIENT  RFC1459  :There are <int> users and <int> invisible on <int> servers  Reply to LUSERS command, other versions exist (eg. RFC2812); Text may vary.
+  252  RPL_LUSEROP  RFC1459  <int> :<info>  Reply to LUSERS command - Number of IRC operators online
+  253  RPL_LUSERUNKNOWN  RFC1459  <int> :<info>  Reply to LUSERS command - Number of unknown/unregistered connections
+  254  RPL_LUSERCHANNELS  RFC1459  <int> :<info>  Reply to LUSERS command - Number of channels formed
+  255  RPL_LUSERME  RFC1459  :I have <int> clients and <int> servers  Reply to LUSERS command - Information about local connections; Text may vary.
+  256  RPL_ADMINME  RFC1459  <server> :<info>  Start of an RPL_ADMIN* reply. In practise, the server parameter is often never given, and instead the info field contains the text 'Administrative info about <server>'. Newer daemons seem to follow the RFC and output the server's hostname in the 'server' parameter, but also output the server name in the text as per traditional daemons.
+  257  RPL_ADMINLOC1  RFC1459  :<admin_location>  Reply to ADMIN command (Location, first line)
+  258  RPL_ADMINLOC2  RFC1459  :<admin_location>  Reply to ADMIN command (Location, second line)
+  259  RPL_ADMINEMAIL  RFC1459  :<email_address>  Reply to ADMIN command (E-mail address of administrator)
+  261  RPL_TRACELOG  RFC1459  File <logfile> <debug_level>  See RFC
+  263  RPL_TRYAGAIN  RFC2812  <command> :<info>  When a server drops a command without processing it, it MUST use this reply. Also known as RPL_LOAD_THROTTLED and RPL_LOAD2HI, I'm presuming they do the same thing.
+  265  RPL_LOCALUSERS  aircd, Hybrid, Hybrid, Bahamut   Also known as RPL_CURRENT_LOCAL
+  266  RPL_GLOBALUSERS  aircd, Hybrid, Hybrid, Bahamut   Also known as RPL_CURRENT_GLOBAL
+  267  RPL_START_NETSTAT  aircd
+  268  RPL_NETSTAT  aircd
+  269  RPL_END_NETSTAT  aircd
+  270  RPL_PRIVS  ircu
+  271  RPL_SILELIST  ircu
+  272  RPL_ENDOFSILELIST  ircu
+  273  RPL_NOTIFY  aircd
+  276  RPL_VCHANEXIST     
+  277  RPL_VCHANLIST
+  278  RPL_VCHANHELP
+  280  RPL_GLIST  ircu
+  296  RPL_CHANINFO_KICKS  aircd
+  299  RPL_END_CHANINFO  aircd
+  300  RPL_NONE  RFC1459   Dummy reply, supposedly only used for debugging/testing new features, however has appeared in production daemons.
+  }
+  //RPL_AWAY
   with CommandHandlers.Add do
   begin
     Command := '301'; {do not localize}
     OnCommand := CommandAWAY;
   end;
-  //USERHOST
+  //RPL_USERHOST
   with CommandHandlers.Add do
   begin
     Command := '302'; {do not localize}
     OnCommand := CommandUSERHOST;
+    ParseParams := False;
   end;
-  //ISON
+  //RPL_ISON
   with CommandHandlers.Add do
   begin
     Command := '303'; {do not localize}
     OnCommand := CommandISON;
   end;
-  //UNAWAY
+  //RPL_UNAWAY
   with CommandHandlers.Add do
   begin
     Command := '305'; {do not localize}
     OnCommand := CommandAWAY;
   end;
-  //NOWAWAY
+  //RPL_NOWAWAY
   with CommandHandlers.Add do
   begin
     Command := '306'; {do not localize}
     OnCommand := CommandAWAY;
   end;
-  //WHOISUSER
+  //RPL_WHOISUSER
   with CommandHandlers.Add do
   begin
     Command := '311'; {do not localize}
     OnCommand := CommandWHOIS;
   end;
-  //WHOISSERVER
+  //RPL_WHOISSERVER
   with CommandHandlers.Add do
   begin
     Command := '312'; {do not localize}
     OnCommand := CommandWHOIS;
   end;
-  //WHOISOPERATOR
+  //RPL_WHOISOPERATOR
   with CommandHandlers.Add do
   begin
     Command := '313'; {do not localize}
     OnCommand := CommandWHOIS;
   end;
-  //WHOWASUSER
+  //RPL_WHOWASUSER
   with CommandHandlers.Add do
   begin
     Command := '314';
     OnCommand := CommandWHOWAS;
   end;
-  //ENDOFWHO
+  //RPL_ENDOFWHO
   with CommandHandlers.Add do
   begin
     Command := '315'; {do not localize}
     OnCommand := CommandENDOFWHO;
   end;
-  //ENDOFWHOIS
+  //RPL_WHOISIDLE
+  with CommandHandlers.Add do
+  begin
+    Command := '317'; {do not localize}
+    OnCommand := CommandWHOIS;
+  end;
+  //RPL_ENDOFWHOIS
   with CommandHandlers.Add do
   begin
     Command := '318'; {do not localize}
     OnCommand := CommandENDOFWHOIS;
   end;
-  //LIST
+  //RPL_WHOISCHANNELS
+  with CommandHandlers.Add do
+  begin
+    Command := '319'; {do not localize}
+    OnCommand := CommandWHOIS;
+  end;
+  {TODO:
+  320  RPL_WHOISVIRT  AustHex
+  320  RPL_WHOIS_HIDDEN  Anothernet
+  320  RPL_WHOISSPECIAL  Unreal
+  }
+  //RPL_LISTSTART
+  with CommandHandlers.Add do
+  begin
+    Command := '321'; {do not localize}
+    OnCommand := CommandLISTSTART;
+  end;
+  //RPL_LIST
   with CommandHandlers.Add do
   begin
     Command := '322'; {do not localize}
     OnCommand := CommandLIST;
   end;
-  //LISTEND
+  //RPL_LISTEND
   with CommandHandlers.Add do
   begin
     Command := '323'; {do not localize}
     OnCommand := CommandLISTEND;
   end;
-  //CHANMODEIS
+  //RPL_CHANMODEIS
   with CommandHandlers.Add do
   begin
     Command := '324'; {do not localize}
     OnCommand := CommandCHANMODE;
   end;
-  //NOTOPIC
+  //RPL_UNIQOPIS
+  with CommandHandlers.Add do
+  begin
+    Command := '325'; {do not localize}
+    //OnCommand := CommandUNIQOP;
+  end;
+  {TODO:
+  326  RPL_NOCHANPASS
+  327  RPL_CHPASSUNKNOWN
+  328  RPL_CHANNEL_URL  Bahamut, AustHex
+  329  RPL_CREATIONTIME  Bahamut
+  }
+  //RPL_NOTOPIC
   with CommandHandlers.Add do
   begin
     Command := '331'; {do not localize}
     OnCommand := CommandTOPIC;
   end;
-  //INVITING
+  //RPL_TOPIC
+  with CommandHandlers.Add do
+  begin
+    Command := '332';
+    OnCommand := CommandTOPIC;
+  end;
+  {TODO:
+  333  RPL_TOPICWHOTIME  ircu
+  339  RPL_BADCHANPASS
+  340  RPL_USERIP  ircu
+  }
+  //RPL_INVITING
   with CommandHandlers.Add do
   begin
     Command := '341'; {do not localize}
     OnCommand := CommandINVITING;
   end;
-  //SUMMONING
+  //RPL_SUMMONING
   with CommandHandlers.Add do
   begin
     Command := '342'; {do not localize}
     OnCommand := CommandSUMMONING;
   end;
-  //ENDOFINVITELIST
+  {TODO:
+  345  RPL_INVITED  GameSurge  <channel> <user being invited> <user issuing invite> :<user being invited> has been invited by <user issuing invite>  Sent to users on a channel when an INVITE command has been issued
+  }
+  //RPL_INVITELIST
+  with CommandHandlers.Add do
+  begin
+    Command := '346'; {do not localize}
+    OnCommand := CommandINVITELIST;
+  end;
+  //RPL_ENDOFINVITELIST
   with CommandHandlers.Add do
   begin
     Command := '347'; {do not localize}
     OnCommand := CommandENDOFINVITELIST;
   end;
-  //ENDOFEXCEPTLIST
+  //RPL_EXCEPTLIST
+  with CommandHandlers.Add do
+  begin
+    Command := '348'; {do not localize}
+    OnCommand := CommandEXCEPTLIST;
+  end;
+  //RPL_ENDOFEXCEPTLIST
   with CommandHandlers.Add do
   begin
     Command := '349'; {do not localize}
     OnCommand := CommandENDOFEXCEPTLIST;
   end;
-  //SVERSION
+  //RPL_VERSION
   with CommandHandlers.Add do
   begin
     Command := '351'; {do not localize}
-    OnCommand := CommandSVERSION;
+    OnCommand := CommandVERSION;
   end;
-  //ENDOFLINKS
+  //RPL_WHOREPLY
+  with CommandHandlers.Add do
+  begin
+    Command := '352'; {do not localize}
+    OnCommand := CommandWHOREPLY;
+  end;
+  //RPL_NAMEREPLY
+  with CommandHandlers.Add do
+  begin
+    Command := '353'; {do not localize}
+    OnCommand := CommandNAMEREPLY;
+  end;
+  { TODO:
+  354  RPL_WHOSPCRPL  ircu   Reply to WHO, however it is a 'special' reply because it is returned using a non-standard (non-RFC1459) format. The format is dictated by the command given by the user, and can vary widely. When this is used, the WHO command was invoked in its 'extended' form, as announced by the 'WHOX' ISUPPORT tag.
+  355  RPL_NAMREPLY_  QuakeNet  ( '=' / '*' / '@' ) <channel> ' ' : [ '@' / '+' ] <nick> *( ' ' [ '@' / '+' ] <nick> )  Reply to the "NAMES -d" command - used to show invisible users (when the channel is set +D, QuakeNet relative). The proper define name for this numeric is unknown at this time Also see #353.
+  }
+  //RPL_LINKS
+  with CommandHandlers.Add do
+  begin
+    Command := '364'; {do not localize}
+    OnCommand := CommandLINKS;
+  end;
+  //RPL_ENDOFLINKS
   with CommandHandlers.Add do
   begin
     Command := '365'; {do not localize}
     OnCommand := CommandENDOFLINKS;
   end;
-  //ENDOFNAMES
+  //RPL_ENDOFNAMES
   with CommandHandlers.Add do
   begin
     Command := '366'; {do not localize}
     OnCommand := CommandENDOFNAMES;
   end;
-  //ENDOFBANLIST
+  // RPL_BANLIST
+  with CommandHandlers.Add do
+  begin
+    Command := '367'; {do not localize}
+    OnCommand := CommandBANLIST;
+  end;
+  //RPL_ENDOFBANLIST
   with CommandHandlers.Add do
   begin
     Command := '368'; {do not localize}
     OnCommand := CommandENDOFBANLIST;
   end;
-  //ENDOFWHOWAS
+  //RPL_ENDOFWHOWAS
   with CommandHandlers.Add do
   begin
     Command := '369'; {do not localize}
     OnCommand := CommandENDOFWHOWAS;
   end;
-  //ENDOFINFO
+  //RPL_INFO
+  with CommandHandlers.Add do
+  begin
+    Command := '371'; {do not localize}
+    OnCommand := CommandINFO;
+  end;
+  //RPL_MOTD
+  with CommandHandlers.Add do
+  begin
+    Command := '372'; {do not localize}
+    OnCommand := CommandMOTD;
+  end;
+  //RPL_ENDOFINFO
   with CommandHandlers.Add do
   begin
     Command := '374'; {do not localize}
     OnCommand := CommandENDOFINFO;
+    ParseParams := False;
   end;
-  //ENDOFMOTD
+  //RPL_MOTDSTART
+  with CommandHandlers.Add do
+  begin
+    Command := '375'; {do not localize}
+    OnCommand := CommandMOTD;
+  end;
+  //RPL_ENDOFMOTD
   with CommandHandlers.Add do
   begin
     Command := '376'; {do not localize}
     OnCommand := CommandENDOFMOTD;
   end;
-  //YOUREOPER
+  //RPL_YOUREOPER
   with CommandHandlers.Add do
   begin
     Command := '381'; {do not localize}
     //OnCommand := CommandYOUAREOPER;
   end;
-  //REHASHING
+  //RPL_REHASHING
   with CommandHandlers.Add do
   begin
     Command := '382'; {do not localize}
     OnCommand := CommandREHASHING;
   end;
-  //YOUARESERVICE
+  //RPL_YOUARESERVICE
   with CommandHandlers.Add do
   begin
     Command := '383'; {do not localize}
     OnCommand := CommandSERVICE;
   end;
-  //STIME
+  {TODO:
+  385  RPL_NOTOPERANYMORE  AustHex, Hybrid, Unreal
+  388  RPL_ALIST  Unreal
+  389  RPL_ENDOFALIST  Unreal
+  }
+  //RPL_TIME
   with CommandHandlers.Add do
   begin
     Command := '391'; {do not localize}
-    OnCommand := CommandSTIME;
+    OnCommand := CommandTIME;
   end;
-  //ENDOFUSERS
+  //RPL_USERSSTART
+  with CommandHandlers.Add do
+  begin
+    Command := '392'; {do not localize}
+    OnCommand := CommandUSERSSTART;
+  end;
+  //RPL_USERS
+  with CommandHandlers.Add do
+  begin
+    Command := '393'; {do not localize}
+    OnCommand := CommandUSERS;
+  end;
+  //RPL_ENDOFUSERS
   with CommandHandlers.Add do
   begin
     Command := '394'; {do not localize}
     OnCommand := CommandENDOFUSERS;
   end;
+  //RPL_NOUSERS
+  with CommandHandlers.Add do
+  begin
+    Command := '395'; {do not localize}
+    OnCommand := CommandUSERS;
+  end;
+  {TODO:
+  396  RPL_HOSTHIDDEN  Undernet   Reply to a user when user mode +x (host masking) was set successfully  
+  400  ERR_UNKNOWNERROR   <command> [<?>] :<info>  Sent when an error occured executing a command, but it is not specifically known why the command could not be executed.
+  401  ERR_NOSUCHNICK  RFC1459  <nick> :<reason>  Used to indicate the nickname parameter supplied to a command is currently unused
+  402  ERR_NOSUCHSERVER  RFC1459  <server> :<reason>  Used to indicate the server name given currently doesn't exist
+  403  ERR_NOSUCHCHANNEL  RFC1459  <channel> :<reason>  Used to indicate the given channel name is invalid, or does not exist
+  404  ERR_CANNOTSENDTOCHAN  RFC1459  <channel> :<reason>  Sent to a user who does not have the rights to send a message to a channel
+  405  ERR_TOOMANYCHANNELS  RFC1459  <channel> :<reason>  Sent to a user when they have joined the maximum number of allowed channels and they tried to join another channel
+  406  ERR_WASNOSUCHNICK  RFC1459  <nick> :<reason>  Returned by WHOWAS to indicate there was no history information for a given nickname
+  407  ERR_TOOMANYTARGETS  RFC1459  <target> :<reason>  The given target(s) for a command are ambiguous in that they relate to too many targets
+  408  ERR_NOSUCHSERVICE  RFC2812  <service_name> :<reason>  Returned to a client which is attempting to send an SQUERY (or other message) to a service which does not exist
+  409  ERR_NOORIGIN  RFC1459  :<reason>  PING or PONG message missing the originator parameter which is required since these commands must work without valid prefixes
+  411  ERR_NORECIPIENT  RFC1459  :<reason>  Returned when no recipient is given with a command
+  412  ERR_NOTEXTTOSEND  RFC1459  :<reason>  Returned when NOTICE/PRIVMSG is used with no message given
+  413  ERR_NOTOPLEVEL  RFC1459  <mask> :<reason>  Used when a message is being sent to a mask without being limited to a top-level domain (i.e. * instead of *.au)
+  414  ERR_WILDTOPLEVEL  RFC1459  <mask> :<reason>  Used when a message is being sent to a mask with a wild-card for a top level domain (i.e. *.*)
+  415  ERR_BADMASK  RFC2812  <mask> :<reason>  Used when a message is being sent to a mask with an invalid syntax
+  416  ERR_TOOMANYMATCHES  IRCnet  <command> [<mask>] :<info>  Returned when too many matches have been found for a command and the output has been truncated. An example would be the WHO command, where by the mask '*' would match everyone on the network! Ouch!
+  416  ERR_QUERYTOOLONG  ircu   Same as ERR_TOOMANYMATCHES
+  419  ERR_LENGTHTRUNCATED  aircd
+  421  ERR_UNKNOWNCOMMAND  RFC1459  <command> :<reason>  Returned when the given command is unknown to the server (or hidden because of lack of access rights)
+  422  ERR_NOMOTD  RFC1459  :<reason>  Sent when there is no MOTD to send the client
+  423  ERR_NOADMININFO  RFC1459  <server> :<reason>  Returned by a server in response to an ADMIN request when no information is available. RFC1459 mentions this in the list of numerics. While it's not listed as a valid reply in section 4.3.7 ('Admin command'), it's confirmed to exist in the real world.
+  424  ERR_FILEERROR  RFC1459  :<reason>  Generic error message used to report a failed file operation during the processing of a command
+  425  ERR_NOOPERMOTD  Unreal
+  429  ERR_TOOMANYAWAY  Bahamut
+  430  ERR_EVENTNICKCHANGE  AustHex   Returned by NICK when the user is not allowed to change their nickname due to a channel event (channel mode +E)
+  431  ERR_NONICKNAMEGIVEN  RFC1459  :<reason>  Returned when a nickname parameter expected for a command isn't found
+  432  ERR_ERRONEUSNICKNAME  RFC1459  <nick> :<reason>  Returned after receiving a NICK message which contains a nickname which is considered invalid, such as it's reserved ('anonymous') or contains characters considered invalid for nicknames. This numeric is misspelt, but remains with this name for historical reasons :)
+  433  ERR_NICKNAMEINUSE  RFC1459  <nick> :<reason>  Returned by the NICK command when the given nickname is already in use
+  436  ERR_NICKCOLLISION  RFC1459  <nick> :<reason>  Returned by a server to a client when it detects a nickname collision
+  439  ERR_TARGETTOOFAST  ircu   Also known as many other things, RPL_INVTOOFAST, RPL_MSGTOOFAST etc  
+  440  ERR_SERVICESDOWN  Bahamut, Unreal
+  441  ERR_USERNOTINCHANNEL  RFC1459  <nick> <channel> :<reason>  Returned by the server to indicate that the target user of the command is not on the given channel
+  442  ERR_NOTONCHANNEL  RFC1459  <channel> :<reason>  Returned by the server whenever a client tries to perform a channel effecting command for which the client is not a member  
+  443  ERR_USERONCHANNEL  RFC1459  <nick> <channel> [:<reason>]  Returned when a client tries to invite a user to a channel they're already on  
+  444  ERR_NOLOGIN  RFC1459  <user> :<reason>  Returned by the SUMMON command if a given user was not logged in and could not be summoned  
+  445  ERR_SUMMONDISABLED  RFC1459  :<reason>  Returned by SUMMON when it has been disabled or not implemented  
+  446  ERR_USERSDISABLED  RFC1459  :<reason>  Returned by USERS when it has been disabled or not implemented  
+  447  ERR_NONICKCHANGE  Unreal    
+  449  ERR_NOTIMPLEMENTED  Undernet  Unspecified  Returned when a requested feature is not implemented (and cannot be completed)  
+  451  ERR_NOTREGISTERED  RFC1459  :<reason>  Returned by the server to indicate that the client must be registered before the server will allow it to be parsed in detail  
+  452  ERR_IDCOLLISION     
+  453  ERR_NICKLOST     
+  455  ERR_HOSTILENAME  Unreal    
+  456  ERR_ACCEPTFULL     
+  457  ERR_ACCEPTEXIST     
+  458  ERR_ACCEPTNOT     
+  459  ERR_NOHIDING  Unreal   Not allowed to become an invisible operator?  
+  460  ERR_NOTFORHALFOPS  Unreal    
+  461  ERR_NEEDMOREPARAMS  RFC1459  <command> :<reason>  Returned by the server by any command which requires more parameters than the number of parameters given  
+  462  ERR_ALREADYREGISTERED  RFC1459  :<reason>  Returned by the server to any link which attempts to register again  
+  463  ERR_NOPERMFORHOST  RFC1459  :<reason>  Returned to a client which attempts to register with a server which has been configured to refuse connections from the client's host  
+  464  ERR_PASSWDMISMATCH  RFC1459  :<reason>  Returned by the PASS command to indicate the given password was required and was either not given or was incorrect  
+  465  ERR_YOUREBANNEDCREEP  RFC1459  :<reason>  Returned to a client after an attempt to register on a server configured to ban connections from that client  
+  466  ERR_YOUWILLBEBANNED  RFC1459   Sent by a server to a user to inform that access to the server will soon be denied  
+  467  ERR_KEYSET  RFC1459  <channel> :<reason>  Returned when the channel key for a channel has already been set  
+  468  ERR_INVALIDUSERNAME  ircu    
+  468  ERR_ONLYSERVERSCANCHANGE  Bahamut, Unreal    
+  469  ERR_LINKSET  Unreal    
+  470  ERR_LINKCHANNEL  Unreal    
+  470  ERR_KICKEDFROMCHAN  aircd    
+  471  ERR_CHANNELISFULL  RFC1459  <channel> :<reason>  Returned when attempting to join a channel which is set +l and is already full  
+  472  ERR_UNKNOWNMODE  RFC1459  <char> :<reason>  Returned when a given mode is unknown  
+  473  ERR_INVITEONLYCHAN  RFC1459  <channel> :<reason>  Returned when attempting to join a channel which is invite only without an invitation  
+  474  ERR_BANNEDFROMCHAN  RFC1459  <channel> :<reason>  Returned when attempting to join a channel a user is banned from  
+  475  ERR_BADCHANNELKEY  RFC1459  <channel> :<reason>  Returned when attempting to join a key-locked channel either without a key or with the wrong key  
+  476  ERR_BADCHANMASK  RFC2812  <channel> :<reason>  The given channel mask was invalid
+  478  ERR_BANLISTFULL  RFC2812  <channel> <char> :<reason>  Returned when a channel access list (i.e. ban list etc) is full and cannot be added to
+  479  ERR_BADCHANNAME  Hybrid
+  479  ERR_LINKFAIL  Unreal
+  481  ERR_NOPRIVILEGES  RFC1459  :<reason>  Returned by any command requiring special privileges (eg. IRC operator) to indicate the operation was unsuccessful
+  482  ERR_CHANOPRIVSNEEDED  RFC1459  <channel> :<reason>  Returned by any command requiring special channel privileges (eg. channel operator) to indicate the operation was unsuccessful
+  483  ERR_CANTKILLSERVER  RFC1459  :<reason>  Returned by KILL to anyone who tries to kill a server
+  485  ERR_UNIQOPRIVSNEEDED  RFC2812  :<reason>  Any mode requiring 'channel creator' privileges returns this error if the client is attempting to use it while not a channel creator on the given channel
+  488  ERR_TSLESSCHAN  IRCnet
+  491  ERR_NOOPERHOST  RFC1459  :<reason>  Returned by OPER to a client who cannot become an IRC operator because the server has been configured to disallow the client's host
+  493  ERR_NOFEATURE  ircu    
+  494  ERR_BADFEATURE  ircu
+  495  ERR_BADLOGTYPE  ircu
+  496  ERR_BADLOGSYS  ircu
+  497  ERR_BADLOGVALUE  ircu
+  498  ERR_ISOPERLCHAN  ircu
+  499  ERR_CHANOWNPRIVNEEDED  Unreal   Works just like ERR_CHANOPRIVSNEEDED except it indicates that owner status (+q) is needed. Also see #482.
+  501  ERR_UMODEUNKNOWNFLAG  RFC1459  :<reason>  Returned by the server to indicate that a MODE message was sent with a nickname parameter and that the mode flag sent was not recognised
+  502  ERR_USERSDONTMATCH  RFC1459  :<reason>  Error sent to any user trying to view or change the user mode for a user other than themselves
+  503  ERR_GHOSTEDCLIENT  Hybrid
+  504  ERR_USERNOTONSERV
+  511  ERR_SILELISTFULL  ircu
+  512  ERR_TOOMANYWATCH  Bahamut   Also known as ERR_NOTIFYFULL (aircd), I presume they are the same
+  513  ERR_BADPING  ircu   Also known as ERR_NEEDPONG (Unreal/Ultimate) for use during registration, however it's not used in Unreal (and might not be used in Ultimate either).
+  515  ERR_BADEXPIRE  ircu    
+  516  ERR_DONTCHEAT  ircu
+  517  ERR_DISABLED  ircu  <command> :<info/reason>
+  522  ERR_WHOSYNTAX  Bahamut
+  523  ERR_WHOLIMEXCEED  Bahamut
+  525  ERR_REMOTEPFX  CAPAB USERCMDPFX  <nickname> :<reason>  Proposed.
+  526  ERR_PFXUNROUTABLE  CAPAB USERCMDPFX  <nickname> :<reason>  Proposed.
+  550  ERR_BADHOSTMASK  QuakeNet
+  551  ERR_HOSTUNAVAIL  QuakeNet
+  552  ERR_USINGSLINE  QuakeNet
+  600  RPL_LOGON  Bahamut, Unreal
+  601  RPL_LOGOFF  Bahamut, Unreal
+  602  RPL_WATCHOFF  Bahamut, Unreal
+  603  RPL_WATCHSTAT  Bahamut, Unreal
+  604  RPL_NOWON  Bahamut, Unreal
+  605  RPL_NOWOFF  Bahamut, Unreal
+  606  RPL_WATCHLIST  Bahamut, Unreal
+  607  RPL_ENDOFWATCHLIST  Bahamut, Unreal
+  608  RPL_WATCHCLEAR  Ultimate
+  611  RPL_ISLOCOP  Ultimate
+  612  RPL_ISNOTOPER  Ultimate
+  613  RPL_ENDOFISOPER  Ultimate
+  618  RPL_DCCLIST
+  624  RPL_OMOTDSTART  Ultimate    
+  625  RPL_OMOTD  Ultimate
+  626  RPL_ENDOFO Ultimate
+  630  RPL_SETTINGS  Ultimate
+  631  RPL_ENDOFSETTINGS  Ultimate
+  660  RPL_TRACEROUTE_HOP  KineIRCd  <target> <hop#> [<address> [<hostname> | '*'] <usec_ping>]  Returned from the TRACEROUTE IRC-Op command when tracerouting a host
+  661  RPL_TRACEROUTE_START  KineIRCd  <target> <target_FQDN> <target_address> <max_hops>  Start of an RPL_TRACEROUTE_HOP list
+  662  RPL_MODECHANGEWARN  KineIRCd  ['+' | '-']<mode_char> :<warning>  Plain text warning to the user about turning on or off a user mode. If no '+' or '-' prefix is used for the mode char, '+' is presumed.
+  663  RPL_CHANREDIR  KineIRCd  <old_chan> <new_chan> :<info>  Used to notify the client upon JOIN that they are joining a different channel than expected because the IRC Daemon has been set up to map the channel they attempted to join to the channel they eventually will join.
+  664  RPL_SERVMODEIS  KineIRCd  <server> <modes> <parameters>..  Reply to MODE <servername>. KineIRCd supports server modes to simplify configuration of servers; Similar to RPL_CHANNELMODEIS
+  665  RPL_OTHERUMODEIS  KineIRCd  <nickname> <modes>  Reply to MODE <nickname> to return the user-modes of another user to help troubleshoot connections, etc. Similar to RPL_UMODEIS, however including the target
+  666  RPL_ENDOF_GENERIC  KineIRCd  <command> [<parameter> ...] :<info>  Generic response for new lists to save numerics.
+  670  RPL_WHOWASDETAILS  KineIRCd  <nick> <type> :<information>  Returned by WHOWAS to return extended information (if available). The type field is a number indication what kind of information.
+  671  RPL_WHOISSECURE  KineIRCd  <nick> <type> [:<info>]  Reply to WHOIS command - Returned if the target is connected securely, eg. type may be TLSv1, or SSLv2 etc. If the type is unknown, a '*' may be used.
+  672  RPL_UNKNOWNMODES  Ithildin  <modes> :<info>  Returns a full list of modes that are unknown when a client issues a MODE command (rather than one numeric per mode)
+  673  RPL_CANNOTSETMODES  Ithildin  <modes> :<info>  Returns a full list of modes that cannot be set when a client issues a MODE command
+  678  RPL_LUSERSTAFF  KineIRCd  <staff_online_count> :<info>  Reply to LUSERS command - Number of network staff (or 'helpers') online (differs from Local/Global operators). Similar format to RPL_LUSEROP
+  679  RPL_TIMEONSERVERIS  KineIRCd  <seconds> [<nanoseconds> | '0'] <timezone> <flags> :<info>  Optionally sent upon connection, and/or sent as a reply to the TIME command. This returns the time on the server in a uniform manner. The seconds (and optionally nanoseconds) is the time since the UNIX Epoch, and is used since many existing timestamps in the IRC-2 protocol are done this way (i.e. ban lists). The timezone is hours and minutes each of Greenwich ('[+/-]HHMM'). Since all timestamps sent from the server are in a similar format, this numeric is designed to give clients the ability to provide accurate timestamps to their users.
+  682  RPL_NETWORKS  KineIRCd  <name> <through_name> <hops> :<info>  A reply to the NETWORKS command when requesting a list of known networks (within the IIRC domain).
+  687  RPL_YOURLANGUAGEIS  KineIRCd  <code(s)> :<info>  Reply to the LANGUAGE command, informing the client of the language(s) it has set
+  688  RPL_LANGUAGE  KineIRCd  <code> <revision> <maintainer> <flags> * :<info>  A language reply to LANGUAGE when requesting a list of known languages
+  689  RPL_WHOISSTAFF  KineIRCd  :<info>  The user is a staff member. The information may explain the user's job role, or simply state that they are a part of the network staff. Staff members are not IRC operators, but rather people who have special access in association with network services. KineIRCd uses this numeric instead of the existing numerics due to the overwhelming number of conflicts.
+  690  RPL_WHOISLANGUAGE  KineIRCd  <nick> <language codes>  Reply to WHOIS command - A list of languages someone can speak. The language codes are comma delimitered.
+  702  RPL_MODLIST  RatBox  <?> 0x<?> <?> <?>  Output from the MODLIST command
+  703  RPL_ENDOFMODLIST  RatBox  :<text>  Terminates MODLIST output
+  704  RPL_HELPSTART  RatBox  <command> :<text>  Start of HELP command output
+  705  RPL_HELPTXT  RatBox  <command> :<text>  Output from HELP command
+  706  RPL_ENDOFHELP  RatBox  <command> :<text>  End of HELP command output
+  708  RPL_ETRACEFULL  RatBox  <?> <?> <?> <?> <?> <?> <?> :<?>  Output from 'extended' trace  
+  709  RPL_ETRACE  RatBox  <?> <?> <?> <?> <?> <?> :<?>  Output from 'extended' trace  
+  710  RPL_KNOCK  RatBox  <channel> <nick>!<user>@<host> :<text>  Message delivered using KNOCK command  
+  711  RPL_KNOCKDLVR  RatBox  <channel> :<text>  Message returned from using KNOCK command  
+  712  ERR_TOOMANYKNOCK  RatBox  <channel> :<text>  Message returned when too many KNOCKs for a channel have been sent by a user  
+  713  ERR_CHANOPEN  RatBox  <channel> :<text>  Message returned from KNOCK when the channel can be freely joined by the user  
+  714  ERR_KNOCKONCHAN  RatBox  <channel> :<text>  Message returned from KNOCK when the user has used KNOCK on a channel they have already joined  
+  715  ERR_KNOCKDISABLED  RatBox  :<text>  Returned from KNOCK when the command has been disabled  
+  716  RPL_TARGUMODEG  RatBox  <nick> :<info>  Sent to indicate the given target is set +g (server-side ignore)  
+  717  RPL_TARGNOTIFY  RatBox  <nick> :<info>  Sent following a PRIVMSG/NOTICE to indicate the target has been notified of an attempt to talk to them while they are set +g  
+  718  RPL_UMODEGMSG  RatBox  <nick> <user>@<host> :<info>  Sent to a user who is +g to inform them that someone has attempted to talk to them (via PRIVMSG/NOTICE), and that they will need to be accepted (via the ACCEPT command) before being able to talk to them  
+  720  RPL_OMOTDSTART  RatBox  :<text>  IRC Operator MOTD header, sent upon OPER command  
+  721  RPL_OMOTD  RatBox  :<text>  IRC Operator MOTD text (repeated, usually)  
+  722  RPL_ENDOFOMOTD  RatBox  :<text>  IRC operator MOTD footer  
+  723  ERR_NOPRIVS  RatBox  <command> :<text>  Returned from an oper command when the IRC operator does not have the relevant operator privileges.  
+  724  RPL_TESTMARK  RatBox  <nick>!<user>@<host> <?> <?> :<text>  Reply from an oper command reporting how many users match a given user@host mask  
+  725  RPL_TESTLINE  RatBox  <?> <?> <?> :<?>  Reply from an oper command reporting relevant I/K lines that will match a given user@host  
+  726  RPL_NOTESTLINE  RatBox  <?> :<text>  Reply from oper command reporting no I/K lines match the given user@host  
+  771  RPL_XINFO  Ithildin   Used to send 'eXtended info' to the client, a replacement for the STATS command to send a large variety of data and minimise numeric pollution.  
+  773  RPL_XINFOSTART  Ithildin   Start of an RPL_XINFO list  
+  774  RPL_XINFOEND  Ithildin   Termination of an RPL_XINFO list  
+  972  ERR_CANNOTDOCOMMAND  Unreal   Works similarly to all of KineIRCd's CANNOT* numerics. This one indicates that a command could not be performed for an arbitrary reason. For example, a halfop trying to kick an op.  
+  973  ERR_CANNOTCHANGEUMODE  KineIRCd  <mode_char> :<reason>  Reply to MODE when a user cannot change a user mode  
+  974  ERR_CANNOTCHANGECHANMODE  KineIRCd  <mode_char> :<reason>  Reply to MODE when a user cannot change a channel mode  
+  975  ERR_CANNOTCHANGESERVERMODE  KineIRCd  <mode_char> :<reason>  Reply to MODE when a user cannot change a server mode  
+  976  ERR_CANNOTSENDTONICK  KineIRCd  <nick> :<reason>  Returned from NOTICE, PRIVMSG or other commands to notify the user that they cannot send a message to a particular client. Similar to ERR_CANNOTSENDTOCHAN. KineIRCd uses this in conjunction with user-mode +R to allow users to block people who are not identified to services (spam avoidance)  
+  977  ERR_UNKNOWNSERVERMODE  KineIRCd  <modechar> :<info>  Returned by MODE to inform the client they used an unknown server mode character.  
+  979  ERR_SERVERMODELOCK  KineIRCd  <target> :<info>  Returned by MODE to inform the client the server has been set mode +L by an administrator to stop server modes being changed  
+  980  ERR_BADCHARENCODING  KineIRCd  <command> <charset> :<info>  Returned by any command which may have had the given data modified because one or more glyphs were incorrectly encoded in the current charset (given). Such a use would be where an invalid UTF-8 sequence was given which may be considered insecure, or defines a character which is invalid within that context. For safety reasons, the invalid character is not returned to the client.  
+  981  ERR_TOOMANYLANGUAGES  KineIRCd  <max_langs> :<info>  Returned by the LANGUAGE command to tell the client they cannot set as many languages as they have requested. To assist the client, the maximum languages which can be set at one time is given, and the language settings are not changed.  
+  982  ERR_NOLANGUAGE  KineIRCd  <language_code> :<info>  Returned by the LANGUAGE command to tell the client it has specified an unknown language code.  
+  983  ERR_TEXTTOOSHORT  KineIRCd  <command> :<info>  Returned by any command requiring text (such as a message or a reason), which was not long enough to be considered valid. This was created initially to combat '/wallops foo' abuse, but is also used by DIE and RESTART commands to attempt to encourage meaningful reasons.  
+  999  ERR_NUMERIC_ERR  Bahamut  
+  }
+
   FCommandHandlers.OnBeforeCommandHandler := DoBeforeCmd;
 end;
 
@@ -854,7 +1341,7 @@ procedure TIdIRC.DoBeforeCmd(ASender: TIdCommandHandlers; var AData: string; ACo
 var
   LTmp: String;
 begin
-  // ":sender!pc@domain"
+  // ":nickname!user@host"
   if TextStartsWith(AData, ':') then begin
     LTmp := Fetch(AData, #32);
     Delete(LTmp, 1, 1); // remove ':'
@@ -896,13 +1383,6 @@ begin
           OnNicknameError(AContext, IndyStrToInt(FetchIRCParam(ALine)));
         end;
       end;
-    else
-      { anything else, just add to TStrings }
-      if ACmdCode <> -1 then begin
-        if Length(ALine) <> 0 then begin
-          FTmp.Add(ALine);
-        end;
-      end;
   end;
 end;
 
@@ -935,35 +1415,42 @@ begin
 end;
 
 procedure TIdIRC.CommandJOIN(ASender: TIdCommand);
-var
-  LTmp: String;
 begin
   if Assigned(FOnJoin) then begin
-    LTmp := ASender.UnparsedParams;
-    OnJoin(ASender.Context, FSenderNick, FSenderHost, FetchIRCParam(LTmp));
+    OnJoin(ASender.Context, FSenderNick, FSenderHost, ASender.Params[0]);
   end;
 end;
 
 procedure TIdIRC.CommandPART(ASender: TIdCommand);
 var
-  LTmp: String;
+  LChannel, LMsg: string;
 begin
   if Assigned(FOnPart) then begin
-    LTmp := ASender.UnparsedParams;
-    OnPart(ASender.Context, FSenderNick, FSenderHost, FetchIRCParam(LTmp));
+    if ASender.Params.Count > 0 then begin
+      LChannel := ASender.Params[0];
+    end;
+    if ASender.Params.Count > 1 then begin
+      LMsg := ASender.Params[1];
+    end;
+    OnPart(ASender.Context, FSenderNick, FSenderHost, LChannel, LMsg);
   end;
 end;
 
 procedure TIdIRC.CommandKICK(ASender: TIdCommand);
 var
-  LChannel, LNick, LReason, LTmp: String;
+  LChannel, LTarget, LReason: string;
 begin
   if Assigned(FOnKick) then begin
-    LTmp := ASender.UnparsedParams;
-    LChannel := FetchIRCParam(LTmp);
-    LNick := FetchIRCParam(LTmp);
-    LReason := FetchIRCParam(LTmp);
-    OnKick(ASender.Context, FSenderNick, FSenderHost, LChannel, LNick, LReason);
+    if ASender.Params.Count > 0 then begin
+      LChannel := ASender.Params[0];
+    end;
+    if ASender.Params.Count > 1 then begin
+      LTarget := ASender.Params[1];
+    end;
+    if ASender.Params.Count > 2 then begin
+      LReason := ASender.Params[2];
+    end;
+    OnKick(ASender.Context, FSenderNick, FSenderHost, LChannel, LTarget, LReason);
   end;
 end;
 
@@ -975,64 +1462,78 @@ begin
   LParam := FetchIRCParam(LTmp);
   if IsChannel(LParam) then begin
     if Assigned(FOnChanMode) then begin
-      OnChannelMode(ASender.Context);
+      OnChannelMode(ASender.Context, FSenderNick, FSenderHost, LParam, LTmp, '');
     end;
   end
   else if Assigned(FOnUserMode) then begin
-    OnUserMode(ASender.Context, FSenderNick, FSenderHost, LParam);
+    OnUserMode(ASender.Context, FSenderNick, FSenderHost, LTmp);
   end;
 end;
 
 procedure TIdIRC.CommandNICK(ASender: TIdCommand);
-var
-  LTmp: String;
 begin
   if Assigned(FOnNickChange) then begin
-    LTmp := ASender.UnparsedParams;
-    OnNicknameChange(ASender.Context, FSenderNick, FSenderHost, FetchIRCParam(LTmp));
+    OnNicknameChange(ASender.Context, FSenderNick, FSenderHost, ASender.Params[0]);
   end;
 end;
 
 procedure TIdIRC.CommandQUIT(ASender: TIdCommand);
 var
-  LTmp: String;
+  LReason: string;
 begin
   if Assigned(FOnQuit) then begin
-    LTmp := ASender.UnparsedParams;
-    OnQuit(ASender.Context, FSenderNick, FSenderHost, FetchIRCParam(LTmp));
+    if ASender.Params.Count > 0 then begin
+      LReason := ASender.Params[0];
+    end;
+    OnQuit(ASender.Context, FSenderNick, FSenderHost, LReason);
+  end;
+end;
+
+procedure TIdIRC.CommandSQUIT(ASender: TIdCommand);
+var
+  LServer, LComment: string;
+begin
+  if Assigned(FOnSvrQuit) then begin
+    if ASender.Params.Count > 0 then begin
+      LServer := ASender.Params[0];
+    end;
+    if ASender.Params.Count > 1 then begin
+      LComment := ASender.Params[1];
+    end;
+    OnServerQuit(ASender.Context, FSenderNick, FSenderHost, LServer, LComment);
   end;
 end;
 
 procedure TIdIRC.CommandINVITE(ASender: TIdCommand);
-var
-  LTmp, LNick, LChannel: String;
 begin
   if Assigned(FOnInvite) then begin
-    LTmp := ASender.UnparsedParams;
-    LNick := FetchIRCParam(LTmp);
-    LChannel := FetchIRCParam(LTmp);
-    OnInvite(ASender.Context, FSenderNick, FSenderHost, LNick, LChannel);
+    OnInvite(ASender.Context, FSenderNick, FSenderHost, ASender.Params[0], ASender.Params[1]);
   end;
 end;
 
 procedure TIdIRC.CommandKILL(ASender: TIdCommand);
 var
-  LTmp, LNick, LComment: String;
+  LTarget, LReason: string;
 begin
   if Assigned(FOnKill) then begin
-    LTmp := ASender.UnparsedParams;
-    LNick := FetchIRCParam(LTmp);
-    LComment := FetchIRCParam(LTmp);
-    OnKill(ASender.Context, FSenderNick, FSenderHost, LNick, LComment);
+    if ASender.Params.Count > 0 then begin
+      LTarget := ASender.Params[0];
+    end;
+    if ASender.Params.Count > 1 then begin
+      LReason := ASender.Params[1];
+    end;
+    OnKill(ASender.Context, FSenderNick, FSenderHost, LTarget, LReason);
   end;
 end;
 
 procedure TIdIRC.CommandPING(ASender: TIdCommand);
 var
-  LTmp: String;
+  LServer1: String;
 begin
-  LTmp := ASender.UnparsedParams;
-  Pong(FetchIRCParam(LTmp));
+  if ASender.Params.Count > 0 then begin
+    LServer1 := ASender.Params[0];
+  end;
+  Pong(LServer1);
   if Assigned(FOnPingPong) then begin
     OnPingPong(ASender.Context);
   end;
@@ -1040,7 +1541,7 @@ end;
 
 procedure TIdIRC.CommandWALLOPS(ASender: TIdCommand);
 var
-  LTmp: String;
+  LTmp: string;
 begin
   if Assigned(FOnWallops) then begin
     LTmp := ASender.UnparsedParams;
@@ -1050,12 +1551,18 @@ end;
 
 procedure TIdIRC.CommandTOPIC(ASender: TIdCommand);
 var
-  LTmp, LChannel, LTopic: String;
+  LChannel, LTopic: String;
 begin
-  if Assigned(FOnTopic) then begin
-    LTmp := ASender.UnparsedParams;
-    LChannel := FetchIRCParam(LTmp);
-    LTopic := FetchIRCParam(LTmp);
+  if Assigned(FOnTopic) then
+  begin
+    if ASender.Params.Count > 0 then begin
+      LChannel := ASender.Params[0];
+    end;
+    if (ASender.CommandHandler.Command <> '331') and (ASender.Params.Count > 1) then begin {do not localize}
+      LTopic := ASender.Params[1];
+    end else begin
+      LTopic := '';
+    end;
     OnTopic(ASender.Context, FSenderNick, FSenderHost, LChannel, LTopic);
   end;
 end;
@@ -1066,62 +1573,108 @@ var
 begin
   if Assigned(FOnSWelcome) then begin
     LTmp := ASender.UnparsedParams;
-    FetchIRCParam(LTmp); // skip target
     OnServerWelcome(ASender.Context, FetchIRCParam(LTmp));
+  end;
+end;
+
+procedure TIdIRC.CommandERROR(ASender: TIdCommand);
+var
+  LTmp: String;
+begin
+  if Assigned(FOnServerError) then begin
+    LTmp := ASender.UnparsedParams;
+    OnServerError(ASender.Context, 0, FetchIRCParam(LTmp));
   end;
 end;
 
 procedure TIdIRC.CommandYOURHOST(ASender: TIdCommand);
 var
-  LTmp: string;
+  LTmp: String;
 begin
-  //if Assigned(FOnYourHost) then begin
+  if Assigned(FOnYourHost) then begin
     LTmp := ASender.UnparsedParams;
-    FetchIRCParam(LTmp); // skip target
-    //OnYourHost(ASender.Context, FetchIRCParam(LTmp));
-  //end;
+    OnYourHost(ASender.Context, FetchIRCParam(LTmp));
+  end;
 end;
 
 procedure TIdIRC.CommandCREATED(ASender: TIdCommand);
 var
   LTmp: string;
 begin
-  //if Assigned(FOnServerCreated) then begin
+  if Assigned(FOnSCreated) then begin
     LTmp := ASender.UnparsedParams;
-    FetchIRCParam(LTmp); // skip target
-    //OnServerCreated(ASender.Context, FetchIRCParam(LTmp));
-  //end;
+    OnServerCreated(ASender.Context, FetchIRCParam(LTmp));
+  end;
 end;
 
 procedure TIdIRC.CommandMYINFO(ASender: TIdCommand);
 var
-  LTmp, LServer, LVersion, LUserModes, LChannelModes: string;
+  LTmp, LServer, LVersion, LUserModes, LChanModes: String;
 begin
-  //if Assigned(FOnMyInfo) then begin
+  if Assigned(FOnMyInfo) then begin
     LTmp := ASender.UnparsedParams;
-    FetchIRCParam(LTmp); // skip target
     LServer := FetchIRCParam(LTmp);
     LVersion := FetchIRCParam(LTmp);
     LUserModes := FetchIRCParam(LTmp);
-    LChannelModes := FetchIRCParam(LTmp);
-    //OnMyInfo(ASender.Context, LServer, LVersion, LUserModes, LChannelModes, LTmp);
-  //end;
+    LChanModes := FetchIRCParam(LTmp);
+    // TODO: <channel_modes_with_params> <user_modes_with_params> <server_modes> <server_modes_with_params>
+    OnMyInfo(ASender.Context, LServer, LVersion, LUserModes, LChanModes, LTmp);
+  end;
+end;
+
+procedure TIdIRC.DoBounce(ASender: TIdCommand; ALegacy: Boolean);
+var
+  LHost, LPort, LInfo: string;
+begin
+  if Assigned(FOnBounce) then begin
+    if ALegacy then begin
+      LInfo := ASender.Params[0];
+      LHost := FetchIRCParam(LInfo);
+      LPort := FetchIRCParam(LInfo);
+    end else
+    begin
+      LHost := ASender.Params[0];
+      LPort := ASender.Params[1];
+      if ASender.Params.Count > 2 then begin
+        LInfo := ASender.Params[2];
+      end;
+    end;
+    // TODO: reconnect automatically
+    OnBounce(ASender.Context, LHost, IndyStrToInt(LPort, 0), LInfo);
+  end;
+end;
+
+procedure TIdIRC.CommandISUPPORT(ASender: TIdCommand);
+var
+  LParams: TStringList;
+  I: Integer;
+begin
+  if ASender.Params.Count = 1 then begin
+    DoBounce(ASender, True); // legacy, deprecated
+    Exit;
+  end;
+  if Assigned(FOnISupport) then
+  begin
+    LParams := TStringList.Create;
+    try
+      for I := 1 to ASender.Params.Count-1 do // skip nickname
+      begin
+        LParams.Add(ASender.Params[I]);
+      end;
+      OnISupport(ASender.Context, LParams);
+    finally
+      LParams.Free;
+    end;
+  end;
 end;
 
 procedure TIdIRC.CommandBOUNCE(ASender: TIdCommand);
-var
-  LTmp: string;
 begin
-  //if Assigned(FOnBounce) then begin
-    LTmp := ASender.UnparsedParams;
-    FetchIRCParam(LTmp); // skip target
-    //OnBounce(ASender.Context, FetchIRCParam(LTmp));
-  //end;
+  DoBounce(ASender, False);
 end;
 
 procedure TIdIRC.CommandAWAY(ASender: TIdCommand);
 var
-  LTmp: String;
   LCmd: Integer;
 begin
   LCmd := IndyStrToInt(ASender.CommandHandler.Command, 0);
@@ -1129,16 +1682,14 @@ begin
     301:
     begin
       if Assigned(FOnAway) then begin
-        LTmp := ASender.UnparsedParams;
-        OnAway(ASender.Context, FSenderNick, FSenderHost, FetchIRCParam(LTmp), True);
+        OnAway(ASender.Context, FSenderNick, FSenderHost, ASender.Params[0], True);
       end;
     end;
     305, 306:
     begin
       FUserAway := (LCmd = 306);
       if Assigned(FOnAway) then begin
-        LTmp := ASender.UnparsedParams;
-        OnAway(ASender.Context, FNickname, '', FetchIRCParam(LTmp), FUserAway);
+        OnAway(ASender.Context, FNickname, '', ASender.Params[0], FUserAway);
       end;
     end;
   end;
@@ -1159,14 +1710,11 @@ begin
 end;
 
 procedure TIdIRC.CommandWHOIS(ASender: TIdCommand);
-var
-  LTmp: String;
 begin
   if not Assigned(FWhoIs) then begin
     FWhoIs := TStringList.Create;
   end;
-  LTmp := ASender.UnparsedParams;
-  FWhoIs.Add(FetchIRCParam(LTmp));
+  FWhoIs.Add(ASender.Params[0]);
 end;
 
 procedure TIdIRC.CommandENDOFWHOIS(ASender: TIdCommand);
@@ -1179,14 +1727,11 @@ begin
 end;
 
 procedure TIdIRC.CommandWHOWAS(ASender: TIdCommand);
-var
-  LTmp: String;
 begin
   if not Assigned(FWhoWas) then begin
     FWhoWas := TStringList.Create;
   end;
-  LTmp := ASender.UnparsedParams;
-  FWhoWas.Add(FetchIRCParam(LTmp));
+  FWhoWas.Add(ASender.Params[0]);
 end;
 
 procedure TIdIRC.CommandENDOFWHOWAS(ASender: TIdCommand);
@@ -1198,15 +1743,21 @@ begin
   FWhoWas.Clear;
 end;
 
+procedure TIdIRC.CommandLISTSTART(ASender: TIdCommand);
+begin
+  if not Assigned(FSvrList) then begin
+    FSvrList := TStringList.Create;
+  end else begin
+    FSvrList.Clear;
+  end;
+end;
+
 procedure TIdIRC.CommandLIST(ASender: TIdCommand);
-var
-  LTmp: String;
 begin
   if not Assigned(FSvrList) then begin
     FSvrList := TStringList.Create;
   end;
-  LTmp := ASender.UnparsedParams;
-  FSvrList.Add(FetchIRCParam(LTmp));
+  FSvrList.Add(ASender.Params[0] + ' ' + ASender.Params[1] + ' ' + ASender.Params[2]); {do not localize}
 end;
 
 procedure TIdIRC.CommandLISTEND(ASender: TIdCommand);
@@ -1232,76 +1783,142 @@ begin
   end;
 end;
 
-procedure TIdIRC.CommandENDOFINVITELIST(ASender: TIdCommand);
-var
-  LTmp: String;
+procedure TIdIRC.CommandINVITELIST(ASender: TIdCommand);
 begin
-  if Assigned(FOnINVList) then begin
-    LTmp := ASender.UnparsedParams;
-    FTmp.Add(FetchIRCParam(LTmp));
-    OnInvitationListReceived(ASender.Context, FSenderNick, FTmp);
-    FTmp.Clear;
+  if not Assigned(FInvites) then begin
+    FInvites := TStringList.Create;
   end;
+  // TODO: use a collection instead
+  FInvites.Add(ASender.Params[0] + ' ' + ASender.Params[1]); {do not localize}
+end;
+
+procedure TIdIRC.CommandENDOFINVITELIST(ASender: TIdCommand);
+begin
+  if not Assigned(FInvites) then begin
+    FInvites := TStringList.Create;
+  end;
+  FInvites.Add(ASender.Params[0]);
+  if Assigned(FOnINVList) then begin
+    OnInvitationListReceived(ASender.Context, FSenderNick, FInvites);
+  end;
+  FInvites.Clear;
+end;
+
+procedure TIdIRC.CommandEXCEPTLIST(ASender: TIdCommand);
+begin
+  if not Assigned(FExcepts) then begin
+    FExcepts := TStringList.Create;
+  end;
+  // TODO: use a collection instead
+  FExcepts.Add(ASender.Params[0] + ' ' + ASender.Params[1]); {do not localize}
 end;
 
 procedure TIdIRC.CommandENDOFEXCEPTLIST(ASender: TIdCommand);
-var
-  LTmp: String;
 begin
-  if Assigned(FOnEXCList) then begin
-    LTmp := ASender.UnparsedParams;
-    FTmp.Add(FetchIRCParam(LTmp));
-    OnExceptionListReceived(ASender.Context, FSenderNick, FTmp);
-    FTmp.Clear;
+  if not Assigned(FExcepts) then begin
+    FExcepts := TStringList.Create;
   end;
+  FExcepts.Add(ASender.Params[0]);
+  if Assigned(FOnEXCList) then begin
+    OnExceptionListReceived(ASender.Context, FSenderNick, FExcepts);
+  end;
+  FExcepts.Clear;
+end;
+
+procedure TIdIRC.CommandWHOREPLY(ASender: TIdCommand);
+begin
+  if not Assigned(FWho) then begin
+    FWho := TStringList.Create;
+  end;
+  FWho.Add(''); // TODO
 end;
 
 procedure TIdIRC.CommandENDOFWHO(ASender: TIdCommand);
-var
-  LTmp: String;
 begin
+  if not Assigned(FWho) then begin
+    FWho := TStringList.Create;
+  end;
+  FWho.Add(ASender.Params[0]);
   if Assigned(FOnWho) then begin
-    LTmp := ASender.UnparsedParams;
-    FTmp.Add(FetchIRCParam(LTmp));
-    OnWho(ASender.Context, FTmp);
-    FTmp.Clear;
+    OnWho(ASender.Context, FWho);
+  end;
+  FWho.Clear;
+end;
+
+procedure TIdIRC.CommandNAMEREPLY(ASender: TIdCommand);
+begin
+  if not Assigned(FNames) then begin
+    FNames := TStringList.Create;
+  end;
+  // TODO: use a collection instead
+  if ASender.Params.Count > 1 then begin
+    FNames.Add(ASender.Params[0] + ' ' + ASender.Params[1]); {do not localize}
+  end else begin
+    FNames.Add(ASender.Params[0]);
   end;
 end;
 
 procedure TIdIRC.CommandENDOFNAMES(ASender: TIdCommand);
-var
-  LTmp: String;
 begin
-  if Assigned(FOnNickList) then begin
-    LTmp := ASender.UnparsedParams;
-    FTmp.Add(FetchIRCParam(LTmp));
-    OnNicknamesListReceived(ASender.Context, FSenderNick, FTmp);
-    FTmp.Clear;
+  if not Assigned(FNames) then begin
+    FNames := TStringList.Create;
   end;
+  FNames.Add(ASender.Params[0]);
+  if Assigned(FOnNickList) then begin
+    OnNicknamesListReceived(ASender.Context, FSenderNick, FNames);
+  end;
+  FNames.Clear;
+end;
+
+procedure TIdIRC.CommandLINKS(ASender: TIdCommand);
+var
+  LHopCnt, LInfo: String;
+begin
+  if not Assigned(FLinks) then begin
+    FLinks := TStringList.Create;
+  end;
+  LInfo := ASender.Params[2];
+  LHopCnt := Fetch(LInfo);
+  // TODO: use a collection instead
+  FLinks.Add(ASender.Params[0] + ' ' + ASender.Params[1] + ' ' + LHopCnt + ' ' + LInfo); {do not localize}
 end;
 
 procedure TIdIRC.CommandENDOFLINKS(ASender: TIdCommand);
-var
-  LTmp: String;
 begin
-  if Assigned(FOnKnownSvrs) then begin
-    LTmp := ASender.UnparsedParams;
-    FTmp.Add(FetchIRCParam(LTmp));
-    OnKnownServersListReceived(ASender.Context, FTmp);
-    FTmp.Clear;
+  if not Assigned(FLinks) then begin
+    FLinks := TStringList.Create;
   end;
+  FLinks.Add(ASender.Params[0]);
+  if Assigned(FOnKnownSvrs) then begin
+    OnKnownServersListReceived(ASender.Context, FLinks);
+  end;
+  FLinks.Clear;
+end;
+
+procedure TIdIRC.CommandBANLIST(ASender: TIdCommand);
+begin
+  if not Assigned(FBans) then begin
+    FBans := TStringList.Create;
+  end;
+  // TODO: use a collection instead
+  FBans.Add(ASender.Params[0] + ' ' + ASender.Params[1]); {do not localize}
 end;
 
 procedure TIdIRC.CommandENDOFBANLIST(ASender: TIdCommand);
-var
-  LTmp: String;
 begin
-  if Assigned(FOnBanList) then begin
-    LTmp := ASender.UnparsedParams;
-    FTmp.Add(FetchIRCParam(LTmp));
-    OnBanListReceived(ASender.Context, FSenderNick, FTmp);
-    FTmp.Clear;
+  if not Assigned(FBans) then begin
+    FBans := TStringList.Create;
   end;
+  FBans.Add(ASender.Params[0]);
+  if Assigned(FOnBanList) then begin
+    OnBanListReceived(ASender.Context, FSenderNick, FBans);
+  end;
+  FBans.Clear;
+end;
+
+procedure TIdIRC.CommandINFO(ASender: TIdCommand);
+begin
+  // TODO
 end;
 
 procedure TIdIRC.CommandENDOFINFO(ASender: TIdCommand);
@@ -1311,14 +1928,23 @@ begin
   end;
 end;
 
+procedure TIdIRC.CommandMOTD(ASender: TIdCommand);
+begin
+  if not Assigned(FMotd) then begin
+    FMotd := TStringList.Create;
+  end;
+  FMotd.Add(ASender.Params[0]);
+end;
+
 procedure TIdIRC.CommandENDOFMOTD(ASender: TIdCommand);
 begin
-  if Assigned(FOnMOTD) then begin
-    //LTmp := ASender.UnparsedParams;
-    //FTmp.Add(FetchIRCParam(LTmp));
-    OnMOTD(ASender.Context, FTmp);
-    FTmp.Clear;
+  if not Assigned(FMotd) then begin
+    FMotd := TStringList.Create;
   end;
+  if Assigned(FOnMOTD) then begin
+    OnMOTD(ASender.Context, FMotd);
+  end;
+  FMotd.Clear;
 end;
 
 procedure TIdIRC.CommandREHASHING(ASender: TIdCommand);
@@ -1328,42 +1954,75 @@ begin
   end;
 end;
 
-procedure TIdIRC.CommandENDOFUSERS(ASender: TIdCommand);
+procedure TIdIRC.CommandUSERSSTART(ASender: TIdCommand);
 begin
-  if Assigned(FOnSvrUsers) then begin
-    // LTmp := ASender.UnparsedParams;
-    // FTmp.Add(FetchIRCParam(LTmp));
-    OnServerUsersListReceived(ASender.Context, FTmp);
-    FTmp.Clear;
+  if not Assigned(FUsers) then begin
+    FUsers := TStringList.Create;
+  end else begin
+    FUsers.Clear;
   end;
 end;
 
+procedure TIdIRC.CommandUSERS(ASender: TIdCommand);
+begin
+  if ASender.CommandHandler.Command = '393' then {do not localize}
+  begin
+    if not Assigned(FUsers) then begin
+      FUsers := TStringList.Create;
+    end;
+    // TODO: use a collection instead
+    FUsers.Add(ASender.Params[0] + ' ' + ASender.Params[1] + ' ' + ASender.Params[2]); {do not localize}
+  end;
+end;
+
+procedure TIdIRC.CommandENDOFUSERS(ASender: TIdCommand);
+begin
+  if not Assigned(FUsers) then begin
+    FUsers := TStringList.Create;
+  end;
+  if Assigned(FOnSvrUsers) then begin
+    OnServerUsersListReceived(ASender.Context, FUsers);
+  end;
+  FUsers.Clear;
+end;
+
 procedure TIdIRC.CommandENDOFSTATS(ASender: TIdCommand);
-var
-  LTmp: String;
 begin
   if Assigned(FOnSvrStats) then begin
-    LTmp := ASender.UnparsedParams;
-    FTmp.Add(FetchIRCParam(LTmp));
-    OnServerStatsReceived(ASender.Context, FTmp);
-    FTmp.Clear;
+    OnServerStatsReceived(ASender.Context, nil); // TODO
   end;
+end;
+
+procedure TIdIRC.CommandSERVLIST(ASender: TIdCommand);
+begin
+  // <name> <server> <mask> <type> <hopcount> <info>
 end;
 
 procedure TIdIRC.CommandSERVLISTEND(ASender: TIdCommand);
 begin
-  //
+  // <mask> <type> :<info> 
 end;
 
-procedure TIdIRC.CommandSTIME(ASender: TIdCommand);
+procedure TIdIRC.CommandTIME(ASender: TIdCommand);
 var
-  LTmp, LServer, LTime: String;
+  LServer, LTimeString: String;
 begin
   if Assigned(FOnSvrTime) then begin
-    LTmp := ASender.UnparsedParams;
-    LServer := FetchIRCParam(LTmp);
-    LTime := FetchIRCParam(LTmp);
-    OnServerTime(ASender.Context, LServer, LTime);
+    LServer := ASender.Params[0];
+    case ASender.Params.Count of
+      2: begin // "<server> :<time string>"
+        LTimeString := ASender.Params[1];
+        end;
+      4: begin // "<server> <timestamp> <offset> :<time string>" or "<server> <timezone name> <microseconds> :<time string>"
+        LTimeString := IndyFormat('%s %s %s', [ASender.Params[1], ASender.Params[2], ASender.Params[3]]); {do not localize}
+        end;
+      7: begin // "<server> <year> <month> <day> <hour> <minute> <second>"
+        LTimeString := IndyFormat('%s %s %s %s %s %s', {do not localize}
+          [ASender.Params[1], ASender.Params[2], ASender.Params[3],
+          ASender.Params[4], ASender.Params[5], ASender.Params[6]]);
+        end;
+    end;
+    OnServerTime(ASender.Context, LServer, LTimeString);
   end;
 end;
 
@@ -1374,33 +2033,24 @@ begin
   end;
 end;
 
-procedure TIdIRC.CommandSVERSION(ASender: TIdCommand);
-var
-  LTmp, LVersion, LServer, LComments: String;
+procedure TIdIRC.CommandVERSION(ASender: TIdCommand);
 begin
   if Assigned(FOnSvrVersion) then begin
-    LTmp := ASender.UnparsedParams;
-    LVersion := FetchIRCParam(LTmp);
-    LServer := FetchIRCParam(LTmp);
-    LComments := FetchIRCParam(LTmp);
-    OnServerVersion(ASender.Context, LVersion, LServer, LComments);
+    OnServerVersion(ASender.Context, ASender.Params[0], ASender.Params[1], ASender.Params[2]);
   end;
 end;
 
 procedure TIdIRC.CommandCHANMODE(ASender: TIdCommand);
 begin
   if Assigned(FOnChanMode) then begin
-    OnChannelMode(ASender.Context);
+    OnChannelMode(ASender.Context, FSenderNick, FSenderHost, ASender.Params[0], ASender.Params[1], ASender.Params[2]);
   end;
 end;
 
 procedure TIdIRC.CommandOPER(ASender: TIdCommand);
-var
-  LTmp: String;
 begin
   if Assigned(FOnOp) then begin
-    LTmp := ASender.UnparsedParams;
-    OnOp(ASender.Context, FSenderNick, FSenderHost, FetchIRCParam(LTmp));
+    OnOp(ASender.Context, FSenderNick, FSenderHost, ASender.Params[0]);
   end;
 end;
 
@@ -1635,10 +2285,14 @@ begin
   end;
 end;
 
-procedure TIdIRC.Kick(const AChannel, ANickname, AReason: String);
+procedure TIdIRC.Kick(const AChannel, ANickname: String; const AReason: String = '');
 begin
   if IsChannel(AChannel) then begin
-    Raw(IndyFormat('KICK %s %s :%s', [AChannel, ANickname, AReason]));  {do not localize}
+    if AReason <> '' then begin
+      Raw(IndyFormat('KICK %s %s :%s', [AChannel, ANickname, AReason]));  {do not localize}
+    end else begin
+      Raw(IndyFormat('KICK %s %s', [AChannel, ANickname]));  {do not localize}
+    end;
   end;
 end;
 
@@ -1675,7 +2329,7 @@ end;
 procedure TIdIRC.SetAway(const AMsg: String);
 begin
   if AMsg <> '' then begin
-    Raw(IndyFormat('AWAY %s', [AMsg])); {do not localize}
+    Raw(IndyFormat('AWAY :%s', [AMsg])); {do not localize}
   end else begin
     Raw('AWAY');  {do not localize}
   end;
@@ -1713,8 +2367,8 @@ end;
 
 procedure TIdIRC.RegisterService(const ANickname, ADistribution, AInfo: String; AType: Integer);
 begin
-  Raw(IndyFormat('SERVICE %s %s %s %s %s :%s',  {do not localize}
-    [ANickname, '*', ADistribution, AType, '0', AInfo]));
+  Raw(IndyFormat('SERVICE %s * %s %s 0 :%s',  {do not localize}
+    [ANickname, ADistribution, AType, AInfo]));
 end;
 
 procedure TIdIRC.ListChannelNicknames(const AChannel: String; const ATarget: String = '');
@@ -1798,7 +2452,7 @@ begin
   else if ARemoteHost = '' then begin
     Raw(IndyFormat('LINKS %s', [AHostMask])); {do not localize}
   end else begin
-    Raw(IndyFormat('LINKS %s', [ARemoteHost])); {do not localize}
+    Raw(IndyFormat('LINKS %s %s', [ARemoteHost, AHostMask])); {do not localize}
   end;
 end;
 
@@ -1811,13 +2465,13 @@ begin
   end;
 end;
 
-procedure TIdIRC.RequestServerConnect(const ATarget, AHost: String; APort: Integer;
+procedure TIdIRC.RequestServerConnect(const ATargetHost: String; APort: Integer;
   const ARemoteHost: String = '');
 begin
   if ARemoteHost <> '' then begin
-    Raw(IndyFormat('CONNECT %s %s %d %s', [ATarget, AHost, APort, ARemoteHost])); {do not localize}
+    Raw(IndyFormat('CONNECT %s %d %s', [ATargetHost, APort, ARemoteHost])); {do not localize}
   end else begin
-    Raw(IndyFormat('CONNECT %s %s %d', [ATarget, AHost, APort])); {do not localize}
+    Raw(IndyFormat('CONNECT %s %d', [ATargetHost, APort])); {do not localize}
   end;
 end;
 
@@ -1848,9 +2502,12 @@ begin
   end;
 end;
 
-procedure TIdIRC.ListNetworkServices(const AHostMask: String; const AType: String = '');
+procedure TIdIRC.ListNetworkServices(const AHostMask: String = ''; const AType: String = '');
 begin
-  if AType <> '' then begin
+  if (AHostMask = '') and (AType = '') then begin
+    Raw('SERVLIST');  {do not localize}
+  end
+  else if AType <> '' then begin
     Raw(IndyFormat('SERVLIST %s %s', [AHostMask, AType]));  {do not localize}
   end else begin
     Raw(IndyFormat('SERVLIST %s', [AHostMask]));  {do not localize}
@@ -1859,12 +2516,15 @@ end;
 
 procedure TIdIRC.QueryService(const AServiceName, AMessage: String);
 begin
-  Raw(IndyFormat('SQUERY %s %s', [AServiceName, AMessage]));  {do not localize}
+  Raw(IndyFormat('SQUERY %s :%s', [AServiceName, AMessage]));  {do not localize}
 end;
 
 procedure TIdIRC.Who(const AMask: String; AOnlyAdmins: Boolean);
 begin
-  if AOnlyAdmins then begin
+  if (AMask = '') and (not AOnlyAdmins) then begin
+    Raw('WHO'); {do not localize}
+  end
+  else if AOnlyAdmins then begin
     Raw(IndyFormat('WHO %s o', [AMask])); {do not localize}
   end else begin
     Raw(IndyFormat('WHO %s', [AMask])); {do not localize}
@@ -1874,7 +2534,7 @@ end;
 procedure TIdIRC.WhoIs(const AMask: String; const ATarget: String = '');
 begin
   if ATarget <> '' then begin
-    Raw(IndyFormat('WHOIS %s %s', [AMask, ATarget])); {do not localize}
+    Raw(IndyFormat('WHOIS %s %s', [ATarget, AMask])); {do not localize}
   end else begin
     Raw(IndyFormat('WHOIS %s', [AMask])); {do not localize}
   end;
@@ -1885,17 +2545,17 @@ begin
   if (ATarget = '') and (ACount < 0) then begin
     Raw(IndyFormat('WHOWAS %s', [ANickname]));  {do not localize}
   end
-  else if ATarget = '' then begin
-    Raw(IndyFormat('WHOWAS %s %d', [ANickname, ACount])); {do not localize}
+  else if ATarget <> '' then begin
+    Raw(IndyFormat('WHOWAS %s %d %s', [ANickname, ACount, ATarget]));  {do not localize}
   end
   else begin
-    Raw(IndyFormat('WHOWAS %s %s', [ANickname, ATarget]));  {do not localize}
+    Raw(IndyFormat('WHOWAS %s %d', [ANickname, ACount])); {do not localize}
   end;
 end;
 
 procedure TIdIRC.Kill(const ANickname, AComment: String);
 begin
-  Raw(IndyFormat('KILL %s %s', [ANickname, AComment])); {do not localize}
+  Raw(IndyFormat('KILL %s :%s', [ANickname, AComment])); {do not localize}
 end;
 
 procedure TIdIRC.Ping(const AServer1: String; const AServer2: String = '');
@@ -1918,7 +2578,7 @@ end;
 
 procedure TIdIRC.Error(const AMessage: String);
 begin
-  Raw(IndyFormat('ERROR %s', [AMessage]));  {do not localize}
+  Raw(IndyFormat('ERROR :%s', [AMessage]));  {do not localize}
 end;
 
 procedure TIdIRC.ReHash;
@@ -1942,13 +2602,13 @@ begin
   if (ATarget = '') and (AChannel = '') then begin
     Raw(IndyFormat('SUMMON %s', [ANickname]));  {do not localize}
   end
-  else if ATarget = '' then
+  else if AChannel <> '' then
   begin
     if IsChannel(AChannel) then begin
-      Raw(IndyFormat('SUMMON %s', [AChannel])); {do not localize}
+      Raw(IndyFormat('SUMMON %s %s %s', [ANickname, ATarget, AChannel])); {do not localize}
     end;
   end else begin
-    Raw(IndyFormat('SUMMON %s', [ANickname]));  {do not localize}
+    Raw(IndyFormat('SUMMON %s %s', [ANickname, ATarget]));  {do not localize}
   end;
 end;
 
@@ -1963,7 +2623,7 @@ end;
 
 procedure TIdIRC.SayWALLOPS(const AMessage: String);
 begin
-  Raw(IndyFormat('WALLOPS %s', [AMessage]));  {do not localize}
+  Raw(IndyFormat('WALLOPS :%s', [AMessage]));  {do not localize}
 end;
 
 procedure TIdIRC.GetUserInfo(const ANickname: String);
@@ -1971,9 +2631,37 @@ begin
   Raw(IndyFormat('USERHOST %s', [ANickname]));  {do not localize}
 end;
 
+procedure TIdIRC.GetUsersInfo(const ANicknames: array of string);
+var
+  I: Integer;
+  S: string;
+begin
+  if Length(ANicknames) > 0 then
+  begin
+    for I := Low(ANicknames) to High(ANicknames) do begin
+      S := S + ' ' + ANicknames[I]; {do not localize}
+    end;
+    Raw(IndyFormat('USERHOST%s', [S]));  {do not localize}
+  end;
+end;
+
 procedure TIdIRC.IsOnIRC(const ANickname: String);
 begin
   Raw(IndyFormat('ISON %s', [ANickname]));  {do not localize}
+end;
+
+procedure TIdIRC.IsOnIRC(const ANicknames: array of String);
+var
+  I: Integer;
+  S: string;
+begin
+  if Length(ANicknames) > 0 then
+  begin
+    for I := Low(ANicknames) to High(ANicknames) do begin
+      S := S + ' ' + ANicknames[I]; {do not localize}
+    end;
+    Raw(IndyFormat('ISON%s', [S]));  {do not localize}
+  end;
 end;
 
 procedure TIdIRC.BecomeOp(const ANickname, APassword: String);
@@ -1983,7 +2671,7 @@ end;
 
 procedure TIdIRC.SQuit(const AHost, AComment: String);
 begin
-  Raw(IndyFormat('SQUIT %s %s', [AHost, AComment]));  {do not localize}
+  Raw(IndyFormat('SQUIT %s :%s', [AHost, AComment]));  {do not localize}
 end;
 
 procedure TIdIRC.SetChannelLimit(const AChannel: String; ALimit: Integer);

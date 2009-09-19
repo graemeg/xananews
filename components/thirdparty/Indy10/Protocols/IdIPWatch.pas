@@ -135,7 +135,7 @@ implementation
 
 uses
   {$IFDEF DOTNET}
-    {$IFDEF USEINLINE}
+    {$IFDEF USE_INLINE}
   System.Threading,
   System.IO,
     {$ENDIF}

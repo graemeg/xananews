@@ -360,7 +360,10 @@ begin
       ASender.Reply.Text.Add('PIPELINING'); {do not localize}
     end;
     ASender.Reply.Text.Add(IndyFormat('SIZE %d', [FMaxMsgSize])); {do not localize}
-    if (FUseTLS in ExplicitTLSVals) and (not LContext.UsingTLS) then begin
+    if (LContext.Connection.IOHandler is TIdSSLIOHandlerSocketBase) and
+      (FUseTLS in ExplicitTLSVals) and
+      (not LContext.UsingTLS) then
+    begin
       ASender.Reply.Text.Add('STARTTLS');    {Do not Localize}
     end;
     ASender.Reply.Text.Add('CHUNKING'); {do not localize}
@@ -947,7 +950,7 @@ begin
     BadSequenceError(ASender);
     Exit;
   end;
-  if FUseTLS in ExplicitTLSVals then begin
+  if (LContext.Connection.IOHandler is TIdSSLIOHandlerSocketBase) and (FUseTLS in ExplicitTLSVals) then begin
     if LContext.UsingTLS then begin // we are already using TLS
       BadSequenceError(ASender);
       Exit;

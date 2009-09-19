@@ -58,6 +58,7 @@ interface
 {$I IdCompilerDefines.inc}
 //we need to put this in Delphi mode to work
 uses
+  Windows,
   Classes,
   IdGlobal;
 
@@ -207,7 +208,13 @@ type
   End;
 
 implementation
-uses SysUtils;
+uses
+  {$IFDEF VCL2010ORABOVE}
+    {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  Windows,
+    {$ENDIF}
+  {$ENDIF}
+  SysUtils;
 
 { TIdThreadSafe }
 

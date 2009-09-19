@@ -38,13 +38,13 @@ const
   SASL_DIGEST_METHOD = 'AUTHENTICATE:';  {do not localize}
 
 function NCToStr(const AValue : Integer):String;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := IntToHex(AValue,8);
 end;
 
 function RemoveQuote(const aStr:string):string;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   if (Length(aStr)>=2) and (aStr[1]='"') and (astr[Length(aStr)]='"') then begin
     Result := Copy(aStr, 2, Length(astr)-2)
@@ -55,7 +55,7 @@ end;
 
 //
 function HashResult(const AStr : String): TIdBytes;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   with TIdHashMessageDigest5.Create do
   try
@@ -66,7 +66,7 @@ begin
 end;
 
 function HashResultAsHex(const ABytes : TIdBytes) : String;  overload;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   with TIdHashMessageDigest5.Create do
   try
@@ -77,7 +77,7 @@ begin
 end;
 
 function HashResultAsHex(const AStr : String) : String; overload;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   with TIdHashMessageDigest5.Create do
   try
@@ -169,13 +169,21 @@ begin
       Lqop := 'auth-int';
     end;
     if LQopOptions.IndexOf('auth-conf') > -1 then begin
-      EIdSASLDigestAuthConfNotSupported.IfFalse(LQopOptions.IndexOf('auth')>-1,RSSASLDigestAuthConfNotSupported);
+      if LQopOptions.IndexOf('auth') = -1 then begin
+        EIdSASLDigestAuthConfNotSupported.Toss(RSSASLDigestAuthConfNotSupported);
+      end;
     end;
     LNonce := LChallange.Values['nonce'];
     LRealm :=  LChallange.Values['realm'];
     LAlgorithm :=  LChallange.Values['algorithm'];
-    EIdSASLDigestChallNoAlgorithm.IfFalse(LAlgorithm<>'',RSSASLDigestMissingAlgorithm);
-//    EIdSASLDigestChallInvalidAlg.IfFalse(LAlgorithm = 'md5-sess',RSSASLDigestInvalidAlgorithm);
+    if LAlgorithm = '' then begin
+      EIdSASLDigestChallNoAlgorithm.Toss(RSSASLDigestMissingAlgorithm);
+    end;
+    {
+    if LAlgorithm <> 'md5-sess' then begin
+      EIdSASLDigestChallInvalidAlg.Toss(RSSASLDigestInvalidAlgorithm);
+    end;
+    }
 
     //Commented out for case test mentioned in RFC 2831
     LstrCNonce := HashResultAsHex(DateTimeToStr(Now));
@@ -187,7 +195,9 @@ begin
 
 
 //    if LQopOptions.IndexOf('auth-conf') > -1 then begin
-//      EIdSASLDigestAuthConfNotSupported.IfFalse(LQopOptions.IndexOf('auth')>-1,RSSASLDigestAuthConfNotSupported);
+//      if LQopOptions.IndexOf('auth') = -1 then begin
+//        EIdSASLDigestAuthConfNotSupported.Toss(RSSASLDigestAuthConfNotSupported);
+//      end;
 //    end;
 
    if LCharset='' then

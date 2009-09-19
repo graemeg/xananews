@@ -199,7 +199,7 @@ uses
   IdCoderQuotedPrintable,
   IdCoderUUE,
   IdCoderXXE,
-  {$IFDEF USEZLIBUNIT}
+  {$IFDEF USE_ZLIB_UNIT}
   IdCompressorZLib,
   IdCompressionIntercept,
   {$ENDIF}
@@ -289,10 +289,10 @@ uses
   IdSNPP,
   IdSNTP,
   IdSocksServer,
-  {$IFDEF DOTNET2_OR_ABOVE}
+  {$IFDEF DOTNET_2_OR_ABOVE}
   IdSSLDotNET,
   {$ENDIF}
-  {$IFDEF USEOPENSSL}
+  {$IFDEF USE_OPENSSL}
   IdSSLOpenSSL,
   {$ENDIF}
   IdSysLog,
@@ -418,7 +418,7 @@ uses
   {$R IconsDotNet\TIdServerInterceptLogFile.bmp}
   {$R IconsDotNet\TIdServerIOHandlerSocket.bmp}
   {$R IconsDotNet\TIdServerIOHandlerStream.bmp}
-  {$IFDEF DOTNET2_OR_ABOVE}
+  {$IFDEF DOTNET_2_OR_ABOVE}
   {$R IconsDotNet\TIdSSLIOHandlerSocketNET.bmp}
   {$R IconsDotNet\TIdServerIOHandlerSSLNET.bmp}
   {$ENDIF}
@@ -559,7 +559,7 @@ begin
 
   RegisterComponents(RSRegIndyIntercepts, [
    TIdBlockCipherIntercept,
-   {$IFDEF USEZLIBUNIT}
+   {$IFDEF USE_ZLIB_UNIT}
    TIdCompressionIntercept,
    TIdServerCompressionIntercept,
     {$ENDIF}
@@ -567,13 +567,13 @@ begin
    TIdServerInterceptLogFile
    ]);
 
-   {$IFDEF DOTNET2_OR_ABOVE}
+   {$IFDEF DOTNET_2_OR_ABOVE}
    RegisterComponents(RSRegIndyIOHandlers, [
     TIdSSLIOHandlerSocketNET,
     TIdServerIOHandlerSSLNET
    ]);
   {$ENDIF}
-  {$IFDEF USEOPENSSL}
+  {$IFDEF USE_OPENSSL}
   RegisterComponents(RSRegIndyIOHandlers, [
    TIdServerIOHandlerSSLOpenSSL,
    TIdSSLIOHandlerSocketOpenSSL
@@ -721,7 +721,7 @@ begin
    TIdMappedTelnet]);
 
   RegisterComponents(RSRegIndyIntercepts+RSProt, [
-   {$IFDEF USEZLIBUNIT}
+   {$IFDEF USE_ZLIB_UNIT}
    TIdCompressionIntercept,
    TIdServerCompressionIntercept,
    {$ENDIF}
@@ -742,7 +742,7 @@ begin
    TIdUserPassProvider
    ]);
 
-  {$IFDEF USEOPENSSL}
+  {$IFDEF USE_OPENSSL}
   RegisterComponents(RSRegIndyIOHandlers+RSProt, [
    TIdServerIOHandlerSSLOpenSSL,
    TIdSSLIOHandlerSocketOpenSSL
@@ -751,7 +751,7 @@ begin
 
   RegisterComponents(RSRegIndyMisc+RSProt, [
    TIdConnectThroughHttpProxy,
-   {$IFDEF USEZLIBUNIT}
+   {$IFDEF USE_ZLIB_UNIT}
    TIdCompressorZLib,
    {$ENDIF}
    TIdCookieManager,

@@ -138,7 +138,7 @@ procedure TestNTLM;
 function BuildType1Msg(const ADomain : AnsiString = ''; const AHost : AnsiString = ''; const ALMCompatibility : LongWord = 0) : TIdBytes;
 procedure ReadType2Msg(const AMsg : TIdBytes; var VFlags : LongWord; var VTargetName : TIdBytes; var VTargetInfo : TIdBytes; var VNonce : TIdBytes );
 function BuildType3Msg(const ADomain, AHost, AUsername, APassword : String;
-  const AFlags : LongWord; const ANonce : TIdBytes;
+  const AFlags : LongWord; const AServerNonce : TIdBytes;
   const ATargetName, ATargetInfo : TIdBytes;
   const ALMCompatibility : LongWord = 0) : TIdBytes;
 
@@ -146,7 +146,7 @@ function BuildType3Msg(const ADomain, AHost, AUsername, APassword : String;
 {
 function BuildType1Message( ADomain, AHost: String; const AEncodeMsg : Boolean = True): String;
 procedure ReadType2Message(const AMsg : String; var VNonce : nonceArray; var Flags : LongWord);
-function BuildType3Message( ADomain, AHost, AUsername: WideString; APassword : String; ANonce : nonceArray): String;
+function BuildType3Message( ADomain, AHost, AUsername: TIdUnicodeString; APassword : String; AServerNonce : nonceArray): String;
  }
 
 function NTLMFunctionsLoaded : Boolean;
@@ -203,6 +203,7 @@ const
 {$ELSE}
 Const
   Magic: des_cblock = ( $4B, $47, $53, $21, $40, $23, $24, $25 );
+  Magic_const : array [0..7] of byte = ( $4b, $47, $53, $21, $40, $23, $24, $25 );
 {$ENDIF}
    TYPE1_MARKER = 1;
    TYPE2_MARGER = 2;
@@ -235,12 +236,12 @@ We do things this way because in Win64, FILETIME may not be a simple typecast
 of Int64.  It might be a two dword record that's aligned on an 8-byte
 boundery.
 }
-{$UNDEF USEFILETIMETYPECAST}
+{$UNDEF USE_FILETIME_TYPECAST}
 {$IFDEF WINCE}
-  {$DEFINE USEFILETIMETYPECAST}
+  {$DEFINE USE_FILETIME_TYPECAST}
 {$ENDIF}
 {$IFDEF WIN32}
-  {$DEFINE USEFILETIMETYPECAST}
+  {$DEFINE USE_FILETIME_TYPECAST}
 {$ENDIF}
 
 function UnixTimeToFileTime(const AUnixTime : LongWord) : FILETIME;
@@ -251,7 +252,7 @@ begin
   Result := Int64ToFileTime((AUnixTime + 11644473600) * 10000000);
   {$ELSE}
   i := (AUnixTime + 11644473600) * 10000000;
-    {$IFDEF USEFILETIMETYPECAST}
+    {$IFDEF USE_FILETIME_TYPECAST}
   Result := FILETIME(i);
     {$ELSE}
   Result.dwLowDateTime := i and $FFFFFFFF;
@@ -262,7 +263,7 @@ end;
 
 function NowAsFileTime : FILETIME;
 {$IFDEF DOTNET}
-  {$IFDEF USEINLINE} inline; {$ENDIF}
+  {$IFDEF USE_INLINE} inline; {$ENDIF}
 {$ENDIF}
 
 {$IFDEF UNIX}
@@ -279,7 +280,7 @@ begin
   {$ENDIF}
   {$IFDEF UNIX}
   //Is the following correct?
-  UnixTimeToFileTime({$IFDEF USEBASEUNIX}fptimes{$ELSE}Libc.Times{$ENDIF}(TheTms));
+  UnixTimeToFileTime({$IFDEF USE_BASEUNIX}fptimes{$ELSE}Libc.Times{$ENDIF}(TheTms));
   {$ENDIF}
   {$IFDEF DOTNET}
    Result := Int64ToFileTime(DateTime.Now.ToFileTimeUtc);
@@ -337,13 +338,13 @@ end;
 //end misc routines
 
 function DumpFlags(const ABytes : TIdBytes): String;
-{$IFDEF USEINLINE}inline;{$ENDIF}
+{$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
   Result := DumpFlags( LittleEndianToHost(BytesToLongWord(ABytes)));
 end;
 
 function DumpFlags(const AFlags : LongWord): String;
-{$IFDEF USEINLINE}inline;{$ENDIF}
+{$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
   Result := IntToHex(AFlags,8)+' -';
   if AFlags and IdNTLMSSP_NEGOTIATE_UNICODE <> 0 then
@@ -485,7 +486,7 @@ Microsoft.NET does not have this functionality when it really should have it.
 }
 
 procedure SetDesKeyOddParity(var VKey : TIdBytes);
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 var i, l : Integer;
 begin
   l := Length( VKey);
@@ -496,7 +497,7 @@ end;
 {$ENDIF}
 
 procedure GetDomain(const AUserName : String; var VUserName, VDomain : String);
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 var i : Integer;
 begin
 {
@@ -526,7 +527,7 @@ end;
 
 {$IFDEF DOTNET}
 function NTLMFunctionsLoaded : Boolean;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := True;
 end;
@@ -563,8 +564,8 @@ end;
 {$ENDIF}
 
 //* create NT hashed password */
-function NTLMHashedPass(const APassword : String): TIdBytes;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+function NTOWFv1(const APassword : String): TIdBytes;
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   with TIdHashMessageDigest4.Create do try
     Result := HashBytes(TIdTextEncoding.Unicode.GetBytes(APassword));
@@ -579,7 +580,7 @@ end;
  * The key schedule ks is also set.
  */}
 procedure setup_des_key(key_56: des_cblock; Var ks: des_key_schedule);
-{$IFDEF USEINLINE}inline;{$ENDIF}
+{$IFDEF USE_INLINE}inline;{$ENDIF}
 Var
   key: des_cblock;
 begin
@@ -597,32 +598,58 @@ begin
   iddes_set_key(@key, ks);
 end;
 
+//Returns 8 bytes in length
+procedure _DES(var Res : TIdBytes; const Akey, AData : array of byte; const AKeyIdx, ADataIdx, AResIdx : Integer);
+var Lks: des_key_schedule;
+begin
+  setup_des_key(pdes_cblock(@Akey[AKeyIdx])^, Lks);
+  iddes_ecb_encrypt(@AData[ADataIdx], Pconst_DES_cblock(@Res[AResIdx]), Lks, OPENSSL_DES_ENCRYPT);
+
+end;
+
+function LMOWFv1(const Passwd, User, UserDom : TIdBytes) : TIdBytes;
+//       ConcatenationOf( DES( UpperCase( Passwd)[0..6],"KGS!@#$%"),
+//                 DES( UpperCase( Passwd)[7..13],"KGS!@#$%"))
+var LBuf : TIdBytes;
+begin
+  SetLength(Result,16);
+  SetLength(LBuf,14);
+  FillBytes( LBuf, 14, 0);
+  CopyTIdBytes(Passwd,0,LBuf, 0,14);
+  _DES(Result,LBuf, Magic_const,0,0,0);
+  _DES(Result,LBuf, Magic_const,7,0,8);
+
+end;
+
 {/*
  * takes a 21 byte array and treats it as 3 56-bit DES keys. The
  * 8 byte plaintext is encrypted with each key and the resulting 24
  * bytes are stored in the results array.
  */}
-procedure calc_resp(keys: PDES_cblock; Anonce: TIdBytes; results: Pdes_key_schedule);
+procedure DESL(const Akeys: TIdBytes; const AServerNonce: TIdBytes; out results: TIdBytes);
+//procedure DESL(keys: TIdBytes; AServerNonce: TIdBytes; results: TIdBytes);
+//procedure DESL(keys: TIdBytes; AServerNonce: TIdBytes; results: Pdes_key_schedule);
 Var
   ks: des_key_schedule;
-  nonce: des_cblock;
 begin
-  setup_des_key(keys^, ks);
-  move(ANonce[0], nonce, 8);
-  iddes_ecb_encrypt(@nonce, Pconst_DES_cblock(results), ks, OPENSSL_DES_ENCRYPT);
+  SetLength(Results,24);
+  setup_des_key(PDES_cblock(@Akeys[0])^, ks);
+  iddes_ecb_encrypt(@AServerNonce[0], Pconst_DES_cblock(results), ks, OPENSSL_DES_ENCRYPT);
 
-  setup_des_key(PDES_cblock(Integer(keys) + 7)^, ks);
-  iddes_ecb_encrypt(@nonce, Pconst_DES_cblock(PtrUInt(results) + 8), ks, OPENSSL_DES_ENCRYPT);
+  setup_des_key(PDES_cblock(Integer(Akeys) + 7)^, ks);
+  iddes_ecb_encrypt(@AServerNonce[0], Pconst_DES_cblock(PtrUInt(results) + 8), ks, OPENSSL_DES_ENCRYPT);
 
-  setup_des_key(PDES_cblock(Integer(keys) + 14)^, ks);
-  iddes_ecb_encrypt(@nonce, Pconst_DES_cblock(PtrUInt(results) + 16), ks, OPENSSL_DES_ENCRYPT);
+  setup_des_key(PDES_cblock(Integer(Akeys) + 14)^, ks);
+  iddes_ecb_encrypt(@AServerNonce[0], Pconst_DES_cblock(PtrUInt(results) + 16), ks, OPENSSL_DES_ENCRYPT);
 end;
 
+
+
 //* setup LanManager password */
-function SetupLMResponse(var vlmHash : TIdBytes; const APassword : String; nonce : TIdBytes): TIdBytes;
+function SetupLMResponse(var vlmHash : TIdBytes; const APassword : String; AServerNonce : TIdBytes): TIdBytes;
 var
-  lm_hpw : TIdBytes; //array[1..21] of Char;
-  lm_pw : TIdBytes; //array[1..21] of Char;
+  lm_hpw : TIdBytes;
+  lm_pw : TIdBytes;
   ks: des_key_schedule;
 
 begin
@@ -642,7 +669,8 @@ begin
   CopyTIdBytes(lm_pw,0,vlmHash,0,16);
  // FillChar(lm_hpw[17], 5, 0);
   SetLength(Result,24);
-  calc_resp(PDes_cblock(@lm_hpw[0]), nonce, Pdes_key_schedule(@Result[0]));
+  DESL(lm_hpw, AServerNonce, Result);
+//  DESL(PDes_cblock(@lm_hpw[0]), AServerNonce, Pdes_key_schedule(@Result[0]));
 //
 end;
 
@@ -662,9 +690,12 @@ begin
   SetLength( nt_hpw, 21);
   FillChar( nt_hpw[ 17], 5, 0);
   CopyTIdBytes( vntlmhash, 0, nt_hpw, 0, 16);
-  // done in calc_resp
+  // done in DESL
   SetLength( Result, 24);
-  calc_resp(pdes_cblock(@nt_hpw[0]), nonce, Pdes_key_schedule(@Result[0]));
+
+//  DESL(pdes_cblock(@nt_hpw[0]), nonce, Pdes_key_schedule(@Result[0]));
+
+  DESL(nt_hpw, nonce, Result);
 end;
 
 {
@@ -685,14 +716,14 @@ begin
   end;
   Move( nt_hpw128[ 0], nt_hpw[ 1], 16);
   FillChar( nt_hpw[ 17], 5, 0);
-  calc_resp(pdes_cblock( @nt_hpw[1]), nonce, Pdes_key_schedule( @Result[ 0]));
+  DESL(pdes_cblock( @nt_hpw[1]), nonce, Pdes_key_schedule( @Result[ 0]));
 end;    }
 
 {$ELSE}
 
 
 procedure setup_des_key(const Akey_56: TIdBytes; out Key : TIdBytes; const AIndex : Integer = 0);
-{$IFDEF USEINLINE}inline;{$ENDIF}
+{$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
   SetLength( key, 8);
   key[0] := Akey_56[ AIndex];
@@ -706,11 +737,13 @@ begin
   SetDesKeyOddParity( Key);
 end;
 
-procedure calc_resp(const Akeys: TIdBytes; const Anonce: TIdBytes; out results: TIdBytes);
-var LKey : TIdBytes;
+
+
+procedure DESL(const Akeys: TIdBytes; const AServerNonce: TIdBytes; out results: TIdBytes);
+var
+  LKey : TIdBytes;
   LDes : System.Security.Cryptography.DES;
   LEnc : ICryptoTransform;
-
 begin
   SetLength( Results, 24);
   SetLength( LKey, 8);
@@ -720,19 +753,19 @@ begin
   setup_des_key( AKeys, LKey, 0);
   LDes.Key := LKey;
   LEnc := LDes.CreateEncryptor;
-  LEnc.TransformBlock( ANonce, 0, 8, Results, 0);
+  LEnc.TransformBlock( AServerNonce, 0, 8, Results, 0);
   setup_des_key( AKeys, LKey, 7);
   LDes.Key := LKey;
   LEnc := LDes.CreateEncryptor;
-  LEnc.TransformBlock( ANonce, 0, 8, Results, 8);
+  LEnc.TransformBlock( AServerNonce, 0, 8, Results, 8);
 
   setup_des_key(AKeys,LKey,14);
   LDes.Key := LKey;
   LEnc := LDes.CreateEncryptor;
-  LEnc.TransformBlock( ANonce, 0, 8, Results, 16);
+  LEnc.TransformBlock( AServerNonce, 0, 8, Results, 16);
 end;
 
-function SetupLMResponse(const APassword : String; nonce : TIdBytes): TIdBytes;
+function SetupLMResponse(const APassword : String; AServerNonce : TIdBytes): TIdBytes;
 var
   lm_hpw : TIdBytes; //array[1..21] of Char;
   lm_pw : TIdBytes; //array[1..21] of Char;
@@ -761,7 +794,7 @@ begin
   end else begin
     CopyTIdBytes( MAGIC_NUL_KEY, 0, lm_hpw, 8, 8);
   end;
-  calc_resp( lm_hpw, nonce, Result);
+  DESL( lm_hpw, nonce, Result);
 end;
 
 function CreateNTLMResponse(const APassword : String; const nonce : TIdBytes): TIdBytes;
@@ -779,16 +812,16 @@ begin
   SetLength( nt_hpw, 21);
   FillBytes( nt_hpw, 21, 0);
   CopyTIdBytes( nt_hpw128, 0, nt_hpw, 0, 16);
-  // done in calc_resp
+  // done in DESL
   //SetLength( nt_resp, 24);
-  calc_resp( nt_hpw,nonce, Result);
+  DESL( nt_hpw,nonce, Result);
 end;
 
 {$ENDIF}
 
 
 procedure AddWord(var VBytes: TIdBytes; const AWord : Word);
-{$IFDEF USEINLINE}inline;{$ENDIF}
+{$IFDEF USE_INLINE}inline;{$ENDIF}
 var LBytes : TIdBytes;
 begin
   SetLength(LBytes,SizeOf(AWord));
@@ -797,7 +830,7 @@ begin
 end;
 
 procedure AddLongWord(var VBytes: TIdBytes; const ALongWord : LongWord);
-{$IFDEF USEINLINE}inline;{$ENDIF}
+{$IFDEF USE_INLINE}inline;{$ENDIF}
 var LBytes : TIdBytes;
 begin
   SetLength(LBytes,SizeOf(ALongWord));
@@ -886,7 +919,6 @@ begin
   IdNTLMv2.AddLongWord(Result, ANTLMTimeStamp.dwLowDateTime );
   IdNTLMv2.AddLongWord(Result, ANTLMTimeStamp.dwHighDateTime );
 
- // AddInt64(Result,ANTLMTimeStamp);
   //client nonce (challange)
   // cnonce - offset 16
   IdGlobal.AppendBytes(Result,cnonce);
@@ -901,7 +933,11 @@ begin
   AddByteArray( Result, NTLMv2_BLOB_Res);
 end;
 
-function InternalCreateNTLMv2Response(var Vntlm2hash : TIdBytes; const AUsername, ADomain,  APassword : String; const ATargetInfo : TIdBytes; const ATimestamp : FILETIME; cnonce, nonce : TIdBytes): TIdBytes;
+function InternalCreateNTLMv2Response(var Vntlm2hash : TIdBytes;
+  const AUsername, ADomain, APassword : String;
+  const ATargetInfo : TIdBytes;
+  const ATimestamp : FILETIME;
+  const cnonce, nonce : TIdBytes): TIdBytes;
 Var
   LLmUserDom : TIdBytes;
   Blob : TIdBytes;
@@ -910,7 +946,7 @@ begin
   AppendBytes(LLmUserDom, TIdTextEncoding.Unicode.GetBytes(ADomain));
   with TIdHMACMD5.Create do
   try
-     Key := NTLMHashedPass(APassword);
+     Key := NTOWFv1(APassword);
      Vntlm2hash := HashValue(LLmUserDom);
   finally
     Free;
@@ -927,13 +963,16 @@ begin
 
 end;
 
-function CreateNTLMv2Response(var Vntlm2hash : TIdBytes; const AUsername, ADomain, APassword : String; const TargetName, ATargetInfo : TIdBytes; cnonce, nonce : TIdBytes): TIdBytes;
+function CreateNTLMv2Response(var Vntlm2hash : TIdBytes;
+  const AUsername, ADomain, APassword : String;
+  const TargetName, ATargetInfo : TIdBytes;
+  const cnonce, nonce : TIdBytes): TIdBytes;
 begin
   Result := InternalCreateNTLMv2Response(Vntlm2hash, AUsername, ADomain, APassword, ATargetInfo, NowAsFileTime,cnonce, nonce);
 end;
 
 function LMUserSessionKey(const AHash : TIdBytes) : TIdBytes;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 //   1. The 16-byte LM hash (calculated previously) is truncated to 8 bytes.
 //   2. This is null-padded to 16 bytes. This value is the LM User Session Key.
 
@@ -944,7 +983,7 @@ begin
 end;
 
 function UserNTLMv1SessionKey(const AHash : TIdBytes) : TIdBytes;
-{$IFDEF USEINLINE} inline; {$ENDIF}
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   with TIdHashMessageDigest4.Create do try
     Result := HashBytes(AHash);
@@ -954,7 +993,7 @@ begin
 end;
 
 function UserLMv2SessionKey(const AHash : TIdBytes; const ABlob : TIdBytes; ACNonce : TIdBytes) : TIdBytes;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 var LBuf : TIdBytes;
 begin
   LBuf := ABlob;
@@ -968,20 +1007,20 @@ begin
   end;
 end;
 
-function UserNTLMv2SessionKey(const AHash : TIdBytes; const ABlob : TIdBytes; const ANonce : TIdBytes) : TIdBytes;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+function UserNTLMv2SessionKey(const AHash : TIdBytes; const ABlob : TIdBytes; const AServerNonce : TIdBytes) : TIdBytes;
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 //extremely similar to the above except that the nonce is used.
 begin
-  Result := UserLMv2SessionKey(AHash,ABlob,ANonce);
+  Result := UserLMv2SessionKey(AHash,ABlob,AServerNonce);
 end;
 
-function UserNTLM2SessionSecSessionKey(const ANTLMv1SessionKey : TIdBytes; const ANonce : TIdBytes): TIdBytes;
- {$IFDEF USEINLINE} inline; {$ENDIF}
+function UserNTLM2SessionSecSessionKey(const ANTLMv1SessionKey : TIdBytes; const AServerNonce : TIdBytes): TIdBytes;
+ {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   with TIdHMACMD5.Create do
   try
     Key := ANTLMv1SessionKey;
-    Result := HashValue(ANonce);
+    Result := HashValue(AServerNonce);
   finally
     Free;
   end;
@@ -1006,22 +1045,21 @@ begin
 
 end;
 
-function SetupLMv2Response(var VntlmHash : TIdBytes; const AUsername, ADomain : String; const APassword : String; cnonce, nonce : TIdBytes): TIdBytes;
+function SetupLMv2Response(var VntlmHash : TIdBytes; const AUsername, ADomain : String; const APassword : String; cnonce, AServerNonce : TIdBytes): TIdBytes;
 Var
-//  ntlm2hash : TIdBytes;
   LLmUserDom : TIdBytes;
   LChall : TIdBytes;
 begin
   LLmUserDom := TIdTextEncoding.Unicode.GetBytes(UpperCase(AUsername));
-  IdGlobal.AppendBytes(LLmUserDom, TIdTextEncoding.Unicode.GetBytes(ADomain));
+  AppendBytes(LLmUserDom, TIdTextEncoding.Unicode.GetBytes(ADomain));
   with TIdHMACMD5.Create do
   try
-     Key := NTLMHashedPass(APassword);
+     Key := NTOWFv1(APassword);
      VntlmHash := HashValue(LLmUserDom);
   finally
     Free;
   end;
-  LChall := nonce;
+  LChall := AServerNonce;
   IdGlobal.AppendBytes(LChall,cnonce);
   with TIdHMACMD5.Create do try
      Key := vntlmhash;
@@ -1029,7 +1067,7 @@ begin
   finally
     Free;
   end;
-  IdGlobal.AppendBytes(Result,cnonce);
+  AppendBytes(Result,cnonce);
 end;
 
 //function SetupLMResponse(const APassword : String; nonce : TIdBytes): TIdBytes;
@@ -1056,21 +1094,21 @@ begin
   SetLength(lntlmseshash,8);
   SetLength(LPassHash,21);
   FillBytes( LPassHash,21, 0);
-  LTmp := NTLMHashedPass(APassword);
+  LTmp := NTOWFv1(APassword);
   IdGlobal.CopyTIdBytes(LTmp,0,LPassHash,0,Length(LTmp));
   {$IFNDEF DOTNET}
   SetLength(Result,24);
-  calc_resp(PDes_cblock(@LPassHash[0]), lntlmseshash, Pdes_key_schedule(@Result[0]));
+  DESL( LPassHash,lntlmseshash, Result);
+ // DESL(PDes_cblock(@LPassHash[0]), lntlmseshash, Pdes_key_schedule(@Result[0]));
    {$ELSE}
-  calc_resp( LPassHash,ntlmseshash, Result);
+  DESL( LPassHash,ntlmseshash, Result);
   {$ENDIF}
-//  Result :=  LPassHash;
 end;
 
 //Todo:  This does not match the results from
 //http://davenport.sourceforge.net/ntlm.html
 function TDateTimeToNTLMTime(const ADateTime : TDateTime):Int64;
-{$IFDEF USEINLINE}inline;{$ENDIF}
+{$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
   Result := DateTimeToUnix((ADateTime+11644473600)* 10000);
 end;
@@ -1098,7 +1136,6 @@ begin
     LFlags := LFlags or IdNTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED;
   end;
   //signature
-   //IdGlobal.CopyTIdByteArray();
   AppendBytes(Result,IdNTLM_SSP_SIG);
   //type
   AddLongWord(Result,IdNTLM_TYPE1_MARKER);
@@ -1200,7 +1237,7 @@ const
     IdNTLMSSP_TARGET_TYPE_SHARE);
 
 function BuildType3Msg(const ADomain, AHost, AUsername, APassword : String;
-  const AFlags : LongWord; const ANonce : TIdBytes;
+  const AFlags : LongWord; const AServerNonce : TIdBytes;
   const ATargetName, ATargetInfo : TIdBytes;
   const ALMCompatibility : LongWord = 0) : TIdBytes;
 var LDom, LHost, LUser, LLMData, LNTLMData, LCNonce : TIdBytes;
@@ -1238,8 +1275,8 @@ begin
     (AFlags and IdNTLMSSP_NEGOTIATE_EXTENDED_SESSIONSECURITY > 0) then
   begin
     LCNonce := GenerateCNonce;
-    LNTLMData := CreateModNTLMv1Response(lntlmhash,AUserName,APassword,LCNonce,ANonce,LLMData);
-//    LLMData := IdNTLMv2.SetupLMv2Response(AUsername,ADomain,APassword,LCNonce,ANonce);
+    LNTLMData := CreateModNTLMv1Response(lntlmhash,AUserName,APassword,LCNonce,AServerNonce,LLMData);
+//    LLMData := IdNTLMv2.SetupLMv2Response(AUsername,ADomain,APassword,LCNonce,AServerNonce);
 //    LNTLMData := CreateNTLMv2Response(AUserName,ADomain,APassword,ATargetName,ATargetName, ATargetInfo,LCNonce);
   end else begin
     case ALMCompatibility of
@@ -1251,9 +1288,9 @@ begin
         end
         else
         begin
-          LLMData :=  SetupLMResponse(llmhash, APassword, ANonce);
+          LLMData :=  SetupLMResponse(llmhash, APassword, AServerNonce);
         end;
-        LNTLMData := CreateNTLMResponse(lntlmhash, APassword, ANonce);
+        LNTLMData := CreateNTLMResponse(lntlmhash, APassword, AServerNonce);
       end;
     1 :
       begin
@@ -1263,13 +1300,13 @@ begin
         end
         else
         begin
-          LLMData :=  SetupLMResponse(llmhash, APassword, ANonce);
+          LLMData :=  SetupLMResponse(llmhash, APassword, AServerNonce);
         end;
-        LNTLMData := CreateNTLMResponse(lntlmhash,APassword, ANonce);
+        LNTLMData := CreateNTLMResponse(lntlmhash,APassword, AServerNonce);
       end;
     2 : //Send NTLM response only
       begin
-        LNTLMData := CreateNTLMResponse(lntlmhash,APassword, ANonce);
+        LNTLMData := CreateNTLMResponse(lntlmhash,APassword, AServerNonce);
         if AFlags and IdNTLMSSP_NEGOTIATE_NT_ONLY <> 0 then
         begin
           SetLength(LLMData,0);
@@ -1284,8 +1321,8 @@ begin
       begin
 //        LFlags := LFlags and (not IdNTLMSSP_NEGOTIATE_NTLM);
         LCNonce := GenerateCNonce;
-        LLMData := IdNTLMv2.SetupLMv2Response(llmhash,AUsername,ADomain,APassword,LCNonce,ANonce);
-        LNTLMData := CreateNTLMv2Response(lntlmhash,AUserName,ADomain,APassword,ATargetName,ATargetInfo,LCNonce,ANonce);
+        LLMData := IdNTLMv2.SetupLMv2Response(llmhash,AUsername,ADomain,APassword,LCNonce,AServerNonce);
+        LNTLMData := CreateNTLMv2Response(lntlmhash,AUserName,ADomain,APassword,ATargetName,ATargetInfo,LCNonce,AServerNonce);
 
       end;
       //        LCNonce := GenerateCNonce;
@@ -1320,7 +1357,6 @@ begin
 
   SetLength(Result,0);
   // 0 - signature
-   //IdGlobal.CopyTIdByteArray();
   AppendBytes(Result,IdNTLM_SSP_SIG);
   // 8 - type
   AddLongWord(Result,IdNTLM_TYPE3_MARKER);
@@ -1556,11 +1592,41 @@ Server Challange
 # NTLMSSP_NEGOTIATE_SIGN
 # NTLM_NEGOTIATE_OEM
 # NTLMSSP_NEGOTIATE_UNICOD
+
+NTLMv1 data flags
+33 82 02 e2
 }
+
+procedure DoMSTests;
+var
+  LFlags : LongWord;
+  LHash : TIdBytes;
+begin
+  LFlags := IdNTLMSSP_NEGOTIATE_KEY_EXCH or
+    IdNTLMSSP_NEGOTIATE_56 or IdNTLMSSP_NEGOTIATE_128 or
+    IdNTLMSSP_NEGOTIATE_VERSION or IdNTLMSSP_TARGET_TYPE_SERVER or
+    IdNTLMSSP_NEGOTIATE_ALWAYS_SIGN or IdNTLMSSP_NEGOTIATE_NTLM or
+    IdNTLMSSP_NEGOTIATE_SEAL or IdNTLMSSP_NEGOTIATE_SIGN or
+    IdNTLM_NEGOTIATE_OEM or IdNTLMSSP_NEGOTIATE_UNICODE;
+  if ToHex(ToBytes(LFlags))<>'338202E2' then
+  begin
+    raise Exception.Create('MS Tests failed - NTLMv1 data flags');
+  end;
+//  if ToHex(NTOWFv1('Password') ) <> UpperCase('e52cac67419a9a224a3b108f3fa6cb6d') then
+  if ToHex(LMOWFv1(
+    TIdTextEncoding.ASCII.GetBytes(Uppercase( 'Password')),
+    TIdTextEncoding.ASCII.GetBytes(Uppercase( 'User')),
+    TIdTextEncoding.ASCII.GetBytes(Uppercase( 'Domain')))) <>
+    Uppercase('e52cac67419a9a224a3b108f3fa6cb6d') then
+
+  begin
+    raise Exception.Create('MS Tests failed - LMOWFv1');
+  end;
+end;
 
 procedure TestNTLM;
 begin
-  //DoMSTests;
+ // DoMSTests;
   DoDavePortTests;
 end;
 
@@ -1571,7 +1637,7 @@ initialization
   SetLength(IdNTLM_SSP_SIG,8);
   IdNTLM_SSP_SIG[0] :=$4e;  //N
   IdNTLM_SSP_SIG[1] :=$54;  //T
-   IdNTLM_SSP_SIG[2] :=$4c; //L
+  IdNTLM_SSP_SIG[2] :=$4c;  //L
   IdNTLM_SSP_SIG[3] :=$4d;  //M
   IdNTLM_SSP_SIG[4] :=$53;  //S
   IdNTLM_SSP_SIG[5] :=$53;  //S

@@ -78,18 +78,20 @@ unit IdDsnPropEdBinding;
 }
 
 interface
- {$I IdCompilerDefines.inc}
 
-{$IFDEF WidgetWinForms}
+{$I IdCompilerDefines.inc}
+
+{$IFDEF WIDGET_WINFORMS}
 {$R 'IdDsnPropEdBindingNET.TIdDsnPropEdBindingNET.resources' 'IdDsnPropEdBindingNET.resx'}
 {$ENDIF}
+
 uses
   Classes,
   IdSocketHandle,
-  {$IFDEF WidgetWinForms}
+  {$IFDEF WIDGET_WINFORMS}
   IdDsnPropEdBindingNET;
   {$ENDIF}
-  {$IFDEF WidgetVCLLikeOrKylix}
+  {$IFDEF WIDGET_VCL_LIKE_OR_KYLIX}
   IdDsnPropEdBindingVCL;
   {$ENDIF}
 
@@ -114,10 +116,10 @@ TODO:  Maybe there might be a way to find the location in a more eligant
 manner than what I described.
 }
 type
-  {$IFDEF WidgetWinForms}
+  {$IFDEF WIDGET_WINFORMS}
    TIdPropEdBindingEntry = TIdDsnPropEdBindingNET;
   {$ENDIF}
-  {$IFDEF WidgetVCLLikeOrKylix}
+  {$IFDEF WIDGET_VCL_LIKE_OR_KYLIX}
   TIdPropEdBindingEntry = TIdDsnPropEdBindingVCL;
   {$ENDIF}
 
@@ -125,7 +127,8 @@ procedure FillHandleList(const AList: string; ADest: TIdSocketHandles);
 function GetListValues(const ASocketHandles : TIdSocketHandles) : String;
 
 implementation
-{$IFDEF WidgetWinForms}
+
+{$IFDEF WIDGET_WINFORMS}
 procedure FillHandleList(const AList: string; ADest: TIdSocketHandles);
 begin
   IdDsnPropEdBindingNET.FillHandleList(AList,ADest);
@@ -136,7 +139,7 @@ begin
   Result := IdDsnPropEdBindingNET.GetListValues(ASocketHandles);
 end;
 {$ENDIF}
-{$IFDEF WidgetVCLLikeOrKylix}
+{$IFDEF WIDGET_VCL_LIKE_OR_KYLIX}
 procedure FillHandleList(const AList: string; ADest: TIdSocketHandles);
 begin
    IdDsnPropEdBindingVCL.FillHandleList(AList,ADest);

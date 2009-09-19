@@ -75,7 +75,7 @@ interface
 
 uses
   Classes
-  {$IFDEF DotNet}
+  {$IFDEF DOTNET}
   {$DEFINE IdDEBUG},
   System.ComponentModel.Design.Serialization,
   System.Collections.Specialized,
@@ -105,7 +105,7 @@ type
   TIdInitializerComponent = class(TComponent)
   private
   protected
-    {$IFDEF DotNet}
+    {$IFDEF DOTNET}
     // This event handler will take care about dynamically loaded assemblies after first initialization.
     class procedure AssemblyLoadEventHandler(sender: &Object; args: AssemblyLoadEventArgs); static;
     class procedure InitializeAssembly(AAssembly: Assembly);
@@ -116,7 +116,7 @@ type
     // It is not abstract so that not all descendants are required to override it.
     procedure InitComponent; virtual;
   public
-    {$IFDEF DotNet}
+    {$IFDEF DOTNET}
     // Should not be able to make this create virtual? But if not
     // DCCIL complain in IdIOHandler about possible polymorphics....
     constructor Create; overload; virtual;
@@ -143,10 +143,10 @@ type
   public
     // This is here to catch components trying to override at compile time and not let them.
     // This does not work in .net, but we always test in VCL so this will catch it.
-    {$IFNDEF DotNet}
+    {$IFNDEF DOTNET}
     constructor Create(AOwner: TComponent); reintroduce; overload;
     {$ENDIF}
-    {$IFNDEF REMOVEFREENOTIFICATION}
+    {$IFNDEF HAS_REMOVEFREENOTIFICATION}
     procedure RemoveFreeNotification(AComponent: TComponent);
     {$ENDIF}
     property Version: string read GetIndyVersion;
@@ -156,12 +156,12 @@ type
 implementation
 
 uses
-  {$IFDEF DotNet}
+  {$IFDEF DOTNET}
   System.Runtime.CompilerServices,
   {$ENDIF}
   IdGlobal;
 
-{$IFDEF DotNet}
+{$IFDEF DOTNET}
 var
   GInitsCalled: Integer = 0;
 {$ENDIF}
@@ -170,7 +170,7 @@ var
 
 constructor TIdInitializerComponent.Create;
 begin
-  {-$IFDEF DotNet}
+  {-$IFDEF DOTNET}
   inherited Create(nil); // Explicit just in case since are not an override
   InitComponent;
   {-$ELSE}
@@ -186,7 +186,7 @@ begin
   InitComponent;
 end;
 
-{$IFDEF DotNet}
+{$IFDEF DOTNET}
 class procedure TIdInitializerComponent.AssemblyLoadEventHandler(sender: &Object;
   args: AssemblyLoadEventArgs);
 begin
@@ -219,7 +219,7 @@ end;
 {$ENDIF}
 
 procedure TIdInitializerComponent.InitComponent;
-{$IFDEF DotNet}
+{$IFDEF DOTNET}
 var
   LAssemblyList: array of Assembly;
   i: integer;
@@ -227,7 +227,7 @@ var
   LM : String;
 {$ENDIF}
 begin
-  {$IFDEF DotNet}
+  {$IFDEF DOTNET}
   try
   // With .NET initialization sections are not called unless the unit is referenced. D.NET makes
   // initializations and globals part of a "Unit" class. So init sections wont get called unless
@@ -298,14 +298,14 @@ end;
 
 { TIdBaseComponent }
 
-{$IFNDEF DotNet}
+{$IFNDEF DOTNET}
 constructor TIdBaseComponent.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner); // Explicit just in case since are not an override
 end;
 {$ENDIF}
 
-{$IFNDEF REMOVEFREENOTIFICATION}
+{$IFNDEF HAS_REMOVEFREENOTIFICATION}
 procedure TIdBaseComponent.RemoveFreeNotification(AComponent: TComponent);
 begin
   // this is a no-op for now, as we can't access the private TComponent.FFreeNotifies list

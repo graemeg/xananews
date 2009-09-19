@@ -190,6 +190,7 @@ interface
 
 uses
   Classes,
+  SysUtils,
   IdAssignedNumbers,
   IdEMailAddress,
   IdException,
@@ -237,7 +238,8 @@ type
     procedure Connect; override;
     procedure Disconnect(ANotifyPeer: Boolean); override;
     procedure DisconnectNotifyPeer; override;
-    class procedure QuickSend(const AHost, ASubject, ATo, AFrom, AText: string);
+    class procedure QuickSend(const AHost, ASubject, ATo, AFrom, AText: string); overload; {$IFDEF HAS_DEPRECATED}deprecated{$IFDEF HAS_DEPRECATED_MSG} 'Use newer overload of QuickSend()'{$ENDIF};{$ENDIF}
+    class procedure QuickSend(const AHost, ASubject, ATo, AFrom, AText, AContentType, ACharset, AContentTransferEncoding: string); overload;
     procedure Expand(AUserName : String; AResults : TStrings); virtual;
     function Verify(AUserName : String) : String; virtual;
     //
@@ -264,7 +266,7 @@ uses
   IdReplySMTP,
   IdSSL,
   IdResourceStringsProtocols,
-  IdTCPConnection, SysUtils;
+  IdTCPConnection;
 
 { TIdSMTP }
 
@@ -338,13 +340,17 @@ begin
         RLebeau: TODO - implement the following code in the future
         instead of the code above.  This way, TIdSASLLogin can be utilized.
 
-        EIdSASLMechNeeded.IfTrue(SASLMechanisms.Count = 0, RSASLRequired);
+        if SASLMechanisms.Count = 0 then begin
+          EIdSASLMechNeeded.Toss(RSASLRequired);
+        end;
         FDidAuthenticate := SASLMechanisms.LoginSASL('AUTH', 'LOGIN', ['235'], ['334'], Self, Capabilities);
 }
       end;
     satSASL:
       begin
-        EIdSASLMechNeeded.IfTrue(SASLMechanisms.Count = 0, RSASLRequired);
+        if SASLMechanisms.Count = 0 then begin
+          EIdSASLMechNeeded.Toss(RSASLRequired);
+        end;
         FDidAuthenticate := SASLMechanisms.LoginSASL('AUTH',FHost,IdGSKSSN_smtp, ['235'], ['334'], Self, Capabilities); {do not localize}
       end;
   end;
@@ -382,7 +388,9 @@ begin
   SendCMD('EXPN ' + AUserName, [250, 251]);    {Do not Localize}
 end;
 
-class procedure TIdSMTP.QuickSend(const AHost, ASubject, ATo, AFrom, AText : String);
+procedure InternalQuickSend(const AHost, ASubject, ATo, AFrom, AText,
+  AContentType, ACharset, AContentTransferEncoding: String);
+{$IFDEF USE_INLINE}inline;{$ENDIF}
 var
   LSMTP: TIdSMTP;
   LMsg: TIdMessage;
@@ -394,6 +402,9 @@ begin
         Recipients.EMailAddresses := ATo;
         From.Text := AFrom;
         Body.Text := AText;
+        ContentType := AContentType;
+        CharSet := ACharset;
+        ContentTransferEncoding := AContentTransferEncoding;
       end;
       with LSMTP do begin
         Host := AHost;
@@ -403,6 +414,17 @@ begin
       end;
     finally FreeAndNil(LMsg); end;
   finally FreeAndNil(LSMTP); end;
+end;
+
+class procedure TIdSMTP.QuickSend(const AHost, ASubject, ATo, AFrom, AText: String);
+begin
+  InternalQuickSend(AHost, ASubject, ATo, AFrom, AText, '', '', '');
+end;
+
+class procedure TIdSMTP.QuickSend(const AHost, ASubject, ATo, AFrom, AText,
+  AContentType, ACharset, AContentTransferEncoding: String);
+begin
+  InternalQuickSend(AHost, ASubject, ATo, AFrom, AText, AContentType, ACharset, AContentTransferEncoding);
 end;
 
 procedure TIdSMTP.InternalSend(AMsg: TIdMessage; const AFrom: String; ARecipients: TIdEMailAddressList);

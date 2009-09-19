@@ -107,7 +107,7 @@ uses
   {$ENDIF}
 
 type
-  {$IFDEF USEUNIXBASE}
+  {$IFDEF USE_BASEUNIX}
   TSocket = cint;  // TSocket is afaik not POSIX, so we have to add it
                    // (Socket() returns a C int according to opengroup)
   {$ENDIF}
@@ -147,7 +147,7 @@ const
     // but they have different numbers in Linux, and possibly
     // also different behaviour?
       {$IFNDEF KYLIX}
-        {$IFDEF USEBASEUNIX}
+        {$IFDEF USE_BASEUNIX}
       //In Linux, the libc.pp header maps the old values to new ones,
       //probably for consistancy.  I'm doing this because we can't link
       //to Libc for Basic Unix stuff and some people may want to use this API
@@ -220,7 +220,7 @@ const
   Id_PF_INET6 = ProtocolFamily.InterNetworkV6;
   {$ENDIF}
 
-  {$IFDEF USEBASEUNIX}
+  {$IFDEF USE_BASEUNIX}
   // These constants are actually WinSock specific, not std TCP/IP
   // FPC doesn't emulate WinSock.
   INVALID_SOCKET = -1;
@@ -283,7 +283,7 @@ const
   {$ELSE}
   Id_IPPROTO_GGP         = ProtocolType.Ggp;    //Gateway To Gateway Protocol.
   Id_IPPROTO_ICMP        = ProtocolType.Icmp; //Internet Control Message Protocol.
-  {$IFNDEF DOTNET1_1}
+  {$IFDEF DOTNET_2_OR_ABOVE}
   Id_IPPROTO_ICMPv6      = ProtocolType.IcmpV6; //ICMP for IPv6
   {$ENDIF}
   Id_IPPROTO_IDP         = ProtocolType.Idp;   //IDP Protocol.
@@ -457,7 +457,7 @@ SocketOptionName.UseLoopback;//  Bypass hardware when possible.
   Id_WSAENOTEMPTY       = ENOTEMPTY;
   {$ENDIF}
 
-  {$IFDEF USEBASEUNIX}
+  {$IFDEF USE_BASEUNIX}
   // Shutdown Options
   Id_SD_Recv = SHUT_RD;
   Id_SD_Send = SHUT_WR;

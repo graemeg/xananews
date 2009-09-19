@@ -6,7 +6,7 @@ interface
 
 uses
   Classes
-  {$IFDEF TSelectionEditor}
+  {$IFDEF HAS_TSelectionEditor}
     {$IFDEF FPC}
     ,PropEdits
     ,ComponentEditors
@@ -17,7 +17,7 @@ uses
   {$ENDIF}
   ;
 
-{$IFDEF TSelectionEditor}
+{$IFDEF HAS_TSelectionEditor}
 type
   TIdContextSelectionEditor = class(TSelectionEditor)
   public
@@ -27,7 +27,7 @@ type
 
 implementation
 
-{$IFDEF TSelectionEditor}
+{$IFDEF HAS_TSelectionEditor}
 procedure TIdContextSelectionEditor.RequiresUnits(Proc: TGetStrProc);
 begin
   inherited RequiresUnits(Proc);

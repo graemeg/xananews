@@ -216,6 +216,7 @@ type
     FProxyConnection: string;
     FProxyAuthenticate: TIdHeaderList;
     FWWWAuthenticate: TIdHeaderList;
+    FMetaHTTPEquiv : TIdHeaderList;
     //
     procedure SetProxyAuthenticate(const Value: TIdHeaderList);
     procedure SetWWWAuthenticate(const Value: TIdHeaderList);
@@ -223,6 +224,7 @@ type
     procedure ProcessHeaders; override;
     procedure SetHeaders; override;
   public
+
     procedure Clear; override;
     constructor Create; override;
     destructor Destroy; override;
@@ -233,6 +235,10 @@ type
     property ProxyAuthenticate: TIdHeaderList read FProxyAuthenticate write SetProxyAuthenticate;
     property Server: string read FServer write FServer;
     property WWWAuthenticate: TIdHeaderList read FWWWAuthenticate write SetWWWAuthenticate;
+  end;
+  TIdMetaHTTPEquiv = class(TIdEntityHeaderInfo)
+  public
+    procedure ProcessMetaHTTPEquiv(AStream: TStream);
   end;
 
 implementation
@@ -325,7 +331,7 @@ end;
 
 procedure TIdEntityHeaderInfo.ProcessHeaders;
 var
-  LSecs: Integer;
+  LSecs: Int64;
   lValue: string;
   lCRange: string;
   lILength: string;
@@ -388,7 +394,7 @@ begin
     if IsNumeric(lValue) then
     begin
       // This is happening when expires is an integer number in seconds
-      LSecs := IndyStrToInt(lValue);
+      LSecs := IndyStrToInt64(lValue);
       // RLebeau 01/23/2005 - IIS sometimes sends an 'Expires: -1' header
       // should we be handling it as actually meaning "Now minus 1 second" instead?
       if LSecs >= 0 then begin
@@ -800,11 +806,13 @@ begin
   FContentType := 'text/html';  {do not localize}
   FWWWAuthenticate := TIdHeaderList.Create;
   FProxyAuthenticate := TIdHeaderList.Create;
+  FMetaHTTPEquiv := TIdHeaderList.Create;
   FAcceptRanges := '';
 end;
 
 destructor TIdResponseHeaderInfo.Destroy;
 begin
+  FreeAndNil(FMetaHTTPEquiv);
   FreeAndNil(FWWWAuthenticate);
   FreeAndNil(FProxyAuthenticate);
   inherited Destroy;
@@ -890,6 +898,16 @@ end;
 procedure TIdResponseHeaderInfo.SetAcceptRanges(const Value: string);
 begin
   FAcceptRanges := Value;
+end;
+
+{ TIdMetaHTTPEquiv }
+
+procedure TIdMetaHTTPEquiv.ProcessMetaHTTPEquiv(AStream: TStream);
+begin
+  ParseMetaHTTPEquiv(AStream, RawHeaders );
+  if FRawHeaders.Count > 0 then begin
+    ProcessHeaders;
+  end;
 end;
 
 end.

@@ -123,7 +123,7 @@ uses
   IdIcmpClient,
   {$ENDIF}
   IdSocks,
-  {$IFDEF TSelectionEditor}
+  {$IFDEF HAS_TSelectionEditor}
     {$IFDEF FPC}
   PropEdits,
     {$ELSE}
@@ -158,7 +158,7 @@ uses
   IdIntercept,
   IdTCPServer,
   IdTCPClient
-  {$IFDEF TSelectionEditor}
+  {$IFDEF HAS_TSelectionEditor}
   ,IdCoreSelectionEditors
   {$ENDIF}
   ;
@@ -191,7 +191,7 @@ uses
   {$R IconsDotNet\TIdSocksInfo.bmp}
 {$ELSE}
   {$IFNDEF FPC}
-    {$IFDEF Borland}
+    {$IFDEF BORLAND}
       {$R IdCoreRegister.dcr}
     {$ELSE}
       {$R IdCoreRegisterCool.dcr}
@@ -281,7 +281,7 @@ begin
    TIdThreadComponent
   ]);
   {$ENDIF}
-  {$IFDEF TSelectionEditor}
+  {$IFDEF HAS_TSelectionEditor}
   RegisterSelectionEditor(TIdTCPServer, TIdContextSelectionEditor);
   RegisterSelectionEditor(TIdCmdTCPClient, TIdContextSelectionEditor);
   {$ENDIF}

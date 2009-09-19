@@ -24,8 +24,7 @@ type
 implementation
 
 uses
-  IdCoder, IdCoderMIME, IdException, IdGlobalProtocols, IdResourceStrings, IdCoderBinHex4,
-  IdCoderHeader, SysUtils;
+  IdCoder, IdCoderBinHex4, SysUtils;
 
 { TIdMessageEncoderInfoBinHex4 }
 
@@ -35,7 +34,7 @@ begin
   FMessageEncoderClass := TIdMessageEncoderBinHex4;
 end;
 
-{ TIdMessageEncoderQuotedPrintable }
+{ TIdMessageEncoderBinHex4 }
 
 procedure TIdMessageEncoderBinHex4.Encode(ASrc: TStream; ADest: TStream);
 var

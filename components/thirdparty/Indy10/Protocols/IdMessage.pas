@@ -525,7 +525,7 @@ implementation
 uses
   //facilitate inlining only.
   {$IFDEF DOTNET}
-    {$IFDEF USEINLINE}
+    {$IFDEF USE_INLINE}
   System.IO,
     {$ENDIF}
   {$ENDIF}
@@ -957,7 +957,7 @@ begin
     Priority := GetMsgPriority(Headers.Values['X-Priority']) {do not localize}
   end;
   {Note that the following code ensures MIMEBoundary.Count is 0 for single-part MIME messages...}
-  LBoundary := ExtractHeaderSubItem(FContentType, 'boundary');  {do not localize}
+  LBoundary := Headers.Params['Content-Type', 'boundary'];  {do not localize}
   FContentType := RemoveHeaderEntry(FContentType, 'boundary');  {do not localize}
   if LBoundary <> '' then begin
     MIMEBoundary.Push(LBoundary, -1);
@@ -1093,7 +1093,9 @@ procedure TIdMessage.LoadFromFile(const AFileName: string; const AHeadersOnly: B
 var
   LStream: TIdReadFileExclusiveStream;
 begin
-  EIdMessageCannotLoad.IfFalse(FileExists(AFilename), IndyFormat(RSIdMessageCannotLoad, [AFilename]));
+  if not FileExists(AFilename) then begin
+    EIdMessageCannotLoad.Toss(IndyFormat(RSIdMessageCannotLoad, [AFilename]));
+  end;
   LStream := TIdReadFileExclusiveStream.Create(AFilename); try
     LoadFromStream(LStream, AHeadersOnly);
   finally FreeAndNil(LStream); end;
@@ -1153,8 +1155,8 @@ Begin
   // Comments welcome on atozedsoftware.indy.general
 
   case IdGetDefaultCharSet of
-    idcsISO_8859_1 : VHeaderEncoding := 'Q';    {Do not Localize}
-    idcsUNICODE_1_1 : VCharSet := IdCharsetNames[idcsUTF_8];
+    idcs_ISO_8859_1 : VHeaderEncoding := 'Q';    {Do not Localize}
+    idcs_UNICODE_1_1 : VCharSet := IdCharsetNames[idcs_UTF_8];
   else
     // nothing
   end;

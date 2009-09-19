@@ -1119,12 +1119,12 @@ implementation
 uses
   //facilitate inlining only.
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
-     {$IFDEF USEINLINE}
+    {$IFDEF USE_INLINE}
   Windows,
-     {$ENDIF}
+    {$ENDIF}
   {$ENDIF}
   {$IFDEF DOTNET}
-    {$IFDEF USEINLINE}
+    {$IFDEF USE_INLINE}
   System.IO,
     {$ENDIF}
   {$ENDIF} 
@@ -5664,10 +5664,25 @@ var
 const
   SContentType = 'Content-Type'; {do not localize}
 
+  procedure CaptureAndDecodeCharSet;
+  var
+    LMStream: TMemoryStream;
+  begin
+    LMStream := TMemoryStream.Create;
+    try
+      IOHandler.Capture(LMStream, LDelim, True, Indy8BitEncoding());
+      LMStream.Position := 0;
+      ReadStringsAsCharSet(LMStream, AMsg.Body, AMsg.CharSet);
+    finally
+      LMStream.Free;
+    end;
+  end;
+
   function ProcessTextPart(ADecoder: TIdMessageDecoder): TIdMessageDecoder;
   var
     LDestStream: TMemoryStream;
     Li: integer;
+    LTxt: TIdText;
   begin
     Result := nil;
     try
@@ -5675,33 +5690,34 @@ const
       try
         Result := ADecoder.ReadBody(LDestStream, LMsgEnd);
         LDestStream.Position := 0;
-        with TIdText.Create(AMsg.MessageParts) do begin
-          try
-            ContentType := ADecoder.Headers.Values[SContentType];
-            ContentID := ADecoder.Headers.Values['Content-ID'];  {Do not Localize}
-            ContentLocation := ADecoder.Headers.Values['Content-Location'];  {Do not Localize}
-            ContentDescription := ADecoder.Headers.Values['Content-Description']; {Do not Localize}
-            ContentDisposition := ADecoder.Headers.Values['Content-Disposition']; {Do not Localize}
-            ContentTransfer := ADecoder.Headers.Values['Content-Transfer-Encoding'];  {Do not Localize}
-            ExtraHeaders.NameValueSeparator := '=';  {Do not Localize}
-            for Li := 0 to ADecoder.Headers.Count-1 do begin
-              if Headers.IndexOfName(ADecoder.Headers.Names[Li]) < 0 then begin
-                ExtraHeaders.Add(ADecoder.Headers.Strings[Li]);
-              end;
+        LTxt := TIdText.Create(AMsg.MessageParts);
+        try
+          LTxt.ContentType := ADecoder.Headers.Values[SContentType];
+          LTxt.ContentID := ADecoder.Headers.Values['Content-ID'];  {Do not Localize}
+          LTxt.ContentLocation := ADecoder.Headers.Values['Content-Location'];  {Do not Localize}
+          LTxt.ContentDescription := ADecoder.Headers.Values['Content-Description']; {Do not Localize}
+          LTxt.ContentDisposition := ADecoder.Headers.Values['Content-Disposition']; {Do not Localize}
+          LTxt.ContentTransfer := ADecoder.Headers.Values['Content-Transfer-Encoding'];  {Do not Localize}
+          LTxt.ExtraHeaders.NameValueSeparator := '=';  {Do not Localize}
+          for Li := 0 to ADecoder.Headers.Count-1 do begin
+            if LTxt.Headers.IndexOfName(ADecoder.Headers.Names[Li]) < 0 then begin
+              LTxt.ExtraHeaders.Add(ADecoder.Headers.Strings[Li]);
             end;
-            ReadStringsAsCharset(LDestStream, Body, CharSet);
-          except
-            //this should also remove the Item from the TCollection.
-            //Note that Delete does not exist in the TCollection.
-            Free;
-            raise;
           end;
+          ReadStringsAsCharset(LDestStream, LTxt.Body, LTxt.CharSet);
+        except
+          //this should also remove the Item from the TCollection.
+          //Note that Delete does not exist in the TCollection.
+          LTxt.Free;
+          raise;
         end;
+        ADecoder.Free;
       finally
         FreeAndNil(LDestStream);
       end;
-    finally
-      FreeAndNil(ADecoder);
+    except
+      FreeAndNil(Result);
+      raise;
     end;
   end;
 
@@ -5711,40 +5727,40 @@ const
     Li: integer;
     LAttachment: TIdAttachment;
   begin
+    Result := nil; // supress warnings
     try
-      Result := nil; // supress warnings
       AMsg.DoCreateAttachment(ADecoder.Headers, LAttachment);
       Assert(Assigned(LAttachment), 'Attachment must not be unassigned here!');    {Do not Localize}
-      with LAttachment do begin
+      try
+        LDestStream := LAttachment.PrepareTempStream;
         try
-          LDestStream := PrepareTempStream;
-          try
-            Result := ADecoder.ReadBody(LDestStream, LMsgEnd);
-            ContentType := ADecoder.Headers.Values[SContentType];
-            ContentTransfer := ADecoder.Headers.Values['Content-Transfer-Encoding'];  {Do not Localize}
-            ContentDisposition := ADecoder.Headers.Values['Content-Disposition'];  {Do not Localize}
-            ContentID := ADecoder.Headers.Values['Content-ID'];  {Do not Localize}
-            ContentLocation := ADecoder.Headers.Values['Content-Location'];  {Do not Localize}
-            ContentDescription := ADecoder.Headers.Values['Content-Description']; {Do not Localize}
-            Filename := ADecoder.Filename;
-            ExtraHeaders.NameValueSeparator := '=';  {Do not Localize}
-            for Li := 0 to ADecoder.Headers.Count-1 do begin
-              if Headers.IndexOfName(ADecoder.Headers.Names[Li]) < 0 then begin
-                ExtraHeaders.Add(ADecoder.Headers.Strings[Li]);
-              end;
-            end;
-          finally
-            FinishTempStream;
-          end;
-        except
-          //this should also remove the Item from the TCollection.
-          //Note that Delete does not exist in the TCollection.
-          Free;
-          raise;
+          Result := ADecoder.ReadBody(LDestStream, LMsgEnd);
+        finally
+          LAttachment.FinishTempStream;
         end;
+        LAttachment.ContentType := ADecoder.Headers.Values[SContentType];
+        LAttachment.ContentTransfer := ADecoder.Headers.Values['Content-Transfer-Encoding'];  {Do not Localize}
+        LAttachment.ContentDisposition := ADecoder.Headers.Values['Content-Disposition'];  {Do not Localize}
+        LAttachment.ContentID := ADecoder.Headers.Values['Content-ID'];  {Do not Localize}
+        LAttachment.ContentLocation := ADecoder.Headers.Values['Content-Location'];  {Do not Localize}
+        LAttachment.ContentDescription := ADecoder.Headers.Values['Content-Description']; {Do not Localize}
+        LAttachment.Filename := ADecoder.Filename;
+        LAttachment.ExtraHeaders.NameValueSeparator := '=';  {Do not Localize}
+        for Li := 0 to ADecoder.Headers.Count-1 do begin
+          if LAttachment.Headers.IndexOfName(ADecoder.Headers.Names[Li]) < 0 then begin
+            LAttachment.ExtraHeaders.Add(ADecoder.Headers.Strings[Li]);
+          end;
+        end;
+      except
+        //this should also remove the Item from the TCollection.
+        //Note that Delete does not exist in the TCollection.
+        LAttachment.Free;
+        raise;
       end;
-    finally
-      FreeAndNil(ADecoder);
+      ADecoder.Free;
+    except
+      FreeAndNil(Result);
+      raise;
     end;
   end;
 
@@ -5759,58 +5775,50 @@ Begin
   end;                   {CC3: ...IMAP hack inserted lines end here}
   LMsgEnd := False;
   if AMsg.NoDecode then begin
-    IOHandler.Capture(AMsg.Body, LDelim);
+    CaptureAndDecodeCharSet;
   end else begin
     BeginWork(wmRead);
     try
       LActiveDecoder := nil;
-      repeat
-        LLine := IOHandler.ReadLn;
-        {CC3: Check for optional flags before delimiter in the case of IMAP...}
-        if LLine = LDelim then begin  {CC3: IMAP hack ADelim -> LDelim}
-          Break;
-        end;              {CC3: IMAP hack inserted lines start here...}
-        if LCheckForOptionalImapFlags and TextStartsWith(LLine, ' FLAGS (\')   {do not localize}
-          and TextEndsWith(LLine, LDelim) then begin
-          Break;
-        end;
-        if LActiveDecoder = nil then begin
-          LActiveDecoder := TIdMessageDecoderList.CheckForStart(AMsg, LLine);
-        end;
-        if LActiveDecoder = nil then begin
-          {CC9: Per RFC821, the sender is required to add a prefixed '.' to any
-          line in an email that starts with '.' and the receiver is
-          required to strip it off.  This ensures that the end-of-message
-          line '.' cannot appear in the message body.}
-          if TextStartsWith(LLine, '.') then begin   {Do not Localize}
-            Delete(LLine,1,1);
+      try
+        repeat
+          LLine := IOHandler.ReadLn;
+          {CC3: Check for optional flags before delimiter in the case of IMAP...}
+          if LLine = LDelim then begin  {CC3: IMAP hack ADelim -> LDelim}
+            Break;
+          end;              {CC3: IMAP hack inserted lines start here...}
+          if LCheckForOptionalImapFlags and TextStartsWith(LLine, ' FLAGS (\')   {do not localize}
+            and TextEndsWith(LLine, LDelim) then begin
+            Break;
           end;
-          AMsg.Body.Add(LLine);
-        end else begin
-          while LActiveDecoder <> nil do begin
-            LActiveDecoder.SourceStream := TIdTCPStream.Create(Self);
-            LActiveDecoder.ReadHeader;
-            case LActiveDecoder.PartType of
-              mcptUnknown:
-              begin
-                raise EIdException.Create(RSMsgClientUnkownMessagePartType);
-              end;
-              mcptText:
-              begin
-                LActiveDecoder := ProcessTextPart(LActiveDecoder);
-              end;
-              mcptAttachment:
-              begin
-                LActiveDecoder := ProcessAttachment(LActiveDecoder);
-              end;
-              mcptIgnore:
-              begin
-                FreeAndNil(LActiveDecoder);
+          if LActiveDecoder = nil then begin
+            LActiveDecoder := TIdMessageDecoderList.CheckForStart(AMsg, LLine);
+          end;
+          if LActiveDecoder = nil then begin
+            {CC9: Per RFC821, the sender is required to add a prefixed '.' to any
+            line in an email that starts with '.' and the receiver is
+            required to strip it off.  This ensures that the end-of-message
+            line '.' cannot appear in the message body.}
+            if TextStartsWith(LLine, '.') then begin   {Do not Localize}
+              Delete(LLine,1,1);
+            end;
+            AMsg.Body.Add(LLine);
+          end else begin
+            while LActiveDecoder <> nil do begin
+              LActiveDecoder.SourceStream := TIdTCPStream.Create(Self);
+              LActiveDecoder.ReadHeader;
+              case LActiveDecoder.PartType of
+                mcptUnknown:    raise EIdException.Create(RSMsgClientUnkownMessagePartType);
+                mcptText:       LActiveDecoder := ProcessTextPart(LActiveDecoder);
+                mcptAttachment: LActiveDecoder := ProcessAttachment(LActiveDecoder);
+                mcptIgnore:     FreeAndNil(LActiveDecoder);
               end;
             end;
           end;
-        end;
-      until LMsgEnd;
+        until LMsgEnd;
+      finally
+        FreeAndNil(LActiveDecoder);
+      end;
     finally
       EndWork(wmRead);
     end;
