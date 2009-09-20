@@ -449,7 +449,7 @@ var
   intermediateCAStream: TResourceStream;
 {$ENDIF}
 begin
-  inherited Create(True);      // Create suspended.
+  inherited Create(False);
   fUISync := TCriticalSection.Create;
   fGetter := AGetter;
   fSettings := ASettings;
@@ -479,8 +479,6 @@ begin
     intermediateCAStream.Free;
   end;
 {$ENDIF}
-
-  Resume;
 end;
 
 destructor TTCPThread.Destroy;

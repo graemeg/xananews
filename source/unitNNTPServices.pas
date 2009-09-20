@@ -1738,9 +1738,9 @@ begin
   end;
 
   if Assigned(gGetVersionThread) then
-    gGetVersionThread.Resume;
+    gGetVersionThread.Start;
   if Assigned(gNetworkMonitorThread) then
-    gNetworkMonitorThread.Resume;
+    gNetworkMonitorThread.Start;
 end;
 
 (*----------------------------------------------------------------------*
@@ -6912,24 +6912,24 @@ begin
     end;
 
     if Loaded and (Self is TSubscribedGroup) then with TSubscribedGroup(Self) do
-      begin
-      i := GetLastArticle;      // nb.  Get's current high water mark or highest
-                                // article no - whichever's higher
+    begin
+      i := GetLastArticle;    // nb.  Get's current high water mark or highest
+                              // article no - whichever's higher
 
-        if lastArt > i then     // If highest ever article is even higher, use that
-          fHighWaterMark := lastArt;
+      if lastArt > i then     // If highest ever article is even higher, use that
+        fHighWaterMark := lastArt;
 
-        if fHighWaterMark <= lastCurrentArticle then
-          fHighWaterMark := 0;
+      if fHighWaterMark <= lastCurrentArticle then
+        fHighWaterMark := 0;
 
-        reg := CreateGroupRegistry(KEY_READ or KEY_WRITE);
-        if Assigned(reg) then
-        try
-          reg.SetIntegerValue('Last Article', fHighWatermark, 0);
-        finally
-          reg.Free;
-        end;
+      reg := CreateGroupRegistry(KEY_READ or KEY_WRITE);
+      if Assigned(reg) then
+      try
+        reg.SetIntegerValue('Last Article', fHighWatermark, 0);
+      finally
+        reg.Free;
       end;
+    end;
 
   finally
     try

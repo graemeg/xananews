@@ -320,7 +320,10 @@ begin
     if RawSameText(Copy(s1, 1, 11), 'References:') then
       s1 := RawStringReplace(s1, '><', '> <', [rfReplaceAll])  // Fix dodgy references
     else if RawSameText(Copy(s1, 1, 5), 'Face:') then
-      s1 := RawStringReplace(S, ' ', '', [rfReplaceAll]);      // Remove folding spaces from Face headers
+    begin
+      s1 := RawStringReplace(s1, ' ', '', [rfReplaceAll]);      // Remove folding spaces from Face headers
+      s1 := RawStringReplace(s1,  #9, '', [rfReplaceAll]);
+    end;
 
     hdrs[i] := RawTrim(s1);
   end;
@@ -1276,9 +1279,21 @@ begin
 end;
 
 function SafeDateTimeToInternetStr(const Value: TDateTime; const AIsGMT: Boolean = False): string;
+
+  function FastLocalDateTimeToGMT(const Value: TDateTime; const AUseGMTStr: Boolean = False) : String;
+  var
+    wDay, wMonth, wYear: Word;
+  begin
+    // It's fast because it uses the global gOffsetFromUTC instead of asking windows for it each time.
+    DecodeDate(Value, wYear, wMonth, wDay);
+    Result := IndyFormat('%s, %d %s %d %s %s',    {do not localize}
+                     [wdays[DayOfWeek(Value)], wDay, monthnames[wMonth],
+                      wYear, FormatDateTime('HH":"nn":"ss', Value), {do not localize}
+                      UTCOffsetToStr(gOffsetFromUTC, AUseGMTStr)]);
+  end;
 begin
   try
-    Result := LocalDateTimeToGMT(Value, AIsGMT);
+    Result := FastLocalDateTimeToGMT(Value, AIsGMT);
   except
     Result := 'Fri, 17 Nov 1961 08:00:00 GMT';
   end;

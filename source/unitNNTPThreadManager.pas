@@ -110,7 +110,7 @@ type
     property OnNotifyNewGroups: TOnNotifyNewGroups read fOnNotifyNewGroups write fOnNotifyNewGroups;
   end;
 
-  TNetworkMonitorThread = class(TThread)
+  TNetworkMonitorThread = class(TXnThread)
   private
     FOverlap: OVERLAPPED;
     FHandle: THandle;
