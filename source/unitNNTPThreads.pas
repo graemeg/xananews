@@ -276,6 +276,7 @@ begin
           NNTP.NewsAgent := ThreadManager.NewsAgent;
           NNTP.Connect;
           NNTP.IOHandler.DefStringEncoding := Indy8BitEncoding;
+          NNTP.IOHandler.MaxLineAction := maSplit;
           fGreet := NNTP.Greeting.Text.Text;
           Synchronize(SetGreeting);
           if ServerSettings.AlwaysAuthenticate then
