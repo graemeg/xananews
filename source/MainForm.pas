@@ -1,4 +1,4 @@
-(*======================================================================*
+ï»¿(*======================================================================*
  | MainForm unit for XanaNews Newsreader                                |
  |                                                                      |
  | The contents of this file are subject to the Mozilla Public License  |
@@ -11,7 +11,7 @@
  | the License for the specific language governing rights and           |
  | limitations under the License.                                       |
  |                                                                      |
- | Copyright © Colin Wilson 2002-2005  All Rights Reserved              |
+ | Copyright (c) Colin Wilson 2002-2005  All Rights Reserved            |
  |                                                                      |
  | Version  Date        By    Description                               |
  | -------  ----------  ----  ------------------------------------------|
@@ -27,8 +27,6 @@ interface
 
 {$WARN UNIT_PLATFORM OFF}
 
-{$define mad_except}
-
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, ToolWin, ActnList,
@@ -41,8 +39,8 @@ uses
   ActiveX, unitNewsThread, DateUtils,
   cmpThemedScrollBox, unitSavedArticles, StdCtrls, MMSystem, unitBatches, unitSettings,
   ExportDialog,
-{$ifdef mad_except}
-  madExceptVcl, madExcept,
+{$ifdef madExcept}
+  madExcept,
 {$endif}
   unitBookmarks, cmpSplitterPanel, unitNewsStringsDisplayObject,
   unitGetMessages1, unitMailServices, Tabs, ButtonGroup, CategoryButtons,
@@ -466,7 +464,6 @@ type
     dlgImportCompressed: TOpenDialog;
     actFileImportCompressed: TAction;
     ImportCompressedMessages1: TMenuItem;
-    MadExceptionHandler1: TMadExceptionHandler;
     actArticleChangeSubject: TAction;
     actToolsTestCrash: TAction;
     CrashXanaNews1: TMenuItem;
@@ -669,7 +666,6 @@ type
     procedure FormResize(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure GotoSelectedURL1Click(Sender: TObject);
-    procedure MadExceptionHandler1Exceptionx(frozen: Boolean; exceptObject: TObject; exceptAddr: Pointer; var bugReport: string; var canContinue, handled: Boolean);
     procedure MessageScrollBox1MouseWheel(Sender: TObject; Shift: TShiftState; WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
     procedure MessageScrollBox1DoubleClick(Sender: TObject);
     procedure PersistentPositionGetSettingsClass(Owner: TObject; var SettingsClass: TExSettingsClass);
@@ -983,11 +979,6 @@ type
 //    fOldMonitorWindowProc: TWndMethod;
     fDontMarkOnLeave: Boolean;
     fOptionsFormActive: Boolean;
-{$ifdef ConditionalExpressions}
- {$if CompilerVersion = 18.5}
-    fIsIconized: Boolean;
- {$ifend}
-{$endif}
 
     procedure DisplayBookmarks(visible: Boolean);
     procedure PopulateSearchBarOpCombo;
@@ -2600,7 +2591,6 @@ var
   settings: TDisplaySettings;
   acc: TNNTPAccount;
   grp: TSubscribedGroup;
-  st: TSystemTime;
 begin
   acc := GetFocusedAccount;
   grp := GetFocusedGroup;
@@ -2641,14 +2631,6 @@ begin
         else
         begin
           dt := Trunc(dlg.DatePicker.DateTime);
-          if dlg.TimePicker.Checked then
-          begin
-            // Workaround for Delphi's handling of an unchecked TDateTimePicker
-            // in Vista (also see QC55052)
-            // TODO: re-check when D2009 update 3 is out.
-            if DateTime_GetSystemtime(dlg.TimePicker.Handle, &st) = GDT_VALID then
-              dt := dt + Frac(dlg.TimePicker.DateTime);
-          end;
         end;
 
       filter := TNNTPFilter.Create('', ftDate, opLess, dt, False, False, False);
@@ -2727,6 +2709,8 @@ begin
       if fm.ShowModal = mrOK then
       begin
         XNOptions.Save;
+        if fDisableShortcutCount = 0 then
+          XNOptions.SaveKeyboardShortcuts;
         NNTPAccounts.SaveToRegistry;
 
         vstSubscribed.RootNodeCount := 0;
@@ -2962,7 +2946,7 @@ begin
   if E is EidSocketError then
     if (EidSocketError(E).LastError = 10054) or (EidSocketError(E).LastError = 0) then
       MessageBeep($FFFF)       // WSACONNRESET.  Not really an error, but
-                                // squeak anyway.
+                               // squeak anyway.
     else
       Application.ShowException(E)
   else
@@ -3130,7 +3114,7 @@ begin
   if not Result then
   begin
     EnumWindows(@EnumWindowsProc, gUniqueMessage);
-    madExcept.CloseApplication;
+    TerminateProcess(GetCurrentProcess, 1);
   end
 end;
 
@@ -3719,13 +3703,13 @@ begin
   // Enable/Disable main menu shortcuts.  Disable shortcuts before
   // displaying modeless forms - otherwise the shortcuts trigger instead
   // of (eg.) typing space into edit box.
-  if not enable then        // Only enable on first call
+  if not enable then         // Only disable on first call
   begin
     Inc(fDisableShortcutCount);
     if fDisableShortcutCount > 1 then
       Exit;
   end
-  else                  // Only disable on last call
+  else                       // Only enable on last call
   begin
     Dec(fDisableShortcutCount);
     if fDisableShortcutCount < 0 then
@@ -3738,8 +3722,7 @@ begin
   begin
     action := TCustomAction(alMain.Actions[i]);
 
-    if enable then   // Re-enable shortcuts by restoring action shortcuts
-                     // from action tags.
+    if enable then   // Re-enable shortcuts by restoring action shortcuts from action tags.
     begin
       action.ShortCut := action.Tag;
       action.Tag := 0;
@@ -7535,14 +7518,35 @@ begin
   Refresh_vstSubscribed;
 end;
 
+var
+  rmTaskbarCreated: DWord;
+
 procedure TfmMain.WndProc(var Message: TMessage);
 begin
+  if rmTaskbarCreated = 0 then
+    rmTaskbarCreated := RegisterWindowMessage('TaskbarCreated');
+
   // Monitor the message queue for the unique message we registered at
   // the beginning.  Part of the 'run once' functionality
   if Message.Msg = gUniqueMessage then
   begin
     actTrayOpenExecute(nil);
     Message.Result := $F00B00;
+  end
+  else if Message.Msg = rmTaskbarCreated then
+  begin
+    // Destroy and recreate trayicon when explorer restarts.
+    try
+      TrayIcon1.Free;
+    except
+      // it will fail because it no longer exists when the explorer restarts.
+    end;
+    TrayIcon1 := TTrayIcon.Create(Self);
+    TrayIcon1.Visible := XNOptions.ShowInSystemTray;
+    TrayIcon1.Hint := 'XanaNews v ' + ProductVersion;
+    TrayIcon1.PopupMenu := pomTrayMenu;
+    TrayIcon1.OnDblClick := TrayIcon1DblClick;
+    fHadUnread := not fHadUnread;
   end
   else
     inherited;
@@ -8308,14 +8312,17 @@ begin
   if dlgImportArticles.Execute then
   begin
     folder := TArticleFolder.CreateFile(dlgImportArticles.FileName, False, True);
-
-    fReloadedList.Clear;
-    repeat
-      article := folder.SequentialReadArticle;
-      if Assigned(article) then
-        DoReloadFolderArticle(article, 1)
-    until not Assigned(article);
-    FixupReloadedGroups;
+    try
+      fReloadedList.Clear;
+      repeat
+        article := folder.SequentialReadArticle;
+        if Assigned(article) then
+          DoReloadFolderArticle(article, 1)
+      until not Assigned(article);
+      FixupReloadedGroups;
+    finally
+      folder.Free;
+    end;
   end;
 end;
 
@@ -8375,41 +8382,8 @@ begin
 end;
 
 procedure TfmMain.WMSysCommand(var Message: TWMSysCommand);
-{$ifdef ConditionalExpressions}
- {$if CompilerVersion = 18.5}
-var
-  I: Integer;
- {$ifend}
-{$endif}
 begin
   inherited;
-{$ifdef ConditionalExpressions}
- {$if CompilerVersion = 18.5}  {18.5 = D2007 Re-check on later versions}
-  if Application.MainFormOnTaskBar then
-  begin
-    case (Message.CmdType and $FFF0) of
-      SC_MINIMIZE:
-        begin
-          fIsIconized := True;
-          for I := fModelessWindowList.Count - 1 downto 0 do
-            ShowWindow(TCustomForm(fModelessWindowList[I]).Handle, SW_HIDE);
-        end;
-      SC_MAXIMIZE,
-      SC_RESTORE:
-        begin
-          if fIsIconized then
-          begin
-            for I := 0 to fModelessWindowList.Count - 1 do
-              ShowWindow(TCustomForm(fModelessWindowList[I]).Handle, SW_RESTORE);
-            fIsIconized := False;
-          end;
-        end;
-    end;
-  end;
- {$elseif CompilerVersion > 18.5}
-   {.$Message Warn 'Re-check if above fix is still needed on later versions. Also see: http://qc.codegear.com/wc/qcmain.aspx?d=65418'}
- {$ifend}
-{$endif}
 end;
 
 procedure TfmMain.actViewGroupMultipartExecute(Sender: TObject);
@@ -8872,20 +8846,6 @@ begin
     vstSubscribed.FocusedNode := node;
     vstSubscribed.Selected[node] := True;
   end;
-end;
-
-procedure TfmMain.MadExceptionHandler1Exceptionx(frozen: Boolean;
-  exceptObject: TObject; exceptAddr: Pointer; var bugReport: string;
-  var canContinue, handled: Boolean);
-begin
-  if exceptObject is EidSocketError then
-    if (EidSocketError(exceptObject).LastError = 10054) or (EidSocketError(exceptObject).LastError = 0) then
-    begin
-      MessageBeep($FFFF);        // WSACONNRESET.  Not really an error, but
-                                 // squeak anyway.
-      handled := True;
-      canContinue := True;
-    end;
 end;
 
 procedure TfmMain.actArticleChangeSubjectExecute(Sender: TObject);
@@ -9593,7 +9553,15 @@ end;
 
 procedure TfmMain.WmNameThread(var msg: TMessage);
 begin
-  NameThread(msg.WParam, UTF8Encode(PChar(msg.LParam)));
+  {$ifdef madExcept}
+    NameThread(msg.WParam, UTF8Encode(PChar(msg.LParam)));
+  {$else}
+    {$ifdef ConditionalExpressions}
+      {$if CompilerVersion >= 21.0}
+        TThread.NameThreadForDebugging(UTF8Encode(PChar(msg.LParam)), msg.WParam);
+      {$ifend}
+    {$endif}
+  {$endif}
 end;
 
 procedure TfmMain.WmGetConnected(var msg: TMessage);

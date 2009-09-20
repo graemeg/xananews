@@ -195,7 +195,6 @@ object fmMain: TfmMain
             Height = 21
             Style = csDropDownList
             Anchors = [akLeft, akTop, akRight]
-            ItemHeight = 13
             TabOrder = 0
             OnChange = cbCharsetChange
           end
@@ -430,7 +429,6 @@ object fmMain: TfmMain
           Height = 21
           Style = csDropDownList
           Anchors = [akTop, akRight]
-          ItemHeight = 13
           TabOrder = 2
           OnChange = cbBookmarkChange
         end
@@ -705,7 +703,6 @@ object fmMain: TfmMain
         Height = 22
         Style = csOwnerDrawFixed
         DropDownCount = 20
-        ItemHeight = 16
         TabOrder = 0
         TabStop = False
         OnSelect = cbBatchesSelect
@@ -975,7 +972,6 @@ object fmMain: TfmMain
         Width = 105
         Height = 21
         Style = csDropDownList
-        ItemHeight = 13
         ItemIndex = 0
         TabOrder = 0
         Text = 'Message'
@@ -993,7 +989,6 @@ object fmMain: TfmMain
         Width = 121
         Height = 21
         Style = csDropDownList
-        ItemHeight = 13
         TabOrder = 1
       end
       object edSearchBarText: TEdit
@@ -6339,10 +6334,6 @@ object fmMain: TfmMain
     Filter = 'XanaNews Compressed Files (*.xns)|*.xns'
     Left = 638
     Top = 405
-  end
-  object MadExceptionHandler1: TMadExceptionHandler
-    Left = 638
-    Top = 365
   end
   object dlgSaveHTML: TSaveDialog
     DefaultExt = 'HTM'
