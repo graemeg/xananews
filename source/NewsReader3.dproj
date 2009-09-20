@@ -7,7 +7,7 @@
 			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
 			<DCC_DependencyCheckOutputName>..\bin\NewsReader3.exe</DCC_DependencyCheckOutputName>
 			<ProjectVersion>12.0</ProjectVersion>
-			<Config Condition="'$(Config)'==''">Full Debug mode</Config>
+			<Config Condition="'$(Config)'==''">Release</Config>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
 			<Base>true</Base>
@@ -34,7 +34,7 @@
 			<DCC_UnitSearchPath>..\dcus;..\components\thirdparty\madCollection;..\components\ImageTypes\Source;..\components\LowLevel\Source;..\components\MiscUnits\Source;..\components\thirdparty\VirtualTreeView\Source;..\components\thirdparty\Indy10\Core;..\components\thirdparty\Indy10\Protocols;..\components\thirdparty\Indy10\System;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<DCC_ExeOutput>..\bin</DCC_ExeOutput>
 			<DCC_DcuOutput>..\dcus</DCC_DcuOutput>
-			<DCC_UsePackage>vclx;vcl;dbrtl;Rave76VCL;bdertl;rtl;vclactnband;xmlrtl;vcldb;vcldbx;dsnap;dsnapcon;TeeUI;TeeDB;Tee;adortl;vclib;ibxpress;IndyCore;IndySystem;IndyProtocols;inet;intrawebdb_100_120;Intraweb_100_120;VclSmp;vclie;websnap;webdsnap;inetdbbde;inetdbxpress;soaprtl;vclribbon;DbxCommonDriver;DbxClientDriver;DBXInterBaseDriver;DBXMySQLDriver;dbexpress;dbxcds;RulerD2009;VirtualTreesD12;LismarD2009;VirtualTreesExD2009;madBasic_;madDisAsm_;madExcept_;MiscUnitsD2009;ImageTypesD2009;LowLevelD2009</DCC_UsePackage>
+			<DCC_UsePackage>vclx;vcl;dbrtl;Rave76VCL;bdertl;rtl;vclactnband;xmlrtl;vcldb;vcldbx;dsnap;dsnapcon;TeeUI;TeeDB;Tee;adortl;vclib;ibxpress;IndyCore;IndySystem;IndyProtocols;inet;intrawebdb_100_120;Intraweb_100_120;VclSmp;vclie;websnap;webdsnap;inetdbbde;inetdbxpress;soaprtl;vclribbon;DbxCommonDriver;DbxClientDriver;DBXInterBaseDriver;DBXMySQLDriver;dbexpress;dbxcds;RulerD2009;VirtualTreesD12;LismarD2009;VirtualTreesExD2009;madBasic_;madDisAsm_;madExcept_;ImageTypesD2009</DCC_UsePackage>
 			<DCC_WIDECHAR_REDUCED>false</DCC_WIDECHAR_REDUCED>
 			<DCC_DependencyCheckOutputName>..\bin\NewsReader3.exe</DCC_DependencyCheckOutputName>
 		</PropertyGroup>
@@ -352,7 +352,7 @@
 						<VersionInfo Name="MajorVer">1</VersionInfo>
 						<VersionInfo Name="MinorVer">19</VersionInfo>
 						<VersionInfo Name="Release">1</VersionInfo>
-						<VersionInfo Name="Build">204</VersionInfo>
+						<VersionInfo Name="Build">215</VersionInfo>
 						<VersionInfo Name="Debug">False</VersionInfo>
 						<VersionInfo Name="PreRelease">False</VersionInfo>
 						<VersionInfo Name="Special">False</VersionInfo>
@@ -364,7 +364,7 @@
 					<VersionInfoKeys>
 						<VersionInfoKeys Name="CompanyName">Colin Wilson</VersionInfoKeys>
 						<VersionInfoKeys Name="FileDescription">XanaNews News Reader</VersionInfoKeys>
-						<VersionInfoKeys Name="FileVersion">1.19.1.204</VersionInfoKeys>
+						<VersionInfoKeys Name="FileVersion">1.19.1.215</VersionInfoKeys>
 						<VersionInfoKeys Name="InternalName">XanaNews</VersionInfoKeys>
 						<VersionInfoKeys Name="LegalCopyright">Copyright (c) XanaNews 2009</VersionInfoKeys>
 						<VersionInfoKeys Name="LegalTrademarks">All Rights Reserved</VersionInfoKeys>
@@ -374,10 +374,10 @@
 						<VersionInfoKeys Name="Comments"/>
 					</VersionInfoKeys>
 					<Excluded_Packages>
-						<Excluded_Packages Name="$(BDS)\bin\dclofficexp120.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
-						<Excluded_Packages Name="$(BDS)\bin\dcloffice2k120.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
-						<Excluded_Packages Name="$(BDS)\bin\bcbofficexp120.bpl">CodeGear C++Builder Office XP Servers Package</Excluded_Packages>
-						<Excluded_Packages Name="$(BDS)\bin\bcboffice2k120.bpl">CodeGear C++Builder Office 2000 Servers Package</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\bcboffice2k140.bpl">Embarcadero C++Builder Office 2000 Servers Package</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\bcbofficexp140.bpl">Embarcadero C++Builder Office XP Servers Package</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\dcloffice2k140.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
+						<Excluded_Packages Name="$(BDS)\bin\dclofficexp140.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
 					</Excluded_Packages>
 					<Source>
 						<Source Name="MainSource">NewsReader3.dpr</Source>

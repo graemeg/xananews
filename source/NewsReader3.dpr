@@ -2,11 +2,11 @@ program NewsReader3;
 
 uses
   FastMM4,
+  madExcept,
+  madLinkDisAsm,
   madListHardware,
   madListProcesses,
   madListModules,
-  madExcept,
-  madLinkDisAsm,
   Forms,
   Windows,
   SysUtils,
@@ -156,6 +156,6 @@ begin
     Application.Title := 'XanaNews';
     Application.HelpFile := 'XanaNews.chm';
     Application.CreateForm(TfmMain, fmMain);
-  Application.Run
+    Application.Run
   end
 end.
