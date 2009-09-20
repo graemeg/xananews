@@ -195,7 +195,7 @@ begin
       for i := 0 to article.Msg.MessageParts.Count - 1 do
       begin
         mp := article.Msg.MessageParts[i];
-        if mp.FileName <> '' then
+        if (mp.FileName <> '') and (CompareText(mp.FileName, 'text/plain') <> 0) then
         begin
           fileName := mp.FileName;
           Break;
