@@ -477,6 +477,7 @@ begin
   try
     repeat
       S := IOHandler.ReadLn();
+      LogMessage(S, False);
       Bytes := ToBytes(S, Indy8BitEncoding);
       L := Length(Bytes);
       if L > 0 then
@@ -515,6 +516,7 @@ begin
   try
     repeat
       S := IOHandler.ReadLn();
+      LogMessage(S, False);
       Bytes := ToBytes(S, Indy8BitEncoding);
       L := Length(Bytes);
       if L > 0 then
