@@ -2,10 +2,10 @@ unit unitCheckVersion;
 
 interface
 
-uses Windows, Dialogs, Classes, SysUtils, Forms, SyncObjs;
+uses Windows, Dialogs, Classes, SysUtils, Forms, SyncObjs, XnClasses;
 
 type
-  TGetVersionThread = class(TThread)
+  TGetVersionThread = class(TXnThread)
   private
     fDiallupTrigger: TEvent;
     fPermissionGranted: boolean;

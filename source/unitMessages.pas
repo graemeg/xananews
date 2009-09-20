@@ -637,7 +637,9 @@ begin
       if CompareText(SplitString(':', s), 'Face') = 0 then
       try
         s := StringReplace(s, ' ', '', [rfReplaceAll]);      // Remove folding spaces from Face headers
-        s := StringReplace(s, #9, '', [rfReplaceAll]);       // Buggy [PlethoraNews Engine v1.0 RC5c].
+        s := StringReplace(s,  #9, '', [rfReplaceAll]);      // Note: older versions did not remove FWS when receiving
+                                                             //       face-headers, as the current versions does.
+                                                             //       So these were stored in the message.fat file.
         facePngStrm := nil;
         png := nil;
         faceDecoder := TIdDecoderMIME.Create(nil);

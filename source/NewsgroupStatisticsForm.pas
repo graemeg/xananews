@@ -446,7 +446,7 @@ begin
   for I := 0 to fStatistics.fPosters.Count - 1 do
   begin
     Stat := TStatistic(fStatistics.fPosters.Objects[I]);
-    Report.Add(Format('%7d  %8d  %-26.26s  %-25.25s',[Stat.Ranking, Stat.Number, fStatistics.fPosters[I], Stat.DataString]));
+    Report.Add(Format('%7d  %8d  %-26.26s  %-25.25s', [Stat.Ranking, Stat.Number, fStatistics.fPosters[I], Stat.DataString]));
   end;
   Report.Add('');
   Report.Add('');
@@ -468,7 +468,7 @@ begin
   if Assigned(fGroup) then
     Result := fGroup.Owner
   else
-    Result := nil;  
+    Result := nil;
 end;
 
 procedure TfmNewsgroupStatistics.lvCustomDrawSubItem(
