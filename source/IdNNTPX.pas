@@ -602,17 +602,23 @@ begin
   // NOTE: Responses must be passed as arrays so that the proper inherited SendCmd is called
   // and a stack overflow is not caused.
   Result := inherited SendCmd(AOut, [], AEncoding);
-
   LogMessage('[tx] ' + AOut);
   LogMessage('[rx] ' + IntToStr(LastCmdResult.NumericCode) + ' ' + LastCmdResult.Text.Text, False, False);
 
   if (Result = 480) or (Result = 450) then
   begin
     Result := inherited SendCmd('AuthInfo User ' + Username, [281, 381]);
+    LogMessage('[rx] ' + IntToStr(LastCmdResult.NumericCode) + ' ' + LastCmdResult.Text.Text, False, False);
 
     if Result = 381 then
+    begin
       inherited SendCmd('AuthInfo Pass ' + Password, [281]);
+      LogMessage('[rx] ' + IntToStr(LastCmdResult.NumericCode) + ' ' + LastCmdResult.Text.Text, False, False);
+    end;
+
     Result := inherited SendCmd(AOut, AResponse, AEncoding);
+    LogMessage('[tx] ' + AOut);
+    LogMessage('[rx] ' + IntToStr(LastCmdResult.NumericCode) + ' ' + LastCmdResult.Text.Text, False, False);
   end
   else
     Result := CheckResponse(Result, AResponse);

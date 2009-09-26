@@ -358,7 +358,7 @@ type
     procedure Clear; override;
     procedure DeleteRequest(idx: Integer); override;
     procedure AddPostToList(hdr: TAnsiStrings; const msg: RawByteString; attachments: TObjectList; ACodepage: Integer; ATextPartStyle: TTextPartStyle);
-    property UseOutbasket: Boolean read fUseOutbasket;
+    property UseOutbasket: Boolean read fUseOutbasket write fUseOutbasket;
   end;
 
   TEmailer = class;
@@ -1821,7 +1821,7 @@ begin
     if multipartBoundary <> '' then
     begin
       msg.Add('This is a multipart message in MIME format');
-      msg.Add('');  // Do we need this ??
+      msg.Add('');
       msg.Add('--' + multipartBoundary);
 
       mimeCharsetName := RawCodepageToMIMECharsetName(fCodepage);

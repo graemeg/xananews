@@ -2,11 +2,13 @@ program NewsReader3;
 
 uses
   FastMM4,
-  madExcept,
-  madLinkDisAsm,
-  madListHardware,
-  madListProcesses,
-  madListModules,
+  {$ifdef madExcept}
+    madExcept,
+    madLinkDisAsm,
+    madListHardware,
+    madListProcesses,
+    madListModules,
+  {$endif}
   Forms,
   Windows,
   SysUtils,

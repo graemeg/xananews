@@ -311,7 +311,13 @@ begin
         fLastError := E.Message;
         State := tsPending;
 
-        st := 'Error in thread "' + Getter.GetterRootText + '" - ' + fLastError;
+        st := 'Error in thread "' + Getter.GetterRootText + '" - ';
+        st := st + 'Class: ' + E.ClassName;
+        if (e is EIdReplyRFCError) then
+          st := st + ', ErrorCode: ' + IntToStr(EIdReplyRFCError(E).ErrorCode);
+        if (e is EIdSocketError) then
+          st := st + ', LastError: ' + IntToStr(EIdSocketError(E).LastError);
+        st := st + ', Message: ' + fLastError;
         LogMessage(st, True);
 
         if not gAppTerminating then
@@ -350,8 +356,18 @@ begin
           //    10054 = Connection reset by peer             (=EIdSocketError)
           if ServerFault or (E is EIdReadTimeout) then
           begin
-            Sleep(250);
-            Synchronize(ThreadManager.JogThreads);
+            if Getter is TPoster then
+            begin
+              // If it concerns a posting thread, pause it, to prevent
+              // (possible) dublicate posts to end up on the server.
+              TPoster(Getter).Paused := True;
+              TPoster(Getter).UseOutbasket := True;
+            end
+            else
+            begin
+              Sleep(250);
+              Synchronize(ThreadManager.JogThreads);
+            end;
           end;
         end;
 
