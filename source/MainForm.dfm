@@ -548,6 +548,7 @@ object fmMain: TfmMain
         TreeOptions.MiscOptions = [toAcceptOLEDrop, toInitOnSave, toWheelPanning]
         TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowRoot, toShowTreeLines, toThemeAware]
         TreeOptions.SelectionOptions = [toFullRowSelect, toMultiSelect, toRightClickSelect]
+        OnDblClick = vstQueuedRequestsDblClick
         OnGetText = vstQueuedRequestsGetText
         OnGetImageIndex = vstQueuedRequestsGetImageIndex
         OnInitChildren = vstQueuedRequestsInitChildren

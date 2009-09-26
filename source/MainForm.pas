@@ -892,10 +892,11 @@ type
     procedure vstBookmarkInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
     procedure vstBookmarkResize(Sender: TObject);
 
-    procedure vstQueuedRequestsInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
-    procedure vstQueuedRequestsInitChildren(Sender: TBaseVirtualTree; Node: PVirtualNode; var ChildCount: Cardinal);
+    procedure vstQueuedRequestsDblClick(Sender: TObject);
     procedure vstQueuedRequestsGetImageIndex(Sender: TBaseVirtualTree; Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex; var Ghosted: Boolean; var ImageIndex: Integer);
     procedure vstQueuedRequestsGetText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
+    procedure vstQueuedRequestsInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
+    procedure vstQueuedRequestsInitChildren(Sender: TBaseVirtualTree; Node: PVirtualNode; var ChildCount: Cardinal);
 
     procedure vstSubscribedAfterItemPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; ItemRect: TRect);
     procedure vstSubscribedCollapsed(Sender: TBaseVirtualTree; Node: PVirtualNode);
@@ -2177,18 +2178,18 @@ begin
   // Edit a 'post message' queued request.
   getter := GetQNodeGetter(vstQueuedRequests.FocusedNode, idx);
 
-                                // Must be a 'post message' request
-  if idx <> -1 then
+  if idx <> -1 then             // Must be a 'post message' request
+  begin
     if getter is TPoster then
     begin
       poster := TPoster(getter);
 
       if not poster.UseOutbasket then
-        poster.Paused := True;
-                                  // Pause it so that it doesn't suddenly get sent
+        poster.Paused := True;    // Pause it so that it doesn't suddenly get sent
                                   // while we're editing it!
                                   // Make sure that it still exists.  Now it's
                                   // paused it ain't going anywhere!
+
       Application.CreateForm(TfmPostMessage, frm);
       try
         frm.OnDestroy := ModelessWindowFormDestroy;
@@ -2199,7 +2200,7 @@ begin
         try
           frm.PosterRequest := TPosterRequest(requests[idx]);
         finally
-          poster.UnlockList
+          poster.UnlockList;
         end;
         frm.Show;
         fModelessWindowList.Add(frm);
@@ -2219,12 +2220,13 @@ begin
           efrm.OnDeactivate := ModelessWindowFormDeactivate;
           efrm.EMailerRequest := TEMailerRequest(TEmailer(Getter).Messages[idx]);
           efrm.Show;
-          fModelessWindowList.Add(efrm)
+          fModelessWindowList.Add(efrm);
         except
           efrm.Free;
-          raise
-        end
-      end
+          raise;
+        end;
+      end;
+  end;
 end;
 
 procedure TfmMain.actQRPauseExecute(Sender: TObject);
@@ -6779,6 +6781,16 @@ begin
   end;
 end;
 
+procedure TfmMain.vstQueuedRequestsDblClick(Sender: TObject);
+var
+  QGetter: TTCPGetter;
+  QIdx: Integer;
+begin
+  QGetter := GetQNodeGetter(vstQueuedRequests.FocusedNode, QIdx);
+  if (QIdx <> -1) and ((QGetter is TPoster) or (QGetter is TEmailer)) then
+    actQREditExecute(Sender);
+end;
+
 procedure TfmMain.vstQueuedRequestsGetImageIndex(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Kind: TVTImageKind; Column: TColumnIndex;
   var Ghosted: Boolean; var ImageIndex: Integer);
@@ -6798,7 +6810,11 @@ begin
   getter := TTCPGetter(data^);
   try
     if (getter is TPoster) or (getter is TEmailer) then
-      ImageIndex := 16                  // Post icon
+    begin
+      ImageIndex := 16;                 // Post icon
+      if getter.State = tsPending then
+        if getter.Paused then ImageIndex := 21; // Red
+    end
     else
       case getter.State of
         tsDormant: if Getter.Connected then
