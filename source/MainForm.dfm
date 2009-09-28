@@ -3749,7 +3749,7 @@ object fmMain: TfmMain
       object DeleteThread1: TMenuItem
         Action = actArticleDeleteThread
       end
-      object IgnoreUnignoreThread1: TMenuItem
+      object IgnoreUnignoreThread2: TMenuItem
         Action = actArticleIgnoreThread
       end
       object MarkUnmarkThreadasInteresting1: TMenuItem
@@ -5395,6 +5395,9 @@ object fmMain: TfmMain
         end
         object mnuMessageDeleteThread: TMenuItem
           Action = actArticleDeleteThread
+        end
+        object IgnoreUnignoreThread1: TMenuItem
+          Action = actArticleIgnoreThread
         end
         object actArticleMarkThreadAsInteresting1: TMenuItem
           Action = actArticleMarkThreadAsInteresting

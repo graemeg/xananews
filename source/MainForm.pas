@@ -654,6 +654,7 @@ type
     spGoToWebForum: TSpeedButton;
     actArticleIgnoreThread: TAction;
     IgnoreUnignoreThread1: TMenuItem;
+    IgnoreUnignoreThread2: TMenuItem;
     procedure ApplicationEvents1Activate(Sender: TObject);
     procedure ApplicationEvents1Deactivate(Sender: TObject);
     procedure ApplicationEvents1Exception(Sender: TObject; E: Exception);
