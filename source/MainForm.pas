@@ -652,6 +652,8 @@ type
     pomSortGroupsByName: TMenuItem;
     actAccountSortGroupsByName: TAction;
     spGoToWebForum: TSpeedButton;
+    actArticleIgnoreThread: TAction;
+    IgnoreUnignoreThread1: TMenuItem;
     procedure ApplicationEvents1Activate(Sender: TObject);
     procedure ApplicationEvents1Deactivate(Sender: TObject);
     procedure ApplicationEvents1Exception(Sender: TObject; E: Exception);
@@ -705,6 +707,7 @@ type
     procedure actArticleGotoPreviousExecute(Sender: TObject);
     procedure actArticleIgnoreBranchExecute(Sender: TObject);
     procedure actArticleIgnoreExecute(Sender: TObject);
+    procedure actArticleIgnoreThreadExecute(Sender: TObject);
     procedure actArticleMarkAsReadExecute(Sender: TObject);
     procedure actArticleMarkBranchAsReadExecute(Sender: TObject);
     procedure actArticleMarkMessageAsInterestingExecute(Sender: TObject);
@@ -1046,6 +1049,7 @@ type
     procedure DoCheckArticle(article: TArticleBase; param: Integer; multiSelect: Boolean);
     procedure DoCheckArticleRead(article: TArticleBase; param: Integer; multiSelect: Boolean);
     procedure DoCheckArticleFlagged(article: TArticleBase; param: Integer; multiSelect: Boolean);
+    procedure DoCheckArticleIgnored(article: TArticleBase; param: Integer; multiSelect: Boolean);
     procedure DoMoveToSelectedFolder(article: TArticleBase; param: Integer; multiSelect: Boolean);
     procedure DoMoveToBookmark(article: TArticleBase; param: Integer; multiSelect: Boolean);
     procedure DoReloadFolderArticle(article: TFolderArticle; param: Integer);
@@ -3406,11 +3410,8 @@ begin
 end;
 
 procedure TfmMain.DoFlagArticle(article: TArticleBase; param: Integer; multiSelect: Boolean);
-var
-  interesting: Boolean;
 begin
-  interesting := Boolean(param);
-  article.IsInteresting := interesting;
+  article.IsInteresting := Boolean(param);
 end;
 
 procedure TfmMain.DoGetArticleBody(article: TArticleBase; param: Integer; multiSelect: Boolean);
@@ -6185,8 +6186,9 @@ begin
   spFixedFont.Visible := not IsFontFixed(XNOptions.Appearance[apMessagePane].FontName);
 
   actArticleMarkMessageAsInteresting.Enabled := hasFocusedArticle;
-  actArticleIgnoreBranch.Enabled := hasFocusedArticle;
   actArticleIgnore.Enabled := hasFocusedArticle;
+  actArticleIgnoreBranch.Enabled := hasFocusedArticle;
+  actArticleIgnoreThread.Enabled := hasSelCount;
   actArticleRetrieveParentMessages.Enabled := hasFocusedArticle;
   actArticleCombineDecode.Enabled := (selCount > 1) or
     ((selCount = 1) and isNNTPArticle and FocusedArticle.Owner.GroupMultiPartMessages and
@@ -9765,23 +9767,10 @@ begin
   end;
 end;
 
-procedure TfmMain.actArticleIgnoreBranchExecute(Sender: TObject);
-var
-  article: TArticleBase;
-begin
-  article := GetFocusedArticle;
-  if Assigned(article) then
-    ForEachArticleInBranch(article, DoIgnoreArticle, Integer(not article.IsIgnore));
-  vstArticles.Invalidate;
-end;
-
 procedure TfmMain.DoIgnoreArticle(article: TArticleBase; param: Integer;
   multiSelect: Boolean);
-var
-  ignore: Boolean;
 begin
-  ignore := Boolean(param);
-  article.IsIgnore := ignore;
+  article.IsIgnore := Boolean(param);
 end;
 
 procedure TfmMain.WmShowNewsgroupList(var msg: TMessage);
@@ -10202,6 +10191,13 @@ procedure TfmMain.DoCheckArticleFlagged(article: TArticleBase; param: Integer;
   multiSelect: Boolean);
 begin
   if not article.IsInteresting then
+    fIteratorFailed := True;
+end;
+
+procedure TfmMain.DoCheckArticleIgnored(article: TArticleBase; param: Integer;
+  multiSelect: Boolean);
+begin
+  if not article.IsIgnore then
     fIteratorFailed := True;
 end;
 
@@ -10861,6 +10857,30 @@ begin
       param := 1;
     ForEachSelectedArticle(DoIgnoreArticle, param);
   end;
+end;
+
+procedure TfmMain.actArticleIgnoreBranchExecute(Sender: TObject);
+var
+  article: TArticleBase;
+begin
+  article := GetFocusedArticle;
+  if Assigned(article) then
+    ForEachArticleInBranch(article, DoIgnoreArticle, Integer(not article.IsIgnore));
+  vstArticles.Invalidate;
+end;
+
+procedure TfmMain.actArticleIgnoreThreadExecute(Sender: TObject);
+var
+  mark: Boolean;
+  article: TArticleBase;
+begin
+  article := GetNodeArticle(vstArticles.GetFirstSelected);
+
+  ForEachArticleInThread(article, DoCheckArticleIgnored, 0);
+  mark := fIteratorFailed;
+
+  ForEachArticleInThread(article, DoIgnoreArticle, Integer(mark));
+  vstArticles.Invalidate;
 end;
 
 procedure TfmMain.actViewHideIgnoredMessagesExecute(Sender: TObject);

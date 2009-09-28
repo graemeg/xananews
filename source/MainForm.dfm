@@ -3749,6 +3749,9 @@ object fmMain: TfmMain
       object DeleteThread1: TMenuItem
         Action = actArticleDeleteThread
       end
+      object IgnoreUnignoreThread1: TMenuItem
+        Action = actArticleIgnoreThread
+      end
       object MarkUnmarkThreadasInteresting1: TMenuItem
         Action = actArticleMarkThreadAsInteresting
       end
@@ -4776,12 +4779,25 @@ object fmMain: TfmMain
       Hint = 'Copy the message'#39's XFace to the clipboard'
       OnExecute = actMessageCopyXFaceExecute
     end
+    object actArticleIgnore: TAction
+      Category = 'Article'
+      Caption = 'Ignore/Unignore Message'
+      OnExecute = actArticleIgnoreExecute
+    end
     object actArticleIgnoreBranch: TAction
       Category = 'Article'
       Caption = 'Ignore/Unignore Branch'
       Hint = 'Mark the selected branch as ignore/unignore'
       ShortCut = 16463
       OnExecute = actArticleIgnoreBranchExecute
+    end
+    object actArticleIgnoreThread: TAction
+      Category = 'Article'
+      Caption = 'Ignore/Unignore Thread'
+      Enabled = False
+      Hint = 'Mark the selected thread as ignore/unignore'
+      ShortCut = 24655
+      OnExecute = actArticleIgnoreThreadExecute
     end
     object actArticleRetrieveParentMessages: TAction
       Category = 'Article'
@@ -4879,11 +4895,6 @@ object fmMain: TfmMain
       Caption = 'E&xecute Attachment'
       OnExecute = actMessageExecuteAttachmentExecute
     end
-    object actArticleIgnore: TAction
-      Category = 'Article'
-      Caption = 'Ignore/Unignore Message'
-      OnExecute = actArticleIgnoreExecute
-    end
     object actViewHideIgnoredMessages: TAction
       Category = 'View'
       Caption = 'Hide Ignored Messages'
@@ -4927,6 +4938,7 @@ object fmMain: TfmMain
     object actArticleMarkThreadAsInteresting: TAction
       Category = 'Article'
       Caption = 'Mark/Unmark Thread as Interesting'
+      Enabled = False
       ShortCut = 24649
       OnExecute = actArticleMarkThreadAsInterestingExecute
     end
