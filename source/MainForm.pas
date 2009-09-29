@@ -62,7 +62,7 @@ type
   TColumnHeaderStatus = set of TColumnHeaderValue;
 
   TGetMessagesParams = record     // Used for getting messages for multiple groups
-    fromArticle: Integer;        // .. passed as a parameter to ForEachSelectedGroup
+    fromArticle: Integer;         // .. passed as a parameter to ForEachSelectedGroup
     batchRef: Integer;
     useDefaultGroupSettings: Boolean;
                                   // If this flags is set, get the settings below from
@@ -1783,7 +1783,7 @@ var
   act: TNNTPAccount;
   params: TGetMessagesParams;
 begin
-  // 'Get Everything; (lightning bolt button)
+  // 'Get Everything (lightning bolt button)
   for i := 0 to NNTPAccounts.Count - 1 do
   begin
     act := NNTPAccounts.Items[i];
@@ -1836,7 +1836,7 @@ begin
   begin
     delete := not article.IsDeleted;
     ForEachSelectedArticle(DoFlagArticle, 0);  // They're actively deleting it
-                                                // Therefore it's no longer interesting.
+                                               // Therefore it's no longer interesting.
 
     if ForEachSelectedArticle(DoDeleteArticle, Integer(delete)) = 1 then
       NextArticle([], GetFocusedArticle);

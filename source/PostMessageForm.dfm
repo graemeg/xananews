@@ -1,9 +1,9 @@
 object fmPostMessage: TfmPostMessage
-  Left = 117
-  Top = 202
+  Left = 441
+  Top = 218
   Caption = 'Post Message'
-  ClientHeight = 408
-  ClientWidth = 652
+  ClientHeight = 454
+  ClientWidth = 640
   Color = clBtnFace
   Constraints.MinHeight = 259
   Constraints.MinWidth = 549
@@ -20,8 +20,8 @@ object fmPostMessage: TfmPostMessage
   OnResize = FormResize
   OnShow = FormShow
   DesignSize = (
-    652
-    408)
+    640
+    454)
   PixelsPerInch = 96
   TextHeight = 13
   object Label2: TLabel
@@ -50,25 +50,23 @@ object fmPostMessage: TfmPostMessage
   object cbGroup: TComboBox
     Left = 79
     Top = 12
-    Width = 471
+    Width = 457
     Height = 21
     Anchors = [akLeft, akTop, akRight]
-    ItemHeight = 13
     TabOrder = 0
   end
   object cbFollowUpTo: TComboBox
     Left = 79
     Top = 36
-    Width = 471
+    Width = 457
     Height = 21
     Anchors = [akLeft, akTop, akRight]
-    ItemHeight = 13
     TabOrder = 1
   end
   object edSubject: TExRichEdit
     Left = 79
     Top = 58
-    Width = 471
+    Width = 457
     Height = 23
     RightMargin = 0
     Anchors = [akLeft, akTop, akRight]
@@ -85,7 +83,7 @@ object fmPostMessage: TfmPostMessage
     WordWrap = False
   end
   object btnCrossPost: TButton
-    Left = 568
+    Left = 552
     Top = 12
     Width = 21
     Height = 21
@@ -95,7 +93,7 @@ object fmPostMessage: TfmPostMessage
     OnClick = btnCrossPostClick
   end
   object btnFollowUp: TButton
-    Left = 568
+    Left = 552
     Top = 36
     Width = 21
     Height = 21
@@ -107,8 +105,8 @@ object fmPostMessage: TfmPostMessage
   inline fmePost1: TfmePost
     Left = 0
     Top = 88
-    Width = 652
-    Height = 320
+    Width = 639
+    Height = 366
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 3
     TabStop = True
@@ -116,72 +114,39 @@ object fmPostMessage: TfmPostMessage
     ExplicitWidth = 652
     ExplicitHeight = 320
     inherited Label1: TLabel
-      Left = 310
-      Top = 269
+      Left = 297
       Width = 65
-      ExplicitLeft = 310
-      ExplicitTop = 269
       ExplicitWidth = 65
     end
     inherited Label2: TLabel
-      Left = 338
-      Top = 292
+      Left = 325
       Width = 34
-      ExplicitLeft = 338
-      ExplicitTop = 292
       ExplicitWidth = 34
     end
-    inherited ScrollBox1: TScrollBox
-      Width = 542
-      Height = 253
-      ExplicitWidth = 542
-      ExplicitHeight = 253
-      inherited mmoMessage: TExRichEdit
-        Font.Height = -15
-      end
+    inherited lbISpellLanguage: TLabel
+      Width = 48
+      ExplicitWidth = 48
     end
-    inherited cbCheckSpelling: TCheckBox
-      Top = 279
-      ExplicitTop = 279
+    inherited ScrollBox1: TScrollBox
+      Width = 529
     end
     inherited cbCharset: TComboBox
-      Left = 381
-      Top = 265
-      Width = 169
-      ExplicitLeft = 381
-      ExplicitTop = 265
-      ExplicitWidth = 169
+      Left = 367
     end
     inherited btnCancel: TButton
-      Left = 564
-      Top = 284
-      ExplicitLeft = 564
-      ExplicitTop = 284
+      Left = 551
     end
     inherited btnOK: TButton
-      Left = 564
-      Top = 252
-      ExplicitLeft = 564
-      ExplicitTop = 252
+      Left = 551
     end
     inherited btnAttachments: TButton
-      Left = 564
-      ExplicitLeft = 564
+      Left = 551
     end
     inherited btnAdvanced: TButton
-      Left = 564
-      OnClick = fmePost1btnAdvancedClick
-      ExplicitLeft = 564
-    end
-    inherited btnSpell: TBitBtn
-      Top = 273
-      ExplicitTop = 273
+      Left = 551
     end
     inherited cbIdentity: TComboBox
-      Left = 381
-      Top = 289
-      ExplicitLeft = 381
-      ExplicitTop = 289
+      Left = 367
     end
   end
   object PersistentPosition1: TPersistentPosition

@@ -38,6 +38,8 @@ type
     Label1: TLabel;
     Label2: TLabel;
     cbIdentity: TComboBox;
+    lbISpellLanguage: TLabel;
+    cbISpellLanguage: TComboBox;
     procedure btnOKClick(Sender: TObject);
     procedure mnuUndoClick(Sender: TObject);
     procedure mnuCutClick(Sender: TObject);
@@ -109,7 +111,7 @@ begin
 
   if okToPost then
   begin
-    CWSpellChecker1.LanguageIdx := fPostingSettings.DefaultSpellLanguage;
+    CWSpellChecker1.LanguageIdx := Integer(cbISpellLanguage.Items.Objects[cbISpellLanguage.ItemIndex]);
     CWSpellChecker1.QuoteChars := '>|';
     skipFirstLine := fIsReply and
                      (fPostingSettings.PostingStyle <> psTop) and
@@ -237,12 +239,32 @@ begin
         Attachments.Add(TAttachment.Create(TAttachment(att[i]).PathName));
   end;
 
-
   mmoMessage.RightMargin := PostingSettings.MaxPostLineLength;
 
   fSpellInstalled := gDefaultISpellLanguage <> -1;
   fCheckSpelling := fSpellInstalled and XNOptions.CheckSpelling;
+
+  if fSpellInstalled then
+  begin
+    cbISpellLanguage.Sorted := False;
+    for i := 0 to TSpellChecker.LanguageCount - 1 do
+      cbISpellLanguage.Items.AddObject(TSpellChecker.Language(i).name, TObject(i));
+    cbISpellLanguage.Sorted := True;
+
+    for i := 0 to cbISpellLanguage.Items.Count - 1 do
+      if Integer(cbISpellLanguage.Items.Objects[i]) = fPostingSettings.DefaultSpellLanguage then
+      begin
+        cbISpellLanguage.ItemIndex := i;
+        Break;
+      end;
+  end;
+
   cbCheckSpelling.Checked := fCheckSpelling;
+  lbISpellLanguage.Enabled := fCheckSpelling;
+  lbISpellLanguage.Visible := fSpellInstalled;
+  cbISpellLanguage.Enabled := fCheckSpelling;
+  cbISpellLanguage.Visible := fSpellInstalled;
+
   SendMessage(mmoMessage.Handle, CM_FONTCHANGED, 0, 0);
 
   mmoMessage.ClearUndoBuffer;
@@ -288,6 +310,7 @@ begin
 
   btnSpell.Enabled := fSpellInstalled;
   cbCheckSpelling.Enabled := fSpellInstalled;
+  cbISpellLanguage.Enabled := fSpellInstalled;
 end;
 
 procedure TfmePost.mnuUndoClick(Sender: TObject);
@@ -319,7 +342,7 @@ procedure TfmePost.btnSpellClick(Sender: TObject);
 var
   skipFirstLine: Boolean;
 begin
-  CWSpellChecker1.LanguageIdx := fPostingSettings.DefaultSpellLanguage;
+  CWSpellChecker1.LanguageIdx := Integer(cbISpellLanguage.Items.Objects[cbISpellLanguage.ItemIndex]);
   CWSpellChecker1.QuoteChars := '>|';
   skipFirstLine := fIsReply and
                    (fPostingSettings.PostingStyle <> psTop) and

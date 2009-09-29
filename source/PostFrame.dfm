@@ -24,6 +24,14 @@ object fmePost: TfmePost
     Anchors = [akRight, akBottom]
     Caption = 'Identity'
   end
+  object lbISpellLanguage: TLabel
+    Left = 9
+    Top = 338
+    Width = 47
+    Height = 13
+    Anchors = [akLeft, akBottom]
+    Caption = 'Language'
+  end
   object ScrollBox1: TScrollBox
     Left = 8
     Top = 0
@@ -73,7 +81,7 @@ object fmePost: TfmePost
   end
   object cbCheckSpelling: TCheckBox
     Left = 8
-    Top = 325
+    Top = 311
     Width = 97
     Height = 17
     Anchors = [akLeft, akBottom]
@@ -81,13 +89,12 @@ object fmePost: TfmePost
     TabOrder = 3
   end
   object cbCharset: TComboBox
-    Left = 392
+    Left = 391
     Top = 311
-    Width = 167
+    Width = 169
     Height = 21
     Style = csDropDownList
     Anchors = [akRight, akBottom]
-    ItemHeight = 13
     TabOrder = 5
     OnChange = cbCharsetChange
   end
@@ -135,9 +142,9 @@ object fmePost: TfmePost
     TabOrder = 1
   end
   object btnSpell: TBitBtn
-    Left = 104
-    Top = 319
-    Width = 89
+    Left = 112
+    Top = 307
+    Width = 90
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = 'Check Now'
@@ -180,9 +187,17 @@ object fmePost: TfmePost
     Height = 21
     Style = csDropDownList
     Anchors = [akRight, akBottom]
-    ItemHeight = 13
     TabOrder = 6
     OnChange = cbIdentityChange
+  end
+  object cbISpellLanguage: TComboBox
+    Left = 68
+    Top = 335
+    Width = 133
+    Height = 21
+    Style = csDropDownList
+    Anchors = [akLeft, akBottom]
+    TabOrder = 9
   end
   object PopupMenu1: TPopupMenu
     Left = 696
