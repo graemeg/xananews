@@ -34,7 +34,7 @@ uses
   cmpNTAboutBox, ComCtrls, ExtCtrls, VirtualTrees, ConTnrs, unitNNTPServices,
   Menus, AppEvnts, ExtDlgs, cmpMessageScrollBox, cmpExSplitter,
   unitMessages, PostMessageForm, ReplyByMailForm, unitNewsReaderOptions,
-  Buttons, {unitHTMLHelpViewer,} SearchDialog,
+  Buttons, SearchDialog,
   ShellApi, NewsGlobals, CommCtrl,
   ActiveX, unitNewsThread, DateUtils,
   cmpThemedScrollBox, unitSavedArticles, StdCtrls, MMSystem, unitBatches, unitSettings,
@@ -630,8 +630,8 @@ type
     rbFilter: TRadioButton;
     Button1: TButton;
     ilMainLarge: TImageList;
-    ImageList3: TImageList;
-    ImageList4: TImageList;
+    ImageList3_NotUsedYet: TImageList;
+    ImageList4_NotUsedYet: TImageList;
     actToolsSearchbarGo: TAction;
     mnuViewToolbars: TMenuItem;
     ShowSearchBar2: TMenuItem;
@@ -4635,6 +4635,7 @@ var
     Result := StringReplace(Result, '%mail%', article.FromEmail, [rfReplaceAll, rfIgnoreCase]);
     Result := StringReplace(Result, '%group%', article.Owner.Name, [rfReplaceAll, rfIgnoreCase]);
     Result := StringReplace(Result, '%forename%', ForeName(article.FromName), [rfReplaceAll, rfIgnoreCase]);
+    Result := StringReplace(Result, '%newline%', #13#10, [rfReplaceAll, rfIgnoreCase]);
   end;
 
 begin
@@ -11058,14 +11059,16 @@ procedure TfmMain.vstArticlesAdvancedHeaderDraw(Sender: TVTHeader;
 var
   idx: Integer;
 begin
-  if hpeSortGlyph in Elements then with PaintInfo do if ShowSortGlyph then
-  begin
-    if vstArticles.Header.SortDirection = VirtualTrees.sdAscending then
-      idx := 34
-    else
-      idx := 33;
-    ImageList1.Draw(TargetCanvas, SortGlyphPos.X, SortGlyphPos.Y, idx);
-  end;
+  if hpeSortGlyph in Elements then
+    with PaintInfo do
+      if ShowSortGlyph then
+      begin
+        if vstArticles.Header.SortDirection = VirtualTrees.sdAscending then
+          idx := 34
+        else
+          idx := 33;
+        ImageList1.Draw(TargetCanvas, SortGlyphPos.X, SortGlyphPos.Y, idx);
+      end;
 end;
 
 procedure TfmMain.vstArticlesHeaderDrawQueryElements(Sender: TVTHeader;

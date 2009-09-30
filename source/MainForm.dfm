@@ -1,12 +1,12 @@
 object fmMain: TfmMain
-  Left = 682
-  Top = 153
+  Left = 612
+  Top = 154
   HelpType = htKeyword
   HelpKeyword = 'Workspace'
   ActiveControl = vstSubscribed
   Caption = 'fmMain'
-  ClientHeight = 512
-  ClientWidth = 809
+  ClientHeight = 585
+  ClientWidth = 952
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -26,8 +26,8 @@ object fmMain: TfmMain
   TextHeight = 13
   object StatusBar: TStatusBar
     Left = 0
-    Top = 490
-    Width = 809
+    Top = 563
+    Width = 952
     Height = 22
     AutoHint = True
     Font.Charset = ANSI_CHARSET
@@ -54,8 +54,8 @@ object fmMain: TfmMain
   end
   object pnlRight: TPanel
     Left = 294
-    Top = 58
-    Width = 481
+    Top = 120
+    Width = 640
     Height = 431
     BevelOuter = bvNone
     FullRepaint = False
@@ -63,16 +63,17 @@ object fmMain: TfmMain
     object spltArticles: TExSplitter
       Left = 0
       Top = 201
-      Width = 481
+      Width = 640
       Height = 6
       Cursor = crVSplit
       Align = alTop
       MinSize = 1
+      ExplicitWidth = 481
     end
     object pnlMessage: TPanel
       Left = 0
       Top = 207
-      Width = 481
+      Width = 640
       Height = 224
       Align = alClient
       BevelOuter = bvNone
@@ -81,8 +82,8 @@ object fmMain: TfmMain
       object pnlMessageHeader: TPanel
         Left = 0
         Top = 0
-        Width = 481
-        Height = 25
+        Width = 640
+        Height = 27
         Align = alTop
         BevelOuter = bvNone
         FullRepaint = False
@@ -90,8 +91,8 @@ object fmMain: TfmMain
         object pnlDetailsBar: TPanel
           Left = 0
           Top = 0
-          Width = 226
-          Height = 25
+          Width = 385
+          Height = 27
           Align = alClient
           Alignment = taLeftJustify
           BevelInner = bvLowered
@@ -99,17 +100,17 @@ object fmMain: TfmMain
           TabOrder = 0
         end
         object pnlCharset: TPanel
-          Left = 226
+          Left = 385
           Top = 0
           Width = 255
-          Height = 25
+          Height = 27
           Align = alRight
           Alignment = taLeftJustify
           BevelOuter = bvNone
           TabOrder = 1
           DesignSize = (
             255
-            25)
+            27)
           object spFixedFont: TSpeedButton
             Left = 2
             Top = 2
@@ -204,7 +205,7 @@ object fmMain: TfmMain
     object pnlArticles: TPanel
       Left = 0
       Top = 0
-      Width = 481
+      Width = 640
       Height = 201
       Align = alTop
       BevelOuter = bvNone
@@ -213,17 +214,18 @@ object fmMain: TfmMain
       object spltBookmark: TExSplitter
         Left = 0
         Top = 122
-        Width = 481
+        Width = 640
         Height = 6
         Cursor = crVSplit
         Align = alBottom
         MinSize = 1
         Visible = False
+        ExplicitWidth = 481
       end
       object vstArticles: TVirtualStringTree
         Left = 0
         Top = 0
-        Width = 481
+        Width = 640
         Height = 122
         HelpType = htKeyword
         HelpKeyword = 'Workspace'
@@ -235,13 +237,9 @@ object fmMain: TfmMain
         DragMode = dmAutomatic
         Header.AutoSizeIndex = -1
         Header.DefaultHeight = 17
-        Header.Font.Charset = DEFAULT_CHARSET
-        Header.Font.Color = clWindowText
-        Header.Font.Height = -11
-        Header.Font.Name = 'MS Sans Serif'
-        Header.Font.Style = []
         Header.Height = 18
         Header.Options = [hoColumnResize, hoDrag, hoHotTrack, hoOwnerDraw, hoShowSortGlyphs, hoVisible]
+        Header.ParentFont = True
         HintMode = hmHint
         Images = ImageList1
         NodeDataSize = 4
@@ -308,7 +306,7 @@ object fmMain: TfmMain
       object pnlBookmark: TPanel
         Left = 0
         Top = 128
-        Width = 481
+        Width = 640
         Height = 73
         Align = alBottom
         BevelOuter = bvNone
@@ -316,31 +314,28 @@ object fmMain: TfmMain
         TabOrder = 1
         Visible = False
         DesignSize = (
-          481
+          640
           73)
         object Bevel1: TBevel
           Left = 0
           Top = 0
-          Width = 481
+          Width = 640
           Height = 73
           Align = alClient
           Shape = bsTopLine
+          ExplicitWidth = 481
         end
         object vstBookmark: TVirtualStringTree
           Left = 0
           Top = 24
-          Width = 481
+          Width = 640
           Height = 49
           Anchors = [akLeft, akTop, akRight, akBottom]
           BevelInner = bvNone
           Header.AutoSizeIndex = 0
           Header.DefaultHeight = 17
-          Header.Font.Charset = DEFAULT_CHARSET
-          Header.Font.Color = clWindowText
-          Header.Font.Height = -11
-          Header.Font.Name = 'MS Sans Serif'
-          Header.Font.Style = []
           Header.Options = [hoColumnResize, hoDrag, hoVisible]
+          Header.ParentFont = True
           NodeDataSize = 4
           TabOrder = 0
           TreeOptions.PaintOptions = [toHideFocusRect, toShowButtons, toShowRoot, toShowTreeLines, toThemeAware]
@@ -423,7 +418,7 @@ object fmMain: TfmMain
           end
         end
         object cbBookmark: TComboBox
-          Left = 278
+          Left = 437
           Top = 2
           Width = 200
           Height = 21
@@ -437,7 +432,7 @@ object fmMain: TfmMain
   end
   object pnlLeft: TPanel
     Left = 16
-    Top = 58
+    Top = 120
     Width = 273
     Height = 431
     BevelOuter = bvNone
@@ -474,13 +469,9 @@ object fmMain: TfmMain
       Font.Style = []
       Header.AutoSizeIndex = 0
       Header.DefaultHeight = 17
-      Header.Font.Charset = DEFAULT_CHARSET
-      Header.Font.Color = clWindowText
-      Header.Font.Height = -11
-      Header.Font.Name = 'MS Sans Serif'
-      Header.Font.Style = []
       Header.MainColumn = -1
       Header.Options = [hoColumnResize, hoDrag]
+      Header.ParentFont = True
       HintMode = hmHint
       Images = ImageList1
       NodeDataSize = 4
@@ -533,12 +524,8 @@ object fmMain: TfmMain
         Align = alClient
         Header.AutoSizeIndex = -1
         Header.DefaultHeight = 17
-        Header.Font.Charset = DEFAULT_CHARSET
-        Header.Font.Color = clWindowText
-        Header.Font.Height = -11
-        Header.Font.Name = 'MS Sans Serif'
-        Header.Font.Style = []
         Header.Options = [hoAutoResize, hoColumnResize, hoDrag]
+        Header.ParentFont = True
         HintAnimation = hatNone
         Images = ilMain
         NodeDataSize = 4
@@ -602,7 +589,7 @@ object fmMain: TfmMain
   end
   object ProgressBar1: TProgressBar
     Left = 184
-    Top = 496
+    Top = 567
     Width = 150
     Height = 16
     Smooth = True
@@ -613,7 +600,7 @@ object fmMain: TfmMain
     Left = 0
     Top = 112
     Width = 4
-    Height = 378
+    Height = 451
     Align = alLeft
     AutoSize = True
     BevelledSplitters = False
@@ -626,10 +613,10 @@ object fmMain: TfmMain
     OnDockDrop = SplitterPanel1DockDrop
   end
   object SplitterPanel2: TSplitterPanel
-    Left = 805
+    Left = 948
     Top = 112
     Width = 4
-    Height = 378
+    Height = 451
     Align = alRight
     AutoSize = True
     BevelledSplitters = False
@@ -644,7 +631,7 @@ object fmMain: TfmMain
   object SplitterPanel3: TSplitterPanel
     Left = 0
     Top = 106
-    Width = 809
+    Width = 952
     Height = 6
     Align = alTop
     AutoSize = True
@@ -659,7 +646,7 @@ object fmMain: TfmMain
   object cbMain: TCoolBar
     Left = 0
     Top = 0
-    Width = 809
+    Width = 952
     Height = 106
     AutoSize = True
     Bands = <
@@ -667,31 +654,31 @@ object fmMain: TfmMain
         Control = tbMenu
         ImageIndex = -1
         MinHeight = 21
-        Width = 807
+        Width = 950
       end
       item
         Control = tbMain
         ImageIndex = -1
         MinHeight = 36
-        Width = 807
+        Width = 950
       end
       item
         Control = pnlSearchBar
         ImageIndex = -1
         MinHeight = 21
-        Width = 807
+        Width = 950
       end
       item
         Control = pnlBatchBar
         ImageIndex = -1
         MinHeight = 22
-        Width = 807
+        Width = 950
       end>
     EdgeBorders = []
     object pnlBatchBar: TPanel
       Left = 11
       Top = 84
-      Width = 798
+      Width = 941
       Height = 22
       Alignment = taLeftJustify
       BevelOuter = bvNone
@@ -728,7 +715,7 @@ object fmMain: TfmMain
     object tbMain: TToolBar
       Left = 11
       Top = 23
-      Width = 798
+      Width = 941
       Height = 36
       AutoSize = True
       ButtonHeight = 36
@@ -866,7 +853,7 @@ object fmMain: TfmMain
     object tbMenu: TToolBar
       Left = 11
       Top = 0
-      Width = 798
+      Width = 941
       Height = 21
       ButtonHeight = 21
       ButtonWidth = 61
@@ -1038,8 +1025,8 @@ object fmMain: TfmMain
     end
   end
   object ilMain: TImageList
-    Left = 376
-    Top = 440
+    Left = 368
+    Top = 460
     Bitmap = {
       494C010126002700040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       000000000000360000002800000040000000A0000000010020000000000000A0
@@ -2371,12 +2358,12 @@ object fmMain: TfmMain
   object NTAboutBox: TNTAboutBox
     Copyright = 'Copyright '#169' Colin Wilson 2006'
     DisplaySupportLink = True
-    Left = 440
-    Top = 440
+    Left = 792
+    Top = 460
   end
   object ImageList1: TImageList
-    Left = 536
-    Top = 440
+    Left = 278
+    Top = 194
     Bitmap = {
       494C010123002400040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000009000000001002000000000000090
@@ -3576,8 +3563,8 @@ object fmMain: TfmMain
   object pomMessage: TPopupMenu
     Images = ilMain
     OnPopup = pomMessagePopup
-    Left = 736
-    Top = 408
+    Left = 336
+    Top = 356
     object ReplytoMessage1: TMenuItem
       Action = actArticleReplyToMessage
     end
@@ -3691,13 +3678,13 @@ object fmMain: TfmMain
   end
   object SavePictureDialog1: TSavePictureDialog
     Options = [ofOverwritePrompt, ofHideReadOnly, ofPathMustExist, ofEnableSizing]
-    Left = 568
-    Top = 440
+    Left = 708
+    Top = 410
   end
   object pomArticles: TPopupMenu
     Images = ilMain
-    Left = 704
-    Top = 440
+    Left = 328
+    Top = 148
     object Message2: TMenuItem
       Caption = 'Message'
       object pomArticlesGetArticle: TMenuItem
@@ -3830,14 +3817,14 @@ object fmMain: TfmMain
     Enabled = False
     Interval = 500
     OnTimer = Timer1Timer
-    Left = 504
-    Top = 440
+    Left = 112
+    Top = 274
   end
   object pomGroups: TPopupMenu
     Images = ilMain
     OnPopup = pomGroupsPopup
-    Left = 680
-    Top = 304
+    Left = 108
+    Top = 134
     object pomGroupsGetMessages: TMenuItem
       Action = actNewsgroupGetMessages
     end
@@ -3923,19 +3910,19 @@ object fmMain: TfmMain
     OnException = ApplicationEvents1Exception
     OnHelp = ApplicationEvents1Help
     OnHint = ApplicationEvents1Hint
-    Left = 736
-    Top = 312
+    Left = 312
+    Top = 416
   end
   object FindDialog1: TFindDialog
     OnClose = FindDialog1Close
     OnFind = FindDialog1Find
-    Left = 672
-    Top = 336
+    Left = 792
+    Top = 410
   end
   object alMain: TActionList
     Images = ilMain
-    Left = 344
-    Top = 440
+    Left = 314
+    Top = 502
     object actAccountShowNewsgroupList: TAction
       Category = 'Account'
       Caption = 'Show Newsgroup &List'
@@ -5005,8 +4992,8 @@ object fmMain: TfmMain
     AutoHotkeys = maManual
     AutoLineReduction = maManual
     Images = ilMain
-    Left = 320
-    Top = 440
+    Left = 312
+    Top = 458
     object mnuFile: TMenuItem
       Caption = '&File'
       object ExportSelectedArticles1: TMenuItem
@@ -5594,18 +5581,18 @@ object fmMain: TfmMain
     Product = 'XanaNews'
     OnGetSettingsClass = PersistentPositionGetSettingsClass
     OnGetSettingsFile = PersistentPositionGetSettingsFile
-    Left = 472
-    Top = 440
+    Left = 552
+    Top = 538
   end
   object OpenDialog1: TOpenDialog
     Filter = 'Messages (*.eml)|*.eml|Any File (*.*)|*.*'
     Options = [ofHideReadOnly, ofFileMustExist, ofEnableSizing]
-    Left = 736
-    Top = 344
+    Left = 790
+    Top = 360
   end
   object pomTrayMenu: TPopupMenu
-    Left = 704
-    Top = 376
+    Left = 900
+    Top = 538
     object Open1: TMenuItem
       Action = actTrayOpen
       Default = True
@@ -5627,8 +5614,8 @@ object fmMain: TfmMain
   object pomQueuedRequests: TPopupMenu
     Images = ilMain
     OnPopup = pomQueuedRequestsPopup
-    Left = 736
-    Top = 376
+    Left = 64
+    Top = 500
     object Pause1: TMenuItem
       Action = actQRPause
     end
@@ -6286,16 +6273,16 @@ object fmMain: TfmMain
       00000007000080070000803F0000E0FF0000FFFF0000}
     PopupMenu = pomTrayMenu
     OnDblClick = TrayIcon1DblClick
-    Left = 704
-    Top = 344
+    Left = 824
+    Top = 538
   end
   object StandardSystemMenu1: TStandardSystemMenu
-    Left = 406
-    Top = 438
+    Left = 678
+    Top = 538
   end
   object pomFolders: TPopupMenu
-    Left = 702
-    Top = 410
+    Left = 42
+    Top = 134
     object NewArchivedMessagesFolder1: TMenuItem
       Action = actFileNewFolder
     end
@@ -6327,47 +6314,47 @@ object fmMain: TfmMain
   object dlgSaveArticle: TSaveDialog
     DefaultExt = 'TXT'
     Filter = 'Text Files (*.txt)|*.txt|Any File (*.*)|*.*'
-    Left = 742
-    Top = 446
+    Left = 884
+    Top = 360
   end
   object dlgImportArticles: TOpenDialog
     DefaultExt = 'TXT'
     Filter = 'Text Files (*.txt)|*.txt|Any File (*.*)|*.*'
     Options = [ofHideReadOnly, ofFileMustExist, ofEnableSizing]
-    Left = 670
-    Top = 438
+    Left = 606
+    Top = 410
   end
   object PrinterSetupDialog1: TPrinterSetupDialog
-    Left = 670
-    Top = 366
+    Left = 886
+    Top = 410
   end
   object PrintDialog1: TPrintDialog
-    Left = 670
-    Top = 406
+    Left = 888
+    Top = 460
   end
   object dlgImportCompressed: TOpenDialog
     DefaultExt = 'XNS'
     Filter = 'XanaNews Compressed Files (*.xns)|*.xns'
-    Left = 638
-    Top = 405
+    Left = 604
+    Top = 361
   end
   object dlgSaveHTML: TSaveDialog
     DefaultExt = 'HTM'
     Filter = 'HTML Files (*.htm; *.html)|*.htm; *.html'
     Options = [ofOverwritePrompt, ofHideReadOnly, ofPathMustExist, ofEnableSizing]
-    Left = 408
-    Top = 408
+    Left = 706
+    Top = 360
   end
   object SaveExecuteDialog1: TSaveDialog
     Options = [ofOverwritePrompt, ofPathMustExist, ofEnableSizing]
-    Left = 608
-    Top = 440
+    Left = 710
+    Top = 460
   end
   object ilDisabled: TImageList
     BlendColor = cl3DLight
     DrawingStyle = dsTransparent
-    Left = 376
-    Top = 408
+    Left = 370
+    Top = 506
     Bitmap = {
       494C010126002700040010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       000000000000360000002800000040000000A0000000010020000000000000A0
@@ -7699,8 +7686,8 @@ object fmMain: TfmMain
   object ilMainLarge: TImageList
     Height = 24
     Width = 24
-    Left = 440
-    Top = 408
+    Left = 434
+    Top = 458
     Bitmap = {
       494C010126002700040018001800FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       000000000000360000002800000060000000F000000001002000000000000068
@@ -10679,10 +10666,10 @@ object fmMain: TfmMain
       FFFFF007800FFFFFFFFFFFFFFFFFFC1F00000000000000000000000000000000
       000000000000}
   end
-  object ImageList3: TImageList
+  object ImageList3_NotUsedYet: TImageList
     Height = 24
     Width = 24
-    Left = 384
+    Left = 436
     Top = 312
     Bitmap = {
       494C01013D003E00040018001800FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
@@ -15444,10 +15431,10 @@ object fmMain: TfmMain
       FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000000000000000000000000000
       000000000000}
   end
-  object ImageList4: TImageList
+  object ImageList4_NotUsedYet: TImageList
     Height = 24
     Width = 24
-    Left = 424
+    Left = 562
     Top = 312
     Bitmap = {
       494C01013D003E00040018001800FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
@@ -20212,8 +20199,8 @@ object fmMain: TfmMain
   object ilDisabledLarge: TImageList
     Height = 24
     Width = 24
-    Left = 472
-    Top = 408
+    Left = 434
+    Top = 506
     Bitmap = {
       494C010126002700040018001800FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       000000000000360000002800000060000000F000000001002000000000000068

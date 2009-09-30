@@ -4,13 +4,13 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, PropertyPageDefaultsForm, StdCtrls, ExtCtrls, PropertyPageForm, PropertyPagePosting,
-  unitSettings;
+  Dialogs, PropertyPageDefaultsForm, StdCtrls, ExtCtrls, PropertyPageForm,
+  PropertyPagePosting, unitSettings;
 
 type
   TPropertyPageQuotingData = class (TPropertyPagePostingData)
   public
-    function Apply : boolean; override;
+    function Apply: Boolean; override;
   end;
 
   TfmPropertyPageQuoting = class(TfmPropertyPageDefaults)
@@ -37,17 +37,19 @@ type
     edSalutation: TEdit;
     Label2: TLabel;
     Label19: TLabel;
+    Label20: TLabel;
+    Label21: TLabel;
     procedure edQuoteHeaderChange(Sender: TObject);
   private
-    fData : TPropertyPageQuotingData;
-    procedure InitializeControls (settings : TPostingSettings);
+    fData: TPropertyPageQuotingData;
+    procedure InitializeControls(settings: TPostingSettings);
     procedure UpdateData;
   protected
-    function CanRestoreParentSettings : boolean; override;
+    function CanRestoreParentSettings: Boolean; override;
     procedure RestoreParentSettings; override;
   public
-    class function GetDataClass : TPropertyPageDataClass; override;
-    procedure PopulateControls (AData : TPropertyPageData); override;
+    class function GetDataClass: TPropertyPageDataClass; override;
+    procedure PopulateControls(AData: TPropertyPageData); override;
   end;
 
 var
@@ -59,12 +61,12 @@ implementation
 
 { TPropertyPageQuotingData }
 
-function TPropertyPageQuotingData.Apply : boolean;
+function TPropertyPageQuotingData.Apply: Boolean;
 var
-  settings : TPostingSettings;
+  settings: TPostingSettings;
 begin
-  result := True;
-  settings := TPostingSettings (Param);
+  Result := True;
+  settings := TPostingSettings(Param);
 
   { nb. Can't just do settings.Assign (fSettings) because only some
         posting settings are handled by this form }
@@ -77,14 +79,14 @@ end;
 
 { TfmPropertyPageQuoting }
 
-function TfmPropertyPageQuoting.CanRestoreParentSettings: boolean;
+function TfmPropertyPageQuoting.CanRestoreParentSettings: Boolean;
 begin
-  result := Assigned (fData.fSettings.Parent);
+  Result := Assigned(fData.fSettings.Parent);
 end;
 
 class function TfmPropertyPageQuoting.GetDataClass: TPropertyPageDataClass;
 begin
-  result := TPropertyPageQuotingData;
+  Result := TPropertyPageQuotingData;
 end;
 
 procedure TfmPropertyPageQuoting.InitializeControls(
@@ -101,20 +103,20 @@ procedure TfmPropertyPageQuoting.PopulateControls(
 begin
   inherited;
   fData := AData as TPropertyPageQuotingData;
-  InitializeControls (fData.fSettings);
+  InitializeControls(fData.fSettings);
 end;
 
 procedure TfmPropertyPageQuoting.RestoreParentSettings;
 begin
   fData.fSettings.Assign(fData.fSettings.Parent);
   Populating := True;
-  InitializeControls (fData.fSettings);
+  InitializeControls(fData.fSettings);
   Populating := False;
 end;
 
 procedure TfmPropertyPageQuoting.UpdateData;
 var
-  settings : TPostingSettings;
+  settings: TPostingSettings;
 begin
   if Populating then Exit;
   settings := fData.fSettings;
