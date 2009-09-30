@@ -116,11 +116,13 @@ object fmPostMessage: TfmPostMessage
     inherited Label1: TLabel
       Left = 297
       Width = 65
+      ExplicitLeft = 297
       ExplicitWidth = 65
     end
     inherited Label2: TLabel
       Left = 325
       Width = 34
+      ExplicitLeft = 325
       ExplicitWidth = 34
     end
     inherited lbISpellLanguage: TLabel
@@ -129,24 +131,32 @@ object fmPostMessage: TfmPostMessage
     end
     inherited ScrollBox1: TScrollBox
       Width = 529
+      ExplicitWidth = 529
     end
     inherited cbCharset: TComboBox
       Left = 367
+      ExplicitLeft = 367
     end
     inherited btnCancel: TButton
       Left = 551
+      ExplicitLeft = 551
     end
     inherited btnOK: TButton
       Left = 551
+      ExplicitLeft = 551
     end
     inherited btnAttachments: TButton
       Left = 551
+      ExplicitLeft = 551
     end
     inherited btnAdvanced: TButton
       Left = 551
+      OnClick = fmePost1btnAdvancedClick
+      ExplicitLeft = 551
     end
     inherited cbIdentity: TComboBox
       Left = 367
+      ExplicitLeft = 367
     end
   end
   object PersistentPosition1: TPersistentPosition

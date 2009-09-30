@@ -23,7 +23,7 @@ type
   protected
     procedure UpdateActions; override;
   public
-    property PostFrame : TfmePost read fPostFrame write fPostFrame;
+    property PostFrame: TfmePost read fPostFrame write fPostFrame;
     { Public declarations }
   end;
 
@@ -38,53 +38,53 @@ uses unitNewsThread;
 
 procedure TdlgAttachments.ListView1Data(Sender: TObject; Item: TListItem);
 var
-  attachment : TAttachment;
+  attachment: TAttachment;
 begin
-  attachment := PostFrame.Attachment [item.Index];
+  attachment := PostFrame.Attachment[item.Index];
 
   Item.Caption := attachment.FileName;
-  Item.SubItems.Add (attachment.Directory);
-  Item.SubItems.Add(DateToStr (FileDateToDateTime (attachment.Date)));
-  Item.SubItems.Add(IntToStr (attachment.Size))
+  Item.SubItems.Add(attachment.Directory);
+  Item.SubItems.Add(DateToStr(FileDateToDateTime(attachment.Date)));
+  Item.SubItems.Add(IntToStr(attachment.Size));
 end;
 
 procedure TdlgAttachments.btnAddClick(Sender: TObject);
 var
-  i : Integer;
+  i: Integer;
 begin
-  if OpenPictureDialog1.Execute then
+  if OpenPictureDialog1.Execute(Handle) then
   begin
     for i := 0 to OpenPictureDialog1.Files.Count - 1 do
-      PostFrame.AddAttachment(OpenPictureDialog1.Files [i]);
+      PostFrame.AddAttachment(OpenPictureDialog1.Files[i]);
     ListView1.Items.Count := PostFrame.AttachmentCount;
-    ListView1.Invalidate
-  end
+    ListView1.Invalidate;
+  end;
 end;
 
 procedure TdlgAttachments.FormCreate(Sender: TObject);
 begin
   with ListView1 do
-    Columns [1].Width := Width - Columns [0].Width - Columns [2].Width - Columns [3].Width - 4;
+    Columns[1].Width := Width - Columns[0].Width - Columns[2].Width - Columns[3].Width - 4;
 end;
 
 procedure TdlgAttachments.btnRemoveClick(Sender: TObject);
 begin
-  if Assigned (ListView1.Selected) then
+  if Assigned(ListView1.Selected) then
   begin
     PostFrame.RemoveAttachment(ListView1.Selected.Index);
     ListView1.Items.Count := PostFrame.AttachmentCount;
-    ListView1.Invalidate
-  end
+    ListView1.Invalidate;
+  end;
 end;
 
 procedure TdlgAttachments.UpdateActions;
 begin
-  btnRemove.Enabled := Assigned (ListView1.Selected)
+  btnRemove.Enabled := Assigned(ListView1.Selected);
 end;
 
 procedure TdlgAttachments.FormShow(Sender: TObject);
 begin
-  ListView1.Items.Count := PostFrame.AttachmentCount
+  ListView1.Items.Count := PostFrame.AttachmentCount;
 end;
 
 end.

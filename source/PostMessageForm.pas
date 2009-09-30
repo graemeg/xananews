@@ -566,6 +566,8 @@ var
 begin
   dlg := TfmPostToGroups.Create(nil);
   try
+    dlg.PopupParent := Self as TCustomForm;
+    dlg.PopupMode := pmExplicit;
     dlg.Account := Account;
     dlg.Groups := cbGroup.Text;
     if dlg.ShowModal = mrOK then
@@ -620,6 +622,8 @@ var
 begin
   dlg := TfmPostToGroups.Create(nil);
   try
+    dlg.PopupParent := Self as TCustomForm;
+    dlg.PopupMode := pmExplicit;
     dlg.Account := Account;
     dlg.Groups := cbFollowUpTo.Text;
     dlg.IsFollowUp := True;

@@ -1,7 +1,6 @@
 object dlgAttachments: TdlgAttachments
   Left = 388
   Top = 228
-  AutoScroll = False
   Caption = 'Attachments'
   ClientHeight = 244
   ClientWidth = 466
@@ -88,6 +87,6 @@ object dlgAttachments: TdlgAttachments
     Filter = 'Any File (*.*)|*.*'
     Options = [ofHideReadOnly, ofAllowMultiSelect, ofFileMustExist, ofEnableSizing]
     Left = 224
-    Top = 208
+    Top = 200
   end
 end
