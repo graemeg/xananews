@@ -628,7 +628,7 @@ type
     rbSearchbarSearch: TRadioButton;
     rbBookmark: TRadioButton;
     rbFilter: TRadioButton;
-    Button1: TButton;
+    btnGo: TButton;
     ilMainLarge: TImageList;
     ImageList3_NotUsedYet: TImageList;
     ImageList4_NotUsedYet: TImageList;
@@ -1089,7 +1089,7 @@ type
     function Unsubscribe(group: TSubscribedGroup; param: Integer): Boolean;
     function MakeDormant(group: TSubscribedGroup; param: Integer): Boolean;
 
-    procedure WMSetup(var Msg: TMessage); message WM_SETUP;
+    procedure WmSetup(var Msg: TMessage); message WM_SETUP;
     procedure WmUnsubscribe(var Msg: TMessage); message WM_UNSUBSCRIBE;
     procedure WmGroupsChanging(var Msg: TMessage); message WM_GROUPSCHANGING;
     procedure WmGroupsChanged(var Msg: TMessage); message WM_GROUPSCHANGED;
@@ -1104,7 +1104,8 @@ type
     procedure WmShowNewsgroupList(var msg: TMessage); message WM_SHOWNEWSGROUPLIST;
     procedure WmApplyChanges(var msg: TMessage); message WM_APPLYCHANGES;
     procedure WmSize(var msg: TMessage); message WM_SIZE;
-    procedure WMSysCommand(var Message: TWMSysCommand); message WM_SYSCOMMAND;
+    procedure WmSysCommand(var Message: TWMSysCommand); message WM_SYSCOMMAND;
+    procedure WmFirstTime(var Msg: TMessage); message WM_FIRSTTIME;
 
     procedure SaveArticleHeaderPositions;
     procedure SaveAttachment(mp: TmvMessagePart; const fileName: string; multipart: Boolean);
@@ -1146,6 +1147,7 @@ type
     procedure LoadToolbarLayout;
     procedure SaveToolbarLayout;
   protected
+    procedure ResizeSearchBar;
     procedure UpdateActions; override;
     procedure WndProc(var Message: TMessage); override;
   public
@@ -2975,6 +2977,30 @@ begin
   if Monitor.Handle = 0 then ApplicationEvents1.CancelDispatch;
 end;
 
+type
+  TCustomCracker = class(TCustomControl)
+  public
+    property Canvas;
+  end;
+
+procedure TfmMain.ResizeSearchBar;
+begin
+  with rbSearchBarSearch do
+    Width := TCustomCracker(pnlSearchBar).Canvas.TextWidth(Caption) + 20;
+  with rbBookmark do
+  begin
+    Left := rbSearchBarSearch.Left + rbSearchBarSearch.Width + 8;
+    Width := TCustomCracker(pnlSearchBar).Canvas.TextWidth(Caption) + 20;
+  end;
+  with rbFilter do
+  begin
+    Left := rbBookmark.Left + rbBookmark.Width + 8;
+    Width := TCustomCracker(pnlSearchBar).Canvas.TextWidth(Caption) + 20;
+  end;
+  with btnGo do
+    Left := rbFilter.Left + rbFilter.Width + 8;
+end;
+
 procedure TfmMain.ApplyControlOptions;
 var
   i: Integer;
@@ -2990,6 +3016,7 @@ begin
   Self.Color := XNOptions.Appearance[apMainForm].ApplyFontAndGetColor(Self.Font);
   cbMain.Color := XNOptions.Appearance[apToolBar].ApplyFontAndGetColor(cbMain.Font);
   pnlDetailsBar.Color := XNOptions.Appearance[apMessageDetailsPanel].ApplyFontAndGetColor(pnlDetailsBar.Font);
+  ResizeSearchBar;
 
   vstArticles.Color := XNOptions.Appearance[apMessageHeaders].ApplyFontAndGetColor(vstArticles.Font);
   vstBookmark.Color := XNOptions.Appearance[apMessageHeaders].ApplyFontAndGetColor(vstArticles.Font);
@@ -4149,6 +4176,7 @@ begin
 
   XNOptions.Load;                 // Load options registry settings
   ApplyControlOptions;
+  PostMessage(Handle, WM_FIRSTTIME, 0, 0);
 
   NNTPAccounts := TNNTPAccounts.Create;
   MailAccounts := TMailAccounts.Create;
@@ -7988,6 +8016,11 @@ begin
     url := PChar(msg.CopyDataStruct.lpData);
     GotoURL(url);
   end;
+end;
+
+procedure TfmMain.WmFirstTime(var Msg: TMessage);
+begin
+  ResizeSearchBar;
 end;
 
 (*----------------------------------------------------------------------*

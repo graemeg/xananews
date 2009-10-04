@@ -186,7 +186,7 @@ object fmMain: TfmMain
           end
           object cbCharset: TComboBox
             Left = 52
-            Top = 2
+            Top = 0
             Width = 200
             Height = 21
             Style = csDropDownList
@@ -943,7 +943,7 @@ object fmMain: TfmMain
     object pnlSearchBar: TPanel
       Left = 11
       Top = 61
-      Width = 611
+      Width = 613
       Height = 21
       Alignment = taLeftJustify
       AutoSize = True
@@ -1010,10 +1010,10 @@ object fmMain: TfmMain
         Caption = 'Filter'
         TabOrder = 5
       end
-      object Button1: TButton
+      object btnGo: TButton
         Left = 588
         Top = 0
-        Width = 23
+        Width = 25
         Height = 21
         Action = actToolsSearchbarGo
         TabOrder = 6
