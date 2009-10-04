@@ -72,7 +72,7 @@ begin
         posting settings are handled by this form }
 
   settings.QuoteHeader := fSettings.QuoteHeader;
-  settings.QuoteLineMarker := fSettings.QuoteLineMarker;
+  settings.QuoteLineMarker := TrimLeft(fSettings.QuoteLineMarker);
   settings.QuoteFooter := fSettings.QuoteFooter;
   settings.QuoteSalutation := fSettings.QuoteSalutation;
 end;
@@ -94,7 +94,7 @@ procedure TfmPropertyPageQuoting.InitializeControls(
 begin
   edQuoteHeader.Text := settings.QuoteHeader;
   edQuoteFooter.Text := settings.QuoteFooter;
-  edQuoteLineMarker.Text := settings.QuoteLineMarker;
+  edQuoteLineMarker.Text := TrimLeft(settings.QuoteLineMarker);
   edSalutation.Text := settings.QuoteSalutation;
 end;
 
