@@ -1,6 +1,6 @@
 object fmMain: TfmMain
   Left = 612
-  Top = 154
+  Top = 172
   HelpType = htKeyword
   HelpKeyword = 'Workspace'
   ActiveControl = vstSubscribed
@@ -30,12 +30,6 @@ object fmMain: TfmMain
     Width = 952
     Height = 22
     AutoHint = True
-    Font.Charset = ANSI_CHARSET
-    Font.Color = clBtnText
-    Font.Height = -11
-    Font.Name = 'Tahoma'
-    Font.Pitch = fpVariable
-    Font.Style = []
     Panels = <
       item
         Width = 150
@@ -47,6 +41,7 @@ object fmMain: TfmMain
         Style = psOwnerDraw
         Width = 50
       end>
+    ParentFont = True
     UseSystemFont = False
     OnClick = StatusBarClick
     OnMouseMove = StatusBarMouseMove
@@ -638,6 +633,7 @@ object fmMain: TfmMain
     BevelledSplitters = False
     BevelOuter = bvNone
     DockSite = True
+    FullRepaint = False
     Splitters = [splBottom]
     SplitterWidth = 6
     TabOrder = 6
@@ -947,7 +943,7 @@ object fmMain: TfmMain
     object pnlSearchBar: TPanel
       Left = 11
       Top = 61
-      Width = 609
+      Width = 611
       Height = 21
       Alignment = taLeftJustify
       AutoSize = True
@@ -1017,7 +1013,7 @@ object fmMain: TfmMain
       object Button1: TButton
         Left = 588
         Top = 0
-        Width = 21
+        Width = 23
         Height = 21
         Action = actToolsSearchbarGo
         TabOrder = 6

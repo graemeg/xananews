@@ -329,14 +329,14 @@ inherited fmPropertyPageFont: TfmPropertyPageFont
     DesignSize = (
       209
       66)
-    object Label1: TLabel
+    object lblBackground: TLabel
       Left = 12
       Top = 19
       Width = 58
       Height = 13
       Caption = '&Background'
     end
-    object Label2: TLabel
+    object lblAlternateBG: TLabel
       Left = 12
       Top = 43
       Width = 60
@@ -350,7 +350,6 @@ inherited fmPropertyPageFont: TfmPropertyPageFont
       Height = 22
       Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor, cbPrettyNames]
       Anchors = [akLeft, akTop, akRight]
-      ItemHeight = 16
       TabOrder = 0
       OnChange = clrBackgroundChange
     end
@@ -361,7 +360,6 @@ inherited fmPropertyPageFont: TfmPropertyPageFont
       Height = 22
       Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor, cbPrettyNames]
       Anchors = [akLeft, akTop, akRight]
-      ItemHeight = 16
       TabOrder = 1
       OnChange = clrAlternateBGChange
     end

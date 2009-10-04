@@ -1,11 +1,14 @@
 inherited fmOptions: TfmOptions
-  Left = 189
-  Top = 224
+  Left = 604
+  Top = 165
   HelpType = htKeyword
   HelpKeyword = 'Options'
   Caption = 'XanaNews Options'
-  ExplicitWidth = 320
-  ExplicitHeight = 240
+  Font.Name = 'Tahoma'
+  ExplicitLeft = 604
+  ExplicitTop = 165
+  ExplicitWidth = 587
+  ExplicitHeight = 402
   PixelsPerInch = 96
   TextHeight = 13
   inherited Splitter1: TSplitter

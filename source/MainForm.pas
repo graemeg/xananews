@@ -44,7 +44,7 @@ uses
 {$endif}
   unitBookmarks, cmpSplitterPanel, unitNewsStringsDisplayObject,
   unitGetMessages1, unitMailServices, Tabs, ButtonGroup, CategoryButtons,
-  unitExSettings, XnClasses, XnRawByteStrings, CaptionedDockTree;
+  unitExSettings, XnClasses, XnRawByteStrings, XnCaptionedDockTree;
 
 type
 
@@ -2987,11 +2987,15 @@ begin
   tbMenu.SetBounds(XNOptions.MenuToolbarLeft, XNOptions.MenuToolbarTop, tbMenu.Width, tbMenu.Height);
   tbMain.SetBounds(XNOptions.MainToolbarLeft, XNOptions.MainToolbarTop, tbMain.Width, tbMain.Height);
 
+  Self.Color := XNOptions.Appearance[apMainForm].ApplyFontAndGetColor(Self.Font);
+  cbMain.Color := XNOptions.Appearance[apToolBar].ApplyFontAndGetColor(cbMain.Font);
+  pnlDetailsBar.Color := XNOptions.Appearance[apMessageDetailsPanel].ApplyFontAndGetColor(pnlDetailsBar.Font);
+
   vstArticles.Color := XNOptions.Appearance[apMessageHeaders].ApplyFontAndGetColor(vstArticles.Font);
   vstBookmark.Color := XNOptions.Appearance[apMessageHeaders].ApplyFontAndGetColor(vstArticles.Font);
   vstArticles.Header.MainColumn := XNOptions.TreeColumn;
   vstSubscribed.Color := XNOptions.Appearance[apSubscribedGroups].ApplyFontAndGetColor(vstSubscribed.Font);
-  vstQueuedRequests.Color := XNOptions.Appearance[apSubscribedGroups].ApplyFontAndGetColor(vstSubscribed.Font);
+  vstQueuedRequests.Color := XNOptions.Appearance[apSubscribedGroups].ApplyFontAndGetColor(vstQueuedRequests.Font);
   MessageScrollBox1.Color := XNOptions.Appearance[apMessagePane].ApplyFontAndGetColor(MessageScrollBox1.Font);
   MessageScrollBox1.ShowHeader := XNOptions.ShowHeader;
   MessageScrollBox1.Refresh(False, True);
@@ -5662,6 +5666,9 @@ begin
   if MessageScrollBox1.FixedFont = '' then
     XNOptions.Appearance[apMessagePane].Init(MessageScrollBox1.Font, MessageScrollBox1.Color);
   XNOptions.Appearance[apSubscribedGroups].Init(vstSubscribed.Font, vstSubscribed.Color);
+  XNOptions.Appearance[apMainForm].Init(Self.Font, Self.Color);
+  XNOptions.Appearance[apToolBar].Init(cbMain.Font, cbMain.Color);
+  XNOptions.Appearance[apMessageDetailsPanel].Init(pnlDetailsBar.Font, pnlDetailsbar.Color);
 end;
 
 procedure TfmMain.spPauseRequestsClick(Sender: TObject);
@@ -6207,7 +6214,7 @@ begin
 
   if Assigned(article) and article.IsOdd then
   begin
-    TargetCanvas.Brush.Color := XNOptions.Appearance[apMessageHeaders].AlternateBGColor;;
+    TargetCanvas.Brush.Color := XNOptions.Appearance[apMessageHeaders].AlternateBGColor;
     TargetCanvas.FillRect(ItemRect);
   end;
 end;

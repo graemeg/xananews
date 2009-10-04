@@ -132,10 +132,12 @@ resourcestring
 
   rstMessageTree = 'Message Tree';
   rstMessagePane = 'Message Pane';
+  rstMainForm = 'Main Form';
   rstColorsFonts = 'Colours & Fonts';
   rstColorsFontsHelp = 'Select an item in the tree below to adjust its colours and fonts.';
   rstColorFontMessageTreeHelp = 'Colour & Font settings for all Message Tree elements.  You can adjust these individually using the sections below.';
   rstColorFontMessagePaneHelp = 'Font settings for all Message Pane elements.  You can adjust these individually using the sections below.';
+  rstColorFontMainFormHelp = 'Font settings for all Main Form elements.  You can adjust these individually using the sections below.';
   rstDefaultSettings = 'Default Settings';
   rstDefaultSettingsHelp = 'The default settings in this section can be overridden per account in ''Account Properties'' or per newsgroup in ''Newsgroup Properties''.';
   rstDerivedSettings = 'Derived Settings';
@@ -159,9 +161,13 @@ resourcestring
   rstLevel2QuoteText = 'Level 2 Quotes Text';
   rstLevel3QuoteText = 'Level 3 Quotes Text';
   rstMessageEditor = 'Message Editor';
-  rstnewsgroupTree = 'Newsgroup Tree';
+  rstNewsgroupTree = 'Newsgroup Tree';
+  rstBasicElements = 'Basic elements';
+  rstToolBar = 'Toolbar';
+  rstMessageDetailsPanel = 'Message Details Panel';
   rstStandardHelp = 'Colour and Font Settings for %s';
   rstStandardHelp1 = 'Colour and Font Settings for the %s';
+  rstStandardHelp2 = 'Font Settings for the %s';
 
 type
   TThreadOrder = (toThreaded, toChronological);

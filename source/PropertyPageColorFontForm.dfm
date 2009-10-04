@@ -19,7 +19,7 @@ inherited fmPropertyPageColorFont: TfmPropertyPageColorFont
   TextHeight = 13
   object Label6: TLabel [0]
     Left = 11
-    Top = 305
+    Top = 303
     Width = 38
     Height = 13
     Anchors = [akLeft, akBottom]
@@ -316,14 +316,14 @@ inherited fmPropertyPageColorFont: TfmPropertyPageColorFont
     DesignSize = (
       209
       66)
-    object Label2: TLabel
+    object lblFont: TLabel
       Left = 12
       Top = 43
       Width = 54
       Height = 13
       Caption = 'Foreground'
     end
-    object Label1: TLabel
+    object lblBackground: TLabel
       Left = 12
       Top = 19
       Width = 58
@@ -337,7 +337,6 @@ inherited fmPropertyPageColorFont: TfmPropertyPageColorFont
       Height = 22
       Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor, cbPrettyNames]
       Anchors = [akLeft, akTop, akRight]
-      ItemHeight = 16
       TabOrder = 1
       OnChange = clrFontChange
     end
@@ -348,7 +347,6 @@ inherited fmPropertyPageColorFont: TfmPropertyPageColorFont
       Height = 22
       Style = [cbStandardColors, cbExtendedColors, cbSystemColors, cbCustomColor, cbPrettyNames]
       Anchors = [akLeft, akTop, akRight]
-      ItemHeight = 16
       TabOrder = 0
       OnChange = clrBackgroundChange
     end

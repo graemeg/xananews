@@ -1738,9 +1738,11 @@ begin
   end;
 
   if Assigned(gGetVersionThread) then
-    gGetVersionThread.Start;
+    if gGetVersionThread.Suspended then
+      gGetVersionThread.Start;
   if Assigned(gNetworkMonitorThread) then
-    gNetworkMonitorThread.Start;
+    if gNetworkMonitorThread.Suspended then
+      gNetworkMonitorThread.Start;
 end;
 
 (*----------------------------------------------------------------------*

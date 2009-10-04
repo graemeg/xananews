@@ -114,13 +114,14 @@ uses
   IdNNTPX in 'IdNNTPX.pas',
   unitArticleHash in 'unitArticleHash.pas',
   unitBatches in 'unitBatches.pas',
+  unitCRC32 in 'unitCRC32.pas',
   unitMessageMime in 'unitMessageMime.pas',
   unitMessageNNTPBinary in 'unitMessageNNTPBinary.pas',
   unitMessageYEncodedBinary in 'unitMessageYEncodedBinary.pas',
   unitNewUserWizard in 'unitNewUserWizard.pas',
+  XnCaptionedDockTree in 'XnCaptionedDockTree.pas',
   XnCoderQuotedPrintable in 'XnCoderQuotedPrintable.pas',
-  XnCoderUUE in 'XnCoderUUE.pas',
-  unitCRC32 in 'unitCRC32.pas';
+  XnCoderUUE in 'XnCoderUUE.pas';
 
 {$R *.res}
 {$R I.RES}
@@ -148,8 +149,6 @@ end;
 
 begin
   OutputDebugString('SAMPLING OFF');
-  RegisterExpectedMemoryLeak(TIdThreadSafeInteger);  {In Indy 10.5.5 (D2009)}
-  RegisterExpectedMemoryLeak(TIdCriticalSection, 2); {In Indy 10.5.5 (D2009)}
   if TfmMain.CheckRunOnce then
   begin
     Application.Initialize;

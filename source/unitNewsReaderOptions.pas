@@ -10,22 +10,25 @@ type
 // nb - these enums must match the 'Items' in the Appearances list view in design mode.
   TAppearanceEnum = (
     apMessageHeaders,
-    apMessagesToMe,
-    apMessagesFromMe,
-    apXanaNewsMessages,
-    apDormantMessages,
-    apReplies,
-    apIgnoredMessages,
-    apChildlessMessages,
-    apInterestingMessages,
+      apMessagesToMe,
+      apMessagesFromMe,
+      apXanaNewsMessages,
+      apDormantMessages,
+      apReplies,
+      apIgnoredMessages,
+      apChildlessMessages,
+      apInterestingMessages,
     apMessagePane,
-    apHeadersInMessagePane,
-    apSignaturesInMessagePane,
-    apLevel1Quotes,
-    apLevel2Quotes,
-    apLevel3Quotes,
+      apHeadersInMessagePane,
+      apSignaturesInMessagePane,
+      apLevel1Quotes,
+      apLevel2Quotes,
+      apLevel3Quotes,
     apMessageEditor,
-    apSubscribedGroups
+    apSubscribedGroups,
+    apMainForm,
+      apToolBar,
+      apMessageDetailsPanel
   );
 
   TAppearanceSettings = class
@@ -271,7 +274,10 @@ const
     'Message Pane Level2 Quotes',
     'Message Pane Level3 Quotes',
     'Message Editor',
-    'Newsgroup Tree');
+    'Newsgroup Tree',
+    'Main Form',
+    'Toolbar',
+    'Message Details Panel');
 
   AppearancesFontColorDefaults: array[TAppearanceEnum] of TColor = (
     clBlack,            // Articles Tree
@@ -289,6 +295,9 @@ const
     clTeal,
     clOlive,
     clPurple,
+    clBlack,
+    clBlack,
+    clBlack,
     clBlack,
     clBlack);
 
@@ -535,8 +544,9 @@ begin
       apMessageHeaders,
       apMessagePane,
       apMessageEditor,
-      apSubscribedGroups: if OpenRegistry('Appearance\' + AppearanceKeyNames[i], True) then
-                             fAppearances[i].Load(fReg);
+      apSubscribedGroups,
+      apMainForm: if OpenRegistry('Appearance\' + AppearanceKeyNames[i], True) then
+                    fAppearances[i].Load(fReg);
 
       Succ(apMessageHeaders)..
       Pred(apMessagePane): if OpenRegistry('Appearance\' + AppearanceKeyNames[i], True) then
@@ -553,6 +563,14 @@ begin
                               else
                               begin
                                 fAppearances[i].Assign(fAppearances[apMessagePane]);
+                                fAppearances[i].fFontColor := AppearancesFontColorDefaults[i];
+                              end;
+      Succ(apMainForm)..
+      High(TAppearanceEnum): if OpenRegistry('Appearance\' + AppearanceKeyNames[i], True) then
+                                fAppearances[i].Load(fReg)
+                              else
+                              begin
+                                fAppearances[i].Assign(fAppearances[apMainForm]);
                                 fAppearances[i].fFontColor := AppearancesFontColorDefaults[i];
                               end;
     end;

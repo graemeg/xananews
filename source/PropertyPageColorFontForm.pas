@@ -35,10 +35,10 @@ type
     cbStrikeout: TCheckBox;
     cbItalic: TCheckBox;
     gbFontColors: TGroupBox;
-    Label2: TLabel;
+    lblFont: TLabel;
     clrFont: TColorBox;
     clrBackground: TColorBox;
-    Label1: TLabel;
+    lblBackground: TLabel;
     lvSizes: TListView;
     procedure lvFontsData(Sender: TObject; Item: TListItem);
     procedure lvFontsChange(Sender: TObject; Item: TListItem; Change: TItemChange);
@@ -63,7 +63,8 @@ var
 
 implementation
 
-uses ConTnrs, NewsGlobals;
+uses
+  ConTnrs, NewsGlobals;
 
 {$R *.dfm}
 
@@ -85,11 +86,16 @@ var
     rstLevel2QuoteText,
     rstLevel3QuoteText,
     rstMessageEditor,
-    rstNewsgroupTree);
+    rstNewsgroupTree,
+    rstBasicElements,
+    rstToolBar,
+    rstMessageDetailsPanel
+    );
 
 const
   sTilde = '~';
   sTilde1 = '~1';
+  sTilde2 = '~2';
 var
   ColorFontHelpText: array[TAppearanceEnum] of string = (
     sTilde,
@@ -108,7 +114,10 @@ var
     sTilde,
     sTilde,
     sTilde1,
-    sTilde1);
+    sTilde1,
+    sTilde2,
+    sTilde2,
+    sTilde2);
 
   { TfmPropertyPageColorFont }
 
@@ -140,8 +149,7 @@ begin
   end;
 end;
 
-procedure TfmPropertyPageColorFont.lvFontsData(Sender: TObject;
-  Item: TListItem);
+procedure TfmPropertyPageColorFont.lvFontsData(Sender: TObject; Item: TListItem);
 var
   st: string;
   details: TFontDetails;
@@ -209,6 +217,17 @@ begin
   inherited;
   fData := AData as TPropertyPageColorFontData;
   EnumerateFonts;
+
+  if (TAppearanceEnum(fData.Param) in [apMainForm..apMessageDetailsPanel]) then
+  begin
+    lblBackground.Visible := False;
+    clrBackground.Visible := False;
+  end
+  else
+  begin
+    lblBackground.Visible := True;
+    clrBackground.Visible := True;
+  end;
 
   cbBold.Checked := fsBold in fData.fFontStyle;
   cbUnderline.Checked := fsUnderline in fData.fFontStyle;
@@ -330,7 +349,10 @@ begin
     Result := Format(rstStandardHelp, [ColorFontPageNames[appn]])
   else
     if Result = sTilde1 then
-      Result := Format(rstStandardHelp1, [ColorFontPageNames[appn]]);
+      Result := Format(rstStandardHelp1, [ColorFontPageNames[appn]])
+    else
+      if Result = sTilde2 then
+        Result := Format(rstStandardHelp2, [ColorFontPageNames[appn]])
 end;
 
 procedure TPropertyPageColorFontData.Initialize;

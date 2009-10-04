@@ -24,6 +24,7 @@ type
     property FontStyle: TFontStyles read fFontStyle;
     property BackgroundColor: TColor read fBackgroundColor;
     property AlternateBGColor: TColor read fAlternateBGColor;
+    property Param;
   end;
 
   TfmPropertyPageFont = class(TfmPropertyPage)
@@ -38,9 +39,9 @@ type
     Label6: TLabel;
     rePreview: TRichEdit;
     gbFontColors: TGroupBox;
-    Label1: TLabel;
+    lblBackground: TLabel;
     clrBackground: TColorBox;
-    Label2: TLabel;
+    lblAlternateBG: TLabel;
     clrAlternateBG: TColorBox;
     procedure lvFontsData(Sender: TObject; Item: TListItem);
     procedure lvSizesData(Sender: TObject; Item: TListItem);
@@ -97,19 +98,20 @@ begin
   clrBackground.HandleNeeded;
   clrBackground.Selected := fData.fBackgroundColor;
 
-  if stSectionDetails.Caption = rstColorFontMessageTreeHelp then
+  if TAppearanceEnum(fData.Param) = apMessageHeaders then
   begin
-    Label2.Visible := True;
+    lblAlternateBG.Visible := True;
     clrAlternateBG.Visible := True;
     clrAlternateBG.HandleNeeded;
     clrAlternateBG.Selected := fData.fAlternateBGColor;
   end
   else
   begin
-    Label2.Visible := False;
+    lblAlternateBG.Visible := False;
     clrAlternateBG.Visible := False;
   end;
 
+  gbFontColors.Visible := not (TAppearanceEnum(fData.Param) in [apMainForm..apMessageDetailsPanel]);
   lvFonts.Items.Count := gFontDetails.Count;
 
   for i := 0 to gFontDetails.Count - 1 do
