@@ -983,6 +983,7 @@ object fmMain: TfmMain
         TabOrder = 2
         OnEnter = edSearchBarTextEnter
         OnExit = edSearchBarTextExit
+        OnKeyPress = edSearchBarTextKeyPress
       end
       object rbSearchbarSearch: TRadioButton
         Left = 406

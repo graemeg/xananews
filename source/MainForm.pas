@@ -849,6 +849,7 @@ type
 
     procedure edSearchBarTextExit(Sender: TObject);
     procedure edSearchBarTextEnter(Sender: TObject);
+    procedure edSearchBarTextKeyPress(Sender: TObject; var Key: Char);
 
     procedure mnuCopyURLToClipboardClick(Sender: TObject);
     procedure mnuViewHeadersClick(Sender: TObject);
@@ -8785,6 +8786,15 @@ procedure TfmMain.edSearchBarTextExit(Sender: TObject);
 begin
   EnableShortcuts(True);
   fInSearchbarText := False;
+end;
+
+procedure TfmMain.edSearchBarTextKeyPress(Sender: TObject; var Key: Char);
+begin
+  if Key = #13 then
+  begin
+    btnGo.Click;
+    Key := #0;
+  end;
 end;
 
 procedure TfmMain.actFileExportCompressedExecute(Sender: TObject);
