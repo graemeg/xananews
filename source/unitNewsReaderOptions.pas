@@ -28,7 +28,8 @@ type
     apSubscribedGroups,
     apMainForm,
       apToolBar,
-      apMessageDetailsPanel
+      apMessageDetailsPanel,
+    apMenu
   );
 
   TAppearanceSettings = class
@@ -277,7 +278,8 @@ const
     'Newsgroup Tree',
     'Main Form',
     'Toolbar',
-    'Message Details Panel');
+    'Message Details Panel',
+    'Menu');
 
   AppearancesFontColorDefaults: array[TAppearanceEnum] of TColor = (
     clBlack,            // Articles Tree
@@ -295,6 +297,7 @@ const
     clTeal,
     clOlive,
     clPurple,
+    clBlack,
     clBlack,
     clBlack,
     clBlack,
@@ -545,34 +548,40 @@ begin
       apMessagePane,
       apMessageEditor,
       apSubscribedGroups,
-      apMainForm: if OpenRegistry('Appearance\' + AppearanceKeyNames[i], True) then
-                    fAppearances[i].Load(fReg);
+      apMainForm,
+      apMenu:
+        if OpenRegistry('Appearance\' + AppearanceKeyNames[i], True) then
+          fAppearances[i].Load(fReg);
 
       Succ(apMessageHeaders)..
-      Pred(apMessagePane): if OpenRegistry('Appearance\' + AppearanceKeyNames[i], True) then
-                              fAppearances[i].Load(fReg)
-                            else
-                            begin
-                              fAppearances[i].Assign(fAppearances[apMessageHeaders]);
-                              fAppearances[i].fFontColor := AppearancesFontColorDefaults[i];
-                            end;
+      Pred(apMessagePane):
+        if OpenRegistry('Appearance\' + AppearanceKeyNames[i], True) then
+          fAppearances[i].Load(fReg)
+        else
+        begin
+          fAppearances[i].Assign(fAppearances[apMessageHeaders]);
+          fAppearances[i].fFontColor := AppearancesFontColorDefaults[i];
+        end;
 
       Succ(apMessagePane)..
-      Pred(apMessageEditor): if OpenRegistry('Appearance\' + AppearanceKeyNames[i], True) then
-                                fAppearances[i].Load(fReg)
-                              else
-                              begin
-                                fAppearances[i].Assign(fAppearances[apMessagePane]);
-                                fAppearances[i].fFontColor := AppearancesFontColorDefaults[i];
-                              end;
+      Pred(apMessageEditor):
+        if OpenRegistry('Appearance\' + AppearanceKeyNames[i], True) then
+          fAppearances[i].Load(fReg)
+        else
+        begin
+          fAppearances[i].Assign(fAppearances[apMessagePane]);
+          fAppearances[i].fFontColor := AppearancesFontColorDefaults[i];
+        end;
+
       Succ(apMainForm)..
-      High(TAppearanceEnum): if OpenRegistry('Appearance\' + AppearanceKeyNames[i], True) then
-                                fAppearances[i].Load(fReg)
-                              else
-                              begin
-                                fAppearances[i].Assign(fAppearances[apMainForm]);
-                                fAppearances[i].fFontColor := AppearancesFontColorDefaults[i];
-                              end;
+      Pred(apMenu):
+        if OpenRegistry('Appearance\' + AppearanceKeyNames[i], True) then
+          fAppearances[i].Load(fReg)
+        else
+        begin
+          fAppearances[i].Assign(fAppearances[apMainForm]);
+          fAppearances[i].fFontColor := AppearancesFontColorDefaults[i];
+        end;
     end;
 
     if OpenRegistry('Connection', True) then

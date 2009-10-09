@@ -164,6 +164,7 @@ resourcestring
   rstMessageEditor = 'Message Editor';
   rstNewsgroupTree = 'Newsgroup Tree';
   rstBasicElements = 'Basic elements';
+  rstMenu = 'Menu';
   rstToolBar = 'Toolbar';
   rstMessageDetailsPanel = 'Message Details Panel';
   rstStandardHelp = 'Colour and Font Settings for %s';

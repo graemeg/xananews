@@ -111,7 +111,7 @@ begin
     clrAlternateBG.Visible := False;
   end;
 
-  gbFontColors.Visible := not (TAppearanceEnum(fData.Param) in [apMainForm..apMessageDetailsPanel]);
+  gbFontColors.Visible := not (TAppearanceEnum(fData.Param) in [apMainForm..apMenu]);
   lvFonts.Items.Count := gFontDetails.Count;
 
   for i := 0 to gFontDetails.Count - 1 do

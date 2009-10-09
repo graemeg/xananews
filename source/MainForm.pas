@@ -3017,6 +3017,8 @@ begin
   Self.Color := XNOptions.Appearance[apMainForm].ApplyFontAndGetColor(Self.Font);
   cbMain.Color := XNOptions.Appearance[apToolBar].ApplyFontAndGetColor(cbMain.Font);
   pnlDetailsBar.Color := XNOptions.Appearance[apMessageDetailsPanel].ApplyFontAndGetColor(pnlDetailsBar.Font);
+  tbMenu.Color := XNOptions.Appearance[apMenu].ApplyFontAndGetColor(tbMenu.Font);
+  Screen.MenuFont := tbMenu.Font;
   ResizeSearchBar;
 
   vstArticles.Color := XNOptions.Appearance[apMessageHeaders].ApplyFontAndGetColor(vstArticles.Font);
@@ -4164,6 +4166,7 @@ begin
   MessageScrollBox1.TabOrder := 0;
   MessageScrollBox1.AutoFit := True;
 
+  tbMenu.Font := Screen.MenuFont;
   SetControlOptions;            // Save default options
   XNOptions.BookmarkHeight := pnlArticles.Height div 2;
 
@@ -4372,9 +4375,7 @@ end;
 
 procedure TfmMain.FormShow(Sender: TObject);
 begin
-//  InitializeHTMLHelp;
   Caption := Application.Title + ' ' + ProductVersion;
-  tbMenu.Font := Screen.MenuFont;
   SaveDefaultActions;
   vstSubscribed.SetFocus;
   LoadToolbarLayout;
@@ -5698,6 +5699,7 @@ begin
   XNOptions.Appearance[apMainForm].Init(Self.Font, Self.Color);
   XNOptions.Appearance[apToolBar].Init(cbMain.Font, cbMain.Color);
   XNOptions.Appearance[apMessageDetailsPanel].Init(pnlDetailsBar.Font, pnlDetailsbar.Color);
+  XNOptions.Appearance[apMenu].Init(tbMenu.Font, tbMenu.Color);
 end;
 
 procedure TfmMain.spPauseRequestsClick(Sender: TObject);

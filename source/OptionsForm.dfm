@@ -4,7 +4,6 @@ inherited fmOptions: TfmOptions
   HelpType = htKeyword
   HelpKeyword = 'Options'
   Caption = 'XanaNews Options'
-  Font.Name = 'Tahoma'
   ExplicitLeft = 604
   ExplicitTop = 165
   ExplicitWidth = 587

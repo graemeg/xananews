@@ -1,6 +1,6 @@
 object fmMain: TfmMain
-  Left = 612
-  Top = 172
+  Left = 664
+  Top = 169
   HelpType = htKeyword
   HelpKeyword = 'Workspace'
   ActiveControl = vstSubscribed
@@ -851,6 +851,7 @@ object fmMain: TfmMain
       Top = 0
       Width = 941
       Height = 21
+      AutoSize = True
       ButtonHeight = 21
       ButtonWidth = 61
       Caption = 'tbMenu'

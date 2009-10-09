@@ -89,7 +89,8 @@ var
     rstNewsgroupTree,
     rstBasicElements,
     rstToolBar,
-    rstMessageDetailsPanel
+    rstMessageDetailsPanel,
+    rstMenu
     );
 
 const
@@ -115,6 +116,7 @@ var
     sTilde,
     sTilde1,
     sTilde1,
+    sTilde2,
     sTilde2,
     sTilde2,
     sTilde2);
@@ -218,16 +220,9 @@ begin
   fData := AData as TPropertyPageColorFontData;
   EnumerateFonts;
 
-  if (TAppearanceEnum(fData.Param) in [apMainForm..apMessageDetailsPanel]) then
-  begin
-    lblBackground.Visible := False;
-    clrBackground.Visible := False;
-  end
-  else
-  begin
-    lblBackground.Visible := True;
-    clrBackground.Visible := True;
-  end;
+  gbFontColors.Visible := not (TAppearanceEnum(fData.Param) in [apToolbar, apMenu]);
+  lblBackground.Visible := not (TAppearanceEnum(fData.Param) in [apMainForm..apMenu]);
+  clrBackground.Visible := lblBackground.Visible;
 
   cbBold.Checked := fsBold in fData.fFontStyle;
   cbUnderline.Checked := fsUnderline in fData.fFontStyle;

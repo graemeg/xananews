@@ -84,6 +84,7 @@ begin
 
   page1 := AddPropertyPageDetails(TfmPropertyPageFont, page, rstMainForm, rstColorFontMainFormHelp, '', Integer(apMainForm));
   AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apMainForm));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apMenu));
   AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apToolBar));
   AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apMessageDetailsPanel));
 
