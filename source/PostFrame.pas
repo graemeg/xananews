@@ -111,8 +111,11 @@ begin
 
   if okToPost then
   begin
-    CWSpellChecker1.LanguageIdx := Integer(cbISpellLanguage.Items.Objects[cbISpellLanguage.ItemIndex]);
-    CWSpellChecker1.QuoteChars := '>|';
+    if fSpellInstalled then
+    begin
+      CWSpellChecker1.LanguageIdx := Integer(cbISpellLanguage.Items.Objects[cbISpellLanguage.ItemIndex]);
+      CWSpellChecker1.QuoteChars := '>|';
+    end;
     skipFirstLine := fIsReply and
                      (fPostingSettings.PostingStyle <> psTop) and
                      ((fPostingSettings.QuoteHeader <> '') or (fPostingSettings.QuoteSalutation <> ''));
