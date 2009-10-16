@@ -1425,7 +1425,7 @@ var
   var
     s1, attribName: string;
   begin
-    mimeHeader.fContentDisposition := SplitString('/', st);
+    mimeHeader.fContentDisposition := SplitString(';', st);
 
     while st <> '' do
     begin
