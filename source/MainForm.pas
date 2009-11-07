@@ -2641,6 +2641,8 @@ begin
         else
         begin
           dt := Trunc(dlg.DatePicker.DateTime);
+          if dlg.TimePicker.Checked then
+            dt := dt + Frac(dlg.TimePicker.DateTime);
         end;
 
       filter := TNNTPFilter.Create('', ftDate, opLess, dt, False, False, False);
