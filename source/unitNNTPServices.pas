@@ -2985,14 +2985,9 @@ begin
         end;
         P := NextItem(article.fMessageID);
         P := NextItem(article.fReferences);
-        article.fBytes := RawStrToInt(NextItemStr);
-        article.fLines := RawStrToInt(NextItemStr);
-        article.fFlags := RawStrToInt(NextItemStr) and $08FFFFFF;
-// TODO: next might help to recover from a partly broken articles.dat file <<
-//        article.fBytes := RawStrToIntDef(NextItemStr, 0);
-//        article.fLines := RawStrToIntDef(NextItemStr, 0);
-//        article.fFlags := RawStrToIntDef(NextItemStr, 0) and $08FFFFFF;
-// >>
+        article.fBytes := RawStrToIntDef(NextItemStr, 0);
+        article.fLines := RawStrToIntDef(NextItemStr, 0);
+        article.fFlags := RawStrToIntDef(NextItemStr, 0) and $08FFFFFF;
         article.fMessageOffset := RawStrToInt64Def(NextItemStr, -1);
 
         if article.IsDeleted then

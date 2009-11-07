@@ -2,13 +2,14 @@ program NewsReader3;
 
 uses
   FastMM4,
-  {$ifdef madExcept}
-    madExcept,
-    madLinkDisAsm,
-    madListHardware,
-    madListProcesses,
-    madListModules,
-  {$endif}
+//  SafeMMInstall,
+{$ifdef madExcept}
+  madExcept,
+  madLinkDisAsm,
+  madListHardware,
+  madListProcesses,
+  madListModules,
+{$endif}
   Forms,
   Windows,
   SysUtils,
@@ -148,7 +149,7 @@ begin
 end;
 
 begin
-  OutputDebugString('SAMPLING OFF');
+//  OutputDebugString('SAMPLING OFF');
   if TfmMain.CheckRunOnce then
   begin
     Application.Initialize;
