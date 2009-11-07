@@ -4,7 +4,8 @@ unit cmpNTAboutBox;
 
 interface
 
-uses Windows, SysUtils, Classes, Graphics, Forms, Controls, StdCtrls,
+uses
+  Windows, SysUtils, Classes, Graphics, Forms, Controls, StdCtrls,
   Buttons, ExtCtrls, cmpHyperlinkButton, ComCtrls;
 
 type
@@ -27,92 +28,91 @@ type
     hlbSupport: THyperlinkButton;
     stThankYou: TLabel;
     lbDonations: TListBox;
+    lblExtra: TLabel;
+    hlbExtra: THyperlinkButton;
     procedure FormShow(Sender: TObject);
   private
-    fThanksTo : string;
-    procedure GetRegistrationInformation (isNT : boolean; var owner, organization : string);
-    { Private declarations }
-  public
-    { Public declarations }
+    fThanksTo: string;
+    procedure GetRegistrationInformation(isNT: Boolean; var owner, organization: string);
   end;
 
   TNTAboutBox = class(TComponent)
   private
     fCopyright: string;
-    fDisplaySupportLink: boolean;
+    fDisplayExtraLink: Boolean;
+    fDisplaySupportLink: Boolean;
     fThanksTo: string;
-    { Private declarations }
-  protected
-    { Protected declarations }
   public
     procedure Execute;
   published
-    property Copyright : string read fCopyright Write fCopyright;
-    property DisplaySupportLink : boolean read fDisplaySupportLink write fDisplaySupportLink;
-    property ThanksTo : string read fThanksTo write fThanksTo;
-    { Published declarations }
+    property Copyright: string read fCopyright write fCopyright;
+    property DisplayExtraLink: Boolean read fDisplayExtraLink write fDisplayExtraLink;
+    property DisplaySupportLink: Boolean read fDisplaySupportLink write fDisplaySupportLink;
+    property ThanksTo: string read fThanksTo write fThanksTo;
   end;
 
-  function LoadGifResource (const resName : string; image : TImage) : boolean;
+function LoadGifResource(const resName: string; image: TImage): Boolean;
 
 var
   fmNTAboutBox: TfmNTAboutBox;
 
 implementation
 
-uses Registry, gifimg;
-
 {$R *.DFM}
 
-function LoadGifResource (const resName : string; image : TImage) : boolean;
+uses
+  Registry, gifimg;
+
+function LoadGifResource(const resName: string; image: TImage): Boolean;
 var
-  g : TGifImage;
-  rs : TResourceStream;
+  g: TGifImage;
+  rs: TResourceStream;
 begin
-  result := False;
-  g := Nil;
-  if FindResource (hInstance, PChar (resName), 'GIF') <> 0 then
-  try
-    rs := TResourceStream.Create(HInstance, resName, 'GIF');
+  Result := False;
+  g := nil;
+  if FindResource(hInstance, PChar(resName), 'GIF') <> 0 then
     try
-      if rs.Size > 0 then
-      begin
-        g := TGifImage.Create;
-        g.LoadFromStream(rs);
-        image.Picture.Assign(g);
-        result := True
-      end
-    finally
-      g.Free;
-      rs.Free
+      rs := TResourceStream.Create(hInstance, resName, 'GIF');
+      try
+        if rs.Size > 0 then
+        begin
+          g := TGifImage.Create;
+          g.LoadFromStream(rs);
+          image.Picture.Assign(g);
+          Result := True;
+        end;
+      finally
+        g.Free;
+        rs.Free;
+      end;
+    except
     end;
-  except
-  end;
 end;
 
-procedure TfmNTAboutBox.GetRegistrationInformation (isNT : boolean; var owner, organization : string);
+procedure TfmNTAboutBox.GetRegistrationInformation(isNT: Boolean; var owner, organization: string);
 var
-  product : string;
-  p : Integer;
-  reg : TRegistry;
-  gotDetails : boolean;
+  product: string;
+  p: Integer;
+  reg: TRegistry;
+  gotDetails: Boolean;
 begin
   gotDetails := False;
-  product := ExtractFileName (Application.ExeName);
-  p := Pos ('.', product);
-  if p > 0 then Delete (product, p, Length (product));
-  reg := TRegistry.Create (KEY_READ);
+  product := ExtractFileName(Application.ExeName);
+  p := Pos('.', product);
+  if p > 0 then
+    Delete(product, p, Length(product));
+  reg := TRegistry.Create(KEY_READ);
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
-    if reg.OpenKey (Format ('Software\Woozle\%s\CurrentVersion', [product]), False) then
-      if reg.ValueExists ('RegisteredOwner') and reg.ValueExists ('RegisteredOrganization') then
+    if reg.OpenKey(Format('Software\Woozle\%s\CurrentVersion', [product]), False) then
+      if reg.ValueExists('RegisteredOwner') and reg.ValueExists('RegisteredOrganization') then
       begin
-        owner := reg.ReadString ('RegisteredOwner');
-        organization := reg.ReadString ('RegisteredOrganization');
-        gotDetails := True
-      end
+        owner := reg.ReadString('RegisteredOwner');
+        organization := reg.ReadString('RegisteredOrganization');
+        gotDetails := True;
+      end;
   finally
-    reg.Free
+    reg.Free;
   end;
 
   if not gotDetails then
@@ -120,7 +120,7 @@ begin
     owner := 'Owner';
     organization := 'Organization';
 
-    reg := TRegistry.Create (KEY_READ);
+    reg := TRegistry.Create(KEY_READ);
     try
       reg.RootKey := HKEY_LOCAL_MACHINE;
       if isNT then
@@ -128,67 +128,72 @@ begin
       else
         product := 'Windows';
 
-      if reg.OpenKey (Format ('Software\Microsoft\%s\CurrentVersion', [product]), False) then
+      if reg.OpenKey(Format('Software\Microsoft\%s\CurrentVersion', [product]), False) then
       begin
-        owner := reg.ReadString ('RegisteredOwner');
-        organization := reg.ReadString ('RegisteredOrganization');
-        gotDetails := True
-      end
+        owner := reg.ReadString('RegisteredOwner');
+        organization := reg.ReadString('RegisteredOrganization');
+        gotDetails := True;
+      end;
     finally
-      reg.Free
+      reg.Free;
     end;
 
     if gotDetails then
-    try
-      reg := TRegistry.Create (KEY_READ or KEY_WRITE);
       try
-        reg.RootKey := HKEY_LOCAL_MACHINE;
-        if reg.OpenKey (Format ('Software\Woozle\%s\CurrentVersion', [product]), True) then
-        begin
-          reg.WriteString ('RegisteredOwner', owner);
-          reg.WriteString ('RegisteredOrganization', organization)
-        end
-      finally
-        reg.Free
-      end
-    except
-    end
-  end
+        reg := TRegistry.Create(KEY_READ or KEY_WRITE);
+        try
+          reg.RootKey := HKEY_LOCAL_MACHINE;
+          if reg.OpenKey(Format('Software\Woozle\%s\CurrentVersion', [product]), True) then
+          begin
+            reg.WriteString('RegisteredOwner', owner);
+            reg.WriteString('RegisteredOrganization', organization);
+          end;
+        finally
+          reg.Free;
+        end;
+      except
+      end;
+  end;
 end;
 
 procedure TfmNTAboutBox.FormShow(Sender: TObject);
 var
-  memInfo : TMemoryStatus;
-  os, owner, organization, st : string;
-  size, zero : DWORD;
-  buffer, pBuffer: pointer;
-  info : PVSFixedFileInfo;
+  memInfo: TMemoryStatusEx;
+  os, owner, organization, st: string;
+  Size, zero: DWORD;
+  buffer, pBuffer: Pointer;
+  info: PVSFixedFileInfo;
 begin
-  GlobalMemoryStatus (memInfo);
+  memInfo.dwLength := SizeOf(TMemoryStatusEx);
+  GlobalMemoryStatusEx(memInfo);
   Caption := 'About ' + Application.Title;
 
-  if not LoadGifResource (Application.Title, icoProduct) then
-    if Assigned (Application.Icon) then
+  if not LoadGifResource(Application.Title, icoProduct) then
+    if Assigned(Application.Icon) then
       icoProduct.Picture.Icon := Application.Icon;
 
   st := Application.Title;
 
-  size := GetFileVersionInfoSize (PChar (Application.ExeName), zero);
-  if size > 0 then
+  Size := GetFileVersionInfoSize(PChar(Application.ExeName), zero);
+  if Size > 0 then
   begin
-    GetMem(buffer, size);
+    GetMem(buffer, Size);
     try
-      if not GetFileVersionInfo (PChar (Application.ExeName), zero, size, buffer) then
+      if not GetFileVersionInfo(PChar(Application.ExeName), zero, Size, buffer) then
         RaiseLastOSError;
 
-      if not VerQueryValue (buffer, '\', pBuffer, size) then
+      if not VerQueryValue(buffer, '\', pBuffer, Size) then
         RaiseLastOSError;
 
-      info := PVSFixedFileInfo (pBuffer);
+      info := PVSFixedFileInfo(pBuffer);
 
       TabSheet1.Caption := 'About ' + st;
 
-      st := st + Format (' Version %d.%d.%d.%d', [HiWord (info^.dwProductVersionMS), LoWord (info^.dwProductVersionMS), HiWord (info^.dwProductVersionLS), LoWord (info^.dwProductVersionLS)]);
+      st := st + Format(' Version %d.%d.%d.%d',
+         [HiWord(info^.dwProductVersionMS),
+          LoWord(info^.dwProductVersionMS),
+          HiWord(info^.dwProductVersionLS),
+          LoWord(info^.dwProductVersionLS)]);
     finally
       FreeMem(buffer);
     end;
@@ -200,8 +205,10 @@ begin
   end
   else
   begin
-    stThankYou.Caption := 'Many thanks for the generous donations from the following kind people!  Without these donations, ' + Application.Title + ' couldn''t have been written';
-    lbDonations.Items.Text := fThanksTo
+    stThankYou.Caption :=
+      'Many thanks for the generous donations from the following kind people!  ' +
+      'Without these donations, ' + Application.Title + ' couldn''t have been written';
+    lbDonations.Items.Text := fThanksTo;
   end;
 
   PageControl1.ActivePageIndex := 0;
@@ -210,39 +217,47 @@ begin
 
   os := '';
   if Win32Platform = VER_PLATFORM_WIN32_NT then
-  case Win32MajorVersion of
-    3, 4 : os := 'Windows NT';
-    5 : if Win32MinorVersion = 0 then
+    case Win32MajorVersion of
+      3, 4:
+        os := 'Windows NT';
+      5:
+        if Win32MinorVersion = 0 then
           os := 'Windows 2000'
         else
-          os := 'Windows XP'
-  end
-  else
-  case Win32MajorVersion of
-    4 : if Win32MinorVersion = 0 then
-          os := 'Windows 95'
+          os := 'Windows XP';
+      6:
+        if Win32MinorVersion = 0 then
+          os := 'Windows Vista'
         else
-          if Win32MinorVersion = 10 then
-            os := 'Windows 98'
-          else
-            os := 'Windows ME'
-  end;
+          os := 'Windows 7';
+    end
+  else
+    case Win32MajorVersion of
+      4:
+        if Win32MinorVersion = 0 then
+          os := 'Windows 95'
+        else if Win32MinorVersion = 10 then
+          os := 'Windows 98'
+        else
+          os := 'Windows ME';
+    end;
 
-  GetRegistrationInformation (Win32Platform = VER_PLATFORM_WIN32_NT, owner, organization);
+  GetRegistrationInformation(Win32Platform = VER_PLATFORM_WIN32_NT, owner, organization);
   stLicense1.Caption := owner;
   stLicense2.Caption := organization;
-  stVersion.Caption := Format ('%s  (Build %d: %s)', [os, Win32BuildNumber, Win32CSDVersion]);
-  stMemAvail.Caption := Format ('Physical Memory Available to Windows: %10.0n KB', [memInfo.dwTotalPhys / 1024]);
-  LoadGifResource (Application.Title+'1', icoProduct1);
+  stVersion.Caption := Format('%s  (Build %d: %s)', [os, Win32BuildNumber, Win32CSDVersion]);
+  stMemAvail.Caption := Format('Physical Memory Available to Windows: %10.0n KB',
+    [memInfo.ullTotalPhys / 1024]);
+  LoadGifResource(Application.Title + '1', icoProduct1);
 end;
 
 { TNTAboutBox }
 
 procedure TNTAboutBox.Execute;
 var
-  dlg : TfmNTAboutBox;
+  dlg: TfmNTAboutBox;
 begin
-  dlg := TfmNTAboutBox.Create (nil);
+  dlg := TfmNTAboutBox.Create(nil);
   try
     if Copyright <> '' then
       dlg.stCopyright.Caption := Copyright;
@@ -253,14 +268,18 @@ begin
       dlg.hlbSupport.Visible := True
     end;
 
+    if DisplayExtraLink then
+    begin
+      dlg.lblExtra.Visible := True;
+      dlg.hlbExtra.Visible := True
+    end;
+
     dlg.fThanksTo := fThanksTo;
 
-    dlg.ShowModal
+    dlg.ShowModal;
   finally
-    dlg.Free
-  end
-
-
+    dlg.Free;
+  end;
 end;
 
 end.

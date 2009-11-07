@@ -2355,6 +2355,7 @@ object fmMain: TfmMain
   end
   object NTAboutBox: TNTAboutBox
     Copyright = 'Copyright '#169' Colin Wilson 2006'
+    DisplayExtraLink = True
     DisplaySupportLink = True
     Left = 792
     Top = 460
