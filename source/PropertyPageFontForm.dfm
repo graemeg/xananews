@@ -1,12 +1,12 @@
 inherited fmPropertyPageFont: TfmPropertyPageFont
-  Left = 242
+  Left = 307
   Top = 200
   HelpType = htKeyword
   HelpKeyword = 'ColoursFonts'
   Caption = 'fmPropertyPageFont'
   ClientHeight = 381
   ClientWidth = 381
-  ExplicitLeft = 242
+  ExplicitLeft = 307
   ExplicitTop = 200
   ExplicitWidth = 397
   ExplicitHeight = 417
@@ -332,14 +332,14 @@ inherited fmPropertyPageFont: TfmPropertyPageFont
     object lblBackground: TLabel
       Left = 12
       Top = 19
-      Width = 58
+      Width = 56
       Height = 13
       Caption = '&Background'
     end
     object lblAlternateBG: TLabel
       Left = 12
       Top = 43
-      Width = 60
+      Width = 61
       Height = 13
       Caption = '&Alternate BG'
     end

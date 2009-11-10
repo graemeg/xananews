@@ -1,6 +1,6 @@
 inherited fmPropertyPageColorFont: TfmPropertyPageColorFont
-  Left = 590
-  Top = 199
+  Left = 321
+  Top = 227
   HelpType = htKeyword
   HelpKeyword = 'ColoursFonts'
   Caption = 'fmPropertyPageColorFont'
@@ -8,8 +8,8 @@ inherited fmPropertyPageColorFont: TfmPropertyPageColorFont
   ClientWidth = 381
   Constraints.MinHeight = 344
   Constraints.MinWidth = 389
-  ExplicitLeft = 590
-  ExplicitTop = 199
+  ExplicitLeft = 321
+  ExplicitTop = 227
   ExplicitWidth = 397
   ExplicitHeight = 417
   DesignSize = (
@@ -319,14 +319,14 @@ inherited fmPropertyPageColorFont: TfmPropertyPageColorFont
     object lblFont: TLabel
       Left = 12
       Top = 43
-      Width = 54
+      Width = 56
       Height = 13
       Caption = 'Foreground'
     end
     object lblBackground: TLabel
       Left = 12
       Top = 19
-      Width = 58
+      Width = 56
       Height = 13
       Caption = '&Background'
     end
