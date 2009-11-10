@@ -16,13 +16,7 @@ interface
 uses
   Windows, Classes, Graphics, SysUtils, unitNNTPServices, unitMailServices,
   SyncObjs, IdTCPClient, ConTnrs, unitSettings, unitIdentities,
-  IdMessage, NewsGlobals, IdNNTPX, XnClasses, XnRawByteStrings
-{$IFDEF USEOPENSTRSEC}
-, SsTLSIdIOHandler
-{$ELSE}
-, IdSSLOpenSSL
-{$ENDIF}
-  ;
+  IdMessage, NewsGlobals, IdNNTPX, IdSSLOpenSSL, XnClasses, XnRawByteStrings;
 
 type
   TNNTPThreadState = (
@@ -42,11 +36,7 @@ type
     fTrigger: TEvent;
     fState: TNNTPThreadState;
     fGetter: TTCPGetter;
-{$IFNDEF USEOPENSTRSEC}
     fSSLHandler: TIdSSLIOHandlerSocketOpenSSL;
-{$ELSE}
-    fSSLHandler: TSsTLSIdIOHandlerSocket;
-{$ENDIF}
     fUISync: TCriticalSection;
     function GetLastResponse: string;
 
@@ -71,11 +61,7 @@ type
     property Client: TIdTCPClientCustom read fClient;
     property LastResponse: string read GetLastResponse;
     property Getter: TTCPGetter read fGetter;
-{$IFNDEF USEOPENSTRSEC}
     property SSLHandler: TIdSSLIOHandlerSocketOpenSSL read fSSLHandler;
-{$ELSE}
-    property SSLHandler: TSsTLSIdIOHandlerSocket read fSSLHandler;
-{$ENDIF}
   end;
 
   TTCPThreadClass = class of TTCPThread;
@@ -400,7 +386,11 @@ type
     fCurrentMessage: TidMessage;
     fUseOutbasket: Boolean;
     fOrigUseOutbasket: Boolean;
+    fSync: TCriticalSection;
+    fLocked: Boolean;
+    fLockThread: Integer;
 
+    function GetCount: Integer;
     function GetOutstandingRequestCount: Integer; override;
     function GetOutstandingRequestText(idx: Integer): string; override;
     function GetGetterRootText: string; override;
@@ -411,10 +401,13 @@ type
     constructor Create(settings: TSMTPServerSettings; AUseOutbasket: Boolean);
     destructor Destroy; override;
     procedure AddMessageToList(AArticleContainer: TServerAccount; const sTo, sCC, sBCC, sSubject, sReplyTo, msg: string; attachments: TObjectList; ACodePage: Integer);
+    procedure DeleteRequest(idx: Integer); override;
+    function LockList: TObjectList;
+    procedure UnlockList;
     procedure Resume; override;
     procedure ResumeOutbasket;
-    property Messages: TObjectList read fMessages;
     procedure WorkDone; override;
+    property Count: Integer read GetCount;
     property CurrentMessage: TidMessage read fCurrentMessage write fCurrentMessage;
   //  procedure SaveOutgoingPost;
     property UseOutbasket: Boolean read fUseOutbasket;
@@ -443,42 +436,15 @@ uses
  |   ANNTPAccount: TNNTPAccount         The account to work on.         |
  *----------------------------------------------------------------------*)
 constructor TTCPThread.Create(AGetter: TTCPGetter; ASettings: TServerSettings);
-{$IFDEF USEOPENSTRSEC}
-var
-  trustedCAStream: TResourceStream;
-  intermediateCAStream: TResourceStream;
-{$ENDIF}
 begin
   inherited Create(False);
   fUISync := TCriticalSection.Create;
   fGetter := AGetter;
   fSettings := ASettings;
   fTrigger := TEvent.Create(nil, False, False, '');
-{$IFNDEF USEOPENSTRSEC}
   fSSLHandler := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
   fSSLHandler.SSLOptions.Mode := sslmClient;
   fSSLHandler.SSLOptions.Method := sslvSSLv23;
-{$ELSE}
-  fSSLHandler := TSsTLSIdIOHandlerSocket.Create(nil);
-  fSSLHandler.TLSServer := TTLSInternalServer.Create(nil);
-  fSSLHandler.TLSServer.ClientOrServer := cosClientSide;
-  fSSLHandler.TLSServer.Options.Export40Bit := prAllowed;
-  fSSLHandler.TLSServer.Options.HashAlgorithmMD5 := prAllowed;
-  fSSLHandler.TLSServer.Options.SignatureRSA := prAllowed;
-  fSSLHandler.TLSServer.Options.BulkCipherRC2 := prAllowed;
-  trustedCAStream := TResourceStream.Create(hInstance, 'trustedca', RT_RCDATA);
-  try
-    fSSLHandler.TLSServer.LoadP7BRootCertsFromStream(trustedCAStream);
-  finally
-    trustedCAStream.Free;
-  end;
-  intermediateCAStream := TResourceStream.Create(hInstance, 'intermediateca', RT_RCDATA);
-  try
-    fSSLHandler.TLSServer.LoadP7BRootCertsFromStream(intermediateCAStream);
-  finally
-    intermediateCAStream.Free;
-  end;
-{$ENDIF}
 end;
 
 destructor TTCPThread.Destroy;
@@ -489,9 +455,6 @@ begin
     fClient.Disconnect;
     WaitFor;
     fUISync.Free;
-{$IFDEF USEOPENSTRSEC}
-    fSSLHandler.TLSServer.Free;
-{$ENDIF}
     fSSLHandler.Free;
     fClient.Free;
     fTrigger.Free;
@@ -770,6 +733,95 @@ begin
     ThreadManager.DoAutoDisconnect;
 end;
 
+{ TNewsGetter }
+
+constructor TNewsGetter.Create(cls: TTCPThreadClass; ANNTPAccount: TNNTPAccount);
+begin
+  inherited Create(cls, ANNTPAccount.NNTPServerSettings);
+  Account := ANNTPAccount;
+end;
+
+function TNewsGetter.GetAccount: TNNTPAccount;
+begin
+  if fThread is TNNTPThread then
+    Result := TNNTPThread(fThread).NNTPAccount
+  else
+    Result := nil;
+end;
+
+function TNewsGetter.GetIsDoing(obj: TObject): Boolean;
+begin
+  Result := obj = Account;
+end;
+
+procedure TNewsGetter.Resume;
+var
+  ok: Boolean;
+begin
+  ok := (Account.NNTPServerSettings.MaxConnections = 0) or
+     (ThreadManager.CountActiveGettersForAccount(Account) < Account.NNTPServerSettings.MaxConnections);
+
+  if not ok then
+  begin
+    threadManager.ClearDormantConnections(Account);
+
+    ok := ThreadManager.CountActiveGettersForAccount(Account) < Account.NNTPServerSettings.MaxConnections;
+  end;
+
+  if ok then
+    inherited Resume;
+end;
+
+procedure TNewsGetter.SetAccount(const Value: TNNTPAccount);
+begin
+  if fThread is TNNTPThread then
+    TNNTPThread(fThread).NNTPAccount := Value;
+end;
+
+{ TMultiNewsGetter }
+
+constructor TMultiNewsGetter.Create(cls: TTCPThreadClass;
+  ANNTPAccount: TNNTPAccount);
+begin
+  inherited Create(cls, ANNTPAccount);
+  fRequests := TObjectList.Create;
+  fSync := TCriticalSection.Create;
+end;
+
+destructor TMultiNewsGetter.Destroy;
+begin
+  fRequests.Free;
+  fSync.Free;
+  inherited Destroy;
+end;
+
+function TMultiNewsGetter.GetCount: Integer;
+begin
+  Result := fRequests.Count;
+end;
+
+function TMultiNewsGetter.LockList: TObjectList;
+begin
+  if fLocked and (fLockThread = Integer(GetCurrentThreadID)) then
+    raise Exception.Create('MultiNewsGetter already locked in this thread');
+  fSync.Enter;
+  fLocked := True;
+  fLockThread := GetCurrentThreadID;
+  Result := fRequests;
+end;
+
+procedure TMultiNewsGetter.UnlockList;
+begin
+  fLocked := False;
+  fLockThread := 0;
+  fSync.Leave;
+end;
+
+procedure TTCPThread.UIUnlock;
+begin
+  fUISync.Leave;
+end;
+
 { TNewsgroupGetter }
 
 (*----------------------------------------------------------------------*
@@ -824,6 +876,7 @@ begin
   try
     Result := rstGetNewsgroupsFor + Account.AccountName;
   except
+    Result := '';
   end
 end;
 
@@ -1028,7 +1081,9 @@ begin
     begin
       getterRequest := TArticlesGetterRequest(fRequests[idx]);
       Result := getterRequest.fGroup.Name;
-    end;
+    end
+    else
+      Result := '';
   finally
     UnlockList;
   end;
@@ -1267,12 +1322,16 @@ function TArticleGetter.GetGroup(idx: Integer): TServerAccount;
 begin
   try
     LockList;
-    if idx < fRequests.Count then
-      Result := TArticleGetterRequest(fRequests[idx]).Group
-    else
-      Result := nil;
-  finally
-    UnlockList;
+    try
+      if idx < fRequests.Count then
+        Result := TArticleGetterRequest(fRequests[idx]).Group
+      else
+        Result := nil;
+    finally
+      UnlockList;
+    end;
+  except
+    REsult := nil;
   end;
 end;
 
@@ -1325,7 +1384,9 @@ begin
     begin
       getterRequest := TArticleGetterRequest(requests[idx]);
       Result := IntToStr(getterRequest.fArticle.ArticleNo) + ' ' + rstFrom + ' ' + getterRequest.fGroup.Name;
-    end;
+    end
+    else
+      Result := '';
   finally
     UnlockList;
   end;
@@ -1786,10 +1847,6 @@ var
       m.Text := st;
       if fTextPartStyle = tpQuotedPrintable then
       begin
-// TODO: WrapStrings is handling URLs as well,
-//       is that really needed in this case? I don't think so!
-//
-//        WrapStrings(m, 75, fTextPartStyle, false, false)
         coder := TXnEncoderQuotedPrintable.Create(nil);
         TXnEncoderQuotedPrintable(coder).AddEOL := True;
         try
@@ -1892,7 +1949,9 @@ begin
       post := TPosterRequest(fRequests[idx]);
       Result := string(post.Groups + ':');
       Result := Result + AnsiStringToWideString(post.Subject, post.Codepage);
-    end;
+    end
+    else
+      Result := '';
   finally
     UnlockList;
   end;
@@ -2035,14 +2094,20 @@ procedure TEMailer.AddMessageToList(AArticleContainer: TServerAccount;
   const sTo, sCC, sBCC, sSubject, sReplyTo, msg: string;
   attachments: TObjectList; ACodePage: Integer);
 begin
-  fMessages.Add(TEMailerRequest.Create(AArticleContainer, Self,
-    sTo, sCC, sBCC, sSubject, sReplyTo, msg, attachments, ACodePage))
+  LockList;
+  try
+    fMessages.Add(TEMailerRequest.Create(AArticleContainer, Self,
+      sTo, sCC, sBCC, sSubject, sReplyTo, msg, attachments, ACodePage))
+  finally
+    UnlockList;
+  end;
 end;
 
 constructor TEMailer.Create(settings: TSMTPServerSettings; AUseOutbasket: Boolean);
 begin
   inherited Create(TSMTPMailer, settings);
   fMessages := TObjectList.Create;
+  fSync := TCriticalSection.Create;
   fOrigUseOutbasket := AUseOutbasket;
   fUseOutbasket := AUseOutbasket;
 end;
@@ -2050,7 +2115,32 @@ end;
 destructor TEMailer.Destroy;
 begin
   fMessages.Free;
+  fSync.Free;
   inherited Destroy;
+end;
+
+procedure TEMailer.DeleteRequest(idx: Integer);
+begin
+  if (State <> tsBusy) or (idx > 0) then
+  begin
+    LockList;
+    try
+      if (idx >= 0) and (idx < fMessages.Count) then
+        fMessages.Delete(idx);
+    finally
+      UnlockList;
+    end;
+  end;
+  if Count = 0 then
+  begin
+    State := tsDormant;
+    fPaused := False;
+  end;
+end;
+
+function TEMailer.GetCount: Integer;
+begin
+  Result := fMessages.Count;
 end;
 
 function TEMailer.GetGetterRootText: string;
@@ -2060,22 +2150,41 @@ end;
 
 function TEMailer.GetGroup(idx: Integer): TServerAccount;
 begin
-  Result := TEMailerRequest(Messages[idx]).fArticleContainer;
+  try
+    LockList;
+    try
+      if idx < fMessages.Count then
+        Result := TEMailerRequest(fMessages[idx]).fArticleContainer
+      else
+        Result := nil;
+    finally
+      UnlockList;
+    end;
+  except
+    Result := nil;
+  end;
 end;
 
 function TEMailer.GetOutstandingRequestCount: Integer;
 begin
-  Result := fMessages.Count;
+  Result := Count;
 end;
 
 function TEMailer.GetOutstandingRequestText(idx: Integer): string;
 var
   msg: TEMailerRequest;
 begin
+  LockList;
   try
-    msg := TEMailerRequest(fMessages[idx]);
-    Result := msg.MTo + ':' + msg.MSubject;
-  except
+    if idx < Count then
+    begin
+      msg := TEMailerRequest(fMessages[idx]);
+      Result := msg.MTo + ':' + msg.MSubject;
+    end
+    else
+      Result := '';
+  finally
+    UnlockList;
   end;
 end;
 
@@ -2089,10 +2198,15 @@ begin
   if fThread.Client.Connected then
   begin
     s := '';
-    if fMessages.Count > 0 then
-    begin
-      req := TEMailerRequest(fMessages[0]);
-      s := req.MTo + ':' + req.MSubject
+    LockList;
+    try
+      if Count > 0 then
+      begin
+        req := TEMailerRequest(fMessages[0]);
+        s := req.MTo + ':' + req.MSubject;
+      end;
+    finally
+      UnLockList;
     end;
 
     if s <> '' then
@@ -2101,6 +2215,16 @@ begin
         tsBusy: Result := 'Posting ' + s;
       end;
   end;
+end;
+
+function TEMailer.LockList: TObjectList;
+begin
+  if fLocked and (fLockThread = Integer(GetCurrentThreadID)) then
+    raise Exception.Create('EMailer already locked in this thread');
+  fSync.Enter;
+  fLocked := True;
+  fLockThread := GetCurrentThreadID;
+  Result := fMessages;
 end;
 
 procedure TEMailer.Resume;
@@ -2115,41 +2239,12 @@ begin
   Resume;
 end;
 
-(*
-procedure TEMailer.SaveOutgoingPost;
-var
-  request: TEmailerRequest;
-  mailAccount :TMailAccount;
-  hdrs: TIdHeaderList;
-  body: TStringStream;
+procedure TEMailer.UnlockList;
 begin
-  request := TEMailerRequest(Messages[0]);
-
-  hdrs := nil;
-  body := nil;
-  try
-    mailAccount := nil;
-    if request.ArticleContainer is TMailAccount then
-      mailAccount := TMailAccount(request.ArticleContainer)
-    else
-      if request.ArticleContainer is TSubscribedGroup then
-        mailAccount := MailAccounts.FindMailAccount(TSubscribedGroup(request.ArticleContainer).Owner.MailAccountName);
-
-    if Assigned(mailAccount) then
-    begin
-      hdrs := CurrentMessage.GenerateHeader;
-      body := TStringStream.Create(CurrentMessage.Body.Text);
-
-      FixHeaders(hdrs);
-
-      mailAccount.AddMessage(hdrs, body);
-    end;
-  finally
-    hdrs.Free;
-    Body.Free
-  end;
+  fLocked := False;
+  fLockThread := 0;
+  fSync.Leave;
 end;
-*)
 
 procedure TEMailer.WorkDone;
 begin
@@ -2189,95 +2284,6 @@ begin
   else
     if ArticleContainer is TMailAccount then
       Result := TMailAccount(ArticleContainer);
-end;
-
-{ TNewsGetter }
-
-constructor TNewsGetter.Create(cls: TTCPThreadClass; ANNTPAccount: TNNTPAccount);
-begin
-  inherited Create(cls, ANNTPAccount.NNTPServerSettings);
-  Account := ANNTPAccount;
-end;
-
-function TNewsGetter.GetAccount: TNNTPAccount;
-begin
-  if fThread is TNNTPThread then
-    Result := TNNTPThread(fThread).NNTPAccount
-  else
-    Result := nil;
-end;
-
-function TNewsGetter.GetIsDoing(obj: TObject): Boolean;
-begin
-  Result := obj = Account;
-end;
-
-procedure TNewsGetter.Resume;
-var
-  ok: Boolean;
-begin
-  ok := (Account.NNTPServerSettings.MaxConnections = 0) or
-     (ThreadManager.CountActiveGettersForAccount(Account) < Account.NNTPServerSettings.MaxConnections);
-
-  if not ok then
-  begin
-    threadManager.ClearDormantConnections(Account);
-
-    ok := ThreadManager.CountActiveGettersForAccount(Account) < Account.NNTPServerSettings.MaxConnections;
-  end;
-
-  if ok then
-    inherited Resume;
-end;
-
-procedure TNewsGetter.SetAccount(const Value: TNNTPAccount);
-begin
-  if fThread is TNNTPThread then
-    TNNTPThread(fThread).NNTPAccount := Value;
-end;
-
-{ TMultiNewsGetter }
-
-constructor TMultiNewsGetter.Create(cls: TTCPThreadClass;
-  ANNTPAccount: TNNTPAccount);
-begin
-  inherited Create(cls, ANNTPAccount);
-  fRequests := TObjectList.Create;
-  fSync := TCriticalSection.Create;
-end;
-
-destructor TMultiNewsGetter.Destroy;
-begin
-  fRequests.Free;
-  fSync.Free;
-  inherited Destroy;
-end;
-
-function TMultiNewsGetter.GetCount: Integer;
-begin
-  Result := fRequests.Count;
-end;
-
-function TMultiNewsGetter.LockList: TObjectList;
-begin
-  if fLocked and (fLockThread = Integer(GetCurrentThreadID)) then
-    raise Exception.Create('MultiNewsGetter already locked in this thread');
-  fSync.Enter;
-  fLocked := True;
-  fLockThread := GetCurrentThreadID;
-  Result := fRequests;
-end;
-
-procedure TMultiNewsGetter.UnlockList;
-begin
-  fLocked := False;
-  fLockThread := 0;
-  fSync.Leave;
-end;
-
-procedure TTCPThread.UIUnlock;
-begin
-  fUISync.Leave;
 end;
 
 end.

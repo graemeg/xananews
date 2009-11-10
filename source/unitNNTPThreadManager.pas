@@ -1107,7 +1107,7 @@ begin
         if getter is TEmailer then
         begin
           emailer := TEMailer(getter);
-          if emailer.OrigUseOutbasket and (emailer.Messages.Count > 0) then
+          if emailer.OrigUseOutbasket and (emailer.Count > 0) then
             Inc(Result);
         end;
     end;
@@ -1149,7 +1149,7 @@ begin
         if getter is TEMailer then
         begin
           emailer := TEMailer(getter);
-          if emailer.OrigUseOutbasket and (emailer.Messages.Count > 0) then
+          if emailer.OrigUseOutbasket and (emailer.Count > 0) then
             emailer.ResumeOutbasket;
         end;
     end;

@@ -2153,7 +2153,7 @@ begin
       if idx = -1 then
       begin
         n := 0;
-        Getter.Clear;
+        getter.Clear;
       end
       else
       begin
@@ -2226,7 +2226,12 @@ begin
           efrm.OnDestroy := ModelessWindowFormDestroy;
           efrm.OnActivate := ModelessWindowFormActivate;
           efrm.OnDeactivate := ModelessWindowFormDeactivate;
-          efrm.EMailerRequest := TEMailerRequest(TEmailer(Getter).Messages[idx]);
+          requests := TEmailer(getter).LockList;
+          try
+            efrm.EMailerRequest := TEmailerRequest(requests[idx]);
+          finally
+            TEmailer(getter).UnlockList;
+          end;
           efrm.Show;
           fModelessWindowList.Add(efrm);
         except
@@ -5547,40 +5552,45 @@ begin
           else
             if Getter is TEMailer then
             begin
-              for j := 0 to getter.OutstandingRequestCount - 1 do
+              requests := TEMailer(getter).LockList;
               try
-                mailerRequest := TEMailerRequest(TEMailer(getter).Messages[j]);
-                if Assigned(mailerRequest.Attachments) then
-                  attachCount := mailerRequest.Attachments.Count
-                else
-                  attachCount := 0;
+                for j := 0 to requests.Count - 1 do
+                try
+                  mailerRequest := TEMailerRequest(requests[j]);
+                  if Assigned(mailerRequest.Attachments) then
+                    attachCount := mailerRequest.Attachments.Count
+                  else
+                    attachCount := 0;
 
-                m.Text := RawByteString(mailerRequest.Msg);
-                if mailerRequest.ArticleContainer is TSubscribedGroup then
-                  st := '&&' + TSubscribedGroup(mailerRequest.ArticleContainer).Owner.AccountName + ':'
-                else
-                  st := '&&' + 'Mail:';
+                  m.Text := RawByteString(mailerRequest.Msg);
+                  if mailerRequest.ArticleContainer is TSubscribedGroup then
+                    st := '&&' + TSubscribedGroup(mailerRequest.ArticleContainer).Owner.AccountName + ':'
+                  else
+                    st := '&&' + 'Mail:';
 
-                st := st + mailerRequest.ArticleContainer.Name + #9 +
-                      IntToStr(5 {h.Count}) + #9 +
-                      IntToStr(m.Count) + #9 +
-                      IntToStr(attachCount) + #9 +
-                      IntToStr(mailerRequest.Codepage);
+                  st := st + mailerRequest.ArticleContainer.Name + #9 +
+                        IntToStr(5 {h.Count}) + #9 +
+                        IntToStr(m.Count) + #9 +
+                        IntToStr(attachCount) + #9 +
+                        IntToStr(mailerRequest.Codepage);
 
-                writer.WriteLn(st);
+                  writer.WriteLn(st);
 
-                writer.WriteLn(WideStringToAnsiString(mailerRequest.MTo, mailerRequest.Codepage));
-                writer.WriteLn(WideStringToAnsiString(mailerRequest.MCC, mailerRequest.Codepage));
-                writer.WriteLn(WideStringToAnsiString(mailerRequest.MBCC, mailerRequest.Codepage));
-                writer.WriteLn(WideStringToAnsiString(mailerRequest.MSubject, mailerRequest.Codepage));
-                writer.WriteLn(WideStringToAnsiString(mailerRequest.MReplyTo, mailerRequest.Codepage));
+                  writer.WriteLn(WideStringToAnsiString(mailerRequest.MTo, mailerRequest.Codepage));
+                  writer.WriteLn(WideStringToAnsiString(mailerRequest.MCC, mailerRequest.Codepage));
+                  writer.WriteLn(WideStringToAnsiString(mailerRequest.MBCC, mailerRequest.Codepage));
+                  writer.WriteLn(WideStringToAnsiString(mailerRequest.MSubject, mailerRequest.Codepage));
+                  writer.WriteLn(WideStringToAnsiString(mailerRequest.MReplyTo, mailerRequest.Codepage));
 
-                for k := 0 to m.Count - 1 do
-                  writer.WriteLn(m[k]);
+                  for k := 0 to m.Count - 1 do
+                    writer.WriteLn(m[k]);
 
-                for k := 0 to attachCount - 1 do
-                  writer.WriteLn(TAttachment(mailerRequest.Attachments[k]).PathName);
-              except
+                  for k := 0 to attachCount - 1 do
+                    writer.WriteLn(TAttachment(mailerRequest.Attachments[k]).PathName);
+                except
+                end;
+              finally
+                TEMailer(getter).UnlockList;
               end;
             end;
         end;

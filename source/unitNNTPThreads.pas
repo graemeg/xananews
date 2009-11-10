@@ -116,7 +116,7 @@ uses
   IdException, unitNNTPThreadManager, unitNewsReaderOptions, unitMessages,
   unitCharsetMap, unitMailServices, unitLog, unitSearchString, NewsGlobals,
   IdGlobal, IdReplyRFC, IdStack, IdGlobalProtocols, IdExceptionCore,
-  IdAttachmentFile;
+  IdAttachmentFile, IdExplicitTLSClientServerBase;
 
 { TNNTPThread }
 
@@ -1331,6 +1331,102 @@ begin
   end;
 end;
 
+{ TSMTPMailer }
+
+procedure TSMTPMailer.DoWork;
+var
+  msg: TidMessage;
+  gtr: TEmailer;
+  email: TEmailerRequest;
+  ok: Boolean;
+  i: Integer;
+  att: TAttachment;
+  account: TMailAccount;
+  messages: TObjectList;
+begin
+  gtr := TEmailer(getter);
+  messages := gtr.LockList;
+  try
+    while messages.Count > 0 do
+    begin
+      ok := False;
+      email := TEMailerRequest(messages[0]);
+
+      msg := TidMessage.Create(nil);
+      try
+        msg.Recipients.Add.Text := email.MTo;
+        if email.MCC <> '' then
+          msg.CCList.Add.Text := email.MCC;
+        if email.MBCC <> '' then
+          msg.BccList.Add.Text := email.MBCC;
+
+        msg.Subject := email.MSubject;
+
+        account := email.MailAccount;
+        if Assigned(account) then
+        begin
+          msg.From.Address := account.Identity.EMailAddress;
+          msg.From.Name := account.Identity.UserName;
+          if account.Identity.ReplyAddress <> '' then
+            if msg.From.Address <> account.Identity.ReplyAddress then
+              with msg.ReplyTo.Add do
+              begin
+                Name := account.Identity.UserName;
+                Address := account.Identity.ReplyAddress;
+              end;
+        end
+        else
+        begin
+          msg.From.Address := email.ArticleContainer.Identity.EMailAddress;
+          msg.From.Name := email.ArticleContainer.Identity.UserName;
+          if email.ArticleContainer.Identity.ReplyAddress <> '' then
+            if msg.From.Address <> email.ArticleContainer.Identity.ReplyAddress then
+              with msg.ReplyTo.Add do
+              begin
+                Name := email.ArticleContainer.Identity.UserName;
+                Address := email.ArticleContainer.Identity.ReplyAddress;
+              end;
+        end;
+
+        msg.Body.Text := email.Msg;
+
+        if email.CodePage <> CP_USASCII then
+          msg.CharSet := CodePageToMIMECharsetName(email.CodePage);
+
+        if Assigned(email.Attachments) then
+          for I := 0 to email.Attachments.Count - 1 do
+          begin
+            att := TAttachment(email.Attachments[I]);
+            TidAttachmentFile.Create(msg.MessageParts, att.PathName);
+          end;
+
+        msg.MsgId := string(GenerateMessageID('XN', '', SMTP.Host));
+        msg.ExtraHeaders.Values['Message-Id'] := msg.MsgId;
+
+        msg.References := email.MReplyTo;
+
+        SMTP.MailAgent := ThreadManager.NewsAgent;
+        gtr.UnlockList;
+        try
+          SMTP.Send(msg);
+        finally
+          messages := gtr.LockList;
+        end;
+
+        gtr.CurrentMessage := msg;
+
+        ok := True;
+      finally
+        msg.Free;
+        if (messages.Count > 0) and (email = messages[0]) and ok then
+          messages.Delete(0);
+      end;
+    end;
+  finally
+    gtr.UnlockList;
+  end;
+end;
+
 { TSMTPThread }
 
 constructor TSMTPThread.Create(AGetter: TTCPGetter; ASettings: TServerSettings);
@@ -1392,29 +1488,24 @@ begin
           SMTP.ConnectTimeout := 1000 * Settings.ConnectTimeout;
           SMTP.ReadTimeout := 1000 * Settings.ReadTimeout;
           if (Settings.ServerAccountName <> '') or (Settings.ServerPassword <> '') then
-            SMTP.AuthType := satDefault;
+            SMTP.AuthType := satDefault
+          else
+            SMTP.AuthType := satNone;
           if Settings.SSLrequired then
           begin
-{$IFNDEF USEOPENSTRSEC}
             SSLHandler.SSLOptions.Method := sslvTLSv1;
-            SSLHandler.PassThrough := True;
-{$ENDIF}
             SMTP.IOHandler := SSLHandler;
             SMTP.Port := Settings.SSLPort;
+            SMTP.UseTLS := utUseExplicitTLS;
           end
           else
+          begin
+            SMTP.UseTLS := utNoTLSSupport;
             SMTP.Port := Settings.ServerPort;
+          end;
           SMTP.Connect;
           SMTP.IOHandler.DefStringEncoding := Indy8BitEncoding;
-          if Settings.SSLRequired then
-          begin
-{$IFNDEF USEOPENSTRSEC}
-            SSLHandler.PassThrough := False;
-{$ENDIF}
-            SMTP.SendCmd('STARTTLS', 220);
-          end;
-          if (SMTP.AuthType <> satNone) then
-            SMTP.Authenticate;
+          SMTP.Authenticate;
         end;
       end;
 
@@ -1428,7 +1519,7 @@ begin
         Getter.ClearWork;
       end;
 
-      State := tsDormant
+      State := tsDormant;
     except
       on e: Exception do
       begin
@@ -1472,91 +1563,6 @@ end;
 function TSMTPThread.GetSettings: TSMTPServerSettings;
 begin
   Result := TSMTPServerSettings(fSettings);
-end;
-
-{ TSMTPMailer }
-
-procedure TSMTPMailer.DoWork;
-var
-  msg: TidMessage;
-  gtr: TEmailer;
-  request: TEmailerRequest;
-  ok: Boolean;
-  i: Integer;
-  att: TAttachment;
-  account: TMailAccount;
-begin
-  gtr := TEmailer(getter);
-  while gtr.Messages.Count > 0 do
-  begin
-    ok := False;
-    request := TEMailerRequest(gtr.Messages[0]);
-
-    msg := TidMessage.Create(nil);
-    try
-      msg.Recipients.Add.Text := request.MTo;
-      if request.MCC <> '' then
-        msg.CCList.Add.Text := request.MCC;
-      if request.MBCC <> '' then
-        msg.BccList.Add.Text := request.MBCC;
-
-      msg.Subject := request.MSubject;
-
-      account := request.MailAccount;
-      if Assigned(account) then
-      begin
-        msg.From.Address := account.Identity.EMailAddress;
-        msg.From.Name := account.Identity.UserName;
-        if account.Identity.ReplyAddress <> '' then
-          if msg.From.Address <> account.Identity.ReplyAddress then
-            with msg.ReplyTo.Add do
-            begin
-              Name := account.Identity.UserName;
-              Address := account.Identity.ReplyAddress;
-            end;
-      end
-      else
-      begin
-        msg.From.Address := request.ArticleContainer.Identity.EMailAddress;
-        msg.From.Name := request.ArticleContainer.Identity.UserName;
-        if request.ArticleContainer.Identity.ReplyAddress <> '' then
-          if msg.From.Address <> request.ArticleContainer.Identity.ReplyAddress then
-            with msg.ReplyTo.Add do
-            begin
-              Name := request.ArticleContainer.Identity.UserName;
-              Address := request.ArticleContainer.Identity.ReplyAddress;
-            end;
-      end;
-
-      msg.Body.Text := request.Msg;
-
-      if request.CodePage <> CP_USASCII then
-        msg.CharSet := CodePageToMIMECharsetName(request.CodePage);
-
-      for I := 0 to request.Attachments.Count - 1 do
-      begin
-        att := TAttachment(request.Attachments[I]);
-        TidAttachmentFile.Create(msg.MessageParts, att.PathName);
-      end;
-
-      msg.MsgId := string(GenerateMessageID('XN', '', SMTP.Host));
-      msg.ExtraHeaders.Values['Message-Id'] := msg.MsgId;
-
-      msg.References := request.MReplyTo;
-
-      SMTP.MailAgent := ThreadManager.NewsAgent;
-      SMTP.Send(msg);
-
-      gtr.CurrentMessage := msg;
-
-      ok := True;
-    finally
-      msg.Free;
-
-      if ok then
-        gtr.Messages.Delete(0);
-    end;
-  end;
 end;
 
 end.

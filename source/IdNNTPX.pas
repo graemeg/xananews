@@ -342,7 +342,6 @@ begin
   Mode := mtReader;
   Port := IdPORT_NNTP;
   SetMode := True;
-//  MaxLineLength := 32768;
   PipelineSize := 1024;
 end;
 
