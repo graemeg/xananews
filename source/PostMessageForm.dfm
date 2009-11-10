@@ -1,6 +1,6 @@
 object fmPostMessage: TfmPostMessage
-  Left = 441
-  Top = 218
+  Left = 637
+  Top = 92
   Caption = 'Post Message'
   ClientHeight = 454
   ClientWidth = 640
@@ -105,22 +105,21 @@ object fmPostMessage: TfmPostMessage
   inline fmePost1: TfmePost
     Left = 0
     Top = 88
-    Width = 639
+    Width = 640
     Height = 366
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 3
     TabStop = True
     ExplicitTop = 88
-    ExplicitWidth = 652
-    ExplicitHeight = 320
+    ExplicitWidth = 640
     inherited Label1: TLabel
-      Left = 297
+      Left = 298
       Width = 65
       ExplicitLeft = 297
       ExplicitWidth = 65
     end
     inherited Label2: TLabel
-      Left = 325
+      Left = 326
       Width = 34
       ExplicitLeft = 325
       ExplicitWidth = 34
@@ -130,32 +129,32 @@ object fmPostMessage: TfmPostMessage
       ExplicitWidth = 48
     end
     inherited ScrollBox1: TScrollBox
-      Width = 529
+      Width = 530
       ExplicitWidth = 529
     end
     inherited cbCharset: TComboBox
-      Left = 367
+      Left = 368
       ExplicitLeft = 367
     end
     inherited btnCancel: TButton
-      Left = 551
+      Left = 552
       ExplicitLeft = 551
     end
     inherited btnOK: TButton
-      Left = 551
+      Left = 552
       ExplicitLeft = 551
     end
     inherited btnAttachments: TButton
-      Left = 551
+      Left = 552
       ExplicitLeft = 551
     end
     inherited btnAdvanced: TButton
-      Left = 551
+      Left = 552
       OnClick = fmePost1btnAdvancedClick
       ExplicitLeft = 551
     end
     inherited cbIdentity: TComboBox
-      Left = 367
+      Left = 368
       ExplicitLeft = 367
     end
   end
@@ -165,7 +164,7 @@ object fmPostMessage: TfmPostMessage
     SubKey = 'Position\PostMessage'
     OnGetSettingsClass = PersistentPosition1GetSettingsClass
     OnGetSettingsFile = PersistentPosition1GetSettingsFile
-    Left = 744
-    Top = 48
+    Left = 578
+    Top = 44
   end
 end

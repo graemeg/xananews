@@ -200,8 +200,8 @@ object fmePost: TfmePost
     TabOrder = 9
   end
   object PopupMenu1: TPopupMenu
-    Left = 696
-    Top = 184
+    Left = 156
+    Top = 32
     object mnuUndo: TMenuItem
       Caption = 'Undo'
       ShortCut = 16474
@@ -263,7 +263,7 @@ object fmePost: TfmePost
   end
   object CWSpellChecker1: TCWSpellChecker
     ExRichEdit = mmoMessage
-    Left = 712
-    Top = 96
+    Left = 54
+    Top = 32
   end
 end

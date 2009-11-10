@@ -6,7 +6,7 @@ uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, unitNNTPServices, unitMailServices, StdCtrls, ComCtrls, ExtCtrls, MAPI, unitNNTPThreadManager,
   cmpCWRichEdit, unitSettings, PostFrame, unitIdentities, ConTnrs, NewsGlobals, unitNewsThread,
-  cmpPersistentPosition, unitExSettings;
+  cmpPersistentPosition, unitExSettings, Menus;
 
 // TODO: email (MAPI) vs Unicode!?
 
