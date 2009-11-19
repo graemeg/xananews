@@ -263,10 +263,16 @@ end;
 
 procedure TidNNTPX.Authenticate;
 begin
+  LogMessage('[tx] AuthInfo User <username>');
   inherited SendCmd('AuthInfo User ' + Username, [281, 381]);
+  LogMessage('[rx] ' + IntToStr(LastCmdResult.NumericCode) + ' ' + LastCmdResult.Text.Text, False, False);
 
   if LastCmdResult.NumericCode <> 281 then
+  begin
+    LogMessage('[tx] AuthInfo Pass <password>');
     inherited SendCmd('AuthInfo Pass ' + Password, [281]);
+    LogMessage('[rx] ' + IntToStr(LastCmdResult.NumericCode) + ' ' + LastCmdResult.Text.Text, False, False);
+  end;
 end;
 
 procedure TidNNTPX.Connect;
@@ -600,23 +606,25 @@ function TidNNTPX.SendCmd(AOut: string; const AResponse: array of SmallInt;
 begin
   // NOTE: Responses must be passed as arrays so that the proper inherited SendCmd is called
   // and a stack overflow is not caused.
-  Result := inherited SendCmd(AOut, [], AEncoding);
   LogMessage('[tx] ' + AOut);
+  Result := inherited SendCmd(AOut, [], AEncoding);
   LogMessage('[rx] ' + IntToStr(LastCmdResult.NumericCode) + ' ' + LastCmdResult.Text.Text, False, False);
 
   if (Result = 480) or (Result = 450) then
   begin
+    LogMessage('[tx] AuthInfo User <username>');
     Result := inherited SendCmd('AuthInfo User ' + Username, [281, 381]);
     LogMessage('[rx] ' + IntToStr(LastCmdResult.NumericCode) + ' ' + LastCmdResult.Text.Text, False, False);
 
     if Result = 381 then
     begin
+      LogMessage('tx] AuthInfo Pass <password>');
       inherited SendCmd('AuthInfo Pass ' + Password, [281]);
       LogMessage('[rx] ' + IntToStr(LastCmdResult.NumericCode) + ' ' + LastCmdResult.Text.Text, False, False);
     end;
 
-    Result := inherited SendCmd(AOut, AResponse, AEncoding);
     LogMessage('[tx] ' + AOut);
+    Result := inherited SendCmd(AOut, AResponse, AEncoding);
     LogMessage('[rx] ' + IntToStr(LastCmdResult.NumericCode) + ' ' + LastCmdResult.Text.Text, False, False);
   end
   else

@@ -31,7 +31,6 @@
 			<DesignOnlyPackage>true</DesignOnlyPackage>
 			<GenDll>true</GenDll>
 			<GenPackage>true</GenPackage>
-			<DCC_SymbolReferenceInfo>1</DCC_SymbolReferenceInfo>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1)'!=''">
 			<DCC_DcuOutput>..\..\..\dcus</DCC_DcuOutput>
