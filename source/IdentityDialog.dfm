@@ -1,11 +1,11 @@
 object dlgIdentity: TdlgIdentity
-  Left = 425
-  Top = 209
+  Left = 673
+  Top = 166
   ActiveControl = edName
-  ClientHeight = 481
+  ClientHeight = 464
   ClientWidth = 607
   Color = clBtnFace
-  Constraints.MinHeight = 508
+  Constraints.MinHeight = 500
   Constraints.MinWidth = 379
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -17,56 +17,47 @@ object dlgIdentity: TdlgIdentity
   OnShow = FormShow
   DesignSize = (
     607
-    481)
+    464)
   PixelsPerInch = 96
   TextHeight = 13
-  object lbBlurb: TLabel
-    Left = 16
-    Top = 16
-    Width = 575
-    Height = 49
-    Anchors = [akLeft, akTop, akRight]
-    AutoSize = False
-    WordWrap = True
-  end
   object Label1: TLabel
     Left = 16
-    Top = 88
+    Top = 18
     Width = 65
     Height = 13
     Caption = '&Identity Name'
   end
   object Label2: TLabel
     Left = 16
-    Top = 112
+    Top = 42
     Width = 53
     Height = 13
     Caption = '&Your Name'
   end
   object Label3: TLabel
     Left = 16
-    Top = 136
+    Top = 66
     Width = 59
     Height = 13
     Caption = '&Organization'
   end
   object Label4: TLabel
     Left = 16
-    Top = 160
+    Top = 90
     Width = 70
     Height = 13
     Caption = 'E-Mail Address'
   end
   object Label5: TLabel
     Left = 16
-    Top = 184
+    Top = 114
     Width = 84
     Height = 13
     Caption = 'Reply To Address'
   end
   object Label14: TLabel
     Left = 16
-    Top = 205
+    Top = 139
     Width = 45
     Height = 13
     Caption = 'Signature'
@@ -74,15 +65,16 @@ object dlgIdentity: TdlgIdentity
   end
   object Label37: TLabel
     Left = 16
-    Top = 383
+    Top = 366
     Width = 34
     Height = 13
     Anchors = [akLeft, akBottom]
     Caption = 'X-Face'
+    ExplicitTop = 383
   end
   object Label6: TLabel
     Left = 208
-    Top = 367
+    Top = 350
     Width = 383
     Height = 49
     Anchors = [akLeft, akRight, akBottom]
@@ -91,44 +83,49 @@ object dlgIdentity: TdlgIdentity
       'An X-Face is a small monochrome picture that is sent along with ' +
       'your messages.  '
     WordWrap = True
+    ExplicitTop = 367
   end
   object Label7: TLabel
     Left = 16
-    Top = 271
+    Top = 254
     Width = 242
     Height = 13
     Anchors = [akLeft, akBottom]
     Caption = 'You can use the following macros in your signature:'
+    ExplicitTop = 271
   end
   object Label8: TLabel
     Left = 24
-    Top = 287
+    Top = 270
     Width = 424
     Height = 13
     Anchors = [akLeft, akBottom]
     Caption = 
       '%author% is replaced with the Author, %datetime% is replaced wit' +
       'h the current date && time,'
+    ExplicitTop = 287
   end
   object Label9: TLabel
     Left = 24
-    Top = 303
+    Top = 286
     Width = 217
     Height = 13
     Anchors = [akLeft, akBottom]
     Caption = '%ver% is replaced with the XanaNews version'
+    ExplicitTop = 303
   end
   object Label10: TLabel
     Left = 16
-    Top = 335
+    Top = 318
     Width = 64
     Height = 13
     Anchors = [akLeft, akBottom]
     Caption = 'Signature File'
+    ExplicitTop = 335
   end
   object btnOK: TButton
     Left = 438
-    Top = 439
+    Top = 422
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -137,10 +134,11 @@ object dlgIdentity: TdlgIdentity
     ModalResult = 1
     TabOrder = 11
     OnClick = btnOKClick
+    ExplicitTop = 439
   end
   object btnCancel: TButton
     Left = 518
-    Top = 439
+    Top = 422
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -148,10 +146,11 @@ object dlgIdentity: TdlgIdentity
     Caption = 'Cancel'
     ModalResult = 2
     TabOrder = 12
+    ExplicitTop = 439
   end
   object edName: TEdit
     Left = 120
-    Top = 84
+    Top = 14
     Width = 471
     Height = 21
     Anchors = [akLeft, akTop, akRight]
@@ -160,7 +159,7 @@ object dlgIdentity: TdlgIdentity
   end
   object edUserName: TEdit
     Left = 120
-    Top = 108
+    Top = 38
     Width = 471
     Height = 21
     Anchors = [akLeft, akTop, akRight]
@@ -169,7 +168,7 @@ object dlgIdentity: TdlgIdentity
   end
   object edOrganization: TEdit
     Left = 120
-    Top = 132
+    Top = 62
     Width = 471
     Height = 21
     Anchors = [akLeft, akTop, akRight]
@@ -178,7 +177,7 @@ object dlgIdentity: TdlgIdentity
   end
   object edEMailAddress: TEdit
     Left = 120
-    Top = 156
+    Top = 86
     Width = 471
     Height = 21
     Anchors = [akLeft, akTop, akRight]
@@ -187,7 +186,7 @@ object dlgIdentity: TdlgIdentity
   end
   object edReplyAddress: TEdit
     Left = 120
-    Top = 180
+    Top = 110
     Width = 471
     Height = 21
     Anchors = [akLeft, akTop, akRight]
@@ -197,22 +196,24 @@ object dlgIdentity: TdlgIdentity
   end
   object mmoSignature: TMemo
     Left = 16
-    Top = 221
+    Top = 155
     Width = 575
-    Height = 43
+    Height = 91
     Anchors = [akLeft, akTop, akRight, akBottom]
     ScrollBars = ssVertical
     TabOrder = 5
+    ExplicitHeight = 108
   end
   object Panel1: TPanel
     Left = 56
-    Top = 367
+    Top = 350
     Width = 50
     Height = 50
     Anchors = [akLeft, akBottom]
     AutoSize = True
     BevelOuter = bvLowered
     TabOrder = 8
+    ExplicitTop = 367
     object imgXFace: TImage
       Left = 1
       Top = 1
@@ -223,49 +224,53 @@ object dlgIdentity: TdlgIdentity
   end
   object btnLoadXFace: TButton
     Left = 112
-    Top = 365
+    Top = 348
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = 'Load...'
     TabOrder = 9
     OnClick = btnLoadXFaceClick
+    ExplicitTop = 365
   end
   object btnClearXFace: TButton
     Left = 112
-    Top = 395
+    Top = 378
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = 'Clear'
     TabOrder = 10
     OnClick = btnClearXFaceClick
+    ExplicitTop = 395
   end
   object edSigFile: TEdit
     Left = 120
-    Top = 331
+    Top = 314
     Width = 447
     Height = 21
     Anchors = [akLeft, akRight, akBottom]
     TabOrder = 6
+    ExplicitTop = 331
   end
   object btnSigFile: TButton
     Left = 574
-    Top = 329
+    Top = 312
     Width = 25
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '...'
     TabOrder = 7
     OnClick = btnSigFileClick
+    ExplicitTop = 329
   end
   object OpenPictureDialog1: TOpenPictureDialog
-    Left = 236
-    Top = 424
+    Left = 130
+    Top = 392
   end
   object pomXFace: TPopupMenu
-    Left = 200
-    Top = 424
+    Left = 94
+    Top = 392
     object actXFaceCopy: TMenuItem
       Caption = 'Copy'
       ShortCut = 16451
@@ -288,7 +293,7 @@ object dlgIdentity: TdlgIdentity
       'Text Files (*.txt)|*.txt|Signature files (*.sig)|*.sig|Any File ' +
       '(*.*)|*.*'
     Options = [ofHideReadOnly, ofFileMustExist, ofEnableSizing]
-    Left = 272
-    Top = 424
+    Left = 166
+    Top = 392
   end
 end

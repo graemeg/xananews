@@ -10,7 +10,6 @@ type
   TdlgIdentity = class(TForm)
     btnOK: TButton;
     btnCancel: TButton;
-    lbBlurb: TLabel;
     Label1: TLabel;
     edName: TEdit;
     Label2: TLabel;
