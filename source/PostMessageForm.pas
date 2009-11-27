@@ -221,12 +221,16 @@ end;
 procedure TfmPostMessage.FormClose(Sender: TObject;
   var Action: TCloseAction);
 begin
-  action := caFree;
-
-  if not fmePost1.CloseOK then
-    if (fmePost1.mmoMessage.Text <> '') or (fmePost1.AttachmentCount > 0) then
-      if MessageBox(Handle, 'Are you sure you want to cancel this message', PChar(Application.Title), MB_YESNO or MB_DEFBUTTON2 or MB_ICONQUESTION) <> IDYES then
-        action := caNone;
+  if not fmePost1.CanClose then
+    action := caNone
+  else
+  begin
+    action := caFree;
+    if not fmePost1.CloseOK then
+      if (fmePost1.mmoMessage.Text <> '') or (fmePost1.AttachmentCount > 0) then
+        if MessageBox(Handle, 'Are you sure you want to cancel this message', PChar(Application.Title), MB_YESNO or MB_DEFBUTTON2 or MB_ICONQUESTION) <> IDYES then
+          action := caNone;
+  end;
 end;
 
 destructor TfmPostMessage.Destroy;
@@ -520,6 +524,11 @@ end;
 procedure TfmPostMessage.WMEnable(var msg: TWMEnable);
 begin
   inherited;
+  // Keeping this window enabled makes it easier to type stuff over from
+  // the options dialog for instance. The drawback is that the OK, Cancel and
+  // [X] also stay active.
+  // All modal dialogs must be owned by this form, so that a check can be performed
+  // to see if any dialogs are still open.
   if not msg.Enabled then
     Windows.EnableWindow(Handle, True);
 end;
@@ -564,7 +573,7 @@ procedure TfmPostMessage.btnCrossPostClick(Sender: TObject);
 var
   dlg: TfmPostToGroups;
 begin
-  dlg := TfmPostToGroups.Create(nil);
+  dlg := TfmPostToGroups.Create(Self);
   try
     dlg.PopupParent := Self as TCustomForm;
     dlg.PopupMode := pmExplicit;
@@ -589,7 +598,7 @@ begin
     firstGroup := CheckCrossPosts(cbGroup.Text);
     if firstGroup <> '' then
     begin
-      dlg := TdlgCheckCrosspost.Create(nil);
+      dlg := TdlgCheckCrosspost.Create(Self);
       try
         if dlg.ShowModal <> idOK then
           okToPost := False;
@@ -620,7 +629,7 @@ procedure TfmPostMessage.btnFollowUpClick(Sender: TObject);
 var
   dlg: TfmPostToGroups;
 begin
-  dlg := TfmPostToGroups.Create(nil);
+  dlg := TfmPostToGroups.Create(Self);
   try
     dlg.PopupParent := Self as TCustomForm;
     dlg.PopupMode := pmExplicit;

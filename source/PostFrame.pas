@@ -40,24 +40,24 @@ type
     cbIdentity: TComboBox;
     lbISpellLanguage: TLabel;
     cbISpellLanguage: TComboBox;
+    procedure btnAttachmentsClick(Sender: TObject);
     procedure btnOKClick(Sender: TObject);
-    procedure mnuUndoClick(Sender: TObject);
-    procedure mnuCutClick(Sender: TObject);
-    procedure mnuCopyClick(Sender: TObject);
-    procedure mnuPasteClick(Sender: TObject);
-    procedure mnuSelectAllClick(Sender: TObject);
+    procedure btnCancelClick(Sender: TObject);
     procedure btnSpellClick(Sender: TObject);
+    procedure mnuCopyClick(Sender: TObject);
+    procedure mnuCutClick(Sender: TObject);
+    procedure mnuPasteClick(Sender: TObject);
     procedure mnuPasteQuoteClick(Sender: TObject);
+    procedure mnuPasteSelectedClick(Sender: TObject);
+    procedure mnuRedoClick(Sender: TObject);
+    procedure mnuSelectAllClick(Sender: TObject);
+    procedure mnuUndoClick(Sender: TObject);
     procedure ROT13SelectedText1Click(Sender: TObject);
     procedure cbCharsetChange(Sender: TObject);
+    procedure cbIdentityChange(Sender: TObject);
     procedure mmoMessageFontChange(Sender: TObject);
-    procedure mnuRedoClick(Sender: TObject);
-    procedure btnCancelClick(Sender: TObject);
-    procedure btnAttachmentsClick(Sender: TObject);
     procedure mmoMessageKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure ReverseSelectedText1Click(Sender: TObject);
-    procedure mnuPasteSelectedClick(Sender: TObject);
-    procedure cbIdentityChange(Sender: TObject);
   private
     fInitialText: string;
     fInitialIdentity: string;
@@ -81,6 +81,7 @@ type
     procedure PasteQuote(const quote: string);
     procedure ApplySignature(Identity: TIdentity; const signatureOverride: string);
   public
+    function CanClose(ShowDlg: Boolean = True): Boolean;
     procedure Initialize(const InitialText: string; PostingSettings: TPostingSettings; identity: TIdentity; ReplyTOArticle: TArticleBase; Request: TObject; attachments: TObjectList; codePageOverride: Integer; const signatureOverride: string);
     procedure UpdateActions(okOK: Boolean);
     procedure DoResize;
@@ -94,8 +95,9 @@ type
 
 implementation
 
-uses unitNewsreaderOptions, unitCharsetMap, ClipBrd,
-     AttachmentsDialog, MainForm, unitSearchString;
+uses
+  unitNewsreaderOptions, unitCharsetMap, ClipBrd,
+  AttachmentsDialog, MainForm, SpellCheckerForm, unitSearchString;
 
 {$R *.dfm}
 
@@ -104,6 +106,8 @@ var
   okToPost: Boolean;
   skipFirstLine: Boolean;
 begin
+  if not CanClose then Exit;
+
   okToPost := True;
   if (mmoMessage.Text = '') and (AttachmentCount = 0) then
     if MessageBox(Handle, 'Are you sure you want to post an empty message', PChar(Application.Title), MB_YESNO or MB_DEFBUTTON2 or MB_ICONQUESTION) <> IDYES then
@@ -122,7 +126,8 @@ begin
     if not cbCheckSpelling.Checked or (CWSpellChecker1.CheckAndShowModal(Owner as TCustomForm, skipFirstLine) = mrOK) then
       PostAndClose
     else
-      mmoMessage.SetFocus;
+      if Assigned(mmoMessage) then
+        mmoMessage.SetFocus;
   end;
 end;
 
@@ -412,6 +417,8 @@ end;
 
 procedure TfmePost.btnCancelClick(Sender: TObject);
 begin
+  if not CanClose then Exit;
+
   SendMessage(Parent.Handle, WM_CLOSE, 0, 0);
 end;
 
@@ -448,6 +455,34 @@ begin
     Result := fAttachments.Count
   else
     Result := 0;
+end;
+
+function TfmePost.CanClose(ShowDlg: Boolean = True): Boolean;
+var
+  Component: TComponent;
+  I: Integer;
+  S: string;
+begin
+  Result := not Assigned(fmSpellChecker);
+  if Result then
+  begin
+    for I := 0 to Owner.ComponentCount - 1 do
+    begin
+      Component := Owner.Components[I];
+      if Component is TCustomForm then
+      begin
+        S := TCustomForm(Component).Caption;
+        Result := False;
+        Break;
+      end;
+    end;
+  end
+  else
+    S := fmSpellChecker.Caption;
+
+  if not Result and ShowDlg then
+    MessageBox(Handle, PChar('[' + S + '] dialog is still open!'),
+      PChar(Application.Title), MB_OK or MB_ICONWARNING);
 end;
 
 procedure TfmePost.RemoveAttachment(idx: Integer);
