@@ -463,7 +463,7 @@ var
   I: Integer;
   S: string;
 begin
-  Result := not Assigned(fmSpellChecker);
+  Result := not Assigned(fmSpellChecker) or (fmSpellChecker.ModalResult <> 0);
   if Result then
   begin
     for I := 0 to Owner.ComponentCount - 1 do

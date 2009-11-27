@@ -38,7 +38,7 @@ begin
   try
     if not Check (txt, 1, ss, se, suggestions, SkipFirstLine) then
     begin
-      fmSpellChecker := TfmSpellChecker.Create(PopupParent);
+      fmSpellChecker := TfmSpellChecker.Create(nil);
       fmSpellChecker.QuoteChars := QuoteChars;
       fmSpellChecker.Initialize (self, ss, se, suggestions);
       fmSpellChecker.PopupParent := PopupParent;
