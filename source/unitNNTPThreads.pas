@@ -220,6 +220,17 @@ var
   st: string;
   timeout, tm: DWORD;
   ServerFault: Boolean;
+
+  function GetExtendedExceptionInfo(const E: Exception): string;
+  begin
+    Result := 'Class: ' + E.ClassName;
+    if (e is EIdReplyRFCError) then
+      Result := Result + ', ErrorCode: ' + IntToStr(EIdReplyRFCError(E).ErrorCode);
+    if (e is EIdSocketError) then
+      Result := Result + ', LastError: ' + IntToStr(EIdSocketError(E).LastError);
+    Result := Result + ', Message: ' + E.Message;
+  end;
+
 begin
   if Assigned(NNTPAccount) then
   begin
@@ -312,12 +323,7 @@ begin
         State := tsPending;
 
         st := 'Error in thread "' + Getter.GetterRootText + '" - ';
-        st := st + 'Class: ' + E.ClassName;
-        if (e is EIdReplyRFCError) then
-          st := st + ', ErrorCode: ' + IntToStr(EIdReplyRFCError(E).ErrorCode);
-        if (e is EIdSocketError) then
-          st := st + ', LastError: ' + IntToStr(EIdSocketError(E).LastError);
-        st := st + ', Message: ' + fLastError;
+        st := st + GetExtendedExceptionInfo(E);
         LogMessage(st, True);
 
         if not gAppTerminating then
@@ -327,7 +333,16 @@ begin
         // notify the peer, just close the IOHandler.  Notifying the peer
         // would just reraise the same exception and the thread would die.
         ServerFault := NNTP.IsServerException(E);
-        NNTP.Disconnect(not ServerFault);
+        try
+          NNTP.Disconnect(not ServerFault);
+        except
+          on E: Exception do
+          begin
+            st := 'Error in thread "' + Getter.GetterRootText + '" while disconnecting after an exception occurred - ';
+            st := st + GetExtendedExceptionInfo(E);
+            LogMessage(st, True);
+          end;
+        end;
 
         if not gAppTerminating then
           try
