@@ -580,6 +580,7 @@ type
 
     fSubscribedGroups: TStringList;
     fOwner: TNNTPAccounts;
+    fCapabilities: TStringList;
     fXOverFMT: TStringList;
     fNoXNews: Boolean;
 
@@ -608,7 +609,10 @@ type
     procedure SaveSubscribedGroups(rootReg: TExSettings);
     function GetSubscribedGroup(idx: Integer): TSubscribedGroup;
     function GetSubscribedGroupCount: Integer;
+    function GetCapabilities: TStringList;
+    procedure SetCapabilities(const Value: TStringList);
     function GetXOverFMT: TStringList;
+    procedure SetXOverFMT(const Value: TStringList);
     procedure ResetKeyPhraseFlags(idx: Integer);
     procedure SetScanKeyPhrases(const Value: Boolean);
     function GetNext: TNNTPAccount;
@@ -623,8 +627,6 @@ type
   public
     constructor Create(AOwner: TNNTPAccounts);
     destructor Destroy; override;
-
-    procedure SetXOverFMT(s: TStringList);
 
     function IsSubscribedTo(const groupName: string): Boolean;
     function SubscribeTo(const groupName: string; save: Boolean = True): TSubscribedGroup;
@@ -642,6 +644,8 @@ type
     property Owner: TNNTPAccounts read fOwner;
     property SubscribedGroupCount: Integer read GetSubscribedGroupCount;
     property SubscribedGroups[idx: Integer]: TSubscribedGroup read GetSubscribedGroup;
+
+    property Capabilities: TStringList read GetCapabilities write SetCapabilities;
     property XOverFMT: TStringList read GetXOverFMT write SetXOverFMT;
 
     property ScanKeyPhrases: Boolean read fScanKeyPhrases write SetScanKeyPhrases;
@@ -2407,6 +2411,7 @@ begin
   for i := 0 to SubscribedGroupCount - 1 do
     SubscribedGroups[i].Free;
   fSubscribedGroups.Free;
+  fCapabilities.Free;
   fXOverFMT.Free;               // Will exist if SetXOverFMT has been called.
                                 // (contains the XOVER Format list)
   fFiltersCtnr.Free;
@@ -2431,6 +2436,11 @@ begin
   end
   else
     Result := nil;
+end;
+
+function TNNTPAccount.GetCapabilities: TStringList;
+begin
+  Result := fCapabilities;
 end;
 
 function TNNTPAccount.GetFileName: string;
@@ -2639,6 +2649,14 @@ begin
   end;
 end;
 
+procedure TNNTPAccount.SetCapabilities(const Value: TStringList);
+begin
+  if not Assigned(fCapabilities) then
+    fCapabilities := TStringList.Create;
+
+  fCapabilities.Assign(Value);
+end;
+
 procedure TNNTPAccount.SetGreeting(const Value: string);
 var
   reg: TExSettings;
@@ -2690,12 +2708,12 @@ begin
   Owner.ChangeAccountSortIdx(Self, Value);
 end;
 
-procedure TNNTPAccount.SetXOverFMT(s: TStringList);
+procedure TNNTPAccount.SetXOverFMT(const Value: TStringList);
 begin
   if not Assigned(fXOverFMT) then
     fXOverFMT := TStringList.Create;
 
-  fXOverFMT.Assign(s);
+  fXOverFMT.Assign(Value);
 end;
 
 function OldCompareGroups(List: TStringList; Index1, Index2: Integer): Integer;
@@ -2882,7 +2900,7 @@ var
   references: RawByteString;
   Bytes: Cardinal;
   lines: Cardinal;
-  exd, val, hdr: string;
+  exd, val, hdr, st: string;
   article: TArticle;
 begin
   if not fArticlesLoaded then
@@ -2915,10 +2933,13 @@ begin
       while (n < XOverFMT.Count) and (exd <> '') do
       begin
         val := Fetch(exd, #9);
-        hdr := XOverFMT[n];
-        hdr := Fetch(hdr, ':');
+        st  := XOverFMT[n];
+        hdr := Fetch(st, ':');
         Inc(n);
-        article.fTempExtraHeaders := article.fTempExtraHeaders + #9 + hdr + ':' + val;
+        if SameText(st, 'full') then
+          article.fTempExtraHeaders := article.fTempExtraHeaders + #9 + val
+        else
+          article.fTempExtraHeaders := article.fTempExtraHeaders + #9 + hdr + ':' + val;
       end;
 
     if article.fTempExtraHeaders <> '' then

@@ -102,7 +102,8 @@ type
 
     procedure GetNewsgroupList(AList: TStrings);
     procedure GetNewGroupsList(const ADate: TDateTime; const AGMT: Boolean; const ADistributions: string; AList: TStrings);
-    procedure GetOverviewFMT(var AResponse: TStringList);
+    procedure GetCapabilities(const AResponse: TstringList);
+    procedure GetOverviewFMT(const AResponse: TStringList);
     function SelectArticle(const AMsgNo: Cardinal): Boolean;
     procedure SelectGroup(const AGroup: string);
     function SendCmd(AOut: string; const AResponse: array of SmallInt;
@@ -231,7 +232,7 @@ begin
   {Line Count}
   ALineCount := RawStrToIntDef(NextItemStr(P), 0);
   {Extra data}
-  AExtraData := string(P^);
+  AExtraData := string(P);
   if (AExtraData <> '') and (Pos(#9#8#9, AExtraData) > 0) then
     AExtraData := StringReplace(AExtraData, #9#8#9, #9, [rfReplaceAll]);
 end;
@@ -303,7 +304,7 @@ begin
     case mode of
       mtStream:
         begin
-          SendCmd('mode stream');
+          SendCmd('MODE STREAM');
           if LastCmdResult.NumericCode <> 203 then
             ModeResult := mrNoStream
           else
@@ -315,7 +316,7 @@ begin
           // Result but we set mode to reader anyway since the
           // server may want to do some internal reconfiguration
           // if it knows that a reader has connected
-          SendCmd('mode reader');
+          SendCmd('MODE READER');
           if LastCmdResult.NumericCode <> 200 then
             ModeResult := mrNoPost
           else
@@ -386,7 +387,7 @@ begin
   try
     try
       if Connected then
-        IOHandler.WriteLn('Quit');
+        IOHandler.WriteLn('QUIT');
     except
       on E: Exception do
       begin
@@ -459,13 +460,19 @@ end;
 
 procedure TidNNTPX.GetNewsgroupList(AList: TStrings);
 begin
-  SendCmd('List', 215);
+  SendCmd('LIST', 215);
   IOHandler.Capture(AList);
 end;
 
-procedure TidNNTPX.GetOverviewFMT(var AResponse: TStringList);
+procedure TidNNTPX.GetCapabilities(const AResponse: TStringList);
 begin
-  SendCmd('list overview.fmt', 215);
+  SendCmd('CAPABILITIES', 101);
+  IOHandler.Capture(AResponse);
+end;
+
+procedure TidNNTPX.GetOverviewFMT(const AResponse: TStringList);
+begin
+  SendCmd('LIST OVERVIEW.FMT', 215);
   IOHandler.Capture(AResponse);
 end;
 
@@ -545,7 +552,7 @@ end;
 
 function TidNNTPX.SelectArticle(const AMsgNo: Cardinal): Boolean;
 begin
-  Result := SetArticle('Stat', AMsgNo, '');
+  Result := SetArticle('STAT', AMsgNo, '');
 end;
 
 procedure TidNNTPX.SelectGroup(const AGroup: string);
@@ -553,7 +560,7 @@ var
   s: string;
   group: string;
 begin
-  SendCmd('Group ' + AGroup, [211]);
+  SendCmd('GROUP ' + AGroup, [211]);
   s := LastCmdResult.Text[0];
   FlMsgCount := IndyStrToInt(Fetch(s));
   FlMsgLow := IndyStrToInt(Fetch(s));
@@ -574,7 +581,7 @@ var
   name, val: RawByteString;
   S: RawByteString;
 begin
-  SendCmd('Post', 340);
+  SendCmd('POST', 340);
   BeginWork(wmWrite);
   try
     for i := 0 to header.Count - 1 do
@@ -633,7 +640,7 @@ end;
 
 procedure TidNNTPX.SendXOVER(const AParam: string; AResponse: TAnsiStrings);
 begin
-  SendCmd('xover ' + AParam, 224);
+  SendCmd('XOVER ' + AParam, 224);
   ReceiveHeaders(AResponse);
 end;
 

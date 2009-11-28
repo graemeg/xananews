@@ -34,14 +34,14 @@ type
   private
     fNNTPAccount: TNNTPAccount;
     fGreet: string;
-
+    function GetCapabilities: TStringList;
     function GetClient: TidNNTPX;
-    procedure CheckNewGroups;
     procedure DoNotifyNewGroups;
     function GetSettings: TNNTPServerSettings;
     procedure SetGreeting;
-
   protected
+    procedure CheckCapabilities;
+    procedure CheckNewGroups;
     procedure Execute; override;
   public
     constructor Create(AGetter: TTCPGetter; ASettings: TServerSettings); override;
@@ -120,6 +120,28 @@ uses
 
 { TNNTPThread }
 
+function GetExtendedExceptionInfo(const E: Exception): string;
+begin
+  Result := 'Class: ' + E.ClassName;
+  if (e is EIdReplyRFCError) then
+    Result := Result + ', ErrorCode: ' + IntToStr(EIdReplyRFCError(E).ErrorCode);
+  if (e is EIdSocketError) then
+    Result := Result + ', LastError: ' + IntToStr(EIdSocketError(E).LastError);
+  Result := Result + ', Message: ' + E.Message;
+end;
+
+procedure TNNTPThread.CheckCapabilities;
+begin
+  try
+    GetCapabilities();
+  except
+    on E: Exception do
+    begin
+      LogMessage('CAPABILITIES: ' + GetExtendedExceptionInfo(E));
+    end;
+  end;
+end;
+
 procedure TNNTPThread.CheckNewGroups;
 var
   FileName: string;
@@ -142,6 +164,9 @@ begin
       try
         NNTP.GetNewGroupsList(dt, True, '', newGroups);
 
+        for I := 0 to newGroups.Count - 1 do
+          LogMessage('[rx] ' + newGroups[i]);
+
         if newGroups.Count > 0 then
         begin
           groups := TStringList.Create;
@@ -159,6 +184,7 @@ begin
           //  allowed ('y') or prohibited ('n').
 
           for i := 0 to newGroups.Count - 1 do
+          begin
             if groups.IndexOf(newGroups[i]) = -1 then
             begin
               st := newGroups[i];
@@ -176,6 +202,7 @@ begin
                 LogMessage(st, True);
               end;
             end;
+          end;
 
           groups.SaveToFile(fileName);
 
@@ -220,17 +247,6 @@ var
   st: string;
   timeout, tm: DWORD;
   ServerFault: Boolean;
-
-  function GetExtendedExceptionInfo(const E: Exception): string;
-  begin
-    Result := 'Class: ' + E.ClassName;
-    if (e is EIdReplyRFCError) then
-      Result := Result + ', ErrorCode: ' + IntToStr(EIdReplyRFCError(E).ErrorCode);
-    if (e is EIdSocketError) then
-      Result := Result + ', LastError: ' + IntToStr(EIdSocketError(E).LastError);
-    Result := Result + ', Message: ' + E.Message;
-  end;
-
 begin
   if Assigned(NNTPAccount) then
   begin
@@ -297,7 +313,14 @@ begin
 
       if not Terminated and NNTP.Connected then
       begin
-        CheckNewGroups;
+// << CAPABILITIES, the world is not ready for this yet.
+//    - most servers respond with        500 Command not recognized
+//    - news.components4developers.com   ReadTimeout
+//    - news.soft-gems.net               400 Command not recognized
+//    - Only recent builds (nov 2009) of INN 2.5.2 and 2.6.0 support this.
+//        CheckCapabilities();
+// >>
+        CheckNewGroups();
 
         Getter.ClearWork;
         DoWork;
@@ -392,6 +415,43 @@ begin
     end;
   end;
 end;
+
+function TNNTPThread.GetCapabilities: TStringList;
+var
+  I: Integer;
+begin
+  Result := NNTPAccount.Capabilities;
+
+  if not Assigned(Result) then
+  begin
+    Result := TStringList.Create;
+    try
+      try
+        NNTP.GetCapabilities(Result);
+
+        for I := 0 to Result.Count - 1 do
+          LogMessage('[rx] ' + Result[I]);
+      except
+        on e: EIdReplyRFCError do
+          case e.ErrorCode of
+            500, 501: ;                 // Capabilities not supported.  Not an
+                                        // error - just a lousy news server.
+            else
+              raise;
+          end
+        else
+          raise;
+      end;
+
+      NNTPAccount.Capabilities := Result;
+    finally
+      Result.Free;
+    end;
+  end;
+
+  Result := NNTPAccount.Capabilities;
+end;
+
 
 function TNNTPThread.GetClient: TidNNTPX;
 begin
@@ -488,6 +548,8 @@ var
   st: string;
 
   function GetXOverFMT: TStringList;
+  var
+    I: Integer;
   begin
     Result := NNTPAccount.XOverFMT;
 
@@ -497,6 +559,9 @@ var
       try
         try
           NNTP.GetOverviewFMT(Result);
+
+          for I := 0 to Result.Count - 1 do
+            LogMessage('[rx] ' + Result[I]);
         except
           on e: EIdReplyRFCError do
             case e.ErrorCode of
