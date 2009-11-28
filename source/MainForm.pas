@@ -1534,6 +1534,11 @@ begin
     ForEachSelectedArticle(DoMarkAsReadArticle, Integer(not article.IsRead));
     vstArticles.Invalidate;
     Refresh_vstSubscribed;
+
+    // If the user requested the article to be marked as unread then stop
+    // the auto mark as read mechanism for the moment.
+    if not article.IsRead then
+      fAutoMarkTicks := MaxInt;
   end;
 end;
 
