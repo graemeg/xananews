@@ -1016,6 +1016,7 @@ type
     procedure ModelessWindowFormActivate(Sender: TObject);
     procedure ModelessWindowFormDeactivate(Sender: TObject);
 
+    procedure InitArticlesRootNodeCount(ctnr: TArticleContainer);
     procedure Refresh_vstArticles(article: TArticleBase = nil);
     procedure Refresh_vstSubscribed;
     procedure Reinit_vstSubscribed(refresh: Boolean = True);
@@ -1826,7 +1827,7 @@ begin
       artNo := -1;
 
     fLastFocusedArticleContainer.HideMessagesNotToMe := not fLastFocusedArticleContainer.HideMessagesNotToMe;
-    vstArticles.RootNodeCount := fLastFocusedArticleContainer.ThreadCount;
+    InitArticlesRootNodeCount(fLastFocusedArticleContainer);
     Refresh_vstArticles;
 
     if artNo <> -1 then
@@ -2082,8 +2083,8 @@ begin
         else
         begin
           FocusArticleContainer(fLastFocusedArticleContainer);
-//          fLastFocusedArticleContainer.ReSortArticles;
-          vstArticles.RootNodeCount := fLastFocusedArticleContainer.ThreadCount;
+
+          InitArticlesRootNodeCount(fLastFocusedArticleContainer);
           Refresh_vstArticles;
           Refresh_vstSubscribed;
 
@@ -2561,7 +2562,8 @@ begin
     finally
       Screen.Cursor := OldCursor;
     end;
-    vstArticles.RootNodeCount := ctnr.ThreadCount;
+
+    InitArticlesRootNodeCount(ctnr);
     Refresh_vstArticles;
     GoToArticle(art);
   end;
@@ -3703,7 +3705,7 @@ begin
     y := MessageScrollBox1.VertScrollBar.Position;
     art := GetFocusedArticle;
     DisplayArticleBody(nil);
-    vstArticles.RootNodeCount := group.ThreadCount;
+    InitArticlesRootNodeCount(group);
     Refresh_vstArticles;
     GoToArticle(art);
     if Assigned(art) then
@@ -5167,7 +5169,7 @@ begin
       msgID := article.UniqueID;
 
       NNTPAccounts.PurgeOldArticles;
-      vstArticles.RootNodeCount := ctnr.ThreadCount;
+      InitArticlesRootNodeCount(ctnr);
                                         // The 'purge' may have deleted the article
                                         // if it was marked as delete - so make sure
                                         // it still exists!
@@ -5910,7 +5912,7 @@ begin
   end;
 
   if Assigned(fLastFocusedArticleContainer) then
-    vstArticles.RootNodeCount := fLastFocusedArticleContainer.ThreadCount;
+    InitArticlesRootNodeCount(fLastFocusedArticleContainer);
 
   if XNOptions.ShowInSystemTray then
   begin
@@ -6604,7 +6606,7 @@ begin
       vstArticles.Header.SortDirection := TSortDirection(0);
   end;
 
-  vstArticles.RootNodeCount := ctnr.ThreadCount;
+  InitArticlesRootNodeCount(ctnr);
   Refresh_vstArticles;
   if ctnr is TArticleFolder then
     art := ctnr.FindUniqueID(id);
@@ -7683,7 +7685,7 @@ begin
       fPrevArticle := nil;
       FocusArticleContainer(ctnr);
       article := ctnr.FindUniqueID(fPurgingMessageID);
-      vstArticles.RootNodeCount := ctnr.ThreadCount;
+      InitArticlesRootNodeCount(ctnr);
       Refresh_vstArticles;
       if Assigned(article) then
         GoToArticle(article);
@@ -7850,7 +7852,7 @@ begin
     ctnr.HideReadMessages := XNOptions.HideReadMessages;
     ctnr.HideMessagesNotToMe := False;
     ctnr.HideIgnoredMessages := XNOptions.HideIgnoredMessages;
-    vstArticles.RootNodeCount := ctnr.ThreadCount;
+    InitArticlesRootNodeCount(ctnr);
 
     case ctnr.ThreadSortOrder of
       soMessageNo    : sortCol := 1;
@@ -8491,7 +8493,7 @@ begin
       Screen.Cursor := oldCursor;
     end;
 
-    vstArticles.RootNodeCount := group.ThreadCount;
+    InitArticlesRootNodeCount(group);
     Refresh_vstArticles;
     GoToArticle(group.FindUniqueID(id));
   end;
@@ -8632,7 +8634,7 @@ begin
       artNo := -1;
 
     fLastFocusedArticleContainer.HideReadMessages := not fLastFocusedArticleContainer.HideReadMessages;
-    vstArticles.RootNodeCount := fLastFocusedArticleContainer.ThreadCount;
+    InitArticlesRootNodeCount(fLastFocusedArticleContainer);
     Refresh_vstArticles;
 
     if artNo <> -1 then
@@ -9619,7 +9621,7 @@ procedure TfmMain.actToolsSearchbarGoExecute(Sender: TObject);
       fltr.Temporary := True;  // Also caused it to be 'owned'
 
     fLastFocusedArticleContainer.ReSortArticles;
-    vstArticles.RootNodeCount := ctnr.ThreadCount;
+    InitArticlesRootNodeCount(ctnr);
     Refresh_vstArticles;
     GoToArticle(art);
   end;
@@ -9890,7 +9892,7 @@ begin
       id := art.UniqueID;
     DisplayArticleBody(nil);
     fldr.Reindex;
-    vstArticles.RootNodeCount := fldr.ThreadCount;
+    InitArticlesRootNodeCount(fldr);
     Refresh_vstArticles;
     art := fldr.FindUniqueID(id);
     GoToArticle(art);
@@ -10456,6 +10458,19 @@ begin
   end;
 end;
 
+procedure TfmMain.InitArticlesRootNodeCount(ctnr: TArticleContainer);
+var
+  wasEnabled: Boolean;
+begin
+  wasEnabled := Timer1.Enabled;
+  Timer1.Enabled := False;
+  try
+    vstArticles.RootNodeCount := ctnr.ThreadCount
+  finally
+    Timer1.Enabled := wasEnabled;
+  end;
+end;
+
 function TfmMain.IsInMultipartMode: Boolean;
 var
   ctnr: TArticleContainer;
@@ -10968,7 +10983,7 @@ begin
       artNo := -1;
 
     fLastFocusedArticleContainer.HideIgnoredMessages := not fLastFocusedArticleContainer.HideIgnoredMessages;
-    vstArticles.RootNodeCount := fLastFocusedArticleContainer.ThreadCount;
+    InitArticlesRootNodeCount(fLastFocusedArticleContainer);
     Refresh_vstArticles;
 
     if artNo <> -1 then

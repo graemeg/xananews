@@ -2826,6 +2826,31 @@ var
   article: TArticle;
   filterIt, bozo: Boolean;
   action: TBozoAction;
+
+  function GetLineCount(body: TStream): Integer;
+  var
+    P: PAnsiChar;
+    I: Integer;
+    L: Integer;
+  begin
+    Result := 0;
+    if body is TMemoryStream then
+    begin
+      P := TMemoryStream(body).Memory;
+      L := TMemoryStream(body).Size;
+      for I := 0 to L - 2 do
+      begin
+        if P^ = #13 then
+        begin
+          Inc(P);
+          if P^ = #10 then
+            Inc(Result);
+        end;
+        Inc(P);
+      end;
+    end
+  end;
+
 begin
   if not Loaded then
     LoadArticles;
@@ -2839,7 +2864,16 @@ begin
     article.fMsg.AddData(body);
 
     if isNew then
+    begin
       article.fFlags := article.fFlags or fgNew;
+      if Assigned(body) then
+      begin
+        if article.fBytes = 0 then
+          article.fBytes := body.Size;
+        if article.fLines = 0 then
+          article.fLines := GetLineCount(body);
+      end;
+    end;
 
     filterIt := filtersCtnr.BlockArticle(article);
     bozo := False;
@@ -2957,10 +2991,13 @@ end;
 
 procedure TSubscribedGroup.AddRawHeaders(headers: TTextFileReader);
 var
+  linesTotal: Integer;
+  linesDeleted: Integer;
   P: PAnsiChar;
   article: TArticle;
   lastGoodDate: TDateTime;
   raw: RawByteString;
+  st: string;
 
   function NextItem(var S: RawByteString): PAnsiChar;
   begin
@@ -2987,42 +3024,69 @@ begin
   if not fArticlesLoaded then
     LoadArticles;
 
-  try
-    lastGoodDate := 0;
-    while headers.ReadLn(raw) do
-    begin
-      P := PAnsiChar(raw);
+  linesTotal := 0;
+  linesDeleted := 0;
+  lastGoodDate := 0;
+  while headers.ReadLn(raw) do
+  begin
+    Inc(linesTotal);
+    P := PAnsiChar(raw);
 
-      article := TArticle.Create(Self);
+    article := TArticle.Create(Self);
+    try
+      article.fArticleNo := RawStrToInt(NextItemStr);
+      P := NextItem(article.fSubject);
+      P := NextItem(article.fFrom);
       try
-        article.fArticleNo := RawStrToInt(NextItemStr);
-        P := NextItem(article.fSubject);
-        P := NextItem(article.fFrom);
-        try
-          article.fDate := FixedGMTToLocalDateTime(NextItemStr);
-          lastGoodDate := article.fDate;
-        except
-          article.fDate := lastGoodDate;
-        end;
-        P := NextItem(article.fMessageID);
-        P := NextItem(article.fReferences);
-        article.fBytes := RawStrToIntDef(NextItemStr, 0);
-        article.fLines := RawStrToIntDef(NextItemStr, 0);
-        article.fFlags := RawStrToIntDef(NextItemStr, 0) and $08FFFFFF;
-        article.fMessageOffset := RawStrToInt64Def(NextItemStr, -1);
-
-        if article.IsDeleted then
-          article.Owner.fNeedsPurge := True;
-
+        article.fDate := FixedGMTToLocalDateTime(NextItemStr);
+        lastGoodDate := article.fDate;
       except
-        article.Free;
-        raise;
+        article.fDate := lastGoodDate;
       end;
-      RawAddArticle(article);
+      P := NextItem(article.fMessageID);
+      P := NextItem(article.fReferences);
+      article.fBytes := RawStrToIntDef(NextItemStr, 0);
+      article.fLines := RawStrToIntDef(NextItemStr, 0);
+      article.fFlags := RawStrToIntDef(NextItemStr, 0) and $08FFFFFF;
+      article.fMessageOffset := RawStrToInt64Def(NextItemStr, -1);
+
+      if article.IsDeleted then
+        article.Owner.fNeedsPurge := True;
+    except
+      FreeAndNil(article);
+      Inc(linesDeleted);
     end;
-  except
-    fArticlesLoaded := False;
-    raise;
+
+    if Assigned(article) then
+      RawAddArticle(article);
+  end;
+
+  if linesDeleted > 1 then
+  begin
+    st := 'The file containing the main article header data is corrupted (articles.dat)!'#13#13 +
+          'Account:'#9 + Owner.AccountName + #13 +
+          'Group:'#9 + Name + #13 +
+          'Posts:'#9 + IntTostr(linesDeleted) + ' out of ' + IntToStr(linesTotal) + ' are damaged!'#13#13 +
+          'Delete the damaged lines?'#13 +
+          '- Yes'#9'means the damaged lines will be removed.'#13 +
+          '- No'#9'means an error will be raised which gives you'#13 +
+          #9'the *opportunity* to close/terminate XanaNews and fix'#13 +
+          #9'the problem by hand (or to make a backup first)';
+    if MessageBox(0, PChar(st), PChar(Application.Title), MB_YESNO or MB_DEFBUTTON2 or MB_ICONEXCLAMATION) <> IDYES then
+    begin
+      fArticlesLoaded := False;
+      raise Exception.Create('Article.dat file corrupted!');
+    end;
+  end;
+
+  if linesDeleted > 0 then
+  begin
+    fFlagsDirty := True;
+    st := 'Articles.dat file of Group: "' + Name +
+      '" from Account "' + Owner.fAccountName + '" was damaged, ' +
+      IntToStr(linesDeleted) + ' of ' + IntToStr(linesTotal) +
+      ' lines/posts were deleted';
+    LogMessage(st, True);
   end;
 
   NNTPAccounts.PerfCue(660, 'Added Article Headers');
