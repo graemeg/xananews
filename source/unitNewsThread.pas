@@ -1820,7 +1820,7 @@ begin
       else
       begin
         multipartBoundary := GenerateMultipartBoundary;
-        hdr.Add('Content-Type=Multipart/Mixed; boundary=' + multipartBoundary);
+        hdr.Add('Content-Type=Multipart/Mixed; boundary="' + multipartBoundary + '"');
       end;
     end;
   except
