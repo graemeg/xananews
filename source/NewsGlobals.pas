@@ -268,13 +268,6 @@ var
   ch, lastch: AnsiChar;
   inQuote: Boolean;
 begin
-// TODO: Remove test code or make it a extra log option <<
-  LogMessage('');
-  for i := 0 to hdrs.Count - 1 do
-    LogMessage(string(hdrs[i]));
-  LogMessage('');
-// >>
-
   i := 1;
   while i < hdrs.Count do              // Merge split lines (unfolding).
   begin

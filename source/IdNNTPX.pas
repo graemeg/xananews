@@ -69,7 +69,8 @@ type
     FIsConnected: Boolean;
     function ConvertDateTimeDist(ADate: TDateTime; AGMT: Boolean; const ADistributions: string): string;
     function Get(const ACmd: string; const AMsgNo: Cardinal; const AMsgID: string; AHdr: TAnsiStrings; ABody: TStream): Boolean;
-    function ReceiveHeader(AMsg: TAnsiStrings; const ADelim: RawByteString = ''): Boolean;
+    procedure ReceiveBody(AStream: TStream; const ADelim: string = '');
+    function  ReceiveHeader(AMsg: TAnsiStrings; const ADelim: RawByteString = ''): Boolean;
     procedure ReceiveHeaders(AMsg: TAnsiStrings);
     procedure setConnectionResult(const Value: TConnectionResult);
     procedure SetModeResult(const Value: TModeSetResult);
@@ -435,7 +436,7 @@ begin
         LContinue := True;
 
       if LContinue and (LastCmdResult.NumericCode in [220, 222]) then
-        IOHandler.Capture(ABody, '.');
+        ReceiveBody(ABody, '.');
     end;
   end;
 end;
@@ -476,6 +477,26 @@ begin
   IOHandler.Capture(AResponse);
 end;
 
+procedure TidNNTPX.ReceiveBody(AStream: TStream; const ADelim: string);
+var
+  I: Integer;
+  sl: TStringList;
+begin
+  IOHandler.Capture(AStream, ADelim);
+  if gLogFlag then
+  begin
+    sl := TStringList.Create;
+    try
+      AStream.Position := 0;
+      sl.LoadFromStream(AStream);
+      for I := 0 to sl.Count - 1 do
+        LogMessage('[rx] ' + sl[I], False);
+    finally
+      sl.Free;
+    end;
+  end;
+end;
+
 function TidNNTPX.ReceiveHeader(AMsg: TAnsiStrings; const ADelim: RawByteString): Boolean;
 var
   L: Integer;
@@ -489,7 +510,7 @@ begin
   try
     repeat
       S := IOHandler.ReadLn();
-      LogMessage(S, False);
+      LogMessage('[rx] ' + S);
       Bytes := ToBytes(S, Indy8BitEncoding);
       L := Length(Bytes);
       if L > 0 then
@@ -528,7 +549,7 @@ begin
   try
     repeat
       S := IOHandler.ReadLn();
-      LogMessage(S, False);
+      LogMessage('[rx] ' + S);
       Bytes := ToBytes(S, Indy8BitEncoding);
       L := Length(Bytes);
       if L > 0 then
@@ -589,9 +610,14 @@ begin
       name := header.Names[i];
       val := header.ValueFromIndex[i];
       if name <> '' then
-        IOHandler.Write(BytesOf(name + ': ' + val + EOL));
+      begin
+        S := name + ': ' + val + EOL;
+        LogMessage('[tx] ' + string(S), False, False);
+        IOHandler.Write(BytesOf(S));
+      end;
     end;
 
+    LogMessage('[tx]');
     IOHandler.WriteLn;
 
     for i := 0 to msg.Count - 1 do
@@ -600,6 +626,7 @@ begin
         S := '.' + msg[i] + EOL
       else
         S := msg[i] + EOL;
+      LogMessage('[tx] ' + string(S), False, False);
       IOHandler.Write(BytesOf(S));
     end;
   finally
@@ -871,10 +898,12 @@ procedure TidNNTPX.ProcessPipeline;
 
       repeat
         str := IOHandler.ReadLn;       // Get the reply
+        LogMessage('[rx] ' + str);
         if not ValidResponse(str) then
         begin
           repeat
             str := IOHandler.ReadLn;
+            LogMessage('[rx] ' + str);
           until str = '.';
 
           str := '';
@@ -883,7 +912,6 @@ procedure TidNNTPX.ProcessPipeline;
                                                 // Ignore blank lines before response
       str := StringReplace(str, #9, ' ', [rfReplaceAll]);
       st := str;
-      LogMessage(str);
 
       resp := StrToIntDef(SplitString(' ', str), -1);
       if resp = -1 then
@@ -965,14 +993,14 @@ procedure TidNNTPX.ProcessPipeline;
         if respOK then                           // We *must* get the response text
           case pipelineCommand.Command of
             gmBody:
-              IOHandler.Capture(body, '.');      // nb. Capture works if body is nil -
+              ReceiveBody(body, '.');            // nb. Capture works if body is nil -
                                                  // it just discards the Result which
                                                  // is what we want.
             gmHeader:
               ReceiveHeader(header, '.');
             gmArticle:
               if ReceiveHeader(header, '') then
-                IOHandler.Capture(body, '.');
+                ReceiveBody(body, '.');
           end
         else
           if not seCalled and Assigned(PipelineCommandAbortEvent) then

@@ -164,8 +164,9 @@ begin
       try
         NNTP.GetNewGroupsList(dt, True, '', newGroups);
 
-        for I := 0 to newGroups.Count - 1 do
-          LogMessage('[rx] ' + newGroups[i]);
+        if gLogFlag then
+          for I := 0 to newGroups.Count - 1 do
+            LogMessage('[rx] ' + newGroups[i]);
 
         if newGroups.Count > 0 then
         begin
@@ -429,8 +430,9 @@ begin
       try
         NNTP.GetCapabilities(Result);
 
-        for I := 0 to Result.Count - 1 do
-          LogMessage('[rx] ' + Result[I]);
+        if gLogFlag then
+          for I := 0 to Result.Count - 1 do
+            LogMessage('[rx] ' + Result[I]);
       except
         on e: EIdReplyRFCError do
           case e.ErrorCode of
@@ -560,8 +562,9 @@ var
         try
           NNTP.GetOverviewFMT(Result);
 
-          for I := 0 to Result.Count - 1 do
-            LogMessage('[rx] ' + Result[I]);
+          if gLogFlag then
+            for I := 0 to Result.Count - 1 do
+              LogMessage('[rx] ' + Result[I]);
         except
           on e: EIdReplyRFCError do
             case e.ErrorCode of
