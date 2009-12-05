@@ -318,7 +318,10 @@ begin
       fHeader.Add('Followup-To=' + cbFollowupTo.Text);
 
     if fIsReply then
-      fHeader.Add('References=' + TrimReferences(fOrigReferences, 19) + ' ' + fOrigMessageID);
+      if fOrigReferences <> '' then
+        fHeader.Add('References=' + TrimReferences(fOrigReferences, 19) + ' ' + fOrigMessageID)
+      else
+        fHeader.Add('References=' + fOrigMessageID);
 
     if fIdentity.Organization <> '' then
       fHeader.Add('Organization=' + fIdentity.Organization);
@@ -384,7 +387,10 @@ begin
 
   if fIsReply then
     if fHeader.Values['References'] = '' then
-      fHeader.Add('References=' + fOrigReferences + ' ' + fOrigMessageID);
+      if fOrigReferences <> '' then
+        fHeader.Add('References=' + TrimReferences(fOrigReferences, 19) + ' ' + fOrigMessageID)
+      else
+        fHeader.Add('References=' + fOrigMessageID);
 
   if fHeader.Values['Newsgroups'] = '' then
     fHeader.Insert(0, 'Newsgroups=' + cbGroup.Text);
