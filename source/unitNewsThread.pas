@@ -1886,7 +1886,7 @@ begin
 
       mimeCharsetName := RawCodepageToMIMECharsetName(fCodepage);
 
-      s := 'Content-Type=text/plain';
+      s := 'Content-Type: text/plain';
       if mimeCharsetName <> '' then
         s := s + '; charset=' + mimeCharsetName;
       if fTextPartStyle = tpFlowed then
