@@ -198,7 +198,7 @@ begin
               end
               else
               begin
-                st := 'NEWSGROUPS: Invalid new group recieved for account: "' +
+                st := 'NEWGROUPS: Invalid new group recieved for account: "' +
                       NNTPAccount.AccountName + '" - ' + newGroups[i];
                 LogMessage(st, True);
               end;
@@ -213,7 +213,7 @@ begin
       except
         on E: Exception do
         begin
-          st := 'NEWSGROUPS: Error checking for new groups for account: "' +
+          st := 'NEWGROUPS: Error checking for new groups for account: "' +
                 NNTPAccount.AccountName + '" - ' + E.Message;
           LogMessage(st, True);
         end;
