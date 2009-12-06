@@ -1,5 +1,9 @@
 program NewsReader3;
 
+{$SetPEFlags 1}  // 1 = IMAGE_FILE_RELOCS_STRIPPED
+{$WEAKLINKRTTI ON}
+{$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
+
 uses
   FastMM4,
 //  SafeMMInstall,
