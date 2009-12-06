@@ -3075,7 +3075,7 @@ begin
     if MessageBox(0, PChar(st), PChar(Application.Title), MB_YESNO or MB_DEFBUTTON2 or MB_ICONEXCLAMATION) <> IDYES then
     begin
       fArticlesLoaded := False;
-      raise Exception.Create('Article.dat file corrupted!');
+      raise Exception.Create('Articles.dat file corrupted!');
     end;
   end;
 
