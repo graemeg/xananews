@@ -1665,6 +1665,7 @@ begin
           contentType := GetMIMEContentType(attachment.FileName);
           msg.Add('Content-Type: ' + contentType + '; name=' + FixFilename(attachment.FileName));
           msg.Add('Content-Transfer-Encoding: base64');
+          msg.Add('Content-Disposition: attachment; filename=' + FixFilename(attachment.FileName));
           msg.Add('');
           chunkLen := 57;
         end
@@ -1814,13 +1815,15 @@ begin
             end;
 
           if bt8 then
-            hdr.Add('Content-Transfer-Encoding=8bit');
+            hdr.Add('Content-Transfer-Encoding=8bit')
+          else
+            hdr.Add('Content-Transfer-Encoding=7bit');
         end;
       end
       else
       begin
         multipartBoundary := GenerateMultipartBoundary;
-        hdr.Add('Content-Type=Multipart/Mixed; boundary="' + multipartBoundary + '"');
+        hdr.Add('Content-Type=multipart/mixed; boundary="' + multipartBoundary + '"');
       end;
     end;
   except
@@ -1903,8 +1906,11 @@ begin
           end;
 
         if bt8 then
-          msg.Add('Content-Transfer-Encoding=8bit');
+          msg.Add('Content-Transfer-Encoding: 8bit')
+        else
+          msg.Add('Content-Transfer-Encoding: 7bit');
       end;
+      msg.Add('Content-Disposition: inline');
       msg.Add('');
 
       AddMessageString(msg, Self.Msg);
