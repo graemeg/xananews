@@ -313,11 +313,14 @@ begin
       if (ext = 'JPG') or (ext = 'JPEG') then
         Result := TJPEGImage
       else
-        if (ext = 'GIF') then
+        if ext = 'GIF' then
           Result := TGIFImage
         else
-          if (ext = 'PNG') then
-            Result := TPngImage;
+          if ext = 'PNG' then
+            Result := TPngImage
+          else
+            if ext = 'ICO' then
+              Result := TIcon;
   end;
 end;
 
