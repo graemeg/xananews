@@ -825,9 +825,11 @@ var
   gDecoderMIME: TidDecoderMIME = nil;
   gDecoderQuotedPrintable: TIdDecoderQuotedPrintable = nil;
 
-// Searches Data for an RFC-1522 chunk, starting at cFrom.
+// Searches Data for an RFC-2047 chunk, starting at cFrom.
 // If a chunk is found, cFrom and cTo contain positions of the first
 // and last character, respectively.
+// Format:  "=?" charset "?" encoding "?" encoded-text "?="
+// Example: =?UTF-8?Q?ascii?=
 function FindChunk(const Data: RawByteString; var cFrom, cTo: integer): Boolean;
 const
   ChunkChars = ['A'..'Z'] + ['a'..'z'] + ['0'..'9'] + ['=', '?', '-', '_'];
@@ -880,7 +882,7 @@ begin
       Str[x] := ' ';
 end;
 
-// Decodes a RFC-1522 chunk into string.
+// Decodes a RFC-2047 chunk into string.
 // Expects a single, pre-stripped chunk as input ('ISO-8859-1?q?data')
 function DecodeChunk(Input: RawByteString): string;
 var
@@ -973,6 +975,9 @@ var
   bt8: Boolean;
   I: Integer;
   chkStart, chkEnd, lastChkEnd: Integer;
+  encoding: RawByteString;
+  st: RawByteString;
+  x: Integer;
 begin
   // Some clients use 8 bit "ascii" in the header, if thats' the case use the
   // article codepage and if there is none, use the user's default setting.
@@ -993,19 +998,34 @@ begin
     Result := '';
     lastChkEnd := 0;
     chkStart := 1;
-    while FindChunk(header, chkStart, chkEnd) do
+
+    st := header;
+    // Remove folding spaces from multiple MIME encoded words.
+    if FindChunk(st, chkStart, chkEnd) then
+    begin
+      encoding := Copy(st, chkStart + 2, chkEnd - chkStart - 3);
+      x := RawPos('?', encoding);
+      if (Length(encoding) >= (x + 3)) and (encoding[x + 2] = '?') then
+      begin
+        encoding := Copy(encoding, 1, x + 2);
+        st := RawStringReplace(st, '?= =?' + encoding, '', [rfReplaceAll]);
+      end;
+    end;
+
+    chkStart := 1;
+    while FindChunk(st, chkStart, chkEnd) do
     begin
       Result := Result +
-        string(Copy(header, lastChkEnd + 1, chkStart - lastChkEnd - 1)) +
-        DecodeChunk(Copy(header, chkStart + 2, chkEnd - chkStart - 3));
+        string(Copy(st, lastChkEnd + 1, chkStart - lastChkEnd - 1)) +
+        DecodeChunk(Copy(st, chkStart + 2, chkEnd - chkStart - 3));
       lastChkEnd := chkEnd;
       chkStart := chkEnd + 1;
       // If a chunk is followed by ' =?', ignore it
-      if (Length(header) > chkStart + 8) and (header[chkStart] in [' ', #8]) and
-         (header[chkStart+1] = '=') and (header[chkStart+2] = '?') then
+      if (Length(st) > chkStart + 8) and (st[chkStart] in [' ', #8]) and
+         (st[chkStart+1] = '=') and (st[chkStart+2] = '?') then
         Inc(lastChkEnd);
     end;
-    Result := Result + Copy(string(header), lastChkEnd + 1, MaxInt);
+    Result := Result + Copy(string(st), lastChkEnd + 1, MaxInt);
   end;
 end;
 
