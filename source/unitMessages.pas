@@ -464,6 +464,8 @@ function TmvMessage.GetCodePage: Integer;
 var
   s, ext: string;
   art: TArticle;
+  I: Integer;
+  mh: TMimeHeader;
 begin
   if fCodePage = -1 then
   begin
@@ -484,7 +486,23 @@ begin
           Exit;
         end
         else
+        begin
           fCodePage := fDefaultCodePage;
+          for I := 0 to fMessageParts.Count - 1 do
+            if fMessageParts[I] is TmvMimeMessagePart then
+            begin
+              mh := TmvMimeMessagePart(fMessageParts[I]).MimeHeader;
+              if Assigned(mh) and Assigned(mh.ContentType_Attributes) then
+              begin
+                s := mh.ContentType_Attributes.Values['charset'];
+                if s <> '' then
+                begin
+                  fCodePage := MIMECharsetNameToCodePage(s);
+                  Break;
+                end;
+              end;
+            end;
+        end;
       end
       else
         fCodePage := MIMECharsetNameToCodePage(s);

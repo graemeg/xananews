@@ -6373,7 +6373,7 @@ begin
       SetLength(st, 5);        // Read XMsg: prefix
       Owner.fMessageFile.Read(st[1], 5);
 
-      if st = 'X-Msg' then      // New style - contains extra header lines
+      if st = 'X-Msg' then     // New style - contains extra header lines
       begin
         SetLength(st, 9);
         Owner.fMessageFile.Read(st[1], 9);
@@ -6393,11 +6393,14 @@ begin
           Owner.fMessageFile.Read(hLen, SizeOf(hLen));
         end;
 
+        if len <> 0 then
+          fMsg.RawData.CopyFrom(Owner.fMessageFile, len);
+
+        // Needs to be after reading the body, since the body can
+        // contain multipart MIME headers specifying the charset.
         if fMsg.Codepage = CP_USASCII then
           fMsg.CodePage := cp;
 
-        if len <> 0 then
-          fMsg.RawData.CopyFrom(Owner.fMessageFile, len);
         MessageCacheController.Add(Self);
       end;
     end;
