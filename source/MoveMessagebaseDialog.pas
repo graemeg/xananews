@@ -53,7 +53,7 @@ var
 implementation
 
 uses
-  NewsGlobals, unitNNTPServices;
+  NewsGlobals, unitLog, unitNNTPServices;
 
 {$R *.dfm}
 
@@ -62,6 +62,7 @@ var
   sr: TSearchRec;
   ext: string;
 begin
+  CloseLogFile;
   FileCopier1.SourceFiles.Clear;
   if FindFirst(gMessageBaseRoot + '\*.*', faAnyFile, sr) = 0 then
   try

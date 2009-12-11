@@ -5,6 +5,7 @@ interface
 uses
   Windows, Classes, SysUtils, SyncObjs, XnClasses;
 
+procedure CloseLogFile;
 procedure LogMessage(msg: string; Force: Boolean = False; AddCRLF: Boolean = True);
 
 implementation
@@ -15,6 +16,12 @@ uses
 var
   crit: TCriticalSection = nil;
   lf: TFileStream = nil;
+
+
+procedure CloseLogFile;
+begin
+  FreeAndNil(lf);
+end;
 
 procedure LogMessage(msg: string; Force: Boolean = False; AddCRLF: Boolean = True);
 var
@@ -62,5 +69,5 @@ initialization
   crit := TCriticalSection.Create;
 finalization
   FreeAndNil(crit);
-  lf.Free;
+  CloseLogFile;
 end.
