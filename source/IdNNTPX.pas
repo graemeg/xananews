@@ -734,7 +734,7 @@ end;
 procedure TIdNNTPX.GetNewGroupsList(const ADate: TDateTime; const AGMT: Boolean;
   const ADistributions: string; AList: TStrings);
 begin
-  SendCmd('NEWGROUPS ' + ConvertDateTimeDist(ADate, AGMT, ADistributions), 231);
+  SendCmd('NEWGROUPS ' + ConvertDateTimeDist(ADate - OffsetFromUTC, AGMT, ADistributions), 231);
   IOHandler.Capture(AList);
 end;
 
