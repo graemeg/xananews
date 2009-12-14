@@ -210,6 +210,8 @@ function EncodeHeader(const header: RawByteString; codepage: Integer; from: Bool
 procedure SetTempStatusMessage(const msg: string; pos, max: word);
 function SafeDateTimeToInternetStr(const Value: TDateTime; const AIsGMT: Boolean = False): string;
 function FixedGMTToLocalDateTime(S: RawByteString): TDateTime;
+function RawGMTToLocalDateTime(S: string): TDateTime;
+procedure UpdateGlobalOffsetFromUTC;
 function ComputerName: string;
 procedure ClearSynchronizedMethods;
 function FixFileNameString(const st: string): string;
@@ -1269,6 +1271,9 @@ begin
         Inc(i);
   end;
 
+
+// TODO: Q or B-encoding (B-encoding seems to be more commonly accepted)
+//       RTC says use Q when most of the text fits in normal ASCII.
   if ansi or not from then
     Result := EncodeHeader1(header, [], 'Q', bit7, RawCodePageToMIMECharsetName(CodePage))
   else
@@ -1418,6 +1423,173 @@ begin
   end;
 end;
 
+function RawStrInternetToDateTime(var Value: string; var VDateTime: TDateTime): Boolean;
+var
+  i: Integer;
+  Dt, Mo, Yr, Ho, Min, Sec: Word;
+  sYear, sTime, sDelim: string;
+  //flags for if AM/PM marker found
+  LAM, LPM : Boolean;
+
+  procedure ParseDayOfMonth;
+  begin
+    Dt :=  IndyStrToInt(Fetch(Value, sDelim), 1);
+    Value := TrimLeft(Value);
+  end;
+
+  procedure ParseMonth;
+  begin
+    Mo := StrToMonth(Fetch(Value, sDelim));
+    Value := TrimLeft(Value);
+  end;
+
+begin
+  Result := False;
+  VDateTime := 0.0;
+
+  LAM := False;
+  LPM := False;
+
+  Value := Trim(Value);
+  if Length(Value) = 0 then begin
+    Exit;
+  end;
+
+  try
+    {Day of Week}
+    if StrToDay(Copy(Value, 1, 3)) > 0 then begin
+      //workaround in case a space is missing after the initial column
+      if CharEquals(Value, 4, ',') and (not CharEquals(Value, 5, ' ')) then begin
+        Insert(' ', Value, 5);
+      end;
+      Fetch(Value);
+      Value := TrimLeft(Value);
+    end;
+
+    // Workaround for some buggy web servers which use '-' to separate the date parts.    {Do not Localize}
+    if (IndyPos('-', Value) > 1) and (IndyPos('-', Value) < IndyPos(' ', Value)) then begin    {Do not Localize}
+      sDelim := '-';    {Do not Localize}
+    end else begin
+      sDelim := ' ';    {Do not Localize}
+    end;
+
+    //workaround for improper dates such as 'Fri, Sep 7 2001'    {Do not Localize}
+    //RFC 2822 states that they should be like 'Fri, 7 Sep 2001'    {Do not Localize}
+    if StrToMonth(Fetch(Value, sDelim, False)) > 0 then begin
+      {Month}
+      ParseMonth;
+      {Day of Month}
+      ParseDayOfMonth;
+    end else begin
+      {Day of Month}
+      ParseDayOfMonth;
+      {Month}
+      ParseMonth;
+    end;
+
+    {Year}
+    // There is some strange date/time formats like
+    // DayOfWeek Month DayOfMonth Time Year
+    sYear := Fetch(Value);
+    Yr := IndyStrToInt(sYear, High(Word));
+    if Yr = High(Word) then begin // Is sTime valid Integer?
+      sTime := sYear;
+      sYear := Fetch(Value);
+      Value := TrimRight(sTime + ' ' + Value);
+      Yr := IndyStrToInt(sYear);
+    end;
+
+    // RLebeau: According to RFC 2822, Section 4.3:
+    //
+    // "Where a two or three digit year occurs in a date, the year is to be
+    // interpreted as follows: If a two digit year is encountered whose
+    // value is between 00 and 49, the year is interpreted by adding 2000,
+    // ending up with a value between 2000 and 2049.  If a two digit year is
+    // encountered with a value between 50 and 99, or any three digit year
+    // is encountered, the year is interpreted by adding 1900."
+    if Length(sYear) = 2 then begin
+      if {(Yr >= 0) and} (Yr <= 49) then begin
+        Inc(Yr, 2000);
+      end
+      else if (Yr >= 50) and (Yr <= 99) then begin
+        Inc(Yr, 1900);
+      end;
+    end
+    else if Length(sYear) = 3 then begin
+      Inc(Yr, 1900);
+    end;
+
+    VDateTime := EncodeDate(Yr, Mo, Dt);
+    // SG 26/9/00: Changed so that ANY time format is accepted
+    if IndyPos('AM', Value) > 0 then begin{do not localize}
+      LAM := True;
+      Value := Fetch(Value, 'AM');  {do not localize}
+    end
+    else if IndyPos('PM', Value) > 0 then begin {do not localize}
+      LPM := True;
+      Value := Fetch(Value, 'PM');  {do not localize}
+    end;
+
+    // RLebeau 03/04/2009: some countries use dot instead of colon
+    // for the time separator
+    i := IndyPos('.', Value);       {do not localize}
+    if i > 0 then begin
+      sDelim := '.';                {do not localize}
+    end else begin
+      sDelim := ':';                {do not localize}
+    end;
+    i := IndyPos(sDelim, Value);
+    if i > 0 then begin
+      // Copy time string up until next space (before GMT offset)
+      sTime := Fetch(Value, ' ');  {do not localize}
+      {Hour}
+      Ho  := IndyStrToInt( Fetch(sTime, sDelim), 0);
+      {Minute}
+      Min := IndyStrToInt( Fetch(sTime, sDelim), 0);
+      {Second}
+      Sec := IndyStrToInt( Fetch(sTime), 0);
+      {AM/PM part if present}
+      Value := TrimLeft(Value);
+      if LAM then begin
+        if Ho = 12 then begin
+          Ho := 0;
+        end;
+      end
+      else if LPM then begin
+        //in the 12 hour format, afternoon is 12:00PM followed by 1:00PM
+        //while midnight is written as 12:00 AM
+        //Not exactly technically correct but pretty accurate
+        if Ho < 12 then begin
+          Inc(Ho, 12);
+        end;
+      end;
+      {The date and time stamp returned}
+      VDateTime := VDateTime + EncodeTime(Ho, Min, Sec, 0);
+    end;
+    Value := TrimLeft(Value);
+    Result := True;
+  except
+    VDateTime := 0.0;
+    Result := False;
+  end;
+end;
+
+function RawGMTToLocalDateTime(S: string): TDateTime;
+var
+  DateTimeOffset: TDateTime;
+begin
+  if RawStrInternetToDateTime(S, Result) then begin
+    DateTimeOffset := GmtOffsetStrToDateTime(S);
+    {-Apply GMT offset here}
+    if DateTimeOffset < 0.0 then begin
+      Result := Result + Abs(DateTimeOffset);
+    end else begin
+      Result := Result - DateTimeOffset;
+    end;
+    // Apply local offset
+    Result := Result + gOffsetFromUTC;
+  end;
+end;
 
 var
   gComputerName: string = '';
@@ -1594,8 +1766,13 @@ begin
   gExSettingsFile := ExpandFileName(gExSettingsFile);
 end;
 
-initialization
+procedure UpdateGlobalOffsetFromUTC;
+begin
   gOffsetFromUTC := OffsetFromUTC;
+end;
+
+initialization
+  UpdateGlobalOffsetFromUTC;
 finalization
   FreeAndNil(gDecoderMIME);
   FreeAndNil(gDecoderQuotedPrintable);

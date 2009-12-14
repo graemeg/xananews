@@ -105,6 +105,7 @@ type
     procedure GetNewGroupsList(const ADate: TDateTime; const AGMT: Boolean; const ADistributions: string; AList: TStrings);
     procedure GetCapabilities(const AResponse: TstringList);
     procedure GetOverviewFMT(const AResponse: TStringList);
+    function GetServerDateTime: TDateTime;
     function SelectArticle(const AMsgNo: Cardinal): Boolean;
     procedure SelectGroup(const AGroup: string);
     function SendCmd(AOut: string; const AResponse: array of SmallInt;
@@ -219,7 +220,7 @@ begin
   P := NextItem(P, AFrom);
   {Date}
   try
-    ADate := GMTToLocalDateTime(string(NextItemStr(P)));
+    ADate := RawGMTToLocalDateTime(string(NextItemStr(P)));
     lastGoodDate := ADate;
   except
     ADate := LastGoodDate;
@@ -475,6 +476,12 @@ procedure TidNNTPX.GetOverviewFMT(const AResponse: TStringList);
 begin
   SendCmd('LIST OVERVIEW.FMT', 215);
   IOHandler.Capture(AResponse);
+end;
+
+function TidNNTPX.GetServerDateTime: TDateTime;
+begin
+  SendCmd('DATE', 111);
+  Result := FTPMLSToGMTDateTime(LastCmdResult.Text[0]);
 end;
 
 procedure TidNNTPX.ReceiveBody(AStream: TStream; const ADelim: string);

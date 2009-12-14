@@ -3024,6 +3024,8 @@ begin
   if not fArticlesLoaded then
     LoadArticles;
 
+  UpdateGlobalOffsetFromUTC;
+
   linesTotal := 0;
   linesDeleted := 0;
   lastGoodDate := 0;
@@ -6583,7 +6585,7 @@ begin
     fFrom := ProcessHeaderLine('From');
     fSubject := ProcessHeaderLine('Subject');
     dt := ProcessHeaderLine('Date');
-    fDate := GMTToLocalDateTime(string(dt));
+    fDate := RawGMTToLocalDateTime(string(dt));
     if StrInternetToDateTime(string(dt)) <> fDate then
       header.Add('X-XanaOrigDate:' + dt);
 

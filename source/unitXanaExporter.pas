@@ -21,7 +21,7 @@ type
 implementation
 
 uses
-  NewsGlobals, unitSearchString, StrUtils;
+  StrUtils, NewsGlobals, unitSearchString;
 
 type
   TLabelBlock = array[0..255] of AnsiChar;

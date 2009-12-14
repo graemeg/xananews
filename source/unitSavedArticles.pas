@@ -1010,7 +1010,7 @@ var
     until False;
 
     if gotDate then
-      date := GMTToLocalDateTime(dtst);
+      date := RawGMTToLocalDateTime(dtst);
 
     if not gotResult then
       Result := ''
