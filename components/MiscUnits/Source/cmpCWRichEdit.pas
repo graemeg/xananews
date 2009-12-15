@@ -1847,25 +1847,28 @@ end;
  |                                                                      |
  | Set the text - Raw or otherwise                                      |
  *----------------------------------------------------------------------*)
-procedure TRichEdit2_3Provider.RawSetText(const st: WideString;
-  sel: boolean);
+procedure TRichEdit2_3Provider.RawSetText(const st: WideString; sel: boolean);
 var
-  editStream : TEditStream;
-  stream : TRichEditStream;
-  fc : TCharFormat;
-  tc : TCharRange;
-  flags : DWORD;
+  editStream: TEditStream;
+  stream: TRichEditStream;
+  flags: DWORD;
+  fc: TCharFormat;
+  tc: TCharRange;
+  last: Longint;
+  range1: TCharRange;
+  range2: TCharRange;
 begin
   Owner.BeginUpdate;
+
   stream := TRichEditStream.Create(Owner);
   try
-    stream.fBuffer := PWideChar (st);
-    stream.fLen := Length (st);
-    editStream.dwCookie := DWORD (stream);
+    stream.fBuffer := PWideChar(st);
+    stream.fLen := Length(st);
+    editStream.dwCookie := DWORD(stream);
     editStream.dwError := 0;
     editStream.pfnCallback := @EditStreamICallback;
 
-    SendMessage (Owner.Handle, EM_EXGETSEL, 0, Integer (@tc));
+    SendMessage(Owner.Handle, EM_EXGETSEL, 0, Integer(@tc));
 
     if not sel then
     begin
@@ -1886,23 +1889,42 @@ begin
     else
       flags := flags or SF_TEXT or SF_UNICODE;
 
-
+    last := 0;
     while stream.ChunkEnd < stream.Len do
     begin
+      // Get a chunk of text and the character format to apply on it.
       Owner.CharFormatter.GetFormattedChars(stream, fc);
 
-      if fc.dwMask <> 0 then
-        SendMessage (Owner.Handle, EM_SETCHARFORMAT, SCF_SELECTION, LongInt (@fc));
-
+      // Stream in the chunk of text.
       stream.fPos := 0;
-      SendMessage (Owner.Handle, EM_STREAMIN, flags, LongInt (@editStream));
+      SendMessage(Owner.Handle, EM_STREAMIN, flags, LongInt(@editStream));
+
+      // Get current selection (EOT).
+      SendMessage(Owner.Handle, EM_EXGETSEL, 0, Integer(@range2));
+
+      // Determine range to format.
+      range1.cpMin := last;
+      range1.cpMax := range2.cpMax;
+
+      if fc.dwMask <> 0 then
+      begin
+        // Select range to format.
+        SendMessage(Owner.Handle, EM_EXSETSEL, 0, Integer(@range1));
+        // Format the chunk of text.
+        SendMessage(Owner.Handle, EM_SETCHARFORMAT, SCF_SELECTION, LongInt(@fc));
+        // Restore selection.
+        SendMessage(Owner.Handle, EM_EXSETSEL, 0, Integer(@range2));
+      end;
+
+      // Setup for the next round of text formatting.
+      last := range2.cpMax;
 
       stream.fChunkStart := stream.fChunkEnd;
       if stream.Truncate then
         break;
     end;
 
-    SendMessage (Owner.Handle, EM_EXSETSEL, 0, Integer (@tc));
+    SendMessage(Owner.Handle, EM_EXSETSEL, 0, Integer(@tc));
 
   finally
     Owner.EndUpdate;
