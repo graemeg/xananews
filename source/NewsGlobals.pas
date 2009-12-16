@@ -1007,7 +1007,7 @@ begin
     begin
       encoding := Copy(st, chkStart + 2, chkEnd - chkStart - 3);
       x := RawPos('?', encoding);
-      if (Length(encoding) >= (x + 3)) and (encoding[x + 2] = '?') then
+      if (Length(encoding) >= (x + 3)) and (encoding[x + 2] = '?') and (encoding[x + 1] in ['q', 'Q']) then
       begin
         encoding := Copy(encoding, 1, x + 2);
         st := RawStringReplace(st, '?= =?' + encoding, '', [rfReplaceAll]);
@@ -1087,7 +1087,7 @@ const
     '4','5','6','7','8','9','+','/');     {Do not Localize}
 
 function EncodeHeader1(const Header: RawByteString; specials: CSET; HeaderEncoding: AnsiChar;
-  TransferHeader: TTransfer; MimeCharSet: RawByteString): RawByteString;
+  TransferHeader: TTransfer; CodePage: Integer): RawByteString;
 const
   SPACES: set of Char = [' ', #9, #10, #13, '''', '"'];    {Do not Localize}
 var
@@ -1099,6 +1099,8 @@ var
   csNeedEncode, csReqQuote: CSET;
   BeginEncode, EndEncode: RawByteString;
   ch: AnsiChar;
+  mimeCharSet: RawByteString;
+  extraBytes: Integer;
 
   procedure EncodeWord(P: Integer);
   const
@@ -1120,16 +1122,29 @@ var
       while Q < P do
       begin
         ac := S[Q];
+
+        // Determine extra bytes needed to encode a complete multi-byte character.
+        extraBytes := 0;
+        if CodePage = CP_UTF8 then
+        begin
+          if (Byte(ac) and $F0) = $F0 then
+            extraBytes := 9
+          else if (Byte(ac) and $E0) = $E0 then
+            extraBytes := 6
+          else if (Byte(ac) and $C0) = $C0 then
+            extraBytes := 3;
+        end;
+
         if not (ac in csReqQuote) then
           Enc1 := ac
         else
         begin
-          if ac = ' ' then  {Do not Localize}
-            Enc1 := '_'   {Do not Localize}
+          if ac = ' ' then {Do not Localize}
+            Enc1 := '_'  {Do not Localize}
           else
-            Enc1 := '=' + RawByteString(IntToHex(Ord(ac), 2));     {Do not Localize}
+            Enc1 := '=' + RawByteString(IntToHex(Ord(ac), 2)); {Do not Localize}
         end;
-        if EncLen + Length(Enc1) > MaxEncLen then
+        if EncLen + Length(Enc1) + extraBytes > MaxEncLen then
         begin
           T := T + EndEncode + #13#10#9 + BeginEncode;
           EncLen := Length(BeginEncode) + 2;
@@ -1156,7 +1171,7 @@ var
                B1 := Ord(S[Q + 1]);
                T := T + base64_tbl[B0 shr 2] +
                     base64_tbl[B0 and $03 shl 4 + B1 shr 4] +
-                    base64_tbl[B1 and $0F shl 2] + '=';  {Do not Localize}
+                    base64_tbl[B1 and $0F shl 2] + '='; {Do not Localize}
              end;
         else
           B1 := Ord(S[Q + 1]);
@@ -1175,6 +1190,7 @@ var
 
 begin
   S := Header;
+  mimeCharSet := RawCodePageToMIMECharsetName(CodePage);
   headerEncoding := UpCase(headerEncoding);
 
   {Suggested by Andrew P.Rybin for easy 8bit support}
@@ -1183,6 +1199,7 @@ begin
     Result := S;
     Exit;
   end;
+
   csNeedEncode := [#0..#31, #127..#255] + specials;
   csReqQuote := csNeedEncode + ['?', '=', '_', ' ']; {Do not Localize}
   BeginEncode := '=?' + MimeCharSet + '?' + HeaderEncoding + '?'; {Do not Localize}
@@ -1275,7 +1292,7 @@ begin
 // TODO: Q or B-encoding (B-encoding seems to be more commonly accepted)
 //       RTC says use Q when most of the text fits in normal ASCII.
   if ansi or not from then
-    Result := EncodeHeader1(header, [], 'Q', bit7, RawCodePageToMIMECharsetName(CodePage))
+    Result := EncodeHeader1(header, [], 'Q', bit7, CodePage)
   else
   begin
     // It concerns a from name with non-ansi characters.
