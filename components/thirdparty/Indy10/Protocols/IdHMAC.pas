@@ -112,16 +112,14 @@ begin
   LKey := Copy(FKey, 0, MaxInt);
   SetLength(LKey, FBlockSize);
   SetLength(TempBuffer1, FBlockSize + Length(ABuffer));
-  for I := Low(LKey) to High(LKey) do
-  begin
+  for I := Low(LKey) to High(LKey) do begin
     TempBuffer1[I] := LKey[I] xor CInnerPad;
   end;
   CopyTIdBytes(ABuffer, 0, TempBuffer1, Length(LKey), Length(ABuffer));
   TempBuffer2 := FHash.HashBytes(TempBuffer1);
   SetLength(TempBuffer1, 0);
   SetLength(TempBuffer1, FBlockSize + FHashSize);
-  for I := Low(LKey) to High(LKey) do
-  begin
+  for I := Low(LKey) to High(LKey) do begin
     TempBuffer1[I] := LKey[I] xor COuterPad;
   end;
   CopyTIdBytes(TempBuffer2, 0, TempBuffer1, Length(LKey), Length(TempBuffer2));
@@ -129,8 +127,7 @@ begin
   SetLength(TempBuffer1, 0);
   SetLength(TempBuffer2, 0);
   SetLength(LKey, 0);
-  if ATruncateTo > -1 then
-  begin
+  if ATruncateTo > -1 then begin
     SetLength(Result, ATruncateTo);
   end;
 end;
@@ -140,8 +137,7 @@ begin
   if FKey = nil then begin
     TIdHMACKeyBuilder.Key(FHashSize);
   end
-  else if Length(FKey) > FBlockSize then
-  begin
+  else if Length(FKey) > FBlockSize then begin
     FKey := FHash.HashBytes(FKey);
   end;
 end;

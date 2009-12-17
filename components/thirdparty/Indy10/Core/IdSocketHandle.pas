@@ -188,7 +188,6 @@ type
     procedure Connect; virtual;
     constructor Create(ACollection: TCollection); override;
     destructor Destroy; override;
-//    procedure GetSockOpt(level, optname: Integer; optval: PChar; optlen: Integer);
     procedure Listen(const AQueueCount: Integer = 5);
     function Readable(AMSec: Integer = IdTimeoutDefault): boolean;
     function Receive(var VBuffer: TIdBytes): Integer;
@@ -200,11 +199,16 @@ type
     procedure SendTo(const AIP: string; const APort: TIdPort; const ABuffer : TIdBytes; const AOffset: Integer; const ASize: Integer; const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION); overload;
     procedure SetPeer(const AIP: string; const APort: TIdPort; const AIPVersion : TIdIPVersion = ID_DEFAULT_IP_VERSION);
     procedure SetBinding(const AIP: string; const APort: TIdPort; const AIPVersion : TIdIPVersion = ID_DEFAULT_IP_VERSION);
-    procedure GetSockOpt(ALevel:TIdSocketOptionLevel; AOptName: TIdSocketOption; out VOptVal: Integer);
-    procedure SetSockOpt(ALevel:TIdSocketOptionLevel; AOptName: TIdSocketOption; AOptVal: Integer);
+    procedure GetSockOpt(ALevel: TIdSocketOptionLevel; AOptName: TIdSocketOption; out VOptVal: Integer);
+    procedure SetSockOpt(ALevel: TIdSocketOptionLevel; AOptName: TIdSocketOption; AOptVal: Integer);
     function Select(ATimeout: Integer = IdTimeoutInfinite): Boolean;
     procedure UpdateBindingLocal;
     procedure UpdateBindingPeer;
+    procedure AddMulticastMembership(const AGroupIP: String);
+    procedure DropMulticastMembership(const AGroupIP: String);
+    procedure SetLoopBack(const AValue: Boolean);
+    procedure SetMulticastTTL(const AValue: Byte);
+    procedure SetTTL(const AValue: Integer);
     //
     property HandleAllocated: Boolean read FHandleAllocated;
     property Handle: TIdStackSocketHandle read FHandle;
@@ -293,11 +297,10 @@ begin
   Result := GStack.Send(Handle, ABuffer, AOffset, ASize);
 end;
 
-procedure TIdSocketHandle.SetSockOpt(ALevel:TIdSocketOptionLevel;
+procedure TIdSocketHandle.SetSockOpt(ALevel: TIdSocketOptionLevel;
   AOptName: TIdSocketOption; AOptVal: Integer);
 begin
   GStack.SetSocketOption(Handle, ALevel, AOptName, AOptVal);
-////  (GStack as TIdStackBSDBase).WSSetSockOpt(Handle, level, optname, optval, optlen);
 end;
 
 procedure TIdSocketHandle.SendTo(const AIP: string; const APort: TIdPort;
@@ -525,9 +528,9 @@ begin
   end;
 end;
 
-procedure TIdSocketHandle.GetSockOpt(ALevel:TIdSocketOptionLevel; AOptName: TIdSocketOption; out VOptVal: Integer);
+procedure TIdSocketHandle.GetSockOpt(ALevel: TIdSocketOptionLevel; AOptName: TIdSocketOption; out VOptVal: Integer);
 begin
-  GStack.GetSocketOption(Handle,ALevel,AOptName,VOptVal);
+  GStack.GetSocketOption(Handle, ALevel, AOptName, VOptVal);
 end;
 
 function TIdSocketHandle.Select(ATimeOut: Integer = IdTimeoutInfinite): Boolean;
@@ -555,6 +558,35 @@ begin
       raise EIdCannotSetIPVersionWhenConnected.Create(RSCannotSetIPVersionWhenConnected);
     end;
     FIPVersion := Value;
+  end;
+end;
+
+procedure TIdSocketHandle.AddMulticastMembership(const AGroupIP: String);
+begin
+  GStack.AddMulticastMembership(Handle, AGroupIP, FIP, FIPVersion);
+end;
+
+procedure TIdSocketHandle.DropMulticastMembership(const AGroupIP: String);
+begin
+  GStack.DropMulticastMembership(Handle, AGroupIP, FIP, FIPVersion);
+end;
+
+procedure TIdSocketHandle.SetLoopBack(const AValue: Boolean);
+begin
+  GStack.SetLoopBack(Handle, AValue, FIPVersion);
+end;
+
+procedure TIdSocketHandle.SetMulticastTTL(const AValue: Byte);
+begin
+  GStack.SetMulticastTTL(Handle, AValue, FIPVersion);
+end;
+
+procedure TIdSocketHandle.SetTTL(const AValue: Integer);
+begin
+  if FIPVersion = Id_IPv4 then begin
+    SetSockOpt(Id_SOL_IP, Id_SO_IP_TTL, AValue);
+  end else begin
+    SetSockOpt(Id_SOL_IPv6, Id_IPV6_UNICAST_HOPS, AValue);
   end;
 end;
 

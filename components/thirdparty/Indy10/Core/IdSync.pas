@@ -119,6 +119,11 @@ uses
   System.Threading,
     {$ENDIF}
   {$ENDIF}
+  {$IFDEF VCL_2010_OR_ABOVE}
+    {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  Windows,
+    {$ENDIF}
+  {$ENDIF}
   SysUtils;
 
 type
@@ -162,8 +167,14 @@ end;
 
 constructor TIdSync.Create;
 begin
+  {$IFDEF DOTNET}
+  inherited Create;
+  CreateNotifyThread;
+  FThread := GNotifyThread;
+  {$ELSE}
   CreateNotifyThread;
   Create(GNotifyThread);
+  {$ENDIF}
 end;
 
 procedure TIdSync.Synchronize;
@@ -287,7 +298,7 @@ begin
 end;
 
 procedure TIdNotify.WaitFor;
-Var
+var
   LNotifyIndex: Integer;
 begin
   LNotifyIndex := 0;

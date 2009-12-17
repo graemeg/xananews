@@ -57,6 +57,14 @@ interface
 {$i IdCompilerDefines.inc}
 
 uses
+  {$IFDEF DOTNET}
+  System.Security.Cryptography,
+  IdException,
+  {$ELSE}
+    {$IFDEF USE_OPENSSL}
+  IdSSLOpenSSLHeaders,
+    {$ENDIF}
+  {$ENDIF}
   Classes,
   IdGlobal;
 
@@ -69,7 +77,7 @@ type
     function LongWordHashToHex(const AHash: TIdBytes; const ACount: Integer): String;
   public
     constructor Create; virtual;
-    function IsAvailable : Boolean; virtual;
+    class function IsAvailable : Boolean; virtual;
     function HashString(const ASrc: string; AEncoding: TIdTextEncoding = nil): TIdBytes;
     function HashStringAsHex(const AStr: String; AEncoding: TIdTextEncoding = nil): String;
     function HashBytes(const ASrc: TIdBytes): TIdBytes;
@@ -109,12 +117,74 @@ type
   end;
 
   TIdHashClass = class of TIdHash;
-  
+
+  {$IFDEF DOTNET}
+  TIdHashInst = System.Security.Cryptography.HashAlgorithm;
+  TIdHashIntCtx =  TIdHashInst;
+  {$ELSE}
+    {$IFDEF USE_OPENSSL}
+  TIdHashInst = PEVP_MD;
+  TIdHashIntCtx = EVP_MD_CTX;
+    {$ELSE}
+  TIdHashInst = Pointer;
+  TIdHashIntCtx = Pointer;
+    {$ENDIF}
+  {$ENDIF}
+  TIdHashIntF = class(TIdHash)
+  protected
+    function HashToHex(const AHash: TIdBytes): String; override;
+    function GetHashInst : TIdHashInst; virtual; abstract;
+    function InitHash : TIdHashIntCtx; virtual;
+    procedure UpdateHash(ACtx : TIdHashIntCtx; const AIn : TIdBytes);
+    function FinalHash(ACtx : TIdHashIntCtx) : TIdBytes;
+    function GetHashBytes(AStream: TStream; ASize: TIdStreamSize): TIdBytes; override;
+  public
+    class function IsAvailable : Boolean; override;
+    class function IsIntfAvailable : Boolean; virtual;
+  end;
+  TIdHashNativeAndIntF = class(TIdHashIntF)
+  protected
+    function NativeGetHashBytes(AStream: TStream; ASize: TIdStreamSize): TIdBytes; virtual;
+    function GetHashBytes(AStream: TStream; ASize: TIdStreamSize): TIdBytes; override;
+
+  end;
+
+  {$IFDEF DOTNET}
+  EIdSecurityAPIException = class(EIdException);
+  EIdSHA224NotSupported = class(EIdSecurityAPIException);
+  {$ELSE}
+    {$IFDEF USE_OPENSSL}
+  EIdDigestError = class(EIdOpenSSLAPICryptoError);
+  EIdDigestFinalEx = class(EIdDigestError);
+  EIdDigestInitEx = class(EIdDigestError);
+  EIdDigestUpdate = class(EIdDigestError);
+    {$ENDIF}
+  {$ENDIF}
+
+{$IFNDEF DOTNET}
+function IsHashingIntfAvail : Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
+{$ENDIF}
+
 implementation
 
 uses
+{$IFNDEF DOTNET}
+  IdStreamVCL,
+  IdCTypes,
+{$ENDIF}
   IdGlobalProtocols, SysUtils;
 
+function IsHashingIntfAvail : Boolean;
+begin
+{$IFDEF USE_OPENSSL}
+
+  Result := Assigned(IdSslEvpDigestInitEx) and
+             Assigned(IdSslEvpDigestUpdate) and
+             Assigned(IdSslEvpDigestFinalEx);
+  {$ELSE}
+  Result := False;
+{$ENDIF}
+end;
 { TIdHash }
 
 constructor TIdHash.Create;
@@ -203,7 +273,7 @@ begin
   Result := ToHex(AHash,ACount*SizeOf(LongWord));
 end;
 
-function TIdHash.IsAvailable : Boolean;
+class function TIdHash.IsAvailable : Boolean;
 begin
   Result := True;
 end;
@@ -332,6 +402,157 @@ end;
 function TIdHash32.HashValue(AStream: TStream; const AStartPos, ASize: TIdStreamSize) : LongWord;
 begin
   Result := BytesToLongWord(HashStream(AStream, AStartPos, ASize));
+end;
+
+
+{ TIdHashIntf }
+
+function TIdHashIntf.FinalHash(ACtx: TIdHashIntCtx): TIdBytes;
+{$IFDEF DOTNET}
+var
+  LDummy : TIdBytes;
+{$ELSE}
+  {$IFDEF USE_OPENSSL}
+var  
+  LLen, LRet : TIdC_UInt;
+  {$ENDIF}
+{$ENDIF}
+begin
+  {$IFDEF DOTNET}
+  //This is a funny way of coding.  I have to pass a dummy value to
+  //TransformFinalBlock so that things can work similarly to the OpenSSL
+  //Crypto API.  You can't pass nul to TransformFinalBlock without an exception.
+  SetLength(LDummy,0);
+   ACtx.TransformFinalBlock(LDummy,0,0);
+  Result := ACtx.Hash;
+  {$ELSE}
+    {$IFDEF USE_OPENSSL}
+  SetLength(Result,OPENSSL_EVP_MAX_MD_SIZE);
+  LRet := IdSslEvpDigestFinalEx(@ACtx,PAnsiChar(@Result[0]),LLen);
+  if LRet <> 1 then begin
+    EIdDigestFinalEx.RaiseException('EVP_DigestFinal_ex error');
+  end;
+  SetLength(Result,LLen);
+  IdSslEvpMDCtxCleanup(@ACtx);
+    {$ENDIF}
+  {$ENDIF}
+end;
+
+function TIdHashIntf.GetHashBytes(AStream: TStream; ASize: TIdStreamSize): TIdBytes;
+var LBuf : TIdBytes;
+  LSize : Int64;
+  LCtx : TIdHashIntCtx;
+begin
+  LCtx := InitHash;
+  try
+    SetLength(LBuf,2048);
+    repeat
+      LSize := ReadTIdBytesFromStream(AStream,LBuf,2048);
+      if LSize = 0 then begin
+        break;
+      end;
+      if LSize < 2048 then begin
+        SetLength(LBuf,LSize);
+        UpdateHash(LCtx,LBuf);
+        break;
+      end else begin
+        UpdateHash(LCtx,LBuf);
+      end;
+    until False;
+  finally
+    Result := FinalHash(LCtx);
+  end;
+end;
+
+function TIdHashIntf.HashToHex(const AHash: TIdBytes): String;
+begin
+  Result := ToHex(AHash);
+end;
+
+function TIdHashIntf.InitHash: TIdHashIntCtx;
+ {$IFNDEF DOTNET}
+   {$IFDEF USE_OPENSSL}
+var
+  LHash : TIdHashInst;
+  LRet : TIdC_Int;
+    {$ENDIF}
+ {$ENDIF}
+begin
+  {$IFDEF DOTNET}
+   Result := GetHashInst;
+  {$ELSE}
+    {$IFDEF USE_OPENSSL}
+  LHash := GetHashInst;
+  IdSslEvpMDCtxInit(@Result);
+  LRet := IdSslEvpDigestInitEx(@Result, LHash, nil);
+  if LRet <> 1 then begin
+    EIdDigestInitEx.RaiseException('EVP_DigestInit_ex error');
+  end;
+    {$ELSE}
+  Result := nil;
+    {$ENDIF}
+  {$ENDIF}
+end;
+
+{$IFDEF DOTNET}
+class function TIdHashIntf.IsAvailable: Boolean;
+begin
+  Result := True;
+end;
+
+class function TIdHashIntF.IsIntfAvailable: Boolean;
+begin
+   Result := False;
+end;
+{$ELSE}
+//done this way so we can override IsAvailble if there is a native
+//implementation.
+class function TIdHashIntf.IsAvailable: Boolean;
+begin
+  Result := IsIntfAvailable;
+end;
+
+class function TIdHashIntF.IsIntfAvailable: Boolean;
+begin
+   Result := IsHashingIntfAvail;
+end;
+{$ENDIF}
+
+procedure TIdHashIntf.UpdateHash(ACtx: TIdHashIntCtx; const AIn: TIdBytes);
+{$IFNDEF DOTNET}
+  {$IFDEF USE_OPENSSL}
+var LRet : TIdC_Int;
+  {$ENDIF}
+{$ENDIF}
+begin
+   {$IFDEF DOTNET}
+   ACtx.TransformBlock(AIn,0,Length(AIn),AIn,0);
+   {$ELSE}
+     {$IFDEF USE_OPENSSL}
+  LRet := IdSslEvpDigestUpdate(@ACtx,@Ain[0],Length(AIn));
+  if LRet <> 1 then begin
+    EIdDigestInitEx.RaiseException('EVP_DigestUpdate error');
+  end;
+     {$ENDIF}
+  {$ENDIF}
+end;
+
+{ TIdHashNativeAndIntF }
+
+function TIdHashNativeAndIntF.GetHashBytes(AStream: TStream;
+  ASize: TIdStreamSize): TIdBytes;
+begin
+  if IsIntfAvailable then begin
+    Result := inherited GetHashBytes(AStream, ASize);
+  end else begin
+    Result := NativeGetHashBytes(AStream, ASize);
+  end;
+end;
+
+function TIdHashNativeAndIntF.NativeGetHashBytes(AStream: TStream;
+  ASize: TIdStreamSize): TIdBytes;
+begin
+
 end;
 
 end.

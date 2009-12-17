@@ -65,6 +65,7 @@ type
 implementation
 
 uses
+  IdException,
   IdGlobal, IdFTPCommon, IdGlobalProtocols, IdStrings, SysUtils;
 
 const

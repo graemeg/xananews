@@ -158,6 +158,7 @@ type
 implementation
 
 uses
+  IdException,
   IdGlobal, IdFTPCommon, IdGlobalProtocols, IdStrings, SysUtils;
 
 { TIdFTPLPMVS }
@@ -444,8 +445,8 @@ begin
       if (s.Count > 7) and (s[3] <> '') and IsNumeric(s[3], 1, 1) and (IndyPos('/', s[3]) > 0) then
       begin
         AItem.ModifiedDate := MVSDate(s[3]);
-        //    Name     VV.MM  Created     Changed     Size  Init   Mod   Id
-        //$README   01.10 89/04/19 94/12/15 18:55    90     1     0 EWZ
+        {    Name     VV.MM  Created     Changed     Size  Init   Mod   Id}
+        { $README   01.10 89/04/19 94/12/15 18:55    90     1     0 EWZ }
         if s.Count > 4 then
         begin
           AItem.ModifiedDate := AItem.ModifiedDate + TimeHHMMSS(s[4]);

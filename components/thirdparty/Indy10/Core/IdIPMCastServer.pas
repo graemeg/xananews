@@ -142,7 +142,7 @@ begin
   if Assigned(FBinding) then
   begin
     if FBinding.HandleAllocated then begin
-      GStack.DropMulticastMembership(FBinding.Handle, FMulticastGroup, FBinding.IP, FBinding.IPVersion);
+      FBinding.DropMulticastMembership(FMulticastGroup);
     end;
     FreeAndNil(FBinding);
   end;
@@ -170,7 +170,7 @@ begin
     FBinding.Bind;
     //Multicast.IMRMultiAddr :=  GBSDStack.StringToTIn4Addr(FMulticastGroup);
     //Hope the following is correct for StringToTIn4Addr(), should be checked...
-    GStack.AddMulticastMembership(FBinding.Handle, FMulticastGroup, FBinding.IP, FBinding.IPVersion);
+    FBinding.AddMulticastMembership(FMulticastGroup);
     ApplyTimeToLive;
     ApplyLoopback;
   end;
@@ -215,14 +215,14 @@ end;
 procedure TIdIPMCastServer.ApplyLoopback;
 begin
   if Assigned(FBinding) and FBinding.HandleAllocated then begin
-    GStack.SetLoopBack(FBinding.Handle, FLoopback, FBinding.IPVersion);
+    FBinding.SetLoopBack(FLoopback);
   end;
 end;
 
 procedure TIdIPMCastServer.ApplyTimeToLive;
 begin
   if Assigned(FBinding) and FBinding.HandleAllocated then begin
-    GStack.SetMulticastTTL(FBinding.Handle, FTimeToLive, FBinding.IPVersion);
+    FBinding.SetMulticastTTL(FTimeToLive);
   end;
 end;
 

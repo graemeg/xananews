@@ -120,6 +120,9 @@ const
 implementation
 
 uses
+  {$IFNDEF DOTNET}
+  IdStreamVCL,
+  {$ENDIF}
   IdHashCRC,
   IdResourceStringsProtocols,
   SysUtils;

@@ -103,6 +103,7 @@ implementation
 
 uses
   SysUtils,
+  IdException,
   IdGlobal,
   IdGlobalProtocols;
 

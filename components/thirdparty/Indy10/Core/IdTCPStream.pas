@@ -85,6 +85,7 @@ type
 implementation
 
 uses
+  IdException,
   SysUtils;
 
 constructor TIdTCPStream.Create(AConnection: TIdTCPConnection);

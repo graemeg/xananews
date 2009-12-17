@@ -254,7 +254,7 @@ end;
 destructor TIdHTTPAppRequest.Destroy;
 begin
   if FFreeContentStream then begin
-    FreeAnsNil(FContentStream);
+    FreeAndNil(FContentStream);
   end;
   inherited;
 end;

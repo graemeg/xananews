@@ -96,8 +96,7 @@ uses
   {$IFDEF WIDGET_WINFORMS}
   IdDsnPropEdBindingNET,
   IdAboutDotNET,
-  {$ENDIF}
-  {$IFDEF WIDGET_VCL_LIKE_OR_KYLIX}
+  {$ELSE}
   IdDsnPropEdBindingVCL,
   IdAboutVCL,
   {$ENDIF}
@@ -132,8 +131,7 @@ uses
 type
   {$IFDEF WIDGET_WINFORMS}
    TIdPropEdBindingEntry = TIdDsnPropEdBindingNET;
-  {$ENDIF}
-  {$IFDEF WIDGET_VCL_LIKE_OR_KYLIX}
+  {$ELSE}
   TIdPropEdBindingEntry = TIdDsnPropEdBindingVCL;
   {$ENDIF}
 

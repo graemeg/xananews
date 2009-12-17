@@ -567,6 +567,7 @@ end;
 function NTOWFv1(const APassword : String): TIdBytes;
 {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+  CheckMD4Permitted;
   with TIdHashMessageDigest4.Create do try
     Result := HashBytes(TIdTextEncoding.Unicode.GetBytes(APassword));
   finally
@@ -681,6 +682,7 @@ var
   nt_hpw : TIdBytes; //array [1..21] of Char;
  // nt_hpw128 : TIdBytes;
 begin
+  CheckMD4Permitted;
   nt_pw := TIdTextEncoding.Unicode.GetBytes(APassword);
   with TIdHashMessageDigest4.Create do try
     vntlmhash := HashBytes(nt_pw);
@@ -706,6 +708,7 @@ var
   nt_hpw128 : TIdBytes;
 
 begin
+  CheckMD4Permitted;
   SetLength(Result,24);
   nt_pw := TIdTextEncoding.Unicode.GetBytes(APassword);
   with TIdHashMessageDigest4.Create do try
@@ -803,6 +806,7 @@ var
   nt_hpw : TIdBytes; //array [1..21] of Char;
   nt_hpw128 : TIdBytes;
 begin
+  CheckMD4Permitted;
   nt_pw := System.Text.Encoding.Unicode.GetBytes( APassword);
   with TIdHashMessageDigest4.Create do try
     nt_hpw128 := HashString( nt_pw);
@@ -985,6 +989,7 @@ end;
 function UserNTLMv1SessionKey(const AHash : TIdBytes) : TIdBytes;
 {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+  CheckMD4Permitted;
   with TIdHashMessageDigest4.Create do try
     Result := HashBytes(AHash);
   finally
@@ -1077,6 +1082,7 @@ var LChall, LTmp : TIdBytes;
   LPassHash : TIdBytes;
 
 begin
+  CheckMD5Permitted;
   //LM feild value for Type3 message
   SetLength(LMFeild,24);
   FillBytes( LMFeild,24, 0);

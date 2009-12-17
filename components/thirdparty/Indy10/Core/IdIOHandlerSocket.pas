@@ -228,7 +228,10 @@ uses
     {$IFDEF USE_INLINE}
   System.IO,
     {$ENDIF}
-  {$ENDIF}  
+  {$ENDIF}
+  {$IFDEF WIN32_OR_WIN64 }
+  Windows,
+  {$ENDIF}
   SysUtils,
   IdStack,
   IdStackConsts,
@@ -261,7 +264,7 @@ begin
     ClientPortMax := BoundPortMax;
     // Turn on Reuse if specified
     if (FReuseSocket = rsTrue) or ((FReuseSocket = rsOSDependent) and (GOSType = otUnix)) then begin
-      GStack.SetSocketOption(FBinding.Handle, Id_SOL_SOCKET, Id_SO_REUSEADDR, Id_SO_True);
+      FBinding.SetSockOpt(Id_SOL_SOCKET, Id_SO_REUSEADDR, Id_SO_True);
     end;
     Bind;
     // Turn off Nagle if specified
@@ -355,8 +358,16 @@ end;
 
 function TIdIOHandlerSocket.WriteFile(const AFile: String;
   AEnableTransferFile: Boolean): Int64;
+  {$IFDEF WIN32_OR_WIN64}
+var
+  LOldErrorMode : Integer;
+  {$ENDIF}
 begin
   Result := 0;
+  {$IFDEF WIN32_OR_WIN64}
+  LOldErrorMode := SetErrorMode(SEM_FAILCRITICALERRORS);
+  try
+  {$ENDIF}
   if FileExists(AFile) then begin
     if Assigned(GServeFileProc) and (not WriteBufferingActive)
      {and (Intercept = nil)} and AEnableTransferFile
@@ -369,6 +380,11 @@ begin
       Result := inherited WriteFile(AFile, AEnableTransferFile);
     end;
   end;
+  {$IFDEF WIN32_OR_WIN64}
+  finally
+    SetErrorMode(LOldErrorMode)
+  end;
+  {$ENDIF}
 end;
 
 procedure TIdIOHandlerSocket.SetTransparentProxy(AProxy : TIdCustomTransparentProxy);
@@ -437,7 +453,7 @@ end;
 procedure TIdIOHandlerSocket.SetNagleOpt(AEnabled: Boolean);
 begin
   if BindingAllocated then begin
-    GStack.SetSocketOption(FBinding.Handle, Id_SOCKETOPTIONLEVEL_TCP, Id_TCP_NODELAY, Integer(not AEnabled));
+    FBinding.SetSockOpt(Id_SOCKETOPTIONLEVEL_TCP, Id_TCP_NODELAY, Integer(not AEnabled));
   end;
 end;
 

@@ -111,6 +111,7 @@ const
 implementation
 
 uses
+  IdException,
   IdGlobal, IdFTPCommon, IdGlobalProtocols,
   SysUtils;
 
@@ -128,6 +129,8 @@ begin
   //
   //or
   //2002-09-02  19:06                9,730 DOS file 2
+
+  //
   //
   //Those were obtained from soem comments in some FileZilla source-code.
   //FtpListResult.cpp
@@ -156,6 +159,30 @@ begin
 09/09/2008  03:51 PM    <DIR>          WinKey
 09/09/2008  03:51 PM    <DIR>          zaep
 }
+
+{Some Windows CE servers might return something like this:
+{
+
+         1         2         3         4         5
+1234567890123456789012345678901234567890123456789012345678901234567890
+"
+                       //  <DI
+01-01-98  08:00AM          <DIR>                  Flash File Store
+01-01-98  08:00AM          <DIR>                  SDMMC Disk
+06-26-06  10:49AM          <DIR>                  install
+06-21-06  01:59PM                                1033 GACLOG.TXT
+06-21-06  12:32PM                                  12 iqdbsett.iqd
+03-21-03  04:02AM          <DIR>                  SmartSystems
+03-21-03  04:00AM          <DIR>                  ftpdcmds
+03-21-03  04:00AM          <DIR>                  ConnMgr
+03-21-03  04:00AM          <DIR>                  CabFiles
+03-20-03  07:59PM          <DIR>                  profiles
+03-20-03  07:59PM          <DIR>                  Program Files
+03-20-03  07:59PM          <DIR>                  My Documents
+03-20-03  07:59PM          <DIR>                  Temp
+03-20-03  07:59PM          <DIR>                  Windows
+"
+}
   Result := False;
   for i := 0 to AListing.Count - 1 do
   begin
@@ -168,7 +195,15 @@ begin
 
       if sDir = '  <DI' then begin   {do not localize}
         sDir := Copy(SData, 27, 5);
+      end else begin
+        sDir := Copy(SData, 26,28);
+        Result := TextStartsWith(sDir,'  <DI') or IsNumeric(TrimLeft(sDir));
+        if not Result then begin
+           Exit;
+        end;
+
       end;
+
       sDir := TrimLeft(sDir);
       //This is a workaround for large file sizes such as:
 
@@ -240,6 +275,7 @@ var
   LBuffer: string;
   LPosMarker : Integer;
 begin
+  LPosMarker := 0;
   //Note that there is quite a bit of duplicate code in this if.
   //That is because there are two similar forms but the dates are in
   //different forms and have to be processed differently.
@@ -294,6 +330,12 @@ begin
     if TextIsSame(LValue, '<DIR>') then    {Do not Localize}
     begin
       AItem.ItemType := ditDirectory;
+      //must contain 17 spaces for WinCE pattern
+      if TextStartsWith(LBuffer,'                 ') then begin
+      //if it is this pattern, 8 needs to be the starting val for LPosMarker
+      //to extract the dirname.
+        LPosMarker := 8;
+      end;
       AItem.SizeAvail := False;
       Break;
     end else
@@ -313,9 +355,9 @@ begin
   until False;
   //We do things this way because a space starting a file name is legel
   if AItem.ItemType = ditDirectory then begin
-    LPosMarker := 10;
+    LPosMarker := LPosMarker + 10;
   end else begin
-    LPosMarker := 1;
+    LPosMarker := LPosMarker + 1;
   end;
 
   // Rest of the buffer is item name

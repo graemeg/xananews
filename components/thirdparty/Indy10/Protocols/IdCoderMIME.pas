@@ -72,6 +72,9 @@ var
 implementation
 
 uses
+  {$IFNDEF DOTNET}
+  IdStreamVCL,
+  {$ENDIF}
   SysUtils;
 
 { TIdDecoderMIMELineByLine }

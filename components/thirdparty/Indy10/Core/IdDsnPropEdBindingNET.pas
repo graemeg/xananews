@@ -190,12 +190,12 @@ begin
   Result := -1;
 end;
 
-function GetDisplayString(const AIP : String; const APort : Integer; AIPVer : TIdIPVersion): string;
+function GetDisplayString(ASocketHandle: TIdSocketHandle): string;
 begin
   Result := '';
-  case AIPVer of
-      Id_IPv4 : Result := IndyFormat('%s:%d', [AIP, APort]);
-      Id_IPv6 : Result := IndyFormat('[%s]:%d', [AIP, APort]);
+  case ASocketHandle.IPVersion of
+    Id_IPv4 : Result := IndyFormat('%s:%d', [ASocketHandle.IP, ASocketHandle.Port]);
+    Id_IPv6 : Result := IndyFormat('[%s]:%d', [ASocketHandle.IP, ASocketHandle.Port]);
   end;
 end;
 
@@ -205,7 +205,7 @@ var
 begin
   Result := '';
   for i := 0 to ASocketHandles.Count -1 do begin
-    Result := Result + ',' + GetDisplayString(ASocketHandles[i].IP,ASocketHandles[i].Port,ASocketHandles[i].IPVersion );
+    Result := Result + ',' + GetDisplayString(ASocketHandles[i]);
   end;
   Delete(Result,1,1);
 end;
@@ -579,7 +579,7 @@ begin
    try
     if lbBindings.Items.Count = FHandles.Count then begin
       for i := 0 to FHandles.Count - 1 do begin
-        s := GetDisplayString(FHandles[i].IP, FHandles[i].Port, FHandles[i].IPVersion);
+        s := GetDisplayString(FHandles[i]);
         if s <> lbBindings.Items[i].ToString then begin
           lbBindings.Items[i] := s;
         end;
@@ -587,7 +587,7 @@ begin
     end else begin
       lbBindings.Items.Clear;
       for i := 0 to FHandles.Count-1 do begin
-        lbBindings.Items.Add(GetDisplayString(FHandles[i].IP, FHandles[i].Port,FHandles[i].IPVersion));
+        lbBindings.Items.Add(GetDisplayString(FHandles[i]));
       end;
     end;
    finally
@@ -603,7 +603,7 @@ begin
   try
     if lbBindings.Items.Count = FHandles.Count then begin
       for i := 0 to FHandles.Count - 1 do begin
-        s := GetDisplayString(FHandles[i].IP, FHandles[i].Port, FHandles[i].IPVersion);
+        s := GetDisplayString(FHandles[i]);
         if s <> lbBindings.Items[i] then begin
           lbBindings.Items[i] := s;
         end;
@@ -611,7 +611,7 @@ begin
     end else begin
       lbBindings.Items.Clear;
       for i := 0 to FHandles.Count-1 do begin
-        lbBindings.Items.Add(GetDisplayString(FHandles[i].IP, FHandles[i].Port,FHandles[i].IPVersion));
+        lbBindings.Items.Add(GetDisplayString(FHandles[i]));
       end;
     end;
   finally

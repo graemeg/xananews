@@ -289,6 +289,7 @@ begin
     FErrorMessage := SysUtils.SysErrorMessage(AError);
     inherited Create(ATitle + ': ' + FErrorMessage);    {Do not Localize}
   end;
+
 end;
 
 function Load : Boolean;
@@ -317,15 +318,30 @@ begin
 end;
 
 function Fixup(const AName: string): Pointer;
+var LEx : Exception;
 begin
   if hIconv = 0 then begin
     if not Load then begin
-      EIdIconvStubError.Build(Format(RSIconvCallError, [AName]), 0);
+      LEx := EIdIconvStubError.Build(Format(RSIconvCallError, [AName]), 0);
+      raise LEx;
     end;
   end;
   Result := GetProcAddress(hIconv, PChar(AName));
+  {
+  IMPORTANT!!!
+
+  GNU libiconv for Win32 might be compiled with the LIBICONV_PLUG define.
+  If that's the case, we will have to load the functions with a "lib" prefix.
+
+  IOW, CYA!!!
+  }
   if Result = nil then begin
-    EIdIconvStubError.Build(Format(RSIconvCallError, [AName]), 10022);
+    Result := GetProcAddress(hIconv, PChar('lib'+AName));
+    if Result = nil then begin
+
+      LEx := EIdIconvStubError.Build(Format(RSIconvCallError, [AName]), 10022);
+      raise LEx;
+    end;
   end;
 end;
 

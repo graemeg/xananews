@@ -72,6 +72,7 @@ type
 implementation
 
 uses
+  IdException,
   IdGlobal;
 
 { TIdFTPLPNCSAforMACOS }

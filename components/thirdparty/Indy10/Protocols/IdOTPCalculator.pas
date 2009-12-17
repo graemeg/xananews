@@ -82,9 +82,10 @@ implementation
 uses
   Classes,
   IdGlobal,
+  IdGlobalProtocols,
   IdHash,
   IdHashMessageDigest,
-  IdHashSHA1,
+  IdHashSHA,
   IdResourceStringsProtocols,
   SysUtils;
 
@@ -424,6 +425,7 @@ var
   L64Bit: Int64;
   LTempLongWord: LongWord;
 begin
+  CheckMD4Permitted;
   LMD4 := TIdHashMessageDigest4.Create;
   try
     L64Bit := Hash4ToInt64(LMD4.HashString(LowerCase(ASeed) + APassword));
@@ -457,6 +459,7 @@ var
   L64Bit: int64;
   LTempLongWord: LongWord;
 begin
+  CheckMD5Permitted;
   LMD5 := TIdHashMessageDigest5.Create;
   try
     L64Bit := Hash4ToInt64(LMD5.HashString(LowerCase(ASeed) + APassword));

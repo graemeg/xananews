@@ -138,6 +138,7 @@ type
 implementation
 
 uses
+  IdException,
   IdGlobal,
   IdGlobalProtocols, SysUtils;
 

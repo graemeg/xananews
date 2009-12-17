@@ -97,6 +97,7 @@ type
     FLastModified: TDateTime;
     FPragma: string;
     FHasContentLength: Boolean;
+    FTransferEncoding: String;
     //
     procedure AssignTo(Destination: TPersistent); override;
     procedure ProcessHeaders; virtual;
@@ -136,6 +137,7 @@ type
     property Expires: TDateTime read FExpires write FExpires;
     property LastModified: TDateTime read FLastModified write FLastModified;
     property Pragma: string read FPragma write FPragma;
+    property TransferEncoding: string read FTransferEncoding write FTransferEncoding;
   end;
 
   TIdProxyConnectionInfo = class(TPersistent)
@@ -424,6 +426,7 @@ begin
 
     FETag := Values['ETag'];  {do not localize}
     FPragma := Values['Pragma'];  {do not localize}
+    FTransferEncoding := Values['Transfer-Encoding']; {do not localize}
   end;
 end;
 
@@ -482,6 +485,10 @@ begin
     if Length(FPragma) > 0 then
     begin
       Values['Pragma'] := FPragma; {do not localize}
+    end;
+    if Length(FTransferEncoding) > 0 then
+    begin
+      Values['Transfer-Encoding'] := FTransferEncoding; {do not localize}
     end;
     if FCustomHeaders.Count > 0 then
     begin

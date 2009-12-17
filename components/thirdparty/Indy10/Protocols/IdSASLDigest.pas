@@ -15,7 +15,7 @@ type
     function StartAuthenticate(const AChallenge, AHost, AProtocolName:string) : String; override;
     function ContinueAuthenticate(const ALastResponse, AHost, AProtocolName : string): string; override;
     class function ServiceName: TIdSASLServiceName; override;
-
+    function IsReadyToStart: Boolean; override;
   published
     property authzid : String read Fauthzid write Fauthzid;
   end;
@@ -32,7 +32,7 @@ function CalcDigestResponse(const AUserName, APassword, ARealm, ANonce, ACNonce 
   const  AQop, ADigestURI : String; const AAuthzid : String = '') : String;
 
 implementation
-uses IdGlobal, IdHash, IdHashMessageDigest, IdResourceStringsProtocols;
+uses IdGlobal, IdGlobalProtocols, IdHash, IdHashMessageDigest, IdResourceStringsProtocols;
 
 const
   SASL_DIGEST_METHOD = 'AUTHENTICATE:';  {do not localize}
@@ -120,6 +120,11 @@ function TIdSASLDigest.ContinueAuthenticate(const ALastResponse, AHost,
   AProtocolName: string): string;
 begin
   Result := '';
+end;
+
+function TIdSASLDigest.IsReadyToStart: Boolean;
+begin
+  Result := not GetFIPSMode;
 end;
 
 class function TIdSASLDigest.ServiceName: TIdSASLServiceName;

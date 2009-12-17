@@ -193,7 +193,7 @@ implementation
 
 uses
   IdException,
-  IdGlobal;
+  IdGlobal, SysUtils;
 
 procedure TIdZLibCompressorBase.DecompressGZipStream(AInStream, AOutStream : TStream);
 

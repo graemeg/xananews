@@ -566,6 +566,7 @@ type
       ); overload;
     procedure Write(AValue: LongWord; AConvert: Boolean = True); overload;
     procedure Write(AValue: LongInt; AConvert: Boolean = True); overload;
+    procedure Write(AValue: Word; AConvert: Boolean = True); overload;
     procedure Write(AValue: SmallInt; AConvert: Boolean = True); overload;
     procedure Write(AValue: Int64; AConvert: Boolean = True); overload;
     procedure Write(AStream: TStream; ASize: TIdStreamSize = 0; AWriteByteCount: Boolean = False); overload; virtual;
@@ -658,6 +659,7 @@ type
     function ReadLongWord(AConvert: Boolean = True): LongWord;
     function ReadLongInt(AConvert: Boolean = True): LongInt;
     function ReadInt64(AConvert: Boolean = True): Int64;
+    function ReadWord(AConvert: Boolean = True): Word;
     function ReadSmallInt(AConvert: Boolean = True): SmallInt;
     //
     procedure ReadStream(AStream: TStream; AByteCount: TIdStreamSize = -1;
@@ -746,6 +748,9 @@ uses
     {$IFDEF USE_INLINE}
   System.IO,
     {$ENDIF}
+  {$ENDIF}
+  {$IFDEF WIN32_OR_WIN64}
+  Windows,
   {$ENDIF}
   IdStack, IdStackConsts, IdResourceStrings, SysUtils;
 
@@ -1036,6 +1041,14 @@ begin
   end;
 end;
 
+procedure TIdIOHandler.Write(AValue: Word; AConvert: Boolean = True);
+begin
+  if AConvert then begin
+    AValue := GStack.HostToNetwork(AValue);
+  end;
+  Write(ToBytes(AValue));
+end;
+
 procedure TIdIOHandler.Write(AValue: SmallInt; AConvert: Boolean = True);
 begin
   if AConvert then begin
@@ -1085,6 +1098,17 @@ begin
   end;
 end;
 
+function TIdIOHandler.ReadWord(AConvert: Boolean = True): Word;
+var
+  LBytes: TIdBytes;
+begin
+  ReadBytes(LBytes, SizeOf(Word), False);
+  Result := BytesToWord(LBytes);
+  if AConvert then begin
+    Result := GStack.NetworkToHost(Result);
+  end;
+end;
+
 function TIdIOHandler.ReadSmallInt(AConvert: Boolean = True): SmallInt;
 var
   LBytes: TIdBytes;
@@ -1107,7 +1131,7 @@ var
   {$ELSE}
   LChars: TIdWideChars;
     {$IFDEF STRING_IS_ANSI}
-  LWTmp: WideString;
+  LWTmp: TIdUnicodeString;
   LATmp: TIdBytes;
     {$ENDIF}
   {$ENDIF}
@@ -2297,17 +2321,30 @@ function TIdIOHandler.WriteFile(const AFile: String; AEnableTransferFile: Boolea
 var
 //TODO: There is a way in linux to dump a file to a socket as well. use it.
   LStream: TStream;
+  {$IFDEF WIN32_OR_WIN64}
+  LOldErrorMode : Integer;
+  {$ENDIF}
 begin
-  if not FileExists(AFile) then begin
-    raise EIdFileNotFound.CreateFmt(RSFileNotFound, [AFile]);
-  end;
-  LStream := TIdReadFileExclusiveStream.Create(AFile);
+  Result := 0;
+  {$IFDEF WIN32_OR_WIN64}
+  LOldErrorMode := SetErrorMode(SEM_FAILCRITICALERRORS);
   try
-    Write(LStream);
-    Result := LStream.Size;
+  {$ENDIF}
+    if not FileExists(AFile) then begin
+      raise EIdFileNotFound.CreateFmt(RSFileNotFound, [AFile]);
+    end;
+    LStream := TIdReadFileExclusiveStream.Create(AFile);
+    try
+      Write(LStream);
+      Result := LStream.Size;
+    finally
+      FreeAndNil(LStream);
+    end;
+  {$IFDEF WIN32_OR_WIN64}
   finally
-    FreeAndNil(LStream);
+    SetErrorMode(LOldErrorMode)
   end;
+  {$ENDIF}
 end;
 
 function TIdIOHandler.WriteBufferingActive: Boolean;

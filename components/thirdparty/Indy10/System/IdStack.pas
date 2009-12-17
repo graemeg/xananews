@@ -354,7 +354,7 @@ uses
   //done this way so we can have a separate stack for FPC under Unix systems
   {$IFDEF UNIX}
     {$IFDEF KYLIXCOMPAT}
-  IdStackLinux,
+  IdStackLibc,
     {$ELSE}
   IdStackUnix,
     {$ENDIF}
@@ -878,7 +878,7 @@ initialization
   GStackClass :=
     {$IFDEF UNIX}
       {$IFDEF KYLIXCOMPAT}
-      TIdStackLinux;
+      TIdStackLibc;
       {$ENDIF}
       {$IFDEF USE_BASEUNIX}
       TIdStackUnix;

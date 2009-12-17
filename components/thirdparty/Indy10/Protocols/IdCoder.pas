@@ -137,6 +137,9 @@ type
 implementation
 
 uses
+  {$IFNDEF DOTNET}
+  IdStreamVCL,
+  {$ENDIF}
   IdGlobalProtocols, SysUtils;
 
 { TIdDecoder }

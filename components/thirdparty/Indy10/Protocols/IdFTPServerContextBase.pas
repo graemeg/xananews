@@ -49,6 +49,8 @@ type
     FHost : String;
     FUsername: string;
     FPassword: string;
+    FAccount : String;
+    FAccountNeeded : Boolean;
     FRESTPos: Integer;
     FRNFR: string;
     FNLSTUtf8: Boolean;
@@ -60,6 +62,9 @@ type
     property HomeDir: TIdFTPFileName read FHomeDir write FHomeDir;
     property Password: string read FPassword write FPassword;
     property Username: string read FUsername write FUsername;
+    property Account : String read FAccount write FAccount;
+    property AccountNeeded : Boolean read FAccountNeeded write FAccountNeeded;
+
     //for virtual domains
     property Host: string read FHost write FHost;
     property UserType: TIdFTPUserType read FUserType write FUserType;
@@ -82,9 +87,11 @@ begin
   FHost := '';   {Do not localize}
   FUsername := '';    {Do not Localize}
   FPassword := '';    {Do not Localize}
+  FAccount := '';   {Do not localize}
   FRESTPos := 0;
   FRNFR := '';    {Do not Localize}
   FNLSTUtf8 := False;
+  FAccountNeeded := False;
 end;
 
 end.

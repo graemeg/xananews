@@ -21,7 +21,7 @@ implementation
 
 uses
   {$IFNDEF DOTNET}
-    {$IFNDEF WINCE}
+    {$IFDEF USE_OPENSSL}
   IdAuthenticationNTLM,
     {$ENDIF}
   {$ENDIF}

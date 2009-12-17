@@ -532,12 +532,14 @@ uses
     {$ENDIF}
   {$ENDIF}
   Classes,
-  SyncObjs,
+  syncobjs,
   {$IFDEF UNIX}
     {$IFDEF KYLIX}
     Libc,
     {$ELSE}
-      DynLibs, // better add DynLibs only for fpc 
+      {$IFDEF FPC}
+      DynLibs, // better add DynLibs only for fpc
+      {$ENDIF}
       {$IFDEF KYLIXCOMPAT}
       Libc,
       {$ENDIF}
@@ -581,7 +583,9 @@ const
   {$IFDEF KYLIX}
   NilHandle = 0;
   {$ENDIF}
-
+  {$IFDEF DELPHI}
+  NilHandle = 0;
+  {$ENDIF}
   LF = #10;
   CR = #13;
   EOL = CR + LF;
@@ -648,7 +652,7 @@ type
   {$ENDIF}
 
   {$IFDEF INT_THREAD_PRIORITY}
-const  
+const
   // approximate values, its finer grained on Linux
   tpIdle = 19;
   tpLowest = 12;
@@ -674,7 +678,7 @@ type
   TIdUnicodeString = String;
   TIdUnicodeChar = Char;
   TIdBytes = TBytes;
-  TIdWideChars = TCharArray;
+  TIdWideChars = {$IFDEF DOTNET}array of Char{$ELSE}TCharArray{$ENDIF};
   {$ELSE}
   TIdUnicodeString = {$IFDEF DOTNET}System.String{$ELSE}WideString{$ENDIF};
   TIdUnicodeChar = WideChar;
@@ -685,11 +689,11 @@ type
   {$IFNDEF DOTNET}
     {$IFNDEF FPC}
       //needed so that in FreePascal, we can use pointers of different sizes
-      {$IFDEF WIN32}
+      {$IFDEF CPU32}
    PtrInt  = LongInt;
    PtrUInt = LongWord;
       {$ENDIF}
-      {$IFDEF WIN64}
+      {$IFDEF CPU64}
    PtrInt  = Int64;
    PtrUInt = Int64;
       {$ENDIF}
@@ -713,7 +717,7 @@ type
   in .NET.  For earlier versions, or when the libiconv library is enabled,
   TIdTextEncoding is a wrapper class, otherwise it maps directly to the OS/RTL's
   encoding class.
-  
+
   This way, Indy can have a unified internal interface for String<->Byte conversions
   without using IFDEFs everywhere.
 
@@ -853,7 +857,7 @@ type
 
 type
   IdAnsiEncodingType = (encOSDefault, encASCII, encUTF7, encUTF8);
-  
+
   procedure EnsureEncoding(var VEncoding : TIdTextEncoding; ADefEncoding: IdAnsiEncodingType = encASCII);
 
 type
@@ -1214,7 +1218,8 @@ procedure WriteStringToStream(AStream: TStream; const AStr: string; const ALengt
 function ReadCharFromStream(AStream: TStream; var VChar: Char; AByteEncoding: TIdTextEncoding = nil
   {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
   ): Integer;
-function ReadTIdBytesFromStream(const AStream: TStream; var ABytes: TIdBytes; const Count: TIdStreamSize): TIdStreamSize;
+function ReadTIdBytesFromStream(const AStream: TStream; var ABytes: TIdBytes;
+  const Count: TIdStreamSize; const AIndex: Integer = 0): TIdStreamSize;
 procedure WriteTIdBytesToStream(const AStream: TStream; const ABytes: TIdBytes;
   const ASize: Integer = -1; const AIndex: Integer = 0);
 
@@ -1391,6 +1396,7 @@ function TwoByteToWord(AByte1, AByte2: Byte): Word;
 
 var
   {$IFDEF UNIX}
+
   // For linux the user needs to set this variable to be accurate where used (mail, etc)
   GOffsetFromUTC: TDateTime = 0;
   {$ENDIF}
@@ -1409,6 +1415,11 @@ const
 implementation
 
 uses
+  {$IFDEF DELPHI_CROSS}
+    {$IFDEF MACOSX}
+  CoreServices,
+    {$ENDIF}
+  {$ENDIF}
   {$IFDEF REGISTER_EXPECTED_MEMORY_LEAK}
     {$IFDEF USE_FASTMM4}FastMM4,{$ENDIF}
   {$ENDIF}
@@ -1454,7 +1465,7 @@ type
     constructor Create(const CharSet : AnsiString); overload; virtual;
     destructor Destroy; override;
     {$ELSE}
-      {$IFDEF WIN32_OR_WIN64_OR_WINCE}    
+      {$IFDEF WIN32_OR_WIN64_OR_WINCE}
     constructor Create(CodePage: Integer); overload; virtual;
     constructor Create(CodePage, MBToWCharFlags, WCharToMBFlags: Integer); overload; virtual;
       {$ENDIF}
@@ -1801,7 +1812,7 @@ begin
     {$IFDEF USE_ICONV}
     LEncoding := TIdMBCSEncoding.Create('ASCII');
     {$ELSE}
-      {$IFDEF WIN32_OR_WIN64_OR_WINCE}  
+      {$IFDEF WIN32_OR_WIN64_OR_WINCE}
     LEncoding := TIdMBCSEncoding.Create(CP_ACP, 0, 0);
       {$ELSE}
     ToDo('Default property of TIdTextEncoding class is not implemented for this platform yet'); {do not localize}
@@ -2044,6 +2055,7 @@ begin
   LCharCount := CharCount * SizeOf(WideChar);
   LBytesPtr := PAnsiChar(Bytes);
   LByteCount := ByteCount;
+  Assert (LBytesPtr <> nil,'TIdMBCSEncoding.GetBytes LBytesPtr can not be nil');
   //Kylix has an odd definition in iconv.  In Kylix, __outbytesleft is defined as a var
   //while in FreePascal's libc and our IdIconv units define it as a pSize_t
   if iconv(FFromUTF16, @LCharsPtr, @LCharCount, @LBytesPtr, {$IFNDEF KYLIX}@{$ENDIF}LByteCount) = size_t(-1) then
@@ -2079,7 +2091,7 @@ begin
   LByteCount := ByteCount;
   while LByteCount > 0 do
   begin
-    LCharsPtr := @LChars[0];
+    LCharsPtr := PAnsiChar(@LChars[0]);
     LCharsSize := SizeOf(LChars);
     //Kylix has an odd definition in iconv.  In Kylix, __outbytesleft is defined as a var
     //while in FreePascal's libc and our IdIconv units define it as a pSize_t
@@ -2115,6 +2127,7 @@ begin
   LCharsPtr := PAnsiChar(Chars);
   LMaxCharsSize := CharCount * SizeOf(WideChar);
   LCharsSize := LMaxCharsSize;
+  Assert (LCharsPtr <> nil,'TIdMBCSEncoding.GetChars LCharsPtr can not be nil');
   //Kylix has an odd definition in iconv.  In Kylix, __outbytesleft is defined as a var
   //while in FreePascal's libc and our IdIconv units define it as a pSize_t
   if iconv(FToUTF16, @LBytesPtr, @LByteCount, @LCharsPtr, {$IFNDEF KYLIX}@{$ENDIF}LCharsSize) = size_t(-1) then
@@ -2428,7 +2441,7 @@ begin
     LEncoding := GId8BitEncoding;
   end;
   Result := LEncoding;
-end;  
+end;
   {$ELSE}
     {$IFDEF WIN32_OR_WIN64_OR_WINCE}
 function Indy8BitEncoding(const AOwnedByIndy: Boolean = True): TIdTextEncoding;
@@ -2460,6 +2473,15 @@ end;
 {$ENDIF}
 
 {$IFDEF UNIX}
+function HackLoadFileName(const ALibName, ALibVer : String) : string;  {$IFDEF USE_INLINE} inline; {$ENDIF}
+begin
+ {$IFDEF DARWIN}
+  Result := ALibName+ALibVer+LIBEXT;
+ {$ELSE}
+  Result := ALibName+LIBEXT+ALibVer;
+ {$ENDIF}
+end;
+
 function HackLoad(const ALibName : String; const ALibVersions : array of String) : HMODULE;
 var
   i : Integer;
@@ -2467,15 +2489,18 @@ begin
   Result := NilHandle;
   for i := Low(ALibVersions) to High(ALibVersions) do
   begin
-    {$IFDEF DARWIN}
-    Result := LoadLibrary(ALibName+ALibVersions[i]+LIBEXT);
+    {$IFDEF USE_SAFELOADLIBRARY}
+    Result := SafeLoadLibrary(HackLoadFileName(ALibName,ALibVersions[i]));
     {$ELSE}
       {$IFDEF KYLIXCOMPAT}
     // Workaround that is required under Linux (changed RTLD_GLOBAL with RTLD_LAZY Note: also work with LoadLibrary())
-    Result := HMODULE(dlopen(PChar(ALibName+LIBEXT+ALibVersions[i]), RTLD_LAZY));
+    Result := HMODULE(dlopen(PAnsiChar(HackLoadFileName(ALibName,ALibVersions[i])), RTLD_LAZY));
       {$ELSE}
-    Result := LoadLibrary(ALibName+LIBEXT+ALibVersions[i]);
+    Result := LoadLibrary(HackLoadFileName(ALibName,ALibVersions[i]));
       {$ENDIF}
+    {$ENDIF}
+    {$IFDEF USE_INVALIDATE_MOD_CACHE}
+    InvalidateModuleCache;
     {$ENDIF}
     if Result <> NilHandle then begin
       break;
@@ -2498,35 +2523,43 @@ end;
 function InterlockedExchangeTHandle(var VTarget: THandle; const AValue: PtrUInt): THandle;
 {$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
-  {$IFDEF THANDLE_32}
+  {$IFDEF HAS_TInterlocked}
+  ToDo('Result := TInterlocked.Exchange<THandle>(VTarget, AValue);');
+  {$ELSE}
+    {$IFDEF THANDLE_32}
   Result := InterlockedExchange(LongInt(VTarget), AValue);
-  {$ENDIF}
-  {$IFDEF THANDLE_64}
+    {$ENDIF}
+    {$IFDEF THANDLE_64}
   Result := InterlockedExchange64(Int64(VTarget), AValue);
+    {$ENDIF}
   {$ENDIF}
 end;
 
 function InterlockedCompareExchangePtr(var VTarget: Pointer; const AValue, Compare: Pointer): Pointer;
 {$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
-  {$IFDEF FPC}
-  //FreePascal 2.2.0 has an overload for InterlockedCompareExchange that takes
-  // pointers.
-  //TODO: Figure out what to do about FreePascal 2.0.x but that might not be
-  //as important as older versions since you download and install FPC for free.
-    {$IFDEF CPU64}
-  Result := Pointer(InterlockedCompareExchange64(PtrInt(VTarget), PtrInt(AValue), PtrInt(Compare)));
-    {$ELSE}
-  Result := Pointer(InterlockedCompareExchange(PtrInt(VTarget), PtrInt(AValue), PtrInt(Compare)));
-    {$ENDIF}
+  {$IFDEF HAS_TInterlocked}
+  ToDo('Result := TInterlocked.CompareExchange(VTarget, AValue, Compare);');
   {$ELSE}
-    {$IFDEF VCL_2009_OR_ABOVE}
-  Result := InterlockedCompareExchangePointer(VTarget, AValue, Compare);
-    {$ELSE}
-      {$IFDEF VCL_2005_OR_ABOVE}
-  Result := Pointer(InterlockedCompareExchange(Longint(VTarget), Longint(AValue), Longint(Compare)));
+    {$IFDEF FPC}
+    //FreePascal 2.2.0 has an overload for InterlockedCompareExchange that takes
+    // pointers.
+    //TODO: Figure out what to do about FreePascal 2.0.x but that might not be
+    //as important as older versions since you download and install FPC for free.
+      {$IFDEF CPU64}
+  Result := Pointer(InterlockedCompareExchange64(PtrInt(VTarget), PtrInt(AValue), PtrInt(Compare)));
       {$ELSE}
+  Result := Pointer(InterlockedCompareExchange(PtrInt(VTarget), PtrInt(AValue), PtrInt(Compare)));
+      {$ENDIF}
+    {$ELSE}
+      {$IFDEF VCL_2009_OR_ABOVE}
+  Result := InterlockedCompareExchangePointer(VTarget, AValue, Compare);
+      {$ELSE}
+        {$IFDEF VCL_2005_OR_ABOVE}
+  Result := Pointer(InterlockedCompareExchange(Longint(VTarget), Longint(AValue), Longint(Compare)));
+        {$ELSE}
   Result := InterlockedCompareExchange(VTarget, AValue, Compare);
+        {$ENDIF}
       {$ENDIF}
     {$ENDIF}
   {$ENDIF}
@@ -3256,22 +3289,33 @@ function Ticks: LongWord;
   {$IFDEF USE_INLINE}inline;{$ENDIF}
 {$ENDIF}
 {$IFDEF UNIX}
+  {$IFDEF MACOSX}
+    {$IFDEF USE_INLINE} inline;{$ENDIF}
+  {$ELSE}
 var
   tv: timeval;
+  {$ENDIF}
 {$ENDIF}
+
 {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF USE_HI_PERF_COUNTER_FOR_TICKS}
 var
   nTime, freq: {$IFDEF WINCE}LARGE_INTEGER{$ELSE}Int64{$ENDIF};
+  {$ENDIF}
 {$ENDIF}
 begin
   {$IFDEF UNIX}
-    {$IFDEF USE_BASEUNIX}
+    {$IFDEF MACOSX}
+  //This seems to be available on the Delphi cross-compiler for OS/X
+  Result := AbsoluteToNanoseconds(UpTime) div 1000000;
+    {$ELSE}
+      {$IFDEF USE_BASEUNIX}
   fpgettimeofday(@tv,nil);
-    {$ENDIF}
-    {$IFDEF KYLIXCOMPAT}
+      {$ENDIF}
+      {$IFDEF KYLIXCOMPAT}
   gettimeofday(tv, nil);
-    {$ENDIF}
-    {$RANGECHECKS OFF}
+      {$ENDIF}
+      {$RANGECHECKS OFF}
   Result := Int64(tv.tv_sec) * 1000 + tv.tv_usec div 1000;
     {
     I've implemented this correctly for now. I'll argue for using
@@ -3284,24 +3328,36 @@ begin
     IdEcho has code to circumvent the wrap, but its not very good
     to have code for that at all spots where it might be relevant.
     }
+    {$ENDIF}
   {$ENDIF}
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
     // S.G. 27/11/2002: Changed to use high-performance counters as per suggested
     // S.G. 27/11/2002: by David B. Ferguson (david.mcs@ns.sympatico.ca)
-    {$IFDEF WINCE}
-  if Windows.QueryPerformanceFrequency(@freq) then begin
-    if Windows.QueryPerformanceCounter(@nTime) then begin
+
+    // RLebeau 11/12/2009: removed the high-performance counters again.  They
+    // are not reliable on multi-core systems, and are now starting to cause
+    // problems with TIdIOHandler.ReadLn() timeouts under Windows XP SP3, both
+    // 32-bit and 64-bit.  Refer to these discussions:
+    //
+    // http://www.virtualdub.org/blog/pivot/entry.php?id=106
+    // http://blogs.msdn.com/oldnewthing/archive/2008/09/08/8931563.aspx
+    
+    {$IFDEF USE_HI_PERF_COUNTER_FOR_TICKS}
+      {$IFDEF WINCE}
+  if Windows.QueryPerformanceCounter(@nTime) then begin
+    if Windows.QueryPerformanceFrequency(@freq) then begin
       Result := Trunc((nTime.QuadPart / Freq.QuadPart) * 1000) and High(LongWord);
       Exit;
     end;
   end;
-    {$ELSE}
-  if Windows.QueryPerformanceFrequency(freq) then begin
-    if Windows.QueryPerformanceCounter(nTime) then begin
+      {$ELSE}
+  if Windows.QueryPerformanceCounter(nTime) then begin
+    if Windows.QueryPerformanceFrequency(freq) then begin
       Result := Trunc((nTime / Freq) * 1000) and High(LongWord);
       Exit;
     end;
   end;
+      {$ENDIF}
     {$ENDIF}
   Result := Windows.GetTickCount;
   {$ENDIF}
@@ -3487,7 +3543,7 @@ end;
 function IsAlpha(const AChar: Char): Boolean;
 {$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
-  // TODO: under Tiburon and later, use TCharacter.IsLetter() instead
+  // TODO: under D2009+, use TCharacter.IsLetter() instead
 
   // Do not use IsCharAlpha or IsCharAlphaNumeric - they are Win32 routines
   Result := ((AChar >= 'a') and (AChar <= 'z')) or ((AChar >= 'A') and (AChar <= 'Z')); {Do not Localize}
@@ -3617,7 +3673,7 @@ end;
 function IsNumeric(const AChar: Char): Boolean;
 {$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
-  // TODO: under Tiburon and later, use TCharacter.IsDigit() instead
+  // TODO: under D2009+, use TCharacter.IsDigit() instead
 
   // Do not use IsCharAlpha or IsCharAlphaNumeric - they are Win32 routines
   Result := (AChar >= '0') and (AChar <= '9'); {Do not Localize}
@@ -4618,18 +4674,25 @@ end;
 // for details.  The bug is fixed in 2009 Update 1.  For RTM, call FormatBuf()
 // directly to work around the problem...
 function IndyFormat(const AFormat: string; const Args: array of const): string;
-{$IFDEF HAS_TFormatSettings}
+{$IFNDEF DOTNET}
+  {$IFDEF HAS_TFormatSettings}
 var
   EnglishFmt: TFormatSettings;
-  {$IFDEF BROKEN_FmtStr}
+    {$IFDEF BROKEN_FmtStr}
   Len, BufLen: Integer;
   Buffer: array[0..4095] of Char;
+    {$ENDIF}
   {$ENDIF}
 {$ENDIF}
 begin
-  {$IFDEF HAS_TFormatSettings}
+  {$IFDEF DOTNET}
+  // RLebeau 10/29/09: temporary workaround until we figure out how to use
+  // SysUtils.FormatBuf() correctly under .NET in D2009 RTM...
+  Result := SysUtils.Format(AFormat, Args);
+  {$ELSE}
+    {$IFDEF HAS_TFormatSettings}
   EnglishFmt := GetEnglishSetting;
-    {$IFDEF BROKEN_FmtStr}
+      {$IFDEF BROKEN_FmtStr}
   BufLen := Length(Buffer);
   if Length(AFormat) < (Length(Buffer) - (Length(Buffer) div 4)) then
   begin
@@ -4655,10 +4718,10 @@ begin
   begin
     SetString(Result, Buffer, Len);
   end;
-    {$ELSE}
+      {$ELSE}
   Result := SysUtils.Format(AFormat, Args, EnglishFmt);
-    {$ENDIF}
-  {$ELSE}
+      {$ENDIF}
+    {$ELSE}
   //Is there a way to get delphi5 to use locale in format? something like:
   //  SetThreadLocale(TheNewLocaleId);
   //  GetFormatSettings;
@@ -4666,6 +4729,7 @@ begin
   //  format()
   //  set locale back to prior
   Result := SysUtils.Format(AFormat, Args);
+    {$ENDIF}
   {$ENDIF}
 end;
 
@@ -4729,16 +4793,31 @@ begin
 end;
 
 function OffsetFromUTC: TDateTime;
-{$IFNDEF WIN32_OR_WIN64_OR_WINCE}
+{$IFDEF DOTNET}
   {$IFDEF USE_INLINE}inline;{$ENDIF}
 {$ELSE}
+  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
 var
   iBias: Integer;
   tmez: TTimeZoneInformation;
+  {$ENDIF}
+  {$IFDEF UNIX}
+var
+  T: TTime_T;
+  TV: TTimeVal;
+  UT: TUnixTime;
+  {$ENDIF}
 {$ENDIF}
 begin
-  {$IFDEF LINUX}
-  Result := GOffsetFromUTC;
+  {$IFDEF UNIX}
+  {from http://edn.embarcadero.com/article/27890 }
+
+  gettimeofday(TV, nil);
+  T := TV.tv_sec;
+  localtime_r(@T, UT);
+    // __tm_gmtoff is the bias in seconds from the UTC to the current time.
+    // so I multiply by -1 to compensate for this.
+  Result := -1*(UT.__tm_gmtoff / 60 / 60 / 24);
   {$ENDIF}
   {$IFDEF DOTNET}
   Result := System.Timezone.CurrentTimezone.GetUTCOffset(DateTime.FromOADate(Now)).TotalDays;
@@ -4882,13 +4961,18 @@ end;
 function IndyFileAge(const AFileName: string): TDateTime;
 {$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
-  {$IFDEF VCL_2006_OR_ABOVE}
+  {$IFDEF DELPHI_CROSS}
+  Result := FileDateToDateTime(SysUtils.FileAge(AFileName));
+  {$ELSE} 
+    {$IFDEF VCL_2006_OR_ABOVE}
   //single-parameter fileage is deprecated in d2006 and above
   if not FileAge(AFileName, Result) then begin
     Result := 0;
   end;
-  {$ELSE}
+
+    {$ELSE}
   Result := FileDateToDateTime(SysUtils.FileAge(AFileName));
+    {$ENDIF}
   {$ENDIF}
 end;
 
@@ -4965,7 +5049,13 @@ function ToBytes(const AValue: string; const ALength: Integer; const AIndex: Int
   ): TIdBytes; overload;
 var
   LLength: Integer;
+  {$IFDEF STRING_IS_ANSI}
+   LBytes: TIdBytes;
+  {$ENDIF}
 begin
+  {$IFDEF STRING_IS_ANSI}
+  LBytes := nil; // keep the compiler happy
+  {$ENDIF}
   LLength := IndyLength(AValue, ALength, AIndex);
   if LLength > 0 then
   begin
@@ -4974,10 +5064,11 @@ begin
     Result := ADestEncoding.GetBytes(Copy(AValue, AIndex, LLength));
     {$ELSE}
     EnsureEncoding(ASrcEncoding, encOSDefault);
-    Result := TIdTextEncoding.Convert(
-      ASrcEncoding,
-      ADestEncoding,
-      RawToBytes(AValue[AIndex], LLength));
+    LBytes := RawToBytes(AValue[AIndex], LLength);
+    if ASrcEncoding <> ADestEncoding then begin
+      LBytes := TIdTextEncoding.Convert(ASrcEncoding, ADestEncoding, LBytes);
+    end;
+    Result := LBytes;
     {$ENDIF}
   end else begin
     SetLength(Result, 0);
@@ -4987,9 +5078,11 @@ end;
 function ToBytes(const AValue: Char; ADestEncoding: TIdTextEncoding = nil
   {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
   ): TIdBytes; overload;
-{$IFDEF STRING_IS_UNICODE}
 var
+{$IFDEF STRING_IS_UNICODE}
   LChars: {$IFDEF DOTNET}array[0..0] of Char{$ELSE}TIdWideChars{$ENDIF};
+{$ELSE}
+  LBytes: TIdBytes;
 {$ENDIF}
 begin
   EnsureEncoding(ADestEncoding);
@@ -5001,10 +5094,11 @@ begin
   Result := ADestEncoding.GetBytes(LChars);
   {$ELSE}
   EnsureEncoding(ASrcEncoding, encOSDefault);
-  Result := TIdTextEncoding.Convert(
-    ASrcEncoding,
-    ADestEncoding,
-    RawToBytes(AValue, 1));
+  LBytes := RawToBytes(AValue, 1);
+  if ASrcEncoding <> ADestEncoding then begin
+    LBytes := TIdTextEncoding.Convert(ASrcEncoding, ADestEncoding, LBytes);
+  end;
+  Result := LBytes;
   {$ENDIF}
 end;
 
@@ -5348,10 +5442,10 @@ begin
     Result := AByteEncoding.GetString(AValue, AStartIndex, LLength);
     {$ELSE}
     EnsureEncoding(ADestEncoding);
-    LBytes := TIdTextEncoding.Convert(
-      AByteEncoding,
-      ADestEncoding,
-      AValue, AStartIndex, LLength);
+    LBytes := Copy(AValue, AStartIndex, LLength);
+    if AByteEncoding <> ADestEncoding then begin
+      LBytes := TIdTextEncoding.Convert(AByteEncoding, ADestEncoding, LBytes);
+    end;
     SetString(Result, PAnsiChar(LBytes), Length(LBytes));
     {$ENDIF}
   end else begin
@@ -5394,10 +5488,11 @@ begin
   );
 end;
 
-function ReadTIdBytesFromStream(const AStream: TStream; var ABytes: TIdBytes; const Count: TIdStreamSize): TIdStreamSize;
+function ReadTIdBytesFromStream(const AStream: TStream; var ABytes: TIdBytes;
+  const Count: TIdStreamSize; const AIndex: Integer = 0): TIdStreamSize;
 {$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
-  Result := TIdStreamHelper.ReadBytes(AStream, ABytes, Count);
+  Result := TIdStreamHelper.ReadBytes(AStream, ABytes, Count, AIndex);
 end;
 
 function ReadCharFromStream(AStream: TStream; var VChar: Char;
@@ -5431,7 +5526,7 @@ begin
   {$IFDEF STRING_IS_ANSI}
   LATmp := nil; // keep the compiler happy
   {$ENDIF}
-  
+
   EnsureEncoding(AByteEncoding);
   StartPos := AStream.Position;
 
@@ -6017,7 +6112,7 @@ begin
     Result := False;
     Exit;
   end;
-  
+
   SetLength(LBuf, LBUFMAXSIZE);
   LCrEncountered := False;
 

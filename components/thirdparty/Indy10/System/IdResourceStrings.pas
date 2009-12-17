@@ -102,9 +102,11 @@ resourcestring
   RSStackEHOSTUNREACH = 'No route to host.';
   RSStackENOTEMPTY = 'Directory not empty';
   RSStackHOST_NOT_FOUND = 'Host not found.';
-  {CH RSStackTRY_AGAIN = 'Non-authoritative response (try again or check DNS setup).'; }
-  {CH RSStackNO_RECOVERY = 'Non-recoverable errors: FORMERR, REFUSED, NOTIMP.'; }
-  {CH RSStackNO_DATA = 'Valid name, no data record (check DNS setup).'; }
+  {$IFDEF KYLIXCOMPAT}
+  RSStackTRY_AGAIN = 'Non-authoritative response (try again or check DNS setup).'; 
+  RSStackNO_RECOVERY = 'Non-recoverable errors: FORMERR, REFUSED, NOTIMP.'; 
+  RSStackNO_DATA = 'Valid name, no data record (check DNS setup).'; 
+  {$ENDIF}
   {$IFDEF UNIX}
   RSStackNotSupportedOnUnix = 'Non-blocking not supported on Unix-like operating systems.';
   {$ENDIF}

@@ -610,6 +610,7 @@ function IsBig5(ch1, ch2: Char) : Boolean;
 implementation
 
 uses
+   {$IFDEF VCL_6_OR_ABOVE}DateUtils,{$ENDIF}
   IdGlobalProtocols,
   IdStack, SysUtils;
 

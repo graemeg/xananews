@@ -64,6 +64,7 @@ type
 implementation
 
 uses
+  IdException,
   IdGlobal, IdFTPCommon, IdFTPListTypes, IdGlobalProtocols, IdStrings, SysUtils;
 
 { TIdFTPLPGOS7 }

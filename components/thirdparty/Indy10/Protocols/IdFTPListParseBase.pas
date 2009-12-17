@@ -159,7 +159,13 @@ type
     class function CheckListing(AListing : TStrings; const ASysDescript : String =''; const ADetails : Boolean = True): boolean; override;
     class function ParseListing(AListing : TStrings; ADir : TIdFTPListItems) : boolean; override;
   end;
-
+  //these are anscestors for some listings with an optional heading
+   TIdFTPListBaseHeaderOpt = class(TIdFTPListBaseHeader)
+   protected
+    class function CheckListingAlt(AListing : TStrings; const ASysDescript : String =''; const ADetails : Boolean = True): boolean; virtual;
+   public
+    class function CheckListing(AListing : TStrings; const ASysDescript : String =''; const ADetails : Boolean = True): boolean; override;
+   end;
   //base class for line-by-line items where there is a file owner along with mod date and file size
   TIdFTPLineOwnedList = class(TIdFTPListBase)
   protected
@@ -481,7 +487,7 @@ begin
 end;
 
 class function TIdFTPLPMList.ParseLine(const AItem: TIdFTPListItem;
-  const APath: String =''): Boolean;
+  const APath: String = ''): Boolean;
 var
   LFacts : TStrings;
   LBuffer : String;
@@ -493,7 +499,7 @@ begin
   LI := AItem as TIdMLSTFTPListItem;
   LFacts := TStringList.Create;
   try
-    LI.FileName := TIdHeaderCoderUTF.Decode('UTF-8', ParseFacts(AItem.Data, LFacts));
+    LI.FileName := TIdTextEncoding.UTF8.GetString(ToBytes(ParseFacts(AItem.Data, LFacts), Indy8BitEncoding));
     LI.LocalFileName := AItem.FileName;
 
     LBuffer := LFacts.Values['type']; {do not localize}
@@ -651,6 +657,23 @@ begin
     end;
   end;
   Result := True;
+end;
+
+{ TIdFTPListBaseHeaderOpt }
+
+class function TIdFTPListBaseHeaderOpt.CheckListing(AListing: TStrings;
+  const ASysDescript: String; const ADetails: Boolean): boolean;
+begin
+  Result := inherited CheckListing(AListing, ASysDescript,ADetails);
+  if not Result then begin
+    Result := CheckListingAlt(AListing, ASysDescript,ADetails);
+  end;
+end;
+
+class function TIdFTPListBaseHeaderOpt.CheckListingAlt(AListing: TStrings;
+  const ASysDescript: String; const ADetails: Boolean): boolean;
+begin
+  Result := False;
 end;
 
 { TIdFTPLineOwnedList }

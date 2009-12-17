@@ -104,7 +104,7 @@ Type
 implementation
 
 uses
-  IdAssignedNumbers, IdGlobal, IdGlobalProtocols, SysUtils;
+  IdAssignedNumbers, IdException, IdGlobal, IdGlobalProtocols, SysUtils;
 
 function IsPortMatch(ACookie: TIdCookieRFC2965; const APort: String): Boolean;
 var

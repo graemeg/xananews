@@ -774,6 +774,7 @@ type
     FUseCCC: Boolean;
     //is the SSCN Client method on for this connection?
     FSSCNOn : Boolean;
+    FIsCompressionSupported : Boolean;
 
     FOnBannerBeforeLogin : TIdFTPBannerEvent;
     FOnBannerAfterLogin : TIdFTPBannerEvent;
@@ -885,14 +886,6 @@ type
     function CheckAccount: Boolean;
     function IsAccountNeeded : Boolean;
     function GetSupportsVerification : Boolean;
-    {$IFNDEF DOTNET_2_OR_ABOVE}
-    //
-    // holger: .NET compatibility change
-    //
-    //ifdefed workaround for an old problem.
-    property IPVersion;
-    //
-    {$ENDIF}
   public
     procedure GetInternalResponse(AEncoding: TIdTextEncoding = nil); override;
 
@@ -969,6 +962,7 @@ type
     //This is true for servers that are known to support these even if they aren't
     //listed in the FEAT reply.
     function IsServerMDTZAndListTForm : Boolean;
+    property IsCompressionSupported : Boolean read FIsCompressionSupported;
     //
     property SupportsVerification : Boolean read GetSupportsVerification;
     property CanResume: Boolean read ResumeSupported;
@@ -984,8 +978,13 @@ type
     property UsingNATFastTrack : Boolean read FUsingNATFastTrack;
     property UsingSFTP : Boolean read FUsingSFTP;
     property CurrentTransferMode : TIdFTPTransferMode read FCurrentTransferMode write TransferMode;
+
   published
-    {$IFDEF DOTNET_2_OR_ABOVE}
+    {$IFDEF DOTNET}
+      {$IFDEF DOTNET_2_OR_ABOVE}
+    property IPVersion;
+      {$ENDIF}
+    {$ELSE}
     property IPVersion;
     {$ENDIF}
     property AutoIssueFEAT : Boolean read FAutoIssueFEAT write FAutoIssueFEAT default DEF_Id_FTP_AutoIssueFEAT;
@@ -1072,9 +1071,20 @@ implementation
 
 uses
   //facilitate inlining only.
+  {$IFDEF KYLIXCOMPAT}
+  Libc,
+    {$IFDEF MACOSX}
+  PosixUnistd,
+    {$ENDIF}
+  {$ENDIF}
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
     {$IFDEF USE_INLINE}
   Windows,
+    {$ELSE}
+  //facilitate inlining only.
+      {$IFDEF VCL_2009_OR_ABOVE}
+  Windows,
+      {$ENDIF}
     {$ENDIF}
   {$ENDIF}
   {$IFDEF DOTNET}
@@ -1084,7 +1094,7 @@ uses
     {$ENDIF}
   {$ENDIF}  
   IdComponent, IdResourceStringsCore, IdIOHandlerStack, IdResourceStringsProtocols,
-  IdSSL, IdGlobalProtocols, IdHash, IdHashCRC, IdHashSHA1, IdHashMessageDigest,
+  IdSSL, IdGlobalProtocols, IdHash, IdHashCRC, IdHashSHA, IdHashMessageDigest,
   IdStack, IdSimpleServer, IdOTPCalculator, SysUtils;
 
 const
@@ -1185,13 +1195,11 @@ begin
       //I think  fpcmTransparent means to connect to the regular host and the firewalll
       //intercepts the login information.
       if (ProxySettings.ProxyType <> fpcmNone) and (ProxySettings.ProxyType <> fpcmTransparent) and
-        (Length(ProxySettings.Host) > 0) then
-      begin
+        (Length(ProxySettings.Host) > 0) then begin
         FHost := ProxySettings.Host;
         FPort := ProxySettings.Port;
       end;
-      if FUseTLS = utUseImplicitTLS then
-      begin
+      if FUseTLS = utUseImplicitTLS then begin
         //at this point, we treat implicit FTP as if it were explicit FTP with TLS
         FUsingSFTP := True;
       end;
@@ -1209,8 +1217,7 @@ begin
     // happens.  Also, the RFC says that 120 should be used, but some
     // servers use other 1xx codes, such as 130, so handle 1xx generically
     LCode := GetResponse;
-    if (LCode div 100) = 1 then
-    begin
+    if (LCode div 100) = 1 then begin
       DoOnBannerWarning(LastCmdResult.FormattedReply);
       LCode := GetResponse;
     end;
@@ -1266,8 +1273,7 @@ begin
         FSystemDesc := LastCmdResult.Text[0];
       end;
 
-      if IsSiteZONESupported then
-      begin
+      if IsSiteZONESupported then begin
         if SendCmd('SITE ZONE') = 210 then begin {do not localize}
           if LastCmdResult.Text.Count > 0 then begin
             LBuf := LastCmdResult.Text[0];
@@ -1281,9 +1287,7 @@ begin
 
       SendTransferType(FTransferType);
       DoStatus(ftpReady, [RSFTPStatusReady]);
-    end
-    else
-    begin
+    end else begin
       // OpenVMS 7.1 replies with 200 instead of 215 - What does the RFC say about this?
       // if SendCmd('SYST', [200, 215, 500]) = 500 then begin  {do not localize}
       //Do not fault if SYST was not understood by the server.  Novel Netware FTP
@@ -1293,8 +1297,7 @@ begin
       end else begin
         FSystemDesc := LastCmdResult.Text[0];
       end;
-      if FAutoIssueFEAT then
-      begin
+      if FAutoIssueFEAT then begin
         IssueFEAT;
       end;
     end;
@@ -1332,8 +1335,7 @@ end;
 
 function TIdFTP.ResumeSupported: Boolean;
 begin
-  if not FResumeTested then
-  begin
+  if not FResumeTested then begin
     FResumeTested := True;
     FCanResume := Quote('REST 1') = 350;   {do not localize}
     Quote('REST 0');  {do not localize}
@@ -1506,8 +1508,7 @@ This is a bug fix for servers will do something like this:
   end;
   DoStatus(ftpReady, [RSFTPStatusDoneTransfer]);
   // 226 = download successful, 225 = Abort successful}
-  if FAbortFlag.Value then
-  begin
+  if FAbortFlag.Value then begin
     LResponse := GetResponse(AcceptableAbortReplies);
 //Experimental -
     if PosInSmallIntArray(LResponse,AbortedReplies)>-1 then begin
@@ -1533,8 +1534,7 @@ This is a bug fix for servers will do something like this:
 //Recv 3/9/2005 12:43:42 AM: 226 abort successful
 //Recv 3/9/2005 12:43:43 AM: 425 transfer canceled
 //
-    if LResponse = 226 then
-    begin
+    if LResponse = 226 then begin
       if IOHandler.Readable(10) then begin
         GetResponse(AbortedReplies);
       end;
@@ -1556,8 +1556,7 @@ var
 begin
   FAbortFlag.Value := False;
 
-  if FCurrentTransferMode = dmDeflate then
-  begin
+  if FCurrentTransferMode = dmDeflate then begin
     if not Assigned(FCompressor) then begin
       raise EIdFTPMissingCompressor.Create(RSFTPMissingCompressor);
     end;
@@ -1608,12 +1607,10 @@ begin
             if FUsingSFTP and (FDataPortProtection = ftpdpsPrivate) then begin
               TIdSSLIOHandlerSocketBase(FDataChannel.IOHandler).Passthrough := False;
             end;
-            if FCurrentTransferMode = dmDeflate then
-            begin
+            if FCurrentTransferMode = dmDeflate then begin
               FCompressor.CompressFTPToIO(ASource, FDataChannel.IOHandler,
                 FZLibCompressionLevel, FZLibWindowBits, FZLibMemLevel, FZLibStratagy);
-            end else
-            begin
+            end else begin
               if AFromBeginning then begin
                 FDataChannel.IOHandler.Write(ASource, 0, False);  // from beginning
               end else begin
@@ -1662,12 +1659,10 @@ begin
         if FUsingSFTP and (FDataPortProtection = ftpdpsPrivate) then begin
           TIdSSLIOHandlerSocketBase(FDataChannel.IOHandler).PassThrough := False;
         end;
-        if FCurrentTransferMode = dmDeflate then
-        begin
+        if FCurrentTransferMode = dmDeflate then begin
           FCompressor.CompressFTPToIO(ASource, FDataChannel.IOHandler,
             FZLibCompressionLevel, FZLibWindowBits, FZLibMemLevel, FZLibStratagy);
-        end else
-        begin
+        end else begin
           if AFromBeginning then begin
             FDataChannel.IOHandler.Write(ASource, 0, False);  // from beginning
           end else begin
@@ -1706,8 +1701,7 @@ var
 begin
   FAbortFlag.Value := False;
 
-  if FCurrentTransferMode = dmDeflate then
-  begin
+  if FCurrentTransferMode = dmDeflate then begin
     if not Assigned(FCompressor) then begin
       raise EIdFTPMissingCompressor.Create(RSFTPMissingCompressor);
     end;
@@ -1756,9 +1750,8 @@ begin
         //
         // RLebeau: some servers send 450 when no files are
         // present, so do not read the stream in that case
-        if Self.SendCmd(ACommand, [125, 150, 154, 450]) <> 450 then
-        begin
-          if (FDataPortProtection = ftpdpsPrivate) then begin
+        if Self.SendCmd(ACommand, [125, 150, 154, 450]) <> 450 then begin
+          if FUsingSFTP and (FDataPortProtection = ftpdpsPrivate) then begin
             TIdSSLIOHandlerSocketBase(FDataChannel.IOHandler).Passthrough := False;
           end;
           if FCurrentTransferMode = dmDeflate then begin
@@ -2002,7 +1995,7 @@ begin
   VPort := TIdPort(IndyStrToInt(Fetch(s, ',')) and $FF) shl 8;   {do not localize}
   //use trim as one server sends something like this:
   //"227 Passive mode OK (195,92,195,164,4,99 )"
-  VPort := VPort + TIdPort(IndyStrToInt(Fetch(s, ',')) and $FF); {Do not translate}
+  VPort := VPort or TIdPort(IndyStrToInt(Fetch(s, ',')) and $FF); {Do not translate}
 end;
 
 procedure TIdFTP.SendPassive(var VIP: string; var VPort: TIdPort);
@@ -2194,11 +2187,8 @@ end;
 procedure TIdFTP.TransferMode(ATransferMode: TIdFTPTransferMode);
 var
   s: String;
-  i : Integer;
-  LBuf : String;
 begin
-  if FCurrentTransferMode <> ATransferMode then
-  begin
+  if FCurrentTransferMode <> ATransferMode then begin
     s := '';
     case ATransferMode of
 //    dmBlock: begin
@@ -2214,14 +2204,8 @@ begin
         if not Assigned(FCompressor) then begin
           raise EIdFTPMissingCompressor.Create(RSFTPMissingCompressor);
         end;
-        //we parse this way because IxExtensionSupported can only work
-        //with one word.
-        for i := 0 to FCapabilities.Count-1 do begin
-          LBuf := Trim(FCapabilities[i]);
-          if LBuf = 'MODE Z' then begin {do not localize}
-            s := 'Z'; {do not localize}
-            Break;
-          end;
+        if Self.IsCompressionSupported then begin
+          s := 'Z';  {Do not localize}
         end;
       end;
     end;
@@ -2254,6 +2238,8 @@ end;
 procedure TIdFTP.IssueFEAT;
 var
   LClnt: String;
+  LBuf : String;
+  i : Integer;
 begin
   //Feat data
 
@@ -2261,8 +2247,7 @@ begin
   FCapabilities.Clear;
 
   //Ipswitch's FTP WS-FTP Server may issue 221 as success
-  if LastCmdResult.NumericCode in [211,221] then
-  begin
+  if LastCmdResult.NumericCode in [211,221] then begin
     FCapabilities.AddStrings(LastCmdResult.Text);
 
     //we remove the first and last lines because we only want the list
@@ -2280,6 +2265,18 @@ begin
 
   FCanUseMLS := IsExtSupported('MLSD') or IsExtSupported('MLST'); {do not localize}
   ExtractFeatFacts('LANG', FLangsSupported); {do not localize}
+
+  //see if compression is supported.
+  //we parse this way because IxExtensionSupported can only work
+  //with one word.
+  FIsCompressionSupported := False;
+  for i := 0 to FCapabilities.Count-1 do begin
+    LBuf := Trim(FCapabilities[i]);
+    if LBuf = 'MODE Z' then begin {do not localize}
+      FIsCompressionSupported := True;
+      Break;
+    end;
+  end;
 
   // send the CLNT command before sending the OPTS UTF8 command.
   // some servers need this in order to work around a bug in
@@ -2307,6 +2304,7 @@ procedure TIdFTP.Login;
 var
   i : Integer;
   LResp : Word;
+  LCmd : String;
 
   function FtpHost: String;
   begin
@@ -2371,15 +2369,28 @@ begin
   case ProxySettings.ProxyType of
   fpcmNone:
     begin
-      if SendCmd('USER ' + FUserName, [230, 232, 331]) = 331 then begin {do not localize}
-        SendCmd('PASS ' + GetLoginPassword, [230, 332]);  {do not localize}
-        if IsAccountNeeded then begin
-          if CheckAccount then begin
-            SendCmd('ACCT ' + FAccount, [202, 230, 500]);  {do not localize}
-          end else begin
-            RaiseExceptionForLastCmdResult
+      LCmd := MakeXAUTCmd( Greeting.Text.Text , FUserName, GetLoginPassword);
+      if (LCmd <> '') and (not IdGlobalProtocols.GetFIPSMode ) then begin
+        if SendCmd(LCmd, [230, 232, 331]) = 331 then begin {do not localize}
+          if IsAccountNeeded then begin
+            if CheckAccount then begin
+              SendCmd('ACCT ' + FAccount, [202, 230, 500]);  {do not localize}
+            end else begin
+              RaiseExceptionForLastCmdResult
+            end;
           end;
-   	end;
+        end;
+      end else begin
+        if SendCmd('USER ' + FUserName, [230, 232, 331]) = 331 then begin {do not localize}
+          SendCmd('PASS ' + GetLoginPassword, [230, 332]);  {do not localize}
+          if IsAccountNeeded then begin
+            if CheckAccount then begin
+              SendCmd('ACCT ' + FAccount, [202, 230, 500]);  {do not localize}
+            end else begin
+              RaiseExceptionForLastCmdResult
+            end;
+         end;
+        end;
       end;
     end;
   fpcmUserSite:
@@ -2419,8 +2430,7 @@ begin
       SendCmd('SITE ' + FtpHost); // ? Server Reply? 220?   {do not localize}
       if SendCmd('USER ' + FUserName, [230, 232, 331]) = 331 then begin {do not localize}
         SendCmd('PASS ' + GetLoginPassword, [230, 332]); {do not localize}
-        if IsAccountNeeded then
-        begin
+        if IsAccountNeeded then begin
      	  if CheckAccount then begin
             SendCmd('ACCT ' + FAccount, [202, 230, 500]);  {do not localize}
           end else begin
@@ -2457,11 +2467,11 @@ begin
     end;
   fpcmUserPass: //USER user@firewalluser@hostname / PASS pass@firewallpass
     begin
-      if SendCmd(IndyFormat('USER %s@%s@%s', [FUserName, ProxySettings.UserName, FtpHost]), [230, 232, 331]) = 331 then begin    {do not localize}
+      if SendCmd(IndyFormat('USER %s@%s@%s',
+        [FUserName, ProxySettings.UserName, FtpHost]), [230, 232, 331]) = 331 then begin    {do not localize}
         if Length(ProxySettings.Password) > 0 then begin
           SendCmd('PASS ' + GetLoginPassword + '@' + ProxySettings.Password, [230, 332]); {do not localize}
-        end
-        else begin
+        end else begin
 	  //// needs otp ////
           SendCmd('PASS ' + GetLoginPassword, [230,332]);  {do not localize}
         end;
@@ -2560,8 +2570,7 @@ Connection: close}
   DoOnBannerAfterLogin(FLoginMsg.FormattedReply);
   //should be here because this can be issued more than once per connection.
 
-  if FAutoIssueFEAT then
-  begin
+  if FAutoIssueFEAT then begin
     IssueFEAT;
   end;
 
@@ -2863,8 +2872,7 @@ var
   LBuf : String;
 begin
   Result := False;
-  for i := 0 to FCapabilities.Count -1 do
-  begin
+  for i := 0 to FCapabilities.Count -1 do begin
     LBuf := TrimLeft(FCapabilities[i]);
     if TextIsSame(Fetch(LBuf), ACmd) then begin
       Result := True;
@@ -2980,7 +2988,7 @@ end;
 procedure TIdFTP.CombineFiles(const ATargetFile: String; AFileParts: TStrings);
 var
   i : Integer;
-  LCmd : String;
+  LCmd: String;
 begin
   if IsExtSupported('COMB') and (AFileParts.Count > 0) then begin {do not localize}
     LCmd := 'COMB "' + ATargetFile + '"'; {do not localize}
@@ -3096,8 +3104,7 @@ end;
 
 procedure TIdFTP.SetCompressor(AValue: TIdZLibCompressorBase);
 begin
-  if FCompressor <> AValue then
-  begin
+  if FCompressor <> AValue then begin
     if Assigned(FCompressor) then begin
       FCompressor.RemoveFreeNotification(Self);
     end;
@@ -3135,8 +3142,7 @@ begin
     LLine := IOHandler.ReadLnWait(MaxInt, AEncoding);
     LResponse.Add(LLine);
 
-    if CharEquals(LLine, 4, '-') then
-    begin
+    if CharEquals(LLine, 4, '-') then begin
       LReplyCode := Copy(LLine, 1, 3);
       repeat
         LLine := IOHandler.ReadLnWait(MaxInt, AEncoding);
@@ -3495,14 +3501,14 @@ returning "MDTM YYYYMMDDHHMMSS" only will use the new method where the date a
 and time is GMT (UTC).
 ===
 }
-procedure TIdFTP.SetModTimeGMT(const AFileName: String; const AGMTTime: TDateTime);
+procedure TIdFTP.SetModTimeGMT(const AFileName : String; const AGMTTime: TDateTime);
 begin
   //use MFMT instead of MDTM because that always takes the time as Universal
   //time (the most accurate).
   if IsExtSupported('MFMT') then begin {do not localize}
     SendCmd('MFMT ' + FTPGMTDateTimeToMLS(AGMTTime) + ' ' + AFileName, 213); {do not localize}
   end
-  
+
   //Syntax 1 - MDTM [Time in GMT format] Filename
   else if (IndexOfFeatLine('MDTM YYYYMMDDHHMMSS[+-TZ];filename') > 0) then begin {do not localize}
     //we use the new method
@@ -3520,7 +3526,7 @@ begin
     //send it relative to the server's time-zone
     SendCmd('MDTM '+ FTPDateTimeToMDTMD(AGMTTime + FTZInfo.FGMTOffset, False, False) + ' ' + AFileName, 253); {do not localize}
   end
-  
+
   else begin
     SendCmd('MDTM '+ FTPDateTimeToMDTMD(AGMTTime + OffSetFromUTC, False, False) + ' ' + AFileName, 253); {do not localize}
   end;
@@ -3756,7 +3762,15 @@ function TIdFTP.GetSupportsVerification: Boolean;
 begin
   Result := Connected;
   if Result then begin
-    Result := IsExtSupported('XSHA1') or IsExtSupported('XMD5') or IsExtSupported('XCRC');
+    Result := TIdHashSHA512.IsAvailable and IsExtSupported('XSHA512');
+    if not Result then begin
+      Result := TIdHashSHA256.IsAvailable and IsExtSupported('XSHA256');
+    end;
+    if not Result then begin
+      Result := IsExtSupported('XSHA1') or
+        (IsExtSupported('XMD5') and (not GetFIPSMode)) or
+        IsExtSupported('XCRC');
+    end;
   end;
 end;
 
@@ -3810,8 +3824,39 @@ begin
   if (LByteCount > AByteCount) and (AByteCount > 0) then begin
     LByteCount := AByteCount;
   end;
-
-  if IsExtSupported('XSHA1') then begin
+  if TIdHashSHA512.IsAvailable and IsExtSupported('XSHA512') then begin
+    //XSHA256 <sp> pathname [<sp> startposition <sp> endposition]
+    LCmd := 'XSHA512 "' + ARemoteFile + '"';
+    if AByteCount > 0 then begin
+      LCmd := LCmd + ' ' + IntToStr(LStartPoint) + ' ' + IntToStr(LByteCount);
+    end
+    else if AStartPoint > 0 then begin
+      LCmd := LCmd + ' ' + IntToStr(LStartPoint);
+    end else begin
+      //just in case the server doesn't support file names in quotes.
+      if IndyPos(' ', ARemoteFile) = 0 then begin
+        LCmd := 'XSHA512 ' + ARemoteFile;
+      end;
+    end;
+    LHashClass := TIdHashSHA512;
+  end
+  else if TIdHashSHA256.IsAvailable and IsExtSupported('XSHA256') then begin
+    //XSHA256 <sp> pathname [<sp> startposition <sp> endposition]
+    LCmd := 'XSHA256 "'+ARemoteFile+'"';
+    if AByteCount > 0 then begin
+      LCmd := LCmd + ' ' + IntToStr(LStartPoint) + ' ' + IntToStr(LByteCount);
+    end
+    else if AStartPoint > 0 then begin
+      LCmd := LCmd + ' ' + IntToStr(LStartPoint);
+    end else begin
+      //just in case the server doesn't support file names in quotes.
+      if IndyPos(' ', ARemoteFile) = 0 then begin
+        LCmd := 'XSHA256 ' + ARemoteFile;
+      end;
+    end;
+    LHashClass := TIdHashSHA256;
+  end
+  else if IsExtSupported('XSHA1') then begin
     //XMD5 "filename" startpos endpos
     //I think there's two syntaxes to this:
     //
@@ -3826,14 +3871,17 @@ begin
     end else
     begin
       //BlackMoon FTP Server uses this one.
-      LCmd := 'XSHA1 "' + ARemoteFile + '"' + ' ' + IntToStr(LStartPoint);
-      if AByteCount > 0 then begin
+      if LStartPoint > 0 then begin
         LCmd := LCmd + ' ' + IntToStr(LByteCount);
+      end else begin
+        //IMPORTANT!!!  Some servers do not support a startpos parameter so do
+        //not attempt to use it if we want to checksum the entire file.
+        LCmd := 'XSHA1 "' + ARemoteFile + '"'
       end;
     end;
     LHashClass := TIdHashSHA1;
   end
-  else if IsExtSupported('XMD5') then begin
+  else if IsExtSupported('XMD5') and (not GetFIPSMode) then begin
     //XMD5 "filename" startpos endpos
     //I think there's two syntaxes to this:
     //
@@ -3876,7 +3924,7 @@ begin
     Free;
   end;
 
-  if SendCMD(LCMD) = 250 then begin
+  if SendCmd(LCmd) = 250 then begin
     LRemoteCRC := Trim(LastCmdResult.Text.Text);
     IdDelete(LRemoteCRC, 1, IndyPos(' ', LRemoteCRC)); // delete the response
   end;

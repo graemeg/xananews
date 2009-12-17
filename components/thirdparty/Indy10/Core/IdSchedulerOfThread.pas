@@ -168,6 +168,9 @@ type
 implementation
 
 uses
+  {$IFDEF KYLIXCOMPAT}
+  Libc,
+  {$ENDIF}
   IdResourceStringsCore, IdTCPServer, IdThreadSafe, IdExceptionCore, SysUtils;
 
 { TIdSchedulerOfThread }

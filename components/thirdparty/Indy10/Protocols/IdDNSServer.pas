@@ -608,6 +608,7 @@ function PosBytes(const SubBytes, SBytes: TIdBytes): Integer;
 implementation
 
 uses
+  IdException,
   {$IFDEF DOTNET}
     {$IFDEF USE_INLINE}
   System.Threading,

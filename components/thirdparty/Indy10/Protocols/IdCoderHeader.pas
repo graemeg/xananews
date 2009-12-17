@@ -116,13 +116,14 @@ uses
 implementation
 
 uses
+  IdException,
   IdGlobal,
   IdGlobalProtocols,
   IdAllHeaderCoders,
   SysUtils;
 
 const
-  csSPECIALS: String = '()[]<>:;.,@\"';  {Do not Localize}
+  csAddressSpecials: String = '()[]<>:;.,@\"';  {Do not Localize}
 
   base64_tbl: array [0..63] of Char = (
     'A','B','C','D','E','F','G','H',     {Do not Localize}
@@ -156,7 +157,7 @@ begin
       end;
     end;
     if NeedEncode then begin
-      S := EncodeHeader(EmailAddr.Name, csSPECIALS, HeaderEncoding, MimeCharSet);
+      S := EncodeHeader(EmailAddr.Name, csAddressSpecials, HeaderEncoding, MimeCharSet);
     end else begin
       { quoted string }
       S := '"';           {Do not Localize}
@@ -193,9 +194,10 @@ var
   LDecoded: Boolean;
   LStartPos, LLength, LEncodingStartPos, LEncodingEndPos, LLastStartPos: Integer;
   LLastWordWasEncoded: Boolean;
+  Buf: TIdBytes;
 
-  function ExtractEncoding(const AHeader: String; const AStartPos: Integer;
-    var VEndPos: Integer; var VCharSet, VEncoding, VData: String): Boolean;
+  function ExtractEncoding(const AHeader: string; const AStartPos: Integer;
+    var VStartPos, VEndPos: Integer; var VCharSet, VEncoding, VData: String): Boolean;
   var
     LCharSet, LEncoding, LData, LDataEnd: Integer;
   begin
@@ -229,6 +231,7 @@ var
     end;
     Inc(LDataEnd);
 
+    VStartPos := LCharSet-2;
     VEndPos := LDataEnd;
     VCharSet := Copy(AHeader, LCharSet, LEncoding-LCharSet-1);
     VEncoding := Copy(AHeader, LEncoding, LData-LEncoding-1);
@@ -238,27 +241,27 @@ var
   end;
 
   // TODO: use TIdCoderQuotedPrintable and TIdCoderMIME instead
-  function ExtractEncodedData(const AEncoding, AData: String; var VDecoded: String): Boolean;
+  function ExtractEncodedData(const AEncoding, AData: String; var VDecoded: TIdBytes): Boolean;
   var
     I, J: Integer;
-    a3: array [1..3] of Byte;
-    a4: array [1..4] of Byte;
+    a3: TIdBytes;
+    a4: array [0..3] of Byte;
   begin
     Result := False;
-    VDecoded := '';        {Do not Localize}
+    SetLength(VDecoded, 0);
     case PosInStrArray(AEncoding, ['Q', 'B', '8'], False) of {Do not Localize}
       0: begin // quoted-printable
         I := 1;
         while I <= Length(AData) do begin
           if AData[i] = '_' then begin {Do not Localize}
-            VDecoded := VDecoded + ' ';    {Do not Localize}
+            AppendByte(VDecoded, Ord(' '));    {Do not Localize}
           end
           else if (AData[i] = '=') and (Length(AData) >= (i+2)) then begin //make sure we can access i+2
-            VDecoded := VDecoded + Chr(IndyStrToInt('$' + Copy(AData, i+1, 2), 32));   {Do not Localize}
+            AppendByte(VDecoded, IndyStrToInt('$' + Copy(AData, i+1, 2), 32));   {Do not Localize}
             Inc(I, 2);
           end else
           begin
-            VDecoded := VDecoded + AData[i];
+            AppendByte(VDecoded, Ord(AData[i]));
           end;
           Inc(I);
         end;
@@ -268,24 +271,40 @@ var
         J := Length(AData) div 4;
         if J > 0 then
         begin
+          SetLength(a3, 3);
           for I := 0 to J-1 do
           begin
-            a4[1] := B64(AData[(I*4)+1]);
-            a4[2] := B64(AData[(I*4)+2]);
-            a4[3] := B64(AData[(I*4)+3]);
-            a4[4] := B64(AData[(I*4)+4]);
+            a4[0] := B64(AData[(I*4)+1]);
+            a4[1] := B64(AData[(I*4)+2]);
+            a4[2] := B64(AData[(I*4)+3]);
+            a4[3] := B64(AData[(I*4)+4]);
 
-            a3[1] := Byte((a4[1] shl 2) or (a4[2] shr 4));
-            a3[2] := Byte((a4[2] shl 4) or (a4[3] shr 2));
-            a3[3] := Byte((a4[3] shl 6) or (a4[4] shr 0));
+            a3[0] := Byte((a4[0] shl 2) or (a4[1] shr 4));
+            a3[1] := Byte((a4[1] shl 4) or (a4[2] shr 2));
+            a3[2] := Byte((a4[2] shl 6) or (a4[3] shr 0));
 
-            VDecoded := VDecoded + Chr(a3[1]) + Chr(a3[2]) + Chr(a3[3]);
+            if AData[(I*4)+4] = '=' then begin
+              if AData[(I*4)+3] = '=' then begin
+                AppendByte(VDecoded, a3[0]);
+              end else begin
+                AppendBytes(VDecoded, a3, 0, 2);
+              end;
+              Break;
+            end else begin
+              AppendBytes(VDecoded, a3, 0, 3);
+            end;
           end;
         end;
         Result := True;
       end;
       2: begin // 8-bit
-        VDecoded := AData;
+        {$IFDEF STRING_IS_ANSI}
+        if AData <> '' then begin
+          VDecoded := RawToBytes(AData[1], Length(AData));
+        end;
+        {$ELSE}
+        VDecoded := Indy8BitEncoding.GetBytes(AData);
+        {$ENDIF}
         Result := True;
       end;
     end;
@@ -305,21 +324,21 @@ begin
     // valid encoded words can not contain spaces
     // if the user types something *almost* like an encoded word,
     // and its sent as-is, we need to find this!!
-    LEncodingStartPos := FindFirstNotOf(LWS, Result, LLength, LStartPos);
-    if LEncodingStartPos = 0 then begin
+    LStartPos := FindFirstNotOf(LWS, Result, LLength, LStartPos);
+    if LStartPos = 0 then begin
       Break;
     end;
-    LEncodingEndPos := FindFirstOf(LWS, Result, LLength, LEncodingStartPos);
+    LEncodingEndPos := FindFirstOf(LWS, Result, LLength, LStartPos);
     if LEncodingEndPos <> 0 then begin
       Dec(LEncodingEndPos);
     end else begin
       LEncodingEndPos := LLength;
     end;
-    if ExtractEncoding(Result, LEncodingStartPos, LEncodingEndPos, HeaderCharSet, HeaderEncoding, HeaderData) then
+    if ExtractEncoding(Result, LStartPos, LEncodingStartPos, LEncodingEndPos, HeaderCharSet, HeaderEncoding, HeaderData) then
     begin
       LDecoded := False;
-      if ExtractEncodedData(HeaderEncoding, HeaderData, S) then begin
-        LDecoded := DecodeHeaderData(HeaderCharSet, S, S);
+      if ExtractEncodedData(HeaderEncoding, HeaderData, Buf) then begin
+        LDecoded := DecodeHeaderData(HeaderCharSet, Buf, S);
       end;
       if LDecoded then
       begin
@@ -344,22 +363,13 @@ begin
       LLastStartPos := LStartPos;
     end else
     begin
-      LStartPos := FindFirstOf(LWS, Result, LLength, LEncodingStartPos);
+      LStartPos := FindFirstOf(LWS, Result, LLength, LStartPos);
       if LStartPos = 0 then begin
         Break;
       end;
       LLastWordWasEncoded := False;
     end;
   end;
-
-  //There might be #0's in header when this is b64 encoded, e.g with:
-  //decodeheader('"Fernando Corti=?ISO-8859-1?B?8Q==?=a" <fernando@nowhere.com>');
-  repeat
-    LStartPos := Pos(#0, Result);
-    if LStartPos > 0 then begin
-      Delete(Result, LStartPos, 1);
-    end;
-  until LStartPos = 0;
 end;
 
 procedure DecodeAddress(EMailAddr : TIdEmailAddressItem);
@@ -397,14 +407,15 @@ end;
 function EncodeHeader(const Header: string; Specials: String; const HeaderEncoding: Char;
   const MimeCharSet: string): string;
 const
-  SPACES: String = ' ' + TAB + EOL;    {Do not Localize}
+  SPACES = [Ord(' '), 9, 13, 10];    {Do not Localize}
 var
-  S, T: string;
+  T: string;
+  Buf: TIdBytes;
   L, P, Q, R: Integer;
   B0, B1, B2: Integer;
   InEncode: Integer;
   NeedEncode: Boolean;
-  csNoEncode, csNoReqQuote: String;
+  csNoEncode, csNoReqQuote, csSpecials: TIdBytes;
   BeginEncode, EndEncode: string;
 
   procedure EncodeWord(AP: Integer);
@@ -425,14 +436,14 @@ var
       0: begin { quoted-printable }
         while LQ < AP do
         begin
-          if S[LQ] = ' ' then begin {Do not Localize}
+          if Buf[LQ] = Ord(' ') then begin {Do not Localize}
             Enc1 := '_';  {Do not Localize}
           end
-          else if (not CharIsInSet(S, LQ, csNoReqQuote)) or CharIsInSet(S, LQ, Specials) then begin
-            Enc1 := '=' + IntToHex(Ord(S[LQ]), 2);     {Do not Localize}
+          else if (not ByteIsInSet(Buf, LQ, csNoReqQuote)) or ByteIsInSet(Buf, LQ, csSpecials) then begin
+            Enc1 := '=' + IntToHex(Buf[LQ], 2);     {Do not Localize}
           end
           else begin
-            Enc1 := S[LQ];
+            Enc1 := Char(Buf[LQ]);
           end;
           if (EncLen + Length(Enc1)) > MaxEncLen then begin
             //T := T + EndEncode + #13#10#9 + BeginEncode;
@@ -462,7 +473,7 @@ var
             EncLen := Length(BeginEncode) + 2;
           end;
 
-          B0 := Ord(S[LQ]);
+          B0 := Buf[LQ];
           case AP - LQ of
             1:
               begin
@@ -470,15 +481,15 @@ var
               end;
             2:
               begin
-                B1 := Ord(S[LQ + 1]);
+                B1 := Buf[LQ + 1];
                 T := T + base64_tbl[B0 shr 2] +
                   base64_tbl[B0 and $03 shl 4 + B1 shr 4] +
                   base64_tbl[B1 and $0F shl 2] + '=';  {Do not Localize}
               end;
             else
               begin
-                B1 := Ord(S[LQ + 1]);
-                B2 := Ord(S[LQ + 2]);
+                B1 := Buf[LQ + 1];
+                B2 := Buf[LQ + 2];
                 T := T + base64_tbl[B0 shr 2] +
                   base64_tbl[B0 and $03 shl 4 + B1 shr 4] +
                   base64_tbl[B1 and $0F shl 2 + B2 shr 6] +
@@ -493,25 +504,27 @@ var
     T := T + EndEncode;
   end;
 
-  // RLebeau: how is this different from what CharRange() produces?
-  function CreateEncodeRange(AStart, AEnd: Char): String;
+  function CreateEncodeRange(AStart, AEnd: Byte): TIdBytes;
   var
-    LBuf: TIdBytes;
     I: Integer;
   begin
-    SetLength(LBuf, Ord(AEnd)-Ord(AStart)+1);
-    for I := 0 to Length(LBuf)-1 do begin
-      LBuf[I] := Byte(Ord(AStart)+I);
+    SetLength(Result, AEnd-AStart+1);
+    for I := 0 to Length(Result)-1 do begin
+      Result[I] := AStart+I;
     end;
-    Result := BytesToString(LBuf, Indy8BitEncoding);
   end;
 
 begin
-  S := EncodeHeaderData(MimeCharSet, Header);
+  if Header = '' then begin
+    Result := '';
+    Exit;
+  end;
+
+  Buf := EncodeHeaderData(MimeCharSet, Header);
 
   {Suggested by Andrew P.Rybin for easy 8bit support}
   if HeaderEncoding = '8' then begin {Do not Localize}
-    Result := S;
+    Result := BytesToString(Buf, Indy8BitEncoding);
     Exit;
   end;//if
 
@@ -524,38 +537,45 @@ begin
   // that words containing codeunits outside the ASCII range are always
   // encoded.  This is easier to manage when Unicode data is involved.
   
-  csNoEncode := CreateEncodeRange(#32, #126);
-  csNoReqQuote := CreateEncodeRange(#33, #60) + #62 + CreateEncodeRange(#64, #94) + CreateEncodeRange(#96, #126);
+  csNoEncode := CreateEncodeRange(32, 126);
+
+  csNoReqQuote := CreateEncodeRange(33, 60);
+  AppendByte(csNoReqQuote, 62);
+  AppendBytes(csNoReqQuote, CreateEncodeRange(64, 94));
+  AppendBytes(csNoReqQuote, CreateEncodeRange(96, 126));
+
+  csSpecials := ToBytes(Specials, Indy8BitEncoding);
+
   BeginEncode := '=?' + MimeCharSet + '?' + HeaderEncoding + '?';    {Do not Localize}
   EndEncode := '?=';  {Do not Localize}
 
   // JMBERG: We want to encode stuff that the user typed
   // as if it already is encoded!!
   if DecodeHeader(Header) <> Header then begin
-    Delete(csNoEncode, Pos('=', csNoEncode), 1);
+    RemoveBytes(csNoEncode, 1, ByteIndex(Ord('='), csNoEncode));
   end;
 
-  L := Length(S);
-  P := 1;
+  L := Length(Buf);
+  P := 0;
   T := '';  {Do not Localize}
   InEncode := 0;
-  while P <= L do
+  while P < L do
   begin
     Q := P;
-    while (P <= L) and CharIsInSet(S, P, SPACES) do begin
+    while (P < L) and (Buf[P] in SPACES) do begin
       Inc(P);
     end;
     R := P;
     NeedEncode := False;
-    while (P <= L) and (not CharIsInSet(S, P, SPACES)) do begin
-      if (not CharIsInSet(S, P, csNoEncode)) or CharIsInSet(S, P, Specials) then begin
+    while (P < L) and (not (Buf[P] in SPACES)) do begin
+      if (not ByteIsInSet(Buf, P, csNoEncode)) or ByteIsInSet(Buf, P, csSpecials) then begin
         NeedEncode := True;
       end;
       Inc(P);
     end;
     if NeedEncode then begin
       if InEncode = 0 then begin
-        T := T + Copy(S, Q, R - Q);
+        T := T + BytesToString(Buf, Q, R - Q);
         InEncode := R;
       end;
     end else
@@ -563,7 +583,7 @@ begin
       if InEncode <> 0 then begin
         EncodeWord(Q);
       end;
-      T := T + Copy(S, Q, P - Q);
+      T := T + BytesToString(Buf, Q, P - Q);
     end;
   end;
   if InEncode <> 0 then begin

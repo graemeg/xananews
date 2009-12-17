@@ -163,6 +163,11 @@ type
 implementation
 
 uses
+  {$IFDEF VCL_2010_OR_ABOVE}
+    {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  Windows,
+    {$ENDIF}
+  {$ENDIF}
   IdGlobalCore, SysUtils;
 
 procedure TIdUDPServer.BroadcastEnabledChanged;
@@ -294,9 +299,13 @@ begin
     for i := 0 to Bindings.Count - 1 do begin
       LListenerThread := FThreadClass.Create(Self, Bindings[i]);
       LListenerThread.Name := Name + ' Listener #' + IntToStr(i + 1); {do not localize}
+      {$IFDEF DELPHI_CROSS}
+        {$IFNDEF MACOSX}
       //Todo: Implement proper priority handling for Linux
       //http://www.midnightbeach.com/jon/pubs/2002/BorCon.London/Sidebar.3.html
       LListenerThread.Priority := tpListener;
+        {$ENDIF}
+      {$ENDIF}
       FListenerThreads.Add(LListenerThread);
       LListenerThread.Start;
     end;

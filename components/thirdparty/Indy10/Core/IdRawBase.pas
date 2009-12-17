@@ -161,7 +161,6 @@ begin
       {$ELSE}
       FBinding.AllocateSocket(Id_SOCK_RAW, FProtocol);
       {$ENDIF}
-      GStack.SetSocketOption(FBinding.Handle, Id_SOL_IP, Id_SO_IP_TTL, FTTL);
     end else
     begin
       {$IFDEF LINUX}
@@ -176,14 +175,14 @@ begin
       in NET 1.1.  NET 2.0 does have a RecvMsg function, BTW.
       }
       //indicate we want packet information with RecvMsg (or WSARecvMsg) calls
-      GStack.SetSocketOption(FBinding.Handle, Id_SOL_IPv6, Id_IPV6_PKTINFO, 1);
+      FBinding.SetSockOpt(Id_SOL_IPv6, Id_IPV6_PKTINFO, 1);
       {$ENDIF}
-      //set hop limit (or TTL as it was called in IPv4
-      GStack.SetSocketOption(FBinding.Handle, Id_SOL_IPv6, Id_IPV6_UNICAST_HOPS, FTTL);
       {$IFNDEF DOTNET}
-      GStack.SetSocketOption(FBinding.Handle, Id_SOL_IPv6, Id_IPV6_HOPLIMIT, 1);
+      FBinding.SetSockOpt(Id_SOL_IPv6, Id_IPV6_HOPLIMIT, 1);
       {$ENDIF}
     end;
+    //set hop limit (or TTL as it was called in IPv4
+    FBinding.SetTTL(FTTL);
   end;
   Result := FBinding;
 end;
@@ -262,11 +261,7 @@ begin
     FTTL := Value;
     if FBinding.HandleAllocated then
     begin
-      if FBinding.IPVersion = Id_IPv4 then begin
-        GStack.SetSocketOption(FBinding.Handle, Id_SOL_IP, Id_SO_IP_TTL, FTTL);
-      end else begin
-        GStack.SetSocketOption(FBinding.Handle, Id_SOL_IPv6, Id_IPV6_UNICAST_HOPS, FTTL);
-      end;
+      FBinding.SetTTL(FTTL);
     end;
   end;
 end;

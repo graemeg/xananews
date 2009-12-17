@@ -5,15 +5,16 @@ interface
 {$i IdCompilerDefines.inc}
 
 uses
-  Classes, IdException;
+  Classes, IdGlobal, IdException;
 
 type
-  TIdHeaderCodingNeededEvent = procedure(const ACharSet, AData: String; var VResult: String; var VHandled: Boolean) of object;
+  TIdHeaderDecodingNeededEvent = procedure(const ACharSet: String; const AData: TIdBytes; var VResult: String; var VHandled: Boolean) of object;
+  TIdHeaderEncodingNeededEvent = procedure(const ACharSet, AData: String; var VResult: TIdBytes; var VHandled: Boolean) of object;
 
   TIdHeaderCoder = class(TObject)
   public
-    class function Decode(const ACharSet, AData: String): String; virtual;
-    class function Encode(const ACharSet, AData: String): String; virtual;
+    class function Decode(const ACharSet: String; const AData: TIdBytes): String; virtual;
+    class function Encode(const ACharSet, AData: String): TIdBytes; virtual;
     class function CanHandle(const ACharSet: String): Boolean; virtual;
   end;
 
@@ -22,12 +23,12 @@ type
   EIdHeaderEncodeError = class(EIdException);
 
 var
-  GHeaderEncodingNeeded: TIdHeaderCodingNeededEvent = nil;
-  GHeaderDecodingNeeded: TIdHeaderCodingNeededEvent = nil;
+  GHeaderEncodingNeeded: TIdHeaderEncodingNeededEvent = nil;
+  GHeaderDecodingNeeded: TIdHeaderDecodingNeededEvent = nil;
 
 function HeaderCoderByCharSet(const ACharSet: String): TIdHeaderCoderClass;
-function DecodeHeaderData(const ACharSet, AData: String; var VResult: String): Boolean;
-function EncodeHeaderData(const ACharSet, AData: String): String;
+function DecodeHeaderData(const ACharSet: String; const AData: TIdBytes; var VResult: String): Boolean;
+function EncodeHeaderData(const ACharSet, AData: String): TIdBytes;
 procedure RegisterHeaderCoder(const ACoder: TIdHeaderCoderClass);
 procedure UnregisterHeaderCoder(const ACoder: TIdHeaderCoderClass);
 
@@ -47,14 +48,14 @@ var
 
 { TIdHeaderCoder }
 
-class function TIdHeaderCoder.Decode(const ACharSet, AData: String): String;
+class function TIdHeaderCoder.Decode(const ACharSet: String; const AData: TIdBytes): String;
 begin
   Result := '';
 end;
 
-class function TIdHeaderCoder.Encode(const ACharSet, AData: String): String;
+class function TIdHeaderCoder.Encode(const ACharSet, AData: String): TIdBytes;
 begin
-  Result := '';
+  Result := nil;
 end;
 
 class function TIdHeaderCoder.CanHandle(const ACharSet: String): Boolean;
@@ -89,7 +90,7 @@ begin
   end;
 end;
 
-function DecodeHeaderData(const ACharSet, AData: String; var VResult: String): Boolean;
+function DecodeHeaderData(const ACharSet: String; const AData: TIdBytes; var VResult: String): Boolean;
 var
   LCoder: TIdHeaderCoderClass;
 begin
@@ -112,7 +113,7 @@ begin
   end;
 end;
 
-function EncodeHeaderData(const ACharSet, AData: String): String;
+function EncodeHeaderData(const ACharSet, AData: String): TIdBytes;
 var
   LCoder: TIdHeaderCoderClass;
   LEncoded: Boolean;
@@ -122,7 +123,7 @@ begin
     Result := LCoder.Encode(ACharSet, AData);
   end else
   begin
-    Result := '';
+    Result := nil;
     LEncoded := False;
     if Assigned(GHeaderEncodingNeeded) then begin
       GHeaderEncodingNeeded(ACharSet, AData, Result, LEncoded);

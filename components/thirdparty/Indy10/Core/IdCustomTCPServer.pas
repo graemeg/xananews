@@ -255,7 +255,6 @@ interface
 //here to flip FPC into Delphi mode
 
 uses
-  Windows,
   Classes,
   IdBaseComponent, 
   IdComponent,IdContext, IdGlobal, IdException,
@@ -403,7 +402,7 @@ type
 implementation
 
 uses
-  {$IFDEF VCL2010ORABOVE}
+  {$IFDEF VCL_2010_OR_ABOVE}
     {$IFDEF WIN32_OR_WIN64_OR_WINCE}
   Windows,
     {$ENDIF}
@@ -710,7 +709,9 @@ begin
         LListenerThread.OnBeforeRun := DoBeforeListenerRun;
         //Todo: Implement proper priority handling for Linux
         //http://www.midnightbeach.com/jon/pubs/2002/BorCon.London/Sidebar.3.html
+        {$IFNDEF MACOSX}
         LListenerThread.Priority := tpListener;
+        {$ENDIF}
         LListenerThreads.Add(LListenerThread);
       except
         Bindings[I].CloseSocket;

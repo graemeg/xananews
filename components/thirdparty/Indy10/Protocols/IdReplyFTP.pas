@@ -112,6 +112,7 @@ type
 implementation
 
 uses
+  IdException,
   IdGlobal, SysUtils;
 
 { TIdReplyFTP }

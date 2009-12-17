@@ -1622,6 +1622,7 @@ end;
 {$ENDIF}
 
 initialization
+  GStarted := False;
   GSocketListClass := TIdSocketListWindows;
   // Check if we are running under windows NT
   {$IFNDEF WINCE}
@@ -1634,6 +1635,7 @@ finalization
   if GStarted then begin
     IdWship6.CloseLibrary;
     UninitializeWinSock;
+    GStarted := False;
   end;
 
 end.

@@ -534,33 +534,27 @@ var
  LValidHash : String;
 begin
   LThread := TIdPOP3ServerContext(aCmd.Context);
-  if not LThread.Authenticated then
-  begin
-    if (FUseTLS = utUseRequireTLS) and (aCmd.Context.Connection.IOHandler as TIdSSLIOHandlerSocketBase).PassThrough then
-    begin
+  if not LThread.Authenticated then begin
+    if (FUseTLS = utUseRequireTLS) and
+      (aCmd.Context.Connection.IOHandler as TIdSSLIOHandlerSocketBase).PassThrough then begin
       MustUseTLS(aCmd);
-    end
-    else
-    begin
+    end else begin
       if Assigned(fCommandAPOP) then
       begin
-       OnAPOP(aCmd, aCmd.Params.Strings[0], LValidPassword);
-       with TIdHashMessageDigest5.Create do
-       try
-         LValidHash := IndyLowerCase(HashStringAsHex(LThread.APOP3Challenge + LValidPassword));
-       finally Free; end;
+        OnAPOP(aCmd, aCmd.Params.Strings[0], LValidPassword);
+        with TIdHashMessageDigest5.Create do
+        try
+          LValidHash := IndyLowerCase(HashStringAsHex(LThread.APOP3Challenge + LValidPassword));
+        finally Free; end;
 
         LThread.fAuthenticated := (LValidHash = aCmd.Params[1]);
 
-       // User to set return state of LThread.State as required.
-       if not LThread.Authenticated then
-       begin
-         aCmd.Reply.SetReply(ST_ERR,RSPOP3SvrLoginFailed);
-       end
-       else
-       begin
-         aCmd.Reply.SetReply(ST_OK,RSPOP3SvrLoginOk);
-       end;
+        // User to set return state of LThread.State as required.
+        if not LThread.Authenticated then begin
+          aCmd.Reply.SetReply(ST_ERR,RSPOP3SvrLoginFailed);
+        end else begin
+          aCmd.Reply.SetReply(ST_OK,RSPOP3SvrLoginOk);
+        end;
       end
       else
       begin
@@ -750,7 +744,7 @@ var
   LGreeting : TIdReplyPOP3;
 begin
 //  AGreeting.Code := OK; {do not localize}
-  if Assigned(fCommandAPOP) then
+  if ( not GetFIPSMode ) and Assigned(fCommandAPOP) then
   begin
     LThread := TIdPOP3ServerContext(AContext);
     LGreeting := TIdReplyPOP3.Create(nil);

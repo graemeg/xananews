@@ -10,6 +10,7 @@ uses
   System.Security.Cryptography,
   IdException
   {$ELSE}
+  IdStreamVCL,
   IdSSLOpenSSLHeaders
   {$ENDIF}
   ;
@@ -32,7 +33,7 @@ type
     function GetHashBytes(AStream: TStream; ASize: TIdStreamSize): TIdBytes; override;
   {$IFNDEF DOTNET}
   public
-    function IsAvailable : Boolean; override;
+    class function IsAvailable : Boolean; override;
   {$ENDIF}
   end;
   TIdHashSHA224 = class(TIdHashInt)
@@ -40,7 +41,7 @@ type
     function GetHashInst : TIdHashInst; override;
   {$IFNDEF DOTNET}
   public
-    function IsAvailable : Boolean; override;
+    class function IsAvailable : Boolean; override;
   {$ENDIF}
   end;
   TIdHashSHA256 = class(TIdHashInt)
@@ -48,7 +49,7 @@ type
     function GetHashInst : TIdHashInst; override;
   {$IFNDEF DOTNET}
   public
-    function IsAvailable : Boolean; override;
+    class function IsAvailable : Boolean; override;
   {$ENDIF}
   end;
   TIdHashSHA386 = class(TIdHashInt)
@@ -56,7 +57,7 @@ type
     function GetHashInst : TIdHashInst; override;
   {$IFNDEF DOTNET}
   public
-    function IsAvailable : Boolean; override;
+    class function IsAvailable : Boolean; override;
   {$ENDIF}
   end;
   TIdHashSHA512 = class(TIdHashInt)
@@ -64,7 +65,7 @@ type
     function GetHashInst : TIdHashInst; override;
   {$IFNDEF DOTNET}
   public
-    function IsAvailable : Boolean; override;
+    class function IsAvailable : Boolean; override;
   {$ENDIF}
   end;
   {$IFDEF DOTNET}
@@ -127,6 +128,8 @@ begin
         SetLength(LBuf,LSize);
         UpdateHash(LCtx,LBuf);
         break;
+      end else begin
+        UpdateHash(LCtx,LBuf);
       end;
     until False;
   finally
@@ -159,7 +162,7 @@ begin
 end;
 
 {$IFNDEF DOTNET}
-function TIdHashInt.IsAvailable: Boolean;
+class function TIdHashInt.IsAvailable: Boolean;
 begin
    Result := Assigned(IdSslEvpDigestInitEx) and
              Assigned(IdSslEvpDigestUpdate) and
@@ -195,7 +198,7 @@ begin
 end;
 
 {$IFNDEF DOTNET}
-function TIdHashSHA224.IsAvailable: Boolean;
+class function TIdHashSHA224.IsAvailable: Boolean;
 begin
   Result := Assigned(IdSslEvpSHA224) and inherited IsAvailable;
 end;
@@ -213,7 +216,7 @@ begin
 end;
 
 {$IFNDEF DOTNET}
-function TIdHashSHA256.IsAvailable: Boolean;
+class function TIdHashSHA256.IsAvailable: Boolean;
 begin
   Result := Assigned(IdSslEvpSHA256) and inherited IsAvailable;
 end;
@@ -226,14 +229,14 @@ begin
   {$IFDEF DOTNET}
    Result := System.Security.Cryptography.SHA384Managed.Create;
   {$ELSE}
-  Result := IdSslEvpSHA386;
+  Result := IdSslEvpSHA384;
   {$ENDIF}
 end;
 
 {$IFNDEF DOTNET}
-function TIdHashSHA386.IsAvailable: Boolean;
+class function TIdHashSHA386.IsAvailable: Boolean;
 begin
-  Result := Assigned(IdSslEvpSHA386) and inherited IsAvailable;
+  Result := Assigned(IdSslEvpSHA384) and inherited IsAvailable;
 end;
 {$ENDIF}
 
@@ -249,7 +252,7 @@ begin
 end;
 
 {$IFNDEF DOTNET}
-function TIdHashSHA512.IsAvailable: Boolean;
+class function TIdHashSHA512.IsAvailable: Boolean;
 begin
   Result := Assigned(IdSslEvpSHA512) and inherited IsAvailable;
 end;

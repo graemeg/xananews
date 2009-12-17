@@ -112,6 +112,7 @@ uses
   IdHashAdler32,
   IdHashCRC,
   IdHashElf,
+  IdHashIntf,
   IdHashMessageDigest,
   IdHashSHA1,
   IdHeaderCoder2022JP,

@@ -395,7 +395,7 @@ type
 
   //
   EIdExtensionAlreadyExists = class(EIdException);
-
+  EIdFIPSAlgorithmNotAllowed = class(EIdException);
 // Procs - KEEP THESE ALPHABETICAL!!!!!
 
 //  procedure BuildMIMETypeMap(dest: TIdStringList);
@@ -411,12 +411,18 @@ type
   function ContentTypeToEncoding(const AContentType: string): TIdTextEncoding;
   function CharsetToEncoding(const ACharset: string): TIdTextEncoding;
 
-  function ReadStringAsContentType(AStream: TStream; const AContentType: String): String;
-  function ReadStringAsCharset(AStream: TStream; const ACharset: String): String;
+  function ReadStringAsContentType(AStream: TStream; const AContentType: String
+    {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}): String;
+  function ReadStringAsCharset(AStream: TStream; const ACharset: String
+    {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}): String;
 
-  procedure ReadStringsAsContentType(AStream: TStream; AStrings: TStrings; const AContentType: string);
-  procedure ReadStringsAsCharset(AStream: TStream; AStrings: TStrings; const ACharset: string);
-
+  procedure ReadStringsAsContentType(AStream: TStream; AStrings: TStrings; const AContentType: string
+    {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF});
+  procedure ReadStringsAsCharset(AStream: TStream; AStrings: TStrings; const ACharset: string
+    {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF});
+  procedure CheckMD2Permitted;
+  procedure CheckMD4Permitted;
+  procedure CheckMD5Permitted;
   {
   These are for handling binary values that are in Network Byte order.  They call
   ntohs, ntols, htons, and htons which are required by SNTP and FSP
@@ -437,8 +443,11 @@ type
   function ExtractHeaderItem(const AHeaderLine: String): String;
   function ExtractHeaderSubItem(const AHeaderLine,ASubItem: String): String;
   function ReplaceHeaderSubItem(const AHeaderLine, ASubItem, AValue: String): String;
+  procedure FIPSAlgorithmNotAllowed(const AAlgorithm : String);
   function FileSizeByName(const AFilename: TIdFileName): Int64;
-
+  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  function IsVolume(const APathName : TIdFileName) : Boolean;
+  {$ENDIF}
   //MLIST FTP DateTime conversion functions
   function FTPMLSToGMTDateTime(const ATimeStamp : String):TDateTime;
   function FTPMLSToLocalDateTime(const ATimeStamp : String):TDateTime;
@@ -522,10 +531,15 @@ type
   procedure ParseMetaHTTPEquiv(AStream: TStream; AStr : TStrings);
 
 
+type
+  TGetFIPSMode = function : Boolean;
+  TSetFIPSMode = procedure (const AMode : Boolean);
+
 var
+  GetFIPSMode : TGetFIPSMode;
+  SetFIPSMode : TSetFIPSMode;
   {$IFDEF UNIX}
   // For linux the user needs to set these variables to be accurate where used (mail, etc)
-  GTimeZoneBias: TDateTime = 0;
   GIdDefaultCharSet : TIdCharSet = idcs_ISO_8859_1; // idcsISO_8859_1;
   {$ENDIF}
 
@@ -548,14 +562,17 @@ const
 implementation
 
 uses
+  {$IFDEF DELPHI_CROSS}
+    {$IFDEF MACOSX}
+  CoreServices,
+    {$ENDIF}
+  {$ENDIF}
+  IdIPAddress,
   {$IFDEF UNIX}
-    {$IFDEF KYLIX}
+    {$IFDEF KYLIXCOMPAT}
   Libc,
     {$ENDIF}
     {$IFDEF FPC}
-      {$IFDEF KYLIXCOMPAT}
-      libc,
-      {$ENDIF}
       {$IFDEF USE_BASEUNIX}
       BaseUnix,
       Unix,
@@ -575,6 +592,46 @@ uses
   IdResourceStringsCore,
   IdResourceStringsProtocols,
   IdStack;
+
+//fips mode default procs
+function DefGetFIPSMode : Boolean;
+begin
+  Result := False;
+end;
+
+procedure DefSetFIPSMode(const AMode : Boolean);
+begin
+  //leave this empty as we may not be using something that supports FIPS
+end;
+
+procedure CheckMD2Permitted; {$IFDEF USE_INLINE} inline; {$ENDIF}
+begin
+  if GetFIPSMode then begin
+    FIPSAlgorithmNotAllowed('MD2');
+  end;
+end;
+
+procedure CheckMD4Permitted; {$IFDEF USE_INLINE} inline; {$ENDIF}
+begin
+  if GetFIPSMode then begin
+    FIPSAlgorithmNotAllowed('MD4');
+  end;
+end;
+
+procedure CheckMD5Permitted; {$IFDEF USE_INLINE} inline; {$ENDIF}
+begin
+  if GetFIPSMode then begin
+    FIPSAlgorithmNotAllowed('MD5');
+  end;
+end;
+
+procedure FIPSAlgorithmNotAllowed(const AAlgorithm : String); {$IFDEF USE_INLINE} inline; {$ENDIF}
+begin
+  raise EIdFIPSAlgorithmNotAllowed.Create(Format(RSFIPSAlgorithmNotAllowed,[AAlgorithm]));
+end;
+
+
+//
 
 function UnquotedStr(const AStr : String): String;
 begin
@@ -1334,17 +1391,27 @@ begin
   end ;
 end;
 
-{$UNDEF API_COPYFILETO}
+{$UNDEF NATIVEFILEAPI}
+{$UNDEF NATIVECOPYAPI}
 {$IFDEF DOTNET}
-  {$DEFINE API_COPYFILETO}
+  {$DEFINE NATIVEFILEAPI}
+  {$DEFINE NATIVECOPYAPI}
 {$ENDIF}
 {$IFDEF WIN32_OR_WIN64_OR_WINCE}
-  {$DEFINE API_COPYFILETO}
+  {$DEFINE NATIVEFILEAPI}
+  {$DEFINE NATIVECOPYAPI}
+{$ENDIF}
+{$IFDEF UNIX}
+  {$DEFINE NATIVEFILEAPI}
 {$ENDIF}
 
 function CopyFileTo(const Source, Destination: TIdFileName): Boolean;
-{$IFDEF API_COPYFILETO}
+{$IFDEF NATIVECOPYAPI}
   {$IFDEF USE_INLINE}inline;{$ENDIF}
+  {$IFDEF WIN32_OR_WIN64}
+var
+  LOldErrorMode : Integer;
+  {$ENDIF}
 {$ELSE}
 var
   SourceF, DestF : File;
@@ -1356,13 +1423,19 @@ begin
   System.IO.File.Copy(Source, Destination, True);
   Result := True; // or you'll get an exception
   {$ENDIF}
-  {$IFDEF WINCE}
-  Result := CopyFile(PWideChar(Source), PWideChar(Destination), False);
+  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+    {$IFDEF WIN32_OR_WIN64}
+  LOldErrorMode := SetErrorMode(SEM_FAILCRITICALERRORS);
+  try
+    {$ENDIF}
+  Result := CopyFile(PIdFileNameChar(Source), PIdFileNameChar(Destination), False);
+    {$IFDEF WIN32_OR_WIN64}
+  finally
+    SetErrorMode(LOldErrorMode);
+  end;
+    {$ENDIF}
   {$ENDIF}
-  {$IFDEF WIN32_OR_WIN64}
-  Result := CopyFile(PChar(Source), PChar(Destination), False);
-  {$ENDIF}
-  {$IFNDEF API_COPYFILETO}
+  {$IFNDEF NATIVECOPYAPI}
   //mostly from  http://delphi.about.com/od/fileio/a/untypedfiles.htm
 
   //note that I do use the I+ and I- directive.
@@ -1446,15 +1519,16 @@ begin
   Result := GetUniqueFilename(lPath, 'Indy', lExt);
 end;
 
+
 function GetUniqueFileName(const APath, APrefix, AExt : String) : String;
-{$IFNDEF UNIX}
+{$IFNDEF FPC}
 var
   LNamePart : LongWord;
   LFQE : String;
   LFName: String;
 {$ENDIF}
 begin
-  {$IFDEF UNIX}
+  {$IFDEF FPC}
   //Do not use Tempnam in Unix-like Operating systems.  That function is dangerous
   //and you will be warned about it when compiling.  FreePascal has GetTempFileName.  Use
   //that instead.
@@ -1527,6 +1601,14 @@ begin
   end;
 end;
 
+{$IFDEF WIN32_OR_WIN64_OR_WINCE}
+function IsVolume(const APathName : TIdFileName) : Boolean;
+  {$IFDEF USE_INLINE}inline;{$ENDIF}
+begin
+  Result := TextEndsWith(APathName, ':') or TextEndsWith(APathName, ':\');
+end;
+{$ENDIF}
+
 // OS-independant version
 function FileSizeByName(const AFilename: TIdFileName): Int64;
 //Leave in for HTTP Server
@@ -1539,29 +1621,84 @@ var
 var
   LHandle : THandle;
   LRec : TWin32FindData;
+    {$IFDEF WIN32_OR_WIN64}
+  LOldErrorMode : Integer;
+    {$ENDIF}
+  {$ENDIF}
+  {$IFDEF UNIX}
+var
+    {$IFDEF DELPHI_CROSS}
+  LRec : TStatBuf64;
+    {$ELSE}
+      {$IFDEF KYLIXCOMPAT}
+  LRec : TStatBuf;
+      {$ELSE}
+  LRec : TStat;
+  LU : time_t;
+      {$ENDIF}
+    {$ENDIF}
   {$ENDIF}
 {$ENDIF}
 begin
-  Result := 0;
   {$IFDEF DOTNET}
+    Result := -1;
   LFile := System.IO.FileInfo.Create(AFileName);
   if LFile.Exists then begin
     Result := LFile.Length;
   end;
-  {$ELSE}
-    {$IFDEF WIN32_OR_WIN64_OR_WINCE}
-  LHandle := Windows.FindFirstFile(PIdFileNameChar(AFileName), LRec);
-  if LHandle <> INVALID_HANDLE_VALUE then begin
-    Windows.FindClose(LHandle);
-    Result := (Int64(LRec.nFileSizeHigh) shl 32) + LRec.nFileSizeLow;
+  {$ENDIF}
+  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+    Result := -1;
+  //check to see if something like "a:\" is specified and fail in that case.
+  //FindFirstFile would probably succede even though a drive is not a proper
+  //file.
+  if not IsVolume(AFileName) then begin
+    {
+    IMPORTANT!!!
+
+    For servers in Windows, you probably want the API call to fail rather than
+    get a "Cancel   Try Again   Continue " dialog-box box if a drive is not
+    ready or there's some other critical I/O error.
+    }
+    {$IFDEF WIN32_OR_WIN64}
+    LOldErrorMode := SetErrorMode(SEM_FAILCRITICALERRORS);
+    try
+    {$ENDIF}
+      LHandle := Windows.FindFirstFile(PIdFileNameChar(AFileName), LRec);
+      if LHandle <> INVALID_HANDLE_VALUE then begin
+        Windows.FindClose(LHandle);
+        if (LRec.dwFileAttributes and Windows.FILE_ATTRIBUTE_DIRECTORY) = 0 then begin
+          Result := (Int64(LRec.nFileSizeHigh) shl 32) + LRec.nFileSizeLow;
+        end;
+      end;
+    {$IFDEF WIN32_OR_WIN64}
+    finally
+     SetErrorMode(LOldErrorMode);
+    end;
+    {$ENDIF}
   end;
-    {$ELSE}
+  {$ENDIF}
+  {$IFDEF UNIX}
+  Result := -1;
+      {$IFDEF DELPHI_CROSS}
+  //This is messy with IFDEF's but I want to be able to handle 63 bit file sizes.
+   if stat64(PAnsiChar(AnsiString(AFileName)), LRec) = 0 then begin
+      Result := LRec.st_size;
+   end;
+      {$ELSE}
+    //Note that we can use stat here because we are only looking at the date.
+  if {$IFDEF KYLIXCOMPAT}stat{$ELSE}fpstat{$ENDIF}(PAnsiChar(AnsiString(AFileName)), LRec) = 0 then begin
+      Result := LRec.st_Size;
+  end;
+    {$ENDIF}
+  {$ENDIF}
+  {$IFNDEF NATIVEFILEAPI}
+  Result := -1;
   if FileExists(AFilename) then begin
     with TIdReadFileExclusiveStream.Create(AFilename) do try
       Result := Size;
     finally Free; end;
   end;
-    {$ENDIF}
   {$ENDIF}
 end;
 
@@ -1571,6 +1708,9 @@ var
   LRec : TWin32FindData;
   LHandle : THandle;
   LTime : {$IFDEF WINCE}TSystemTime{$ELSE}Integer{$ENDIF};
+  {$IFDEF WIN32_OR_WIN64}
+  LOldErrorMode : Integer;
+ {$ENDIF}
 {$ENDIF}
 {$IFDEF UNIX}
 var
@@ -1586,10 +1726,19 @@ var
 begin
   Result := -1;
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
-  LHandle := Windows.FindFirstFile(PIdFileNameChar(AFileName), LRec);
-  if LHandle <> INVALID_HANDLE_VALUE then begin
-    Windows.FindClose(LHandle);
-    if (LRec.dwFileAttributes and FILE_ATTRIBUTE_DIRECTORY) = 0 then begin
+  if not IsVolume(AFileName) then begin
+    {$IFDEF WIN32_OR_WIN64}
+    LOldErrorMode := SetErrorMode(SEM_FAILCRITICALERRORS);
+    try
+    {$ENDIF}
+      LHandle := Windows.FindFirstFile(PIdFileNameChar(AFileName), LRec);
+    {$IFDEF WIN32_OR_WIN64}
+    finally
+      SetErrorMode(LOldErrorMode);
+    end;
+    {$ENDIF}
+    if LHandle <> INVALID_HANDLE_VALUE then begin
+      Windows.FindClose(LHandle);
       {$IFDEF WINCE}
       FileTimeToSystemTime(@LRec, @LTime);
       Result := SystemTimeToDateTime(LTime);
@@ -1606,13 +1755,13 @@ begin
   end;
   {$ENDIF}
   {$IFDEF UNIX}
-  if {$IFDEF KYLIXCOMPAT}stat{$ELSE}fpstat{$ENDIF}(PChar(AFileName), LRec) = 0 then begin
+  //Note that we can use stat here because we are only looking at the date.
+  if {$IFDEF KYLIXCOMPAT}stat{$ELSE}fpstat{$ENDIF}(PAnsiChar(AnsiString(AFileName)), LRec) = 0 then begin
     LTime := LRec.st_mtime;
     {$IFDEF KYLIXCOMPAT}
-    gmtime_r({$IFDEF KYLIX}@{$ENDIF}LTime, LU);
+    gmtime_r({$IFDEF KYLIXCOMPAT}@{$ENDIF}LTime, LU);
     Result := EncodeDate(LU.tm_year + 1900, LU.tm_mon + 1, LU.tm_mday) +
               EncodeTime(LU.tm_hour, LU.tm_min, LU.tm_sec, 0);
-
     {$ELSE}
     Result := UnixToDateTime(LTime);
     {$ENDIF}
@@ -1635,10 +1784,21 @@ end;
 
 function TimeZoneBias: TDateTime;
 {$IFDEF USE_INLINE} inline; {$ENDIF}
+  {$IFDEF UNIX}
+var
+  T: TTime_T;
+  TV: TTimeVal;
+  UT: TUnixTime;
+  {$ENDIF}
 begin
   {$IFDEF UNIX}
-  //TODO: Fix TimeZoneBias for Linux to be automatic
-  Result := GTimeZoneBias;
+ {from http://edn.embarcadero.com/article/27890 }
+  gettimeofday(TV, nil);
+  T := TV.tv_sec;
+  localtime_r(@T, UT);
+    // __tm_gmtoff is the bias in seconds from the UTC to the current time.
+    // so I multiply by -1 to compensate for this.
+  Result := (UT.__tm_gmtoff / 60 / 60 / 24);
   {$ELSE}
   Result := -OffsetFromUTC;
   {$ENDIF}
@@ -2810,26 +2970,23 @@ begin
 end;
 
 function IsValidIP(const S: String): Boolean;
+{$IFDEF USE_INLINE}inline;{$ENDIF}
 var
-  j, i: Integer;
-  LTmp: String;
+  LErr: Boolean;
 begin
-  Result := False;
-  LTmp := Trim(S);
-  for i := 1 to 4 do begin
-    j := IndyStrToInt(Fetch(LTmp, '.'), -1);    {Do not Localize}
-    if (j < 0) or (j >= 256) then begin
-      Exit;
-    end;
+  LErr := False; // keep the compiler happy
+  IPv4ToDWord(S, LErr);
+  if LErr then begin
+    LErr := (MakeCanonicalIPv6Address(S) = '');
   end;
-  Result := True;
+  Result := not LErr;
 end;
 
 //everything that does not start with '.' is treated as hostname
 function IsHostname(const S: String): Boolean;
 {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-  Result := (not TextStartsWith(S, '.')) and (not IsValidIP(S));    {Do not Localize}
+  Result := (not TextStartsWith(S, '.')) and (not IsValidIP(S)) ;    {Do not Localize}
 end;
 
 function IsTopDomain(const AStr: string): Boolean;
@@ -3207,10 +3364,10 @@ begin
   until False;
 end;
 
-function DiscardUntilCloseTag(const AStr, ATagWord : String; var VPos : Integer; const ALen : Integer) : String;  {$IFDEF USE_INLINE}inline; {$ENDIF}
+procedure DiscardUntilCloseTag(const AStr, ATagWord : String; var VPos : Integer;
+  const ALen : Integer; const AIsScript : Boolean = False);  {$IFDEF USE_INLINE}inline; {$ENDIF}
 var LWord, LTmp : String;
 begin
-  Result := '';
   repeat
     if VPos > ALen then begin
       exit;
@@ -3225,15 +3382,19 @@ begin
       LTmp := LTmp + '/';
       LWord := ParseWord(AStr,VPos,ALen);
       if TextIsSame(LWord,ATagWord) then begin
-        DiscardUntil(AStr,'>',VPos,ALen);
+       DiscardUntil(AStr,'>',VPos,ALen);
         break;
       end else begin
-        DiscardUntil(AStr,'>',VPos,ALen);
+        if not AIsScript then begin
+          DiscardUntil(AStr,'>',VPos,ALen);
+        end;
         Inc(VPos);
       end;
     end else begin
+      if Not AIsScript then begin
         DiscardUntil(AStr,'>',VPos,ALen);
-        Inc(VPos);
+      end;
+      Inc(VPos);
     end;
   until False;
 end;
@@ -3315,7 +3476,7 @@ begin
               2 :
               begin
                 DiscardUntilEndOfTag(LRawData,LPos,LLen);
-                DiscardUntilCloseTag(LRawData,'SCRIPT',LPos,LLen);
+                DiscardUntilCloseTag(LRawData,'SCRIPT',LPos,LLen,True);
               end;
               //'LINK'
               3 :
@@ -3372,8 +3533,7 @@ var
     Result := '';
     Delete(VHeaderLine, 1, 1);
     I := 1;
-    while I <= Length(VHeaderLine) do
-    begin
+    while I <= Length(VHeaderLine) do begin
       if VHeaderLine[I] = '\' then begin
         if I < Length(VHeaderLine) then begin
           Delete(VHeaderLine, I, 1);
@@ -3402,8 +3562,7 @@ begin
     if TextStartsWith(AHeaderLine, '"') then {do not localize}
     begin
       LValue := FetchQuotedString(AHeaderLine);
-    end else
-    begin
+    end else  begin
       I := FindFirstOf(' ' + token_specials, AHeaderLine);
       if I <> 0 then
       begin
@@ -3412,8 +3571,7 @@ begin
           Inc(I);
         end;
         Delete(AHeaderLine, 1, I-1);
-      end else
-      begin
+      end else begin
         LValue := AHeaderLine;
         AHeaderLine := '';
       end;
@@ -3631,7 +3789,7 @@ begin
     {$IFDEF KYLIXCOMPAT}
   if GetHostname(@LHost[1], 255) <> -1 then begin
     i := IndyPos(#0, LHost);
-    SetString(Result, @LHost[1], i-1);
+    SetString(Result, PAnsiChar(@LHost[1]), i-1);
   end;
     {$ELSE}
   Result := Unix.GetHostName;
@@ -3876,7 +4034,9 @@ begin
   end;
 end;
 
-function ReadStringAsContentType(AStream: TStream; const AContentType: String): String;
+function ReadStringAsContentType(AStream: TStream; const AContentType: String
+  {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
+): String;
 var
   LEncoding: TIdTextEncoding;
 begin
@@ -3885,7 +4045,7 @@ begin
   {$IFNDEF DOTNET}
   try
   {$ENDIF}
-    Result := ReadStringFromStream(AStream, -1, LEncoding);
+    Result := ReadStringFromStream(AStream, -1, LEncoding{$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF});
   {$IFNDEF DOTNET}
   finally
     LEncoding.Free;
@@ -3893,7 +4053,9 @@ begin
   {$ENDIF}
 end;
 
-procedure ReadStringsAsContentType(AStream: TStream; AStrings: TStrings; const AContentType: string);
+procedure ReadStringsAsContentType(AStream: TStream; AStrings: TStrings; const AContentType: string
+  {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
+);
 var
   LEncoding: TIdTextEncoding;
 begin
@@ -3904,7 +4066,7 @@ begin
     {$IFDEF HAS_TEncoding}
     AStrings.LoadFromStream(AStream, LEncoding);
     {$ELSE}
-    AStrings.Text := ReadStringFromStream(AStream, -1, LEncoding);
+    AStrings.Text := ReadStringFromStream(AStream, -1, LEncoding{$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF});
     {$ENDIF}
   {$IFNDEF DOTNET}
   finally
@@ -3913,7 +4075,9 @@ begin
   {$ENDIF}
 end;
 
-function ReadStringAsCharset(AStream: TStream; const ACharset: String): String;
+function ReadStringAsCharset(AStream: TStream; const ACharset: String
+  {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
+): String;
 //TODO:  Figure out what should happen with Unicode content type.
 var
   LEncoding: TIdTextEncoding;
@@ -3923,7 +4087,7 @@ begin
   {$IFNDEF DOTNET}
   try
   {$ENDIF}
-    Result := ReadStringFromStream(AStream, -1, LEncoding);
+    Result := ReadStringFromStream(AStream, -1, LEncoding{$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF});
   {$IFNDEF DOTNET}
   finally
     LEncoding.Free;
@@ -3931,7 +4095,9 @@ begin
   {$ENDIF}
 end;
 
-procedure ReadStringsAsCharset(AStream: TStream; AStrings: TStrings; const ACharset: String);
+procedure ReadStringsAsCharset(AStream: TStream; AStrings: TStrings; const ACharset: String
+  {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
+);
 var
   LEncoding: TIdTextEncoding;
 begin
@@ -3942,7 +4108,7 @@ begin
     {$IFDEF HAS_TEncoding}
     AStrings.LoadFromStream(AStream, LEncoding);
     {$ELSE}
-    AStrings.Text := ReadStringFromStream(AStream, -1, LEncoding);
+    AStrings.Text := ReadStringFromStream(AStream, -1, LEncoding{$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF});
     {$ENDIF}
   {$IFNDEF DOTNET}
   finally
@@ -3979,5 +4145,6 @@ initialization
   IndyFalseBoolStrs[Low(IndyFalseBoolStrs)] := 'FALSE';    {Do not Localize}
   SetLength(IndyTrueBoolStrs, 1);
   IndyTrueBoolStrs[Low(IndyTrueBoolStrs)] := 'TRUE';    {Do not Localize}
-
+  GetFIPSMode := DefGetFIPSMode;
+  SetFIPSMode := DefSetFIPSMode;
 end.

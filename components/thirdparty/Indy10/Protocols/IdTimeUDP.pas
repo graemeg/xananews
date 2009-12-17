@@ -84,7 +84,7 @@ type
 implementation
 
 uses
-  IdGlobal,  IdStack;
+  IdGlobal,  IdStack, SysUtils; //Sysutils added to facilitate inlining.
 
 { TIdCustomTimeUDP }
 

@@ -42,7 +42,7 @@
   Rev 1.0    11/13/2002 07:53:48 AM  JPMugaas
 }
 
-unit IdHashSHA1;
+unit IdHashSHA;
 
 interface
 {$i IdCompilerDefines.inc}
@@ -51,27 +51,110 @@ uses
   Classes,
   IdGlobal, IdHash;
 
+{
+Microsoft.NET notes!!!!
+
+In Microsoft.NET, there are some limitations that you need to be aware of.
+
+1) In Microsoft.NET 1.1, 2.0, and 3.0, only the CryptoService SHA1 class is
+FIPS-complient.  Unfortunately, SHA1 will not be permitted after 2010.
+2) In Microsoft.NET 3.5,There are more classes ending in CryptoServiceProvider" or
+"Cng" that are complient.
+3) SHA224 is not exposed.
+}
 type
   T5x4LongWordRecord = array[0..4] of LongWord;
   T512BitRecord = array [0..63] of Byte;
-
-  TIdHashSHA1 = class(TIdHash)
+  {$IFNDEF DOTNET}
+  TIdHashSHA1 = class(TIdHashNativeAndIntF)
+  {$ELSE}
+  TIdHashSHA1 = class(TIdHashIntF)
+  {$ENDIF}
   protected
-    FCheckSum: T5x4LongWordRecord;
+
+    {$IFNDEF DOTNET}
+        FCheckSum: T5x4LongWordRecord;
     FCBuffer: TIdBytes;
     procedure Coder;
-    function GetHashBytes(AStream: TStream; ASize: TIdStreamSize): TIdBytes; override;
+    function NativeGetHashBytes(AStream: TStream; ASize: TIdStreamSize): TIdBytes; override;
     function HashToHex(const AHash: TIdBytes): String; override;
+    
+    {$ENDIF}
+    function GetHashInst : TIdHashInst; override;
   public
+    {$IFDEF DOTNET}
+    class function IsAvailable : Boolean; override;
+    {$ELSE}
     constructor Create; override;
+    {$ENDIF}
+    class function IsIntfAvailable: Boolean; override;
+  end;
+  {$IFNDEF DOTNET}
+  TIdHashSHA224 = class(TIdHashIntF)
+  protected
+    function GetHashInst : TIdHashInst; override;
+  public
+    class function IsAvailable: Boolean; override;
+  end;
+  {$ENDIF}
+  TIdHashSHA256 = class(TIdHashIntF)
+  protected
+    function GetHashInst : TIdHashInst; override;
+  {$IFNDEF DOTNET}
+  public
+    class function IsAvailable : Boolean; override;
+  {$ENDIF}
+  end;
+  TIdHashSHA384 = class(TIdHashIntF)
+  protected
+    function GetHashInst : TIdHashInst; override;
+  {$IFNDEF DOTNET}
+  public
+    class function IsAvailable : Boolean; override;
+  {$ENDIF}
+  end;
+  TIdHashSHA512 = class(TIdHashIntF)
+  protected
+    function GetHashInst : TIdHashInst; override;
+  {$IFNDEF DOTNET}
+  public
+    class function IsAvailable : Boolean; override;
+  {$ENDIF}
   end;
 
 implementation
-  {$IFNDEF DOTNET}
 uses
-  IdStreamVCL;
+  {$IFDEF DOTNET}
+  System.Security.Cryptography
+  {$ELSE}
+  IdStreamVCL
+    {$IFDEF USE_OPENSSL}
+  ,IdSSLOpenSSLHeaders 
+     {$ENDIF}
   {$ENDIF}
+  ;
+
 { TIdHashSHA1 }
+
+{$IFDEF DOTNET}
+
+function TIdHashSHA1.GetHashInst : TIdHashInst;
+begin
+//You can not use SHA256Managed for FIPS complience.
+  Result := System.Security.Cryptography.SHA1CryptoServiceProvider.Create;
+end;
+
+class function TIdHashSHA1.IsIntfAvailable : Boolean;
+begin
+  Result := True;
+end;
+
+class function TIdHashSHA1.IsAvailable : Boolean; 
+begin
+  Result := True;
+end;
+
+{$ELSE}
 
 function SwapLongWord(const AValue: LongWord): LongWord;
 begin
@@ -82,6 +165,24 @@ constructor TIdHashSHA1.Create;
 begin
   inherited Create;
   SetLength(FCBuffer, 64);
+end;
+
+class function TIdHashSHA1.IsIntfAvailable: Boolean;
+begin
+  {$IFDEF USE_OPENSSL}
+  Result := Assigned(IdSslEvpSHA1) and inherited IsIntFAvailable;
+  {$ELSE}
+  Result := False;
+  {$ENDIF}
+end;
+
+function TIdHashSHA1.GetHashInst : TIdHashInst; 
+begin
+  {$IFDEF USE_OPENSSL}
+  Result :=  IdSslEvpSHA1;
+  {$ELSE}
+  Result := nil;
+  {$ENDIF}
 end;
 
 {$Q-,R-} // Operations performed modulo $100000000
@@ -307,7 +408,7 @@ begin
   FCheckSum[4]:= FCheckSum[4] + E;
 end;
 
-function TIdHashSHA1.GetHashBytes(AStream: TStream; ASize: TIdStreamSize): TIdBytes;
+function TIdHashSHA1.NativeGetHashBytes(AStream: TStream; ASize: TIdStreamSize): TIdBytes;
 var
   LSize: Integer;
   LLenHi: LongWord;
@@ -374,4 +475,103 @@ begin
   Result := LongWordHashToHex(AHash, 5);
 end;
 
+{ TIdHashSHA224 }
+
+function TIdHashSHA224.GetHashInst : TIdHashInst; 
+begin
+  {$IFDEF USE_OPENSSL}
+  Result := IdSslEvpSHA224;
+  {$ELSE}
+  Result := nil;
+  {$ENDIF}
+end;
+
+class function TIdHashSHA224.IsAvailable: Boolean;
+begin
+  {$IFDEF USE_OPENSSL}
+  Result := Assigned(IdSslEvpSHA224) and inherited IsAvailable;
+  {$ELSE}
+  Result := False;
+  {$ENDIF}
+end;
+
+{$ENDIF}
+
+{ TIdHashSHA256 }
+
+function TIdHashSHA256.GetHashInst: TIdHashInst;
+begin
+  {$IFDEF DOTNET}
+  Result := System.Security.Cryptography.SHA256Managed.Create;
+  {$ELSE}
+    {$IFDEF USE_OPENSSL}
+  Result := IdSslEvpSHA256;
+    {$ELSE}
+  Result := nil;
+    {$ENDIF}
+  {$ENDIF}
+end;
+
+{$IFNDEF DOTNET}
+class function TIdHashSHA256.IsAvailable: Boolean;
+begin
+  {$IFDEF USE_OPENSSL}
+  Result := Assigned(IdSslEvpSHA256) and inherited IsAvailable;
+  {$ELSE}
+  Result := False;
+  {$ENDIF}
+end;
+{$ENDIF}
+
+{ TIdHashSHA384 }
+
+function TIdHashSHA384.GetHashInst: TIdHashInst;
+begin
+   {$IFDEF DOTNET}
+   Result := System.Security.Cryptography.SHA384Managed.Create;
+   {$ELSE}
+     {$IFDEF USE_OPENSSL}
+  Result := IdSslEvpSHA384;
+     {$ELSE}
+  Result := nil;
+     {$ENDIF}
+  {$ENDIF}
+end;
+
+{$IFNDEF DOTNET}
+class function TIdHashSHA384.IsAvailable: Boolean;
+begin
+  {$IFDEF USE_OPENSSL}
+  Result := Assigned(IdSslEvpSHA384) and inherited IsAvailable;
+  {$ELSE}
+  Result := False;
+  {$ENDIF}
+end;
+{$ENDIF}
+
+{ TIdHashSHA384 }
+
+function TIdHashSHA512.GetHashInst: TIdHashInst;
+begin
+   {$IFDEF DOTNET}
+   Result := System.Security.Cryptography.SHA512Managed.Create;
+   {$ELSE}
+    {$IFDEF USE_OPENSSL}
+  Result := IdSslEvpSHA512;
+    {$ELSE}
+  Result := nil;
+    {$ENDIF}
+  {$ENDIF}
+end;
+
+{$IFNDEF DOTNET}
+class function TIdHashSHA512.IsAvailable: Boolean;
+begin
+  {$IFDEF USE_OPENSSL}
+  Result := Assigned(IdSslEvpSHA512) and inherited IsAvailable;
+  {$ELSE}
+  Result := False;
+  {$ENDIF}
+end;
+{$ENDIF}
 end.

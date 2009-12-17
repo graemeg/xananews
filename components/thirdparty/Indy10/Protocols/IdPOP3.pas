@@ -311,6 +311,7 @@ begin
     patAPOP:  //APR
       begin
         if FHasAPOP then begin
+          CheckMD5Permitted;
           with TIdHashMessageDigest5.Create do
           try
             S := LowerCase(HashStringAsHex(FAPOPToken+Password));

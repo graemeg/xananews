@@ -213,7 +213,6 @@ type
     case Integer of
     0: (s6_addr: packed array [0..16-1] of Byte);
     1: (s6_addr16: packed array [0..8-1] of Word);
-    2: (s6_addr32: packed array [0..4-1] of LongWord);
   end;
 
   PIdInAddr = ^TIdInAddr;
@@ -312,7 +311,7 @@ uses
   //done this way so we can have a separate stack for the Unix systems in FPC
   {$IFDEF UNIX}
     {$IFDEF KYLIXCOMPAT}
-  IdStackLinux,
+  IdStackLibc,
     {$ELSE}
   IdStackUnix,
     {$ENDIF}
@@ -323,6 +322,7 @@ uses
   {$IFDEF DOTNET}
   IdStackDotNet,
   {$ENDIF}
+  IdResourceStrings,
   SysUtils;
 
 { TIdStackBSDBase }

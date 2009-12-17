@@ -431,6 +431,7 @@ type
   end;
 
   TIdHTTPProtocol = class(TObject)
+  protected
     FHTTP: TIdCustomHTTP;
     FResponseCode: Integer;
     FRequest: TIdHTTPRequest;
@@ -635,6 +636,9 @@ type
 implementation
 
 uses
+  {$IFNDEF DOTNET}
+  IdStreamVCL,
+  {$ENDIF}
   SysUtils,
   IdAllAuthentications, IdComponent, IdCoderMIME, IdTCPConnection,
   IdResourceStringsCore, IdResourceStringsProtocols, IdGlobalProtocols,
@@ -1011,17 +1015,20 @@ var
     s: string;
   begin
     s := InternalReadLn;
-    j := IndyPos(' ', s);
+    j := IndyPos(';', s); {do not localize}
     if j > 0 then begin
       s := Copy(s, 1, j - 1);
     end;
-    Result := IndyStrToInt('$' + s, 0);      {do not localize}
+    Result := IndyStrToInt('$' + Trim(s), 0);      {do not localize}
   end;
 
 begin
   LDecMeth := 0;
+
+  // TODO: parse XML as well...
   LParseHTML := IsContentTypeHtml(AResponse) and Assigned(AResponse.ContentStream);
   LCreateTmpContent := LParseHTML and not (AResponse.ContentStream is TCustomMemoryStream);
+
   LOrigStream := Response.ContentStream;
   if LCreateTmpContent then begin
     Response.ContentStream := TMemoryStream.Create;
@@ -1051,21 +1058,22 @@ begin
     end;
 
     try
-      if IndyPos('chunked', LowerCase(AResponse.RawHeaders.Values['Transfer-Encoding'])) > 0 then begin {do not localize}
+      if IndyPos('chunked', LowerCase(AResponse.TransferEncoding)) > 0 then begin {do not localize}
         DoStatus(hsStatusText, [RSHTTPChunkStarted]);
         BeginWork(wmRead);
         try
           Size := ChunkSize;
-          while Size > 0 do begin
+          while Size <> 0 do begin
             if Assigned(LS) then begin
               IOHandler.ReadStream(LS, Size);
             end else begin
               IOHandler.Discard(Size);
             end;
-            InternalReadLn; // blank line
+            InternalReadLn; // CRLF at end of chunk data
             Size := ChunkSize;
           end;
-          InternalReadLn; // blank line
+          // skip trailer headers
+          repeat until InternalReadLn = '';
         finally
           EndWork(wmRead);
         end;
@@ -1191,20 +1199,14 @@ begin
     if Length(LURI.Port) > 0 then begin
       FURI.Port := LURI.Port;
     end
-    else begin
-      if TextIsSame(LURI.Protocol, 'http') then begin     {do not localize}
-        FURI.Port := IntToStr(IdPORT_HTTP);
-      end else begin
-        if TextIsSame(LURI.Protocol, 'https') then begin  {do not localize}
-          FURI.Port := IntToStr(IdPORT_SSL);
-        end else begin
-          if Length(FURI.Port) > 0 then begin
-          {  FURI.Port:=FURI.Port; } // do nothing, as the port is already filled in.
-          end else begin
-            raise EIdUnknownProtocol.Create(RSHTTPUnknownProtocol);
-          end;
-        end;
-      end;
+    else if TextIsSame(LURI.Protocol, 'http') then begin     {do not localize}
+      FURI.Port := IntToStr(IdPORT_HTTP);
+    end
+    else if TextIsSame(LURI.Protocol, 'https') then begin  {do not localize}
+      FURI.Port := IntToStr(IdPORT_SSL);
+    end
+    else if Length(FURI.Port) = 0 then begin
+      raise EIdUnknownProtocol.Create(RSHTTPUnknownProtocol);
     end;
 
     // The URL part is not URL encoded at this place
@@ -1233,10 +1235,12 @@ begin
       ARequest.ContentLength := -1;
     end;
 
-    if FURI.Port <> IntToStr(IdPORT_HTTP) then begin
-      ARequest.Host := FURI.Host + ':' + FURI.Port;    {do not localize}
-    end else begin
+    if (TextIsSame(FURI.Protocol, 'http') and (FURI.Port = IntToStr(IdPORT_HTTP))) or  {do not localize}
+      (TextIsSame(FURI.Protocol, 'https') and (FURI.Port = IntToStr(IdPORT_SSL))) then  {do not localize}
+    begin
       ARequest.Host := FURI.Host;
+    end else begin
+      ARequest.Host := FURI.Host + ':' + FURI.Port;    {do not localize}
     end;
   finally
     FreeAndNil(LURI);  // Free URI Object
@@ -1249,6 +1253,10 @@ begin
 
   if not AResponse.KeepAlive then begin
     Disconnect;
+  end;
+
+  if Assigned(IOHandler) then begin
+    IOHandler.InputBuffer.Clear;
   end;
 
   CheckForGracefulDisconnect(False);

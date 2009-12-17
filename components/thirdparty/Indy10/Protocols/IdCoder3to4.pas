@@ -274,7 +274,7 @@ begin
     Inc(LInPos, 4);
 
     // Reduce to 3 bytes
-    Result[LOutPos]     := (FDecodeTable[LInBytes[0]] shl 2) or ((FDecodeTable[LInBytes[1]] shr 4) and 3);
+    Result[LOutPos]     := ((FDecodeTable[LInBytes[0]] and 63) shl 2) or ((FDecodeTable[LInBytes[1]] shr 4) and 3);
     Result[LOutPos + 1] := ((FDecodeTable[LInBytes[1]] and 15) shl 4) or ((FDecodeTable[LInBytes[2]] shr 2) and 15);
     Result[LOutPos + 2] := ((FDecodeTable[LInBytes[2]] and 3) shl 6) or (FDecodeTable[LInBytes[3]] and 63);
     Inc(LOutPos, 3);

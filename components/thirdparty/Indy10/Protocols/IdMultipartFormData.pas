@@ -116,11 +116,12 @@ uses
 const
   sContentTypeFormData = 'multipart/form-data; boundary=';            {do not localize}
   sContentTypeOctetStream = 'application/octet-stream';               {do not localize}
-  crlf = #13#10;
-  sContentDisposition = 'Content-Disposition: form-data; name="%s"';  {do not localize}
+  CRLF = #13#10;
+  sContentDispositionPlaceHolder = 'Content-Disposition: form-data; name="%s"';  {do not localize}
   sFileNamePlaceHolder = '; filename="%s"';                           {do not localize}
   sContentTypePlaceHolder = 'Content-Type: %s';                       {do not localize}
   sCharsetPlaceHolder = '; charset="%s"';                             {do not localize}
+  sContentTransferPlaceHolder = 'Content-Transfer-Encoding: %s';      {do not localize}
 
 type
   TIdMultiPartFormDataStream = class;
@@ -185,6 +186,7 @@ type
   TIdMultiPartFormDataStream = class(TIdBaseStream)
   protected
     FInputStream: TStream;
+    FFreeInputStream: Boolean;
     FBoundary: string;
     FRequestContentType: string;
     FCurrentItem: integer;
@@ -197,7 +199,7 @@ type
     FFields: TIdFormDataFields;
 
     function GenerateUniqueBoundary: string;
-    function PrepareStreamForDispatch: string;
+    procedure CalculateSize;
 
     function IdRead(var VBuffer: TIdBytes; AOffset, ACount: Longint): Longint; override;
     function IdWrite(const ABuffer: TIdBytes; AOffset, ACount: Longint): Longint; override;
@@ -223,6 +225,7 @@ implementation
 
 uses
   SysUtils,
+  IdCoderQuotedPrintable,
   IdStream,
   IdGlobalProtocols;
 
@@ -250,21 +253,27 @@ var
   LItem: TIdFormDataField;
   LCharSet: String;
 begin
+  if not ((AFileData is TStream) or (AFileData is TStrings)) then begin
+    raise EIdInvalidObjectType.Create(RSMFDIvalidObjectType);
+  end;
+
   LItem := FFields.Add;
 
   with LItem do begin
     FFieldName := AFieldName;
-    FFileName := AFileName;
+    FFileName := ExtractFileName(AFileName);
     FFieldObject := AFileData;
     if Length(AContentType) > 0 then begin
       FContentType := RemoveHeaderEntry(AContentType, 'charset'); {do not localize}
-      {RLebeau: override the current CharSet only if the header specifies a new value}
-      LCharSet := ExtractHeaderSubItem(AContentType, 'charset'); {do not localize}
-      if LCharSet <> '' then begin
-        FCharSet := LCharSet;
-      end;
       if ACharset <> '' then begin
         FCharset := ACharset;
+      end else
+      begin
+        {RLebeau: override the current CharSet only if the header specifies a new value}
+        LCharSet := ExtractHeaderSubItem(AContentType, 'charset'); {do not localize}
+        if LCharSet <> '' then begin
+          FCharSet := LCharSet;
+        end;
       end;
     end
     else if Length(FFileName) > 0 then begin
@@ -273,8 +282,6 @@ begin
       FContentType := sContentTypeOctetStream;
     end;
   end;
-
-  FSize := FSize + LItem.FieldSize;
 end;
 
 procedure TIdMultiPartFormDataStream.AddFile(const AFieldName, AFileName,
@@ -293,7 +300,7 @@ begin
 
   with LItem do begin
     FFieldName := AFieldName;
-    FFileName := AFileName;
+    FFileName := ExtractFileName(AFileName);
     FFieldObject := LStream;
     FCanFreeFieldObject := True;
     if Length(AContentType) > 0 then begin
@@ -302,8 +309,6 @@ begin
       FContentType := GetMIMETypeFromFile(AFileName);
     end;
   end;
-
-  FSize := FSize + LItem.FieldSize;
 end;
 
 procedure TIdMultiPartFormDataStream.AddFormField(const AFieldName,
@@ -323,22 +328,22 @@ begin
 
   with LItem do begin
     FFieldName := AFieldName;
-    FieldObject := LStrings;
+    FFieldObject := LStrings;
     FCanFreeFieldObject := True;
-    if ACharset <> '' then begin
-      FContentType := 'text/plain'; {do not localize}
-      FCharset := ACharset;
-    end;
+    FContentType := 'text/plain'; {do not localize}
+    FCharset := ACharset;
   end;
-
-  FSize := FSize + LItem.FieldSize;
 end;
 
 procedure TIdMultiPartFormDataStream.Clear;
 begin
   FInitialized := False;
   FFields.Clear;
+  if FFreeInputStream then begin
+    FInputStream.Free;
+  end;
   FInputStream := nil;
+  FFreeInputStream := False;
   FCurrentItem := 0;
   FPosition := 0;
   FSize := 0;
@@ -350,9 +355,17 @@ begin
   Result := '--------' + FormatDateTime('mmddyyhhnnsszzz', Now);  {do not localize}
 end;
 
-function TIdMultiPartFormDataStream.PrepareStreamForDispatch: string;
+procedure TIdMultiPartFormDataStream.CalculateSize;
+var
+  I: Integer;
 begin
-  result := {crlf +} '--' + Boundary + '--' + crlf;
+  FSize := 0;
+  if FFields.Count > 0 then begin
+    for I := 0 to FFields.Count-1 do begin
+      FSize := FSize + FFields.Items[I].FieldSize;
+    end;
+    FSize := FSize + 2{'--'} + Length(Boundary) + 4{'--'+CRLF};
+  end;
 end;
 
 // RLebeau - IdRead() should wrap multiple files using a single
@@ -376,42 +389,44 @@ begin
   LTotalRead := 0;
   LBufferCount := 0;
 
-  while (LTotalRead < ACount) and ((FCurrentItem < FFields.Count) or (Length(FInternalBuffer) > 0)) do begin
+  while (LTotalRead < ACount) and ((Length(FInternalBuffer) > 0) or Assigned(FInputStream) or (FCurrentItem < FFields.Count)) do begin
     if (Length(FInternalBuffer) = 0) and (not Assigned(FInputStream)) then begin
       LItem := FFields.Items[FCurrentItem];
       AppendString(FInternalBuffer, LItem.FormatHeader);
 
-      if Assigned(LItem.FieldObject) then begin
-        if (LItem.FieldObject is TStream) then begin
-          FInputStream := TStream(LItem.FieldObject);
-          FInputStream.Position := 0;
-        end
-        else if (LItem.FieldObject is TStrings) then begin
-          LEncoding := CharsetToEncoding(LItem.Charset);
-          {$IFNDEF DOTNET}
+      if (LItem.FieldObject is TStream) then begin
+        FInputStream := TStream(LItem.FieldObject);
+        FFreeInputStream := False;
+        FInputStream.Position := 0;
+      end
+      else if (LItem.FieldObject is TStrings) then begin
+        LEncoding := CharsetToEncoding(LItem.Charset);
+        {$IFNDEF DOTNET}
+        try
+        {$ENDIF}
+          FInputStream := TMemoryStream.Create;
+          FFreeInputStream := True;
           try
-          {$ENDIF}
-            AppendString(FInternalBuffer, TStrings(LItem.FieldObject).Text, -1, LEncoding);
-          {$IFNDEF DOTNET}
-          finally
-            LEncoding.Free;
+            TIdEncoderQuotedPrintable.EncodeString(TStrings(LItem.FieldObject).Text, FInputStream, LEncoding);
+          except
+            FreeAndNil(FInputStream);
+            FFreeInputStream := False;
+            raise;
           end;
-          {$ENDIF}
-          Inc(FCurrentItem);
+          FInputStream.Position := 0;
+        {$IFNDEF DOTNET}
+        finally
+          LEncoding.Free;
         end;
+       {$ENDIF}
       end else
-      begin;
+      begin
         Inc(FCurrentItem);
       end;
     end;
 
     if Length(FInternalBuffer) > 0 then begin
-      if Length(FInternalBuffer) > (ACount - LBufferCount) then begin
-        LCount := ACount - LBufferCount;
-      end else begin
-        LCount := Length(FInternalBuffer);
-      end;
-
+      LCount := IndyMin(ACount - LBufferCount, Length(FInternalBuffer));
       if LCount > 0 then begin
         LRemaining := Length(FInternalBuffer) - LCount;
         CopyTIdBytes(FInternalBuffer, 0, VBuffer, LBufferCount, LCount);
@@ -425,26 +440,33 @@ begin
       end;
     end;
 
-    if Assigned(FInputStream) and (LTotalRead < ACount) then begin
+    if (LTotalRead < ACount) and (Length(FInternalBuffer) = 0) and Assigned(FInputStream) then begin
       LCount := TIdStreamHelper.ReadBytes(FInputStream, VBuffer, ACount - LTotalRead, LBufferCount);
-      if LCount < (ACount - LTotalRead) then begin
-        FInputStream.Position := 0;
-        FInputStream := nil;
-        Inc(FCurrentItem);
+      if LCount > 0 then begin
+        LBufferCount := LBufferCount + LCount;
+        LTotalRead := LTotalRead + LCount;
+        FPosition := FPosition + LCount;
+      end
+      else begin
         SetLength(FInternalBuffer, 0);
-        AppendString(FInternalBuffer, #13#10);
+        if FFreeInputStream then begin
+          FInputStream.Free;
+        end else begin
+          FInputStream.Position := 0;
+          AppendString(FInternalBuffer, CRLF);
+        end;
+        FInputStream := nil;
+        FFreeInputStream := False;
+        Inc(FCurrentItem);
       end;
-
-      LBufferCount := LBufferCount + LCount;
-      LTotalRead := LTotalRead + LCount;
-      FPosition := FPosition + LCount;
     end;
 
-    if FCurrentItem = FFields.Count then begin
-      AppendString(FInternalBuffer, PrepareStreamForDispatch);
+    if (Length(FInternalBuffer) = 0) and (not Assigned(FInputStream)) and (FCurrentItem = FFields.Count) then begin
+      AppendString(FInternalBuffer, '--' + Boundary + '--' + CRLF);     {do not localize}
       Inc(FCurrentItem);
     end;
   end;
+
   Result := LTotalRead;
 end;
 
@@ -453,20 +475,25 @@ begin
   Result := 0;
   case AOrigin of
     soBeginning: begin
-        if (AOffset = 0) then begin
-          FInitialized := False;
-          FPosition := 0;
-          Result := 0;
-        end else begin
-          Result := FPosition;
-        end;
-      end;
-    soCurrent: begin
+      if (AOffset = 0) then begin
+        FInitialized := False;
+        FPosition := 0;
+        Result := 0;
+      end else begin
         Result := FPosition;
       end;
+    end;
+    soCurrent: begin
+      Result := FPosition;
+    end;
     soEnd: begin
-        Result := FSize + Length(PrepareStreamForDispatch);
+      if (AOffset = 0) then begin
+        CalculateSize;
+        Result := FSize;
+      end else begin
+        Result := FPosition;
       end;
+    end;
   end;
 end;
 
@@ -526,7 +553,7 @@ var
   LHeaderEncoding: Char;
   LCharSet: String;
 begin
-  LBoundary := TIdFormDataFields(Collection).MultipartFormDataStream.Boundary;
+  LBoundary := '--' + TIdFormDataFields(Collection).MultipartFormDataStream.Boundary; {do not localize}
 
   LHeaderEncoding := 'B';     { base64 / quoted-printable }    {Do not Localize}
   LCharSet := IdCharsetNames[IdGetDefaultCharSet];
@@ -541,89 +568,101 @@ begin
     // nothing
   end;
 
-  Result := IndyFormat('--%s' + crlf + sContentDisposition,                     {do not localize}
-    [LBoundary, EncodeHeader(FieldName, '', LHeaderEncoding, LCharSet)]);
+  Result := IndyFormat('%s' + CRLF + sContentDispositionPlaceHolder,
+    [LBoundary, EncodeHeader(FieldName, '', LHeaderEncoding, LCharSet)]);       {do not localize}
+
   if Length(FileName) > 0 then begin
     Result := Result + IndyFormat(sFileNamePlaceHolder,
-      [EncodeHeader(FileName, '', LHeaderEncoding, LCharSet)]);                 
+      [EncodeHeader(FileName, '', LHeaderEncoding, LCharSet)]);                 {do not localize}
   end;
-  Result := Result + crlf;
+
+  Result := Result + CRLF;
 
   if Length(ContentType) > 0 then begin
     Result := Result + IndyFormat(sContentTypePlaceHolder, [ContentType]);      {do not localize}
     if Length(CharSet) > 0 then begin
       Result := Result + IndyFormat(sCharsetPlaceHolder, [Charset]);            {do not localize}
     end;
-    Result := Result + crlf;
+    Result := Result + CRLF;
   end;
 
-  Result := Result + crlf;
+  Result := Result + IndyFormat(sContentTransferPlaceHolder + CRLF,
+    [iif(FieldObject is TStream, 'binary', 'quoted-printable')]);               {do not localize}
+
+  Result := Result + CRLF;
 end;
 
 function TIdFormDataField.GetFieldSize: LongInt;
 var
   LEncoding: TIdTextEncoding;
+  LSize: TIdStreamSize;
+  LStream: TStream;
 begin
   Result := Length(FormatHeader);
-  if Assigned(FFieldObject) then begin
-    if FieldObject is TStrings then begin
-      LEncoding := CharsetToEncoding(FCharset);
-      {$IFNDEF DOTNET}
+  if not Assigned(FFieldObject) then begin
+    Exit;
+  end;
+  if FieldObject is TStrings then begin
+    LEncoding := CharsetToEncoding(FCharset);
+    {$IFNDEF DOTNET}
+    try
+    {$ENDIF}
+      LStream := TMemoryStream.Create;
       try
-      {$ENDIF}
-        Result := Result + LEncoding.GetByteCount(TStrings(FieldObject).Text) + 2;
-      {$IFNDEF DOTNET}
+        TIdEncoderQuotedPrintable.EncodeString(TStrings(FieldObject).Text, LStream, LEncoding);
+        // the text always includes a CRLF at the end...
+        Result := Result + LStream.Size {+2};
       finally
-        LEncoding.Free;
+        LStream.Free;
       end;
-      {$ENDIF}
-    end
-    else if FieldObject is TStream then begin
-      Result := Result + TStream(FieldObject).Size + 2;
+    {$IFNDEF DOTNET}
+    finally
+      LEncoding.Free;
+    end;
+    {$ENDIF}
+  end
+  else if FieldObject is TStream then begin
+    LSize := TStream(FieldObject).Size;
+    if LSize > 0 then begin
+      // need to include an explicit CRLF at the end of the data
+      Result := Result + LSize + 2;
     end;
   end;
 end;
 
 function TIdFormDataField.GetFieldStream: TStream;
 begin
-  Result := nil;
-  if Assigned(FFieldObject) then begin
-    if (FFieldObject is TStream) then begin
-      Result := TStream(FFieldObject);
-    end else begin
-      raise EIdInvalidObjectType.Create(RSMFDIvalidObjectType);
-    end;
+  if (FFieldObject is TStream) then begin
+    Result := TStream(FFieldObject);
+  end else begin
+    Result := nil;
+    raise EIdInvalidObjectType.Create(RSMFDIvalidObjectType);
   end;
 end;
 
 function TIdFormDataField.GetFieldStrings: TStrings;
 begin
-  Result := nil;
-  if Assigned(FFieldObject) then begin
-    if (FFieldObject is TStrings) then begin
-      Result := TStrings(FFieldObject);
-    end else begin
-      raise EIdInvalidObjectType.Create(RSMFDIvalidObjectType);
-    end;
+  if (FFieldObject is TStrings) then begin
+    Result := TStrings(FFieldObject);
+  end else begin
+    Result := nil;
+    raise EIdInvalidObjectType.Create(RSMFDIvalidObjectType);
   end;
 end;
 
 function TIdFormDataField.GetFieldValue: string;
 begin
-  Result := '';
-  if Assigned(FFieldObject) then begin
-    if (FFieldObject is TStrings) then begin
-      Result := TStrings(FFieldObject).Text;
-    end else begin
-      raise EIdInvalidObjectType.Create(RSMFDIvalidObjectType);
-    end;
+  if (FFieldObject is TStrings) then begin
+    Result := TStrings(FFieldObject).Text;
+  end else begin
+    Result := '';
+    raise EIdInvalidObjectType.Create(RSMFDIvalidObjectType);
   end;
 end;
 
 procedure TIdFormDataField.SetCharset(const Value: string);
 begin
   FCharset := Value;
-  GetFieldSize;
 end;
 
 procedure TIdFormDataField.SetContentType(const Value: string);
@@ -643,21 +682,17 @@ begin
   end else begin;
     FContentType := sContentTypeOctetStream;
   end;
-  GetFieldSize;
 end;
 
 procedure TIdFormDataField.SetFieldName(const Value: string);
 begin
   FFieldName := Value;
-  GetFieldSize;
 end;
 
 procedure TIdFormDataField.SetFieldObject(const Value: TObject);
 begin
-  if Assigned(Value) then begin
-    if not ((Value is TStream) or (Value is TStrings)) then begin
-      raise EIdInvalidObjectType.Create(RSMFDIvalidObjectType);
-    end;
+  if not ((Value is TStream) or (Value is TStrings)) then begin
+    raise EIdInvalidObjectType.Create(RSMFDIvalidObjectType);
   end;
 
   if Assigned(FFieldObject) and FCanFreeFieldObject then begin
@@ -666,7 +701,6 @@ begin
 
   FFieldObject := Value;
   FCanFreeFieldObject := False;
-  GetFieldSize;
 end;
 
 procedure TIdFormDataField.SetFieldStream(const Value: TStream);
@@ -694,13 +728,11 @@ begin
     FCanFreeFieldObject := True;
   end;
   TStrings(FFieldObject).Text := Value;
-  GetFieldSize;
 end;
 
 procedure TIdFormDataField.SetFileName(const Value: string);
 begin
-  FFileName := Value;
-  GetFieldSize;
+  FFileName := ExtractFileName(Value);
 end;
 
 end.

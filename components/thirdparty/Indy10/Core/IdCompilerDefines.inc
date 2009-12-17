@@ -40,11 +40,16 @@
 {$UNDEF STRING_IS_UNICODE}
 {$UNDEF STRING_IS_ANSI}
 
-// Make sure the following are $DEFINE'd only for suitable environments
+// Make sure the following is $DEFINE'd only for suitable environments
 // as specified further below.  This works in conjunction with the
 // STRING_IS_ANSI and STRING_IS_UNICODE defines above.
 {$UNDEF UNICODE_BUT_STRING_IS_ANSI}
+
+// Make sure the following are $DEFINE'd only for suitable environments
+// as specified further below.
 {$UNDEF HAS_TEncoding}
+{$UNDEF HAS_TCharacter}
+{$UNDEF HAS_TInterlocked}
 
 // Make sure that this is defined only for environments where we are using
 // the iconv library to charactor conversions.
@@ -65,7 +70,7 @@
   {$DEFINE WIDGET_VCL_LIKE_OR_KYLIX}
 {$ENDIF}
 
-// C++ Builder 4
+// C++Builder 4
 {$IFDEF VER125}
   {$DEFINE VCL_4_OR_ABOVE}
   {$DEFINE VCL_40}
@@ -80,7 +85,7 @@
   {$DEFINE WIDGET_VCL_LIKE_OR_KYLIX}
 {$ENDIF}
 
-// Delphi 5 & CBuilder 5
+// Delphi & C++Builder 5
 {$IFDEF VER130}
   {$DEFINE VCL_4_OR_ABOVE}
   {$DEFINE VCL_5_OR_ABOVE}
@@ -102,7 +107,7 @@
   {$DEFINE HAS_REMOVEFREENOTIFICATION}
 {$ENDIF}
 
-//Delphi 6
+//Delphi & C++Builder 6
 {$IFDEF VER140}
   {$DEFINE VCL_4_OR_ABOVE}
   {$DEFINE VCL_5_OR_ABOVE}
@@ -208,7 +213,8 @@
 // Highlander prior to the release of RAD Studio 2007.  Use VER185 to
 // identify Highlanger specifically.
 
-//Delphi 2006, Delphi 2007 (Highlander)
+//Delphi & C++Builder 2006
+//Delphi & C++Builder 2007 (Highlander)
 {$IFDEF VER180}
   {$DEFINE USE_INLINE}
   {$DEFINE VCL_4_OR_ABOVE}
@@ -235,15 +241,17 @@
   {$DEFINE CPUI386}
   {$DEFINE ENDIAN_LITTLE}
   {$DEFINE CPU32}
-  {$DEFINE WIDGET_VCL_LIKE} // LCL included.
-  {$DEFINE WIDGET_VCL}
-  {$DEFINE WIDGET_VCL_LIKE_OR_KYLIX}
-  {$DEFINE VCL_60_PLUS}
+  {$IFNDEF CIL}
+    {$DEFINE WIDGET_VCL_LIKE} // LCL included.
+    {$DEFINE WIDGET_VCL}
+    {$DEFINE WIDGET_VCL_LIKE_OR_KYLIX}
+    {$DEFINE VCL_60_PLUS}
+  {$ENDIF}
   {$DEFINE HAS_DEPRECATED}
   {$DEFINE HAS_REMOVEFREENOTIFICATION}
 {$ENDIF}
 
-//Delphi 2007 (Highlander)
+//Delphi & C++Builder 2007 (Highlander)
 {$IFDEF VER185}
   {$DEFINE USE_INLINE}
   {$DEFINE VCL_4_OR_ABOVE}
@@ -321,12 +329,10 @@
   {$DEFINE HAS_REMOVEFREENOTIFICATION}
 {$ENDIF}
 
-//Delphi 2009 (Tiburon)
+//Delphi & C++Builder 2009 (Tiburon)
 {$IFDEF VER200}
   {$DEFINE USE_INLINE}
   {$DEFINE STRING_IS_UNICODE} // 'String' type is Unicode now
-  {$DEFINE HAS_TEncoding}
-  {$DEFINE HAS_TCharacter}
   {$DEFINE VCL_4_OR_ABOVE}
   {$DEFINE VCL_5_OR_ABOVE}
   {$DEFINE VCL_6_OR_ABOVE}
@@ -359,6 +365,8 @@
     {$DEFINE WIDGET_VCL_LIKE_OR_KYLIX}
     {$DEFINE WIDGET_VCL}
     {$DEFINE VCL_60_PLUS}
+    {$DEFINE HAS_TEncoding}
+    {$DEFINE HAS_TCharacter}
   {$ENDIF}
   {$DEFINE HAS_CLASSPROPERTIES}
   {$DEFINE HAS_DEPRECATED}
@@ -366,12 +374,10 @@
   {$DEFINE HAS_REMOVEFREENOTIFICATION}
 {$ENDIF}
 
-//Delphi 2010 (Weaver)
+//Delphi & C++Builder 2010 (Weaver)
 {$IFDEF VER210}
   {$DEFINE USE_INLINE}
   {$DEFINE STRING_IS_UNICODE} // 'String' type is Unicode now
-  {$DEFINE HAS_TEncoding}
-  {$DEFINE HAS_TCharacter}
   {$DEFINE VCL_4_OR_ABOVE}
   {$DEFINE VCL_5_OR_ABOVE}
   {$DEFINE VCL_6_OR_ABOVE}
@@ -384,7 +390,7 @@
   {$DEFINE VCL_2010_OR_ABOVE}
   {$DEFINE VCL_2010}
   {$IFDEF CBUILDER}
-    {$DEFINE DELPHI_2010}
+    {$DEFINE CBUILDER_2010}
   {$ELSE}
     {$DEFINE DELPHI_2010}
   {$ENDIF}
@@ -405,6 +411,56 @@
     {$DEFINE WIDGET_VCL_LIKE_OR_KYLIX}
     {$DEFINE WIDGET_VCL}
     {$DEFINE VCL_60_PLUS}
+    {$DEFINE HAS_TEncoding}
+    {$DEFINE HAS_TCharacter}
+  {$ENDIF}
+  {$DEFINE HAS_CLASSPROPERTIES}
+  {$DEFINE HAS_DEPRECATED}
+  {$DEFINE HAS_DEPRECATED_MSG}
+  {$DEFINE HAS_REMOVEFREENOTIFICATION}
+{$ENDIF}
+
+//Delphi & C++Builder 2011 (Fulcrum)
+{$IFDEF VER220}
+  {$DEFINE USE_INLINE}
+  {$DEFINE STRING_IS_UNICODE} // 'String' type is Unicode now
+  {$DEFINE VCL_4_OR_ABOVE}
+  {$DEFINE VCL_5_OR_ABOVE}
+  {$DEFINE VCL_6_OR_ABOVE}
+  {$DEFINE VCL_7_OR_ABOVE}
+  {$DEFINE VCL_8_OR_ABOVE}
+  {$DEFINE VCL_2005_OR_ABOVE}
+  {$DEFINE VCL_2006_OR_ABOVE}
+  {$DEFINE VCL_2007_OR_ABOVE}
+  {$DEFINE VCL_2009_OR_ABOVE}
+  {$DEFINE VCL_2010_OR_ABOVE}
+  {$DEFINE VCL_2011_OR_ABOVE}
+  {$DEFINE VCL_2011}
+  {$IFDEF CBUILDER}
+    {$DEFINE CBUILDER_2011}
+  {$ELSE}
+    {$DEFINE DELPHI_2011}
+  {$ENDIF}
+  {$DEFINE HAS_OPTIONAL_PARAMS}
+  {$DEFINE HAS_SAMETEXT}
+  {$DEFINE HAS_NAMED_THREADS}
+  {$DEFINE HAS_TThread_NameThreadForDebugging}
+  {$IFNDEF FREE_ON_FINAL}
+    {$DEFINE REGISTER_EXPECTED_MEMORY_LEAK}
+  {$ENDIF}
+  {$DEFINE HAS_TFormatSettings}
+  {$DEFINE HAS_TSelectionEditor}
+  {$DEFINE CPUI386}
+  {$DEFINE ENDIAN_LITTLE}
+  {$DEFINE CPU32}
+  {$IFNDEF CIL}
+    {$DEFINE WIDGET_VCL_LIKE} // LCL included.
+    {$DEFINE WIDGET_VCL_LIKE_OR_KYLIX}
+    {$DEFINE WIDGET_VCL}
+    {$DEFINE VCL_60_PLUS}
+    {$DEFINE HAS_TEncoding}
+    {$DEFINE HAS_TCharacter}
+    {$DEFINE HAS_TInterlocked}
   {$ENDIF}
   {$DEFINE HAS_CLASSPROPERTIES}
   {$DEFINE HAS_DEPRECATED}
@@ -450,9 +506,7 @@
   //what we do and what platforms we support in FPC.
   //I'll let Marco think about that one.
   {$IFDEF UNIX}
-    {$DEFINE USE_BASEUNIX}
-    {$DEFINE USE_OPENSSL}
-    {$DEFINE USE_ZLIB_UNIT}
+         {$DEFINE USE_BASEUNIX}
     {$IFDEF LINUX}
       //In Linux for I386, you can choose between a Kylix-libc API or
       //the standard RTL Unix API.  Just pass -dKYLIXCOMPAT to the FPC compiler.
@@ -496,6 +550,13 @@
 //IF's are evaluated before IFDEF's
 //and Kylix 1 does not have CompilerVersion defined at all.
 {$IFNDEF FPC}
+   {$IFDEF POSIX}
+     {$IF RTLVersion >= 22.0}
+       {$DEFINE UNIX}
+       {$DEFINE VCL_CROSS_COMPILE}
+       {$DEFINE KYLIXCOMPAT}
+     {$IFEND}
+  {$ENDIF}
   {$IFDEF LINUX}
     {$IFDEF CONDITIONALEXPRESSIONS}
       {$IF RTLVersion = 14.0}
@@ -514,6 +575,9 @@
         {$DEFINE KYLIX_1_OR_ABOVE}
         {$DEFINE KYLIX_2_OR_ABOVE}
         {$DEFINE KYLIX_3_OR_ABOVE}
+      {$IFEND}
+      {$IF RTLVersion >= 22.0}
+        {$DEFINE VCL_CROSS_COMPILE}
       {$IFEND}
     {$ENDIF}
     {$DEFINE VCL_4_OR_ABOVE}
@@ -535,8 +599,10 @@
   {$ENDIF}
 {$ENDIF}
 
-{$IFDEF KYLIXCOMPAT}
+{$IFNDEF VCL_CROSS_COMPILE}
+  {$IFDEF KYLIXCOMPAT}
   {$linklib c}
+  {$ENDIF}
 {$ENDIF}
 
 // .NET and Delphi 2009+ support UNICODE strings natively!
@@ -562,6 +628,18 @@
   {$DEFINE WIN32_OR_WIN64_OR_WINCE}
 {$ENDIF}
 
+// High-performance counters are not reliable on multi-core systems, and have
+// been known to cause problems with TIdIOHandler.ReadLn() timeouts in Windows
+// XP SP3, both 32-bit and 64-bit.  Refer to these discussions for more info:
+//
+// http://www.virtualdub.org/blog/pivot/entry.php?id=106
+// http://blogs.msdn.com/oldnewthing/archive/2008/09/08/8931563.aspx
+//
+// Do not enable thus unless you know it will work correctly on your systems!
+{$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {.$DEFINE USE_HI_PERF_COUNTER_FOR_TICKS}
+{$ENDIF}
+
 {
 BSD 4.4 introduced a minor API change.  sa_family was changed from a 16bit
 word to an 8 bit byte and an 8 bit byte field named sa_len was added.
@@ -570,11 +648,76 @@ word to an 8 bit byte and an 8 bit byte field named sa_len was added.
    {$DEFINE SOCK_HAS_SINLEN}
 {$ENDIF}
 {$IFDEF DARWIN}
-   {$DEFINE SOCK_HAS_SINLEN}
+  {$IFNDEF KYLIXCOMPAT}
+    {$DEFINE SOCK_HAS_SINLEN}
+  {$ENDIF}
 {$ENDIF}
 
+{$IFDEF UNIX}
+    {$DEFINE USE_OPENSSL}
+    {$DEFINE USE_ZLIB_UNIT}
+{$ENDIF}
+    
 {$IFDEF FPC_REQUIRES_PROPER_ALIGNMENT}
   {$DEFINE REQUIRES_PROPER_ALIGNMENT}
+{$ENDIF}
+
+//
+//iconv defines section.
+{$DEFINE USE_ICONV_UNIT}
+{$DEFINE USE_ICONV_ENC}
+{$IFDEF UNIX}
+  {$DEFINE USE_ICONV}
+  {$IFDEF USE_BASEUNIX}
+    {$IFDEF FPC}
+      {$UNDEF USE_ICONV_UNIT}
+    {$ELSE}
+      {$UNDEF USE_ICONV_ENC}
+    {$ENDIF}
+  {$ENDIF}
+  {$IFDEF KYLIXCOMPAT}
+    //important!!  Iconv functions are defined in the libc.pas Kylix compatible unit.
+    {$UNDEF USE_ICONV_ENC}
+    {$UNDEF USE_ICONV_UNIT}
+  {$ENDIF}
+{$ENDIF}
+{$IFDEF NETWARELIBC}
+  {$DEFINE USE_ICONV}
+  //important!!! iconv functions are defined in the libc.pas Novell Netware header.
+  //Do not define USE_ICONVUNIT
+  {$UNDEF USE_ICONV_UNIT}
+  {$UNDEF USE_ICONV_ENC}
+{$ENDIF}
+{$IFNDEF USE_ICONV}
+  {$UNDEF USE_ICONV_UNIT}
+  {$UNDEF USE_ICONV_ENC}
+{$ENDIF}
+{$UNDEF USE_SAFELOADLIBRARY}
+{$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$UNDEF USE_ICONV_ENC}
+  {$DEFINE USE_SAFELOADLIBRARY}
+{$ENDIF}
+
+{$UNDEF USE_INVALIDATE_MOD_CACHE}
+{$UNDEF USE_SAFELOADLIBRARY}
+//This must come after the iconv defines because this compiler targets a Unix-like
+//operating system.  One key difference is that it does have a TEncoding class.
+//If this comes before the ICONV defines, it creates problems.
+//This also must go before the THandle size calculations.
+{$IFDEF VCL_CROSS_COMPILE}
+  {$IFDEF MACOSX}
+    {$DEFINE BSD}
+    {$DEFINE DARWIN}
+    {$DEFINE USE_SAFELOADLIBRARY}
+    {$DEFINE USE_INVALIDATE_MOD_CACHE}
+  {$ENDIF}
+  {$UNDEF USE_ICONV}
+  //important!!! iconv functions are defined in the libc.pas Novell Netware header.
+  //Do not define USE_ICONVUNIT
+  {$UNDEF USE_ICONV_UNIT}
+  {$UNDEF USE_ICONV_ENC}  
+  {$DEFINE INT_THREAD_PRIORITY}
+  {$DEFINE HAS_TInterlocked}
 {$ENDIF}
 
 // Do NOT remove these IFDEF's.  They are here because InterlockedExchange
@@ -612,6 +755,7 @@ word to an 8 bit byte and an 8 bit byte field named sa_len was added.
 {$IFDEF MACOS}
    {$DEFINE THANDLE_CPUBITS}
 {$ENDIF}
+
 {$IFDEF MORPHOS}
   {$DEFINE THANDLE_CPUBITS}
 {$ENDIF}
@@ -640,6 +784,7 @@ word to an 8 bit byte and an 8 bit byte field named sa_len was added.
   {$DEFINE THANDLE_CPUBITS}
 {$ENDIF}
 
+
 // end platform specific stuff for THandle size
 
 {$IFDEF THANDLE_CPUBITS}
@@ -648,39 +793,6 @@ word to an 8 bit byte and an 8 bit byte field named sa_len was added.
   {$ELSE}
     {$DEFINE THANDLE_32}
   {$ENDIF}
-{$ENDIF}
-//
-//iconv defines section.
-{$DEFINE USE_ICONV_UNIT}
-{$DEFINE USE_ICONV_ENC}
-{$IFDEF UNIX}
-  {$DEFINE USE_ICONV}
-  {$IFDEF USE_BASEUNIX}
-    {$IFDEF FPC}
-      {$UNDEF USE_ICONV_UNIT}
-    {$ELSE}
-      {$UNDEF USE_ICONV_ENC}
-    {$ENDIF}
-  {$ENDIF}
-  {$IFDEF KYLIXCOMPAT}
-    //important!!  Iconv functions are defined in the libc.pas Kylix compatible unit.
-    {$UNDEF USE_ICONV_ENC}
-    {$UNDEF USE_ICONV_UNIT}
-  {$ENDIF}
-{$ENDIF}
-{$IFDEF NETWARELIBC}
-  {$DEFINE USE_ICONV}
-  //important!!! iconv functions are defined in the libc.pas Novell Netware header.
-  //Do not define USE_ICONVUNIT
-  {$UNDEF USE_ICONV_UNIT}
-  {$UNDEF USE_ICONV_ENC}
-{$ENDIF}
-{$IFNDEF USE_ICONV}
-  {$UNDEF USE_ICONV_UNIT}
-  {$UNDEF USE_ICONV_ENC}
-{$ENDIF}
-{$IFDEF WIN32_OR_WIN64_OR_WINCE}
-  {$UNDEF USE_ICONV_ENC}
 {$ENDIF}
 
 {$IFDEF DOTNET}
@@ -710,7 +822,11 @@ word to an 8 bit byte and an 8 bit byte field named sa_len was added.
   {$IFDEF DOTNET}
     {$UNDEF REGISTER_EXPECTED_MEMORY_LEAK}
   {$ENDIF}
+  {$IFDEF VCL_CROSS_COMPILE}
+    {$UNDEF REGISTER_EXPECTED_MEMORY_LEAK}  
+  {$ENDIF}
 {$ENDIF}
+
 
 {$IFDEF DEBUG}
   {$UNDEF USE_INLINE}

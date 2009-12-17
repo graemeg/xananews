@@ -137,7 +137,7 @@ begin
     // Necessary here - cancels the recvfrom in the listener thread
     FListenerThread.Stop;
     for i := 0 to Bindings.Count - 1 do begin
-      GStack.DropMulticastMembership(Bindings[i].Handle, FMulticastGroup, Bindings[i].IP, Bindings[i].IPVersion);
+      Bindings[i].DropMulticastMembership(FMulticastGroup);
       Bindings[i].CloseSocket;
     end;
     FListenerThread.WaitFor;
@@ -181,7 +181,7 @@ begin
       Bindings[i].AllocateSocket(Id_SOCK_DGRAM);
 {$ENDIF}
       Bindings[i].Bind;
-      GStack.AddMulticastMembership(Bindings[i].Handle, FMulticastGroup, Bindings[i].IP, Bindings[i].IPVersion);
+      Bindings[i].AddMulticastMembership(FMulticastGroup);
     end;
     FCurrentBinding := Bindings[0];
     FListenerThread := TIdIPMCastListenerThread.Create(Self);
@@ -268,8 +268,8 @@ begin
       if not Stopped then
       begin
         IncomingData := FServer.Bindings.BindingByHandle(TIdStackSocketHandle(LReadList[i]));
-        ByteCount := IncomingData.RecvFrom(LBuffer,PeerIP, PeerPort, IncomingData.IPVersion);
-        if ByteCount = 0 then
+        ByteCount := IncomingData.RecvFrom(LBuffer, PeerIP, PeerPort, IncomingData.IPVersion);
+        if ByteCount <= 0 then
         begin
           raise EIdUDPReceiveErrorZeroBytes.Create(RSIPMCastReceiveError0);
         end;

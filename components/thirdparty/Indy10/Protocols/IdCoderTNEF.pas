@@ -189,7 +189,7 @@ type
 implementation
 
 uses
-  DateUtils, IdMessageClient, IdText, IdStream;
+  DateUtils, IdMessageClient, IdText, IdStream, SysUtils;
 
 const
   //Initial RTF-compression decode string...

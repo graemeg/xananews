@@ -76,6 +76,7 @@ type
     function DoNext: TIdAuthWhatsNext; override;
     function GetSteps: Integer; override;
   public
+    constructor Create; override;
     destructor Destroy; override;
     function Authentication: String; override;
     property Method: String read FMethod write FMethod;
@@ -86,9 +87,15 @@ type
 implementation
 
 uses
-  IdHash, IdResourceStrings, IdResourceStringsProtocols, SysUtils;
+  IdGlobalProtocols, IdHash, IdResourceStrings, IdResourceStringsProtocols, SysUtils;
 
 { TIdDigestAuthentication }
+
+constructor TIdDigestAuthentication.Create;
+begin
+  inherited Create;
+  CheckMD5Permitted;
+end;
 
 destructor TIdDigestAuthentication.Destroy;
 begin

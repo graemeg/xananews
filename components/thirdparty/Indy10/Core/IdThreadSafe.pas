@@ -58,7 +58,6 @@ interface
 {$I IdCompilerDefines.inc}
 //we need to put this in Delphi mode to work
 uses
-  Windows,
   Classes,
   IdGlobal;
 
@@ -209,7 +208,7 @@ type
 
 implementation
 uses
-  {$IFDEF VCL2010ORABOVE}
+  {$IFDEF VCL_2010_OR_ABOVE}
     {$IFDEF WIN32_OR_WIN64_OR_WINCE}
   Windows,
     {$ENDIF}

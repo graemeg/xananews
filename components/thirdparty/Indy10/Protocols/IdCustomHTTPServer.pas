@@ -474,10 +474,18 @@ type
 implementation
 
 uses
+  {$IFDEF KYLIXCOMPAT}
+  Libc,
+  {$ENDIF}
   {$IFDEF DOTNET}
     {$IFDEF USE_INLINE}
   System.IO,
   System.Threading,
+    {$ENDIF}
+  {$ENDIF}
+  {$IFDEF VCL_2010_OR_ABOVE}
+    {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  Windows,
     {$ENDIF}
   {$ENDIF}
   IdCoderMIME, IdResourceStringsProtocols, IdURI, IdIOHandlerSocket, IdSSL;
@@ -740,20 +748,29 @@ var
       Exit;
     end;
 
-    // if the client has already sent some or all of the request
-    // body then don't bother checking for a v1.1 'Expect' header
-    if not AContext.Connection.IOHandler.InputBufferIsEmpty then begin
-      Exit;
-    end;
-    
-    // the request body has not been read yet, get the HTTP version
-    // and check for a v1.1 'Expect' header...
+    // get the HTTP version and check for v1.1 'Host' and 'Expect' headers...
     S := LRequestInfo.Version;
     Fetch(S, '/');  {Do not localize}
     LMajor := IndyStrToInt(Fetch(S, '.'), -1);  {Do not Localize}
     LMinor := IndyStrToInt(S, -1);
 
     if (LMajor < 1) or ((LMajor = 1) and (LMinor < 1)) then begin
+      Exit;
+    end;
+
+    // MUST report a 400 (Bad Request) error if an HTTP/1.1
+    // request does not include a 'Host' header
+    S := LRequestInfo.RawHeaders.Values['Host'];
+    if Length(S) = 0 then begin
+      LResponseInfo.ResponseNo := 400;
+      LResponseInfo.CloseConnection := True;
+      LResponseInfo.WriteHeader;
+      Exit;
+    end;
+    
+    // if the client has already sent some or all of the request
+    // body then don't bother checking for a v1.1 'Expect' header
+    if not AContext.Connection.IOHandler.InputBufferIsEmpty then begin
       Exit;
     end;
 
@@ -766,8 +783,6 @@ var
     Result := DoHeaderExpectations(AContext, S);
     if not Result then begin
       LResponseInfo.ResponseNo := 417;
-      LResponseInfo.ResponseText := '';
-      LResponseInfo.ContentText := '';
       LResponseInfo.CloseConnection := True;
       LResponseInfo.WriteHeader;
       Exit;
@@ -901,6 +916,7 @@ begin
 
                 if TextIsSame(LContentType, ContentTypeFormUrlencoded) then
                 begin
+                  // TODO: need to decode percent-encoded octets before the CharSet can then be applied...
                   LRequestInfo.FormParams := ReadStringAsCharSet(LRequestInfo.PostStream, LRequestInfo.CharSet);
                   FreeAndNil(LRequestInfo.FPostStream); // don't need the PostStream anymore
                 end;
@@ -993,7 +1009,7 @@ begin
       until LCloseConnection;
     except
       on E: EIdSocketError do begin
-        if E.LastError <> Id_WSAECONNRESET then begin
+        if not ((E.LastError = Id_WSAESHUTDOWN) or (E.LastError = Id_WSAECONNABORTED) or (E.LastError = Id_WSAECONNRESET)) then begin
           raise;
         end;
       end;
@@ -1205,6 +1221,7 @@ var
 begin
   // Convert special characters
   // ampersand '&' separates values    {Do not Localize}
+  // TODO: need to decode UTF-8 octets...
   Params.BeginUpdate;
   try
     Params.Clear;
@@ -1363,7 +1380,7 @@ begin
     410: ResponseText := RSHTTPGone;
     411: ResponseText := RSHTTPLengthRequired;
     412: ResponseText := RSHTTPPreconditionFailed;
-    413: ResponseText := RSHTTPRequestEntityToLong;
+    413: ResponseText := RSHTTPRequestEntityTooLong;
     414: ResponseText := RSHTTPRequestURITooLong;
     415: ResponseText := RSHTTPUnsupportedMediaType;
     417: ResponseText := RSHTTPExpectationFailed;

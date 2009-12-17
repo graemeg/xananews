@@ -47,7 +47,6 @@ uses
   IdCoder,
   Windows,
   SysUtils,
-  IdSys,
   IdSSPI;
 
 const

@@ -90,8 +90,7 @@ uses
   IdSocketHandle,
   {$IFDEF WIDGET_WINFORMS}
   IdDsnPropEdBindingNET;
-  {$ENDIF}
-  {$IFDEF WIDGET_VCL_LIKE_OR_KYLIX}
+  {$ELSE}
   IdDsnPropEdBindingVCL;
   {$ENDIF}
 
@@ -118,8 +117,7 @@ manner than what I described.
 type
   {$IFDEF WIDGET_WINFORMS}
    TIdPropEdBindingEntry = TIdDsnPropEdBindingNET;
-  {$ENDIF}
-  {$IFDEF WIDGET_VCL_LIKE_OR_KYLIX}
+  {$ELSE}
   TIdPropEdBindingEntry = TIdDsnPropEdBindingVCL;
   {$ENDIF}
 
@@ -128,26 +126,22 @@ function GetListValues(const ASocketHandles : TIdSocketHandles) : String;
 
 implementation
 
-{$IFDEF WIDGET_WINFORMS}
 procedure FillHandleList(const AList: string; ADest: TIdSocketHandles);
 begin
+  {$IFDEF WIDGET_WINFORMS}
   IdDsnPropEdBindingNET.FillHandleList(AList,ADest);
+  {$ELSE}
+  IdDsnPropEdBindingVCL.FillHandleList(AList,ADest);
+  {$ENDIF}
 end;
 
 function GetListValues(const ASocketHandles : TIdSocketHandles) : String;
 begin
+  {$IFDEF WIDGET_WINFORMS}
   Result := IdDsnPropEdBindingNET.GetListValues(ASocketHandles);
-end;
-{$ENDIF}
-{$IFDEF WIDGET_VCL_LIKE_OR_KYLIX}
-procedure FillHandleList(const AList: string; ADest: TIdSocketHandles);
-begin
-   IdDsnPropEdBindingVCL.FillHandleList(AList,ADest);
+  {$ELSE}
+  Result := IdDsnPropEdBindingVCL.GetListValues(ASocketHandles);
+  {$ENDIF}
 end;
 
-function GetListValues(const ASocketHandles : TIdSocketHandles) : String;
-begin
-   Result := IdDsnPropEdBindingVCL.GetListValues( ASocketHandles);
-end;
-{$ENDIF}
 end.

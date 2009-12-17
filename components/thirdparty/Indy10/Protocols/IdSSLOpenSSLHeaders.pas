@@ -43,6 +43,7 @@
   Rev 1.0    11/13/2002 08:01:32 AM  JPMugaas
 }
 unit IdSSLOpenSSLHeaders;
+
 {
   Author: Gregor Ibic (gregor.ibic@intelicom.si)
   Copyright: (c) Gregor Ibic, Intelicom d.o.o and Indy Working Group.
@@ -189,14 +190,19 @@ CFLAG= /MD /Ox /W3 /Gs0 /GF /Gy /nologo
 interface
 
 {$i IdCompilerDefines.inc}
-
+{$IFNDEF USE_OPENSSL}
+      {$message error Should not compile if USE_OPENSSL is not defined!!!}
+{$ENDIF}
 {$WRITEABLECONST OFF}
 
 {$IFNDEF FPC}
   {$IFDEF WIN32}
     {$ALIGN OFF}
   {$ELSE}
-    {$message error alignment!}
+    {$IFNDEF DELPHI_CROSS}
+      {$message error alignment!}
+    {$ENDIF}
+
   {$ENDIF}
 {$ELSE}
   {$packrecords C}
@@ -618,6 +624,9 @@ my $default_depflags = " -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_CAPIENG -DOPENSSL_NO
 // ##### Compaq Non-Stop Kernel (Tandem)
 // "tandem-c89","c89:-Ww -D__TANDEM -D_XOPEN_SOURCE -D_XOPEN_SOURCE_EXTENDED=1 -D_TANDEM_SOURCE -DB_ENDIAN::(unknown):::THIRTY_TWO_BIT:::",
 
+{enable if you want FIPS support and are using an openssl library with FIPS support compiled in.}
+{$DEFINE OPENSSL_FIPS}
+
 {$IFDEF WIN32}
   {$DEFINE OPENSSL_SYSNAME_WIN32}
   {$DEFINE OPENSSL_SYS_WIN32}
@@ -860,6 +869,7 @@ const
   OPENSSL_ASN1_F_ASN1_VERIFY = 121;
   OPENSSL_ASN1_F_B64_READ_ASN1 = 208;
   OPENSSL_ASN1_F_B64_WRITE_ASN1 = 209;
+  OPENSSL_ASN1_F_BIO_NEW_NDEF = 212;
   OPENSSL_ASN1_F_BITSTR_CB = 180;
   OPENSSL_ASN1_F_SMIME_READ_ASN1 = 210;
   OPENSSL_ASN1_F_SMIME_TEXT = 211;
@@ -2703,11 +2713,11 @@ const
   OPENSSL_OBJ_NAME_TYPE_UNDEF = $00;
   OPENSSL_OBJ_R_MALLOC_FAILURE = 100;
   OPENSSL_OBJ_R_UNKNOWN_NID = 101;
-  OPENSSL_OPENSSL_VERSION_NUMBER	= $009080bf;
+  OPENSSL_OPENSSL_VERSION_NUMBER	= $009080cf;
 {$IFDEF OPENSSL_FIPS}
-  OPENSSL_OPENSSL_VERSION_TEXT = 'OpenSSL 0.9.8k-fips 25 Mar 2009'; {Do not localize}
+  OPENSSL_OPENSSL_VERSION_TEXT = 'OpenSSL 0.9.8l-fips 5 Nov 2009'; {Do not localize}
 {$ELSE}
-  OPENSSL_OPENSSL_VERSION_TEXT = 'OpenSSL 0.9.8k 25 Mar 2009'; {Do not localize}
+  OPENSSL_OPENSSL_VERSION_TEXT = 'OpenSSL 0.9.8l 5 Nov 2009'; {Do not localize}
 {$ENDIF}
   OPENSSL_OPENSSL_VERSION_PTEXT = ' part of '+ OPENSSL_OPENSSL_VERSION_TEXT;  {Do not localize}
   OPENSSL_PEM_BUFSIZE = 1024;
@@ -3999,6 +4009,7 @@ const
   OPENSSL_SSL_R_NO_PRIVATE_KEY_ASSIGNED = 190;
   OPENSSL_SSL_R_NO_PROTOCOLS_AVAILABLE = 191;
   OPENSSL_SSL_R_NO_PUBLICKEY = 192;
+  OPENSSL_SSL_R_NO_RENEGOTIATION = 318;
   OPENSSL_SSL_R_NO_SHARED_CIPHER = 193;
   OPENSSL_SSL_R_NO_VERIFY_CALLBACK = 194;
   OPENSSL_SSL_R_NULL_SSL_CTX = 195;
@@ -4264,6 +4275,7 @@ const
   OPENSSL_TLS1_CK_ECDH_anon_WITH_AES_256_CBC_SHA          = $0300C019;
   OPENSSL_TLS1_FINISH_MAC_LENGTH = 12;
   OPENSSL_TLS1_FLAGS_TLS_PADDING_BUG = $0008;
+  OPENSSL_SSL3_FLAGS_ALLOW_UNSAFE_LEGACY_RENEGOTIATION = $0010;
   OPENSSL_TLS1_TXT_RSA_EXPORT1024_WITH_RC4_56_MD5 = 'EXP1024-RC4-MD5';
   OPENSSL_TLS1_TXT_RSA_EXPORT1024_WITH_RC2_CBC_56_MD5 = 'EXP1024-RC2-CBC-MD5';
   OPENSSL_TLS1_TXT_RSA_EXPORT1024_WITH_DES_CBC_SHA = 'EXP1024-DES-CBC-SHA';
@@ -8437,7 +8449,7 @@ var
       md: PByte; var len: TIdC_UINT): TIdC_INT cdecl = nil;
   {$IFNDEF OPENSSL_NO_SHA512}
   IdSslEvpSHA512 : function : PEVP_MD cdecl = nil;
-  IdSslEvpSHA386 : function : PEVP_MD cdecl = nil;
+  IdSslEvpSHA384 : function : PEVP_MD cdecl = nil;
   {$ENDIF}
   {$IFNDEF OPENSSL_NO_SHA256}
   IdSslEvpSHA256 : function : PEVP_MD cdecl = nil;
@@ -8448,6 +8460,12 @@ var
   {$ENDIF}
   {$IFNDEF OPENSSL_NO_MD5}
   IdSslEvpMd5 : function: PEVP_MD cdecl = nil;
+  {$ENDIF}
+  {$IFNDEF OPENSSL_NO_MD4}
+  IdSslEvpMd4 : function: PEVP_MD cdecl = nil;
+  {$ENDIF}
+  {$IFNDEF OPENSSL_NO_MD2}
+  IdSslEvpMd2 : function: PEVP_MD cdecl = nil;
   {$ENDIF}
   IdSslEvpPKEYType : function(_type : TIdC_INT): TIdC_INT cdecl = nil;
   IdSslX509StoreCtxGetExData : function(ctx: PX509_STORE_CTX; idx: TIdC_INT): Pointer cdecl = nil;
@@ -8498,6 +8516,29 @@ var
   IdSslCryptoCleanupAllExData : procedure cdecl = nil;
   IdSslCompGetCompressionMethods : function: PSTACK_OF_SSL_COMP cdecl = nil;
   IdSslSkPopFree : procedure(st: PSTACK; func: Tsk_pop_free_func) cdecl = nil;
+{$IFDEF OPENSSL_FIPS}
+{Note that I'm doing things this way so that we can have wrapper functions that hide
+any IFDEF's and cases where the FIPS functions aren't in the .DLL}
+  _IdSslFIPSModeSet : function(onoff : TIdC_INT) : TIdC_INT cdecl = nil;
+  _IdSslFIPSMode : function () : TIdC_INT cdecl = nil;
+{$ENDIF}
+
+{$IFNDEF OPENSSL_NO_HMAC}
+//void HMAC_Init_ex(HMAC_CTX *ctx, const void *key, int len,
+//		  const EVP_MD *md, ENGINE *impl);
+  IdSslHMACInitEx : procedure(ctx : PHMAC_CTX; key : Pointer; len : TIdC_INT;
+    md : PEVP_MD; impl : PENGINE) cdecl = nil;
+//void HMAC_Update(HMAC_CTX *ctx, const unsigned char *data, size_t len);
+  IdSslHMACUpdate : procedure(ctx : PHMAC_CTX; data : PAnsiChar; len : size_t) cdecl = nil;
+//void HMAC_Final(HMAC_CTX *ctx, unsigned char *md, unsigned int *len);
+  IdSslHMACFinal : procedure(ctx : PHMAC_CTX; md : PAnsiChar; len : PIdC_UINT) cdecl = nil;
+//void HMAC_CTX_cleanup(HMAC_CTX *ctx);
+  IdSslHMACCTXCleanup : procedure (ctx : PHMAC_CTX) cdecl = nil;
+{$ENDIF}
+
+function IdSslFIPSModeSet(onoff : TIdC_INT) : TIdC_INT;  {$IFDEF INLINE}inline;{$ENDIF}
+function IdSslFIPSMode() : TIdC_INT;  {$IFDEF INLINE}inline;{$ENDIF}
+
 
 function IdSslUCTTimeDecode(UCTtime : PASN1_UTCTIME; var year, month, day, hour, min, sec: Word;
   var tz_hour, tz_min: Integer): Integer;
@@ -8585,6 +8626,8 @@ function IdSslMASN1StringLength(x : PASN1_STRING): TIdC_INT;
 procedure IdSslMASN1StringLengthSet(x : PASN1_STRING; n : TIdC_INT);
 function IdSslMASN1StringType(x : PASN1_STRING) : TIdC_INT;
 function IdSslMASN1StringData(x : PASN1_STRING) : PAnsiChar;
+
+
 //
 function ErrMsg(AErr : TIdC_ULONG) : AnsiString;
 function GetCryptLibHandle : Integer;
@@ -8621,6 +8664,7 @@ implementation
 uses
   Classes,
   IdGlobal,  //needed for Sys symbol
+  IdGlobalProtocols,
   IdResourceStringsProtocols,
   IdStack
   {$IFDEF FPC}
@@ -8630,12 +8674,47 @@ uses
   , Windows
   {$ENDIF};
 
+function OpenSSLGetFIPSMode : Boolean;
+begin
+  Result := IdSslFIPSMode <> 0;
+end;
+
+procedure OpenSSLSetFIPSMode(const AMode : Boolean);
+begin
+  //leave this empty as we may not be using something that supports FIPS
+  if AMode then begin
+    IdSslFIPSModeSet(1);
+  end else begin
+    IdSslFIPSModeSet(0);
+  end;
+end;
+
+function IdSslFIPSModeSet(onoff : TIdC_INT) : TIdC_INT;  {$IFDEF INLINE}inline;{$ENDIF}
+begin
+  Result := 0;
+  {$IFDEF OPENSSL_FIPS}
+  if Assigned(_IdSslFIPSModeSet) then begin
+    Result := _IdSslFIPSModeSet(onoff);
+  end;
+  {$ENDIF}
+end;
+
+function IdSslFIPSMode() : TIdC_INT;  {$IFDEF INLINE}inline;{$ENDIF}
+begin
+  Result := 0;
+    {$IFDEF OPENSSL_FIPS}
+  if Assigned(_IdSslFIPSMode) then begin
+    Result := _IdSslFIPSMode;
+  end;
+  {$ENDIF}
+end;
+
 function GetErrorMessage(const AErr : TIdC_ULONG) : AnsiString;
 {$IFDEF USE_INLINE} inline; {$ENDIF}
 var
   LErrMsg: array [0..160] of AnsiChar;
 begin
-  IdSSLERR_error_string(AErr, @LErrMsg);
+  IdSSLERR_error_string(AErr, PAnsiChar(@LErrMsg));
   result := StrPas(PAnsiChar(@LErrMsg));
 end;
 
@@ -8867,7 +8946,7 @@ them in case we use them later.}
   {CH fn_CRYPTO_get_locked_mem_functions = 'CRYPTO_get_locked_mem_functions'; }  {Do not localize}
   {CH fn_CRYPTO_malloc_locked = 'CRYPTO_malloc_locked'; }  {Do not localize}
   {CH fn_CRYPTO_free_locked = 'CRYPTO_free_locked'; }  {Do not localize}
-      fn_CRYPTO_malloc = 'CRYPTO_malloc';  {Do not localize}
+  fn_CRYPTO_malloc = 'CRYPTO_malloc';  {Do not localize}
   fn_CRYPTO_free = 'CRYPTO_free';  {Do not localize}
   {CH fn_CRYPTO_realloc = 'CRYPTO_realloc'; }  {Do not localize}
   {CH fn_CRYPTO_remalloc = 'CRYPTO_remalloc'; }  {Do not localize}
@@ -9061,12 +9140,12 @@ them in case we use them later.}
   {CH fn_RIPEMD160_Transform = 'RIPEMD160_Transform'; }  {Do not localize}
   {$ENDIF}
   {$IFNDEF OPENSSL_NO_HMAC}
-  {CH fn_HMAC_CTX_init = 'HMAC_CTX_init'; } {Do not localize}
-  {CH fn_HMAC_CTX_cleanup = 'HMAC_CTX_cleanup'; } {Do not localize}
+  fn_HMAC_CTX_init = 'HMAC_CTX_init';  {Do not localize}
+  fn_HMAC_CTX_cleanup = 'HMAC_CTX_cleanup';  {Do not localize}
   {CH fn_HMAC_Init = 'HMAC_Init'; } {Do not localize}
-  {CH fn_HMAC_Init_ex = 'HMAC_Init_ex'; } {Do not localize}
-  {CH fn_HMAC_Update = 'HMAC_Update'; } {Do not localize}
-  {CH fn_HMAC_Final = 'HMAC_Final'; } {Do not localize}
+  fn_HMAC_Init_ex = 'HMAC_Init_ex';  {Do not localize}
+  fn_HMAC_Update = 'HMAC_Update';  {Do not localize}
+  fn_HMAC_Final = 'HMAC_Final';  {Do not localize}
   {CH fn_HMAC = 'HMAC'; } {Do not localize}
   {CH fn_HMAC_CTX_set_flags = 'HMAC_CTX_set_flags'; } {Do not localize}
   {$ENDIF}
@@ -9996,10 +10075,10 @@ them in case we use them later.}
   {$ENDIF}
   {CH fn_EVP_md_null = 'EVP_md_null'; }  {Do not localize}
   {$IFNDEF OPENSSL_NO_MD2}
-  {CH fn_EVP_md2 = 'EVP_md2'; }  {Do not localize}
+   fn_EVP_md2 = 'EVP_md2';   {Do not localize}
   {$ENDIF}
   {$IFNDEF OPENSSL_NO_MD4}
-  {CH fn_EVP_md4 = 'EVP_md4'; }  {Do not localize}
+  fn_EVP_md4 = 'EVP_md4';   {Do not localize}
   {$ENDIF}
   {$IFNDEF OPENSSL_NO_MD5}
   fn_EVP_md5 = 'EVP_md5';  {Do not localize}
@@ -10225,11 +10304,11 @@ them in case we use them later.}
   {CH fn_EVP_add_alg_module = 'EVP_add_alg_module'; {Do not localize}
   {CH fn_ERR_load_EVP_strings = 'ERR_load_EVP_strings'; }  {Do not localize}
   {$IFDEF OPENSSL_FIPS}
-  {CH fn_FIPS_mode_set = 'FIPS_mode_set'; } {Do not localize}
-  {CH fn_FIPS_mode = 'FIPS_mode'; } {Do not localize}
-  {CH fn_FIPS_rand_check = 'FIPS_rand_check'; } {Do not localize}
-  {CH fn_FIPS_selftest_failed = 'FIPS_selftest_failed'; } {Do not localize}
-  {CH fn_FIPS_selftest_check = 'FIPS_selftest_check'; } {Do not localize}
+  fn_FIPS_mode_set = 'FIPS_mode_set'; {Do not localize}
+  fn_FIPS_mode = 'FIPS_mode'; {Do not localize}
+   {CH fn_FIPS_rand_check = 'FIPS_rand_check'; } {Do not localize}
+   {CH fn_FIPS_selftest_failed = 'FIPS_selftest_failed'; } {Do not localize}
+  fn_FIPS_selftest_check = 'FIPS_selftest_check';  {Do not localize}
   {CH fn_FIPS_corrupt_sha1 = 'FIPS_corrupt_sha1'; } {Do not localize}
   {CH fn_FIPS_selftest_sha1 = 'FIPS_selftest_sha1'; } {Do not localize}
   {CH fb_FIPS_corrupt_aes = 'FIPS_corrupt_aes'; } {Do not localize}
@@ -11531,9 +11610,16 @@ them in case we use them later.}
   {$ENDIF}
 
 
-function LoadFunction(const FceName: string; const ACritical : Boolean = True): Pointer;
+{ IMPORTANT!!!
+
+WindowsCE only has a Unicode (WideChar) version of GetProcAddress.  We could use
+a version of GetProcAddress in the FreePascal dynlibs unit but that does a
+conversion from ASCII to Unicode which might not be necessary since most calls
+pass a constant anyway.
+}
+function LoadFunction(const FceName: {$IFDEF UNDER_CE}TIdUnicodeString{$ELSE}string{$ENDIF}; const ACritical : Boolean = True): Pointer;
 begin
-  Result := GetProcAddress(hIdSSL, PChar(FceName));
+  Result := {$IFDEF WIN32_OR_WIN64_OR_WINCE}Windows.{$ENDIF}GetProcAddress(hIdSSL, {$IFDEF UNDER_CE}PWideChar{$ELSE}PChar{$ENDIF}(FceName));
   if ACritical then
   begin
     if Result = nil then begin
@@ -11542,9 +11628,9 @@ begin
   end;
 end;
 
-function LoadFunctionCLib(const FceName: string; const ACritical : Boolean = True): Pointer;
+function LoadFunctionCLib(const FceName: {$IFDEF UNDER_CE}TIdUnicodeString{$ELSE}string{$ENDIF}; const ACritical : Boolean = True): Pointer;
 begin
-  Result := GetProcAddress(hIdCrypto, PChar(FceName));
+  Result := {$IFDEF WIN32_OR_WIN64_OR_WINCE}Windows.{$ENDIF}GetProcAddress(hIdCrypto, {$IFDEF UNDER_CE}PWideChar{$ELSE}PChar{$ENDIF}(FceName));
   if ACritical then
   begin
     if Result = nil then begin
@@ -11562,11 +11648,11 @@ The OpenSSL developers changed that interface to a new "des_*" API.  They have s
  "_ossl_old_des_*" for backwards compatability with the old functions
  which are defined in des_old.h. 
 }
-function LoadOldCLib(const AOldName, ANewName : String; const ACritical : Boolean = True): Pointer;
+function LoadOldCLib(const AOldName, ANewName : {$IFDEF UNDER_CE}TIdUnicodeString{$ELSE}String{$ENDIF}; const ACritical : Boolean = True): Pointer;
 begin
-  Result := GetProcAddress(hIdCrypto, PChar(AOldName));
+  Result := {$IFDEF WIN32_OR_WIN64_OR_WINCE}Windows.{$ENDIF}GetProcAddress(hIdCrypto, {$IFDEF UNDER_CE}PWideChar{$ELSE}PChar{$ENDIF}(AOldName));
   if Result = nil then begin
-     Result := GetProcAddress(hIdCrypto, PChar(ANewName));
+     Result := {$IFDEF WIN32_OR_WIN64_OR_WINCE}Windows.{$ENDIF}GetProcAddress(hIdCrypto, {$IFDEF UNDER_CE}PWideChar{$ELSE}PChar{$ENDIF}(ANewName));
      if ACritical then begin
         if Result = nil then begin
             FFailedFunctionLoadList.Add(AOldName);
@@ -11587,7 +11673,7 @@ end;
 
 function Load: Boolean;
 begin
-  Result := True;
+
   Assert(FFailedFunctionLoadList<>nil);
   FFailedFunctionLoadList.Clear;
   {$IFDEF KYLIXCOMPAT}
@@ -11599,6 +11685,7 @@ begin
     hIdSSL := HackLoad(SSL_DLL_name, SSLDLLVers);
   end;
   {$ELSE}
+    Result := True;
     {$IFDEF FPC}
       {$IFDEF WIN32_OR_WIN64_OR_WINCE}
   //On Windows, you should use SafeLoadLibrary because
@@ -11819,7 +11906,7 @@ begin
   {$ENDIF}
   {$IFNDEF OPENSSL_NO_SHA512}
   @IdSslEvpSHA512 := LoadFunctionCLib(fn_EVP_sha512,False);
-  @IdSslEvpSHA386 := LoadFunctionCLib(fn_EVP_sha384,False);
+  @IdSslEvpSHA384 := LoadFunctionCLib(fn_EVP_sha384,False);
   {$ENDIF}
   {$IFNDEF OPENSSL_NO_SHA256}
   @IdSslEvpSHA256 := LoadFunctionCLib(fn_EVP_sha256,False);
@@ -11831,6 +11918,12 @@ begin
   {$IFNDEF OPENSSL_NO_MD5}
   @IdSslEvpMd5 := LoadFunctionCLib(fn_EVP_md5);
   {$ENDIF}
+  {$IFNDEF OPENSSL_NO_MD4}
+  @IdSslEvpMd4 := LoadFunctionCLib(fn_EVP_md4);
+  {$ENDIF}
+  {$IFNDEF OPENSSL_NO_MD2}
+  @IdSslEvpMd2 := LoadFunctionCLib(fn_EVP_md2);
+  {$ENDIF}
   @IdSslEvpMDCtxInit := LoadFunctionCLib(fn_EVP_MD_CTX_init);
   @IdSslEvpDigestInitEx := LoadFunctionCLib(fn_EVP_DigestInit_ex);
   @IdSslEvpDigestUpdate := LoadFunctionClib(fn_EVP_DigestUpdate);
@@ -11841,11 +11934,18 @@ begin
   @IdSslEvpPKeyFree := LoadFunctionCLib(fn_EVP_PKEY_free);
   @IdSslEvpPKeyAssign := LoadFunctionCLib(fn_EVP_PKEY_assign);
   @IdSslEvpGetDigestByName := LoadFunctionCLib(fn_EVP_get_digestbyname);
+  //HMAC
+{$IFNDEF OPENSSL_NO_HMAC}
+  @IdSslHMACInitEx := LoadFunctionCLib(fn_HMAC_Init_ex);
+  @IdSslHMACUpdate := LoadFunctionCLib(fn_HMAC_Update);
+  @IdSslHMACFinal := LoadFunctionCLib(fn_HMAC_Final);
+  @IdSslHMACCTXCleanup := LoadFunctionCLib(fn_HMAC_CTX_cleanup);
+{$ENDIF}
   //OBJ
-   @IdSslOBJObj2Nid := LoadFunctionCLib(fn_OBJ_obj2nid);
-   @IdSslOBJNid2Obj := LoadFunctionCLib(fn_OBJ_nid2obj);
-   @IdSslOBJNid2ln := LoadFunctionCLib(fn_OBJ_nid2ln);
-   @IdSslOBJNid2sn := LoadFunctionCLib(fn_OBJ_nid2sn);
+  @IdSslOBJObj2Nid := LoadFunctionCLib(fn_OBJ_obj2nid);
+  @IdSslOBJNid2Obj := LoadFunctionCLib(fn_OBJ_nid2obj);
+  @IdSslOBJNid2ln := LoadFunctionCLib(fn_OBJ_nid2ln);
+  @IdSslOBJNid2sn := LoadFunctionCLib(fn_OBJ_nid2sn);
   //ASN1
   @IdSslAsn1IntegerSet := LoadFunctionCLib(fn_ASN1_INTEGER_set);
   @IdSslAsn1IntegerGet := LoadFunctionCLib(fn_ASN1_INTEGER_get);
@@ -11871,7 +11971,260 @@ begin
   @IdSslEvpCleanup := LoadFunctionCLib(fn_EVP_cleanup);
   @IdSslSkNewNull := LoadFunctionCLib(fn_sk_new_null);
   @IdSslSkPush := LoadFunctionCLib(fn_sk_push);
+  {$IFDEF OPENSSL_FIPS}
+  @_IdSslFIPSModeSet := LoadFunctionCLib(fn_FIPS_mode_set,False);
+  @_IdSslFIPSMode := LoadFunctionCLib(fn_FIPS_mode,False);
+
+  {$ENDIF}
   Result := (FFailedFunctionLoadList.Count = 0);
+end;
+
+procedure InitializeFuncPointers; {$IFDEF USE_INLINE} inline; {$ENDIF}
+begin
+  @IdSslCtxSetCipherList := nil;
+  @IdSslCtxNew := nil;
+  @IdSslCtxFree := nil;
+  @IdSslSetFd := nil;
+  @IdSslCtxUsePrivateKeyFile := nil;
+  @IdSslCtxUsePrivateKey := nil;
+  @IdSslCtxUseCertificate := nil;
+  @IdSslCtxUseCertificateFile := nil;
+  @IdSslLoadErrorStrings := nil;
+  @IdSslStateStringLong := nil;
+  @IdSslAlertDescStringLong := nil;
+  @IdSslAlertTypeStringLong := nil;
+
+  @IdSslGetPeerCertificate := nil;
+  @IdSslCtxSetVerify := nil;
+  @IdSslCtxSetVerifyDepth := nil;
+  @IdSslCtxGetVerifyDepth := nil;
+  @IdSslCtxSetDefaultPasswdCb := nil;
+  @IdSslCtxSetDefaultPasswdCbUserdata := nil;
+  @IdSslCtxCheckPrivateKeyFile := nil;
+  @IdSslNew := nil;
+  @IdSslFree := nil;
+  @IdSslAccept := nil;
+  @IdSslConnect := nil;
+  @IdSslRead := nil;
+  @IdSslPeek := nil;
+  @IdSslPending := nil;
+  @IdSslWrite := nil;
+  @IdSslCtrl := nil;
+  @IdSslCallbackCtrl := nil;
+  @IdSslCtxCtrl := nil;
+  @IdSslCtxCallbackCtrl := nil;
+  @IdSslGetError := nil;
+  @IdSslMethodV2 := nil;
+  @IdSslMethodServerV2 := nil;
+  @IdSslMethodClientV2 := nil;
+  @IdSslMethodV3 := nil;
+  @IdSslMethodServerV3 := nil;
+  @IdSslMethodClientV3 := nil;
+  @IdSslMethodV23 := nil;
+  @IdSslMethodServerV23 := nil;
+  @IdSslMethodClientV23 := nil;
+  @IdSslMethodTLSV1 := nil;
+  @IdSslMethodServerTLSV1 := nil;
+  @IdSslMethodClientTLSV1 := nil;
+  @IdSslMethodDTLSv1 := nil;
+  @IdSslMethodServerDTLSv1 := nil;
+  @IdSslMethodClientDTLSv1 := nil;
+  @IdSslShutdown := nil;
+  @IdSslSetConnectState := nil;
+  @IdSslSetAcceptState := nil;
+  @IdSslSetShutdown := nil;
+  @IdSslCtxLoadVerifyLocations := nil;
+  @IdSslGetSession := nil;
+  @IdSslAddSslAlgorithms := nil;
+  @IdSslSessionGetId := nil;
+  // CRYPTO LIB
+  @IdSslSSLeay_version := nil;
+  @IdSsleay := nil;
+  @IdSslX509NameOneline := nil;
+  @IdSslX509NameHash := nil;
+  @IdSslX509SetIssuerName := nil;
+  @IdSslX509GetIssuerName := nil;
+  @IdSslX509SetSubjectName := nil;
+  @IdSslX509GetSubjectName := nil;
+  @IdSslX509Digest := nil;
+  @IdSslX509StoreCtxGetExData := nil;
+  @IdSslX509StoreCtxGetError := nil;
+  @IdSslX509StoreCtxSetError := nil;
+  @IdSslX509StoreCtxGetErrorDepth := nil;
+  @IdSslX509StoreCtxGetCurrentCert := nil;
+  @IdSslX509Sign := nil;
+  @IdSslX509ReqSign := nil;
+  @IdSslX509ReqAddExtensions := nil;
+  @IdSslX509V3ExtConfNid := nil;
+  @IdSslX509ExtensionCreateByNid := nil;
+  @IdSslX509V3SetCtx := nil;
+  @IdSslX509ExtensionFree := nil;
+  @IdSslX509AddExt := nil;
+    {$IFNDEF OPENSSL_NO_BIO}
+  //X509_print
+  @IdSslX509Print := nil;
+  {$ENDIF}
+  {$IFDEF SYS_WIN}
+  @IdSslRandScreen := nil;
+  {$ENDIF}
+  {$IFNDEF OPENSSL_NO_DES}
+  // 3DES
+  @iddes_set_odd_parity := nil;
+  @iddes_set_key := nil;
+  @iddes_ecb_encrypt := nil;
+  @Id_ossl_old_des_set_odd_parity := nil;
+  @Id_ossl_old_des_set_key := nil;
+  @Id_ossl_old_des_ecb_encrypt := nil;
+  {$ENDIF}
+  // More SSL functions
+  @IdSSL_set_ex_data := nil;
+  @IdSSL_get_ex_data := nil;
+  @IdSSLLoadClientCAFile := nil;
+  @IdSSLCtxSetClientCAList := nil;
+  @IdSSLCtxSetDefaultVerifyPaths := nil;
+  @IdSSLCtxSetSessionIdContext := nil;
+  @IdSSLCipherDescription := nil;
+  @IdSSLGetCurrentCipher := nil;
+  @IdSSLCipherGetName := nil;
+  @IdSSLCipherGetVersion := nil;
+  @IdSSLCipherGetBits  := nil;
+  // Thread safe
+  @IdSslCryptoNumLocks := nil;
+  @IdSslSetLockingCallback := nil;
+  {$IFNDEF WIN32_OR_WIN64}
+  @IdSslSetIdCallback := nil;
+  {$ENDIF}
+  @IdSSLERR_get_err := nil;
+  @IdSSLERR_peek_err := nil;
+  @IdSSLERR_clear_error := nil;
+  @IdSSLERR_error_string := nil;
+  @IdSSLERR_error_string_n := nil;
+  @IdSSLERR_lib_error_string := nil;
+  @IdSSLERR_func_error_string := nil;
+  @IdSSLERR_reason_error_string := nil;
+  @IdSSLERR_load_ERR_strings := nil;
+  @IdSSLERR_load_crypto_strings := nil;
+  @IdSSLERR_free_strings := nil;
+  @IdSslErrRemoveState := nil;
+  @IdSslCryptoCleanupAllExData := nil;
+  @IdSslCompGetCompressionMethods := nil;
+  @IdSslSkPopFree := nil;
+  //RSA
+  @IdSslRsaFree := nil;
+  @IdSslRsaGenerateKey := nil;
+  @IdSslRsaCheckKey := nil;
+  //BIO
+  @IdSslBioNew := nil;
+  @IdSslBioFree := nil;
+  @IdSslBioSMem := nil;
+  @IdSslBioSFile := nil;
+  @IdSslBioCtrl := nil;
+  @IdSslBioNewFile := nil;
+  @IdSslBioPutS := nil;
+  @IdSslBioRead := nil;
+  @IdSslBioWrite := nil;
+  //i2d
+  @IdSslI2dX509Bio := nil;
+  @IdSslI2dPrivateKeyBio := nil;
+  @IdSslI2dX509 := nil;
+  @IdSslD2iX509Bio := nil;
+  @IdSslD2iX509 := nil;
+  @IdSslI2dX509ReqBio := nil;
+  //X509
+  @IdSslX509New := nil;
+  @IdSslX509Free := nil;
+  @IdSslX509ReqNew := nil;
+  @IdSslX509ReqFree := nil;
+  @IdSslX509ToX509Req := nil;
+  @IdSslX509NameAddEntryByTxt := nil;
+  @IdSslX509SetVersion := nil;
+  @IdSslX509GetSerialNumber := nil;
+  @IdSslX509GmTimeAdj := nil;
+  @IdSslX509SetNotBefore := nil;
+  @IdSslX509SetNotAfter := nil;
+  @IdSslX509SetPubKey := nil;
+  @IdSslX509ReqSetPubKey := nil;
+  //PEM
+  @IdSslPemWriteBioPKCS8PrivateKey := nil;
+  @IdSslPemAsn1WriteBio := nil;
+  @IdSslPemAsn1ReadBio := nil;
+  @IdSslPemReadBioPrivateKey := nil;
+  @IdSslPemWriteBioX509Req := nil;
+  //EVP
+  {$IFNDEF OPENSSL_NO_DES}
+  @IdSslEvpDesEde3Cbc := nil;
+  {$ENDIF}
+  {$IFNDEF OPENSSL_NO_SHA512}
+  @IdSslEvpSHA512 := nil;
+  @IdSslEvpSHA384 := nil;
+  {$ENDIF}
+  {$IFNDEF OPENSSL_NO_SHA256}
+  @IdSslEvpSHA256 := nil;
+  @IdSslEvpSHA224 := nil;
+  {$ENDIF}
+  {$IFNDEF OPENSSL_NO_SHA}
+  @IdSslEvpSHA1 := nil;
+  {$ENDIF}
+  {$IFNDEF OPENSSL_NO_MD5}
+  @IdSslEvpMd5 := nil;
+  {$ENDIF}
+  {$IFNDEF OPENSSL_NO_MD4}
+  @IdSslEvpMd4 := nil;
+  {$ENDIF}
+  {$IFNDEF OPENSSL_NO_MD2}
+  @IdSslEvpMd2 := nil;
+  {$ENDIF}
+  @IdSslEvpMDCtxInit := nil;
+  @IdSslEvpDigestInitEx := nil;
+  @IdSslEvpDigestUpdate := nil;
+  @IdSslEvpDigestFinalEx := nil;
+  @IdSslEvpMDCtxCleanup := nil;
+  @IdSslEvpPKEYType := nil;
+  @IdSslEvpPKeyNew := nil;
+  @IdSslEvpPKeyFree := nil;
+  @IdSslEvpPKeyAssign := nil;
+  @IdSslEvpGetDigestByName := nil;
+  //HMAC
+{$IFNDEF OPENSSL_NO_HMAC}
+  @IdSslHMACInitEx := nil;
+  @IdSslHMACUpdate := nil;
+  @IdSslHMACFinal := nil;
+  @IdSslHMACCTXCleanup := nil;
+{$ENDIF}
+  //OBJ
+  @IdSslOBJObj2Nid := nil;
+  @IdSslOBJNid2Obj := nil;
+  @IdSslOBJNid2ln := nil;
+  @IdSslOBJNid2sn := nil;
+  //ASN1
+  @IdSslAsn1IntegerSet := nil;
+  @IdSslAsn1IntegerGet := nil;
+  @IdSslAsn1StringTypeNew := nil;
+  @IdSslAsn1StringFree := nil;
+  @IdSslCryptoSetMemFunctions := nil;
+  @IdSslCryptoMalloc := nil;
+  @IdSslCryptoFree := nil;
+  @IdSslCryptoMemLeaks := nil;
+  @IdSslCryptoMemCtrl := nil;
+  @IdSslCryptoSetMemDebugFunctions := nil;
+  //@IdSslCryptoDbgMalloc := nil;
+  //@IdSslCryptoDbgRealloc := nil;
+  //@IdSslCryptoDbgFree := nil;
+  //@IdSslCryptoDbgSetOptions := nil;
+  //@IdSslCryptoDbgGetOptions := nil;
+  @IdSSLPKCS12Create := nil;
+  @IdSSLI2dPKCS12Bio := nil;
+  @IdSSLPKCS12Free := nil;
+  //@IdSslAddAllAlgorithms := nil;
+  @IdSslAddAllCiphers := nil;
+  @IdSslAddAllDigests := nil;
+  @IdSslEvpCleanup := nil;
+  @IdSslSkNewNull := nil;
+  @IdSslSkPush := nil;
+  {$IFDEF OPENSSL_FIPS}
+  @_IdSslFIPSModeSet := nil;
+  @_IdSslFIPSMode := nil;
+  {$ENDIF}
 end;
 
 procedure Unload;
@@ -11880,8 +12233,7 @@ var
 begin
   //this is a workaround for a known leak in the openssl library
   //present in 0.9.8a
-  if IdSsleay = $0090801f then  //0x0090801fL
-  begin
+  if IdSsleay = $0090801f then begin //0x0090801fL
     LStack := IdSslCompGetCompressionMethods;
     IdSslSkPopFree(LStack, @IdSslCryptoFree);
   end;
@@ -11889,17 +12241,26 @@ begin
   IdSSLERR_free_strings;
   IdSslErrRemoveState(0);
   IdSslEvpCleanup;
-  if hIdSSL > 0 then
-  begin
-    FreeLibrary(hIdSSL);
+  if hIdSSL > 0 then begin
+    {$IFDEF WIN32_OR_WIN64_OR_WINCE}Windows.{$ENDIF}FreeLibrary(hIdSSL);
     hIdSSL := 0;
   end;
-  if hIdCrypto > 0 then
-  begin
-    FreeLibrary(hIdCrypto);
+  if hIdCrypto > 0 then begin
+    {$IFDEF WIN32_OR_WIN64_OR_WINCE}Windows.{$ENDIF}FreeLibrary(hIdCrypto);
     hIdCrypto := 0;
   end;
+  {$IFDEF USE_INVALIDATE_MOD_CACHE}
+  InvalidateModuleCache;
+  {$ENDIF}  
+  {
+  IMPORTANT!!
+
+  We probably should reinitialize the functions to nil after the library is
+  unloaded as some code will test for their presence with Assigned.
+  }
+  InitializeFuncPointers;
 end;
+
 
 function WhichFailedToLoad: string;
 begin
@@ -12535,7 +12896,8 @@ end;
 
 initialization
   FFailedFunctionLoadList := TStringList.Create;
-
+  IdGlobalProtocols.SetFIPSMode := OpenSSLSetFIPSMode;
+  IdGlobalProtocols.GetFIPSMode := OpenSSLGetFIPSMode;
 finalization
   FreeAndNil(FFailedFunctionLoadList);
 

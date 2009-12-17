@@ -68,6 +68,9 @@ type
 implementation
 
 uses
+  {$IFDEF KYLIXCOMPAT}
+  Libc,
+  {$ENDIF}
   //facilitate inlining only.
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
     {$IFDEF VCL_2009_OR_ABOVE}

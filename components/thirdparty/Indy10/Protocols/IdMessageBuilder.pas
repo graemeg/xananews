@@ -35,13 +35,14 @@ type
     function Add: TIdMessageBuilderAttachment; reintroduce; overload;
     function Add(const AFileName: String; const AContentID: String = ''): TIdMessageBuilderAttachment; overload;
     function Add(AData: TStream; const AContentType: String; const AContentID: String = ''): TIdMessageBuilderAttachment; overload;
+    procedure AddToMessage(AMsg: TIdMessage; ParentPart: Integer);
     property Attachment[Index: Integer]: TIdMessageBuilderAttachment
       read GetAttachment write SetAttachment; default;
   end;
 
   TIdCustomMessageBuilder = class
   protected
-    FAttachments: TStrings;
+    FAttachments: TIdMessageBuilderAttachments;
     FPlainText: TStrings;
     FPlainTextCharSet: String;
     FPlainTextContentTransfer: String;
@@ -49,7 +50,7 @@ type
     procedure FillBody(AMsg: TIdMessage); virtual; abstract;
     procedure FillHeaders(AMsg: TIdMessage); virtual;
     procedure SetPlainText(AValue: TStrings);
-    procedure SetAttachments(AValue: TStrings);
+    procedure SetAttachments(AValue: TIdMessageBuilderAttachments);
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -58,7 +59,7 @@ type
     procedure FillMessage(AMsg: TIdMessage);
     function NewMessage(AOwner: TComponent = nil): TIdMessage;
     //
-    property Attachments: TStrings read FAttachments write SetAttachments;
+    property Attachments: TIdMessageBuilderAttachments read FAttachments write SetAttachments;
     property PlainText: TStrings read FPlainText write SetPlainText;
     property PlainTextCharSet: String read FPlainTextCharSet write FPlainTextCharSet;
     property PlainTextContentTransfer: String read FPlainTextContentTransfer write FPlainTextContentTransfer;
@@ -129,8 +130,6 @@ const
   cMultipartMixed = 'multipart/mixed'; {do not localize}
   cMultipartRelatedHtml = 'multipart/related; type="text/html"'; {do not localize}
 
-
-
 { TIdMessageBuilderAttachment }
 
 procedure TIdMessageBuilderAttachment.Assign(Source: TPersistent);
@@ -182,6 +181,84 @@ begin
   Result.FData := AData;
 end;
 
+procedure TIdMessageBuilderAttachments.AddToMessage(AMsg: TIdMessage; ParentPart: Integer);
+var
+  I: Integer;
+  LMsgBldrAttachment: TIdMessageBuilderAttachment;
+  LMsgAttachment: TIdAttachment;
+  LStream: TStream;
+
+  function FormatContentId(Item: TIdMessageBuilderAttachment): String;
+  begin
+    if Item.ContentID <> '' then begin
+      Result := EnsureMsgIDBrackets(Item.ContentID);
+    end
+    else if Item.FileName <> '' then begin
+      Result := EnsureMsgIDBrackets(ExtractFileName(Item.FileName));
+    end
+    else begin
+      Result := '';
+    end;
+  end;
+
+  function FormatContentType(Item: TIdMessageBuilderAttachment): String;
+  begin
+    if Item.ContentType <> '' then begin
+      Result := Item.ContentType;
+    end else begin
+      Result := GetMIMETypeFromFile(Item.FileName);
+    end;
+  end;
+
+  function FormatName(Item: TIdMessageBuilderAttachment): String;
+  begin
+    if Item.Name <> '' then begin
+      Result := Item.Name;
+    end
+    else if Item.FileName <> '' then begin
+      Result := ExtractFileName(Item.FileName);
+    end else begin
+      Result := '';
+    end;
+  end;
+
+begin
+  for I := 0 to Count-1 do
+  begin
+    LMsgBldrAttachment := Attachment[I];
+    if Assigned(LMsgBldrAttachment.Data) then
+    begin
+      LMsgAttachment := TIdAttachmentMemory.Create(AMsg.MessageParts);
+      try
+        LMsgAttachment.FileName := ExtractFileName(LMsgBldrAttachment.FileName);
+        LStream := LMsgAttachment.PrepareTempStream;
+        try
+          LStream.CopyFrom(LMsgBldrAttachment.Data, 0);
+        finally
+          LMsgAttachment.FinishTempStream;
+        end;
+      except
+        LMsgAttachment.Free;
+        raise;
+      end;
+    end else
+    begin
+      LMsgAttachment := TIdAttachmentFile.Create(AMsg.MessageParts, LMsgBldrAttachment.FileName);
+    end;
+    LMsgAttachment.Name := FormatName(LMsgBldrAttachment);
+    LMsgAttachment.ContentId := FormatContentId(LMsgBldrAttachment);
+    LMsgAttachment.ContentType := FormatContentType(LMsgBldrAttachment);
+    LMsgAttachment.ContentTransfer := LMsgBldrAttachment.ContentTransfer;
+    if ParentPart > -1 then
+    begin
+      if TextStartsWith(LMsgAttachment.ContentType, 'image/') then begin {do not localize}
+        LMsgAttachment.ContentDisposition := 'inline'; {do not localize}
+      end;
+      LMsgAttachment.ParentPart := ParentPart;
+    end;
+  end;
+end;
+
 function TIdMessageBuilderAttachments.GetAttachment(Index: Integer): TIdMessageBuilderAttachment;
 begin
   Result := TIdMessageBuilderAttachment(inherited GetItem(Index));
@@ -198,7 +275,7 @@ constructor TIdCustomMessageBuilder.Create;
 begin
   inherited Create;
   FPlainText := TStringList.Create;
-  FAttachments := TStringList.Create;
+  FAttachments := TIdMessageBuilderAttachments.Create;
 end;
 
 destructor TIdCustomMessageBuilder.Destroy;
@@ -209,15 +286,8 @@ begin
 end;
 
 procedure TIdCustomMessageBuilder.AddAttachments(AMsg: TIdMessage);
-var
-  I: Integer;
 begin
-  for I := 0 to FAttachments.Count-1 do
-  begin
-    with TIdAttachmentFile.Create(AMsg.MessageParts, FAttachments[I]) do begin
-      ContentType := GetMIMETypeFromFile(FileName);
-    end;
-  end;
+  FAttachments.AddToMessage(AMsg, -1);
 end;
 
 procedure TIdCustomMessageBuilder.Clear;
@@ -271,7 +341,7 @@ begin
   end;
 end;
 
-procedure TIdCustomMessageBuilder.SetAttachments(AValue: TStrings);
+procedure TIdCustomMessageBuilder.SetAttachments(AValue: TIdMessageBuilderAttachments);
 begin
   FAttachments.Assign(AValue);
 end;
@@ -383,45 +453,7 @@ end;
 procedure TIdMessageBuilderHtml.FillBody(AMsg: TIdMessage);
 var
   LUsePlain, LUseHtml, LUseHtmlFiles, LUseAttachments: Boolean;
-  I, LAlternativeIndex, LRelatedIndex: Integer;
-  LMsgBuilderAttachment: TIdMessageBuilderAttachment;
-  LAttachment: TIdAttachment;
-  LStream: TStream;
-
-  function FormatContentId(Item: TIdMessageBuilderAttachment): String;
-  begin
-    if Item.ContentID <> '' then begin
-      Result := EnsureMsgIDBrackets(Item.ContentID);
-    end
-    else if Item.FileName <> '' then begin
-      Result := EnsureMsgIDBrackets(ExtractFileName(Item.FileName));
-    end
-    else begin
-      Result := '';
-    end;
-  end;
-
-  function FormatContentType(Item: TIdMessageBuilderAttachment): String;
-  begin
-    if Item.ContentType <> '' then begin
-      Result := Item.ContentType;
-    end else begin
-      Result := GetMIMETypeFromFile(Item.FileName);
-    end;
-  end;
-
-  function FormatName(Item: TIdMessageBuilderAttachment): String;
-  begin
-    if Item.Name <> '' then begin
-      Result := Item.Name;
-    end
-    else if Item.FileName <> '' then begin
-      Result := ExtractFileName(Item.FileName);
-    end else begin
-      Result := '';
-    end;
-  end;
-
+  LAlternativeIndex, LRelatedIndex: Integer;
 begin
   // Cache these for better performance
   //
@@ -525,41 +557,8 @@ begin
 
     // Are related attachments present?
     //
-    if LUseHtmlFiles then
-    begin
-      for I := 0 to FHtmlFiles.Count-1 do
-      begin
-        LMsgBuilderAttachment := FHtmlFiles[I];
-
-        if Assigned(LMsgBuilderAttachment.Data) then
-        begin
-          LAttachment := TIdAttachmentMemory.Create(AMsg.MessageParts);
-          try
-            LAttachment.FileName := ExtractFileName(LMsgBuilderAttachment.FileName);
-            LStream := LAttachment.PrepareTempStream;
-            try
-              LStream.CopyFrom(LMsgBuilderAttachment.Data, 0);
-            finally
-              LAttachment.FinishTempStream;
-            end;
-          except
-            LAttachment.Free;
-            raise;
-          end;
-        end else
-        begin
-          LAttachment := TIdAttachmentFile.Create(AMsg.MessageParts, LMsgBuilderAttachment.FileName);
-        end;
-
-        LAttachment.Name := FormatName(LMsgBuilderAttachment);
-        LAttachment.ContentId := FormatContentId(LMsgBuilderAttachment);
-        LAttachment.ContentType := FormatContentType(LMsgBuilderAttachment);
-        LAttachment.ContentTransfer := LMsgBuilderAttachment.ContentTransfer;
-        if TextStartsWith(LAttachment.ContentType, 'image/') then begin {do not localize}
-          LAttachment.ContentDisposition := 'inline'; {do not localize}
-        end;
-        LAttachment.ParentPart := LRelatedIndex;
-      end;
+    if LUseHtmlFiles then begin
+      FHtmlFiles.AddToMessage(AMsg, LRelatedIndex);
     end;
   end;
 end;

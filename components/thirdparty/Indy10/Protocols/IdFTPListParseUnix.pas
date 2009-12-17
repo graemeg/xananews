@@ -190,6 +190,7 @@ const
 implementation
 
 uses
+  IdException,
   IdGlobal, IdFTPCommon, IdGlobalProtocols,
   IdHeaderCoderUTF,  //here so we can decode UTF... filenames
   SysUtils;
@@ -752,7 +753,7 @@ begin
     end;
   end;
 
-  LI.FileName := TIdHeaderCoderUTF.Decode('UTF-8', LName);
+  LI.FileName := TIdTextEncoding.UTF8.GetString(ToBytes(LName, Indy8BitEncoding));
   Result := True;
 end;
 

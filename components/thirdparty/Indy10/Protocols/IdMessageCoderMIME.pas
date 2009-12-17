@@ -303,12 +303,14 @@ begin
   if ASender.MIMEBoundary.Boundary <> '' then begin
     if TextIsSame(ALine, '--' + ASender.MIMEBoundary.Boundary) then begin    {Do not Localize}
       Result := TIdMessageDecoderMIME.Create(ASender);
-    end else if TextIsSame(ALine, '--' + ASender.MIMEBoundary.Boundary + '--') then begin    {Do not Localize}
+    end
+    else if TextIsSame(ALine, '--' + ASender.MIMEBoundary.Boundary + '--') then begin    {Do not Localize}
       ASender.MIMEBoundary.Pop;
       Result := TIdMessageDecoderMIMEIgnore.Create(ASender);
-    end else if PosInStrArray(ASender.ContentTransferEncoding, ['base64', 'quoted-printable'], False) <> -1 then begin {Do not localize}
-      Result := TIdMessageDecoderMIME.Create(ASender, ALine);
     end;
+  end;
+  if (Result = nil) and (PosInStrArray(ASender.ContentTransferEncoding, ['base64', 'quoted-printable'], False) <> -1) then begin {Do not localize}
+    Result := TIdMessageDecoderMIME.Create(ASender, ALine);
   end;
 end;
 
@@ -340,10 +342,10 @@ begin
   end else begin
     LContentType := FHeaders.Values['Content-Type']; {Do not Localize}
     LContentTransferEncoding := FHeaders.Values['Content-Transfer-Encoding']; {Do not Localize}
-    if LContentTransferEncoding = '' then begin
-      if TextIsSame(ExtractHeaderItem(FHeaders.Values['Content-Type']), 'application/mac-binhex40') then begin  {Do not Localize}
-        LContentTransferEncoding := 'binhex40'; {do not localize}
-      end;
+  end;
+  if LContentTransferEncoding = '' then begin
+    if TextIsSame(ExtractHeaderItem(LContentType), 'application/mac-binhex40') then begin  {Do not Localize}
+      LContentTransferEncoding := 'binhex40'; {do not localize}
     end;
   end;
 
@@ -378,8 +380,10 @@ begin
       LDecoder.DecodeBegin(ADestStream);
     end;
 
-    BoundaryStart := '--' + MIMEBoundary; {Do not Localize}
-    BoundaryEnd := BoundaryStart + '--'; {Do not Localize}
+    if MIMEBoundary <> '' then begin
+      BoundaryStart := '--' + MIMEBoundary; {Do not Localize}
+      BoundaryEnd := BoundaryStart + '--'; {Do not Localize}
+    end;
 
     case PosInStrArray(LContentTransferEncoding, ['7bit', 'quoted-printable', 'base64', '8bit', 'binary'], False) of {do not localize}
       0..2: IsBinaryContentTransferEncoding := False;
@@ -421,65 +425,43 @@ begin
         if TextIsSame(LLine, BoundaryStart) then begin
           Result := TIdMessageDecoderMIME.Create(Owner);
           Break;
-        // End of all coders (not quite ALL coders)
-        end
-        else if TextIsSame(LLine, BoundaryEnd) then begin
+          // End of all coders (not quite ALL coders)
+        end;
+        if TextIsSame(LLine, BoundaryEnd) then begin
           // POP the boundary
           if Owner is TIdMessage then begin
             TIdMessage(Owner).MIMEBoundary.Pop;
           end;
           Break;
-        end
+        end;
+      end;
+      if LDecoder = nil then begin
         // Data to save, but not decode
-        else if LDecoder = nil then begin
-          if IsBinaryContentTransferEncoding then begin {do not localize}
-            //In this case, we have to make sure we dont write out an EOL at the
-            //end of the file.
-            if LIsThisTheFirstLine then begin
-              LIsThisTheFirstLine := False;
-            end else begin
-              WriteStringToStream(ADestStream, EOL, Indy8BitEncoding);
-            end;
-            WriteStringToStream(ADestStream, LLine, Indy8BitEncoding);
+        if IsBinaryContentTransferEncoding then begin {do not localize}
+          //In this case, we have to make sure we dont write out an EOL at the
+          //end of the file.
+          if LIsThisTheFirstLine then begin
+            LIsThisTheFirstLine := False;
           end else begin
-            WriteStringToStream(ADestStream, LLine + EOL);
+            WriteStringToStream(ADestStream, EOL, Indy8BitEncoding);
           end;
-        end
-        // Data to decode
-        else begin
-          // For TIdDecoderQuotedPrintable, we have to make sure all EOLs are
-          // intact
-          if LDecoder is TIdDecoderQuotedPrintable then begin
-            LDecoder.Decode(LLine + EOL);
-          end else if LDecoder is TIdDecoderBinHex4 then begin
-            //We cannot decode line-by-line because lines don't have a whole
-            //number of 4-byte blocks due to the : inserted at the start of
-            //the first line, so buffer the file...
-            LBuffer := LBuffer + LLine;
-          end else if LLine <> '' then begin
-            LDecoder.Decode(LLine);
-          end;
+          WriteStringToStream(ADestStream, LLine, Indy8BitEncoding);
+        end else begin
+          WriteStringToStream(ADestStream, LLine + EOL);
         end;
       end
-      else begin  {CC3: Added "else" for QP and base64 encoded message BODIES}
+      else begin
+        // Data to decode
         // For TIdDecoderQuotedPrintable, we have to make sure all EOLs are
         // intact
-        if LDecoder = nil then begin
-          if IsBinaryContentTransferEncoding then begin {do not localize}
-            //In this case, we have to make sure we dont write out an EOL at the
-            //end of the file.
-            if LIsThisTheFirstLine then begin
-              LIsThisTheFirstLine := False;
-            end else begin
-              WriteStringToStream(ADestStream, EOL, Indy8BitEncoding);
-            end;
-            WriteStringToStream(ADestStream, LLine, Indy8BitEncoding);
-          end else begin
-            WriteStringToStream(ADestStream, LLine + EOL);
-          end;
-        end
-        else if LDecoder is TIdDecoderQuotedPrintable then begin
+        if LDecoder is TIdDecoderQuotedPrintable then begin
+          // For TIdDecoderQuotedPrintable, we have to make sure all EOLs are intact
           LDecoder.Decode(LLine + EOL);
+        end else if LDecoder is TIdDecoderBinHex4 then begin
+          //We cannot decode line-by-line because lines don't have a whole
+          //number of 4-byte blocks due to the : inserted at the start of
+          //the first line, so buffer the file...
+          LBuffer := LBuffer + LLine;
         end else if LLine <> '' then begin
           LDecoder.Decode(LLine);
         end;

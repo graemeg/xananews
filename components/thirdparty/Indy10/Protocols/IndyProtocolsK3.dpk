@@ -138,6 +138,7 @@ contains
   IdHash in 'IdHash.pas',
   IdHashCRC in 'IdHashCRC.pas',
   IdHashElf in 'IdHashElf.pas',
+  IdHashIntf in 'IdHashIntf.pas',
   IdHashMessageDigest in 'IdHashMessageDigest.pas',
   IdHashSHA1 in 'IdHashSHA1.pas',
   IdHeaderCoder2022JP in 'IdHeaderCoder2022JP.pas',

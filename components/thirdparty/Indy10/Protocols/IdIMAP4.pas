@@ -1117,11 +1117,26 @@ varies between servers.  A typical line that gets parsed into this is:
 implementation
 
 uses
+  //facilitate inlining on
+  {$IFDEF KYLIXCOMPAT}
+  Libc,
+    {$IFDEF MACOSX}
+  PosixUnistd,
+    {$ENDIF}
+  {$ENDIF}
   //facilitate inlining only.
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
     {$IFDEF USE_INLINE}
   Windows,
+    {$ELSE}
+  //facilitate inlining only.
+      {$IFDEF VCL_2009_OR_ABOVE}
+  Windows,
+      {$ENDIF}
     {$ENDIF}
+  {$ENDIF}
+  {$IFNDEF DOTNET}
+  IdStreamVCL,
   {$ENDIF}
   {$IFDEF DOTNET}
     {$IFDEF USE_INLINE}
@@ -5678,30 +5693,30 @@ const
     end;
   end;
 
-  function ProcessTextPart(ADecoder: TIdMessageDecoder): TIdMessageDecoder;
+  procedure ProcessTextPart(var VDecoder: TIdMessageDecoder);
   var
     LDestStream: TMemoryStream;
     Li: integer;
     LTxt: TIdText;
+    LNewDecoder: TIdMessageDecoder;
   begin
-    Result := nil;
+    LDestStream := TMemoryStream.Create;
     try
-      LDestStream := TMemoryStream.Create;
+      LNewDecoder := VDecoder.ReadBody(LDestStream, LMsgEnd);
       try
-        Result := ADecoder.ReadBody(LDestStream, LMsgEnd);
         LDestStream.Position := 0;
         LTxt := TIdText.Create(AMsg.MessageParts);
         try
-          LTxt.ContentType := ADecoder.Headers.Values[SContentType];
-          LTxt.ContentID := ADecoder.Headers.Values['Content-ID'];  {Do not Localize}
-          LTxt.ContentLocation := ADecoder.Headers.Values['Content-Location'];  {Do not Localize}
-          LTxt.ContentDescription := ADecoder.Headers.Values['Content-Description']; {Do not Localize}
-          LTxt.ContentDisposition := ADecoder.Headers.Values['Content-Disposition']; {Do not Localize}
-          LTxt.ContentTransfer := ADecoder.Headers.Values['Content-Transfer-Encoding'];  {Do not Localize}
+          LTxt.ContentType := VDecoder.Headers.Values[SContentType];
+          LTxt.ContentID := VDecoder.Headers.Values['Content-ID'];  {Do not Localize}
+          LTxt.ContentLocation := VDecoder.Headers.Values['Content-Location'];  {Do not Localize}
+          LTxt.ContentDescription := VDecoder.Headers.Values['Content-Description']; {Do not Localize}
+          LTxt.ContentDisposition := VDecoder.Headers.Values['Content-Disposition']; {Do not Localize}
+          LTxt.ContentTransfer := VDecoder.Headers.Values['Content-Transfer-Encoding'];  {Do not Localize}
           LTxt.ExtraHeaders.NameValueSeparator := '=';  {Do not Localize}
-          for Li := 0 to ADecoder.Headers.Count-1 do begin
-            if LTxt.Headers.IndexOfName(ADecoder.Headers.Names[Li]) < 0 then begin
-              LTxt.ExtraHeaders.Add(ADecoder.Headers.Strings[Li]);
+          for Li := 0 to VDecoder.Headers.Count-1 do begin
+            if LTxt.Headers.IndexOfName(VDecoder.Headers.Names[Li]) < 0 then begin
+              LTxt.ExtraHeaders.Add(VDecoder.Headers.Strings[Li]);
             end;
           end;
           ReadStringsAsCharset(LDestStream, LTxt.Body, LTxt.CharSet);
@@ -5711,57 +5726,60 @@ const
           LTxt.Free;
           raise;
         end;
-        ADecoder.Free;
-      finally
-        FreeAndNil(LDestStream);
+      except
+        LNewDecoder.Free;
+        raise;
       end;
-    except
-      FreeAndNil(Result);
-      raise;
+      VDecoder.Free;
+      VDecoder := LNewDecoder;
+    finally
+      FreeAndNil(LDestStream);
     end;
   end;
 
-  function ProcessAttachment(ADecoder: TIdMessageDecoder): TIdMessageDecoder;
+  procedure ProcessAttachment(var VDecoder: TIdMessageDecoder);
   var
     LDestStream: TStream;
     Li: integer;
     LAttachment: TIdAttachment;
+    LNewDecoder: TIdMessageDecoder;
   begin
-    Result := nil; // supress warnings
+    AMsg.DoCreateAttachment(VDecoder.Headers, LAttachment);
+    Assert(Assigned(LAttachment), 'Attachment must not be unassigned here!');    {Do not Localize}
     try
-      AMsg.DoCreateAttachment(ADecoder.Headers, LAttachment);
-      Assert(Assigned(LAttachment), 'Attachment must not be unassigned here!');    {Do not Localize}
+      LNewDecoder := nil;
       try
         LDestStream := LAttachment.PrepareTempStream;
         try
-          Result := ADecoder.ReadBody(LDestStream, LMsgEnd);
+          LNewDecoder := VDecoder.ReadBody(LDestStream, LMsgEnd);
         finally
           LAttachment.FinishTempStream;
         end;
-        LAttachment.ContentType := ADecoder.Headers.Values[SContentType];
-        LAttachment.ContentTransfer := ADecoder.Headers.Values['Content-Transfer-Encoding'];  {Do not Localize}
-        LAttachment.ContentDisposition := ADecoder.Headers.Values['Content-Disposition'];  {Do not Localize}
-        LAttachment.ContentID := ADecoder.Headers.Values['Content-ID'];  {Do not Localize}
-        LAttachment.ContentLocation := ADecoder.Headers.Values['Content-Location'];  {Do not Localize}
-        LAttachment.ContentDescription := ADecoder.Headers.Values['Content-Description']; {Do not Localize}
-        LAttachment.Filename := ADecoder.Filename;
+        LAttachment.ContentType := VDecoder.Headers.Values[SContentType];
+        LAttachment.ContentTransfer := VDecoder.Headers.Values['Content-Transfer-Encoding'];  {Do not Localize}
+        LAttachment.ContentDisposition := VDecoder.Headers.Values['Content-Disposition'];  {Do not Localize}
+        LAttachment.ContentID := VDecoder.Headers.Values['Content-ID'];  {Do not Localize}
+        LAttachment.ContentLocation := VDecoder.Headers.Values['Content-Location'];  {Do not Localize}
+        LAttachment.ContentDescription := VDecoder.Headers.Values['Content-Description']; {Do not Localize}
+        LAttachment.Filename := VDecoder.Filename;
         LAttachment.ExtraHeaders.NameValueSeparator := '=';  {Do not Localize}
-        for Li := 0 to ADecoder.Headers.Count-1 do begin
-          if LAttachment.Headers.IndexOfName(ADecoder.Headers.Names[Li]) < 0 then begin
-            LAttachment.ExtraHeaders.Add(ADecoder.Headers.Strings[Li]);
+        for Li := 0 to VDecoder.Headers.Count-1 do begin
+          if LAttachment.Headers.IndexOfName(VDecoder.Headers.Names[Li]) < 0 then begin
+            LAttachment.ExtraHeaders.Add(VDecoder.Headers.Strings[Li]);
           end;
         end;
       except
-        //this should also remove the Item from the TCollection.
-        //Note that Delete does not exist in the TCollection.
-        LAttachment.Free;
+        LNewDecoder.Free;
         raise;
       end;
-      ADecoder.Free;
     except
-      FreeAndNil(Result);
+      //this should also remove the Item from the TCollection.
+      //Note that Delete does not exist in the TCollection.
+      LAttachment.Free;
       raise;
     end;
+    VDecoder.Free;
+    VDecoder := LNewDecoder;
   end;
 
 Begin
@@ -5809,8 +5827,8 @@ Begin
               LActiveDecoder.ReadHeader;
               case LActiveDecoder.PartType of
                 mcptUnknown:    raise EIdException.Create(RSMsgClientUnkownMessagePartType);
-                mcptText:       LActiveDecoder := ProcessTextPart(LActiveDecoder);
-                mcptAttachment: LActiveDecoder := ProcessAttachment(LActiveDecoder);
+                mcptText:       ProcessTextPart(LActiveDecoder);
+                mcptAttachment: ProcessAttachment(LActiveDecoder);
                 mcptIgnore:     FreeAndNil(LActiveDecoder);
               end;
             end;

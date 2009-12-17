@@ -69,7 +69,7 @@ interface
 {$i IdCompilerDefines.inc}
 
 uses
-  Windows, IdBaseComponent, IdThread, IdTask, IdYarn, IdThreadSafe;
+  IdBaseComponent, IdThread, IdTask, IdYarn, IdThreadSafe;
 
 type
   TIdScheduler = class(TIdBaseComponent)
@@ -99,6 +99,11 @@ uses
   {$IFDEF DOTNET}
     {$IFDEF USE_INLINE}
   System.Threading,
+    {$ENDIF}
+  {$ENDIF}
+  {$IFDEF VCL_2010_OR_ABOVE}
+    {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  Windows,
     {$ENDIF}
   {$ENDIF}
   IdGlobal, SysUtils;

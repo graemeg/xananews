@@ -101,6 +101,11 @@ type
 implementation
 
 uses
+  {$IFDEF VCL_2010_OR_ABOVE}
+    {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  Windows,
+    {$ENDIF}
+  {$ENDIF}
   IdGlobal, SysUtils;
 
 type

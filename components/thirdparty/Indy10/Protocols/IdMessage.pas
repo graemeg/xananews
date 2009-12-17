@@ -713,6 +713,7 @@ var
   LN: Integer;
   LEncoding, LMIMEBoundary, LContentType: string;
   LDate: TDateTime;
+  LReceiptRecipient: string;
 begin
   MessageParts.CountParts;
   {CC2: If the encoding is meDefault, the user wants us to pick an encoding mechanism:}
@@ -846,7 +847,9 @@ begin
     Values['Reply-To'] := EncodeAddress(ReplyTo, HeaderEncoding, ISOCharSet); {do not localize}
     Values['Organization'] := EncodeHeader(Organization, '', HeaderEncoding, ISOCharSet); {do not localize}
 
-    Values['Disposition-Notification-To'] := EncodeAddressItem(ReceiptRecipient, HeaderEncoding, ISOCharSet); {do not localize}
+    LReceiptRecipient := EncodeAddressItem(ReceiptRecipient, HeaderEncoding, ISOCharSet);
+    Values['Disposition-Notification-To'] := LReceiptRecipient; {do not localize}
+    Values['Return-Receipt-To'] := LReceiptRecipient; {do not localize}
 
     Values['References'] := References; {do not localize}
 

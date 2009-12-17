@@ -110,6 +110,7 @@ type
     class function IsRegisteredUser(AUserAccess: TIdUserAccess): Boolean;
     procedure LogoffUser(AUserHandle: TIdUserHandle); virtual;
     procedure UserDisconnected(const AUser : String); virtual;
+    function SendsChallange : Boolean;  virtual;
   End;//TIdCustomUserManager
 
   //=============================================================================
@@ -325,6 +326,11 @@ end;
 procedure TIdCustomUserManager.UserDisconnected(const AUser: String);
 begin
 
+end;
+
+function TIdCustomUserManager.SendsChallange : Boolean;
+begin
+  Result := False;
 end;
 
 { TIdUserAccount }

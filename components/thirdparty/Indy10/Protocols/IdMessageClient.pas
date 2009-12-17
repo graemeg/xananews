@@ -461,6 +461,8 @@ uses
     {$IFDEF USE_INLINE}
   System.IO,
     {$ENDIF}
+  {$ELSE}
+  IdStreamVCL,
   {$ENDIF}
   //TODO: Remove these references and make it completely pluggable. Check other spots in Indy as well
   IdMessageCoderBinHex4, IdMessageCoderQuotedPrintable, IdMessageCoderMIME,
@@ -662,31 +664,31 @@ var
 
   {Only set AUseBodyAsTarget to True if you want the input stream stored in TIdMessage.Body
   instead of TIdText.Body: this happens with some single-part messages.}
-  function ProcessTextPart(ADecoder: TIdMessageDecoder; AUseBodyAsTarget: Boolean): TIdMessageDecoder;
+  procedure ProcessTextPart(var VDecoder: TIdMessageDecoder; AUseBodyAsTarget: Boolean);
   var
     LMStream: TMemoryStream;
     i: integer;
     LTxt : TIdText;
     LHdrs: TStrings;
+    LNewDecoder: TIdMessageDecoder;
   begin
-    Result := nil;
     LMStream := TMemoryStream.Create;
     try
       LParentPart := AMsg.MIMEBoundary.ParentPart;
-      Result := ADecoder.ReadBody(LMStream, LMsgEnd);
+      LNewDecoder := VDecoder.ReadBody(LMStream, LMsgEnd);
       try
         LMStream.Position := 0;
         if AUseBodyAsTarget then begin
           if AMsg.IsMsgSinglePartMime then begin
             ReadStringsAsCharSet(LMStream, AMsg.Body, AMsg.CharSet);
           end else begin
-            ReadStringsAsContentType(LMStream, AMsg.Body, ADecoder.Headers.Values[SContentType]);
+            ReadStringsAsContentType(LMStream, AMsg.Body, VDecoder.Headers.Values[SContentType]);
           end;
         end else begin
           if AMsg.IsMsgSinglePartMime then begin
             LHdrs := AMsg.Headers;
           end else begin
-            LHdrs := ADecoder.Headers;
+            LHdrs := VDecoder.Headers;
           end;
           LTxt := TIdText.Create(AMsg.MessageParts);
           try
@@ -707,7 +709,7 @@ var
                 end;
               end;
             end;
-            LTxt.Filename := ADecoder.Filename;
+            LTxt.Filename := VDecoder.Filename;
             if TextStartsWith(LTxt.ContentType, 'multipart/') then begin {do not localize}
               LTxt.ParentPart := LPreviousParentPart;
 
@@ -734,44 +736,46 @@ var
             raise;
           end;
         end;
-        ADecoder.Free;
       except
-        FreeAndNil(Result);
+        LNewDecoder.Free;
         raise;
       end;
+      VDecoder.Free;
+      VDecoder := LNewDecoder;
     finally
       FreeAndNil(LMStream);
     end;
   end;
 
-  function ProcessAttachment(ADecoder: TIdMessageDecoder): TIdMessageDecoder;
+  procedure ProcessAttachment(var VDecoder: TIdMessageDecoder);
   var
     LDestStream: TStream;
     i: integer;
     LAttachment: TIdAttachment;
     LHdrs: TStrings;
+    LNewDecoder: TIdMessageDecoder;
   begin
-    Result := nil; // suppress warnings
     LParentPart := AMsg.MIMEBoundary.ParentPart;
-    AMsg.DoCreateAttachment(ADecoder.Headers, LAttachment);
+    AMsg.DoCreateAttachment(VDecoder.Headers, LAttachment);
     Assert(Assigned(LAttachment), 'Attachment must not be unassigned here!'); {Do not localize}
     try
-      LDestStream := LAttachment.PrepareTempStream;
+      LNewDecoder := nil;
       try
-        Result := ADecoder.ReadBody(LDestStream, LMsgEnd);
-      finally
-        LAttachment.FinishTempStream;
-      end;
-      try
+        LDestStream := LAttachment.PrepareTempStream;
+        try
+          LNewDecoder := VDecoder.ReadBody(LDestStream, LMsgEnd);
+        finally
+          LAttachment.FinishTempStream;
+        end;
         if AMsg.IsMsgSinglePartMime then begin
           LHdrs := AMsg.Headers;
         end else begin
-          LHdrs := ADecoder.Headers;
+          LHdrs := VDecoder.Headers;
         end;
         LAttachment.ContentType := LAttachment.ResolveContentType(LHdrs.Values[SContentType]);
         LAttachment.CharSet := LAttachment.GetCharSet(LHdrs.Values[SContentType]);
-        if ADecoder is TIdMessageDecoderUUE then begin
-          LAttachment.ContentTransfer := TIdMessageDecoderUUE(ADecoder).CodingType;  {do not localize}
+        if VDecoder is TIdMessageDecoderUUE then begin
+          LAttachment.ContentTransfer := TIdMessageDecoderUUE(VDecoder).CodingType;  {do not localize}
         end else begin
           //Watch out for BinHex 4.0 encoding: no ContentTransfer is specified
           //in the header, but we need to set it to something meaningful for us...
@@ -793,7 +797,7 @@ var
             end;
           end;
         end;
-        LAttachment.Filename := ADecoder.Filename;
+        LAttachment.Filename := VDecoder.Filename;
         if TextStartsWith(LAttachment.ContentType, 'multipart/') then begin  {do not localize}
           LAttachment.ParentPart := LPreviousParentPart;
 
@@ -815,11 +819,12 @@ var
         end else begin
           LAttachment.ParentPart := LParentPart;
         end;
-        ADecoder.Free;
       except
-        FreeAndNil(Result);
+        LNewDecoder.Free;
         raise;
       end;
+      VDecoder.Free;
+      VDecoder := LNewDecoder;
     except
       //This should also remove the Item from the TCollection.
       //Note that Delete does not exist in the TCollection.
@@ -900,8 +905,8 @@ begin
                 LActiveDecoder.ReadHeader;
                 case LActiveDecoder.PartType of
                   mcptUnknown:    EIdException.Toss(RSMsgClientUnkownMessagePartType);
-                  mcptText:       LActiveDecoder := ProcessTextPart(LActiveDecoder, False);
-                  mcptAttachment: LActiveDecoder := ProcessAttachment(LActiveDecoder);
+                  mcptText:       ProcessTextPart(LActiveDecoder, False);
+                  mcptAttachment: ProcessAttachment(LActiveDecoder);
                   mcptIgnore:     FreeAndNil(LActiveDecoder);
                 end;
               end;

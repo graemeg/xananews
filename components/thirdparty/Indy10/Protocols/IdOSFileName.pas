@@ -62,6 +62,7 @@ function FileNameUnixToOS9(const AUnixFileName : String) : String;
 implementation
 
 uses
+  IdException,
   IdGlobal, IdGlobalProtocols, SysUtils;
 
 function EnsureValidCharsByValidSet(const AFilePart, AValidChars : String; const  AReplaceWith : String='_'): String;

@@ -161,6 +161,8 @@ resourcestring
   // General
   RSIOHandlerPropInvalid = 'IOHandler value is not valid';
 
+  //FIPS
+  RSFIPSAlgorithmNotAllowed = 'Algorithm %s not permitted in FIPS mode';
   //FSP
   RSFSPNotFound = 'File Not Found';
   RSFSPPacketTooSmall = 'Packet too small';
@@ -241,7 +243,7 @@ resourcestring
   RSHTTPGone = 'Gone';
   RSHTTPLengthRequired = 'Length Required';
   RSHTTPPreconditionFailed = 'Precondition Failed';
-  RSHTTPRequestEntityToLong = 'Request Entity To Long';
+  RSHTTPRequestEntityTooLong = 'Request Entity Too Long';
   RSHTTPRequestURITooLong = 'Request-URI Too Long. 256 Chars max';
   RSHTTPUnsupportedMediaType = 'Unsupported Media Type';
   RSHTTPExpectationFailed = 'Expectation Failed';
@@ -429,9 +431,11 @@ resourcestring
   RSTFTPDiskFull = 'Unable to complete write request, progress halted at %d bytes';
   RSTFTPFileNotFound = 'Unable to open %s';
   RSTFTPAccessDenied = 'Access to %s denied';
+  RSTFTPUnsupportedOption = 'Unsupported option: "%s"';
+  RSTFTPUnsupportedOptionValue = 'Unsupported value "%s" for option: "%s"';
 
   { MESSAGE Exception messages }
-  RSTIdTextInvalidCount = 'Invalid Text count. TIdText must be greater than 1';
+  RSTIdTextInvalidCount = 'Invalid Text count. Must have more than 1 TIdText object.';
   RSTIdMessagePartCreate = 'TIdMessagePart can not be created.  Use descendant classes. ';
   RSTIdMessageErrorSavingAttachment = 'Error saving attachment.';
   RSTIdMessageErrorAttachmentBlocked = 'Attachment %s is blocked.';

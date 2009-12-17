@@ -286,6 +286,7 @@ uses
   {$IFDEF DOTNET}
   System.Text,
   {$ENDIF}
+  IdGlobalProtocols,
   IdHash,
   IdHashMessageDigest,
   IdCoderMIME;
@@ -444,6 +445,7 @@ var
   nt_hpw128: TIdBytes;
   nt_resp: array [1..24] of AnsiChar;
 begin
+  CheckMD4Permitted;
   with TIdHashMessageDigest4.Create do
   try
     {$IFDEF STRING_IS_UNICODE}

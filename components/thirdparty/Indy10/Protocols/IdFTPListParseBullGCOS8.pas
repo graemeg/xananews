@@ -70,6 +70,7 @@ type
 implementation
 
 uses
+  IdException,
   IdGlobal, IdFTPCommon, IdGlobalProtocols, SysUtils;
 
 { TIdFTPLPGOS8 }
