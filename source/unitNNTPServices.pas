@@ -2830,7 +2830,6 @@ var
   function GetLineCount(body: TStream): Integer;
   var
     P: PAnsiChar;
-    I: Integer;
     L: Integer;
   begin
     Result := 0;
@@ -2838,14 +2837,16 @@ var
     begin
       P := TMemoryStream(body).Memory;
       L := TMemoryStream(body).Size;
-      for I := 0 to L - 2 do
+      while L > 1 do
       begin
         if P^ = #13 then
         begin
+          Dec(L);
           Inc(P);
           if P^ = #10 then
             Inc(Result);
         end;
+        Dec(L);
         Inc(P);
       end;
     end

@@ -353,7 +353,7 @@
 						<VersionInfo Name="MajorVer">1</VersionInfo>
 						<VersionInfo Name="MinorVer">19</VersionInfo>
 						<VersionInfo Name="Release">1</VersionInfo>
-						<VersionInfo Name="Build">259</VersionInfo>
+						<VersionInfo Name="Build">263</VersionInfo>
 						<VersionInfo Name="Debug">False</VersionInfo>
 						<VersionInfo Name="PreRelease">False</VersionInfo>
 						<VersionInfo Name="Special">False</VersionInfo>
@@ -365,7 +365,7 @@
 					<VersionInfoKeys>
 						<VersionInfoKeys Name="CompanyName">Colin Wilson</VersionInfoKeys>
 						<VersionInfoKeys Name="FileDescription">XanaNews News Reader</VersionInfoKeys>
-						<VersionInfoKeys Name="FileVersion">1.19.1.259</VersionInfoKeys>
+						<VersionInfoKeys Name="FileVersion">1.19.1.263</VersionInfoKeys>
 						<VersionInfoKeys Name="InternalName">XanaNews</VersionInfoKeys>
 						<VersionInfoKeys Name="LegalCopyright">Copyright (c) XanaNews 2009</VersionInfoKeys>
 						<VersionInfoKeys Name="LegalTrademarks">All Rights Reserved</VersionInfoKeys>
