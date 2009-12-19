@@ -112,6 +112,7 @@ uses
   unitRFC2646Coder in 'unitRFC2646Coder.pas',
   ReadLnDelayDialog in 'ReadLnDelayDialog.pas' {dlgReadLnDelay},
   unitMessageBaseSearch in 'unitMessageBaseSearch.pas',
+  unitNewsgroups in 'unitNewsgroups.pas',
   unitNewsThread in 'unitNewsThread.pas',
   unitNNTPThreads in 'unitNNTPThreads.pas',
   cmpMessageScrollBox in 'cmpMessageScrollBox.pas',

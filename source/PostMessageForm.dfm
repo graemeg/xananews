@@ -138,20 +138,20 @@ object fmPostMessage: TfmPostMessage
     end
     inherited btnCancel: TButton
       Left = 552
-      ExplicitLeft = 551
+      ExplicitLeft = 552
     end
     inherited btnOK: TButton
       Left = 552
-      ExplicitLeft = 551
+      ExplicitLeft = 552
     end
     inherited btnAttachments: TButton
       Left = 552
-      ExplicitLeft = 551
+      ExplicitLeft = 552
     end
     inherited btnAdvanced: TButton
       Left = 552
       OnClick = fmePost1btnAdvancedClick
-      ExplicitLeft = 551
+      ExplicitLeft = 552
     end
     inherited cbIdentity: TComboBox
       Left = 368

@@ -250,10 +250,58 @@ begin
   fCodePageOverride := -1;
 end;
 
-function TrimReferences(st: string; n: Integer): string;
+
+//http://tools.ietf.org/html/draft-ietf-usefor-useage-00#section-3.2.1.5
+//
+//3.2.1.4.  References
+//
+//   Followup agents SHOULD trim message identifiers out of a References
+//   header but SHOULD NOT do so until the number of message identifiers
+//   exceeds 21, at which time trimming SHOULD be done by removing
+//   sufficient identifiers starting with the second from the left so as
+//   to bring the total down to 21 (but the first message identifier MUST
+//   NOT be trimmed). However, it would be wrong to assume that References
+//   headers containing more than 21 message identifiers will not occur.
+//[21 was the figure agreed by the WG, but I think it would be better to
+//recommend an overall cutoff at 998 characters, because I have seen
+//followup agents that systematically undo the folding carefully put their
+//by precursors.]
+//
+// --- AND ---
+//
+//http://tools.ietf.org/html/rfc5537#section-3.4.4
+//
+//3.4.4.  Construction of the References Header Field
+//
+//   The following procedure is to be used whenever some previous article
+//   (the "parent") is to be referred to in the References header field of
+//   a new article, whether because the new article is a followup and the
+//   parent is its precursor or for some other reason.
+//
+//   The content of the new article's References header field MUST be
+//   formed from the content of the parent's References header field if
+//   present, followed by the content of the Message-ID header field of
+//   the parent.  If the parent had a References header, FWS as defined in
+//   [RFC5536] MUST be added between its content and the Message-ID header
+//   field content.
+//
+//   If the resulting References header field would, after unfolding,
+//   exceed 998 characters in length (including its field name but not the
+//   final CRLF), it MUST be trimmed (and otherwise MAY be trimmed).
+//   Trimming means removing any number of message identifiers from its
+//   content, except that the first message identifier and the last two
+//   MUST NOT be removed.
+//
+//   An essential property of the References header field, guaranteed by
+//   the above procedure and REQUIRED to be maintained by any extensions
+//   to this protocol, is that an article MUST NOT precede one of its
+//   parents.
+
+function TrimReferences(st: string): string;
 var
   refCount: Integer;
   s, r, firstRef: string;
+  L: Integer;
 begin
   s := '';
   refCount := 0;
@@ -261,7 +309,8 @@ begin
     r := SplitString(' ', st);
     if r <> '' then
     begin
-      if (Copy(r, 1, 1) = '<') and (Copy(r, Length(r), 1) = '>') then
+      L := Length(r);
+      if (L > 1) and (r[1] = '<') and (r[L] = '>') then
       begin
         Inc(refCount);
         if s = '' then
@@ -272,13 +321,12 @@ begin
     end
   until r = '';
 
-  if refCount > n then
+  if refCount > 3 then
   begin
     firstRef := ExtractString(' ', s);
-    while (refCount > n) or (Length(firstRef + ' ' + s) > 998) do
+    while Length(firstRef + ' ' + s) > (998 - 12) do // Length('References: ') = 12
     begin
       ExtractString(' ', s);
-      Dec(refCount);
       if s = '' then
         Break;
     end;
@@ -319,7 +367,7 @@ begin
 
     if fIsReply then
       if fOrigReferences <> '' then
-        fHeader.Add('References=' + TrimReferences(fOrigReferences, 19) + ' ' + fOrigMessageID)
+        fHeader.Add('References=' + TrimReferences(fOrigReferences + ' ' + fOrigMessageID))
       else
         fHeader.Add('References=' + fOrigMessageID);
 
@@ -388,7 +436,7 @@ begin
   if fIsReply then
     if fHeader.Values['References'] = '' then
       if fOrigReferences <> '' then
-        fHeader.Add('References=' + TrimReferences(fOrigReferences, 19) + ' ' + fOrigMessageID)
+        fHeader.Add('References=' + TrimReferences(fOrigReferences + ' ' + fOrigMessageID))
       else
         fHeader.Add('References=' + fOrigMessageID);
 
