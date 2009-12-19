@@ -1783,7 +1783,7 @@ begin
               if RawPos('Newsgroups', s1) = 1 then
                 hdr.Add(s1 + '=' + s)
               else
-                hdr.Add(s1 + '=' + EncodeHeader(s, CodePage, RawPos('From', s1) = 1));
+                hdr.Add(s1 + '=' + EncodeHeader(s, fCodePage, RawPos('From', s1) = 1, Length(s1) + 2));
             end;
         end
       else

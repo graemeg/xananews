@@ -206,7 +206,7 @@ procedure DecodeFromEMail(const from: RawByteString; var fromName, fromEMail: st
 function DecodeHeader(const header: RawByteString; defCP: Integer = -1): string;
 function DecodeSubject(const subject: RawByteString; defCP: Integer): string;
 function GenerateMessageID(const product, stub, host: string): RawByteString;
-function EncodeHeader(const header: RawByteString; codepage: Integer; from: Boolean): RawByteString;
+function EncodeHeader(const header: RawByteString; codepage: Integer; from: Boolean; headerLength: Integer): RawByteString;
 procedure SetTempStatusMessage(const msg: string; pos, max: word);
 function SafeDateTimeToInternetStr(const Value: TDateTime; const AIsGMT: Boolean = False): string;
 function FixedGMTToLocalDateTime(S: RawByteString): TDateTime;
@@ -1087,7 +1087,7 @@ const
     '4','5','6','7','8','9','+','/');     {Do not Localize}
 
 function EncodeHeader1(const Header: RawByteString; specials: CSET; HeaderEncoding: AnsiChar;
-  TransferHeader: TTransfer; CodePage: Integer): RawByteString;
+  TransferHeader: TTransfer; codePage, initialLength: Integer): RawByteString;
 const
   SPACES: set of Char = [' ', #9, #10, #13, '''', '"'];    {Do not Localize}
 var
@@ -1110,8 +1110,11 @@ var
     EncLen: Integer;
     Enc1: RawByteString;
     ac: AnsiChar;
+    first: Boolean;
   begin
-    T := T + BeginEncode;
+    if headerEncoding = 'Q' then
+      initialLength := initialLength + Length(T);
+    first := True;
     if L < P then P := L + 1;
     Q := InEncode;
     InEncode := 0;
@@ -1123,7 +1126,7 @@ var
       begin
         ac := S[Q];
 
-        // Determine extra bytes needed to encode a complete multi-byte character.
+        // Determine extra bytes needed to encode a *complete* multi-byte character.
         extraBytes := 0;
         if CodePage = CP_UTF8 then
         begin
@@ -1144,11 +1147,21 @@ var
           else
             Enc1 := '=' + RawByteString(IntToHex(Ord(ac), 2)); {Do not Localize}
         end;
-        if EncLen + Length(Enc1) + extraBytes > MaxEncLen then
+
+        if initialLength + EncLen + Length(Enc1) + extraBytes > MaxEncLen then
         begin
-          T := T + EndEncode + #13#10#9 + BeginEncode;
+          initialLength := 0;
+          if first then
+            T := T + #13#10#9 + BeginEncode
+          else
+            T := T + EndEncode + #13#10#9 + BeginEncode;
           EncLen := Length(BeginEncode) + 2;
-        end;
+        end
+        else
+          if first then
+            T := T + BeginEncode;
+        first := False;
+
         T := T + Enc1;
         INC(EncLen, Length(Enc1));
         INC(Q);
@@ -1158,11 +1171,19 @@ var
     begin { base64 }
       while Q < P do
       begin
-        if EncLen + 4 > MaxEncLen then
+        if initialLength + EncLen + 4 > MaxEncLen then
         begin
-          T := T + EndEncode + #13#10#9 + BeginEncode;
+          initialLength := 0;
+          if first then
+            T := T + #13#10#9 + BeginEncode
+          else
+            T := T + EndEncode + #13#10#9 + BeginEncode;
           EncLen := Length(BeginEncode) + 2;
-        end;
+        end
+        else
+          if first then
+            T := T + BeginEncode;
+        first := False;
 
         B0 := Ord(S[Q]);
         case P - Q of
@@ -1170,8 +1191,8 @@ var
           2: begin
                B1 := Ord(S[Q + 1]);
                T := T + base64_tbl[B0 shr 2] +
-                    base64_tbl[B0 and $03 shl 4 + B1 shr 4] +
-                    base64_tbl[B1 and $0F shl 2] + '='; {Do not Localize}
+                 base64_tbl[B0 and $03 shl 4 + B1 shr 4] +
+                 base64_tbl[B1 and $0F shl 2] + '='; {Do not Localize}
              end;
         else
           B1 := Ord(S[Q + 1]);
@@ -1190,7 +1211,7 @@ var
 
 begin
   S := Header;
-  mimeCharSet := RawCodePageToMIMECharsetName(CodePage);
+  mimeCharSet := RawCodePageToMIMECharsetName(codePage);
   headerEncoding := UpCase(headerEncoding);
 
   {Suggested by Andrew P.Rybin for easy 8bit support}
@@ -1202,7 +1223,7 @@ begin
 
   csNeedEncode := [#0..#31, #127..#255] + specials;
   csReqQuote := csNeedEncode + ['?', '=', '_', ' ']; {Do not Localize}
-  BeginEncode := '=?' + MimeCharSet + '?' + HeaderEncoding + '?'; {Do not Localize}
+  BeginEncode := '=?' + mimeCharSet + '?' + headerEncoding + '?'; {Do not Localize}
   EndEncode := '?='; {Do not Localize}
 
   L := Length(S);
@@ -1251,7 +1272,8 @@ begin
   Result := T;
 end;
 
-function EncodeHeader(const header: RawByteString; codePage: Integer; from: Boolean): RawByteString;
+function EncodeHeader(const header: RawByteString; codePage: Integer;
+  from: Boolean; headerLength: Integer): RawByteString;
 var
   raw: RawByteString;
   i: Integer;
@@ -1288,11 +1310,12 @@ begin
         Inc(i);
   end;
 
-
 // TODO: Q or B-encoding (B-encoding seems to be more commonly accepted)
-//       RTC says use Q when most of the text fits in normal ASCII.
+//       RFC says use Q when most of the text fits in normal ASCII.
+// - Problem is that the current implementation of the B-encoding may
+//   use folding within a multi-byte character, which is not allowed.
   if ansi or not from then
-    Result := EncodeHeader1(header, [], 'Q', bit7, CodePage)
+    Result := EncodeHeader1(header, [], 'Q', bit7, codePage, headerLength)
   else
   begin
     // It concerns a from name with non-ansi characters.
@@ -1307,7 +1330,7 @@ begin
       finally
         sl.Free;
       end;
-      Result := '=?' + RawCodePageToMIMECharsetName(CodePage) + '?Q?' + raw + '?= ' +
+      Result := '=?' + RawCodePageToMIMECharsetName(codePage) + '?Q?' + raw + '?= ' +
         RawTrim(Copy(header, i + 2, MaxInt));
     finally
       coder.Free;
