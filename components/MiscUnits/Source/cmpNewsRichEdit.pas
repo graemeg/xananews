@@ -30,7 +30,8 @@ unit cmpNewsRichEdit;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Forms, Controls, Graphics, RichEdit, cmpCWRichEdit;
+  Windows, Messages, SysUtils, Classes, Forms, Controls, Graphics,
+  RichEdit, cmpCWRichEdit;
 
 type
   TNewsRichEdit = class;
@@ -41,59 +42,57 @@ type
 
   TNewsCharFormatter = class (TCharFormatter)
   private
-    fIsFormatted : boolean;
-    fEOL : boolean;
-    fInSignature : boolean;
-    fInHighlight : boolean;
-    fStrictSigSeparator : boolean;
+    fIsFormatted: Boolean;
+    fEOL: Boolean;
+    fInSignature: Boolean;
+    fInHighlight: Boolean;
+    fStrictSigSeparator: Boolean;
   public
     constructor Create;
     procedure Reset; override;
-    procedure GetFormattedChars (stream : TRichEditStream; var fc : TCharFormat); override;
+    procedure GetFormattedChars(stream: TRichEditStream; var fc: TCharFormat); override;
   end;
 
 //----------------------------------------------------------------------
 // TNewsRichEdit class
+
   TNewsRichEdit = class(TExRichEdit)
   private
     fLevel3QuoteFont: TFont;
     fLevel1QuoteFont: TFont;
     fLevel2QuoteFont: TFont;
-    fFormatter : TCharFormatter;
+    fFormatter: TCharFormatter;
     fHeaderFont: TFont;
     fSignatureFont: TFont;
-    fRawText: boolean;
+    fRawText: Boolean;
     fTruncateFrom: WideString;
-    fStrictSigSeparator: boolean;
+    fStrictSigSeparator: Boolean;
     procedure SetLevel1QuoteFont(const Value: TFont);
     procedure SetLevel2QuoteFont(const Value: TFont);
     procedure SetLevel3QuoteFont(const Value: TFont);
     procedure SetHeaderFont(const Value: TFont);
     procedure SetSignatureFont(const Value: TFont);
-    procedure SetRawText(const Value: boolean);
-   { Private declarations }
+    procedure SetRawText(const Value: Boolean);
   protected
-    function GetCharFormatter : TCharFormatter; override;
-    { Protected declarations }
+    function GetCharFormatter: TCharFormatter; override;
   public
-    constructor Create (AOwner : TComponent); override;
+    constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
-    property TruncateFrom : WideString read fTruncateFrom write fTruncateFrom;
-    property StrictSigSeparator : boolean read fStrictSigSeparator write fStrictSigSeparator;
-    { Public declarations }
+    property TruncateFrom: WideString read fTruncateFrom write fTruncateFrom;
+    property StrictSigSeparator: Boolean read fStrictSigSeparator write fStrictSigSeparator;
   published
-    property HeaderFont : TFont read fHeaderFont write SetHeaderFont;
-    property Level1QuoteFont : TFont read fLevel1QuoteFont write SetLevel1QuoteFont;
-    property Level2QuoteFont : TFont read fLevel2QuoteFont write SetLevel2QuoteFont;
-    property Level3QuoteFont : TFont read fLevel3QuoteFont write SetLevel3QuoteFont;
-    property SignatureFont : TFont read fSignatureFont write SetSignatureFont;
-    property RawText : boolean read fRawText write SetRawText;
-    { Published declarations }
+    property HeaderFont: TFont read fHeaderFont write SetHeaderFont;
+    property Level1QuoteFont: TFont read fLevel1QuoteFont write SetLevel1QuoteFont;
+    property Level2QuoteFont: TFont read fLevel2QuoteFont write SetLevel2QuoteFont;
+    property Level3QuoteFont: TFont read fLevel3QuoteFont write SetLevel3QuoteFont;
+    property SignatureFont: TFont read fSignatureFont write SetSignatureFont;
+    property RawText: Boolean read fRawText write SetRawText;
   end;
 
 implementation
 
-uses unitCharsetMap;
+uses
+  unitCharsetMap;
 
 { TNewsRichEdit }
 
@@ -104,7 +103,7 @@ uses unitCharsetMap;
  *----------------------------------------------------------------------*)
 constructor TNewsRichEdit.Create(AOwner: TComponent);
 begin
-  inherited;
+  inherited Create(AOwner);
 
   RawPaste := True;
 
@@ -134,9 +133,9 @@ begin
   fLevel3QuoteFont.Free;
   fSignatureFont.Free;
 
-  FreeAndNil (fFormatter);
+  FreeAndNil(fFormatter);
 
-  inherited;
+  inherited Destroy;
 end;
 
 (*----------------------------------------------------------------------*
@@ -148,15 +147,15 @@ end;
  *----------------------------------------------------------------------*)
 function TNewsRichEdit.GetCharFormatter: TCharFormatter;
 begin
- if not Assigned (fFormatter) then
-   if RawText then
-     fFormatter := TCharFormatter.Create
-   else
-   begin
-     fFormatter := TNewsCharFormatter.Create;
-     TNewsCharFormatter (fFormatter).fStrictSigSeparator := StrictSigSeparator
-   end;
- result := fFormatter;
+  if not Assigned(fFormatter) then
+    if RawText then
+      fFormatter := TCharFormatter.Create
+    else
+    begin
+      fFormatter := TNewsCharFormatter.Create;
+      TNewsCharFormatter(fFormatter).fStrictSigSeparator := StrictSigSeparator
+    end;
+  Result := fFormatter;
 end;
 
 (*----------------------------------------------------------------------*
@@ -166,7 +165,7 @@ end;
  *----------------------------------------------------------------------*)
 procedure TNewsRichEdit.SetHeaderFont(const Value: TFont);
 begin
-  fHeaderFont.Assign (Value);
+  fHeaderFont.Assign(Value);
 end;
 
 (*----------------------------------------------------------------------*
@@ -176,7 +175,7 @@ end;
  *----------------------------------------------------------------------*)
 procedure TNewsRichEdit.SetLevel1QuoteFont(const Value: TFont);
 begin
-  fLevel1QuoteFont.Assign (Value);
+  fLevel1QuoteFont.Assign(Value);
 end;
 
 (*----------------------------------------------------------------------*
@@ -186,7 +185,7 @@ end;
  *----------------------------------------------------------------------*)
 procedure TNewsRichEdit.SetLevel2QuoteFont(const Value: TFont);
 begin
-  fLevel2QuoteFont.Assign (Value);
+  fLevel2QuoteFont.Assign(Value);
 end;
 
 (*----------------------------------------------------------------------*
@@ -196,7 +195,7 @@ end;
  *----------------------------------------------------------------------*)
 procedure TNewsRichEdit.SetLevel3QuoteFont(const Value: TFont);
 begin
-  fLevel3QuoteFont.Assign (Value);
+  fLevel3QuoteFont.Assign(Value);
 end;
 
 (*----------------------------------------------------------------------*
@@ -204,14 +203,14 @@ end;
  |                                                                      |
  | Set method for the RawText property                                  |
  *----------------------------------------------------------------------*)
-procedure TNewsRichEdit.SetRawText(const Value: boolean);
+procedure TNewsRichEdit.SetRawText(const Value: Boolean);
 begin
   if fRawText <> Value then
   begin
     fRawText := Value;
-    FreeAndNil (fFormatter)     // It will be recreated when it's next required
+    FreeAndNil(fFormatter);     // It will be recreated when it's next required
                                 // in the appropriate raw or not raw type
-  end
+  end;
 end;
 
 (*----------------------------------------------------------------------*
@@ -221,7 +220,7 @@ end;
  *----------------------------------------------------------------------*)
 procedure TNewsRichEdit.SetSignatureFont(const Value: TFont);
 begin
-  fSignatureFont.Assign (Value)
+  fSignatureFont.Assign(Value);
 end;
 
 { TNewsCharFormatter }
@@ -233,7 +232,7 @@ end;
  *----------------------------------------------------------------------*)
 constructor TNewsCharFormatter.Create;
 begin
-  Reset
+  Reset;
 end;
 
 (*----------------------------------------------------------------------*
@@ -241,30 +240,31 @@ end;
  |                                                                      |
  | Bit of a black hole this - sorry!                                    |
  *----------------------------------------------------------------------*)
-procedure TNewsCharFormatter.GetFormattedChars(stream: TRichEditStream; var fc : TCharFormat);
+procedure TNewsCharFormatter.GetFormattedChars(stream: TRichEditStream; var fc: TCharFormat);
 var
-  c, pc : WideChar;
-  p, p1 : PWideChar;
-  i, n, n1 : DWORD;
-  sol, trc : boolean;
-  own : TNewsRichEdit;
-  quoteLevel : Integer;
-  hl : TFontStyles;
+  c, pc: WideChar;
+  p, p1: PWideChar;
+  i, n, n1: DWORD;
+  sol, trc: Boolean;
+  own: TNewsRichEdit;
+  quoteLevel: Integer;
+  hl: TFontStyles;
 
 begin
-  own := TNewsRichEdit (stream.Owner);
+  own := TNewsRichEdit(stream.Owner);
   trc := own.TruncateFrom <> '';
   with stream do
   begin
     i := ChunkStart;
     if ChunkStart >= Len then Exit;
     p := Buffer;
-    Inc (p, ChunkStart);
+    Inc(p, ChunkStart);
     sol := False;
 
     if fEOL then        // When we finished last time, we were at the end of
     begin               // a line.  So cancel all formatting
-      fc := Owner.DefaultCharFormat;
+      if not fInSignature then
+        fc := Owner.DefaultCharFormat;
       fIsFormatted := False;
       sol := True;
     end;
@@ -275,8 +275,8 @@ begin
                                 // the terminating indicators
       while (p^ = '*') or (p^ = '/') or (p^ = '_') do
       begin
-        Inc (p);
-        Inc (i);
+        Inc(p);
+        Inc(i);
         ChunkStart := ChunkStart + 1;
       end;
       fc.dwEffects := fc.dwEffects and not (CFE_BOLD or CFE_ITALIC or CFE_UNDERLINE or CFE_LINK);
@@ -296,8 +296,8 @@ begin
         begin
           Owner.FontToCharFormat(own.fHeaderFont, fc);
           fIsFormatted := True;
-          Inc (p);
-          Inc (i);
+          Inc(p);
+          Inc(i);
           sol := False;
           stream.ChunkStart := stream.ChunkStart + 1;
           continue
@@ -307,9 +307,9 @@ begin
         p1 := p;
         while (p1^ = '>') or (p1^ = '|') do
         begin
-          Inc (quoteLevel);
-          Inc (p1);
-          if p1^ = ' ' then Inc (p1)
+          Inc(quoteLevel);
+          Inc(p1);
+          if p1^ = ' ' then Inc(p1)
         end;
 
         if quoteLevel > 0 then
@@ -317,33 +317,33 @@ begin
                                 // If the 'Chunk' is not empty, exit, so that
                                 // it can be displayed
           if i <> ChunkStart then
-            break;
+            Break;
                                 // The chunk was empty, so select the new font
                                 // an use it for the chunk
           case QuoteLevel of
-            1 : Owner.FontToCharFormat(own.fLevel1QuoteFont, fc);
-            2 : Owner.FontToCharFormat(own.fLevel2QuoteFont, fc);
-            else Owner.FontToCharFormat(own.fLevel3QuoteFont, fc)
+            1: Owner.FontToCharFormat(own.fLevel1QuoteFont, fc);
+            2: Owner.FontToCharFormat(own.fLevel2QuoteFont, fc);
+          else Owner.FontToCharFormat(own.fLevel3QuoteFont, fc)
           end;
 
-          fIsFormatted := True
+          fIsFormatted := True;
         end;
 
 
         if p^ = '-' then        // Detect signature indicator.  Allow a line
         begin                   // containing '-- ' or '--'
           p1 := p;
-          Inc (p1);
+          Inc(p1);
           if p1^ = '-' then
           begin
-            Inc (p1);
+            Inc(p1);
             if (p1^ = ' ') or not fStrictSigSeparator then
             begin
-              if p1^ = ' ' then Inc (p1);
+              if p1^ = ' ' then Inc(p1);
               if p1^ = #13 then
               begin
                 if i <> ChunkStart then
-                  break;
+                  Break;
                 fInSignature := True;
                 Owner.FontToCharFormat(own.SignatureFont, fc);
               end
@@ -353,10 +353,10 @@ begin
       end;
 
       if sol and trc and fInSignature then
-        if WideSameText (Copy (p, 1, Length (own.TruncateFrom)), own.TruncateFrom) then
+        if WideSameText(Copy(p, 1, Length(own.TruncateFrom)), own.TruncateFrom) then
         begin
           stream.Truncate := True;
-          break;
+          Break;
         end;
 
 
@@ -365,17 +365,17 @@ begin
         fEOL := True;
         sol := True;
         pc := c;
-        Inc (p);
-        Inc (i);
+        Inc(p);
+        Inc(i);
         if p^ = #10 then
         begin
-          Inc (i);
-          Inc (p)
+          Inc(i);
+          Inc(p);
         end;                    // If it's formatted then output this line
         if fIsFormatted then
-          break
+          Break
         else
-          continue;
+          Continue;
       end;
 
       sol := False;
@@ -393,7 +393,7 @@ begin
                                 // Group all potential indicator chars together.
         while (c = '*') or (c = '/') or (c = '_') do
         begin
-          Inc (n);
+          Inc(n);
           if c = '*' then
             hl := hl + [fsBold]
           else
@@ -402,31 +402,31 @@ begin
             else
               if c = '_' then
                 hl := hl + [fsUnderline];
-          Inc (p1);
+          Inc(p1);
           c := p1^
         end;
 
                                 // Skip word after indicator chars
         n1 := 0;
-        while IsWideCharAlNum (p1^) or (p1^ = '''') do
+        while IsWideCharAlNum(p1^) or (p1^ = '''') do
         begin
-          Inc (n1);
-          Inc (p1)
+          Inc(n1);
+          Inc(p1);
         end;
 
                                 // Did we have whitespace, indicator chars, alpha chars, indicator chars ???
         if (p1^ = '*') or (p1^ = '/') or (p1^ = '_') then
         begin
           repeat
-            Inc (p1)
+            Inc(p1);
           until not ((p1^ = '*') or (p1^ = '/') or (p1^ = '_'));
 
                                 // It looks like a highlighted word - but be careful we're not
                                 // in the middle of a URL or filename!
-          if not IsWideCharAlNum (p1^) and not (Char (p1^) in ['@', '#', '£', '''', '"', '&']) then
+          if not IsWideCharAlNum(p1^) and not (Char(p1^) in ['@', '#', '£', '''', '"', '&']) then
           begin
             if i <> ChunkStart then
-              break
+              Break
             else
             begin               // We're in a highlighted word.  Skip the indicator chars
               ChunkStart := ChunkStart + n;
@@ -435,36 +435,36 @@ begin
               if fsBold in hl then
               begin
                 fc.dwMask := fc.dwMask or CFM_BOLD;
-                fc.dwEffects := fc.dwEffects or CFE_BOLD
+                fc.dwEffects := fc.dwEffects or CFE_BOLD;
               end;
 
               if fsItalic in hl then
               begin
                 fc.dwMask := fc.dwMask or CFM_ITALIC;
-                fc.dwEffects := fc.dwEffects or CFE_ITALIC
+                fc.dwEffects := fc.dwEffects or CFE_ITALIC;
               end;
 
               if fsUnderline in hl then
               begin
                 fc.dwMask := fc.dwMask or CFM_UNDERLINE;
-                fc.dwEffects := fc.dwEffects or CFE_UNDERLINE
+                fc.dwEffects := fc.dwEffects or CFE_UNDERLINE;
               end;
 
               fInHighlight := True;
               fIsFormatted := True;
-              exit
-            end
-          end
-        end
+              Exit;
+            end;
+          end;
+        end;
       end;
 
       pc := c;
-      Inc (p);
-      Inc (i)
-    end; // End while
+      Inc(p);
+      Inc(i);
+    end; // end while
 
-    ChunkEnd := i
-  end  // end with
+    ChunkEnd := i;
+  end;  // end with
 end;
 
 procedure TNewsCharFormatter.Reset;
