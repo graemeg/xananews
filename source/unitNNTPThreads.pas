@@ -114,7 +114,8 @@ implementation
 uses
   DateUtils,
   IdException, unitNNTPThreadManager, unitNewsReaderOptions, unitMessages,
-  unitCharsetMap, unitMailServices, unitLog, unitSearchString, NewsGlobals,
+  unitCharsetMap, unitMailServices, unitNewsgroups, unitLog, unitSearchString,
+  NewsGlobals,
   IdGlobal, IdReplyRFC, IdStack, IdGlobalProtocols, IdExceptionCore,
   IdAttachmentFile, IdExplicitTLSClientServerBase;
 
@@ -146,9 +147,11 @@ procedure TNNTPThread.CheckNewGroups;
 var
   FileName: string;
   dt: TDateTime;
-  groups, newGroups: TStringList;
+  groups: TNewsgroupsStringList;
+  newGroups: TStringList;
   i: Integer;
   st: string;
+  group: string;
 begin
   if HoursBetween(Now, NNTPAccount.LastCheckForNewGroups) < 6 then Exit;
 
@@ -170,7 +173,7 @@ begin
 
         if newGroups.Count > 0 then
         begin
-          groups := TStringList.Create;
+          groups := TNewsgroupsStringList.Create;
           groups.LoadFromFile(fileName);
 
           groups.Sorted := True;
@@ -178,23 +181,24 @@ begin
 
           // Check incoming line(s) should be:
           //    group last first p
-          //  where <group> is the name of the newsgroup, <last> is the number of
-          //  the last known article currently in that newsgroup, <first> is the
-          //  number of the first article currently in the newsgroup, and <p> is
-          //  either 'y' or 'n' indicating whether posting to this newsgroup is
-          //  allowed ('y') or prohibited ('n').
+          // where <group> is the name of the newsgroup, <last> is the number of
+          // the last known article currently in that newsgroup, <first> is the
+          // number of the first article currently in the newsgroup, and <p> is
+          // either 'y' or 'n' indicating whether posting to this newsgroup is
+          // allowed ('y') or prohibited ('n').
 
           for i := 0 to newGroups.Count - 1 do
           begin
-            if groups.IndexOf(newGroups[i]) = -1 then
+            st := newGroups[i];
+            if Length(st) > 0 then
             begin
-              st := newGroups[i];
-              SplitString(' ', st);
+              group := SplitString(' ', st);
               if (StrToIntDef(SplitString(' ', st), -1) <> -1) and
                  (StrToIntDef(SplitString(' ', st), -1) <> -1) then
               begin
-                // Received a valid new group, add it to the list.
-                groups.Add(newGroups[i] + ' *')
+                // Received a valid new group, add it to the list if it didn't exist yet.
+                if groups.IndexOf(group) = -1 then
+                  groups.Add(newGroups[i] + ' *');
               end
               else
               begin
