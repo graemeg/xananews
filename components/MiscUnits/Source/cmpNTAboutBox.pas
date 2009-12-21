@@ -51,6 +51,7 @@ type
     property ThanksTo: string read fThanksTo write fThanksTo;
   end;
 
+function IsWow64: Boolean;
 function LoadGifResource(const resName: string; image: TImage): Boolean;
 
 var
@@ -62,6 +63,24 @@ implementation
 
 uses
   Registry, gifimg;
+
+type
+  LPFN_ISWOW64PROCESS = function(hProcess: THandle; var Wow64Process: BOOL): BOOL; stdcall;
+
+function IsWow64: Boolean;
+var
+  fnIsWow64Process: LPFN_ISWOW64PROCESS;
+  bIsWow64: BOOL;
+begin
+  Result := False;
+  fnIsWow64Process := LPFN_ISWOW64PROCESS(GetProcAddress(GetModuleHandle('kernel32'), 'IsWow64Process'));
+  if Assigned(fnIsWow64Process) then
+  begin
+    bIsWow64 := False;
+    if fnIsWow64Process(GetCurrentProcess(), bIsWow64) then
+      Result := bIsWow64;
+  end;
+end;
 
 function LoadGifResource(const resName: string; image: TImage): Boolean;
 var
@@ -91,9 +110,10 @@ end;
 
 procedure TfmNTAboutBox.GetRegistrationInformation(isNT: Boolean; var owner, organization: string);
 var
-  product: string;
+  os, product: string;
   p: Integer;
   reg: TRegistry;
+  flags: LongWord;
   gotDetails: Boolean;
 begin
   gotDetails := False;
@@ -120,15 +140,18 @@ begin
     owner := 'Owner';
     organization := 'Organization';
 
-    reg := TRegistry.Create(KEY_READ);
+    flags := KEY_READ;
+    if IsWow64 then
+      flags := flags or KEY_WOW64_64KEY;
+    reg := TRegistry.Create(flags);
     try
       reg.RootKey := HKEY_LOCAL_MACHINE;
       if isNT then
-        product := 'Windows NT'
+        os := 'Windows NT'
       else
-        product := 'Windows';
+        os := 'Windows';
 
-      if reg.OpenKey(Format('Software\Microsoft\%s\CurrentVersion', [product]), False) then
+      if reg.OpenKey(Format('Software\Microsoft\%s\CurrentVersion', [os]), False) then
       begin
         owner := reg.ReadString('RegisteredOwner');
         organization := reg.ReadString('RegisteredOrganization');
