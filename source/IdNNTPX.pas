@@ -280,7 +280,7 @@ end;
 
 procedure TidNNTPX.Connect;
 begin
-  inherited;
+  inherited Connect;
   if IOHandler is TidIOHandlerSocket then
     TidIOHandlerSOcket(IOHandler).UseNagle := False;
   try

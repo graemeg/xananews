@@ -23,7 +23,7 @@ unit unitNNTPThreads;
 interface
 
 uses
-  Windows, Classes, SysUtils, Forms, syncobjs, IdNNTPX, ConTnrs, WinINet,
+  Windows, Classes, SysUtils, Forms, SyncObjs, IdNNTPX, Contnrs, {WinINet,}
   unitNNTPServices, IdTCPClient, unitNewsThread, IdSSLOpenSSL, IdSMTP, IdMessage,
   unitSettings, XnClasses, XnRawByteStrings;
 

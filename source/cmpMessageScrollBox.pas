@@ -245,8 +245,9 @@ var
   XFace: TBitmap;
   bo: TObject;
   nsd: TNewsStringsDisplayObjectLink;
+  TextOnlyAttachement: Boolean;
 
-  procedure AddOrReplaceObject(obj: TObject; XFace, header: Boolean);
+  procedure AddOrReplaceObject(obj: TObject; XFace, header: Boolean; toa: Boolean = False);
   var
     tp: TDisplayObjectLinkClass;
     newObj: TDisplayObjectLink;
@@ -279,7 +280,7 @@ var
 
     if (c = fMessageDisplay.ObjectCount) then
     begin
-      if (c > 0) and (tp = TNewsStringsDisplayObjectLink) and (fMessageDisplay.Objects[c - 1] is TNewsStringsDisplayObjectLink) then
+      if not toa and  (c > 0) and (tp = TNewsStringsDisplayObjectLink) and (fMessageDisplay.Objects[c - 1] is TNewsStringsDisplayObjectLink) then
         AddOrReplaceTextObj(c - 1)
       else
       begin
@@ -395,7 +396,10 @@ begin
       mp := Msg.AlternateMessagePart[i];
 
       if Assigned(mp.Body) then
-        AddOrReplaceObject(mp.Body, False, False)
+      begin
+        TextOnlyAttachement := (mp.FileName <> '') and not SameText(mp.FileName, 'text/plain');
+        AddOrReplaceObject(mp.Body, False, False, TextOnlyAttachement);
+      end
       else
         if Assigned(mp.Graphic) then
           AddOrReplaceObject(mp.Graphic, False, False);
