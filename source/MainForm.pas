@@ -1082,7 +1082,7 @@ type
 
     procedure CentralizeDisplay;
     procedure EnableShortcuts(enable: Boolean);
-    procedure SetControlOptions;
+    procedure SetControlOptions(initfonts: Boolean);
     procedure SaveArticleHeaderColumns;
     procedure SaveBookmarkHeaderColumns;
     procedure ApplyControlOptions;
@@ -2720,7 +2720,7 @@ var
   fm: TfmOptions;
   ctnr: TArticleContainer;
 begin
-  SetControlOptions;
+  SetControlOptions(False);
   ctnr := fLastFocusedArticleContainer;
   if ctnr <> nil then
     if (not NNTPAccounts.ShowSecrets) and (ctnr.Secret or ((ctnr is TSubscribedGroup) and (TSubscribedGroup(ctnr).Owner.Secret))) then
@@ -2746,7 +2746,7 @@ begin
         SyncContainerTree(ctnr);
       end
       else
-        SetControlOptions;
+        SetControlOptions(False);
     finally
       fm.Free;
     end;
@@ -4099,7 +4099,7 @@ begin
     CanClose := CheckSaveOutboxMessages;
 
     if Assigned(XNOptions) then
-      SetControlOptions;
+      SetControlOptions(False);
     TrayIcon1.Visible := False;
 
     if Assigned(XNOptions) then
@@ -4181,7 +4181,7 @@ begin
   MessageScrollBox1.AutoFit := True;
 
   tbMenu.Font := Screen.MenuFont;
-  SetControlOptions;            // Save default options
+  SetControlOptions(True);        // Save default options
   XNOptions.BookmarkHeight := pnlArticles.Height div 2;
 
   Application.CreateForm(TfmPostMessage, pmForm);
@@ -5676,7 +5676,7 @@ begin
   end;
 end;
 
-procedure TfmMain.SetControlOptions;
+procedure TfmMain.SetControlOptions(initfonts: Boolean);
 begin
   // Set control layout, based on 'XNOptions' registry entries.
   XNOptions.PanelLeft := pnlLeft.Width;
@@ -5711,14 +5711,17 @@ begin
   SaveArticleHeaderColumns;
   SaveArticleHeaderPositions;
 
-  XNOptions.Appearance[apMessageHeaders].Init(vstArticles.Font, vstArticles.Color);
-  if MessageScrollBox1.FixedFont = '' then
-    XNOptions.Appearance[apMessagePane].Init(MessageScrollBox1.Font, MessageScrollBox1.Color);
-  XNOptions.Appearance[apSubscribedGroups].Init(vstSubscribed.Font, vstSubscribed.Color);
-  XNOptions.Appearance[apMainForm].Init(Self.Font, Self.Color);
-  XNOptions.Appearance[apToolBar].Init(cbMain.Font, cbMain.Color);
-  XNOptions.Appearance[apMessageDetailsPanel].Init(pnlDetailsBar.Font, pnlDetailsbar.Color);
-  XNOptions.Appearance[apMenu].Init(tbMenu.Font, tbMenu.Color);
+  if initfonts then
+  begin
+    XNOptions.Appearance[apMessageHeaders].Init(vstArticles.Font, vstArticles.Color);
+    if MessageScrollBox1.FixedFont = '' then
+      XNOptions.Appearance[apMessagePane].Init(MessageScrollBox1.Font, MessageScrollBox1.Color);
+    XNOptions.Appearance[apSubscribedGroups].Init(vstSubscribed.Font, vstSubscribed.Color);
+    XNOptions.Appearance[apMainForm].Init(Self.Font, Self.Color);
+    XNOptions.Appearance[apToolBar].Init(cbMain.Font, cbMain.Color);
+    XNOptions.Appearance[apMessageDetailsPanel].Init(pnlDetailsBar.Font, pnlDetailsbar.Color);
+    XNOptions.Appearance[apMenu].Init(tbMenu.Font, tbMenu.Color);
+  end;
 end;
 
 procedure TfmMain.spPauseRequestsClick(Sender: TObject);

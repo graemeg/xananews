@@ -936,15 +936,6 @@ begin
     Result := inherited Equals(Obj);
 end;
 
-procedure TAppearanceSettings.Init(font: TFont; bkColor: TColor);
-begin
-  fFontName := font.Name;
-  fFontColor := font.Color;
-  fFontStyle := font.Style;
-  fFontSize := font.Size;
-  fBackgroundColor := bkColor;
-end;
-
 function CalcAlternateColor(Background: TColor): TColor;
 begin
   Result := ColorToRGB(Background);
@@ -952,6 +943,16 @@ begin
     Result := Windows.RGB(GetRValue(Result) * 97 div 100, GetGValue(Result) * 98 div 100, GetBValue(Result * 99 div 100))
   else
     Result := Windows.RGB(GetRValue(Result) * 95 div 100, GetGValue(Result) * 95 div 100, GetBValue(Result * 95 div 100));
+end;
+
+procedure TAppearanceSettings.Init(font: TFont; bkColor: TColor);
+begin
+  fFontName := font.Name;
+  fFontColor := font.Color;
+  fFontStyle := font.Style;
+  fFontSize := font.Size;
+  fBackgroundColor := bkColor;
+  fAlternateBGColor := CalcAlternateColor(fBackgroundColor);
 end;
 
 procedure TAppearanceSettings.Load(reg: TExSettings);
