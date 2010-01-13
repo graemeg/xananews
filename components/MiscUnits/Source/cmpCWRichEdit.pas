@@ -524,7 +524,7 @@ begin
           SetLength(ansi, 65536);
           textRange.chrg := ENLink^.chrg;
           textRange.lpstrText := PAnsiChar(ansi);
-          SendMessage(Handle, EM_GETTEXTRANGE, 0, lParam(@textRange));
+          SendMessage(Handle, EM_GETTEXTRANGE, 0, Windows.LPARAM(@textRange));
           SetString(fURLText, PAnsiChar(ansi), Length(PAnsiChar(ansi)));
 
           case ENLink^.Msg of
@@ -730,7 +730,7 @@ begin
       Raise Exception.Create ('Unable to create window handle');
 
     DoSetMaxLength (fMaxLength);
-    if SendMessage(WindowHandle, WM_SETTEXT, 0, Longint(Caption)) = 0 then
+    if SendMessage(WindowHandle, WM_SETTEXT, 0, Windows.LPARAM(Caption)) = 0 then
       RaiseLastOSError;
   end;
 end;
@@ -841,7 +841,7 @@ begin
   if stWholeWord in Options then Flags := Flags or FR_WHOLEWORD;
   if stMatchCase in Options then Flags := Flags or FR_MATCHCASE;
   Find.lpstrText := PChar(SearchStr);
-  Result := SendMessage(Handle, EM_FINDTEXTW, Flags, LongInt(@Find));
+  Result := SendMessage(Handle, EM_FINDTEXTW, Flags, Windows.LPARAM(@Find));
 end;
 
 (*----------------------------------------------------------------------*
@@ -1140,7 +1140,7 @@ begin
   if HideSelection <> Value then
   begin
     FHideSelection := Value;
-    SendMessage(Handle, EM_HIDESELECTION, Ord(HideSelection), LongInt(True))
+    SendMessage(Handle, EM_HIDESELECTION, Ord(HideSelection), Windows.LPARAM(True))
   end
 end;
 
@@ -1196,9 +1196,9 @@ procedure TCustomExRichEdit.SetSelLength(const Value: Integer);
 var
   range: TCharRange;
 begin
-  SendMessage(Handle, EM_EXGETSEL, 0, Longint(@range));
+  SendMessage(Handle, EM_EXGETSEL, 0, Windows.LPARAM(@range));
   range.cpMax := range.cpMin + Value;
-  SendMessage(Handle, EM_EXSETSEL, 0, Longint(@range));
+  SendMessage(Handle, EM_EXSETSEL, 0, Windows.LPARAM(@range));
   SendMessage(Handle, EM_SCROLLCARET, 0, 0);
 end;
 
@@ -1223,7 +1223,7 @@ var
 begin
   range.cpMin := Value;
   range.cpMax := Value;
-  SendMessage(Handle, EM_EXSETSEL, 0, Longint(@range));
+  SendMessage(Handle, EM_EXSETSEL, 0, Windows.LPARAM(@range));
 end;
 
 (*----------------------------------------------------------------------*
@@ -1269,7 +1269,7 @@ begin
 
     FontToCharFormat (font, Format);
 
-    SendMessage(Handle, EM_SETCHARFORMAT, Flag, LPARAM(@Format));
+    SendMessage(Handle, EM_SETCHARFORMAT, Flag, Windows.LPARAM(@Format));
 
     fDefaultCharFormat := Format;
 
@@ -1502,7 +1502,7 @@ var
   len: Integer;
 begin
   SetLength(Result, Owner.SelLength + 1);
-  len := SendMessage(Owner.Handle, EM_GETSELTEXT, 0, Longint(PChar(Result)));
+  len := SendMessage(Owner.Handle, EM_GETSELTEXT, 0, Windows.LPARAM(PChar(Result)));
   SetLength(Result, len);
 end;
 
@@ -1537,7 +1537,7 @@ end;
  *----------------------------------------------------------------------*)
 procedure TRichEdit1Provider.SetSelText(const value: WideString);
 begin
-  SendMessage(Owner.Handle, EM_REPLACESEL, 0, LongInt(PChar(Value)));
+  SendMessage(Owner.Handle, EM_REPLACESEL, 0, Windows.LPARAM(PChar(Value)));
 end;
 
 (*----------------------------------------------------------------------*
@@ -1868,7 +1868,7 @@ begin
     editStream.dwError := 0;
     editStream.pfnCallback := @EditStreamICallback;
 
-    SendMessage(Owner.Handle, EM_EXGETSEL, 0, Integer(@tc));
+    Owner.Perform(EM_EXGETSEL, 0, Windows.LPARAM(@tc));
 
     if not sel then
     begin
@@ -1897,10 +1897,10 @@ begin
 
       // Stream in the chunk of text.
       stream.fPos := 0;
-      SendMessage(Owner.Handle, EM_STREAMIN, flags, LongInt(@editStream));
+      Owner.Perform(EM_STREAMIN, flags, Windows.LPARAM(@editStream));
 
       // Get current selection (EOT).
-      SendMessage(Owner.Handle, EM_EXGETSEL, 0, Integer(@range2));
+      Owner.Perform(EM_EXGETSEL, 0, Windows.LPARAM(@range2));
 
       // Determine range to format.
       range1.cpMin := last;
@@ -1909,11 +1909,11 @@ begin
       if fc.dwMask <> 0 then
       begin
         // Select range to format.
-        SendMessage(Owner.Handle, EM_EXSETSEL, 0, Integer(@range1));
+        Owner.Perform(EM_EXSETSEL, 0, Windows.LPARAM(@range1));
         // Format the chunk of text.
-        SendMessage(Owner.Handle, EM_SETCHARFORMAT, SCF_SELECTION, LongInt(@fc));
+        Owner.Perform(EM_SETCHARFORMAT, SCF_SELECTION, Windows.LPARAM(@fc));
         // Restore selection.
-        SendMessage(Owner.Handle, EM_EXSETSEL, 0, Integer(@range2));
+        Owner.Perform(EM_EXSETSEL, 0, Windows.LPARAM(@range2));
       end;
 
       // Setup for the next round of text formatting.
@@ -1924,7 +1924,7 @@ begin
         break;
     end;
 
-    SendMessage(Owner.Handle, EM_EXSETSEL, 0, Integer(@tc));
+    Owner.Perform(EM_EXSETSEL, 0, Windows.LPARAM(@tc));
 
   finally
     Owner.EndUpdate;
@@ -2174,7 +2174,7 @@ begin
       repeat
         rc := SaveRect;
         chrg.cpMin := LastChar;
-        LastChar := SendMessage(Self.Handle, EM_FORMATRANGE, 1, Longint(@Range));
+        LastChar := SendMessage(Self.Handle, EM_FORMATRANGE, 1, Windows.LPARAM(@Range));
         if (LastChar < MaxLen) and (LastChar <> -1) then NewPage;
       until (LastChar >= MaxLen) or (LastChar = -1);
     finally
