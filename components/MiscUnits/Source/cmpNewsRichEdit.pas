@@ -247,9 +247,8 @@ var
   i, n, n1: DWORD;
   sol, trc: Boolean;
   own: TNewsRichEdit;
-  quoteLevel: Integer;
+  prevQuoteLevel, quoteLevel: Integer;
   hl: TFontStyles;
-
 begin
   own := TNewsRichEdit(stream.Owner);
   trc := own.TruncateFrom <> '';
@@ -282,6 +281,7 @@ begin
       fc.dwEffects := fc.dwEffects and not (CFE_BOLD or CFE_ITALIC or CFE_UNDERLINE or CFE_LINK);
     end;
 
+    prevQuoteLevel := -1;
     pc := #13;
     while i < Len do
     begin
@@ -299,8 +299,8 @@ begin
           Inc(p);
           Inc(i);
           sol := False;
-          stream.ChunkStart := stream.ChunkStart + 1;
-          continue
+          ChunkStart := ChunkStart + 1;
+          Continue;
         end;
 
         quoteLevel := 0;        // Calculate the quote level
@@ -312,21 +312,21 @@ begin
           if p1^ = ' ' then Inc(p1)
         end;
 
+        if (prevQuoteLevel > -1) and (prevQuoteLevel <> quoteLevel) then
+        begin
+          fIsFormatted := True; // Quote level changed, exit, so that
+          Break;                // it can be displayed.
+        end
+        else
+          prevQuoteLevel := quoteLevel;
+
         if quoteLevel > 0 then
         begin
-                                // If the 'Chunk' is not empty, exit, so that
-                                // it can be displayed
-          if i <> ChunkStart then
-            Break;
-                                // The chunk was empty, so select the new font
-                                // an use it for the chunk
-          case QuoteLevel of
+          case quoteLevel of
             1: Owner.FontToCharFormat(own.fLevel1QuoteFont, fc);
             2: Owner.FontToCharFormat(own.fLevel2QuoteFont, fc);
           else Owner.FontToCharFormat(own.fLevel3QuoteFont, fc)
           end;
-
-          fIsFormatted := True;
         end;
 
 
@@ -346,10 +346,10 @@ begin
                   Break;
                 fInSignature := True;
                 Owner.FontToCharFormat(own.SignatureFont, fc);
-              end
-            end
-          end
-        end
+              end;
+            end;
+          end;
+        end;
       end;
 
       if sol and trc and fInSignature then
@@ -383,7 +383,6 @@ begin
 
                                 // Is it an indicator char, with the previous char = whitespace ???
       if ((pc = ' ') or (pc = #13) or (pc = #10)) and ((c = '*') or (c = '/') or (c = '_')) then
-
       begin
                                 // This *may* be the start of highlighted text!
         p1 := p;
@@ -403,7 +402,7 @@ begin
               if c = '_' then
                 hl := hl + [fsUnderline];
           Inc(p1);
-          c := p1^
+          c := p1^;
         end;
 
                                 // Skip word after indicator chars
@@ -464,7 +463,7 @@ begin
     end; // end while
 
     ChunkEnd := i;
-  end;  // end with
+  end; // end with
 end;
 
 procedure TNewsCharFormatter.Reset;
