@@ -9381,6 +9381,8 @@ begin
 
     header.Values['From'] := '"' + grp.NNTPSettings.Identity.UserName + '" <' + grp.NNTPSettings.Identity.EMailAddress + '>';
     header.Values['Subject'] := 'cmsg ' + subj;
+    if grp.NNTPSettings.GenerateDateHeaders then
+      header.Values['Date'] := LocalDateTimeToGMT(Now);
     header.Values['Control'] := subj;
     header.Values['Newsgroups'] := grp.Name;
     if grp.NNTPSettings.GenerateApprovedHeaders then
@@ -9404,11 +9406,11 @@ begin
     msg.Add('This message was cancelled by ' + grp.NNTPSettings.Identity.UserName);
     msg.Add('');
     msg.Add('Original message header:');
-    msg.Add('  From:' + article.From);
-    msg.Add('  Subject:' + article.Subject);
-    msg.Add('  Date:' + SafeDateTimeToInternetStr(article.Date));
-    msg.Add('  Newsgroups:' + article.Header['Newsgroups']);
-    msg.Add('  Message-ID:' + article.MessageId);
+    msg.Add('  From: ' + article.From);
+    msg.Add('  Subject: ' + article.Subject);
+    msg.Add('  Date: ' + SafeDateTimeToInternetStr(article.Date));
+    msg.Add('  Newsgroups: ' + article.Header['Newsgroups']);
+    msg.Add('  Message-ID: ' + article.MessageId);
 
     if reason <> '' then
       msg.Add(#13#10 + reason);

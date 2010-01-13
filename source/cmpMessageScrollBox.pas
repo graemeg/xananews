@@ -280,7 +280,7 @@ var
 
     if (c = fMessageDisplay.ObjectCount) then
     begin
-      if not toa and  (c > 0) and (tp = TNewsStringsDisplayObjectLink) and (fMessageDisplay.Objects[c - 1] is TNewsStringsDisplayObjectLink) then
+      if not toa and (c > 0) and (tp = TNewsStringsDisplayObjectLink) and (fMessageDisplay.Objects[c - 1] is TNewsStringsDisplayObjectLink) then
         AddOrReplaceTextObj(c - 1)
       else
       begin

@@ -426,6 +426,9 @@ begin
     end
     else
       fHeader.Values['Followup-To'] := cbFollowupTo.Text;
+
+    if NNTPSettings.GenerateDateHeaders then
+      fHeader.Values['Date'] := LocalDateTimeToGMT(Now);
   end;
 end;
 
@@ -646,6 +649,8 @@ var
   okToPost: Boolean;
   dlg: TdlgCheckCrosspost;
 begin
+  if not fmePost1.CanClose then Exit;
+
   okToPost := True;
   if cbFollowupTo.Text = '' then
   begin
@@ -653,6 +658,8 @@ begin
     if firstGroup <> '' then
     begin
       dlg := TdlgCheckCrosspost.Create(Self);
+      dlg.PopupParent := Self;
+      dlg.PopupMode := pmExplicit;
       try
         if dlg.ShowModal <> idOK then
           okToPost := False;

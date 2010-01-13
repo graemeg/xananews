@@ -142,6 +142,7 @@ object fmPostMessage: TfmPostMessage
     end
     inherited btnOK: TButton
       Left = 552
+      OnClick = TfmePost1btnOKClick
       ExplicitLeft = 552
     end
     inherited btnAttachments: TButton
