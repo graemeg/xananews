@@ -149,7 +149,16 @@ begin
     ctrl := TExWebBrowser(obj);
     if Supports(ctrl.Document, IHTMLDocument2, doc) then
     begin
-      elm := doc.ActiveElement as IHTMLElement2; //body as IHTMLElement2;
+      try
+        elm := doc.ActiveElement as IHTMLElement2; //body as IHTMLElement2;
+
+// TODO: re-check when a new Wine version arrives, last checked on Wine 1.1.36
+//  ActiveElement does not appear to be implemented in Wine (Linux).
+      except
+        on E: EOleException do
+          if E.ErrorCode = E_NOTIMPL then
+            elm := doc.Body as IHTMLElement2;
+      end;
 
       if Assigned(elm) then
       begin

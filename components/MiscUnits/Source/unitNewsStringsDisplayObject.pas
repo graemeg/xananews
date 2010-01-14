@@ -517,9 +517,9 @@ begin
 
   if fAutoSize then
     BoundsRect := Rect(BoundsRect.Left, BoundsRect.Top, BoundsRect.Right, BoundsRect.Top + R.Bottom);
-// TODO: verify in future is this is still needed:
-//  Above is a fix for Wine which returns strange numbers for the requested size.
-//  BoundsRect := R;
+// TODO: re-check when a new Wine version arrives, last checked on Wine 1.1.36
+//  Above is a fix for Wine (Linux) which returns strange numbers for the requested size.
+//  orig-code was: BoundsRect := R;
 end;
 
 procedure TNewsRichEditX.ScrollIntoView;
