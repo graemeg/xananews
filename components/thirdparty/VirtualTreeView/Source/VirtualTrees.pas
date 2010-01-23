@@ -1,4 +1,4 @@
-unit VirtualTrees;
+﻿unit VirtualTrees;
 
 // Version 5.0.0
 //
@@ -22139,7 +22139,8 @@ var
   P: TPoint;
 
 begin
-  if [tsVCLDragPending, tsVCLDragging, tsVCLDragFinished] * FStates = [] then
+// PZ 20100123 added tsOLEDragging, to make sure that the button up message is fired when using OLE dragging.
+  if [tsOLEDragging, tsVCLDragPending, tsVCLDragging, tsVCLDragFinished] * FStates = [] then
     Exit;
 
   DoStateChange([], [tsVCLDragPending, tsVCLDragging, tsUserDragObject, tsVCLDragFinished]);
