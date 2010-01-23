@@ -1,4 +1,4 @@
-﻿(*======================================================================*
+(*======================================================================*
  | MainForm unit for XanaNews Newsreader                                |
  |                                                                      |
  | The contents of this file are subject to the Mozilla Public License  |
@@ -701,7 +701,7 @@ type
     procedure actArticleExpandAllThreadsExecute(Sender: TObject);
     procedure actArticleExpandThreadExecute(Sender: TObject);
     procedure actArticleFlagExecute(Sender: TObject);
-    procedure actArticleGetArticleExecute(Sender: TObject);
+    procedure actArticleGetMessageBodyExecute(Sender: TObject);
     procedure actArticleGetThreadExecute(Sender: TObject);
     procedure actArticleGoToNextDontMarkExecute(Sender: TObject);
     procedure actArticleGoToNextExecute(Sender: TObject);
@@ -1340,7 +1340,8 @@ begin
     account.SortGroupsByName := not account.SortGroupsByName;
 end;
 
-procedure TfmMain.actArticleCancelExecute(Sender: TObject);
+
+procedure TfmMain.actArticleCancelExecute(Sender: TObject);
 var
   article: TArticleBase;
   grp: TSubscribedGroup;
@@ -1494,10 +1495,11 @@ begin
   vstArticles.Invalidate;
 end;
 
-procedure TfmMain.actArticleGetArticleExecute(Sender: TObject);
+procedure TfmMain.actArticleGetMessageBodyExecute(Sender: TObject);
 begin
   // Get the selected articles from the news server.
-  ForEachSelectedArticle(DoGetArticleBody, 0, False);
+  // Note: when a node is expanded it will also download all children.
+  ForEachSelectedArticle(DoGetArticleBody);
   vstArticles.Invalidate;
 end;
 
@@ -6372,7 +6374,7 @@ begin
         vstArticles.Invalidate;
       end
       else
-        actArticleGetArticleExecute(nil);
+        actArticleGetMessageBodyExecute(nil);
     end;
   end;
 end;

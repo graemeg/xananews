@@ -3950,7 +3950,7 @@ object fmMain: TfmMain
       Enabled = False
       Hint = 'Get the body for the currently selected message header(s)'
       ShortCut = 190
-      OnExecute = actArticleGetArticleExecute
+      OnExecute = actArticleGetMessageBodyExecute
     end
     object actArticleReplyToMessage: TAction
       Category = 'Article'
