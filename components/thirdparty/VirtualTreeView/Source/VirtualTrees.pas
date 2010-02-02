@@ -1,4 +1,4 @@
-ï»¿unit VirtualTrees;
+unit VirtualTrees;
 
 // Version 5.0.0
 //
@@ -33,7 +33,7 @@
 //   - Bug fix: TCustomVirtualTreeOptions.SetPaintOptions no longer accidentally removed the the explorer theme
 //   - Bug fix: Fixed a potential Integer overflow in TBaseVirtualTree.CalculateVerticalAlignments
 //  October 2009
-//   - Bug fix: enabling checkbox support for a column is now possible without assigning a dummy imagelist  
+//   - Bug fix: enabling checkbox support for a column is now possible without assigning a dummy imagelist
 //   - Bug fix: checkboxes in the header are now correctly aligned
 //   - Improvement: changed TBaseVirtualTree.PaintCheckImage to be usable by TVirtualTreeColumns.PaintHeader to be
 //                  able to paint themed header checkboxes
@@ -63,8 +63,8 @@
 //   - Improvement: modified TBaseVirtualTree.DoCreateEditor so that applications can now return NIL in OnCreateEditor
 //                  to use the standard editor of the tree
 //   - Bug fix: pressing CTRL + PgUp/PgDown no longer leads to an index-out-of-bounds exception if no columns are used
-//   - Bug fix: avoided race condition between TBaseVirtualTree.DeleteNode and the worker thread 
-//   - Bug fix: TBaseVirtualTree.ToggleNode could produce an overflow if range checking was enabled 
+//   - Bug fix: avoided race condition between TBaseVirtualTree.DeleteNode and the worker thread
+//   - Bug fix: TBaseVirtualTree.ToggleNode could produce an overflow if range checking was enabled
 //   - Bug fix: TWorkerThread will no longer reference the tree after it has been destroyed (Mantis issue #384)
 //   - Improvement: removed support for Delphi versions older than Delphi 7
 //   - Improvement: removed local memory manager
@@ -320,14 +320,14 @@
 // For full document history see help file.
 //
 // Credits for their valuable assistance and code donations go to:
-//   Freddy Ertl, Marian AldenhÃ¶vel, Thomas Bogenrieder, Jim Kuenemann, Werner Lehmann, Jens Treichler,
-//   Paul Gallagher (IBO tree), Ondrej Kelle, Ronaldo Melo Ferraz, Heri Bender, Roland BedÃ¼rftig (BCB)
+//   Freddy Ertl, Marian Aldenhövel, Thomas Bogenrieder, Jim Kuenemann, Werner Lehmann, Jens Treichler,
+//   Paul Gallagher (IBO tree), Ondrej Kelle, Ronaldo Melo Ferraz, Heri Bender, Roland Bedürftig (BCB)
 //   Anthony Mills, Alexander Egorushkin (BCB), Mathias Torell (BCB), Frank van den Bergh, Vadim Sedulin, Peter Evans,
 //   Milan Vandrovec (BCB), Steve Moss, Joe White, David Clark, Anders Thomsen, Igor Afanasyev, Eugene Programmer,
 //   Corbin Dunn, Richard Pringle, Uli Gerhardt, Azza, Igor Savkic, Daniel Bauten, Timo Tegtmeier, Dmitry Zegebart,
 //   Andreas Hausladen
 // Beta testers:
-//   Freddy Ertl, Hans-JÃ¼rgen Schnorrenberg, Werner Lehmann, Jim Kueneman, Vadim Sedulin, Moritz Franckenstein,
+//   Freddy Ertl, Hans-Jürgen Schnorrenberg, Werner Lehmann, Jim Kueneman, Vadim Sedulin, Moritz Franckenstein,
 //   Wim van der Vegt, Franc v/d Westelaken
 // Indirect contribution (via publicly accessible work of those persons):
 //   Alex Denissov, Hiroyuki Hori (MMXAsm expert)
@@ -2201,7 +2201,7 @@ type
     FStartIndex: Cardinal;                       // index to start validating cache from
     FSelection: TNodeArray;                      // list of currently selected nodes
     FSelectionCount: Integer;                    // number of currently selected nodes (size of FSelection might differ)
-    FSelectionLocked: Boolean;                   // prevents the tree from changing the selection 
+    FSelectionLocked: Boolean;                   // prevents the tree from changing the selection
     FRangeAnchor: PVirtualNode;                  // anchor node for selection with the keyboard, determines start of a
                                                  // selection range
     FCheckNode: PVirtualNode;                    // node which "captures" a check event
@@ -2229,7 +2229,7 @@ type
     FPlusBM,
     FMinusBM,                                    // small bitmaps used for tree buttons
     FHotPlusBM,
-    FHotMinusBM: TBitmap;                        // small bitmaps used for hot tree buttons 
+    FHotMinusBM: TBitmap;                        // small bitmaps used for hot tree buttons
     FImages,                                     // normal images in the tree
     FStateImages,                                // state images in the tree
     FCustomCheckImages: TCustomImageList;        // application defined check images
@@ -3377,7 +3377,7 @@ type
     FOnNewText: TVSTNewTextEvent;                  // used to notify the application about an edited node caption
     FOnShortenString: TVSTShortenStringEvent;      // used to allow the application a customized string shortage
     FOnMeasureTextWidth: TVTMeasureTextWidthEvent; // used to adjust the width of the cells
-    FOnDrawText: TVTDrawTextEvent;                 // used to custom draw the node text 
+    FOnDrawText: TVTDrawTextEvent;                 // used to custom draw the node text
 
     function GetImageText(Node: PVirtualNode; Kind: TVTImageKind;
       Column: TColumnIndex): UnicodeString;
@@ -4006,7 +4006,7 @@ const
 
   // Do not modify the copyright in any way! Usage of this unit is prohibited without the copyright notice
   // in the compiled binary file.
-  Copyright: string = 'Virtual Treeview Â© 1999, 2009 Mike Lischke';
+  Copyright: string = 'Virtual Treeview © 1999, 2009 Mike Lischke';
 
 var
   StandardOLEFormat: TFormatEtc = (
@@ -4086,7 +4086,7 @@ const
       FSB_ENCARTA_MODE
     );
   {$endif}
-  
+
   {$ifndef COMPILER_11_UP}
     const
       TVP_HOTGLYPH = 4;
@@ -9965,7 +9965,7 @@ begin
 
   if FHeader.Treeview.UseRightToLeftAlignment then
     Inc(ColumnLeft, FHeader.Treeview.ComputeRTLOffset(True));
-    
+
   for I := 0 to Count - 1 do
     with Items[FPositionToIndex[I]] do
       if coVisible in FOptions then
@@ -11625,7 +11625,7 @@ var
   end;
 
   //--------------- end local function ----------------------------------------
-  
+
 begin
   Result := False;
   FColumns.FTrackIndex := NoColumn;
@@ -11786,7 +11786,7 @@ end;
 
 //----------------------------------------------------------------------------------------------------------------------
 
-function TVTHeader.DoGetPopupMenu(Column: TColumnIndex; Position: TPoint): TPopupMenu; 
+function TVTHeader.DoGetPopupMenu(Column: TColumnIndex; Position: TPoint): TPopupMenu;
 
 // Queries the application whether there is a column specific header popup menu.
 
@@ -14786,7 +14786,7 @@ procedure TBaseVirtualTree.FixupTotalCount(Node: PVirtualNode);
 
 var
   Child: PVirtualNode;
-  
+
 begin
   // Initial total count is set to one on node creation.
   Child := Node.FirstChild;
@@ -14807,7 +14807,7 @@ procedure TBaseVirtualTree.FixupTotalHeight(Node: PVirtualNode);
 
 var
   Child: PVirtualNode;
-  
+
 begin
   // Initial total height is set to the node height on load.
   Child := Node.FirstChild;
@@ -15986,7 +15986,7 @@ begin
         begin
           Remaining := NewChildCount - Node.ChildCount;
           Count := Remaining;
-          
+
           // New nodes to add.
           if Assigned(Node.LastChild) then
             Index := Node.LastChild.Index + 1
@@ -17032,7 +17032,7 @@ begin
     FEffectiveOffsetX := -FOffsetX;
   if FEffectiveOffsetX < 0 then
     FEffectiveOffsetX := 0;
-    
+
   if toAutoBidiColumnOrdering in FOptions.FAutoOptions then
     FHeader.FColumns.ReorderColumns(UseRightToLeftAlignment);
   FHeader.Invalidate(nil);
@@ -17873,7 +17873,7 @@ begin
     RTLFactor := -1
   else
     RTLFactor := 1;
-    
+
   case Message.ScrollCode of
     SB_BOTTOM:
       SetOffsetX(-Integer(FRangeX));
@@ -17989,7 +17989,7 @@ begin
           RTLFactor := -1
         else
           RTLFactor := 1;
-          
+
         // Determine new focused node.
         case CharCode of
           VK_HOME, VK_END:
@@ -21826,7 +21826,7 @@ begin
 
     if UseRightToLeftAlignment then
       DeltaX := - DeltaX;
-      
+
     if IsMouseSelecting then
     begin
       // In order to avoid scrolling the area which needs a repaint due to the changed selection rectangle
@@ -24285,13 +24285,13 @@ begin
     FHeader.UpdateMainColumn;
     FHeader.FColumns.FixPositions;
     if toAutoBidiColumnOrdering in FOptions.FAutoOptions then
-      FHeader.FColumns.ReorderColumns(UseRightToLeftAlignment);  
+      FHeader.FColumns.ReorderColumns(UseRightToLeftAlignment);
     FHeader.RecalculateHeader;
     if hoAutoResize in FHeader.FOptions then
       FHeader.FColumns.AdjustAutoSize(InvalidColumn, True);
   finally
     Updated;
-  end;                             
+  end;
 end;
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -24554,7 +24554,7 @@ begin
     RTLOffset := ComputeRTLOffset(True)
   else
     RTLOffset := 0;
-  
+
   // The update rect has already been filled in WMPaint, as it is the window's update rect, which gets
   // reset when BeginPaint is called (in the ancestor).
   // The difference to the DC's clipbox is that it is also valid with internal paint operations used
@@ -24997,7 +24997,7 @@ begin
     if toShowVertGridLines in FOptions.PaintOptions then
       Dec(RowRect.Right);
   end;
-  
+
   with PaintInfo, Canvas do
   begin
     // Fill cell background if its color differs from tree background.
@@ -28502,7 +28502,7 @@ end;
 
 function TBaseVirtualTree.GetNext(Node: PVirtualNode; ConsiderChildrenAbove: Boolean = False): PVirtualNode;
 
-// Returns next node in tree while optionally considering toChildrenAbove. The Result will be initialized if needed. 
+// Returns next node in tree while optionally considering toChildrenAbove. The Result will be initialized if needed.
 
 begin
   Result := Node;
@@ -30699,7 +30699,7 @@ begin
             SelectLevel := DetermineLineImageAndSelectLevel(PaintInfo.Node, LineImage);
             IndentSize := Length(LineImage);
             if not (toFixedIndent in FOptions.FPaintOptions) then
-              ButtonX := (IndentSize - 1) * Integer(FIndent) + Round((Integer(FIndent) - FPlusBM.Width) / 2); 
+              ButtonX := (IndentSize - 1) * Integer(FIndent) + Round((Integer(FIndent) - FPlusBM.Width) / 2);
 
             // Initialize node if not already done.
             if not (vsInitialized in PaintInfo.Node.States) then
@@ -34422,7 +34422,7 @@ function TCustomVirtualStringTree.ContentToHTML(Source: TVSTTextSourceType; Capt
 
 // Renders the current tree content (depending on Source) as HTML text encoded in UTF-8.
 // If Caption is not empty then it is used to create and fill the header for the table built here.
-// Based on ideas and code from Frank van den Bergh and Andreas HÃ¶rstemeier.
+// Based on ideas and code from Frank van den Bergh and Andreas Hörstemeier.
 
 type
   UCS2 = Word;
@@ -34630,7 +34630,7 @@ begin
       AddHeader := AddHeader + Format(' border="%d" frame=box', [BorderWidth + 1]);
 
     Buffer.Add('<META http-equiv="Content-Type" content="text/html; charset=utf-8">');
-      
+
     // Create HTML table based on the tree structure. To simplify formatting we use styles defined in a small CSS area.
     Buffer.Add('<style type="text/css">');
     Buffer.AddnewLine;
@@ -34772,7 +34772,7 @@ begin
       if Assigned(FOnAfterHeaderExport) then
         FOnAfterHeaderExport(self, etHTML);
     end;
-  
+
     // Now go through the tree.
     Run := Save;
     while Assigned(Run) do
@@ -34937,7 +34937,7 @@ end;
 function TCustomVirtualStringTree.ContentToRTF(Source: TVSTTextSourceType): AnsiString;
 
 // Renders the current tree content (depending on Source) as RTF (rich text).
-// Based on ideas and code from Frank van den Bergh and Andreas HÃ¶rstemeier.
+// Based on ideas and code from Frank van den Bergh and Andreas Hörstemeier.
 
 var
   Fonts: TStringList;

@@ -466,7 +466,7 @@
    {$define CPPB}
  {$else}
    {$define DELPHI}
- {$endif} 
+ {$endif}
 
 {$endif}
 
