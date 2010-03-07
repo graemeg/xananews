@@ -8,54 +8,64 @@ inherited fmPropertyPageSorting: TfmPropertyPageSorting
   ClientWidth = 307
   Constraints.MinHeight = 281
   Constraints.MinWidth = 307
+  ExplicitLeft = 527
+  ExplicitTop = 154
+  ExplicitWidth = 323
+  ExplicitHeight = 317
   PixelsPerInch = 96
   TextHeight = 13
   inherited Bevel2: TBevel
     Top = 241
     Width = 307
+    ExplicitTop = 241
+    ExplicitWidth = 307
   end
   object Label10: TLabel [1]
     Left = 12
     Top = 102
-    Width = 86
+    Width = 88
     Height = 13
     Caption = 'Display threads in '
   end
   object Label9: TLabel [2]
     Left = 12
     Top = 60
-    Width = 87
+    Width = 88
     Height = 13
     Caption = 'Display messages:'
   end
   object Label1: TLabel [3]
     Left = 272
     Top = 104
-    Width = 26
+    Width = 28
     Height = 13
     Caption = '&Order'
     FocusControl = cbSortOrder
   end
   inherited Panel1: TPanel
     Width = 307
+    ExplicitWidth = 307
     inherited Bevel1: TBevel
       Width = 307
+      ExplicitWidth = 307
     end
     inherited stSectionDetails: TLabel
       Width = 295
+      ExplicitWidth = 295
     end
   end
   inherited btnReset: TButton
     Left = 196
     Top = 250
     TabOrder = 6
+    ExplicitLeft = 196
+    ExplicitTop = 250
   end
   object cbSortOrder: TComboBox
     Left = 121
     Top = 100
     Width = 144
     Height = 21
-    ItemHeight = 13
     TabOrder = 3
     Text = 'Date'
     OnChange = ControlClick
@@ -72,7 +82,7 @@ inherited fmPropertyPageSorting: TfmPropertyPageSorting
     Top = 168
     Width = 271
     Height = 25
-    Caption = '&Group orphaned replies by Subject'
+    Caption = '&Group posts using Subjects'
     TabOrder = 5
     OnClick = ControlClick
   end
