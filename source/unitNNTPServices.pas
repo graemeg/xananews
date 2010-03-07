@@ -6126,8 +6126,16 @@ begin
         mp := mps[i];
         if mp.Complete then
         begin
-          if mp.DecodeType in [ttBase64, ttUUEncode, ttYEnc] then
-            fFlags := fFlags or fgHasAttachment
+          case mp.DecodeType of
+            // ttBase64: it is only an attachment when inside one of the message parts.
+            ttBase64:
+              if i > 0 then
+                fFlags := fFlags or fgHasAttachment;
+
+            // ttUUEncode, ttYEnc: can be (are) attachments directly in the body
+            ttUUEncode, ttYEnc:
+              fFlags := fFlags or fgHasAttachment;
+          end;
         end
         else
           if (fFlags and fgHasAttachment) = 0 then

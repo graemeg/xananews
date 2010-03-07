@@ -1386,6 +1386,7 @@ var
   mimeHeader: TMimeHeader;
   gotVersion: Boolean;
   gotContentType: Boolean;
+  gotContentTransferEncoding: Boolean;
 
   procedure ParseMIMEVersion(var st: string);
   begin
@@ -1429,6 +1430,7 @@ var
 
   procedure ParseContentTransferEncoding(var st: string);
   begin
+    gotContentTransferEncoding := True;
     mimeHeader.fContentTransferEncoding := SplitString(';', st);
   end;
 
@@ -1471,6 +1473,7 @@ var
 
 begin
   gotContentType := False;
+  gotContentTransferEncoding := False;
   if forceMime then
   begin
     gotVersion := True;
@@ -1529,7 +1532,7 @@ begin
     end;
   end;
 
-  if gotVersion or gotContentType then
+  if gotVersion or gotContentType or gotContentTransferEncoding then
     Result := mimeHeader
   else
   begin
