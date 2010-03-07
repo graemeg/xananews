@@ -659,7 +659,7 @@ begin
 
     if Result = 381 then
     begin
-      LogMessage('tx] AuthInfo Pass <password>');
+      LogMessage('[tx] AuthInfo Pass <password>');
       inherited SendCmd('AuthInfo Pass ' + Password, [281]);
       LogMessage('[rx] ' + IntToStr(LastCmdResult.NumericCode) + ' ' + LastCmdResult.Text.Text, False, False);
     end;
@@ -896,6 +896,7 @@ procedure TidNNTPX.ProcessPipeline;
     end;
 
   begin
+    LogMessage('[tx] ' + cmd, False, False);
     IOHandler.Write(cmd);              // Send the buffer of commands.
 
                         // Must get a reply for each one
