@@ -44,7 +44,7 @@ uses
 {$endif}
   unitBookmarks, cmpSplitterPanel, unitNewsStringsDisplayObject,
   unitGetMessages1, unitMailServices, Tabs, ButtonGroup, CategoryButtons,
-  unitExSettings, XnClasses, XnRawByteStrings, XnCaptionedDockTree;
+  unitExSettings, XnClasses, XnRawByteStrings, XnCaptionedDockTree, DockingUtils;
 
 type
 
@@ -206,17 +206,17 @@ type
     mnuBtnTools: TToolButton;
     mnuBtnHelp: TToolButton;
     tbMain: TToolBar;
-    ToolButton9: TToolButton;
-    ToolButton10: TToolButton;
-    ToolButton11: TToolButton;
-    ToolButton12: TToolButton;
-    ToolButton13: TToolButton;
-    ToolButton14: TToolButton;
-    ToolButton15: TToolButton;
-    ToolButton16: TToolButton;
-    ToolButton17: TToolButton;
-    ToolButton18: TToolButton;
-    ToolButton19: TToolButton;
+    btnReconnect: TToolButton;
+    tbs0: TToolButton;
+    btnGetMessages: TToolButton;
+    tbs2: TToolButton;
+    btnPostNew: TToolButton;
+    btnPostReply: TToolButton;
+    tbs3: TToolButton;
+    btnFind: TToolButton;
+    btnSearch: TToolButton;
+    tbs4: TToolButton;
+    btnBozoAuthor: TToolButton;
     actArticleExpandThread: TAction;
     actArticleExpandAllThreads: TAction;
     ExpandThread1: TMenuItem;
@@ -246,7 +246,7 @@ type
     actArticleReplyByMail: TAction;
     ReplyByMail1: TMenuItem;
     ReplyByMail2: TMenuItem;
-    ToolButton20: TToolButton;
+    btnMailReply: TToolButton;
     actToolsDisconnectAll: TAction;
     N17: TMenuItem;
     DisconnectAll1: TMenuItem;
@@ -273,9 +273,9 @@ type
     MarkAllMessagesAsRead3: TMenuItem;
     actArticleNextUnread: TAction;
     actArticleGotoPrevious: TAction;
-    ToolButton21: TToolButton;
-    ToolButton22: TToolButton;
-    ToolButton23: TToolButton;
+    btnPrevious: TToolButton;
+    btnNext: TToolButton;
+    tbs1: TToolButton;
     actToolsNewsgroupStatistics: TAction;
     NewsgroupStatistics1: TMenuItem;
     pomTrayMenu: TPopupMenu;
@@ -368,7 +368,7 @@ type
     actToolsDecodePerformance: TAction;
     estDecodeMessagePerformance1: TMenuItem;
     actGetEverything: TAction;
-    ToolButton24: TToolButton;
+    btnQuickGet: TToolButton;
     N31: TMenuItem;
     actFileNewFolder: TAction;
     NewFolder1: TMenuItem;
@@ -469,7 +469,7 @@ type
     CrashXanaNews1: TMenuItem;
     actToolsRunSelectedBatch: TAction;
     actMessageAddToBozoBin: TAction;
-    ToolButton25: TToolButton;
+    tbs5: TToolButton;
     pnlArticles: TPanel;
     vstArticles: TVirtualStringTree;
     spltBookmark: TExSplitter;
@@ -519,7 +519,7 @@ type
     actToolsSendOutbasket: TAction;
     SendOutbasket1: TMenuItem;
     SendOutbasket2: TMenuItem;
-    ToolButton2: TToolButton;
+    btnPrint: TToolButton;
     SplitterPanel1: TSplitterPanel;
     SplitterPanel2: TSplitterPanel;
     actViewSubscribedGroupsPane: TAction;
@@ -674,6 +674,8 @@ type
     procedure PersistentPositionGetSettingsClass(Owner: TObject; var SettingsClass: TExSettingsClass);
     procedure PersistentPositionGetSettingsFile(Owner: TObject; var fileName: string);
     procedure SplitterPanel1DockDrop(Sender: TObject; Source: TDragDockObject; X, Y: Integer);
+    procedure SplitterPanel1DockOver(Sender: TObject; Source: TDragDockObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
+    procedure SplitterPanel2DockOver(Sender: TObject; Source: TDragDockObject; X, Y: Integer; State: TDragState; var Accept: Boolean);
     procedure SplitterPanel3DockDrop(Sender: TObject; Source: TDragDockObject; X, Y: Integer);
     procedure Timer1Timer(Sender: TObject);
     procedure TrayIcon1DblClick(Sender: TObject);
@@ -867,6 +869,9 @@ type
     procedure spGoToWebForumClick(Sender: TObject);
     procedure spPauseRequestsClick(Sender: TObject);
 
+    procedure tbMainCustomized(Sender: TObject);
+    procedure tbMainCustomizeReset(Sender: TObject);
+
     procedure vstArticlesAdvancedHeaderDraw(Sender: TVTHeader; var PaintInfo: THeaderPaintInfo; const Elements: THeaderPaintElements);
     procedure vstArticlesAfterItemErase(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; ItemRect: TRect);
     procedure vstArticlesAfterItemPaint(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; ItemRect: TRect);
@@ -920,6 +925,7 @@ type
     procedure vstSubscribedKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure vstSubscribedNewText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; NewText: string);
     procedure vstSubscribedPaintText(Sender: TBaseVirtualTree; const Canvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType);
+    procedure pnlLeftEndDock(Sender, Target: TObject; X, Y: Integer);
   private
     fHeaderSortCol: Integer;
     fURL: string;
@@ -967,6 +973,7 @@ type
     fLastFocusedAccount: TNNTPAccount;
     fUpdatingBookmark: Boolean;
     fRetrySetMsgFlag: Boolean;
+    fPanelLeftDragOffset: TPoint;
     fPanelLeftWidth: Integer;
     fPanelLeftHeight: Integer;
     fPreForensicThreadOrder: TThreadOrder;
@@ -1199,6 +1206,9 @@ type
     constructor Create(const AFileName: string; articleList: TList);
     destructor Destroy; override;
   end;
+
+const
+ NewLine = #13#10;
 
 var
   gMutex: THandle = 0; // Used by 'run once' detection
@@ -4395,6 +4405,15 @@ begin
   SaveDefaultActions;
   vstSubscribed.SetFocus;
   LoadToolbarLayout;
+
+{QEC}
+  if tbMain.Customizable then
+     tbMain.Hint := 'Dbl-Click here to Configure Buttons.' + NewLine +
+                    'Neither the Configure Dialog nor the' + NewLine +
+                    'Shift-Dragging of Buttons work correctly.'
+  else
+     tbMain.Hint := 'ToolBar is NOT configurable.';
+
   fPanelLeftWidth := pnlLeft.Width;
   fPanelLeftHeight := pnlLeft.Height;
   if XNOptions.PanelLeftHeight > 0 then
@@ -4773,7 +4792,137 @@ var
   i, idx: Integer;
   ctrl: TControl;
   band: TCoolBand;
+
+procedure ArrangetbMainButtons; // QEC20100124
+  type
+    PosRec = record
+      CN: string;  // Control Name
+      CL: longInt; // Control Left Value
+      CX: longInt; // Component Index
+      CE: boolean; // Control Enabled Value
+      CV: boolean; // Control Visible Value
+      CS: TToolButtonStyle; // Control Style ('B' is Button, 'S' is Separator)
+    end;
+  var
+    st, s: string;
+    i, J, BC, CC, Val: Integer;
+    ctrlArray: array of PosRec;
+    Swapped: boolean;
+    Temp: PosRec;
+
+  begin
+    if not tbMain.Customizable then
+      Exit;
+
+    reg.Section := 'Position\Toolbar';
+    if not reg.HasSection('tbMainButtons') then
+      Exit;
+
+    reg.Section := reg.Section + '\tbMainButtons';
+    if not(reg.HasValue('ButtonCount') and reg.HasValue('ControlCount') and reg.HasValue
+        ('LeftValues-Ctrls') and reg.HasValue('Enabled-Btns') and reg.HasValue('Visible-Btns')
+        and reg.HasValue('Style-Btns') and reg.HasValue('BtnsConfiguration')) then
+      Exit;
+
+    st := reg.StringValue['ButtonCount'];
+    BC := StrToInt(st);
+
+    st := reg.StringValue['ControlCount'];
+    CC := StrToInt(st);
+
+    SetLength(ctrlArray, BC);
+    st := reg.StringValue['Names-Btns'];
+    for i := 0 to BC - 1 do
+    begin
+      s := SplitString(',', st);
+      ctrlArray[i].CN := s;
+    end;
+
+    st := reg.StringValue['LeftValues-Btns'];
+    for i := 0 to BC - 1 do
+    begin
+      Val := StrToInt(SplitString(',', st));
+      ctrlArray[i].CL := Val;
+    end;
+
+    st := reg.StringValue['Index-BtnComp'];
+    for i := 0 to BC - 1 do
+    begin
+      Val := StrToInt(SplitString(',', st));
+      ctrlArray[i].CX := Val;
+    end;
+
+    st := reg.StringValue['Enabled-Btns'];
+    for i := 0 to BC - 1 do
+    begin
+      s := SplitString(',', st);
+      ctrlArray[i].CE := (s = 'E');
+    end;
+
+    st := reg.StringValue['Visible-Btns'];
+    for i := 0 to BC - 1 do
+    begin
+      s := SplitString(',', st);
+      ctrlArray[i].CV := (s = 'V');
+    end;
+
+    st := reg.StringValue['Style-Btns'];
+    for i := 0 to BC - 1 do
+    begin
+      s := SplitString(',', st);
+      if s = 'B' then
+        ctrlArray[i].CS := tbsButton
+      else if s = 'S' then
+        ctrlArray[i].CS := tbsSeparator;
+    end;
+
+    // =========================================================================
+    // Bubble sort ctrlArray by LeftValues
+    Swapped := True; // Required for entry to while loop
+    while Swapped do
+    begin
+      Swapped := False;
+      for i := 0 to High(ctrlArray) - 1 do
+      begin
+        if ctrlArray[i].CL < ctrlArray[i + 1].CL then // < is Descending
+        begin                                         // > is Ascending
+          Temp := ctrlArray[i];
+          ctrlArray[i] := ctrlArray[i + 1];
+          ctrlArray[i + 1] := Temp;
+          Swapped := True;
+        end; // if
+      end; // for
+    end; // while
+    // =========================================================================
+
+    tbMain.Enabled := False;
+    try
+      for i := 0 to BC - 1 do
+      begin
+        for J := 0 to CC - 1 do
+        begin
+          if tbMain.Controls[J].name = ctrlArray[i].CN then
+          begin
+            tbMain.Controls[J].Left := ctrlArray[i].CL;
+            tbMain.Controls[J].Visible := tbMain.Buttons[J].Visible;
+            tbMain.Controls[J].Enabled := tbMain.Buttons[i].Enabled;
+          end;
+        end;
+      end;
+    finally
+      tbMain.Enabled := True;
+    end;
+    tbMain.Update;
+    tbMain.Invalidate;
+  end;
+
 begin
+  if tbMain.Customizable then
+  begin
+    tbMain.CustomizeKeyName := 'Software\Woozle\XanaNews\Position\ToolBar\tbMainButtons';
+    tbMain.CustomizeValueName := 'BtnsConfiguration';
+  end;
+
   sl := nil;
   reg := CreateExSettings;
   try
@@ -4858,6 +5007,9 @@ begin
       for i := sl.Count - 1 downto 0 do
       begin
         ctrl := TControl(sl.Objects[i]);
+{QEC}
+        if (ctrl.name = 'tbMain') then
+          ArrangetbMainButtons;
         ctrl.Visible := StrToIntDef(sl[i], 1) <> 0;
       end;
     end
@@ -5639,7 +5791,153 @@ begin
         st := Format('%d,%d,%d,%d', [i, Width, Ord(Break), Ord(Control.Visible)]);
 
       reg.StringValue[ctrl.Name] := st;
-    end
+    end;
+
+    // QEC20100120-13:31 - Added tbMainButtons LeftValues Save
+    // 'Software\Woozle\XanaNews\Position\ToolBar\tbMainButtons'
+    if not tbMain.Customizable then
+      Exit;
+
+    reg.Section := 'Position\ToolBar\tbMainButtons';
+    st := Format('%d', [tbMain.ControlCount]);
+    reg.StringValue['ControlCount'] := st;
+
+    st := Format('%d', [tbMain.ButtonCount]);
+    reg.StringValue['ButtonCount'] := st;
+
+    // LeftValues =======================================
+    st := '';
+    for I := 0 to tbMain.ButtonCount - 1 do
+    begin
+      ctrl := TWinControl(tbMain.Buttons[I]);
+      st := st + Format('%d', [ctrl.Left]);
+      if (I < (tbMain.ButtonCount - 1)) then
+        st := st + ',';
+    end;
+    reg.StringValue['LeftValues-Btns'] := st;
+
+    st := '';
+    for I := 0 to tbMain.ControlCount - 1 do
+    begin
+      ctrl := TWinControl(tbMain.Controls[I]);
+      st := st + Format('%d', [ctrl.Left]);
+      if (I < (tbMain.ControlCount - 1)) then
+        st := st + ',';
+    end;
+    reg.StringValue['LeftValues-Ctrls'] := st;
+
+    // Names ============================================
+    st := '';
+    for I := 0 to tbMain.ButtonCount - 1 do
+    begin
+      st := st + tbMain.Buttons[I].name;
+      if (I < (tbMain.ButtonCount - 1)) then
+        st := st + ',';
+    end;
+    reg.StringValue['Names-Btns'] := st;
+
+    st := '';
+    for I := 0 to tbMain.ButtonCount - 1 do
+    begin
+      st := st + tbMain.Buttons[I].Caption;
+      if (I < (tbMain.ButtonCount - 1)) then
+        st := st + ',';
+    end;
+    reg.StringValue['Names-Capt'] := st;
+
+    st := '';
+    for I := 0 to tbMain.ControlCount - 1 do
+    begin
+      st := st + tbMain.Controls[I].name;
+      if (I < (tbMain.ControlCount - 1)) then
+        st := st + ',';
+    end;
+    reg.StringValue['Names-Ctrls'] := st;
+
+    // Style ============================================
+    st := '';
+    for I := 0 to tbMain.ButtonCount - 1 do
+    begin
+      if tbMain.Buttons[I].Style = tbsButton then
+        st := st + 'B'
+      else if tbMain.Buttons[I].Style = tbsSeparator then
+        st := st + 'S';
+      if (I < (tbMain.ButtonCount - 1)) then
+        st := st + ',';
+    end;
+    reg.StringValue['Style-Btns'] := st;
+
+    // Enable ===========================================
+    st := '';
+    for I := 0 to tbMain.ButtonCount - 1 do
+    begin
+      if tbMain.Buttons[I].Enabled then
+        st := st + 'E'
+      else
+        st := st + 'D';
+      if (I < (tbMain.ButtonCount - 1)) then
+        st := st + ',';
+    end;
+    reg.StringValue['Enabled-Btns'] := st;
+
+    st := '';
+    for I := 0 to tbMain.ControlCount - 1 do
+    begin
+      if tbMain.Controls[I].Enabled then
+        st := st + 'E'
+      else
+        st := st + 'D';
+      if (I < (tbMain.ControlCount - 1)) then
+        st := st + ',';
+    end;
+    reg.StringValue['Enabled-Ctrls'] := st;
+
+    // Visible ==========================================
+    st := '';
+    for I := 0 to tbMain.ButtonCount - 1 do
+    begin
+      if tbMain.Buttons[I].Visible then
+        st := st + 'V'
+      else
+        st := st + 'I';
+      if (I < (tbMain.ButtonCount - 1)) then
+        st := st + ',';
+    end;
+    reg.StringValue['Visible-Btns'] := st;
+
+    st := '';
+    for I := 0 to tbMain.ControlCount - 1 do
+    begin
+      if tbMain.Controls[I].Visible then
+        st := st + 'V'
+      else
+        st := st + 'I';
+      if (I < (tbMain.ControlCount - 1)) then
+        st := st + ',';
+    end;
+    reg.StringValue['Visible-Ctrls'] := st;
+
+    // Index ============================================
+    st := '';
+    for I := 0 to tbMain.ButtonCount - 1 do
+    begin
+      st := st + IntToStr(tbMain.Buttons[I].ComponentIndex);
+      if (I < (tbMain.ButtonCount - 1)) then
+        st := st + ',';
+    end;
+    reg.StringValue['Index-BtnComp'] := st;
+
+    st := '';
+    for I := 0 to tbMain.ControlCount - 1 do
+    begin
+      st := st + IntToStr(tbMain.Controls[I].ComponentIndex);
+      if (I < (tbMain.ControlCount - 1)) then
+        st := st + ',';
+    end;
+    reg.StringValue['Index-CtlComp'] := st;
+
+    // ==================================================
+
   finally
     reg.Free;
   end;
@@ -9677,12 +9975,62 @@ begin
     Source.Control.Width := fPanelLeftWidth;
 end;
 
+procedure TfmMain.SplitterPanel1DockOver(Sender: TObject;
+  Source: TDragDockObject; X, Y: Integer; State: TDragState;
+  var Accept: Boolean);
+var
+  ARect: TRect;
+begin
+  Accept := Source.Control is TPanel;
+  if Accept then
+  begin
+    // Modify the DockRect to preview dock area.
+    ARect.TopLeft := TControl(Sender).ClientToScreen(Point(0, 0));
+    ARect.BottomRight := TControl(Sender).ClientToScreen(Point(Source.Control.Width, TControl(Sender).Height));
+    Source.DockRect := ARect;
+  end;
+end;
+
+procedure TfmMain.SplitterPanel2DockOver(Sender: TObject;
+  Source: TDragDockObject; X, Y: Integer; State: TDragState;
+  var Accept: Boolean);
+var
+  ARect: TRect;
+begin
+  Accept := Source.Control is TPanel;
+  if Accept then
+  begin
+    // Modify the DockRect to preview dock area.
+    ARect.TopLeft := TControl(Sender).ClientToScreen(Point(-Source.Control.Width, 0));
+    ARect.BottomRight := TControl(Sender).ClientToScreen(Point(0, TControl(Sender).Height));
+    Source.DockRect := ARect;
+  end;
+end;
+
+procedure TfmMain.pnlLeftEndDock(Sender, Target: TObject; X, Y: Integer);
+begin
+  if (Sender is TPanel) and (Target is TCustomForm) then
+  begin
+    with TCustomForm(Target) do
+    begin
+      Left := X - fPanelLeftDragOffset.X;
+      Top := Y {- fPanelLeftDragOffset.Y};
+    end;
+  end;
+end;
+
 procedure TfmMain.pnlLeftStartDock(Sender: TObject;
   var DragObject: TDragDockObject);
+var
+  mp: TPoint;
 begin
+  GetCursorPos(mp);
+  fPanelLeftDragOffset := pnlLeft.ScreenToClient(mp);
   fPanelLeftWidth := pnlLeft.Width;
   fPanelLeftHeight := pnlLeft.Height;
   pnlLeft.UndockWidth := pnlLeft.Width;
+
+  DragObject:= TTransparentDragDockObject.Create(pnlLeft);
 end;
 
 procedure TfmMain.actViewSubscribedGroupsPaneExecute(Sender: TObject);
@@ -9698,10 +10046,7 @@ begin
   begin
     pnlLeft.Width := fPanelLeftWidth;
     pnlLeft.Height := fPanelLeftHeight;
-    SplitterPanel1.Width := fPanelLeftWidth;
-  end
-  else
-    SplitterPanel1.Width := 4;
+  end;
 end;
 
 procedure TfmMain.actViewToolbarCaptionsExecute(Sender: TObject);
@@ -11205,6 +11550,18 @@ begin
     refresh_vstArticles;
   end;
 end;
+
+procedure TfmMain.tbMainCustomized(Sender: TObject);
+begin
+  SaveToolbarLayout;
+end;
+
+
+procedure TfmMain.tbMainCustomizeReset(Sender: TObject);
+begin
+  SaveToolbarLayout;
+end;
+
 
 procedure TfmMain.vstArticlesFocusChanged(Sender: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex);

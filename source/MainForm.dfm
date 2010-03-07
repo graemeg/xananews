@@ -444,6 +444,7 @@ object fmMain: TfmMain
     DragMode = dmAutomatic
     FullRepaint = False
     TabOrder = 1
+    OnEndDock = pnlLeftEndDock
     OnStartDock = pnlLeftStartDock
     object spltQueuedRequests: TExSplitter
       Left = 0
@@ -614,6 +615,7 @@ object fmMain: TfmMain
     SplitterWidth = 6
     TabOrder = 4
     OnDockDrop = SplitterPanel1DockDrop
+    OnDockOver = SplitterPanel1DockOver
   end
   object SplitterPanel2: TSplitterPanel
     Left = 948
@@ -630,6 +632,7 @@ object fmMain: TfmMain
     SplitterWidth = 6
     TabOrder = 5
     OnDockDrop = SplitterPanel1DockDrop
+    OnDockOver = SplitterPanel2DockOver
   end
   object SplitterPanel3: TSplitterPanel
     Left = 0
@@ -640,7 +643,6 @@ object fmMain: TfmMain
     AutoSize = True
     BevelledSplitters = False
     BevelOuter = bvNone
-    DockSite = True
     FullRepaint = False
     Splitters = [splBottom]
     SplitterWidth = 6
@@ -733,121 +735,123 @@ object fmMain: TfmMain
       TabOrder = 1
       Transparent = True
       Wrapable = False
-      object ToolButton9: TToolButton
+      OnCustomized = tbMainCustomized
+      OnCustomizeReset = tbMainCustomizeReset
+      object btnReconnect: TToolButton
         Left = 0
         Top = 0
         Action = actToolsReconnect
       end
-      object ToolButton10: TToolButton
+      object tbs0: TToolButton
         Left = 74
         Top = 0
         Width = 8
-        Caption = 'ToolButton10'
+        Caption = 'tbs0'
         ImageIndex = 51
         Style = tbsSeparator
       end
-      object ToolButton11: TToolButton
+      object btnGetMessages: TToolButton
         Left = 82
         Top = 0
         Action = actNewsgroupGetMessages
         Caption = '&Get Messages'
       end
-      object ToolButton23: TToolButton
+      object tbs1: TToolButton
         Left = 156
         Top = 0
         Width = 8
-        Caption = 'ToolButton23'
+        Caption = 'tbs1'
         ImageIndex = 60
         Style = tbsSeparator
       end
-      object ToolButton21: TToolButton
+      object btnPrevious: TToolButton
         Left = 164
         Top = 0
         Action = actArticleGotoPrevious
         Caption = 'Previous'
       end
-      object ToolButton22: TToolButton
+      object btnNext: TToolButton
         Left = 238
         Top = 0
         Action = actArticleGoToNext
         Caption = 'Next'
       end
-      object ToolButton12: TToolButton
+      object tbs2: TToolButton
         Left = 312
         Top = 0
         Width = 8
-        Caption = 'ToolButton12'
+        Caption = 'tbs2'
         ImageIndex = 56
         Style = tbsSeparator
       end
-      object ToolButton13: TToolButton
+      object btnPostNew: TToolButton
         Left = 320
         Top = 0
         Action = actArticlePostNewMessage
         Caption = '&Post New'
       end
-      object ToolButton14: TToolButton
+      object btnPostReply: TToolButton
         Left = 394
         Top = 0
         Action = actArticleReplyToMessage
         Caption = '&Post Reply'
       end
-      object ToolButton20: TToolButton
+      object btnMailReply: TToolButton
         Left = 468
         Top = 0
         Action = actArticleReplyByMail
         Caption = 'Mail Reply'
         Enabled = False
       end
-      object ToolButton15: TToolButton
+      object tbs3: TToolButton
         Left = 542
         Top = 0
         Width = 8
-        Caption = 'ToolButton15'
+        Caption = 'tbs3'
         ImageIndex = 55
         Style = tbsSeparator
       end
-      object ToolButton16: TToolButton
+      object btnFind: TToolButton
         Left = 550
         Top = 0
         Action = actSearchFindInMessage
         Caption = '&Find'
       end
-      object ToolButton17: TToolButton
+      object btnSearch: TToolButton
         Left = 624
         Top = 0
         Action = actSearchSearchMessages
         Caption = '&Search'
       end
-      object ToolButton2: TToolButton
+      object btnPrint: TToolButton
         Left = 698
         Top = 0
         Action = actFilePrint
         Caption = '&Print'
       end
-      object ToolButton18: TToolButton
+      object tbs4: TToolButton
         Left = 772
         Top = 0
         Width = 8
-        Caption = 'ToolButton18'
+        Caption = 'tbs4'
         ImageIndex = 13
         Style = tbsSeparator
       end
-      object ToolButton24: TToolButton
+      object btnQuickGet: TToolButton
         Left = 780
         Top = 0
         Action = actGetEverything
         Caption = 'Quick Get'
       end
-      object ToolButton25: TToolButton
+      object tbs5: TToolButton
         Left = 854
         Top = 0
         Width = 8
-        Caption = 'ToolButton25'
+        Caption = 'tbs5'
         ImageIndex = 60
         Style = tbsSeparator
       end
-      object ToolButton19: TToolButton
+      object btnBozoAuthor: TToolButton
         Left = 862
         Top = 0
         Action = actMessageAddToBozoBin
