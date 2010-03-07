@@ -66,11 +66,13 @@
    Rev 1.0    11/13/2002 08:59:24 AM  JPMugaas
 }
 unit IdStackUnix;
-
 interface
 
 {$i IdCompilerDefines.inc}
 
+{$IFNDEF FPC}
+  {$Message Fatal 'IdStackUnix is only for FreePascal.'}
+{$ENDIF}
 uses
   Classes,
   sockets,
@@ -169,9 +171,9 @@ type
     function NetworkToHost(AValue: Int64): Int64; override;
     function RecvFrom(const ASocket: TIdStackSocketHandle; var VBuffer;
       const ALength, AFlags: Integer; var VIP: string; var VPort: TIdPort;
-      AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION): Integer; override;
-    function ReceiveMsg(ASocket: TIdStackSocketHandle; var VBuffer: TIdBytes;
-      APkt :  TIdPacketInfo; const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION): LongWord; override;
+      var VIPVersion: TIdIPVersion): Integer; override;
+    function ReceiveMsg(ASocket: TIdStackSocketHandle;
+      var VBuffer: TIdBytes; APkt: TIdPacketInfo): LongWord; override;
     procedure WSSendTo(ASocket: TIdStackSocketHandle; const ABuffer;
       const ABufferLength, AFlags: Integer; const AIP: string; const APort: TIdPort;
       AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION); override;
@@ -450,51 +452,53 @@ begin
   Result := fpRecv(ASocket, @ABuffer, ABufferLength, AFlags or Id_MSG_NOSIGNAL);
 end;
 
-function TIdStackUnix.RecvFrom(const ASocket: TIdStackSocketHandle;
-  var VBuffer; const ALength, AFlags: Integer; var VIP: string;
-  var VPort: TIdPort; AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION ): Integer;
+function TIdStackUnix.RecvFrom(const ASocket: TIdStackSocketHandle; var VBuffer;
+      const ALength, AFlags: Integer; var VIP: string; var VPort: TIdPort;
+      var VIPVersion: TIdIPVersion): Integer;
 var
   LiSize: tsocklen;
   LAddr: sockaddr_in6;
 begin
-  case AIPVersion of
-    Id_IPv4 :
+  LiSize := SizeOf(sockaddr_in6);
+  Result := fpRecvFrom(ASocket, @VBuffer, ALength, AFlags or Id_MSG_NOSIGNAL, Psockaddr(@LAddr), @LiSize);
+  if Result >= 0 then
+  begin
+    case LAddr.sin6_family of
+    Id_PF_INET4 :
       begin
-        LiSize := SizeOf(sockaddr);
-        Result := fpRecvFrom(ASocket, @VBuffer, ALength, AFlags or Id_MSG_NOSIGNAL, Psockaddr(@LAddr), @LiSize);
         with Psockaddr(@LAddr)^ do
         begin
           VIP := NetAddrToStr(sin_addr);
           VPort := ntohs(sin_port);
         end;
       end;
-    Id_IPv6:
+    Id_PF_INET6:
       begin
-        LiSize := SizeOf(sockaddr_in6);
-        Result := fpRecvFrom(ASocket, @VBuffer, ALength, AFlags or Id_MSG_NOSIGNAL, PSockAddr(@LAddr), @LiSize);
         with LAddr do
         begin
           VIP := NetAddrToStr6(sin6_addr);
           VPort := ntohs(sin6_port);
         end;
+        VIPVersion := Id_IPV6;
       end;
-    else begin
-      Result := 0;
-      IPVersionUnsupported;
     end;
   end;
 end;
 
 function TIdStackUnix.ReceiveMsg(ASocket: TIdStackSocketHandle;
-  var VBuffer: TIdBytes; APkt :  TIdPacketInfo;
-  const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION): LongWord;
+  var VBuffer: TIdBytes; APkt: TIdPacketInfo): LongWord;
 var
   LIP : String;
   LPort : TIdPort;
+  LIPVersion : TIdIPVersion;
 begin
-  LongWord(Result) := RecvFrom(ASocket, VBuffer[0], Length(VBuffer), 0, LIP, LPort);
+  Result := RecvFrom(ASocket, VBuffer, Length(VBuffer), 0, LIP, LPort, LIPVersion);
+  APkt.Reset;
   APkt.SourceIP := LIP;
   APkt.SourcePort := LPort;
+  APkt.SourceIPVersion := LIPVersion;
+  APkt.DestIPVersion := LIPVersion;
+
   SetLength(VBuffer, Result);
 end;
 {The stuff below is commented out until I figure out what to do}
@@ -502,8 +506,7 @@ end;
   LIP : String;
   LPort : TIdPort;
   LSize: Cardinal;
-  LAddr4: SockAddr_In;
-  LAddr6: SockAddr_In6;
+  LAddr: SockAddr_In6;
   LMsg : msghdr;
   LMsgBuf : BUF;
   LControl : TIdBytes;
@@ -513,77 +516,83 @@ end;
   LByte : PByte;
   LDummy, LDummy2 : Cardinal;
 begin
-   //we call the macro twice because we specified two possible structures.
-   //Id_IPV6_HOPLIMIT and Id_IPV6_PKTINFO
-   LSize := CMSG_LEN(CMSG_LEN(Length(VBuffer)));
-   SetLength( LControl,LSize);
-    LMsgBuf.len := Length(VBuffer); // Length(VMsgData);
-    LMsgBuf.buf := @VBuffer[0]; // @VMsgData[0];
+  //we call the macro twice because we specified two possible structures.
+  //Id_IPV6_HOPLIMIT and Id_IPV6_PKTINFO
+  LSize := CMSG_LEN(CMSG_LEN(Length(VBuffer)));
+  SetLength( LControl,LSize);
 
-    FillChar(LMsg,SizeOf(LMsg),0);
+  LMsgBuf.len := Length(VBuffer); // Length(VMsgData);
+  LMsgBuf.buf := @VBuffer[0]; // @VMsgData[0];
 
-    LMsg.lpBuffers := @LMsgBuf;
-    LMsg.dwBufferCount := 1;
+  FillChar(LMsg,SizeOf(LMsg),0);
 
-    LMsg.Control.Len := LSize;
-    LMsg.Control.buf := @LControl[0];
+  LMsg.lpBuffers := @LMsgBuf;
+  LMsg.dwBufferCount := 1;
 
-    case AIPVersion of
-      Id_IPv4: begin
-        LMsg.name :=  @LAddr4;
-        LMsg.namelen := SizeOf(LAddr4);
+  LMsg.Control.Len := LSize;
+  LMsg.Control.buf := @LControl[0];
 
-        CheckForSocketError(RecvMsg(ASocket,@LMsg,Result,nil,nil));
-        APkt.SourceIP :=  TranslateTInAddrToString(LAddr4.sin_addr,Id_IPv4);
+  LMsg.name := PSOCKADDR(@LAddr);
+  LMsg.namelen := SizeOf(LAddr);
+  CheckForSocketError( RecvMsg(ASocket,@LMsg,Result,@LDummy,LPwsaoverlapped_COMPLETION_ROUTINE(@LDummy2)));
 
-        APkt.SourcePort := NToHs(LAddr4.sin_port);
-      end;
-      Id_IPv6: begin
-        LMsg.name := PSOCKADDR( @LAddr6);
-        LMsg.namelen := SizeOf(LAddr6);
-
-        CheckForSocketError( RecvMsg(ASocket,@LMsg,Result,@LDummy,LPwsaoverlapped_COMPLETION_ROUTINE(@LDummy2)));
-        APkt.SourceIP := TranslateTInAddrToString(LAddr6.sin6_addr, Id_IPv6);
-
-        APkt.SourcePort := NToHs(LAddr6.sin6_port);
-      end;
-      else begin
-        Result := 0; // avoid warning
-        IPVersionUnsupported;
-      end;
-    end;
-    LCurCmsg := nil;
-    repeat
-      LCurCmsg := CMSG_NXTHDR(@LMsg,LCurCmsg);
-      if LCurCmsg = nil then
+  case LAddr.sin6_family of
+    Id_PF_INET4: begin
+      with PSOCKADDR(@LAddr)^do
       begin
-        break;
+        APkt.SourceIP :=  TranslateTInAddrToString(sin_addr,Id_IPv4);
+        APkt.SourcePort := NToHs(sin_port);
       end;
-      case LCurCmsg^.cmsg_type of
-        IP_PKTINFO :     //done this way because IPV6_PKTINF and  IP_PKTINFO
-        //are both 19
-        begin
-          if AIPVersion = Id_IPv4 then
+      APkt.SourceIPVersion := Id_IPv4;
+    end;
+    Id_PF_INET6: begin
+      with LAddr do
+      begin
+        APkt.SourceIP := TranslateTInAddrToString(sin6_addr, Id_IPv6);
+        APkt.SourcePort := NToHs(sin6_port);
+      end;
+      APkt.SourceIPVersion := Id_IPv6;
+    end;
+    else begin
+      Result := 0; // avoid warning
+      IPVersionUnsupported;
+    end;
+  end;
+  LCurCmsg := nil;
+  repeat
+    LCurCmsg := CMSG_NXTHDR(@LMsg,LCurCmsg);
+    if LCurCmsg = nil then
+    begin
+      break;
+    end;
+    case LCurCmsg^.cmsg_type of
+      IP_PKTINFO :     //done this way because IPV6_PKTINF and  IP_PKTINFO
+      //are both 19
+      begin
+        case LAddr.sin6_family of
+          Id_PF_INET4:
           begin
             LCurPt := WSA_CMSG_DATA(LCurCmsg);
             APkt.DestIP := GWindowsStack.TranslateTInAddrToString(LCurPt^.ipi_addr,Id_IPv4);
             APkt.DestIF := LCurPt^.ipi_ifindex;
+            APkt.DestIPVersion := Id_IPv4;
           end;
-          if AIPVersion = Id_IPv6 then
+          Id_PF_INET6:
           begin
             LCurPt6 := WSA_CMSG_DATA(LCurCmsg);
             APkt.DestIP := GWindowsStack.TranslateTInAddrToString(LCurPt6^.ipi6_addr,Id_IPv6);
             APkt.DestIF := LCurPt6^.ipi6_ifindex;
+            APkt.DestIPVersion := Id_IPv6;
           end;
         end;
-        Id_IPV6_HOPLIMIT :
-        begin
-          LByte :=  PByte(WSA_CMSG_DATA(LCurCmsg));
-          APkt.TTL := LByte^;
-        end;
       end;
-    until False; }
-
+      Id_IPV6_HOPLIMIT :
+      begin
+        LByte :=  PByte(WSA_CMSG_DATA(LCurCmsg));
+        APkt.TTL := LByte^;
+      end;
+    end;
+  until False; }
 
 function TIdStackUnix.WSSend(ASocket: TIdStackSocketHandle;
   const ABuffer; const ABufferLength, AFlags: Integer): Integer;

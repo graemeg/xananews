@@ -124,6 +124,11 @@ uses
   Windows,
     {$ENDIF}
   {$ENDIF}
+  {$IFDEF USE_VCL_POSIX}
+  PosixGlue,
+  PosixSysSelect,
+  PosixSysTime,
+  {$ENDIF}
   SysUtils;
 
 type

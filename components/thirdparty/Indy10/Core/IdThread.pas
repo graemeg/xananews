@@ -270,6 +270,10 @@ uses
   System.Threading,
     {$ENDIF}
   {$ENDIF}
+  {$IFDEF USE_VCL_POSIX}
+  PosixSysSelect,
+  PosixSysTime,
+  {$ENDIF}
   IdResourceStringsCore;
 
 class procedure TIdThread.WaitAllThreadsTerminated(AMSec: Integer = IdWaitAllThreadsTerminatedCount);

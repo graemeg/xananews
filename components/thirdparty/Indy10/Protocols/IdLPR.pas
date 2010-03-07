@@ -185,6 +185,11 @@ type
 implementation
 
 uses
+  {$IFDEF DOTNET}
+  IdStreamNET,
+  {$ELSE}
+  IdStreamVCL,
+  {$ENDIF}
   IdGlobalProtocols, IdResourceStringsProtocols, IdStack, SysUtils;
 
 { TIdLPR }

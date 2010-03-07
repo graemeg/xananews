@@ -241,6 +241,7 @@ procedure TIdIPMCastListenerThread.Run;
 var
   PeerIP: string;
   PeerPort: TIdPort;
+  PeerIPVersion: TIdIPVersion;
   ByteCount: Integer;
   LReadList: TIdSocketList;
   i: Integer;
@@ -268,14 +269,14 @@ begin
       if not Stopped then
       begin
         IncomingData := FServer.Bindings.BindingByHandle(TIdStackSocketHandle(LReadList[i]));
-        ByteCount := IncomingData.RecvFrom(LBuffer, PeerIP, PeerPort, IncomingData.IPVersion);
+        ByteCount := IncomingData.RecvFrom(LBuffer, PeerIP, PeerPort, PeerIPVersion);
         if ByteCount <= 0 then
         begin
           raise EIdUDPReceiveErrorZeroBytes.Create(RSIPMCastReceiveError0);
         end;
         SetLength(FBuffer, ByteCount);
         CopyTIdBytes(LBuffer, 0, FBuffer, 0, ByteCount);
-        IncomingData.SetPeer(PeerIP, PeerPort, IncomingData.IPVersion);
+        IncomingData.SetPeer(PeerIP, PeerPort, PeerIPVersion);
         if FServer.ThreadedEvent then begin
           IPMCastRead;
         end else begin

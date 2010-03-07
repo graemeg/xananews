@@ -158,7 +158,7 @@ function ToIdentifierType(iTag : integer) : TIdASN1IdentifierType;
 implementation
 
 uses
-  IdException;
+  IdException, SysUtils;
 
 function ToIdentifierType(iTag : integer) : TIdASN1IdentifierType;
 begin
@@ -392,8 +392,8 @@ end;
 
 function TIdASN1Decoder.DescribeIdentifier(const aId : TIdASN1Identifier) : String;
 begin
-  result := '[Pos '+Sys.IntToStr(aId.Position)+', Type '+NAMES_ASN1IDENTIFIERTYPE[aId.TagType]+', '+
-             'Tag '+Sys.IntToStr(aId.TagValue)+', Class '+NAMES_ASN1IDENTIFIERCLASS[aId.IdClass]+']';
+  result := '[Pos '+IntToStr(aId.Position)+', Type '+NAMES_ASN1IDENTIFIERTYPE[aId.TagType]+', '+
+             'Tag '+IntToStr(aId.TagValue)+', Class '+NAMES_ASN1IDENTIFIERCLASS[aId.IdClass]+']';
 end;
 
 Function TIdASN1Decoder.ReadByte : Byte;

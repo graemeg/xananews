@@ -85,6 +85,10 @@ type
 implementation
 
 uses
+  {$IFDEF USE_VCL_POSIX}
+  PosixSysTime,
+  PosixTime,
+  {$ENDIF}
   IdException,
   IdGlobal, IdFTPCommon, IdGlobalProtocols, SysUtils;
 

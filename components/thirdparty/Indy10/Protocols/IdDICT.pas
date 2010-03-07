@@ -112,6 +112,7 @@ type
 implementation
 
 uses
+  IdFIPS,
   IdGlobal, IdGlobalProtocols, IdHash, IdHashMessageDigest, SysUtils;
 
 const

@@ -249,8 +249,7 @@ type
     function Send(ASocket: TIdStackSocketHandle; const ABuffer: TIdBytes;
       const AOffset: Integer = 0; const ASize: Integer = -1): Integer; override;
     function ReceiveFrom(ASocket: TIdStackSocketHandle; var VBuffer: TIdBytes;
-      var VIP: string; var VPort: TIdPort; const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION
-      ): Integer; override;
+      var VIP: string; var VPort: TIdPort; var VIPVersion: TIdIPVersion): Integer; override;
     function SendTo(ASocket: TIdStackSocketHandle; const ABuffer: TIdBytes;
       const AOffset: Integer; const ASize: Integer; const AIP: string;
       const APort: TIdPort; const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION): Integer; override;
@@ -263,11 +262,11 @@ type
     function WSGetServByPort(const APortNumber: TIdPort): TStrings; virtual; abstract;
     function RecvFrom(const ASocket: TIdStackSocketHandle; var ABuffer;
       const ALength, AFlags: Integer; var VIP: string; var VPort: TIdPort;
-      AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION): Integer; virtual; abstract;
+      var VIPVersion: TIdIPVersion): Integer; virtual; abstract;
     procedure WSSendTo(ASocket: TIdStackSocketHandle; const ABuffer;
       const ABufferLength, AFlags: Integer; const AIP: string; const APort: TIdPort;
       AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION); virtual; abstract;
-    function WSSocket(AFamily, AStruct, AProtocol: Integer;
+    function WSSocket(AFamily : Integer; AStruct : TIdSocketType; AProtocol: Integer;
       const AOverlapped: Boolean = False): TIdStackSocketHandle; virtual; abstract;
     procedure WSGetSockOpt(ASocket: TIdStackSocketHandle; Alevel, AOptname: Integer;
       AOptval: PAnsiChar; var AOptlen: Integer); virtual; abstract;
@@ -312,8 +311,12 @@ uses
   {$IFDEF UNIX}
     {$IFDEF KYLIXCOMPAT}
   IdStackLibc,
-    {$ELSE}
+    {$ENDIF}
+    {$IFDEF USE_BASEUNIX}
   IdStackUnix,
+    {$ENDIF}
+    {$IFDEF USE_VCL_POSIX}
+  IdStackVCLPosix,
     {$ENDIF}
   {$ENDIF}
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
@@ -417,10 +420,10 @@ end;
 
 function TIdStackBSDBase.ReceiveFrom(ASocket: TIdStackSocketHandle;
   var VBuffer: TIdBytes; var VIP: string; var VPort: TIdPort;
-  const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION): Integer;
+  var VIPVersion: TIdIPVersion): Integer;
 begin
    Result := CheckForSocketError(RecvFrom(ASocket, VBuffer[0], Length(VBuffer),
-     0, VIP, VPort, AIPVersion));
+     0, VIP, VPort, VIPVersion));
 end;
 
 function TIdStackBSDBase.SendTo(ASocket: TIdStackSocketHandle;

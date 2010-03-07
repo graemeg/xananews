@@ -320,6 +320,7 @@ type
 implementation
 
 uses
+  IdFIPS,
   IdGlobalProtocols, IdHash,
   IdHashMessageDigest,
   IdReplyPOP3,

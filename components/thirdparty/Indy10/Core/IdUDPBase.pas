@@ -125,8 +125,7 @@ type
     function ReceiveBuffer(var ABuffer : TIdBytes; var VPeerIP: string; var VPeerPort: TIdPort;
       AMSec: Integer = IdTimeoutDefault): integer; overload; virtual;
     function ReceiveBuffer(var ABuffer : TIdBytes; var VPeerIP: string; var VPeerPort: TIdPort;
-      const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION;
-      const AMSec: Integer = IdTimeoutDefault): integer; overload; virtual;
+      var VIPVersion: TIdIPVersion; const AMSec: Integer = IdTimeoutDefault): integer; overload; virtual;
     function ReceiveBuffer(var ABuffer : TIdBytes;
      const AMSec: Integer = IdTimeoutDefault): Integer; overload;  virtual;
     function ReceiveString(const AMSec: Integer = IdTimeoutDefault; AEncoding: TIdTextEncoding = nil): string; overload;
@@ -233,23 +232,23 @@ function TIdUDPBase.ReceiveBuffer(var ABuffer : TIdBytes;
 var
   VoidIP: string;
   VoidPort:  TIdPort;
+  VoidIPVer: TIdIPVersion;
 begin
-  Result := ReceiveBuffer(ABuffer,  VoidIP, VoidPort, AMSec);
+  Result := ReceiveBuffer(ABuffer, VoidIP, VoidPort, VoidIPVer, AMSec);
 end;
 
 function TIdUDPBase.ReceiveBuffer(var ABuffer : TIdBytes;
   var VPeerIP: string; var VPeerPort: TIdPort;
   AMSec: Integer = IdTimeoutDefault): integer;
 var
-  LVoidIPVer : TIdIPVersion;
+  VoidIPVer : TIdIPVersion;
 begin
-  LVoidIPVer := IPVersion;
-  Result := ReceiveBuffer(ABuffer,VPeerIP,VPeerPort, LVoidIPVer,AMSec);
+  Result := ReceiveBuffer(ABuffer, VPeerIP, VPeerPort, VoidIPVer, AMSec);
  // GBSDStack.CheckForSocketError(Result);
 end;
 
 function TIdUDPBase.ReceiveBuffer(var ABuffer : TIdBytes;
-  var VPeerIP: string; var VPeerPort: TIdPort; const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION;
+  var VPeerIP: string; var VPeerPort: TIdPort; var VIPVersion: TIdIPVersion;
   const AMSec: Integer = IdTimeoutDefault): integer;
 var
   LMSec : Integer;
@@ -269,7 +268,7 @@ begin
     VPeerPort := 0;
     Exit;
   end;
-  Result := Binding.RecvFrom(ABuffer, VPeerIP, VPeerPort, AIPVersion);
+  Result := Binding.RecvFrom(ABuffer, VPeerIP, VPeerPort, VIPVersion);
 end;
 
 function TIdUDPBase.ReceiveString(var VPeerIP: string; var VPeerPort: TIdPort;

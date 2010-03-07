@@ -286,6 +286,7 @@ uses
   {$IFDEF DOTNET}
   System.Text,
   {$ENDIF}
+  IdFIPS,
   IdGlobalProtocols,
   IdHash,
   IdHashMessageDigest,
@@ -320,11 +321,9 @@ end;
 {$ELSE}
 function NTLMFunctionsLoaded : Boolean;
 begin
-  Result := Assigned(iddes_set_odd_parity) and
-    Assigned(IdDES_set_key) and
-    Assigned(iddes_set_odd_parity) and
-    Assigned(IdDES_ecb_encrypt) and
-    Assigned(iddes_ecb_encrypt);
+  Result := Assigned(DES_set_odd_parity) and
+    Assigned(DES_set_key) and
+    Assigned(DES_ecb_encrypt);
 end;
 {$ENDIF}
 
@@ -347,8 +346,8 @@ begin
   key[6] := ((key_56[5] SHL 2) and $FF) or (key_56[6] SHR 6);
   key[7] :=  (key_56[6] SHL 1) and $FF;
 
-  iddes_set_odd_parity(@key);
-  iddes_set_key(@key, ks);
+  DES_set_odd_parity(@key);
+  DES_set_key(@key, ks);
 end;
 
 {/*
@@ -363,13 +362,13 @@ Var
 begin
   setup_des_key(keys^, ks);
   Move(ANonce[0], nonce, 8);
-  iddes_ecb_encrypt(@nonce, Pconst_DES_cblock(results), ks, OPENSSL_DES_ENCRYPT);
+  des_ecb_encrypt(@nonce, Pconst_DES_cblock(results), ks, DES_ENCRYPT);
 
   setup_des_key(PDES_cblock(PtrUInt(keys) + 7)^, ks);
-  iddes_ecb_encrypt(@nonce, Pconst_DES_cblock(PtrUInt(results) + 8), ks, OPENSSL_DES_ENCRYPT);
+  des_ecb_encrypt(@nonce, Pconst_DES_cblock(PtrUInt(results) + 8), ks, DES_ENCRYPT);
 
   setup_des_key(PDES_cblock(PtrUInt(keys) + 14)^, ks);
-  iddes_ecb_encrypt(@nonce, Pconst_DES_cblock(PtrUInt(results) + 16), ks, OPENSSL_DES_ENCRYPT);
+  des_ecb_encrypt(@nonce, Pconst_DES_cblock(PtrUInt(results) + 16), ks, DES_ENCRYPT);
 end;
 
 Const
@@ -404,10 +403,10 @@ begin
   //* create LanManager hashed password */
 
   setup_des_key(pdes_cblock(@lm_pw[1])^, ks);
-  iddes_ecb_encrypt(@magic, Pconst_DES_cblock(@lm_hpw[1]), ks, OPENSSL_DES_ENCRYPT);
+  des_ecb_encrypt(@magic, Pconst_DES_cblock(@lm_hpw[1]), ks, DES_ENCRYPT);
 
   setup_des_key(pdes_cblock(PtrUInt(@lm_pw[1]) + 7)^, ks);
-  iddes_ecb_encrypt(@magic, Pconst_DES_cblock(PtrUInt(@lm_hpw[1]) + 8), ks, OPENSSL_DES_ENCRYPT);
+  des_ecb_encrypt(@magic, Pconst_DES_cblock(PtrUInt(@lm_hpw[1]) + 8), ks, DES_ENCRYPT);
 
   FillChar(lm_hpw[17], 5, 0);
 
@@ -418,19 +417,20 @@ begin
 end;
 
 function BuildUnicode(const S: String): TIdBytes;
-{$IFDEF STRING_IS_ANSI}
+{$IFDEF STRING_IS_UNICODE}
+  {$IFDEF USE_INLINE}inline;{$ENDIF}
+{$ELSE}
 var
   i: integer;
 {$ENDIF}
 begin
-  Result := nil;
-  if S = '' then begin
-    Exit;
-  end;
-  SetLength(Result, Length(S) * SizeOf(WideChar));
   {$IFDEF STRING_IS_UNICODE}
-  Move(S[1], Result[0], Length(Result));
+  Result := TIdTextEncoding.Unicode.GetBytes(S);
   {$ELSE}
+  // RLebeau: TODO - should this use TIdTextEncoding.Unicode.GetBytes()
+  // as well?  This logic will not produce a valid Unicode string if
+  // non-ASCII characters are present!
+  SetLength(Result, Length(S) * SizeOf(WideChar));
   for i := 0 to Length(S)-1 do begin
     Result[i*2] := Byte(S[i+1]);
     Result[(i*2)+1] := Byte(#0);
@@ -449,7 +449,7 @@ begin
   with TIdHashMessageDigest4.Create do
   try
     {$IFDEF STRING_IS_UNICODE}
-    nt_hpw128 := HashString(APassword);
+    nt_hpw128 := HashString(APassword, TIdTextEncoding.Unicode);
     {$ELSE}
     nt_hpw128 := HashBytes(BuildUnicode(APassword));
     {$ENDIF}

@@ -211,7 +211,7 @@ type
    
     //
     function DisasmUDPReplyPacket(const APacket : TIdBytes;
-      var VHost : String; var VPort : TIdPort): TIdBytes;
+      var VHost : String; var VPort : TIdPort; var VIPVersion: TIdIPVersion): TIdBytes;
     function MakeUDPRequestPacket(const AData: TIdBytes;
       const AHost: String; const APort: TIdPort) : TIdBytes;
     function GetEnabled: Boolean; override;
@@ -240,7 +240,7 @@ type
     function  Listen(AIOHandler: TIdIOHandler; const ATimeOut:integer):boolean;override;
     procedure OpenUDP(AHandle : TIdSocketHandle; const AHost: string = ''; const APort: TIdPort = 0; const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION); override;
     function RecvFromUDP(AHandle: TIdSocketHandle; var ABuffer : TIdBytes;
-      var VPeerIP: string; var VPeerPort: TIdPort; const AIPVersion: TIdIPVersion;
+      var VPeerIP: string; var VPeerPort: TIdPort; var VIPVersion: TIdIPVersion;
       AMSec: Integer = IdTimeoutDefault): Integer; override;
     procedure SendToUDP(AHandle: TIdSocketHandle; const AHost: string;
       const APort: TIdPort; const AIPVersion: TIdIPVersion; const ABuffer : TIdBytes); override;
@@ -864,7 +864,7 @@ begin
 end;
 
 function TIdSocksInfo.DisasmUDPReplyPacket(const APacket : TIdBytes;
-  var VHost : String; var VPort : TIdPort): TIdBytes;
+  var VHost : String; var VPort : TIdPort; var VIPVersion: TIdIPVersion): TIdBytes;
 {
 
 
@@ -901,6 +901,7 @@ begin
     1: begin
          LLen := 4 + 4; //4 IPv4 address len, 4- 2 reserved, 1 frag, 1 atype
          VHost := IntToStr(APacket[4])+'.'+IntToStr(APacket[5])+'.'+IntToStr(APacket[6])+'.'+IntToStr(APacket[7]);
+         VIPVersion := Id_IPv4;
        end;
     // FQDN
     3: begin
@@ -911,6 +912,7 @@ begin
          SetLength(LHost, APacket[4]);
          CopyTIdBytes(APacket, 5, LHost, 0, APacket[4]);
          VHost := BytesToString(LHost);
+         // VIPVersion is pre-initialized by the receiving socket before DisasmUDPReplyPacket() is called
        end;
     // IP V6  - 4:
     else begin
@@ -922,6 +924,7 @@ begin
         LIP6[i] := GStack.NetworkToHost(LIP6[i]);
       end;
       VHost := IPv6AddressToStr(LIP6);
+      VIPVersion := Id_IPv6;
     end;
   end;
   VPort := APacket[LLen]*256 + APacket[LLen+1];
@@ -1018,7 +1021,7 @@ end;
 
 function TIdSocksInfo.RecvFromUDP(AHandle: TIdSocketHandle;
   var ABuffer : TIdBytes; var VPeerIP: string; var VPeerPort: TIdPort;
-  const AIPVersion: TIdIPVersion; AMSec: Integer = IdTimeoutDefault): Integer;
+  var VIPVersion: TIdIPVersion; AMSec: Integer = IdTimeoutDefault): Integer;
 var
   LBuf : TIdBytes;
 begin
@@ -1031,11 +1034,12 @@ begin
     Result := 0;
     VPeerIP := '';    {Do not Localize}
     VPeerPort := 0;
+    VIPVersion := ID_DEFAULT_IP_VERSION;
     Exit;
   end;
-  Result := AHandle.RecvFrom(LBuf, VPeerIP, VPeerPort, AIPVersion);
+  Result := AHandle.RecvFrom(LBuf, VPeerIP, VPeerPort, VIPVersion);
   SetLength(LBuf, Result);
-  LBuf := DisasmUDPReplyPacket(LBuf, VPeerIP, VPeerPort);
+  LBuf := DisasmUDPReplyPacket(LBuf, VPeerIP, VPeerPort, VIPVersion);
   Result := Length(LBuf);
   CopyTIdBytes(LBuf, 0, ABuffer, 0, Result);
 end;

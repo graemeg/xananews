@@ -204,6 +204,10 @@ type
 implementation
 
 uses
+  {$IFDEF USE_VCL_POSIX}
+  PosixSysSelect,
+  PosixSysTime,
+  {$ENDIF}
   IdAntiFreezeBase, IdResourceStringsCore, IdResourceStrings, IdStackConsts, IdException,
   IdTCPConnection, IdComponent, IdIOHandler;
 

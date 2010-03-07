@@ -709,9 +709,7 @@ begin
         LListenerThread.OnBeforeRun := DoBeforeListenerRun;
         //Todo: Implement proper priority handling for Linux
         //http://www.midnightbeach.com/jon/pubs/2002/BorCon.London/Sidebar.3.html
-        {$IFNDEF MACOSX}
         LListenerThread.Priority := tpListener;
-        {$ENDIF}
         LListenerThreads.Add(LListenerThread);
       except
         Bindings[I].CloseSocket;
@@ -853,6 +851,8 @@ procedure TIdCustomTCPServer.Startup;
 begin
   // Set up bindings
   if Bindings.Count = 0 then begin
+    // TODO: on systems that support dual-stack sockets, create a single
+    // Binding object that supports both IPv4 and IPv6 on the same socket...
     Bindings.Add; // IPv4
     if GStack.SupportsIPv6 then begin
       // maybe add a property too, so the developer can switch it on/off
@@ -937,6 +937,10 @@ begin
     // GetYarn can raise exceptions
     LYarn := Server.Scheduler.AcquireYarn;
 
+    // TODO: under Windows at least, use SO_CONDITIONAL_ACCEPT to allow
+    // the user to reject connections before they are accepted.  Somehow
+    // expose an event here for the user to decide with...
+    
     LIOHandler := Server.IOHandler.Accept(Binding, Self, LYarn);
     if LIOHandler = nil then begin
       // Listening has finished

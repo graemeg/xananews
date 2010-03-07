@@ -45,7 +45,7 @@ Level        |	Sent by Client               |	Accepted by Server
   end;
 
 implementation
-uses IdNTLMv2, IdGlobal;
+uses IdFIPS, IdNTLMv2, IdGlobal;
 //uses IdNTLM;
 
 { TIdSASLNTLM }
@@ -90,16 +90,14 @@ end;
 
 function TIdSASLNTLM.StartAuthenticate(const AChallenge, AHost,
   AProtocolName: string): String;
-var LDomain,LUsername : String;
+var
+  LDomain, LUsername : String;
 begin
-  GetDomain(GetUsername,LUsername,LDomain);
-  if LDomain = '' then
-  begin
+  GetDomain(GetUsername, LUsername, LDomain);
+  if LDomain = '' then begin
     LDomain := FDomain;
   end;
-  Result := String(BytesToString(
-    IdNTLMv2.BuildType1Msg(LDomain,LDomain,FLMCompatibility),
-    Indy8BitEncoding));
+  Result := BytesToStringRaw(IdNTLMv2.BuildType1Msg(LDomain, LDomain, FLMCompatibility));
 end;
 
 end.

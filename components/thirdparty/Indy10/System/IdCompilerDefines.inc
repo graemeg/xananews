@@ -55,8 +55,12 @@
 // the iconv library to charactor conversions.
 {.$UNDEF USE_ICONV}
 
+//Define for Delphi cross-compiler targetting Posix
+{$UNDEF USE_VCL_POSIX}
+
 // Delphi 4
 {$IFDEF VER120}
+  {$DEFINE DCC}
   {$DEFINE VCL_4_OR_ABOVE}
   {$DEFINE VCL_40}
   {$DEFINE DELPHI_4}
@@ -72,6 +76,7 @@
 
 // C++Builder 4
 {$IFDEF VER125}
+  {$DEFINE DCC}
   {$DEFINE VCL_4_OR_ABOVE}
   {$DEFINE VCL_40}
   {$DEFINE CBUILDER_4}
@@ -87,6 +92,7 @@
 
 // Delphi & C++Builder 5
 {$IFDEF VER130}
+  {$DEFINE DCC}
   {$DEFINE VCL_4_OR_ABOVE}
   {$DEFINE VCL_5_OR_ABOVE}
   {$DEFINE VCL_5}
@@ -109,6 +115,7 @@
 
 //Delphi & C++Builder 6
 {$IFDEF VER140}
+  {$DEFINE DCC}
   {$DEFINE VCL_4_OR_ABOVE}
   {$DEFINE VCL_5_OR_ABOVE}
   {$IFDEF CBUILDER}
@@ -135,6 +142,7 @@
 
 //Delphi 7
 {$IFDEF VER150}
+  {$DEFINE DCC}
   {$DEFINE VCL_4_OR_ABOVE}
   {$DEFINE VCL_5_OR_ABOVE}
   {$DEFINE VCL_6_OR_ABOVE}
@@ -159,6 +167,7 @@
 
 //Delphi 8
 {$IFDEF VER160}
+  {$DEFINE DCC}
   {$DEFINE VCL_4_OR_ABOVE}
   {$DEFINE VCL_5_OR_ABOVE}
   {$DEFINE VCL_6_OR_ABOVE}
@@ -181,6 +190,7 @@
 
 //Delphi 2005
 {$IFDEF VER170}
+  {$DEFINE DCC}
   {$DEFINE VCL_4_OR_ABOVE}
   {$DEFINE VCL_5_OR_ABOVE}
   {$DEFINE VCL_6_OR_ABOVE}
@@ -216,6 +226,7 @@
 //Delphi & C++Builder 2006
 //Delphi & C++Builder 2007 (Highlander)
 {$IFDEF VER180}
+  {$DEFINE DCC}
   {$DEFINE USE_INLINE}
   {$DEFINE VCL_4_OR_ABOVE}
   {$DEFINE VCL_5_OR_ABOVE}
@@ -253,6 +264,7 @@
 
 //Delphi & C++Builder 2007 (Highlander)
 {$IFDEF VER185}
+  {$DEFINE DCC}
   {$DEFINE USE_INLINE}
   {$DEFINE VCL_4_OR_ABOVE}
   {$DEFINE VCL_5_OR_ABOVE}
@@ -299,6 +311,7 @@
 // BDS 2007 NET personality uses VER190 instead of 185.
 //Delphi .NET 2007
 {$IFDEF VER190}
+  {$DEFINE DCC}
   {$DEFINE USE_INLINE}
   {$DEFINE VCL_4_OR_ABOVE}
   {$DEFINE VCL_5_OR_ABOVE}
@@ -331,6 +344,7 @@
 
 //Delphi & C++Builder 2009 (Tiburon)
 {$IFDEF VER200}
+  {$DEFINE DCC}
   {$DEFINE USE_INLINE}
   {$DEFINE STRING_IS_UNICODE} // 'String' type is Unicode now
   {$DEFINE VCL_4_OR_ABOVE}
@@ -376,6 +390,7 @@
 
 //Delphi & C++Builder 2010 (Weaver)
 {$IFDEF VER210}
+  {$DEFINE DCC}
   {$DEFINE USE_INLINE}
   {$DEFINE STRING_IS_UNICODE} // 'String' type is Unicode now
   {$DEFINE VCL_4_OR_ABOVE}
@@ -422,6 +437,9 @@
 
 //Delphi & C++Builder 2011 (Fulcrum)
 {$IFDEF VER220}
+//REMOVE DCC DEFINE after the next Fulcrum beta.
+//It will be defined there.
+  {$DEFINE DCC}
   {$DEFINE USE_INLINE}
   {$DEFINE STRING_IS_UNICODE} // 'String' type is Unicode now
   {$DEFINE VCL_4_OR_ABOVE}
@@ -449,6 +467,7 @@
     {$DEFINE REGISTER_EXPECTED_MEMORY_LEAK}
   {$ENDIF}
   {$DEFINE HAS_TFormatSettings}
+  {$DEFINE HAS_TFormatSettings_Object}
   {$DEFINE HAS_TSelectionEditor}
   {$DEFINE CPUI386}
   {$DEFINE ENDIAN_LITTLE}
@@ -506,7 +525,7 @@
   //what we do and what platforms we support in FPC.
   //I'll let Marco think about that one.
   {$IFDEF UNIX}
-         {$DEFINE USE_BASEUNIX}
+     {$DEFINE USE_BASEUNIX}
     {$IFDEF LINUX}
       //In Linux for I386, you can choose between a Kylix-libc API or
       //the standard RTL Unix API.  Just pass -dKYLIXCOMPAT to the FPC compiler.
@@ -550,24 +569,29 @@
 //IF's are evaluated before IFDEF's
 //and Kylix 1 does not have CompilerVersion defined at all.
 {$IFNDEF FPC}
-   {$IFDEF POSIX}
+  {$IFDEF POSIX}
      {$IF RTLVersion >= 22.0}
        {$DEFINE UNIX}
        {$DEFINE VCL_CROSS_COMPILE}
-       {$DEFINE KYLIXCOMPAT}
+       {$DEFINE USE_VCL_POSIX}
+       {$UNDEF USE_BASEUNIX}
+       {$UNDEF KYLIXCOMPAT}
      {$IFEND}
   {$ENDIF}
   {$IFDEF LINUX}
+       {$DEFINE UNIX}
     {$IFDEF CONDITIONALEXPRESSIONS}
       {$IF RTLVersion = 14.0}
         {$DEFINE KYLIX_1}
         {$DEFINE KYLIX_1_OR_ABOVE}
+         {$DEFINE KYLIXCOMPAT}
       {$IFEND}
       {$IF RTLVersion = 14.2}
         {$DEFINE KYLIX_2}
         {$DEFINE USE_ZLIB_UNIT}
         {$DEFINE KYLIX_1_OR_ABOVE}
         {$DEFINE KYLIX_2_OR_ABOVE}
+         {$DEFINE KYLIXCOMPAT}
       {$IFEND}
       {$IF RTLVersion = 14.5}
         {$DEFINE KYLIX_3}
@@ -578,6 +602,8 @@
       {$IFEND}
       {$IF RTLVersion >= 22.0}
         {$DEFINE VCL_CROSS_COMPILE}
+        {$DEFINE USE_VCL_POSIX}
+        {$UNDEF KYLIXCOMPAT}
       {$IFEND}
     {$ENDIF}
     {$DEFINE VCL_4_OR_ABOVE}
@@ -586,8 +612,8 @@
     {$DEFINE VCL_60}
     {$DEFINE HAS_OPTIONALPARAMS}
     {$DEFINE HAS_SAMETEXT}
-    {$DEFINE UNIX}
-    {$DEFINE KYLIXCOMPAT}
+
+
     {$DEFINE WIDGET_KYLIX}
     {$DEFINE WIDGET_VCL_LIKE_OR_KYLIX}
     {$DEFINE INT_THREAD_PRIORITY}
@@ -638,19 +664,6 @@
 // Do not enable thus unless you know it will work correctly on your systems!
 {$IFDEF WIN32_OR_WIN64_OR_WINCE}
   {.$DEFINE USE_HI_PERF_COUNTER_FOR_TICKS}
-{$ENDIF}
-
-{
-BSD 4.4 introduced a minor API change.  sa_family was changed from a 16bit
-word to an 8 bit byte and an 8 bit byte field named sa_len was added.
-}
-{$IFDEF FREEBSD}
-   {$DEFINE SOCK_HAS_SINLEN}
-{$ENDIF}
-{$IFDEF DARWIN}
-  {$IFNDEF KYLIXCOMPAT}
-    {$DEFINE SOCK_HAS_SINLEN}
-  {$ENDIF}
 {$ENDIF}
 
 {$IFDEF UNIX}
@@ -705,12 +718,13 @@ word to an 8 bit byte and an 8 bit byte field named sa_len was added.
 //If this comes before the ICONV defines, it creates problems.
 //This also must go before the THandle size calculations.
 {$IFDEF VCL_CROSS_COMPILE}
-  {$IFDEF MACOSX}
+  {$IFDEF MACOS}
     {$DEFINE BSD}
     {$DEFINE DARWIN}
     {$DEFINE USE_SAFELOADLIBRARY}
     {$DEFINE USE_INVALIDATE_MOD_CACHE}
   {$ENDIF}
+
   {$UNDEF USE_ICONV}
   //important!!! iconv functions are defined in the libc.pas Novell Netware header.
   //Do not define USE_ICONVUNIT
@@ -719,6 +733,35 @@ word to an 8 bit byte and an 8 bit byte field named sa_len was added.
   {$DEFINE INT_THREAD_PRIORITY}
   {$DEFINE HAS_TInterlocked}
 {$ENDIF}
+
+//IMPORTANT!!!!
+//
+//Do not remove this!!!  This is to work around a conflict.  In DCC, MACOS
+//will mean OS X.  In FreePascal, the DEFINE MACOS means MacIntosh System OS Classic.
+{$IFDEF DCC}
+  {$IFDEF MACOS}
+    {$DEFINE DARWIN}
+  {$ENDIF}
+{$ENDIF}
+{$IFDEF FPC}
+  {$IFDEF MACOS}
+    {$DEFINE MACOS_CLASSIC}
+  {$ENDIF}
+{$ENDIF}
+
+
+{
+BSD 4.4 introduced a minor API change.  sa_family was changed from a 16bit
+word to an 8 bit byte and an 8 bit byte field named sa_len was added.
+}
+//Place this only after DARWIN has been defined for Delphi MACOS
+{$IFDEF FREEBSD}
+   {$DEFINE SOCK_HAS_SINLEN}
+{$ENDIF}
+{$IFDEF DARWIN}
+  {$DEFINE SOCK_HAS_SINLEN}
+{$ENDIF}
+
 
 // Do NOT remove these IFDEF's.  They are here because InterlockedExchange
 // only handles 32bit values.  Some Operating Systems may have 64bit  
@@ -752,7 +795,7 @@ word to an 8 bit byte and an 8 bit byte field named sa_len was added.
 {$IFDEF LINUX}
   {$DEFINE THANDLE_32}
 {$ENDIF}
-{$IFDEF MACOS}
+{$IFDEF MACOS_CLASSIC}
    {$DEFINE THANDLE_CPUBITS}
 {$ENDIF}
 
@@ -816,6 +859,47 @@ word to an 8 bit byte and an 8 bit byte field named sa_len was added.
       {$DEFINE REGISTER_EXPECTED_MEMORY_LEAK}
     {$ENDIF}
   {$ENDIF}
+{$ENDIF}
+
+{
+We must determine what the SocketType parameter is for the Socket function.
+In DotNET, it's SocketType.  In Kylix and the libc.pas Kylix-compatibility
+library, it's a __socket_type.  In BaseUnix, it's a C-type Integer.  In Windows,
+it's a LongInt.
+
+}
+{$UNDEF SOCKETTYPE_IS_SOCKETTYPE}
+{$UNDEF SOCKETTYPE_IS_CINT}
+{$UNDEF SOCKETTYPE_IS___SOCKETTYPE}
+{$UNDEF SOCKETTYPE_IS_LONGINT}
+{$UNDEF SOCKETTYPE_IS_NUMERIC}
+{$UNDEF SOCKET_LEN_IS_socklen_t}
+{$IFDEF DOTNET}
+   {$DEFINE SOCKETTYPE_IS_SOCKETTYPE}
+{$ENDIF}
+{$IFDEF USE_BASEUNIX}
+   {$DEFINE SOCKETTYPE_IS_CINT}
+   {$DEFINE SOCKETTYPE_IS_NUMERIC}
+{$ENDIF}
+{$IFDEF KYLIXCOMPAT}
+   {$DEFINE SOCKETTYPE_IS___SOCKETTYPE}
+{$ENDIF}
+{$IFDEF USE_VCL_POSIX}
+   {$DEFINE SOCKETTYPE_IS_NUMERIC}
+   {$DEFINE SOCKETTYPE_IS_LONGINT}
+   {$DEFINE SOCKET_LEN_IS_socklen_t}
+{$ENDIF}
+{$IFDEF WIN32_OR_WIN64_OR_WINCE}
+   {$DEFINE SOCKETTYPE_IS_LONGINT}
+   {$DEFINE SOCKETTYPE_IS_NUMERIC}
+{$ENDIF}
+{$IFDEF OS2}
+   {$DEFINE SOCKETTYPE_IS_LONGINT}
+   {$DEFINE SOCKETTYPE_IS_NUMERIC}
+{$ENDIF}
+{$IFDEF NETWARE}
+   {$DEFINE SOCKETTYPE_IS_LONGINT}
+   {$DEFINE SOCKETTYPE_IS_NUMERIC}
 {$ENDIF}
 
 {$IFDEF REGISTER_EXPECTED_MEMORY_LEAK}

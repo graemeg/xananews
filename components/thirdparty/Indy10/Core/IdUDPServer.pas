@@ -368,6 +368,7 @@ procedure TIdUDPListenerThread.Run;
 var
   PeerIP: string;
   PeerPort : TIdPort;
+  PeerIPVersion: TIdIPVersion;
   ByteCount: Integer;
 begin
   if FBinding.Select(AcceptWait) then try
@@ -375,13 +376,16 @@ begin
     // Depending on timing - may not reach here if it is in ancestor run when thread is stopped
     if not Stopped then begin
       SetLength(FBuffer, FServer.BufferSize);
-      ByteCount := GStack.ReceiveFrom(FBinding.Handle, FBuffer, PeerIP, PeerPort, FBinding.IPVersion);
-      SetLength(FBuffer, ByteCount);
-      FBinding.SetPeer(PeerIP, PeerPort, FBinding.IPVersion);
-      if FServer.ThreadedEvent then begin
-        UDPRead;
-      end else begin
-        Synchronize(UDPRead);
+      ByteCount := FBinding.RecvFrom(FBuffer, PeerIP, PeerPort, PeerIPVersion);
+      FBinding.SetPeer(PeerIP, PeerPort, PeerIPVersion);
+      if ByteCount > 0 then
+      begin
+        SetLength(FBuffer, ByteCount);
+        if FServer.ThreadedEvent then begin
+          UDPRead;
+        end else begin
+          Synchronize(UDPRead);
+        end;
       end;
     end;
   except

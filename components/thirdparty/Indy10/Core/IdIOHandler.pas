@@ -752,6 +752,11 @@ uses
   {$IFDEF WIN32_OR_WIN64}
   Windows,
   {$ENDIF}
+  {$IFDEF USE_VCL_POSIX}
+	  {$IFDEF DARWIN}
+    CoreServices,
+	  {$ENDIF}
+  {$ENDIF}
   IdStack, IdStackConsts, IdResourceStrings, SysUtils;
 
 var
@@ -1147,12 +1152,15 @@ begin
   SetLength(LChars, 2);
   {$ENDIF}
   NumChars := 0;
-  for I := 1 to NumBytes do
+  if NumBytes > 0 then
   begin
-    LBytes[I-1] := ReadByte;
-    NumChars := AByteEncoding.GetChars(LBytes, 0, I, LChars, 0);
-    if NumChars > 0 then begin
-      Break;
+    for I := 1 to NumBytes do
+    begin
+      LBytes[I-1] := ReadByte;
+      NumChars := AByteEncoding.GetChars(LBytes, 0, I, LChars, 0);
+      if NumChars > 0 then begin
+        Break;
+      end;
     end;
   end;
   {$IFDEF STRING_IS_UNICODE}
@@ -1281,12 +1289,13 @@ begin
         EIdReadLnMaxLineLengthExceeded.Toss(RSReadLnMaxLineLengthExceeded);
       end;
       FReadLnSplit := True;
-      Result := FInputBuffer.Extract(AMaxLineLength, AByteEncoding
+      Result := FInputBuffer.ExtractToString(AMaxLineLength, AByteEncoding
         {$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF}
         );
       Exit;
+    end
     // ReadFromSource blocks - do not call unless we need to
-    end else if LTermPos = -1 then begin
+    else if LTermPos = -1 then begin
       // RLebeau 11/19/08: this is redundant, since it is the same
       // logic as above and should have been handled there...
       {
@@ -1955,7 +1964,7 @@ begin
   {$IFDEF STRING_IS_ANSI}
   ADestEncoding := iif(ADestEncoding, FDefAnsiEncoding, encOSDefault);
   {$ENDIF}
-  Result := FInputBuffer.Extract(FInputBuffer.Size, AByteEncoding
+  Result := FInputBuffer.ExtractToString(FInputBuffer.Size, AByteEncoding
     {$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF}
     );
 end;
@@ -2169,11 +2178,11 @@ begin
     LPos := InputBuffer.IndexOf(LBytes, LPos);
     if LPos <> -1 then begin
       if ARemoveFromBuffer and AInclusive then begin
-        Result := InputBuffer.Extract(LPos+Length(LBytes), AByteEncoding
+        Result := InputBuffer.ExtractToString(LPos+Length(LBytes), AByteEncoding
           {$IFDEF STRING_IS_ANSI}, AAnsiEncoding{$ENDIF}
           );
       end else begin
-        Result := InputBuffer.Extract(LPos, AByteEncoding
+        Result := InputBuffer.ExtractToString(LPos, AByteEncoding
           {$IFDEF STRING_IS_ANSI}, AAnsiEncoding{$ENDIF}
           );
         if ARemoveFromBuffer then begin

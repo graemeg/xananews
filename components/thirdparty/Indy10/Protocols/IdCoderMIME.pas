@@ -72,7 +72,9 @@ var
 implementation
 
 uses
-  {$IFNDEF DOTNET}
+  {$IFDEF DOTNET}
+  IdStreamNET,
+    {$ELSE}
   IdStreamVCL,
   {$ENDIF}
   SysUtils;

@@ -109,7 +109,6 @@ uses
   IdGlobal, SysUtils;
 
 type
-
   TIdYarnOfThreadAccess = class(TIdYarnOfThread)
   end;
 
@@ -143,18 +142,18 @@ begin
   //Currently LThread can =nil. Is that a valid condition?
   //Assert(LThread<>nil);
 
-  // inherited removes from ActiveYarns list and destroys yarn
+  // inherited removes from ActiveYarns list
   inherited ReleaseYarn(AYarn);
 
-  with FThreadPool.LockList do try
-    if (Count < PoolSize) and (LThread <> nil) and (not LThread.Terminated) then begin
-      Add(LThread);
-      LThread := nil;
-    end;
-  finally FThreadPool.UnlockList; end;
-
-  // Was not redeposited to pool, need to destroy it
   if LThread <> nil then begin
+    // need to redeposit the thread in the pool or destroy it
+    LThread.Yarn := nil; // Yarn is being destroyed, de-couple it from the thread
+    with FThreadPool.LockList do try
+      if (Count < PoolSize) and (not LThread.Terminated) then begin
+        Add(LThread);
+        Exit;
+      end;
+    finally FThreadPool.UnlockList; end;
     LThread.Terminate;
     // RLebeau - ReleaseYarn() can be called in the context of
     // the yarn's thread (when TIdThread.Cleanup() destroys the
@@ -165,7 +164,7 @@ begin
     end else begin
       LThread.Resume;
       LThread.WaitFor;
-      FreeAndNil(LThread);
+      LThread.Free;
     end;
   end;
 end;

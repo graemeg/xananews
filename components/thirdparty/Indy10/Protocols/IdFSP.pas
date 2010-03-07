@@ -408,9 +408,11 @@ uses
   //facilitate inlining only.
   {$IFDEF KYLIXCOMPAT}
   Libc,
-    {$IFDEF MACOSX}
+  {$ENDIF}
+  {$IFDEF USE_VCL_POSIX}
+  PosixSysSelect,
+  PosixSysTime,
   PosixUnistd,
-    {$ENDIF}
   {$ENDIF}
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
     {$IFDEF USE_INLINE}

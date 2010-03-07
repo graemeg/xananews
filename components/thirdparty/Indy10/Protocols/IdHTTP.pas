@@ -1203,7 +1203,7 @@ begin
       FURI.Port := IntToStr(IdPORT_HTTP);
     end
     else if TextIsSame(LURI.Protocol, 'https') then begin  {do not localize}
-      FURI.Port := IntToStr(IdPORT_SSL);
+      FURI.Port := IntToStr(IdPORT_https);
     end
     else if Length(FURI.Port) = 0 then begin
       raise EIdUnknownProtocol.Create(RSHTTPUnknownProtocol);
@@ -1236,7 +1236,7 @@ begin
     end;
 
     if (TextIsSame(FURI.Protocol, 'http') and (FURI.Port = IntToStr(IdPORT_HTTP))) or  {do not localize}
-      (TextIsSame(FURI.Protocol, 'https') and (FURI.Port = IntToStr(IdPORT_SSL))) then  {do not localize}
+      (TextIsSame(FURI.Protocol, 'https') and (FURI.Port = IntToStr(IdPORT_https))) then  {do not localize}
     begin
       ARequest.Host := FURI.Host;
     end else begin

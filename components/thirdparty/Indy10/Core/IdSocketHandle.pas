@@ -182,7 +182,10 @@ type
     // Returns True if error was ignored (Matches iIgnore), false if no error occurred
     procedure Assign(Source: TPersistent); override;
     procedure Bind;
-    procedure Broadcast(const AData: string; const APort: TIdPort; const AIP: String = ''; AEncoding: TIdTextEncoding = nil); overload;
+    procedure Broadcast(const AData: string; const APort: TIdPort; const AIP: String = '';
+      AByteEncoding: TIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+      ); overload;
     procedure Broadcast(const AData: TIdBytes; const APort: TIdPort; const AIP: String = ''); overload;
     procedure CloseSocket; virtual;
     procedure Connect; virtual;
@@ -192,9 +195,16 @@ type
     function Readable(AMSec: Integer = IdTimeoutDefault): boolean;
     function Receive(var VBuffer: TIdBytes): Integer;
     function RecvFrom(var ABuffer : TIdBytes; var VIP: string;
-      var VPort: TIdPort; const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION): Integer;
+      var VPort: TIdPort; var VIPVersion: TIdIPVersion): Integer;
     procedure Reset(const AResetLocal: boolean = True);
-    function Send(const ABuffer: TIdBytes; const AOffset: Integer = 0; const ASize: Integer = -1): Integer;
+    function Send(const AData: String; AByteEncoding: TIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+      ): Integer; overload;
+    function Send(const ABuffer: TIdBytes; const AOffset: Integer = 0; const ASize: Integer = -1): Integer; overload;
+    procedure SendTo(const AIP: string; const APort: TIdPort; const AData: String;
+      const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION; AByteEncoding: TIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+      ); overload;
     procedure SendTo(const AIP: string; const APort: TIdPort; const ABuffer : TIdBytes; const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION); overload;
     procedure SendTo(const AIP: string; const APort: TIdPort; const ABuffer : TIdBytes; const AOffset: Integer; const ASize: Integer; const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION); overload;
     procedure SetPeer(const AIP: string; const APort: TIdPort; const AIPVersion : TIdIPVersion = ID_DEFAULT_IP_VERSION);
@@ -291,6 +301,13 @@ begin
   Result := GStack.Receive(Handle, VBuffer);
 end;
 
+function TIdSocketHandle.Send(const AData: String; AByteEncoding: TIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+  ): Integer;
+begin
+  Result := Send(ToBytes(AData, AByteEncoding{$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF}));
+end;
+
 function TIdSocketHandle.Send(const ABuffer: TIdBytes; const AOffset: Integer = 0;
   const ASize: Integer = -1): Integer;
 begin
@@ -301,6 +318,15 @@ procedure TIdSocketHandle.SetSockOpt(ALevel: TIdSocketOptionLevel;
   AOptName: TIdSocketOption; AOptVal: Integer);
 begin
   GStack.SetSocketOption(Handle, ALevel, AOptName, AOptVal);
+end;
+
+procedure TIdSocketHandle.SendTo(const AIP: string; const APort: TIdPort;
+  const AData: String; const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION;
+  AByteEncoding: TIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+  );
+begin
+  SendTo(AIP, APort, ToBytes(AData, AByteEncoding{$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF}), AIPVersion);
 end;
 
 procedure TIdSocketHandle.SendTo(const AIP: string; const APort: TIdPort;
@@ -317,9 +343,9 @@ begin
 end;
 
 function TIdSocketHandle.RecvFrom(var ABuffer : TIdBytes; var VIP: string;
- var VPort: TIdPort; const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION): Integer;
+ var VPort: TIdPort; var VIPVersion: TIdIPVersion): Integer;
 begin
-  Result := GStack.ReceiveFrom(Handle, ABuffer, VIP, VPort, AIPVersion);
+  Result := GStack.ReceiveFrom(Handle, ABuffer, VIP, VPort, VIPVersion);
 end;
 
 procedure TIdSocketHandle.Bind;
@@ -328,7 +354,7 @@ begin
     if (FClientPortMin > FClientPortMax) then begin
       raise EIdInvalidPortRange.CreateFmt(RSInvalidPortRange, [FClientPortMin, FClientPortMax]);
     end else if not BindPortReserved then begin
-      raise EIdCanNotBindPortInRange.CreateFmt(RSCanNotBindRange, [FClientPortMin, FClientPortMax]);
+      raise EIdCanNotBindPortInRange.CreateFmt(RSCannotBindRange, [FClientPortMin, FClientPortMax]);
     end;
   end else if not TryBind then begin
     raise EIdCouldNotBindSocket.Create(RSCouldNotBindSocket);
@@ -336,9 +362,11 @@ begin
 end;
 
 procedure TIdSocketHandle.Broadcast(const AData: string; const APort: TIdPort;
-  const AIP: String = ''; AEncoding: TIdTextEncoding = nil);
+  const AIP: String = ''; AByteEncoding: TIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+  );
 begin
-  Broadcast(ToBytes(AData, AEncoding), APort, AIP);
+  Broadcast(ToBytes(AData, AByteEncoding{$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF}), APort, AIP);
 end;
 
 procedure TIdSocketHandle.Broadcast(const AData: TIdBytes; const APort: TIdPort;
@@ -603,12 +631,11 @@ var
   i: integer;
 begin
   Result := nil;
-  i := Count - 1;
-  while (i >= 0) and (Items[i].Handle <> AHandle) do begin
-    dec(i);
-  end;
-  if i >= 0 then begin
-    Result := Items[i];
+  for i := Count-1 downto 0 do begin
+    if Items[i].Handle = AHandle then begin
+      Result := Items[i];
+      Exit;
+    end;
   end;
 end;
 

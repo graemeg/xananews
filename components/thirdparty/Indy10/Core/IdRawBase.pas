@@ -191,6 +191,7 @@ function TIdRawBase.ReceiveBuffer(var VBuffer : TIdBytes; ATimeOut: Integer = -1
 var
   LIP : String;
   LPort : TIdPort;
+  LIPVersion: TIdIPVersion;
 begin
   Result := 0;
   // TODO: pass flags to recv()
@@ -203,9 +204,12 @@ begin
     if FBinding.IPVersion = Id_IPv4 then
     begin
       if Binding.Readable(ATimeOut) then begin
-        Result := Binding.RecvFrom(VBuffer, LIP, LPort, FBinding.IPVersion);
+        Result := Binding.RecvFrom(VBuffer, LIP, LPort, LIPVersion);
+        FPkt.Reset;
         FPkt.SourceIP := LIP;
         FPkt.SourcePort := LPort;
+        FPkt.SourceIPVersion := LIPVersion;
+        FPkt.DestIPVersion := LIPVersion;
       end;
     end else
     begin
@@ -226,7 +230,7 @@ begin
       IP address and hopefully, the TTL (hop count).
       }
 
-      Result := GStack.ReceiveMsg(Binding.Handle, VBuffer, FPkt, Id_IPv6);
+      Result := GStack.ReceiveMsg(Binding.Handle, VBuffer, FPkt);
     end;
   end;
 end;

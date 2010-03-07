@@ -161,7 +161,11 @@ type
   {$IFDEF UNIX}
   EIdResolveError = class(EIdSocketError);
   EIdReverseResolveError = class(EIdSocketError);
+  EIdMaliciousPtrRecord = class(EIdReverseResolveError);
+  {$ELSE}
+  EIdMaliciousPtrRecord = class(EIdSocketError);
   {$ENDIF}
+
   EIdNotASocket = class(EIdSocketError);
 
   TIdServeFile = function(ASocket: TIdStackSocketHandle; const AFileName: string): Int64;
@@ -170,22 +174,29 @@ type
   protected
     FSourceIP: String;
     FSourcePort : TIdPort;
+    FSourceIF: LongWord;
+    FSourceIPVersion: TIdIPVersion;
     FDestIP: String;
     FDestPort : TIdPort;
-    FSourceIF: LongWord;
     FDestIF: LongWord;
+    FDestIPVersion: TIdIPVersion;
     FTTL: Byte;
   public
+    procedure Reset;
+
     property TTL : Byte read FTTL write FTTL;
     //The computer that sent it to you
     property SourceIP : String read FSourceIP write FSourceIP;
     property SourcePort : TIdPort read FSourcePort write FSourcePort;
     property SourceIF : LongWord read FSourceIF write FSourceIF;
-    //you, the receiver - this is provided for multihorned machines
+    property SourceIPVersion : TIdIPVersion read FSourceIPVersion write FSourceIPVersion;
+    //you, the receiver - this is provided for multihomed machines
     property DestIP : String read FDestIP write FDestIP;
     property DestPort : TIdPort read FDestPort write FDestPort;
     property DestIF : LongWord read FDestIF write FDestIF;
+    property DestIPVersion : TIdIPVersion read FDestIPVersion write FDestIPVersion;
   end;
+
   TIdSocketListClass = class of TIdSocketList;
 
   // Descend from only TObject. This objects is created a lot and should be fast
@@ -287,8 +298,7 @@ type
       const AOffset: Integer = 0; const ASize: Integer = -1): Integer; virtual; abstract;
 
     function ReceiveFrom(ASocket: TIdStackSocketHandle; var VBuffer: TIdBytes;
-      var VIP: string; var VPort: TIdPort;
-      const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION): Integer; virtual; abstract;
+      var VIP: string; var VPort: TIdPort; var VIPVersion: TIdIPVersion): Integer; virtual; abstract;
     function SendTo(ASocket: TIdStackSocketHandle; const ABuffer: TIdBytes;
       const AOffset: Integer; const AIP: string; const APort: TIdPort;
       const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION): Integer; overload;
@@ -297,8 +307,7 @@ type
       const APort: TIdPort; const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION)
       : Integer; overload; virtual; abstract;
     function ReceiveMsg(ASocket: TIdStackSocketHandle; var VBuffer: TIdBytes;
-      APkt: TIdPacketInfo; const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION)
-      : LongWord; virtual; abstract;
+      APkt: TIdPacketInfo): LongWord; virtual; abstract;
     function SupportsIPv6: Boolean; virtual; abstract;
 
     //multicast stuff Kudzu permitted me to add here.
@@ -353,15 +362,19 @@ implementation
 uses
   //done this way so we can have a separate stack for FPC under Unix systems
   {$IFDEF UNIX}
+    {$IFDEF USE_VCL_POSIX}
+  IdStackVCLPosix,
+    {$ENDIF}
     {$IFDEF KYLIXCOMPAT}
   IdStackLibc,
-    {$ELSE}
+    {$ENDIF}
+    {$IFDEF USE_BASEUNIX}
   IdStackUnix,
     {$ENDIF}
   {$ENDIF}
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
     {$IFDEF USE_INLINE}
- //   Windows,
+  Windows,
     {$ENDIF}
   IdStackWindows,
   {$ENDIF}
@@ -385,6 +398,19 @@ const
 procedure SetStackClass(AStackClass: TIdStackClass);
 begin
   GStackClass := AStackClass;
+end;
+
+procedure TIdPacketInfo.Reset;
+begin
+  FSourceIP := '';
+  FSourcePort := 0;
+  FSourceIF := 0;
+  FSourceIPVersion := ID_DEFAULT_IP_VERSION;
+  FDestIP := '';
+  FDestPort:= 0;
+  FDestIF := 0;
+  FDestIPVersion := ID_DEFAULT_IP_VERSION;
+  FTTL := 0;
 end;
 
 { TIdSocketList }
@@ -602,7 +628,7 @@ end;
 
 function TIdStack.CheckForSocketError(const AResult: Integer): Integer;
 begin
-  if AResult = Id_SOCKET_ERROR then begin
+  if AResult = Integer(Id_SOCKET_ERROR) then begin
     RaiseLastSocketError;
   end;
   Result := AResult;
@@ -615,7 +641,7 @@ var
   LLastError: Integer;
 begin
   Result := AResult;
-  if AResult = Id_SOCKET_ERROR then begin
+  if AResult = Integer(Id_SOCKET_ERROR) then begin
     LLastError := WSGetLastError;
     for i := Low(AIgnore) to High(AIgnore) do begin
       if LLastError = AIgnore[i] then begin
@@ -877,6 +903,9 @@ initialization
   //done this way so we can have a separate stack just for FPC under Unix systems
   GStackClass :=
     {$IFDEF UNIX}
+      {$IFDEF USE_VCL_POSIX}
+      TIdStackVCLPosix;
+      {$ENDIF}
       {$IFDEF KYLIXCOMPAT}
       TIdStackLibc;
       {$ENDIF}

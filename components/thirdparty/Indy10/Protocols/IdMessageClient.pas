@@ -458,9 +458,8 @@ implementation
 uses
   //facilitate inlining only.
   {$IFDEF DOTNET}
-    {$IFDEF USE_INLINE}
   System.IO,
-    {$ENDIF}
+  IdStreamNET,
   {$ELSE}
   IdStreamVCL,
   {$ENDIF}

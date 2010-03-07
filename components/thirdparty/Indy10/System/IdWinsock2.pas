@@ -3361,6 +3361,31 @@ const
   IP_UNBLOCK_SOURCE         = 18; // unblock IP group/source
   {$EXTERNALSYM IP_PKTINFO}
   IP_PKTINFO                = 19; // receive packet information for ipv4
+  {$EXTERNALSYM IP_RECEIVE_BROADCAST}
+  IP_RECEIVE_BROADCAST      = 22; // Allow/block broadcast reception.
+  {$EXTERNALSYM IP_RECVIF}
+  IP_RECVIF                 = 24; // Receive arrival interface.
+  {$EXTERNALSYM IP_RECVDSTADDR}
+  IP_RECVDSTADDR            = 25; // Receive destination address.
+  {$EXTERNALSYM IP_IFLIST}
+  IP_IFLIST                 = 28; // Enable/Disable an interface list.
+  {$EXTERNALSYM IP_ADD_IFLIST}
+  IP_ADD_IFLIST             = 29; // Add an interface list entry.
+  {$EXTERNALSYM IP_DEL_IFLIST}
+  IP_DEL_IFLIST             = 30; // Delete an interface list entry.
+  {$EXTERNALSYM IP_UNICAST_IF}
+  IP_UNICAST_IF             = 31; // IP unicast interface.
+  {$EXTERNALSYM IP_RTHDR}
+  IP_RTHDR                  = 32; // Set/get IPv6 routing header.
+  {$EXTERNALSYM IP_RECVRTHDR}
+  IP_RECVRTHDR              = 38; // Receive the routing header.
+  {$EXTERNALSYM IP_TCLASS}
+  IP_TCLASS                = 39; // Packet traffic class.
+  {$EXTERNALSYM IP_RECVTCLASS}
+  IP_RECVTCLASS            = 40; // Receive packet traffic class.
+  {$EXTERNALSYM IP_ORIGINAL_ARRIVAL_IF}
+  IP_ORIGINAL_ARRIVAL_IF   = 47; // Original Arrival Interface Index.  (Windows 7)
+
 
   {$IFDEF UNDER_CE}
   {$EXTERNALSYM IP_DSCP_TRAFFIC_TYPE}
@@ -3922,6 +3947,23 @@ const
   AI_CANONNAME          = $2;   // Return canonical name in first ai_canonname
   {$EXTERNALSYM AI_NUMERICHOST}
   AI_NUMERICHOST        = $4;   // Nodename must be a numeric address string
+  {$EXTERNALSYM AI_NUMERICSERV}
+  AI_NUMERICSERV        = $00000008;  // Servicename must be a numeric port number
+  {$EXTERNALSYM AI_ALL}
+  AI_ALL                = $00000100;  // Query both IP6 and IP4 with AI_V4MAPPED
+  {$EXTERNALSYM AI_V4MAPPED}
+  AI_V4MAPPED           = $00000800;  // On v6 failure, query v4 and convert to V4MAPPED format (Vista or later)
+  {$EXTERNALSYM AI_NON_AUTHORITATIVE}
+  AI_NON_AUTHORITATIVE  = $00004000;  // LUP_NON_AUTHORITATIVE  (Vista or later)
+  {$EXTERNALSYM AI_SECURE}
+  AI_SECURE             = $00008000;  // LUP_SECURE  (Vista or later and applies only to NS_EMAIL namespace.)
+  {$EXTERNALSYM AI_RETURN_PREFERRED_NAMES}
+  AI_RETURN_PREFERRED_NAMES = $00010000;  // LUP_RETURN_PREFERRED_NAMES (Vista or later and applies only to NS_EMAIL namespace.)
+  {$EXTERNALSYM AI_FQDN}
+  AI_FQDN                   = $00020000;  // Return the FQDN in ai_canonname  (Windows 7 or later)
+  {$EXTERNALSYM AI_FILESERVER}
+  AI_FILESERVER             = $00040000;  // Resolving fileserver name resolution (Windows 7 or later)
+
 
 type
   {$EXTERNALSYM PADDRINFOEXA}

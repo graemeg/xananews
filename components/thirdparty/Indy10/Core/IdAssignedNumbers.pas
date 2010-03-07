@@ -354,7 +354,7 @@ irc             194/udp    Internet Relay Chat Protocol
   IdPORT_sgcp           = 440;//sgcp
   IdPORT_decvms_sysmgt  = 441;//decvms-sysmgt
   IdPORT_cvc_hostd      = 442;//cvc_hostd
-  IdPORT_SSL     = 443;
+  IdPORT_https     = 443;  //HTTPS
   IdPORT_npp2    = 444;//Simple Network Paging Protocol [RFC1568]
   IdPORT_microsoft_ds = 445;//Microsoft-DS
   IdPORT_ddm_rdb = 446; //DDM-RDB

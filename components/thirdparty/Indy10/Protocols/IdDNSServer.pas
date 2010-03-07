@@ -615,6 +615,10 @@ uses
   System.IO,
     {$ENDIF}
   {$ENDIF}
+  {$IFDEF USE_VCL_POSIX}
+  PosixSysSelect,
+  PosixSysTime,
+  {$ENDIF}
   IdIOHandler,
   IdStack,
   SysUtils;

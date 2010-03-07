@@ -333,6 +333,9 @@ type
     // will extract number of bytes and decode as specified
     function Extract(AByteCount: Integer = -1; AByteEncoding: TIdTextEncoding = nil
       {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
+      ): string; {$IFDEF HAS_DEPRECATED}deprecated{$IFDEF HAS_DEPRECATED_MSG} 'Use ExtractToString()'{$ENDIF};{$ENDIF}
+    function ExtractToString(AByteCount: Integer = -1; AByteEncoding: TIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
       ): string;
     // all 3 extract routines append to existing data, if any
     procedure ExtractToStream(const AStream: TStream; AByteCount: Integer = -1; const AIndex: Integer = -1);
@@ -461,6 +464,14 @@ begin
 end;
 
 function TIdBuffer.Extract(AByteCount: Integer = -1; AByteEncoding: TIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
+  ): string;
+{$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
+begin
+  Result := ExtractToString(AByteCount, AByteEncoding{$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF});
+end;
+
+function TIdBuffer.ExtractToString(AByteCount: Integer = -1; AByteEncoding: TIdTextEncoding = nil
   {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
   ): string;
 var

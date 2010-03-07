@@ -17,6 +17,7 @@
                   - Added FPC compiler directives.
  1.7.0.0 20080924 - Added Delphi 2009 compiler directives.
  1.8.0.0 20090918 - Added Delphi 2010 compiler directives.
+ 1.9.0.0 20091217 - Added Delphi 2011 compiler directives.
 *******************************************************************************}
 
 {$B-} { Boolean shortcut evaluation. }
@@ -122,6 +123,12 @@
 {$IFDEF VER210}
   {$DEFINE COMPILER14}
   {$DEFINE DELPHI14}
+  {$DEFINE DELPHI}
+{$ENDIF}
+
+{$IFDEF VER220}
+  {$DEFINE COMPILER15}
+  {$DEFINE DELPHI15}
   {$DEFINE DELPHI}
 {$ENDIF}
 
@@ -270,6 +277,23 @@
   {$DEFINE COMPILER1_UP}
 {$ENDIF}
 
+{$IFDEF COMPILER15}
+  {$DEFINE COMPILER15_UP}
+  {$DEFINE COMPILER14_UP}
+  {$DEFINE COMPILER12_UP}
+  {$DEFINE COMPILER11_UP}
+  {$DEFINE COMPILER10_UP}
+  {$DEFINE COMPILER9_UP}
+  {$DEFINE COMPILER7_UP}
+  {$DEFINE COMPILER35_UP}
+  {$DEFINE COMPILER6_UP}
+  {$DEFINE COMPILER5_UP}
+  {$DEFINE COMPILER4_UP}
+  {$DEFINE COMPILER3_UP}
+  {$DEFINE COMPILER2_UP}
+  {$DEFINE COMPILER1_UP}
+{$ENDIF}
+
 
 {*******************************************************************************
   DELPHIx_UP definitions for Delphi
@@ -375,6 +399,22 @@
 {$ENDIF}
 
 {$IFDEF DELPHI14}
+  {$DEFINE DELPHI14_UP}
+  {$DEFINE DELPHI12_UP}
+  {$DEFINE DELPHI11_UP}
+  {$DEFINE DELPHI10_UP}
+  {$DEFINE DELPHI9_UP}
+  {$DEFINE DELPHI7_UP}
+  {$DEFINE DELPHI6_UP}
+  {$DEFINE DELPHI5_UP}
+  {$DEFINE DELPHI4_UP}
+  {$DEFINE DELPHI3_UP}
+  {$DEFINE DELPHI2_UP}
+  {$DEFINE DELPHI1_UP}
+{$ENDIF}
+
+{$IFDEF DELPHI15}
+  {$DEFINE DELPHI15_UP}
   {$DEFINE DELPHI14_UP}
   {$DEFINE DELPHI12_UP}
   {$DEFINE DELPHI11_UP}

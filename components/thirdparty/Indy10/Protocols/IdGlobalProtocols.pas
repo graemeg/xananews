@@ -395,7 +395,6 @@ type
 
   //
   EIdExtensionAlreadyExists = class(EIdException);
-  EIdFIPSAlgorithmNotAllowed = class(EIdException);
 // Procs - KEEP THESE ALPHABETICAL!!!!!
 
 //  procedure BuildMIMETypeMap(dest: TIdStringList);
@@ -420,9 +419,7 @@ type
     {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF});
   procedure ReadStringsAsCharset(AStream: TStream; AStrings: TStrings; const ACharset: string
     {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF});
-  procedure CheckMD2Permitted;
-  procedure CheckMD4Permitted;
-  procedure CheckMD5Permitted;
+
   {
   These are for handling binary values that are in Network Byte order.  They call
   ntohs, ntols, htons, and htons which are required by SNTP and FSP
@@ -443,7 +440,6 @@ type
   function ExtractHeaderItem(const AHeaderLine: String): String;
   function ExtractHeaderSubItem(const AHeaderLine,ASubItem: String): String;
   function ReplaceHeaderSubItem(const AHeaderLine, ASubItem, AValue: String): String;
-  procedure FIPSAlgorithmNotAllowed(const AAlgorithm : String);
   function FileSizeByName(const AFilename: TIdFileName): Int64;
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
   function IsVolume(const APathName : TIdFileName) : Boolean;
@@ -530,14 +526,7 @@ type
   function TrimAllOf(const ATrim, AText: string): string;
   procedure ParseMetaHTTPEquiv(AStream: TStream; AStr : TStrings);
 
-
-type
-  TGetFIPSMode = function : Boolean;
-  TSetFIPSMode = procedure (const AMode : Boolean);
-
 var
-  GetFIPSMode : TGetFIPSMode;
-  SetFIPSMode : TSetFIPSMode;
   {$IFDEF UNIX}
   // For linux the user needs to set these variables to be accurate where used (mail, etc)
   GIdDefaultCharSet : TIdCharSet = idcs_ISO_8859_1; // idcsISO_8859_1;
@@ -579,11 +568,21 @@ uses
       DateUtils,
       {$ENDIF}
     {$ENDIF}
+    {$IFDEF USE_VCL_POSIX}
+	  {$IFDEF DARWIN}
+    CoreServices,
+	  {$ENDIF}
+    DateUtils,
+    PosixSysStat, PosixSysTime, PosixTime, PosixUnistd,
+    {$ENDIF}
   {$ENDIF}
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
   Messages,
   Registry,
   {$ENDIF}
+    {$IFDEF USE_VCL_POSIX}
+
+    {$ENDIF}
   {$IFDEF DOTNET}
   System.IO,
   System.Text,
@@ -593,42 +592,7 @@ uses
   IdResourceStringsProtocols,
   IdStack;
 
-//fips mode default procs
-function DefGetFIPSMode : Boolean;
-begin
-  Result := False;
-end;
 
-procedure DefSetFIPSMode(const AMode : Boolean);
-begin
-  //leave this empty as we may not be using something that supports FIPS
-end;
-
-procedure CheckMD2Permitted; {$IFDEF USE_INLINE} inline; {$ENDIF}
-begin
-  if GetFIPSMode then begin
-    FIPSAlgorithmNotAllowed('MD2');
-  end;
-end;
-
-procedure CheckMD4Permitted; {$IFDEF USE_INLINE} inline; {$ENDIF}
-begin
-  if GetFIPSMode then begin
-    FIPSAlgorithmNotAllowed('MD4');
-  end;
-end;
-
-procedure CheckMD5Permitted; {$IFDEF USE_INLINE} inline; {$ENDIF}
-begin
-  if GetFIPSMode then begin
-    FIPSAlgorithmNotAllowed('MD5');
-  end;
-end;
-
-procedure FIPSAlgorithmNotAllowed(const AAlgorithm : String); {$IFDEF USE_INLINE} inline; {$ENDIF}
-begin
-  raise EIdFIPSAlgorithmNotAllowed.Create(Format(RSFIPSAlgorithmNotAllowed,[AAlgorithm]));
-end;
 
 
 //
@@ -1627,8 +1591,8 @@ var
   {$ENDIF}
   {$IFDEF UNIX}
 var
-    {$IFDEF DELPHI_CROSS}
-  LRec : TStatBuf64;
+    {$IFDEF USE_VCL_POSIX}
+  LRec : _Stat;
     {$ELSE}
       {$IFDEF KYLIXCOMPAT}
   LRec : TStatBuf;
@@ -1680,9 +1644,9 @@ begin
   {$ENDIF}
   {$IFDEF UNIX}
   Result := -1;
-      {$IFDEF DELPHI_CROSS}
+      {$IFDEF USE_VCL_POSIX}
   //This is messy with IFDEF's but I want to be able to handle 63 bit file sizes.
-   if stat64(PAnsiChar(AnsiString(AFileName)), LRec) = 0 then begin
+   if stat(PAnsiChar(AnsiString(AFileName)), LRec) = 0 then begin
       Result := LRec.st_size;
    end;
       {$ELSE}
@@ -1715,10 +1679,15 @@ var
 {$IFDEF UNIX}
 var
   LTime : Integer;
+  {$IFDEF USE_VCL_POSIX}
+  LRec : _Stat;
+
+  {$ENDIF}
   {$IFDEF KYLIXCOMPAT}
   LRec : TStatBuf;
   LU : TUnixTime;
-  {$ELSE}
+  {$ENDIF}
+  {$IFDEF USE_BASEUNIX}
   LRec : TStat;
   LU : time_t;
   {$ENDIF}
@@ -1756,14 +1725,26 @@ begin
   {$ENDIF}
   {$IFDEF UNIX}
   //Note that we can use stat here because we are only looking at the date.
-  if {$IFDEF KYLIXCOMPAT}stat{$ELSE}fpstat{$ENDIF}(PAnsiChar(AnsiString(AFileName)), LRec) = 0 then begin
+    {$IFDEF USE_BASEUNIX}
+  if fpstat(PAnsiChar(AnsiString(AFileName)), LRec) = 0 then begin
+    {$ENDIF}
+    {$IFDEF KYLIXCOMPAT}
+  if stat(PAnsiChar(AnsiString(AFileName)), LRec) = 0 then begin
+    {$ENDIF}
+    {$IFDEF USE_VCL_POSIX}
+  if stat(PAnsiChar(AnsiString(AFileName)), LRec) = 0 then begin
+    {$ENDIF}
     LTime := LRec.st_mtime;
     {$IFDEF KYLIXCOMPAT}
-    gmtime_r({$IFDEF KYLIXCOMPAT}@{$ENDIF}LTime, LU);
+    gmtime_r(@LTime, LU);
     Result := EncodeDate(LU.tm_year + 1900, LU.tm_mon + 1, LU.tm_mday) +
               EncodeTime(LU.tm_hour, LU.tm_min, LU.tm_sec, 0);
-    {$ELSE}
+    {$ENDIF}
+    {$IFDEF USE_BASEUNIX}
     Result := UnixToDateTime(LTime);
+    {$ENDIF}
+    {$IFDEF USE_VCL_POSIX}
+    Result := DateUtils.UnixToDateTime(LTime);
     {$ENDIF}
   end;
   {$ENDIF}
@@ -1786,19 +1767,30 @@ function TimeZoneBias: TDateTime;
 {$IFDEF USE_INLINE} inline; {$ENDIF}
   {$IFDEF UNIX}
 var
-  T: TTime_T;
-  TV: TTimeVal;
+  T: Time_T;
+  TV: TimeVal;
+      {$IFDEF USE_VCL_POSIX}
+  UT: tm;
+      {$ELSE}
   UT: TUnixTime;
+      {$ENDIF}
   {$ENDIF}
 begin
   {$IFDEF UNIX}
  {from http://edn.embarcadero.com/article/27890 }
   gettimeofday(TV, nil);
   T := TV.tv_sec;
+    {$IFDEF USE_VCL_POSIX}
+  localtime_r(T, UT);
+    // __tm_gmtoff is the bias in seconds from the UTC to the current time.
+    // so I multiply by -1 to compensate for this.
+  Result := (UT.tm_gmtoff / 60 / 60 / 24);
+    {$ELSE}
   localtime_r(@T, UT);
     // __tm_gmtoff is the bias in seconds from the UTC to the current time.
     // so I multiply by -1 to compensate for this.
   Result := (UT.__tm_gmtoff / 60 / 60 / 24);
+    {$ENDIF}
   {$ELSE}
   Result := -OffsetFromUTC;
   {$ENDIF}
@@ -3709,8 +3701,10 @@ var
   LFTime : TFileTime;
 {$ENDIF}
 {$IFDEF UNIX}
+  {$IFNDEF USE_VCL_POSIX}
 var
   TheTms: tms;
+  {$ENDIF}
 {$ENDIF}
 begin
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
@@ -3724,7 +3718,15 @@ begin
   {$ENDIF}
   {$IFDEF UNIX}
   //Is the following correct?
-  Result := {$IFDEF USE_BASEUNIX}fptimes{$ELSE}Libc.Times{$ENDIF}(TheTms);
+    {$IFDEF USE_BASEUNIX}
+  Result := fptimes(TheTms);
+    {$ENDIF}
+    {$IFDEF KYLIXCOMPAT}
+  Result := Times(TheTms);
+    {$ENDIF}
+    {$IFDEF USE_VCL_POSIX}
+  Result := time(nil);
+    {$ENDIF}
   {$ENDIF}
   {$IFDEF DOTNET}
   Result := System.DateTime.Now.Ticks;
@@ -3776,7 +3778,7 @@ function IndyComputerName: string;
 {$ENDIF}
 {$IFDEF UNIX}
 var
-  LHost: array[1..255] of Char;
+  LHost: array[1..255] of AnsiChar;
   i: LongWord;
 {$ENDIF}
 {$IFDEF WIN32_OR_WIN64_OR_WINCE}
@@ -3791,8 +3793,15 @@ begin
     i := IndyPos(#0, LHost);
     SetString(Result, PAnsiChar(@LHost[1]), i-1);
   end;
-    {$ELSE}
-  Result := Unix.GetHostName;
+    {$ENDIF}
+    {$IFDEF USE_BASE_UNIX}
+  Result := GetHostName;
+    {$ENDIF}
+    {$IFDEF USE_VCL_POSIX}
+  if PosixUnistd.gethostname(@LHost[1], 255) <> -1 then begin
+    i := IndyPos(#0, String(LHost));
+    SetString(Result, PAnsiChar(@LHost[1]), i-1);
+  end;
     {$ENDIF}
   {$ENDIF}
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
@@ -4145,6 +4154,4 @@ initialization
   IndyFalseBoolStrs[Low(IndyFalseBoolStrs)] := 'FALSE';    {Do not Localize}
   SetLength(IndyTrueBoolStrs, 1);
   IndyTrueBoolStrs[Low(IndyTrueBoolStrs)] := 'TRUE';    {Do not Localize}
-  GetFIPSMode := DefGetFIPSMode;
-  SetFIPSMode := DefSetFIPSMode;
 end.

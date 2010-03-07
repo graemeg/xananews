@@ -47,10 +47,10 @@ begin
     {$IFNDEF DOTNET}
     try
     {$ENDIF}
-      LBytes := TIdTextEncoding.Convert(
-        LEncoding,
-        TIdTextEncoding.Unicode,
-        AData);
+      LBytes := AData;
+      if LEncoding <> TIdTextEncoding.Unicode then begin
+        LBytes := TIdTextEncoding.Convert(LEncoding, TIdTextEncoding.Unicode, LBytes);
+      end;
       Result := TIdTextEncoding.Unicode.GetString(LBytes, 0, Length(LBytes));
     {$IFNDEF DOTNET}
     finally
@@ -64,11 +64,13 @@ end;
 class function TIdHeaderCoderIndy.Encode(const ACharSet, AData: String): TIdBytes;
 var
   LEncoding: TIdTextEncoding;
+  LBytes: TIdBytes;
   {$IFNDEF DOTNET_OR_ICONV}
   CP: Word;
   {$ENDIF}
 begin
   Result := nil;
+  LBytes := nil;
   try
     {$IFDEF DOTNET_OR_ICONV}
     LEncoding := TIdTextEncoding.GetEncoding(ACharSet);
@@ -80,10 +82,11 @@ begin
     {$IFNDEF DOTNET}
     try
     {$ENDIF}
-      Result := TIdTextEncoding.Convert(
-        TIdTextEncoding.Unicode,
-        LEncoding,
-        TIdTextEncoding.Unicode.GetBytes(AData));
+      LBytes := TIdTextEncoding.Unicode.GetBytes(AData);
+      if LEncoding <> TIdTextEncoding.Unicode then begin
+        LBytes := TIdTextEncoding.Convert(TIdTextEncoding.Unicode, LEncoding, LBytes);
+      end;
+      Result := LBytes;
     {$IFNDEF DOTNET}
     finally
       LEncoding.Free;

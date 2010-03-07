@@ -266,13 +266,15 @@ type
 implementation
 
 uses
+  IdFIPS,
   IdHash,
   IdHashMessageDigest,
   IdTCPConnection,
   IdSSL,
   IdResourceStringsProtocols,
   IdReplyPOP3,
-  IdCoderMIME, SysUtils;
+  IdCoderMIME,
+  SysUtils;
 
 { TIdPOP3 }
 

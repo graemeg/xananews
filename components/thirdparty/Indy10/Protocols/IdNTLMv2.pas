@@ -174,6 +174,9 @@ implementation
 
 uses
   SysUtils,
+   {$IFDEF USE_VCL_POSIX}
+  PosixTime,
+   {$ENDIF}
   {$IFDEF DOTNET}
   Classes,
   System.Runtime.InteropServices,
@@ -190,6 +193,7 @@ uses
     Windows,
     {$ENDIF}
   {$ENDIF}
+  IdFIPS,
   IdGlobalProtocols,
   IdHash,
   IdHMACMD5,
@@ -267,8 +271,10 @@ function NowAsFileTime : FILETIME;
 {$ENDIF}
 
 {$IFDEF UNIX}
+  {$IFNDEF USE_VCL_POSIX}
 var
   TheTms: tms;
+  {$ENDIF}
 {$ENDIF}
 begin
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
@@ -279,8 +285,16 @@ begin
     {$ENDIF}
   {$ENDIF}
   {$IFDEF UNIX}
+    {$IFDEF USE_VCL_BASEUNIX}
+  Result := UnixTimeToFileTime( fptimes (TheTms));
+    {$ENDIF}
   //Is the following correct?
-  UnixTimeToFileTime({$IFDEF USE_BASEUNIX}fptimes{$ELSE}Libc.Times{$ENDIF}(TheTms));
+    {$IFDEF KYLIXCOMPAT}
+  Result := UnixTimeToFileTime(Times(TheTms));
+     {$ENDIF}
+      {$IFDEF USE_VCL_POSIX}
+  Result := UnixTimeToFileTime(PosixTime.time(nil));
+      {$ENDIF}
   {$ENDIF}
   {$IFDEF DOTNET}
    Result := Int64ToFileTime(DateTime.Now.ToFileTimeUtc);
@@ -535,11 +549,9 @@ end;
 
 function NTLMFunctionsLoaded : Boolean;
 begin
-  Result := Assigned( iddes_set_odd_parity) and
-    Assigned( IdDES_set_key) and
-    Assigned( iddes_set_odd_parity) and
-    Assigned( IdDES_ecb_encrypt) and
-    Assigned( iddes_ecb_encrypt);
+  Result := Assigned( des_set_odd_parity) and
+    Assigned( DES_set_key) and
+    Assigned( DES_ecb_encrypt);
 end;
 
 function LoadRC4 : Boolean;
@@ -595,8 +607,8 @@ begin
   key[6] := ((key_56[5] SHL 2) and $FF) or (key_56[6] SHR 6);
   key[7] :=  (key_56[6] SHL 1) and $FF;
 
-  iddes_set_odd_parity(@key);
-  iddes_set_key(@key, ks);
+  DES_set_odd_parity(@key);
+  DES_set_key(@key, ks);
 end;
 
 //Returns 8 bytes in length
@@ -604,7 +616,7 @@ procedure _DES(var Res : TIdBytes; const Akey, AData : array of byte; const AKey
 var Lks: des_key_schedule;
 begin
   setup_des_key(pdes_cblock(@Akey[AKeyIdx])^, Lks);
-  iddes_ecb_encrypt(@AData[ADataIdx], Pconst_DES_cblock(@Res[AResIdx]), Lks, OPENSSL_DES_ENCRYPT);
+  DES_ecb_encrypt(@AData[ADataIdx], Pconst_DES_cblock(@Res[AResIdx]), Lks, DES_ENCRYPT);
 
 end;
 
@@ -635,13 +647,13 @@ Var
 begin
   SetLength(Results,24);
   setup_des_key(PDES_cblock(@Akeys[0])^, ks);
-  iddes_ecb_encrypt(@AServerNonce[0], Pconst_DES_cblock(results), ks, OPENSSL_DES_ENCRYPT);
+  DES_ecb_encrypt(@AServerNonce[0], Pconst_DES_cblock(results), ks, DES_ENCRYPT);
 
   setup_des_key(PDES_cblock(Integer(Akeys) + 7)^, ks);
-  iddes_ecb_encrypt(@AServerNonce[0], Pconst_DES_cblock(PtrUInt(results) + 8), ks, OPENSSL_DES_ENCRYPT);
+  DES_ecb_encrypt(@AServerNonce[0], Pconst_DES_cblock(PtrUInt(results) + 8), ks, DES_ENCRYPT);
 
   setup_des_key(PDES_cblock(Integer(Akeys) + 14)^, ks);
-  iddes_ecb_encrypt(@AServerNonce[0], Pconst_DES_cblock(PtrUInt(results) + 16), ks, OPENSSL_DES_ENCRYPT);
+  DES_ecb_encrypt(@AServerNonce[0], Pconst_DES_cblock(PtrUInt(results) + 16), ks, DES_ENCRYPT);
 end;
 
 
@@ -663,10 +675,10 @@ begin
 
   //* create LanManager hashed password */
   setup_des_key(pdes_cblock(@lm_pw[0])^, ks);
-  iddes_ecb_encrypt(@magic, pconst_des_cblock(@lm_hpw[0]), ks, OPENSSL_DES_ENCRYPT);
+  DES_ecb_encrypt(@magic, pconst_des_cblock(@lm_hpw[0]), ks, DES_ENCRYPT);
 
   setup_des_key(pdes_cblock(@lm_pw[7])^, ks);
-  iddes_ecb_encrypt(@magic, pconst_des_cblock(@lm_hpw[8]), ks, OPENSSL_DES_ENCRYPT);
+  DES_ecb_encrypt(@magic, pconst_des_cblock(@lm_hpw[8]), ks, DES_ENCRYPT);
   CopyTIdBytes(lm_pw,0,vlmHash,0,16);
  // FillChar(lm_hpw[17], 5, 0);
   SetLength(Result,24);
@@ -1043,10 +1055,10 @@ begin
   CopyTIdBytes(LHash8,0,LKey,0,8);
   SetLength(Result,16);
   setup_des_key(pdes_cblock(@LKey[0])^, ks);
-  iddes_ecb_encrypt(@LHash8, pconst_des_cblock(@Result[0]), ks, OPENSSL_DES_ENCRYPT);
+  DES_ecb_encrypt(@LHash8, pconst_des_cblock(@Result[0]), ks, DES_ENCRYPT);
 
   setup_des_key(pdes_cblock(@LKey[7])^, ks);
-  iddes_ecb_encrypt(@LHash8, pconst_des_cblock(@Result[8]), ks, OPENSSL_DES_ENCRYPT);
+  DES_ecb_encrypt(@LHash8, pconst_des_cblock(@Result[8]), ks, DES_ENCRYPT);
 
 end;
 

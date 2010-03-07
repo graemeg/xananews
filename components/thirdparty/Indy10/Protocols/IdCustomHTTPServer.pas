@@ -204,6 +204,7 @@ type
   TOnCreateSession = procedure(ASender:TIdContext;
     var VHTTPSession: TIdHTTPSession) of object;
   TOnCreatePostStream = procedure(AContext: TIdContext; AHeaders: TIdHeaderList; var VPostStream: TStream) of object;
+  TIdHTTPParseAuthenticationEvent = procedure(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String; var VHandled: Boolean) of object;
   TIdHTTPCommandEvent = procedure(AContext: TIdContext;
     ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo) of object;
   TIdHTTPCommandError = procedure(AContext: TIdContext;
@@ -234,6 +235,7 @@ type
     FRemoteIP: string;
     FSession: TIdHTTPSession;
     FDocument: string;
+    FURI: string;
     FCommand: string;
     FVersion: string;
     FAuthUsername: string;
@@ -256,6 +258,7 @@ type
     property CommandType: THTTPCommandType read FCommandType;
     property Cookies: TIdServerCookies read FCookies;
     property Document: string read FDocument write FDocument; // writable for isapi compatibility. Use with care
+    property URI: string read FURI;
     property Params: TStrings read FParams;
     property PostStream: TStream read FPostStream write FPostStream;
     property RawHTTPCommand: string read FRawHTTPCommand;
@@ -376,6 +379,7 @@ type
     FOnCreatePostStream: TOnCreatePostStream;
     FOnCreateSession: TOnCreateSession;
     FOnInvalidSession: TIdHTTPInvalidSessionEvent;
+    FOnParseAuthentication: TIdHTTPParseAuthenticationEvent;
     FOnSessionEnd: TOnSessionEndEvent;
     FOnSessionStart: TOnSessionStartEvent;
     FOnCommandGet: TIdHTTPCommandEvent;
@@ -404,6 +408,7 @@ type
     function DoHeadersAvailable(ASender: TIdContext; AHeaders: TIdHeaderList): Boolean; virtual;
     procedure DoHeadersBlocked(ASender: TIdContext; AHeaders: TIdHeaderList; var VResponseNo: Integer; var VResponseText, VContentText: String); virtual;
     function DoHeaderExpectations(ASender: TIdContext; const AExpectations: String): Boolean; virtual;
+    function DoParseAuthentication(ASender: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String): Boolean;
     function DoQuerySSLPort(APort: TIdPort): Boolean; virtual;
     //
     function DoExecute(AContext:TIdContext): Boolean; override;
@@ -450,6 +455,7 @@ type
      write FOnCommandOther;
     property OnCommandError: TIdHTTPCommandError read FOnCommandError write FOnCommandError;
     property OnQuerySSLPort: TIdHTTPQuerySSLPortEvent read FOnQuerySSLPort write FOnQuerySSLPort;
+    property OnParseAuthentication: TIdHTTPParseAuthenticationEvent read FOnParseAuthentication write FOnParseAuthentication;
   end;
 
   TIdHTTPDefaultSessionList = Class(TIdHTTPCustomSessionList)
@@ -476,6 +482,10 @@ implementation
 uses
   {$IFDEF KYLIXCOMPAT}
   Libc,
+  {$ENDIF}
+  {$IFDEF USE_VCL_POSIX}
+  PosixSysSelect,
+  PosixSysTime,
   {$ENDIF}
   {$IFDEF DOTNET}
     {$IFDEF USE_INLINE}
@@ -567,6 +577,25 @@ begin
   FAutoStartSession := Id_TId_HTTPAutoStartSession;
   FKeepAlive := Id_TId_HTTPServer_KeepAlive;
   FMaximumHeaderLineCount := Id_TId_HTTPMaximumHeaderLineCount;
+end;
+
+function TIdCustomHTTPServer.DoParseAuthentication(ASender: TIdContext;
+  const AAuthType, AAuthData: String; var VUsername, VPassword: String): Boolean;
+var
+  s: String;
+begin
+  Result := False;
+  if Assigned(FOnParseAuthentication) then begin
+    FOnParseAuthentication(ASender, AAuthType, AAuthData, VUsername, VPassword, Result);
+  end;
+  if (not Result) and TextIsSame(AAuthType, 'Basic') then begin    {Do not Localize}
+    with TIdDecoderMIME.Create do try
+      s := DecodeString(AAuthData);
+    finally Free; end;
+    VUsername := Fetch(s, ':');    {Do not Localize}
+    VPassword := s;
+    Result := True;
+  end;
 end;
 
 procedure TIdCustomHTTPServer.DoOnCreateSession(AContext: TIdContext; Var VNewSession: TIdHTTPSession);
@@ -709,8 +738,9 @@ var
           LRequestInfo.Cookies.AddSrcCookie(Fetch(S, ';'));    {Do not Localize}
           S := Trim(S);
         end;
-        if S <> '' then
+        if S <> '' then begin
           LRequestInfo.Cookies.AddSrcCookie(S);
+        end;
       end;
     finally FreeAndNil(LRawCookies); end;
   end;
@@ -797,11 +827,9 @@ var
 
 var
   i: integer;
-  s, LInputLine, LCmd, LContentType: String;
+  s, LInputLine, LRawHTTPCommand, LCmd, LContentType, LAuthType: String;
   LURI: TIdURI;
-  LRawHTTPCommand: string;
-  LContinueProcessing: Boolean;
-  LCloseConnection: Boolean;
+  LContinueProcessing, LCloseConnection: Boolean;
 begin
   LContinueProcessing := True;
   Result := False;
@@ -872,6 +900,7 @@ begin
                   // SG 29/11/01: Per request of Doychin
                   // Try to fill the "host" parameter
                   LRequestInfo.FDocument := TIdURI.URLDecode(LURI.Path) + TIdURI.URLDecode(LURI.Document);
+                  LRequestInfo.FURI := LURI.Path + LURI.Document;
                   if (Length(LURI.Host) > 0) and (Length(LRequestInfo.FHost) = 0) then begin
                     LRequestInfo.FHost := LURI.Host;
                   end;
@@ -918,7 +947,8 @@ begin
                 begin
                   // TODO: need to decode percent-encoded octets before the CharSet can then be applied...
                   LRequestInfo.FormParams := ReadStringAsCharSet(LRequestInfo.PostStream, LRequestInfo.CharSet);
-                  FreeAndNil(LRequestInfo.FPostStream); // don't need the PostStream anymore
+                  // Workaround to keep the WebappDbg.exe working
+                  //FreeAndNil(LRequestInfo.FPostStream); // don't need the PostStream anymore
                 end;
               end;
 
@@ -953,15 +983,10 @@ begin
 
               // Authentication
               s := LRequestInfo.RawHeaders.Values['Authorization'];    {Do not Localize}
-              LRequestInfo.FAuthExists := (Length(s) > 0);
-              if LRequestInfo.AuthExists then begin
-                if TextIsSame(Fetch(s, ' '), 'Basic') then begin    {Do not Localize}
-                  with TIdDecoderMIME.Create do try
-                    s := DecodeString(s);
-                  finally Free; end;
-                  LRequestInfo.FAuthUsername := Fetch(s, ':');    {Do not Localize}
-                  LRequestInfo.FAuthPassword := s;
-                end else begin
+              if Length(s) > 0 then begin
+                LAuthType := Fetch(s, ' ');
+                LRequestInfo.FAuthExists := DoParseAuthentication(AContext, LAuthType, s, LRequestInfo.FAuthUsername, LRequestInfo.FAuthPassword);
+                if not LRequestInfo.FAuthExists then begin
                   raise EIdHTTPUnsupportedAuthorisationScheme.Create(
                    RSHTTPUnsupportedAuthorisationScheme);
                 end;
@@ -1060,6 +1085,9 @@ begin
       Result := FSessionList.GetSession(LSessionID, AHTTPrequest.RemoteIP);
       if not Assigned(Result) then begin
         DoInvalidSession(AContext, AHTTPRequest, AHTTPResponse, VContinueProcessing, LSessionId);
+        if not VContinueProcessing then begin
+          Break;
+        end;
       end;
       Inc(LIndex);
       LIndex := AHTTPRequest.Cookies.GetCookieIndex(LIndex, GSessionIDCookie);
@@ -1082,18 +1110,18 @@ begin
     begin
       // starting server
       // set the session timeout and options
-      if FSessionTimeOut <> 0 then
-        FSessionList.FSessionTimeout := FSessionTimeOut
-      else
-        FSessionState := false;
+      if FSessionTimeOut <> 0 then begin
+        FSessionList.FSessionTimeout := FSessionTimeOut;
+      end else begin
+        FSessionState := False;
+      end;
       // Session events
       FSessionList.OnSessionStart := FOnSessionStart;
       FSessionList.OnSessionEnd := FOnSessionEnd;
       // If session handeling is enabled, create the housekeeper thread
       if SessionState then
         FSessionCleanupThread := TIdHTTPSessionCleanerThread.Create(FSessionList);
-    end
-    else
+    end else
     begin
       // Stopping server
       // Boost the clear thread priority to give it a good chance to terminate
@@ -1112,8 +1140,9 @@ end;
 procedure TIdCustomHTTPServer.SetSessionState(const Value: Boolean);
 begin
   // ToDo: Add thread multiwrite protection here
-  if (not (IsDesignTime or IsLoading)) and Active then
+  if (not (IsDesignTime or IsLoading)) and Active then begin
     raise EIdHTTPCannotSwitchSessionStateWhenActive.Create(RSHTTPCannotSwitchSessionStateWhenActive);
+  end;
   FSessionState := Value;
 end;
 
@@ -1226,14 +1255,14 @@ begin
   try
     Params.Clear;
     i := 1;
-    while i <= length(AValue) do
+    while i <= Length(AValue) do
     begin
       j := i;
-      while (j <= length(AValue)) and (AValue[j] <> '&') do
+      while (j <= Length(AValue)) and (AValue[j] <> '&') do {do not localize}
       begin
-        inc(j);
+        Inc(j);
       end;
-      s := copy(AValue, i, j-i);
+      s := Copy(AValue, i, j-i);
       // See RFC 1866 section 8.2.1. TP
       s := StringReplace(s, '+', ' ', [rfReplaceAll]);  {do not localize}
       Params.Add(TIdURI.URLDecode(s));
@@ -1490,7 +1519,23 @@ begin
   end;
   FHeaderHasBeenWritten := True;
 
-  if ContentLength = -1 then begin
+  // RLebeau: according to RFC 2616 Section 4.4:
+  //
+  // If a Content-Length header field (section 14.13) is present, its
+  // decimal value in OCTETs represents both the entity-length and the
+  // transfer-length. The Content-Length header field MUST NOT be sent
+  // if these two lengths are different (i.e., if a Transfer-Encoding
+  // header field is present). If a message is received with both a
+  // Transfer-Encoding header field and a Content-Length header field,
+  // the latter MUST be ignored.
+  // ...
+  // Messages MUST NOT include both a Content-Length header field and a
+  // non-identity transfer-coding. If the message does include a non-
+  // identity transfer-coding, the Content-Length MUST be ignored.
+
+  if (ContentLength = -1) and
+    ((TransferEncoding = '') or TextIsSame(TransferEncoding, 'identity')) then {do not localize}
+  begin
     // Always check ContentText first
     if ContentText <> '' then begin
       LEncoding := CharsetToEncoding(CharSet);
@@ -1506,9 +1551,13 @@ begin
     end
     else if Assigned(ContentStream) then begin
       ContentLength := ContentStream.Size;
+    end else begin
+      ContentLength := 0;
     end;
   end;
+
   SetHeaders;
+
   LBufferingStarted := not FConnection.IOHandler.WriteBufferingActive;
   if LBufferingStarted then begin
     FConnection.IOHandler.WriteBufferOpen;

@@ -18,7 +18,7 @@ package IndyProtocolsK3;
 {$IMAGEBASE $400000}
 {$DESCRIPTION 'Indy 10 Protocols'}
 {$RUNONLY}
-{$IMPLICITBUILD OFF}
+{$IMPLICITBUILD ON}
 
 requires
   rtl,
@@ -76,6 +76,7 @@ contains
   IdEchoUDP in 'IdEchoUDP.pas',
   IdEchoUDPServer in 'IdEchoUDPServer.pas',
   IdExplicitTLSClientServerBase in 'IdExplicitTLSClientServerBase.pas',
+  IdFIPS in 'IdFIPS.pas',
   IdFSP in 'IdFSP.pas',
   IdFTP in 'IdFTP.pas',
   IdFTPBaseFileSystem in 'IdFTPBaseFileSystem.pas',
@@ -91,6 +92,7 @@ contains
   IdFTPListParseDistinctTCPIP in 'IdFTPListParseDistinctTCPIP.pas',
   IdFTPListParseEPLF in 'IdFTPListParseEPLF.pas',
   IdFTPListParseHellSoft in 'IdFTPListParseHellSoft.pas',
+  IdFTPListParseIEFTPGateway in 'IdFTPListParseIEFTPGateway.pas',
   IdFTPListParseKA9Q in 'IdFTPListParseKA9Q.pas',
   IdFTPListParseMPEiX in 'IdFTPListParseMPEiX.pas',
   IdFTPListParseMVS in 'IdFTPListParseMVS.pas',
@@ -102,6 +104,7 @@ contains
   IdFTPListParseNovellNetwarePSU in 'IdFTPListParseNovellNetwarePSU.pas',
   IdFTPListParseOS2 in 'IdFTPListParseOS2.pas',
   IdFTPListParsePCNFSD in 'IdFTPListParsePCNFSD.pas',
+  IdFTPListParsePCTCP in 'IdFTPListParsePCTCP.pas',
   IdFTPListParseStercomOS390Exp in 'IdFTPListParseStercomOS390Exp.pas',
   IdFTPListParseStercomUnixEnt in 'IdFTPListParseStercomUnixEnt.pas',
   IdFTPListParseStratusVOS in 'IdFTPListParseStratusVOS.pas',
@@ -138,9 +141,8 @@ contains
   IdHash in 'IdHash.pas',
   IdHashCRC in 'IdHashCRC.pas',
   IdHashElf in 'IdHashElf.pas',
-  IdHashIntf in 'IdHashIntf.pas',
   IdHashMessageDigest in 'IdHashMessageDigest.pas',
-  IdHashSHA1 in 'IdHashSHA1.pas',
+  IdHashSHA in 'IdHashSHA.pas',
   IdHeaderCoder2022JP in 'IdHeaderCoder2022JP.pas',
   IdHeaderCoderBase in 'IdHeaderCoderBase.pas',
   IdHeaderCoderIndy in 'IdHeaderCoderIndy.pas',

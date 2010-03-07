@@ -87,7 +87,8 @@ type
 implementation
 
 uses
-  IdGlobalProtocols, IdHash, IdResourceStrings, IdResourceStringsProtocols, SysUtils;
+  IdGlobalProtocols, IdFIPS, IdHash, IdResourceStrings, IdResourceStringsProtocols,
+  SysUtils;
 
 { TIdDigestAuthentication }
 

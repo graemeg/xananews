@@ -1271,6 +1271,11 @@ uses
   System.Threading,
     {$ENDIF}
   {$ENDIF}
+  {$IFDEF USE_VCL_POSIX}
+  PosixSysSelect,
+  PosixSysTime,
+  {$ENDIF}
+  IdFIPS,
   IdHash, IdHashCRC, IdHashMessageDigest, IdHashSHA, IdIOHandlerSocket,
   IdResourceStringsProtocols, IdGlobalProtocols, IdSimpleServer, IdSSL,
   IdIOHandlerStack, IdSocketHandle, IdStrings, IdTCPClient, IdEMailAddress,
@@ -3893,7 +3898,7 @@ begin
   end;
   //MFF
   LTmp := MFFPREFIX;  {Do not localize}
-  if Assigned(FOnSetCreationTime) then begin
+  if Assigned(FOnSetCreationTime) and (mlsdFileLastAccessTime in FMLSDFacts) then begin
     LTmp := LTmp + 'Create;'; {Do not Localize}
   end;
   if Assigned(FOnSetModifiedTime) or Assigned(FTPFileSystem) then begin
@@ -3905,10 +3910,10 @@ begin
   if Assigned(FOnSiteCHOWN) then begin
     LTmp := LTmp + 'Unix.owner;';
   end;
-  if Assigned(FOnSiteCHGRP) then begin
+  if Assigned(FOnSiteCHGRP)  then begin
     LTmp := LTmp + 'Unix.group;';
   end;
-  if Assigned(FOnSiteUTIME) then begin
+  if Assigned(FOnSiteUTIME) and (mlsdFileLastAccessTime in FMLSDFacts) then begin
     LTmp := LTmp + 'Windows.lastaccesstime;';
   end;
   if Assigned(FOnSetATTRIB) then begin
@@ -4983,7 +4988,7 @@ begin
       end;
       if LFacts.Values['Windows.lastaccesstime'] <> '' then begin
         LValue := LFacts.Values['Windows.lastaccesstime'];
-        if Assigned(FOnSiteUTIME) then begin
+        if Assigned(FOnSiteUTIME) and (mlsdFileLastAccessTime in FMLSDFacts) then begin
           LDate := FTPMLSToGMTDateTime(LValue);
           LDummyDate1 := 0;
           LDummyDate2 := 0;

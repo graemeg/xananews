@@ -9,13 +9,14 @@ uses
   DynLibs,  
   {$ENDIF}
   IdCTypes,
-  IdException,
+  IdException
   {$IFDEF USE_BASEUNIX}
-  UnixType; 
+  ,UnixType
   {$ENDIF}
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
-  Windows;
+  ,Windows
   {$ENDIF}
+  ;
 
 {.$DEFINE STATICLOAD_ICONV}
 //These should be defined in libc.pas.
@@ -69,8 +70,8 @@ type
   
 var
   iconv_open  : TIdiconv_open = nil;
-  iconv        : TIdiconv = nil;
-  iconv_close :  TIdiconv_close = nil;
+  iconv       : TIdiconv = nil;
+  iconv_close : TIdiconv_close = nil;
 {$ENDIF}
 
 {$IFDEF WIN32_OR_WIN64}
@@ -194,11 +195,13 @@ function Loaded : Boolean;
 {$IFDEF STATICLOAD_ICONV}
 function iconv_open(__tocode : PAnsiChar; __fromcode : PAnsiChar) : iconv_t; cdecl;
   external LICONV name FN_ICONV_OPEN;
+
 function iconv(__cd : iconv_t; __inbuf : PPAnsiChar;
                     __inbytesleft : Psize_t;
 		    __outbuf : PPAnsiChar;
 		    __outbytesleft : Psize_t ) : size_t; cdecl;
   external LICONV name FN_ICONV;
+
 function iconv_close(__cd : iconv_t) : TIdC_INT; cdecl;
   external LICONV name FN_ICONV_CLOSE;
 {$ENDIF}
@@ -226,42 +229,7 @@ function errnoStr(const AErrNo : TIdC_INT) : String;
 
 implementation
 
-{$IFDEF STATICLOAD_ICONV}
-  {$IFDEF WIN32_OR_WIN64}
-var
-  hmsvcrt : THandle = 0;
-  {$ENDIF}
-
-function Load : Boolean;
-{$IFDEF USE_INLINE} inline; {$ENDIF}
-begin
-  Result := True;
-end;
-
-procedure Unload;
-{$IFDEF USE_INLINE} inline; {$ENDIF}
-begin
-  {$IFDEF WIN32_OR_WIN64}
-  if hmsvcrt <> 0 then begin
-    FreeLibrary(hmsvcrt);
-    hmsvcrt := 0;
-  end;
-  {$ENDIF}
-end;
-
-function Loaded : Boolean;
-{$IFDEF USE_INLINE} inline; {$ENDIF}
-begin
-  Result := True;
-end;
-
-procedure InitializeStubs;
-begin
-  {$IFDEF WIN32_OR_WIN64}
-  {$ENDIF}
-end;
-
-{$ELSE}
+{$IFNDEF STATICLOAD_ICONV}
 uses
   IdResourceStrings, SysUtils;
 
@@ -271,13 +239,16 @@ var
   {$ELSE}
   hIconv: THandle = 0;
   {$ENDIF}
-  {$IFDEF WIN32_OR_WIN64}
+{$ENDIF}
+
+{$IFDEF WIN32_OR_WIN64}
 var
   hmsvcrt : THandle = 0;
 
-function stub_errno : PIdC_INT; cdecl; forward;
-  {$ENDIF}
+function Stub_errno : PIdC_INT; cdecl; forward;
+{$ENDIF}
   
+{$IFNDEF STATICLOAD_ICONV}
 constructor EIdIconvStubError.Build(const ATitle : String; AError : LongWord);
 begin
   FTitle := ATitle;
@@ -292,38 +263,11 @@ begin
 
 end;
 
-function Load : Boolean;
-begin
-  Result := True;
-  if not Loaded then begin
-    //In Windows, you should use SafeLoadLibrary instead of the LoadLibrary API
-    //call because LoadLibrary messes with the FPU control word.
-    {$IFDEF WIN32_OR_WIN64_OR_WINCE}
-    hIconv := SafeLoadLibrary(LICONV);
-    if hIconv = 0 then begin
-      hIconv := SafeLoadLibrary(LICONV_ALT);
-    end;
-    {$ELSE}
-      {$IFDEF UNIX}
-    hIconv := LoadLibrary(LICONV);
-    if hIconv = NilHandle then  begin
-      hIconv := LoadLibrary(LIBC);
-    end;
-      {$ELSE}
-    hIconv := LoadLibrary(LICONV);
-      {$ENDIF}
-    {$ENDIF}
-    Result := Loaded;
-  end;
-end;
-
 function Fixup(const AName: string): Pointer;
-var LEx : Exception;
 begin
   if hIconv = 0 then begin
     if not Load then begin
-      LEx := EIdIconvStubError.Build(Format(RSIconvCallError, [AName]), 0);
-      raise LEx;
+      raise EIdIconvStubError.Build(Format(RSIconvCallError, [AName]), 0);
     end;
   end;
   Result := GetProcAddress(hIconv, PChar(AName));
@@ -338,9 +282,7 @@ begin
   if Result = nil then begin
     Result := GetProcAddress(hIconv, PChar('lib'+AName));
     if Result = nil then begin
-
-      LEx := EIdIconvStubError.Build(Format(RSIconvCallError, [AName]), 10022);
-      raise LEx;
+      raise EIdIconvStubError.Build(Format(RSIconvCallError, [AName]), 10022);
     end;
   end;
 end;
@@ -370,36 +312,78 @@ end;
 
 {end stub sections}
 
+{$ENDIF}
+
 procedure InitializeStubs;
 begin
+{$IFNDEF STATICLOAD_ICONV}
   iconv_open  := Stub_iconv_open;
   iconv       := Stub_iconv;
   iconv_close := Stub_iconv_close;
+{$ENDIF}
 {$IFDEF WIN32_OR_WIN64}
-  errno := Stub_errno;
+  errno       := Stub_errno;
+{$ENDIF}
+end;
+
+function Load : Boolean;
+{$IFDEF STATICLOAD_ICONV}
+  {$IFDEF USE_INLINE} inline; {$ENDIF}
+{$ENDIF}
+begin
+{$IFDEF STATICLOAD_ICONV}
+  Result := True;
+{$ELSE}
+  if not Loaded then begin
+    //In Windows, you should use SafeLoadLibrary instead of the LoadLibrary API
+    //call because LoadLibrary messes with the FPU control word.
+    {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+    hIconv := SafeLoadLibrary(LICONV);
+    if hIconv = 0 then begin
+      hIconv := SafeLoadLibrary(LICONV_ALT);
+    end;
+    {$ELSE}
+      {$IFDEF UNIX}
+    hIconv := LoadLibrary(LICONV);
+    if hIconv = NilHandle then  begin
+      hIconv := LoadLibrary(LIBC);
+    end;
+      {$ELSE}
+    hIconv := LoadLibrary(LICONV);
+      {$ENDIF}
+    {$ENDIF}
+    Result := Loaded;
+  end;
 {$ENDIF}
 end;
 
 procedure Unload;
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+{$IFNDEF STATICLOAD_ICONV}
   if Loaded then begin
     FreeLibrary(hIconv);
     hIconv := 0;
-  {$IFDEF WIN32_OR_WIN64}
-   if hmsvcrt <> 0 then begin
-     FreeLibrary(hmsvcrt);
-     hmsvcrt := 0;
-   end;
-  {$ENDIF}
-    InitializeStubs;
   end;
+{$ENDIF}
+{$IFDEF WIN32_OR_WIN64}
+  if hmsvcrt <> 0 then begin
+    FreeLibrary(hmsvcrt);
+    hmsvcrt := 0;
+  end;
+{$ENDIF}
+  InitializeStubs;
 end;
 
 function Loaded : Boolean;
+{$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+{$IFDEF STATICLOAD_ICONV}
+  Result := True;
+{$ELSE}
   Result := (hIconv <> 0);
-end;
 {$ENDIF}
+end;
 
 {$IFDEF WIN32_OR_WIN64}
 const
@@ -465,20 +449,20 @@ begin
   end;
 end;
 
-function stub_errno : PIdC_INT; cdecl;
+function Stub_errno : PIdC_INT; cdecl;
 begin
   if hmsvcrt = 0 then begin
-     hmsvcrt := SafeLoadLibrary(LIBMSVCRTL);
-     if hmsvcrt = 0 then begin
-       raise EIdMSVCRTStubError.Build('Failed to load '+LIBMSVCRTL,0);
-     end;
-     errno := GetProcAddress(hmsvcrt,PChar(FN_errno));
-     if not Assigned(errno) then begin
-       errno := stub_errno;
-       raise EIdMSVCRTStubError.Build('Failed to load '+FN_errno+' in '+LIBMSVCRTL,0);
-     end;
+    hmsvcrt := SafeLoadLibrary(LIBMSVCRTL);
+    if hmsvcrt = 0 then begin
+      raise EIdMSVCRTStubError.Build('Failed to load ' + LIBMSVCRTL, 0);
+    end;
+    errno := GetProcAddress(hmsvcrt, PChar(FN_errno));
+    if not Assigned(errno) then begin
+      errno := Stub_errno;
+      raise EIdMSVCRTStubError.Build('Failed to load ' + FN_errno + ' in ' + LIBMSVCRTL, 0);
+    end;
   end;
-  Result := errno;  
+  Result := errno();
 end;
 {$ENDIF}
 

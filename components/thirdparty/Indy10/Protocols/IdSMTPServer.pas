@@ -133,10 +133,12 @@ type
     var VAuthenticated: Boolean) of object;
   TOnSPFCheck = procedure(ASender: TIdSMTPServerContext; const AIP, ADomain, AIdentity: String;
     var VAction: TIdSPFReply) of object;
+  TOnDataStreamEvent = procedure(ASender: TIdSMTPServerContext; var VStream: TStream) of object;
   
   TIdSMTPServer = class(TIdExplicitTLSServer)
   protected
     //events
+    FOnBeforeMsg : TOnDataStreamEvent;
     FOnMailFrom : TOnMailFromEvent;
     FOnMsgReceive : TOnMsgReceive;
     FOnRcptTo : TOnRcptToEvent;
@@ -213,11 +215,13 @@ type
     procedure InitializeCommandHandlers; override;
     //
     procedure DoReset(AContext: TIdSMTPServerContext; AIsTLSReset: Boolean = False);
+    procedure MsgBegan(AContext: TIdSMTPServerContext; var VStream: TStream);
     procedure MsgReceived(ASender: TIdCommand; AMsgData: TStream);
     procedure SetMaxMsgSize(AValue: Integer);
     function SPFAuthOk(AContext: TIdSMTPServerContext; AReply: TIdReply; const ACmd, ADomain, AIdentity: String): Boolean;
   published
     //events
+    property OnBeforeMsg : TOnDataStreamEvent read FOnBeforeMsg write FOnBeforeMsg;
     property OnMailFrom : TOnMailFromEvent read FOnMailFrom write FOnMailFrom;
     property OnMsgReceive : TOnMsgReceive read FOnMsgReceive write FOnMsgReceive;
     property OnRcptTo : TOnRcptToEvent read FOnRcptTo write FOnRcptTo;
@@ -250,7 +254,7 @@ type
     FMsgSize: Integer;
     FPipeLining : Boolean;
     FFinalStage : Boolean;
-    FBDataStream: TMemoryStream;
+    FBDataStream: TStream;
     FBodyType: TIdSMTPBodyType;
     function GetUsingTLS: Boolean;
     procedure SetPipeLining(const AValue : Boolean);
@@ -800,7 +804,7 @@ begin
                 Exit;
               end;
             end else begin
-              LBodyType := idSMTP7Bit;
+              LBodyType := idSMTP8BitMime;
             end;
             // let the user perform custom validations
             if Assigned(FOnMailFrom) then begin
@@ -994,6 +998,113 @@ begin
   end;
 end;
 
+procedure TIdSMTPServer.CommandDATA(ASender: TIdCommand);
+var
+  LContext : TIdSMTPServerContext;
+  LStream: TStream;
+  LEncoding: TIdTextEncoding;
+begin
+  LContext := TIdSMTPServerContext(ASender.Context);
+  if LContext.SMTPState <> idSMTPRcpt then begin
+    BadSequenceError(ASender);
+    Exit;
+  end;
+  if LContext.HELO or LContext.EHLO then begin
+    // BINARYMIME cannot be used with the DATA command
+    if LContext.FBodyType = idSMTPBinaryMime then begin
+      BadSequenceError(ASender);
+      Exit;
+    end;
+    MsgBegan(LContext, LStream);
+    try
+      // RLebeau: TODO - do not even create the stream if the OnMsgReceive
+      // event is not assigned, or at least create a stream that discards
+      // any data received...
+      if LContext.FBodyType = idSMTP7Bit then begin
+        LEncoding := TIdTextEncoding.ASCII;
+      end else begin
+        LEncoding := Indy8BitEncoding;
+      end;
+      SetEnhReply(ASender.Reply, 354, '', RSSMTPSvrStartData, LContext.EHLO);
+      ASender.SendReply;
+      LContext.PipeLining := False;
+      LContext.Connection.IOHandler.Capture(LStream, '.', True, LEncoding);    {Do not Localize}
+      MsgReceived(ASender, LStream);
+    finally
+      FreeAndNil(LStream);
+      DoReset(LContext);
+    end;
+  end else begin // No EHLO / HELO was received
+    NoHello(ASender);
+  end;
+  LContext.PipeLining := False;
+end;
+
+procedure TIdSMTPServer.CommandBDAT(ASender: TIdCommand);
+var
+  LContext : TIdSMTPServerContext;
+  LSize: TIdStreamSize;
+  LLast: Boolean;
+begin
+  LContext := TIdSMTPServerContext(ASender.Context);
+  if not (LContext.SMTPState in [idSMTPRcpt, idSMTPBDat]) then begin
+    BadSequenceError(ASender);
+    Exit;
+  end;
+  if LContext.HELO or LContext.EHLO then begin
+    LContext.PipeLining := False;
+    if ASender.Params.Count > 0 then begin
+      LSize := IndyStrToStreamSize(ASender.Params[0], -1);
+      if LSize < 0 then
+      begin
+        CmdSyntaxError(ASender);
+        Exit;
+      end;
+      if ASender.Params.Count > 1 then begin
+        if not TextIsSame(ASender.Params[1], 'LAST') then begin {do not localize}
+          LContext.Connection.IOHandler.Discard(LSize);
+          CmdSyntaxError(ASender);
+          Exit;
+        end;
+        LLast := True;
+      end else begin
+        LLast := False;
+      end;
+      LContext.SMTPState := idSMTPBDat;
+      if not Assigned(LContext.FBDataStream) then begin
+        MsgBegan(LContext, LContext.FBDataStream);
+      end;
+      LContext.Connection.IOHandler.ReadStream(LContext.FBDataStream, LSize, False);
+      if not LLast then begin
+        Exit;  // do not turn off pipelining yet
+      end;
+      try
+        MsgReceived(ASender, LContext.FBDataStream);
+      finally
+        DoReset(LContext);
+      end;
+    end else begin
+      CmdSyntaxError(ASender);
+    end;
+  end else begin // No EHLO / HELO was received
+    NoHello(ASender);
+  end;
+  LContext.PipeLining := False;
+end;
+
+procedure TIdSMTPServer.DoReset(AContext: TIdSMTPServerContext; AIsTLSReset: Boolean = False);
+begin
+  AContext.Reset(AIsTLSReset);
+  if Assigned(FOnReset) then begin
+    FOnReset(AContext);
+  end;
+end;
+
+procedure TIdSMTPServer.SetMaxMsgSize(AValue: Integer);
+begin
+  FMaxMsgSize := IndyMax(AValue, 0);
+end;
+
 // RLebeau: processing the tokens dynamically now
 // so that only the tokens that are actually present
 // will be processed.  This helps to avoid unnecessary
@@ -1054,148 +1165,47 @@ begin
   end;
 end;
 
-procedure TIdSMTPServer.CommandDATA(ASender: TIdCommand);
+procedure TIdSMTPServer.MsgBegan(AContext: TIdSMTPServerContext; var VStream: TStream);
 var
-  LContext : TIdSMTPServerContext;
-  LStream: TStream;
-  LEncoding: TIdTextEncoding;
+  LReceivedString: string;
 begin
-  LContext := TIdSMTPServerContext(ASender.Context);
-  if LContext.SMTPState <> idSMTPRcpt then begin
-    BadSequenceError(ASender);
-    Exit;
+  VStream := nil;
+  if Assigned(FOnBeforeMsg) then begin
+    FOnBeforeMsg(AContext, VStream);
   end;
-  if LContext.HELO or LContext.EHLO then begin
-    // BINARYMIME cannot be used with the DATA command
-    if LContext.FBodyType = idSMTPBinaryMime then begin
-      BadSequenceError(ASender);
-      Exit;
+  if not Assigned(VStream) then begin
+    VStream := TMemoryStream.Create;
+  end;
+  try
+    LReceivedString := IdSMTPSvrReceivedString;
+    if Assigned(FOnReceived) then begin
+      FOnReceived(AContext, LReceivedString);
     end;
-    SetEnhReply(ASender.Reply, 354, '', RSSMTPSvrStartData, LContext.EHLO);
-    ASender.SendReply;
-    LContext.PipeLining := False;
-    LStream := TMemoryStream.Create;
-    try
-      // RLebeau: TODO - do not even create the stream if the OnMsgReceive
-      // event is not assigned, or at least create a stream that discards
-      // any data received...
-      if LContext.FBodyType = idSMTP8BitMime then begin
-        LEncoding := Indy8BitEncoding;
-      end else begin
-        LEncoding := TIdTextEncoding.ASCII;
-      end;
-      LContext.Connection.IOHandler.Capture(LStream, '.', True, LEncoding);    {Do not Localize}
-      LStream.Position := 0;
-      MsgReceived(ASender, LStream);
-    finally
-      FreeAndNil(LStream);
-      DoReset(LContext);
+    if AContext.FinalStage then begin
+      // If at the final delivery stage, add the Return-Path line for the received MAIL FROM line.
+      WriteStringToStream(VStream, 'Received-Path: <' + AContext.From + '>' + EOL); {do not localize}
     end;
-  end else begin // No EHLO / HELO was received
-    NoHello(ASender);
-  end;
-  LContext.PipeLining := False;
-end;
-
-procedure TIdSMTPServer.CommandBDAT(ASender: TIdCommand);
-var
-  LContext : TIdSMTPServerContext;
-  LSize: TIdStreamSize;
-  LLast: Boolean;
-begin
-  LContext := TIdSMTPServerContext(ASender.Context);
-  if not (LContext.SMTPState in [idSMTPRcpt, idSMTPBDat]) then begin
-    BadSequenceError(ASender);
-    Exit;
-  end;
-  if LContext.HELO or LContext.EHLO then begin
-    LContext.PipeLining := False;
-    if ASender.Params.Count > 0 then begin
-      LSize := IndyStrToStreamSize(ASender.Params[0], -1);
-      if LSize < 0 then
-      begin
-        CmdSyntaxError(ASender);
-        Exit;
-      end;
-      if ASender.Params.Count > 1 then begin
-        if not TextIsSame(ASender.Params[1], 'LAST') then begin {do not localize}
-          LContext.Connection.IOHandler.Discard(LSize);
-          CmdSyntaxError(ASender);
-          Exit;
-        end;
-        LLast := True;
-      end else begin
-        LLast := False;
-      end;
-      LContext.SMTPState := idSMTPBDat;
-      if not Assigned(LContext.FBDataStream) then begin
-        LContext.FBDataStream := TMemoryStream.Create;
-      end;
-      LContext.Connection.IOHandler.ReadStream(LContext.FBDataStream, LSize, False);
-      if not LLast then begin
-        Exit;  // do not turn off pipelining yet
-      end;
-      try
-        LContext.FBDataStream.Position := 0;
-        MsgReceived(ASender, LContext.FBDataStream);
-      finally
-        DoReset(LContext);
-      end;
-    end else begin
-      CmdSyntaxError(ASender);
+    if LReceivedString <> '' then begin
+      WriteStringToStream(VStream, ReplaceReceivedTokens(AContext, LReceivedString) + EOL);
     end;
-  end else begin // No EHLO / HELO was received
-    NoHello(ASender);
+  except
+    FreeAndNil(VStream);
+    raise;
   end;
-  LContext.PipeLining := False;
-end;
-
-procedure TIdSMTPServer.DoReset(AContext: TIdSMTPServerContext; AIsTLSReset: Boolean = False);
-begin
-  AContext.Reset(AIsTLSReset);
-  if Assigned(FOnReset) then begin
-    FOnReset(AContext);
-  end;
-end;
-
-procedure TIdSMTPServer.SetMaxMsgSize(AValue: Integer);
-begin
-  FMaxMsgSize := IndyMax(AValue, 0);
 end;
 
 procedure TIdSMTPServer.MsgReceived(ASender: TIdCommand; AMsgData: TStream);
 var
-  LContext: TIdSMTPServerContext;
-  LMsg: TStream;
   LAction: TIdDataReply;
-  LReceivedString: String;
 begin
-  LContext := TIdSMTPServerContext(ASender.Context);
-  LMsg := TMemoryStream.Create;
-  try
-    LAction := dOk;
-    LReceivedString := IdSMTPSvrReceivedString;
-    if Assigned(FOnReceived) then begin
-      FOnReceived(LContext, LReceivedString);
-    end;
-    if LContext.FinalStage then begin
-      // If at the final delivery stage, add the Return-Path line for the received MAIL FROM line.
-      WriteStringToStream(LMsg, 'Received-Path: <' + LContext.From + '>' + EOL); {do not localize}
-    end;
-    if LReceivedString <> '' then begin
-      WriteStringToStream(LMsg, ReplaceReceivedTokens(LContext, LReceivedString) + EOL);
-    end;
-    LMsg.CopyFrom(AMsgData, 0); // Copy the contents that was captured to the new stream.
-    LMsg.Position := 0; // RLebeau: CopyFrom() does not reset the Position
-    // RLebeau: verify the message size now
-    if (FMaxMsgSize > 0) and (LMsg.Size > FMaxMsgSize) then begin
-      LAction := dLimitExceeded;
-    end
-    else if Assigned(FOnMsgReceive) then begin
-      FOnMsgReceive(LContext, LMsg, LAction);
-    end;
-  finally
-    FreeAndNil(LMsg);
+  LAction := dOk;
+  AMsgData.Position := 0;
+  // RLebeau: verify the message size now
+  if (FMaxMsgSize > 0) and (AMsgData.Size > FMaxMsgSize) then begin
+    LAction := dLimitExceeded;
+  end
+  else if Assigned(FOnMsgReceive) then begin
+    FOnMsgReceive(TIdSMTPServerContext(ASender.Context), AMsgData, LAction);
   end;
   case LAction of
     dOk                   : MailSubmitOk(ASender); //accept the mail message
@@ -1285,7 +1295,7 @@ begin
   FPassword := '';
   FLoggedIn := False;
   FMsgSize := 0;
-  FBodyType := idSMTP7Bit;
+  FBodyType := idSMTP8BitMime;
   FFinalStage := False;
   FreeAndNil(FBDataStream);
   CheckPipeLine;

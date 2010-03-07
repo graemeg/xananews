@@ -823,10 +823,10 @@ begin
         if FContentType <> '' then begin
           LContentType := FContentType;
           if FCharSet <> '' then begin
-            LContentType := LContentType + '; charset="' + FCharSet + '"';  {do not localize}
+            LContentType := ReplaceHeaderSubItem(LContentType, 'charset', FCharSet);  {do not localize}
           end;
           if (MessageParts.Count > 0) and (LMIMEBoundary <> '') then begin
-            LContentType := RemoveHeaderEntry(LContentType, 'boundary') + '; boundary="' + LMIMEBoundary + '"'; {do not localize}
+            LContentType := ReplaceHeaderSubItem(LContentType, 'boundary', LMIMEBoundary);  {do not localize}
           end;
           Values['Content-Type'] := LContentType; {do not localize}
         end;
@@ -839,7 +839,7 @@ begin
       Values['Content-Transfer-Encoding'] := ContentTransferEncoding; {do not localize}
       LContentType := FContentType;
       if (LContentType <> '') and (FCharSet <> '') then begin
-        LContentType := LContentType + '; charset="' + FCharSet + '"';  {do not localize}
+        LContentType := ReplaceHeaderSubItem(LContentType, 'charset', FCharSet);  {do not localize}
       end;
       Values['Content-Type'] := LContentType;  {do not localize}
     end;

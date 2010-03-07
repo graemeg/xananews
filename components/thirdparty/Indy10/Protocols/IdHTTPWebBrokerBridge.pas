@@ -57,7 +57,7 @@ uses
   HTTPApp,
   IdContext, IdCustomHTTPServer, IdException, IdTCPServer, IdIOHandlerSocket,
   {$IFDEF CLR}System.Text,{$ENDIF}
-  WebBroker;
+  WebBroker, WebReq;
 
 type
   EWBBException = class(EIdException);
@@ -135,10 +135,15 @@ type
   end;
 
   TIdHTTPWebBrokerBridge = class(TIdCustomHTTPServer)
+  private
+    procedure RunWebModuleClass(AThread: TIdContext; ARequestInfo: TIdHTTPRequestInfo;
+     AResponseInfo: TIdHTTPResponseInfo);
   protected
     FWebModuleClass: TComponentClass;
     //
     procedure DoCommandGet(AThread: TIdContext; ARequestInfo: TIdHTTPRequestInfo;
+     AResponseInfo: TIdHTTPResponseInfo); override;
+    procedure DoCommandOther(AThread: TIdContext; ARequestInfo: TIdHTTPRequestInfo;
      AResponseInfo: TIdHTTPResponseInfo); override;
     procedure InitComponent; override;
   public
@@ -286,28 +291,29 @@ begin
   case Index of
     INDEX_Method          : Result := AnsiString(FRequestInfo.Command);
     INDEX_ProtocolVersion : Result := AnsiString(FRequestInfo.Version);
-    INDEX_URL             : Result := AnsiString(FRequestInfo.Document);
+    //INDEX_URL             : Result := AnsiString(FRequestInfo.Document);
+    INDEX_URL             : Result := AnsiString(''); // Root - consistent with ISAPI which return path to root
     INDEX_Query           : Result := AnsiString(FRequestInfo.QueryParams);
     INDEX_PathInfo        : Result := AnsiString(FRequestInfo.Document);
     INDEX_PathTranslated  : Result := AnsiString(FRequestInfo.Document);             // it's not clear quite what should be done here - we can't translate to a path
-    INDEX_CacheControl    : Result := GetFieldByName('CACHE_CONTROL');   {do not localize}
-    INDEX_Date            : Result := GetFieldByName('DATE');            {do not localize}
+    INDEX_CacheControl    : Result := GetFieldByName('Cache-Control');   {do not localize}
+    INDEX_Date            : Result := GetFieldByName('Date');            {do not localize}
     INDEX_Accept          : Result := AnsiString(FRequestInfo.Accept);
     INDEX_From            : Result := AnsiString(FRequestInfo.From);
     INDEX_Host: begin
       s := FRequestInfo.Host;
       Result := AnsiString(Fetch(s, ':'));
     end;
-    INDEX_IfModifiedSince : Result := GetFieldByName('IF_MODIFIED_SINCE'); {do not localize}
+    INDEX_IfModifiedSince : Result := GetFieldByName('If-Modified-Since'); {do not localize}
     INDEX_Referer         : Result := AnsiString(FRequestInfo.Referer);
     INDEX_UserAgent       : Result := AnsiString(FRequestInfo.UserAgent);
     INDEX_ContentEncoding : Result := AnsiString(FRequestInfo.ContentEncoding);
     INDEX_ContentType     : Result := AnsiString(FRequestInfo.ContentType);
     INDEX_ContentLength   : Result := AnsiString(IntToStr(FContentStream.Size));
     INDEX_ContentVersion  : Result := GetFieldByName('CONTENT_VERSION'); {do not localize}
-    INDEX_DerivedFrom     : Result := GetFieldByName('DERIVED_FROM');    {do not localize}
-    INDEX_Expires         : Result := GetFieldByName('EXPIRES');         {do not localize}
-    INDEX_Title           : Result := GetFieldByName('TITLE');           {do not localize}
+    INDEX_DerivedFrom     : Result := GetFieldByName('Derived-From');    {do not localize}
+    INDEX_Expires         : Result := GetFieldByName('Expires');         {do not localize}
+    INDEX_Title           : Result := GetFieldByName('Title');           {do not localize}
     INDEX_RemoteAddr      : Result := AnsiString(FRequestInfo.RemoteIP);
     INDEX_RemoteHost      : Result := GetFieldByName('REMOTE_HOST');     {do not localize}
     INDEX_ScriptName      : Result := '';
@@ -340,7 +346,7 @@ begin
           TIdStreamHelper.ReadBytes(FContentStream, LBytes);
           {$IFDEF DOTNET}
           // RLebeau: how to handle this correctly in .NET?
-          Result := AnsiString(BytesToString(LBytes, Indy8BitEncoding));
+          Result := AnsiString(BytesToStringRaw(LBytes));
           {$ELSE}
           SetString(Result, PAnsiChar(LBytes), Length(LBytes));
             {$IFDEF VCL_2009_OR_ABOVE}
@@ -352,9 +358,9 @@ begin
         end;
       end;
     end;
-    INDEX_Connection      : Result := GetFieldByName('CONNECTION');      {do not localize}
+    INDEX_Connection      : Result := GetFieldByName('Connection');      {do not localize}
     INDEX_Cookie          : Result := '';  // not available at present. FRequestInfo.Cookies....;
-    INDEX_Authorization   : Result := GetFieldByName('AUTHORIZATION');   {do not localize}
+    INDEX_Authorization   : Result := GetFieldByName('Authorization');   {do not localize}
   else
     Result := '';
   end;
@@ -393,7 +399,7 @@ begin
   TIdStreamHelper.ReadBytes(FContentStream, LBytes, Count);
   {$IFDEF DOTNET}
   // RLebeau: how to handle this correctly in .NET?
-  Result := AnsiString(BytesToString(LBytes, Indy8BitEncoding));
+  Result := AnsiString(BytesToStringRaw(LBytes));
   {$ELSE}
   SetString(Result, PAnsiChar(LBytes), Length(LBytes));
     {$IFDEF VCL_2009_OR_ABOVE}
@@ -477,13 +483,13 @@ begin
     {$IFNDEF DOTNET}
   try
     {$ENDIF}
-    LBytes := TIdTextEncoding.Convert(
-      TIdTextEncoding.Unicode,
-      LEncoding,
-      TIdTextEncoding.Unicode.GetBytes(FResponseInfo.ContentText));
+    LBytes := TIdTextEncoding.Unicode.GetBytes(FResponseInfo.ContentText);
+    if LEncoding <> TIdTextEncoding.Unicode then begin
+      LBytes := TIdTextEncoding.Convert(TIdTextEncoding.Unicode, LEncoding, LBytes);
+    end;
     {$IFDEF DOTNET}
     // RLebeau: how to handle this correctly in .NET?
-    Result := AnsiString(BytesToString(LBytes, Indy8BitEncoding));
+    Result := AnsiString(BytesToStringRaw(LBytes));
     {$ELSE}
     SetString(Result, PAnsiChar(LBytes), Length(LBytes));
       {$IFDEF VCL_2009_OR_ABOVE}
@@ -511,24 +517,38 @@ begin
 end;
 
 function TIdHTTPAppResponse.GetDateVariable(Index: Integer): TDateTime;
+  // WebBroker apps are responsible for conversion to GMT, Indy HTTP server expects apps to pas local time
+  function ToGMT(ADateTime: TDateTime): TDateTime;
+  begin
+    Result := ADateTime;
+    if Result <> -1 then
+      Result := Result - OffsetFromUTC;
+  end;
 begin
   //TODO: resource string these
   case Index of
-    INDEX_RESP_Date             : Result := FResponseInfo.Date;
-    INDEX_RESP_Expires          : Result := FResponseInfo.Expires;
-    INDEX_RESP_LastModified     : Result := FResponseInfo.LastModified;
+    INDEX_RESP_Date             : Result := ToGMT(FResponseInfo.Date);
+    INDEX_RESP_Expires          : Result := ToGMT(FResponseInfo.Expires);
+    INDEX_RESP_LastModified     : Result := ToGMT(FResponseInfo.LastModified);
   else
     raise EWBBInvalidIdxGetDateVariable.Create( Format( RSWBBInvalidIdxGetDateVariable,[inttostr(Index)]));
   end;
 end;
 
 procedure TIdHTTPAppResponse.SetDateVariable(Index: Integer; const Value: TDateTime);
+  // WebBroker apps are responsible for conversion to GMT, Indy HTTP server expects apps to pas local time
+  function ToLocal(ADateTime: TDateTime): TDateTime;
+  begin
+    Result := ADateTime;
+    if Result <> -1 then
+      Result := Result + OffsetFromUTC;
+  end;
 begin
   //TODO: resource string these
   case Index of
-    INDEX_RESP_Date             : FResponseInfo.Date := Value;
-    INDEX_RESP_Expires          : FResponseInfo.Expires := Value;
-    INDEX_RESP_LastModified     : FResponseInfo.LastModified := Value;
+    INDEX_RESP_Date             : FResponseInfo.Date := ToLocal(Value);
+    INDEX_RESP_Expires          : FResponseInfo.Expires := ToLocal(Value);
+    INDEX_RESP_LastModified     : FResponseInfo.LastModified := ToLocal(Value);
   else
     raise EWBBInvalidIdxSetDateVariable.Create(Format(RSWBBInvalidIdxSetDateVariable,[inttostr(Index) ]));
   end;
@@ -665,13 +685,92 @@ end;
 
 { TIdHTTPWebBrokerBridge }
 
+procedure TIdHTTPWebBrokerBridge.DoCommandOther(AThread: TIdContext;
+  ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo);
+begin
+  DoCommandGet(AThread, ARequestInfo, AResponseInfo);
+
+end;
+
 procedure TIdHTTPWebBrokerBridge.InitComponent;
 begin
   inherited InitComponent;
  // FOkToProcessCommand := True;
 end;
 
+type
+  TIdHTTPWebBrokerBridgeRequestHandler = class(TWebRequestHandler)
+  private
+   class var FWebRequestHandler: TIdHTTPWebBrokerBridgeRequestHandler;
+  public
+    constructor Create(AOwner: TComponent); override;
+    class destructor Destroy;
+    destructor Destroy; override;
+    procedure Run(AThread: TIdContext; ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo);
+  end;
+
+{ TIdHTTPWebBrokerBridgeRequestHandler }
+
+procedure TIdHTTPWebBrokerBridgeRequestHandler.Run(AThread: TIdContext; ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo);
+var
+  LRequest: TIdHTTPAppRequest;
+  LResponse: TIdHTTPAppResponse;
+begin
+  try
+    LRequest := TIdHTTPAppRequest.Create(AThread, ARequestInfo, AResponseInfo);
+    try
+      LResponse := TIdHTTPAppResponse.Create(LRequest, AThread, ARequestInfo, AResponseInfo);
+      try
+        // WebBroker will free it and we cannot change this behaviour
+        AResponseInfo.FreeContentStream := False;
+        HandleRequest(LRequest, LResponse);
+      finally
+        FreeAndNil(LResponse);
+      end;
+    finally
+      FreeAndNil(LRequest);
+    end;
+  except
+    // Let Indy handle this exception
+    raise;
+  end;
+end;
+
+constructor TIdHTTPWebBrokerBridgeRequestHandler.Create(AOwner: TComponent);
+begin
+  inherited;
+  Classes.ApplicationHandleException := HandleException;
+end;
+
+destructor TIdHTTPWebBrokerBridgeRequestHandler.Destroy;
+begin
+  Classes.ApplicationHandleException := nil;
+  inherited;
+end;
+
+class destructor TIdHTTPWebBrokerBridgeRequestHandler.Destroy;
+begin
+  FreeAndNil(FWebRequestHandler);
+end;
+
+function IdHTTPWebBrokerBridgeRequestHandler: TWebRequestHandler;
+begin
+  if not Assigned(TIdHTTPWebBrokerBridgeRequestHandler.FWebRequestHandler) then
+    TIdHTTPWebBrokerBridgeRequestHandler.FWebRequestHandler := TIdHTTPWebBrokerBridgeRequestHandler.Create(nil);
+  Result := TIdHTTPWebBrokerBridgeRequestHandler.FWebRequestHandler;
+end;
+
 procedure TIdHTTPWebBrokerBridge.DoCommandGet(AThread: TIdContext;
+ ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo);
+begin
+  if FWebModuleClass <> nil then
+    // FWebModuleClass, RegisterWebModuleClass supported for backward compatability
+    RunWebModuleClass(AThread, ARequestInfo, AResponseInfo)
+  else
+    TIdHTTPWebBrokerBridgeRequestHandler.FWebRequestHandler.Run(AThread, ARequestInfo, AResponseInfo);
+end;
+
+procedure TIdHTTPWebBrokerBridge.RunWebModuleClass(AThread: TIdContext;
  ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo);
 var
   LRequest: TIdHTTPAppRequest;
@@ -718,10 +817,15 @@ begin
   end;
 end;
 
+// FWebModuleClass, RegisterWebModuleClass supported for backward compatability
+// Instead set WebModuleClass using: WebReq.WebRequestHandler.WebModuleClass := TWebModule1;
 procedure TIdHTTPWebBrokerBridge.RegisterWebModuleClass(AClass: TComponentClass);
 begin
   FWebModuleClass := AClass;
 end;
+
+initialization
+  WebReq.WebRequestHandlerProc := IdHTTPWebBrokerBridgeRequestHandler;
 
 end.
 

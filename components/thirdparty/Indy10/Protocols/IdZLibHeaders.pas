@@ -21,7 +21,7 @@ interface
 {$WRITEABLECONST OFF}
 
 {$UNDEF STATICLOAD_ZLIB}
-{$IFNDEF FPC}
+{$IFDEF DCC}
   {$IFDEF WIN32}
 {
 For Delphi, we use some .obj files.  These .objs were compiled from the ZLib
@@ -34,13 +34,13 @@ the C++ objects are compiled appropriately.
 The only things that still are cdecl are the callback functions.
 }
     {$DEFINE STATICLOAD_ZLIB}
-  {$ELSE}
-    {$IFNDEF UNIX}
-      {$message error alignment!}
-    {$ENDIF}
+	{$ALIGN OFF}
+  {$ENDIF}
+  {$IFDEF WIN64}
+    {$ALIGN ON}
   {$ENDIF}
 {$ELSE}
-  {$packrecords C}
+    {$packrecords C}
 {$ENDIF}
 
 uses
@@ -384,21 +384,17 @@ uses
   SysUtils
   {$IFNDEF STATICLOAD_ZLIB}
   , IdZLibConst
-  {$ENDIF}
-  {$IFDEF KYLIXCOMPAT}
-  , libc
-  , IdGlobal
-  {$ENDIF}
-  {$IFDEF FPC}
+  , IdGlobal  
     {$IFDEF KYLIXCOMPAT}
-    , libc
+  , libc
     {$ENDIF}
-    , IdGlobal
-    , DynLibs // better add DynLibs only for fpc
-  {$ENDIF}
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+    {$IFDEF FPC}
+  , DynLibs // better add DynLibs only for fpc
+    {$ENDIF}	
+    {$IFDEF WIN32_OR_WIN64_OR_WINCE}
   , Windows
-  {$ENDIF};
+    {$ENDIF}
+  {$ENDIF} ;
 
 {$IFDEF STATICLOAD_ZLIB}
 {$L adler32.obj}

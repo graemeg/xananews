@@ -144,7 +144,7 @@ type
     FFieldObject: TObject;
     FCanFreeFieldObject: Boolean;
 
-    function GetFieldSize: LongInt;
+    function GetFieldSize: Int64;
     function GetFieldStream: TStream;
     function GetFieldStrings: TStrings;
     function GetFieldValue: string;
@@ -169,7 +169,7 @@ type
     property FieldObject: TObject read FFieldObject write SetFieldObject;
     property FileName: string read FFileName write SetFileName;
     property FieldValue: string read GetFieldValue write SetFieldValue;
-    property FieldSize: LongInt read GetFieldSize;
+    property FieldSize: Int64 read GetFieldSize;
   end;
 
   TIdFormDataFields = class(TCollection)
@@ -400,27 +400,33 @@ begin
         FInputStream.Position := 0;
       end
       else if (LItem.FieldObject is TStrings) then begin
-        LEncoding := CharsetToEncoding(LItem.Charset);
-        {$IFNDEF DOTNET}
-        try
-        {$ENDIF}
-          FInputStream := TMemoryStream.Create;
-          FFreeInputStream := True;
+        if TStrings(LItem.FieldObject).Count > 0 then begin
+          LEncoding := CharsetToEncoding(LItem.Charset);
+          {$IFNDEF DOTNET}
           try
-            TIdEncoderQuotedPrintable.EncodeString(TStrings(LItem.FieldObject).Text, FInputStream, LEncoding);
-          except
-            FreeAndNil(FInputStream);
-            FFreeInputStream := False;
-            raise;
+          {$ENDIF}
+            FInputStream := TMemoryStream.Create;
+            FFreeInputStream := True;
+            try
+              TIdEncoderQuotedPrintable.EncodeString(TStrings(LItem.FieldObject).Text, FInputStream, LEncoding);
+            except
+              FreeAndNil(FInputStream);
+              FFreeInputStream := False;
+              raise;
+            end;
+            FInputStream.Position := 0;
+          {$IFNDEF DOTNET}
+          finally
+            LEncoding.Free;
           end;
-          FInputStream.Position := 0;
-        {$IFNDEF DOTNET}
-        finally
-          LEncoding.Free;
+         {$ENDIF}
+        end else begin
+          AppendString(FInternalBuffer, CRLF);
+          Inc(FCurrentItem);
         end;
-       {$ENDIF}
       end else
       begin
+        AppendString(FInternalBuffer, CRLF);
         Inc(FCurrentItem);
       end;
     end;
@@ -592,72 +598,68 @@ begin
   Result := Result + CRLF;
 end;
 
-function TIdFormDataField.GetFieldSize: LongInt;
+function TIdFormDataField.GetFieldSize: Int64;
 var
   LEncoding: TIdTextEncoding;
-  LSize: TIdStreamSize;
   LStream: TStream;
 begin
   Result := Length(FormatHeader);
-  if not Assigned(FFieldObject) then begin
-    Exit;
-  end;
-  if FieldObject is TStrings then begin
-    LEncoding := CharsetToEncoding(FCharset);
-    {$IFNDEF DOTNET}
-    try
-    {$ENDIF}
-      LStream := TMemoryStream.Create;
-      try
-        TIdEncoderQuotedPrintable.EncodeString(TStrings(FieldObject).Text, LStream, LEncoding);
-        // the text always includes a CRLF at the end...
-        Result := Result + LStream.Size {+2};
-      finally
-        LStream.Free;
-      end;
-    {$IFNDEF DOTNET}
-    finally
-      LEncoding.Free;
-    end;
-    {$ENDIF}
+  if FieldObject is TStream then begin
+    // need to include an explicit CRLF at the end of the data
+    Result := Result + TStream(FieldObject).Size + 2{CRLF};
   end
-  else if FieldObject is TStream then begin
-    LSize := TStream(FieldObject).Size;
-    if LSize > 0 then begin
-      // need to include an explicit CRLF at the end of the data
-      Result := Result + LSize + 2;
+  else if FieldObject is TStrings then begin
+    if TStrings(FieldObject).Count > 0 then begin
+      LEncoding := CharsetToEncoding(FCharset);
+      {$IFNDEF DOTNET}
+      try
+      {$ENDIF}
+        LStream := TMemoryStream.Create;
+        try
+          TIdEncoderQuotedPrintable.EncodeString(TStrings(FieldObject).Text, LStream, LEncoding);
+          // the encoded text always includes a CRLF at the end...
+          Result := Result + LStream.Size {+2};
+        finally
+          LStream.Free;
+        end;
+      {$IFNDEF DOTNET}
+      finally
+        LEncoding.Free;
+      end;
+      {$ENDIF}
+    end else begin
+      // need to include an explicit CRLF at the end of blank text
+      Result := Result + 2{CRLF};
     end;
+  end
+  else begin
+    // need to include an explicit CRLF at the end of blank data
+    Result := Result + 2{CRLF};
   end;
 end;
 
 function TIdFormDataField.GetFieldStream: TStream;
 begin
-  if (FFieldObject is TStream) then begin
-    Result := TStream(FFieldObject);
-  end else begin
-    Result := nil;
+  if not (FFieldObject is TStream) then begin
     raise EIdInvalidObjectType.Create(RSMFDIvalidObjectType);
   end;
+  Result := TStream(FFieldObject);
 end;
 
 function TIdFormDataField.GetFieldStrings: TStrings;
 begin
-  if (FFieldObject is TStrings) then begin
-    Result := TStrings(FFieldObject);
-  end else begin
-    Result := nil;
+  if not (FFieldObject is TStrings) then begin
     raise EIdInvalidObjectType.Create(RSMFDIvalidObjectType);
   end;
+  Result := TStrings(FFieldObject);
 end;
 
 function TIdFormDataField.GetFieldValue: string;
 begin
-  if (FFieldObject is TStrings) then begin
-    Result := TStrings(FFieldObject).Text;
-  end else begin
-    Result := '';
+  if not (FFieldObject is TStrings) then begin
     raise EIdInvalidObjectType.Create(RSMFDIvalidObjectType);
   end;
+  Result := TStrings(FFieldObject).Text;
 end;
 
 procedure TIdFormDataField.SetCharset(const Value: string);

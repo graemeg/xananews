@@ -1082,8 +1082,8 @@ varies between servers.  A typical line that gets parsed into this is:
     function  GetResponse: string; reintroduce; overload;
     function  SendCmd(const AOut: string; AExpectedResponses: array of String): string; overload;
     function  SendCmd(const ATag, AOut: string; AExpectedResponses: array of String): string; overload;
-    function  ReadLnWait: string;
-    procedure WriteLn(const AOut: string = '');
+    function  ReadLnWait: string; {$IFDEF HAS_DEPRECATED}deprecated;{$ENDIF}
+    procedure WriteLn(const AOut: string = ''); {$IFDEF HAS_DEPRECATED}deprecated;{$ENDIF}
   { IdTCPConnection Commands }
     published
     property  OnAlert: TIdAlertEvent read FOnAlert write FOnAlert;
@@ -1135,14 +1135,16 @@ uses
       {$ENDIF}
     {$ENDIF}
   {$ENDIF}
-  {$IFNDEF DOTNET}
-  IdStreamVCL,
-  {$ENDIF}
   {$IFDEF DOTNET}
     {$IFDEF USE_INLINE}
   System.IO,
     {$ENDIF}
   {$ENDIF} 
+  {$IFDEF DOTNET}
+  IdStreamNET,
+  {$ELSE}
+  IdStreamVCL,
+  {$ENDIF}
   IdCoder,
   IdEMailAddress,
   IdResourceStrings,
@@ -1808,7 +1810,7 @@ begin
   LResponse := TStringList.Create;
   try
     repeat
-      LLine := ReadLnWait;
+      LLine := IOHandler.ReadLnWait;
       LResponse.Add(LLine);
       {CCB: Trap case of server telling you that you have been disconnected, usually because
       you were inactive for too long (get "* BYE idle time too long").  }
@@ -1842,7 +1844,7 @@ begin
               end;
               LStrippedLine := Copy(LStrippedLine, 1, LPos-1);
               //The rest of the reply is on the following line...
-              LSplitLine := ReadLnWait;  //Cannot thrash LLine, need it later
+              LSplitLine := IOHandler.ReadLnWait;  //Cannot thrash LLine, need it later
               LResponse.Add(LSplitLine);
               LStrippedLine := LStrippedLine + LSplitLine;
             end;
@@ -1887,14 +1889,14 @@ begin
   if (AOut <> #0) then begin
     repeat
       //Remove anything that may be unprocessed from a previous (probably failed) command...
-      LDataInBuffer := inherited IOHandler.Readable(MilliSecsToWaitToClearBuffer);
+      LDataInBuffer := IOHandler.Readable(MilliSecsToWaitToClearBuffer);
       if LDataInBuffer then begin
-        inherited IOHandler.ReadLnWait;
+        IOHandler.ReadLnWait;
       end;
     until not LDataInBuffer;
     {CC3: Catch "Connection reset by peer"...}
     try
-      WriteLn(ATag + ' ' + AOut);                     {Do not Localize}
+      IOHandler.WriteLn(ATag + ' ' + AOut);                     {Do not Localize}
     except
       on E: EIdSocketError do begin
         if E.LastError = 10054 then begin
@@ -2672,15 +2674,12 @@ var
   LMsgLiteral: String;
   Ln: Integer;
   LCmd: string;
-  LLength: integer;
+  LLength: TIdStreamSize;
   LHeadersAsString: string;
-  LText: TextFile;
-  LTempPathname: string;
-  LSourceStream: TIdReadFileExclusiveStream;
+  LStream: TStream;
   LHelper: TIdIMAP4WorkHelper;
   LLengthOfAMsgHeaders: integer;
-  LLengthOfFileHeaders: integer;
-  LLine: string;
+  LLengthOfFileHeaders: TIdStreamSize;
 begin
   Result := False;
   CheckConnectionState([csAuthenticated, csSelected]);
@@ -2697,12 +2696,7 @@ begin
       for Ln := 0 to Pred (AMsg.Headers.Count) do begin
         LHeadersAsString := LHeadersAsString + AMsg.Headers[Ln] + EOL;       {Do not Localize}
       end;
-      for Ln := 0 to Pred (AMsg.ExtraHeaders.Count) do begin
-        LHeadersAsString := LHeadersAsString + AMsg.ExtraHeaders[Ln] + EOL;    {Do not Localize}
-      end;
     end else begin
-      {Note AAlternativeHeaders is probably IdSMTP's LastGeneratedHeaders,
-      which would include the ExtraHeaders field.}
       {Use the headers that the user has passed to us...}
       for Ln := 0 to Pred (AAlternativeHeaders.Count) do begin
         LHeadersAsString := LHeadersAsString + AAlternativeHeaders[Ln] + EOL;  {Do not Localize}
@@ -2714,33 +2708,22 @@ begin
     in advance of sending it for the IMAP APPEND command.
     The problem is that there is no way of calculating the size of a
     message without generating the encoded message.  Therefore, write the
-    message out to a temporary file, and then get the size of the file,
+    message out to a temporary sream, and then get the size of the data,
     which with a bit of adjustment, will give us the size of the message
     we will send.
-    The "adjustment" is necessary because SaveToFile generates it's own
+    The "adjustment" is necessary because SaveToStream generates it's own
     headers, which will be different to both the ones in AMsg and
     AAlternativeHeaders, in the Date header, if nothing else.}
-    LTempPathname := MakeTempFilename;
-    AMsg.SaveToFile(LTempPathname);
+
+    LStream := TMemoryStream.Create;
     try
-      LLength := FileSizeByName(LTempPathname);
-      {Get the size of the headers (by opening it as a text file) which
-      SaveToFile may have generated, and will be different from the ones
-      in AMsg...}
-      AssignFile(LText, LTempPathname);
-      try
-        Reset(LText);
-        LLengthOfFileHeaders := 0;
-        while True do begin
-          Readln(LText, LLine);
-          if Length(LLine) = 0 then begin
-            Break;
-          end;
-          LLengthOfFileHeaders := LLengthOfFileHeaders + Length(LLine) + 2;
-        end;
-      finally
-        CloseFile(LText);
-      end;
+      AMsg.SaveToStream(LStream);
+      LStream.Position := 0;
+      LLength := LStream.Size;
+      {Get the size of the headers which SaveToStream may have generated,
+      and will be different from the ones in AMsg...}
+      repeat until Length(ReadLnFromStream(LStream)) = 0;
+      LLengthOfFileHeaders := LStream.Position-2;
       {We have to subtract the size of the headers in the file and
       add back the size of the headers we are to use
       to get the size of the message we are going to send...}
@@ -2764,32 +2747,26 @@ begin
       if LastCmdResult.Code = IMAP_CONT then begin
         LHelper := TIdIMAP4WorkHelper.Create(Self);
         try
-          LSourceStream := TIdReadFileExclusiveStream.Create(LTempPathname);
-          try
-            IOHandler.Write(LHeadersAsString);
-            //Change from CopyFrom to WriteStream (I think) to get OnWork invoked, as we do elsewhere
-            //with LSourceStream.Connection.IOHandler.ReadStream(LUnstrippedStream, ABufferLength);
-            //ReadStream uses OnWork, most other methods dont
-            LSourceStream.Position := LLengthOfFileHeaders;
-            IOHandler.Write(LSourceStream, LSourceStream.Size - LLengthOfFileHeaders);
-          finally
-            FreeAndNil(LSourceStream);
-          end;
+          IOHandler.Write(LHeadersAsString);
+          //Change from CopyFrom to WriteStream (I think) to get OnWork invoked, as we do elsewhere
+          //with LSourceStream.Connection.IOHandler.ReadStream(LUnstrippedStream, ABufferLength);
+          //ReadStream uses OnWork, most other methods dont
+          LStream.Position := LLengthOfFileHeaders;
+          IOHandler.Write(LStream, LStream.Size - LLengthOfFileHeaders);
         finally
           FreeAndNil(LHelper);
         end;
         {WARNING: After we send the message (which should be exactly
         LLength bytes long), we need to send an EXTRA CRLF which is in
-        addition to to count in LLength, because this CRLF terminates the
+        addition to the count in LLength, because this CRLF terminates the
         APPEND command...}
-        WriteLn;
+        IOHandler.WriteLn;
         if GetInternalResponse(LastCmdCounter, [IMAP4Commands[cmdAppend]], False) = IMAP_OK then begin
           Result := True;
         end;
       end;
     finally
-      {Delete the file, don't need it anymore...}
-      SysUtils.DeleteFile(LTempPathname);
+      LStream.Free;
     end;
   end;
 end;
@@ -2984,8 +2961,8 @@ begin
   {CC2: This is one of the few cases where the server can return only "OK completed"
   meaning that the user has no envelopes.}
   CheckConnectionState(csSelected);
-  SendCmd(NewCmdCounter, (IMAP4Commands[cmdFetch] + ' 1:* (' +        {Do not Localize}
-    IMAP4FetchDataItem[fdEnvelope] + ')'), []);                 {Do not Localize}
+  SendCmd(NewCmdCounter, (IMAP4Commands[cmdFetch] + ' 1:* (' +         {Do not Localize}
+    IMAP4FetchDataItem[fdEnvelope] + ')'), [IMAP4Commands[cmdFetch]]); {Do not Localize}
   if LastCmdResult.Code = IMAP_OK then begin
     for Ln := 0 to LastCmdResult.Text.Count-1 do begin
       if ParseLastCmdResult(LastCmdResult.Text[Ln], IMAP4Commands[cmdFetch], [IMAP4FetchDataItem[fdEnvelope]]) then begin
@@ -3015,7 +2992,7 @@ begin
   meaning that the user has no envelopes.}
   CheckConnectionState(csSelected);
   SendCmd(NewCmdCounter, ( IMAP4Commands[cmdUID] + ' ' + IMAP4Commands[cmdFetch] + ' 1:* (' +  {Do not Localize}
-    IMAP4FetchDataItem[fdEnvelope] + ')'), []);                          {Do not Localize}
+    IMAP4FetchDataItem[fdEnvelope] + ')'), [IMAP4Commands[cmdFetch]]);                         {Do not Localize}
   if LastCmdResult.Code = IMAP_OK then begin
     for Ln := 0 to LastCmdResult.Text.Count-1 do begin
       if ParseLastCmdResult(LastCmdResult.Text[Ln], IMAP4Commands[cmdFetch], [IMAP4FetchDataItem[fdEnvelope]]) then begin
@@ -3157,7 +3134,7 @@ begin
   end else begin
     LCmd := LCmd + '[' +IntToStr(LTextPart+1)+ '])';            {Do not Localize}
   end;
-  WriteLn(LCmd);
+  IOHandler.WriteLn(LCmd);
   if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], True) = IMAP_OK then begin
     {For an invalid request (non-existent part or message), NIL is returned as the size...}
     if (LastCmdResult.Text.Count < 1)
@@ -3203,7 +3180,7 @@ begin
     end else begin
       AText := LText;
     end;
-    ReadLnWait();  {Remove last line, ')' or 'UID 1)'}
+    IOHandler.ReadLnWait;  {Remove last line, ')' or 'UID 1)'}
     if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
       Result := True;
     end;
@@ -3228,7 +3205,7 @@ var
 begin
   Result := False;
   CheckConnectionState(csSelected);
-  WriteLn(NewCmdCounter + ' ' + (                       {Do not Localize}
+  IOHandler.WriteLn(NewCmdCounter + ' ' + (                       {Do not Localize}
     IMAP4Commands[cmdFetch] + ' ' + IntToStr ( AMsgNum ) + ' (' +       {Do not Localize}
     IMAP4FetchDataItem[fdBodyStructure] + ')' ));               {Do not Localize}
   if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch]], True) = IMAP_OK then begin
@@ -3549,7 +3526,7 @@ begin
     LCmd := LCmd + IMAP4FetchDataItem[fdBody];
   end;
   LCmd := LCmd + '[' + APartNum + '])';                     {Do not Localize}
-  WriteLn(LCmd);
+  IOHandler.WriteLn(LCmd);
   {CC7: wsBAD added because Ipswitch's IMAP server sometimes returns it here...}
   if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], True) = IMAP_OK then begin
   //  LPartSizeParam := '';                                               {Do not Localize}
@@ -3604,7 +3581,7 @@ begin
           FreeAndNil(LDestStream);
         end;
       end;
-      ReadLnWait;  {Remove last line, ')' or 'UID 1)'}
+      IOHandler.ReadLnWait;  {Remove last line, ')' or 'UID 1)'}
       if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
         Result := True;
       end;
@@ -3632,7 +3609,7 @@ var
 begin
   Result := False;
   CheckConnectionState(csSelected);
-  WriteLn(NewCmdCounter + ' ' + ( IMAP4Commands[cmdUID] + ' ' +                  {Do not Localize}
+  IOHandler.WriteLn(NewCmdCounter + ' ' + ( IMAP4Commands[cmdUID] + ' ' +                  {Do not Localize}
     IMAP4Commands[cmdFetch] + ' ' + AMsgUID + ' (' +                       {Do not Localize}
     IMAP4FetchDataItem[fdBodyStructure] + ')' ));                        {Do not Localize}
   //Note: The normal single-line response may be split for huge bodystructures,
@@ -3662,7 +3639,7 @@ begin
   Result := False;
   IsNumberValid(AMsgNum);
   CheckConnectionState(csSelected);
-  WriteLn(NewCmdCounter + ' ' + (                       {Do not Localize}
+  IOHandler.WriteLn(NewCmdCounter + ' ' + (                       {Do not Localize}
     IMAP4Commands[cmdFetch] + ' ' + IntToStr ( AMsgNum ) + ' (' +       {Do not Localize}
     IMAP4FetchDataItem[fdRFC822Header] + ')'));                 {Do not Localize}
   if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch]], True ) = IMAP_OK then begin
@@ -3679,7 +3656,7 @@ begin
         AMsg.Clear;
         AMsg.Headers.Text := LStr;
         AMsg.ProcessHeaders;
-        LStr := ReadLnWait;  {Remove trailing line after the message, probably a ')' }
+        LStr := IOHandler.ReadLnWait;  {Remove trailing line after the message, probably a ')' }
         ParseLastCmdResultButAppendInfo(LStr);  //There may be a UID or FLAGS in this
         if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch]], False) = IMAP_OK then begin
           Result := True;
@@ -3696,7 +3673,7 @@ begin
   Result := False;
   IsUIDValid(AMsgUID);
   CheckConnectionState(csSelected);
-  WriteLn(NewCmdCounter + ' ' + (IMAP4Commands[cmdUID] + ' ' + IMAP4Commands[cmdFetch] + ' ' +                 {Do not Localize}
+  IOHandler.WriteLn(NewCmdCounter + ' ' + (IMAP4Commands[cmdUID] + ' ' + IMAP4Commands[cmdFetch] + ' ' +                 {Do not Localize}
     AMsgUID + ' (' + IMAP4FetchDataItem[fdRFC822Header] + ')'));                               {Do not Localize}
   if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], True) = IMAP_OK then begin
     if LastCmdResult.Text.Count > 0 then begin
@@ -3712,7 +3689,7 @@ begin
         AMsg.Clear;
         AMsg.Headers.Text := LStr;
         AMsg.ProcessHeaders;
-        LStr := ReadLnWait;  {Remove trailing line after the message, probably a ')' }
+        LStr := IOHandler.ReadLnWait;  {Remove trailing line after the message, probably a ')' }
         ParseLastCmdResultButAppendInfo(LStr);  //There may be a UID or FLAGS in this
         if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
           Result := True;
@@ -3749,7 +3726,7 @@ begin
     IntToStr(AMsgNum) + ' (' + IMAP4FetchDataItem[fdBody] +      {Do not Localize}
     '[' + APartNum + '.' + IMAP4FetchDataItem[fdHeader] + ']' +    {Do not Localize}
     ')';                               {Do not Localize}
-  WriteLn(LCmd);                           {Do not Localize}
+  IOHandler.WriteLn(LCmd);                           {Do not Localize}
   if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], True) = IMAP_OK then begin
     if LastCmdResult.Text.Count > 0 then begin
       if ParseLastCmdResult(LastCmdResult.Text[0], IMAP4Commands[cmdFetch], [])
@@ -3771,7 +3748,7 @@ begin
         end;
       end;
     end;
-    ReadLnWait;
+    IOHandler.ReadLnWait;
     if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
       Result := True;
     end;
@@ -3919,7 +3896,7 @@ begin
     LCmd := LCmd + IMAP4FetchDataItem[fdRFC822];              {Do not Localize}
   end;
   LCmd := LCmd + ')';                             {Do not Localize}
-  WriteLn(LCmd);
+  IOHandler.WriteLn(LCmd);
   if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], True) = IMAP_OK then begin
     //Leave 3rd param as [] because ParseLastCmdResult can get a number of odd
     //replies ( variants on Body[] )...
@@ -3950,7 +3927,7 @@ begin
         FreeAndNil(LDestStream);
       end;
     end;
-    LStr := ReadLnWait;  {Remove trailing line after the message, probably a ')' }
+    LStr := IOHandler.ReadLnWait;  {Remove trailing line after the message, probably a ')' }
     ParseLastCmdResultButAppendInfo(LStr);  //There may be a UID or FLAGS in this
     if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
       AMsg.UID := FLineStruct.UID;
@@ -5604,7 +5581,7 @@ begin
   changes their settings at a time between whn you do it but before the date is formatted.
   }
   DecodeDate(ADate, LYear, LMonth, LDay);
-  Result := IndyFormat('%2.d-%s-%4.d', [LDay, UpperCase(monthnames[LMonth]), LYear]);  {Do not Localize}
+  Result := IndyFormat('%.2d-%s-%.4d', [LDay, UpperCase(monthnames[LMonth]), LYear]);  {Do not Localize}
 end;
 
 procedure TIdIMAP4.StripCRLFs(ASourceStream, ADestStream: TStream);
@@ -5871,62 +5848,63 @@ accept all the above possibilities.
 
 We MUST stop when we find a valid response code, like OK.
 }
-var LLine: String;
+var
+  LLine: String;
   LResponse: TStringList;
   LWord: string;
   LPos: integer;
   LBuf: string;
 begin
-  LResponse := TStringList.Create;
   Result := ''; {Do not Localize}
+  LResponse := TStringList.Create;
   try
     repeat
-    LLine := ReadLnWait;
-    if LLine <> '' then begin  {Do not Localize}
-      {It is not an empty line, add it to our list of stuff received (it is
-      not our job to interpret it)}
-      LResponse.Add(LLine);
-      {See if the last LLine contained a response code like OK or BAD.}
-      LPos := Pos(' ', LLine); {Do not Localize}
-      if LPos <> 0 then begin
-        {There are at least two words on this line...}
-        LWord := Trim(Copy(LLine, 1, LPos-1));
-        LBuf := Trim(Copy(LLine, LPos+1, MaxInt));  {The rest of the line, without the 1st word}
-      end else begin
-        {No space, so this line is a single word.  A bit weird, but it
-        could be just an OK...}
-        LWord := LLine;  {A bit pedantic, but emphasises we have a word, not a line}
-        LBuf := '';  {Do not Localize}
+      LLine := IOHandler.ReadLnWait;
+      if LLine <> '' then begin  {Do not Localize}
+        {It is not an empty line, add it to our list of stuff received (it is
+        not our job to interpret it)}
+        LResponse.Add(LLine);
+        {See if the last LLine contained a response code like OK or BAD.}
+        LPos := Pos(' ', LLine); {Do not Localize}
+        if LPos <> 0 then begin
+          {There are at least two words on this line...}
+          LWord := Trim(Copy(LLine, 1, LPos-1));
+          LBuf := Trim(Copy(LLine, LPos+1, MaxInt));  {The rest of the line, without the 1st word}
+        end else begin
+          {No space, so this line is a single word.  A bit weird, but it
+          could be just an OK...}
+          LWord := LLine;  {A bit pedantic, but emphasises we have a word, not a line}
+          LBuf := '';  {Do not Localize}
+        end;
+        LPos := PosInStrArray(LWord, VALID_TAGGEDREPLIES); {Do not Localize}
+        if LPos > -1 then begin
+          {We got a valid response code as the first word...}
+          Result := LWord;
+          FLastCmdResult.FormattedReply := LResponse;
+          Exit;
+        end;
+        if Length(LBuf) = 0 then begin  {Do not Localize}
+          Continue;  {We hit a line with just one word which is not a valid IMAP response}
+        end;
+        {In all other cases, any valid response should be the second word...}
+        LPos := Pos(' ', LBuf); {Do not Localize}
+        if LPos <> 0 then begin
+          {There are at least three words on this line...}
+          LWord := Trim(Copy(LBuf, 1, LPos-1));
+          LBuf := Trim(Copy(LBuf, LPos+1, MaxInt));  {The rest of the line, without the 1st word}
+        end else begin
+          {No space, so this line is two single words.}
+          LWord := LLine;  {A bit pedantic, but emphasises we have a word, not a line}
+          LBuf := '';  {Do not Localize}
+        end;
+        LPos := PosInStrArray(LWord, VALID_TAGGEDREPLIES); {Do not Localize}
+        if LPos > -1 then begin
+          {We got a valid response code as the second word...}
+          Result := LWord;
+          FLastCmdResult.FormattedReply := LResponse;
+          Exit;
+        end;
       end;
-      LPos := PosInStrArray(LWord, VALID_TAGGEDREPLIES); {Do not Localize}
-      if LPos > -1 then begin
-        {We got a valid response code as the first word...}
-        Result := LWord;
-        FLastCmdResult.FormattedReply := LResponse;
-        Exit;
-      end;
-      if Length(LBuf) = 0 then begin  {Do not Localize}
-        Continue;  {We hit a line with just one word which is not a valid IMAP response}
-      end;
-      {In all other cases, any valid response should be the second word...}
-      LPos := Pos(' ', LBuf); {Do not Localize}
-      if LPos <> 0 then begin
-        {There are at least three words on this line...}
-        LWord := Trim(Copy(LBuf, 1, LPos-1));
-        LBuf := Trim(Copy(LBuf, LPos+1, MaxInt));  {The rest of the line, without the 1st word}
-      end else begin
-        {No space, so this line is two single words.}
-        LWord := LLine;  {A bit pedantic, but emphasises we have a word, not a line}
-        LBuf := '';  {Do not Localize}
-      end;
-      LPos := PosInStrArray(LWord, VALID_TAGGEDREPLIES); {Do not Localize}
-      if LPos > -1 then begin
-        {We got a valid response code as the second word...}
-        Result := LWord;
-        FLastCmdResult.FormattedReply := LResponse;
-        Exit;
-      end;
-    end;
     until False;
   finally
     FreeAndNil(LResponse);

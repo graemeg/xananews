@@ -333,20 +333,31 @@ end;
 
 class function TIdURI.URLDecode(ASrc: string): string;
 var
-  i: Integer;
+  i, j: Integer;
   ESC: string;
   CharCode: Integer;
+  IsUTF8: boolean;
+  {$IFDEF VCL_2009_OR_ABOVE}
+  r: RawByteString;
+  {$ELSE}
+  r : AnsiString;
+  {$ENDIF}
 begin
+  IsUTF8 := false;
   Result := '';    {Do not Localize}
   // S.G. 27/11/2002: Spaces is NOT to be encoded as "+".
   // S.G. 27/11/2002: "+" is a field separator in query parameter, space is...
   // S.G. 27/11/2002: well, a space
   // ASrc := StringReplace(ASrc, '+', ' ', [rfReplaceAll]);  {do not localize}
   i := 1;
+  j := 1;
+  SetLength(r, Length(ASrc));
   while i <= Length(ASrc) do begin
     if ASrc[i] <> '%' then begin  {do not localize}
       Result := Result + ASrc[i]; // Copy the char
+      r[j] := AnsiChar(Ord(ASrc[i]));
       Inc(i); // Then skip it
+      Inc(j);
     end else begin
       Inc(i); // skip the % char
       if not CharIsInSet(ASrc, i, 'uU') then begin  {do not localize}
@@ -356,6 +367,9 @@ begin
         try
           CharCode := IndyStrToInt('$' + ESC);  {do not localize}
           Result := Result + Char(CharCode);
+          r[j] := AnsiChar(CharCode);
+          Inc(j);
+          IsUTF8 := true;
         except end;
       end else
       begin
@@ -369,7 +383,7 @@ begin
         Inc(i, 5); // Then skip it.
         try
           CharCode := IndyStrToInt('$' + ESC);  {do not localize}
-          Result := Result + TIdUnicodeChar(CharCode);
+          Result := Result +  TIdWideChar(CharCode);
         except end;
       end;
     end;

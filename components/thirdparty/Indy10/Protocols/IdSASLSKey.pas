@@ -65,7 +65,7 @@ type
 implementation
 
 uses
-  IdBaseComponent, IdGlobal, IdGlobalProtocols, IdOTPCalculator,  IdUserPassProvider, SysUtils;
+  IdBaseComponent, IdFIPS, IdGlobal, IdGlobalProtocols, IdOTPCalculator,  IdUserPassProvider, SysUtils;
 
 const
   SKEYSERVICENAME = 'SKEY'; {do not localize}

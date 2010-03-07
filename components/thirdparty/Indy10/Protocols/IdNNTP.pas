@@ -174,6 +174,7 @@ type
      ALineCount : Integer; AExtraData : String; var VCanContinue : Boolean) of object;
   TIdEventNewNewsList = procedure(AMsgID: string; var ACanContinue: Boolean) of object;
   TIdEventXHDREntry = procedure(AHeader : String; AMsg, AHeaderData : String; var ACanContinue: Boolean) of object;
+
   //TODO: Add a TranslateRFC822 Marker - probably need to do it in TCPConnection and modify Capture
   // Better yet, make capture an object
   TIdNNTP = class(TIdMessageClient)
@@ -1216,12 +1217,18 @@ var
   i: Integer;
 begin
   FCapabilities.Clear;
-  if SendCmd('LIST EXTENSIONS') in [202, 215] then  {do not localize}
+  // try CAPABILITIES first, as it is a standard command introduced in RFC 3977
+  if SendCmd('CAPABILITIES') = 101 then {do not localize}
   begin
-    IOHandler.Capture(FCapabilities,'.');
+    IOHandler.Capture(FCapabilities, '.'); {do not localize}
+  end
+  // fall back to the previous non-standard approach
+  else if SendCmd('LIST EXTENSIONS') in [202, 215] then  {do not localize}
+  begin
+    IOHandler.Capture(FCapabilities, '.'); {do not localize}
   end;
   //flatten everything out for easy processing
-  for i := 0 to FCapabilities.Count -1 do
+  for i := 0 to FCapabilities.Count-1 do
   begin
     FCapabilities[i] := Trim(UpperCase(FCapabilities[i]));
   end;

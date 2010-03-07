@@ -5,24 +5,17 @@ interface
 
 uses
   Classes,
+  IdFIPS,
   IdGlobal, IdHash,
   {$IFDEF DOTNET}
   System.Security.Cryptography,
   IdException
   {$ELSE}
-  IdStreamVCL,
-  IdSSLOpenSSLHeaders
+  IdStreamVCL
   {$ENDIF}
   ;
 
 type
-  {$IFDEF DOTNET}
-  TIdHashInst = System.Security.Cryptography.HashAlgorithm;
-  TIdHashIntCtx =  TIdHashInst;
-  {$ELSE}
-  TIdHashInst = PEVP_MD;
-  TIdHashIntCtx = EVP_MD_CTX;
-  {$ENDIF}
   TIdHashInt = class(TIdHash)
   protected
     function HashToHex(const AHash: TIdBytes): String; override;

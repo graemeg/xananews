@@ -77,6 +77,7 @@ type
 implementation
 
 uses
+  IdFIPS,
   IdGlobal,
   IdGlobalProtocols,
   IdHMACMD5,

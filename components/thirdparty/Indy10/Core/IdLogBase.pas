@@ -141,7 +141,7 @@ begin
     if LogTime then begin
       LMsg := DateTimeToStr(Now);
     end;
-    s := BytesToString(ABuffer, Indy8BitEncoding);
+    s := BytesToStringRaw(ABuffer);
     if FReplaceCRLF then begin
       s := ReplaceCR(S);
     end;
@@ -165,7 +165,7 @@ begin
     if LogTime then begin
       LMsg := DateTimeToStr(Now);
     end;
-    s := BytesToString(ABuffer, Indy8BitEncoding);
+    s := BytesToStringRaw(ABuffer);
     if FReplaceCRLF then begin
       s := ReplaceCR(S);
     end;

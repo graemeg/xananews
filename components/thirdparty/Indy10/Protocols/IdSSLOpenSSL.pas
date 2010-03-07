@@ -252,7 +252,7 @@ type
 
   TEVP_MD = record
     Length: TIdC_UINT;
-    MD: Array[0..OPENSSL_EVP_MAX_MD_SIZE-1] of AnsiChar;
+    MD: Array[0..EVP_MAX_MD_SIZE-1] of AnsiChar;
   end;
 
   TByteArray = record
@@ -267,6 +267,7 @@ type
     const AsslSocket: PSSL;
     const AWhere, Aret: TIdC_INT; const AType, AMsg : String ) of object;
   TPasswordEvent  = procedure(var Password: AnsiString) of object;
+  TPasswordEventEx = procedure( ASender : TObject; var VPassword: AnsiString; const AIsWrite : Boolean) of object;
   TVerifyPeerEvent  = function(Certificate: TIdX509; AOk: Boolean; ADepth: Integer): Boolean of object;
   TIOHandlerNotify = procedure(ASender: TIdSSLIOHandlerSocketOpenSSL) of object;
 
@@ -308,7 +309,7 @@ type
     fMethod: TIdSSLVersion;
     fSSLVersions : TIdSSLVersions;
     fMode: TIdSSLMode;
-    fsRootCertFile, fsCertFile, fsKeyFile: AnsiString;
+    fsRootCertFile, fsCertFile, fsKeyFile: String;
     fVerifyDepth: Integer;
     fVerifyMode: TIdSSLVerifyModeSet;
 //    fVerifyFile: String;
@@ -341,9 +342,9 @@ type
     property SSLVersions : TIdSSLVersions read fSSLVersions write fSSLVersions;
     property Method: TIdSSLVersion read fMethod write fMethod;
     property Mode: TIdSSLMode read fMode write fMode;
-    property RootCertFile: AnsiString read fsRootCertFile write fsRootCertFile;
-    property CertFile: AnsiString read fsCertFile write fsCertFile;
-    property KeyFile: AnsiString read fsKeyFile write fsKeyFile;
+    property RootCertFile: String read fsRootCertFile write fsRootCertFile;
+    property CertFile: String read fsCertFile write fsCertFile;
+    property KeyFile: String read fsKeyFile write fsKeyFile;
 //    property VerifyMode: TIdSSLVerifyModeSet read GetVerifyMode write SetVerifyMode;
     property VerifyMode: TIdSSLVerifyModeSet read fVerifyMode write fVerifyMode;
     property VerifyDepth: Integer read fVerifyDepth write fVerifyDepth;
@@ -383,6 +384,7 @@ type
     fOnStatusInfo: TCallbackEvent;
     FOnStatusInfoEx : TCallbackExEvent;
     fOnGetPassword: TPasswordEvent;
+    fOnGetPasswordEx : TPasswordEventEx;
     fOnVerifyPeer: TVerifyPeerEvent;
     fSSLLayerClosed: Boolean;
     fOnBeforeConnect: TIOHandlerNotify;
@@ -395,6 +397,8 @@ type
     procedure DoStatusInfoEx(const AsslSocket: PSSL;
     const AWhere, Aret: TIdC_INT; const AWhereStr, ARetStr : String );
     procedure DoGetPassword(var Password: AnsiString); virtual;
+    procedure DoGetPasswordEx(var VPassword: AnsiString; const AIsWrite : Boolean); virtual;
+
     function DoVerifyPeer(Certificate: TIdX509; AOk: Boolean; ADepth: Integer): Boolean; virtual;
     function RecvEnc(var VBuffer: TIdBytes): Integer; override;
     function SendEnc(const ABuffer: TIdBytes; const AOffset, ALength: Integer): Integer; override;
@@ -420,6 +424,7 @@ type
     property OnStatusInfo: TCallbackEvent read fOnStatusInfo write fOnStatusInfo;
     property OnStatusInfoEx: TCallbackExEvent read fOnStatusInfoEx write fOnStatusInfoEx;
     property OnGetPassword: TPasswordEvent read fOnGetPassword write fOnGetPassword;
+    property OnGetPasswordEx : TPasswordEventEx read fOnGetPasswordEx write fOnGetPasswordEx;
     property OnVerifyPeer: TVerifyPeerEvent read fOnVerifyPeer write fOnVerifyPeer;
   end;
 
@@ -430,6 +435,7 @@ type
     fOnStatusInfo: TCallbackEvent;
     FOnStatusInfoEx : TCallbackExEvent;
     fOnGetPassword: TPasswordEvent;
+    fOnGetPasswordEx : TPasswordEventEx;
     fOnVerifyPeer: TVerifyPeerEvent;
     //
     //procedure CreateSSLContext(axMode: TIdSSLMode);
@@ -439,6 +445,8 @@ type
     procedure DoStatusInfoEx(const AsslSocket: PSSL;
       const AWhere, Aret: TIdC_INT; const AWhereStr, ARetStr : String );
     procedure DoGetPassword(var Password: AnsiString); virtual;
+//TPasswordEventEx
+    procedure DoGetPasswordEx(var VPassword: AnsiString; const AIsWrite : Boolean); virtual;
     function DoVerifyPeer(Certificate: TIdX509; AOk: Boolean; ADepth: Integer): Boolean; virtual;
     procedure InitComponent; override;
   public
@@ -460,6 +468,7 @@ type
     property OnStatusInfo: TCallbackEvent read fOnStatusInfo write fOnStatusInfo;
     property OnStatusInfoEx: TCallbackExEvent read fOnStatusInfoEx write fOnStatusInfoEx;
     property OnGetPassword: TPasswordEvent read fOnGetPassword write fOnGetPassword;
+    property OnGetPasswordEx : TPasswordEventEx read fOnGetPasswordEx write fOnGetPasswordEx;
     property OnVerifyPeer: TVerifyPeerEvent read fOnVerifyPeer write fOnVerifyPeer;
   end;
 
@@ -611,6 +620,12 @@ procedure UnLoadOpenSSLLibrary;
 implementation
 
 uses
+  {$IFDEF USE_VCL_POSIX}
+  PosixGlue,
+  PosixSysTime,
+  PosixTime,
+  {$ENDIF}
+  IdFIPS,
   IdResourceStringsCore,
   IdResourceStringsProtocols,
   IdStack,
@@ -628,27 +643,112 @@ var
   LockVerifyCB: TIdCriticalSection = nil;
   CallbackLockList: TThreadList = nil;
 
+function IndySSL_CTX_use_PrivateKey_file(ctx : PSSL_CTX; AFileName : String; AType : Integer) : Boolean;
+var
+  LM : TMemoryStream;
+  B : PBIO;
+  LKey : PEVP_PKEY;
+begin
+  Result := False;
+  LM := TMemoryStream.Create;
+  try
+    LM.LoadFromFile(AFileName);
+    B :=  BIO_new_mem_buf(LM.Memory,LM.Size);
+    try
+      case AType of
+        SSL_FILETYPE_PEM :
+        begin
+          LKey := PEM_read_bio_PrivateKey(b,nil,CTX^.default_passwd_callback,
+            CTX^.default_passwd_callback_userdata);
+        end;
+        SSL_FILETYPE_ASN1 :
+        begin
+          LKey := d2i_PrivateKey_bio(b,nil);
+        end;
+      else
+        raise Exception.Create('Invalid Key');
+      end;
+      if LKey = nil then begin
+        EIdOSSLLoadingKeyError.RaiseException(RSSSLLoadingKeyError);
+      end;
+      result := SSL_CTX_use_PrivateKey(ctx,LKey) > 0;
+    finally
+      BIO_free(B);
+    end;
+  finally
+    FreeAndNil(LM);
+  end;
+end;
+
+function IndySSL_CTX_use_certificate_file(ctx : PSSL_CTX; AFileName : String; AType : Integer) : Boolean;
+var
+  LM : TMemoryStream;
+  B : PBIO;
+  LX : PX509;
+begin
+  Result := False;
+  LM := TMemoryStream.Create;
+  try
+    LM.LoadFromFile(AFileName);
+    B :=  BIO_new_mem_buf(LM.Memory,LM.Size);
+    try
+      case AType of
+        SSL_FILETYPE_ASN1 :
+        begin
+          LX := d2i_X509_bio(B,nil);
+        end;
+        SSL_FILETYPE_PEM :
+        begin
+          LX := PEM_read_bio_X509(B,nil,CTX^.default_passwd_callback,
+            CTX^.default_passwd_callback_userdata );
+        end
+      else
+        raise Exception.Create('Invalid Key');
+      end;
+      Result := SSL_CTX_use_certificate(ctx,LX) > 0;
+    finally
+      BIO_free(B);
+    end;
+  finally
+    FreeAndNil(LM);
+  end;
+end;
+
 function PasswordCallback(buf: PAnsiChar; size: TIdC_INT; rwflag: TIdC_INT; userdata: Pointer): TIdC_INT; cdecl;
 var
   Password: AnsiString;
   IdSSLContext: TIdSSLContext;
+  LErr : Integer;
 begin
-  LockPassCB.Enter;
+  //Preserve last eror just in case OpenSSL is using it and we do something that
+  //clobers it.  CYA.
+  LErr := GStack.WSGetLastError;
   try
-    Password := '';    {Do not Localize}
-    IdSSLContext := TIdSSLContext(userdata);
-    if (IdSSLContext.Parent is TIdSSLIOHandlerSocketOpenSSL) then begin
-      TIdSSLIOHandlerSocketOpenSSL(IdSSLContext.Parent).DoGetPassword(Password);
+    LockPassCB.Enter;
+    try
+      Password := '';    {Do not Localize}
+      IdSSLContext := TIdSSLContext(userdata);
+      if (IdSSLContext.Parent is TIdSSLIOHandlerSocketOpenSSL) then begin
+        TIdSSLIOHandlerSocketOpenSSL(IdSSLContext.Parent).DoGetPasswordEx(Password,rwflag > 0);
+        if Password = '' then begin
+          TIdSSLIOHandlerSocketOpenSSL(IdSSLContext.Parent).DoGetPassword(Password);
+        end;
+      end;
+      if (IdSSLContext.Parent is TIdServerIOHandlerSSLOpenSSL) then begin
+        TIdServerIOHandlerSSLOpenSSL(IdSSLContext.Parent).DoGetPasswordEx(Password,rwflag > 0);
+        if Password = '' then begin
+          TIdServerIOHandlerSSLOpenSSL(IdSSLContext.Parent).DoGetPassword(Password);
+        end;
+      end;
+      FillChar(buf^, size, 0);
+      StrPLCopy(buf, Password, size);
+      Result := Length(Password);
+      buf[size-1] := #0; // RLebeau: truncate the password if needed
+    finally
+      LockPassCB.Leave;
     end;
-    if (IdSSLContext.Parent is TIdServerIOHandlerSSLOpenSSL) then begin
-      TIdServerIOHandlerSSLOpenSSL(IdSSLContext.Parent).DoGetPassword(Password);
-    end;
-    FillChar(buf^, size, 0);
-    StrPLCopy(buf, Password, size);
-    Result := Length(Password);
-    buf[size-1] := #0; // RLebeau: truncate the password if needed
   finally
-    LockPassCB.Leave;
+     GStack.WSSetLastError(LErr);
   end;
 end;
 
@@ -656,27 +756,27 @@ procedure GetStateVars(const sslSocket: PSSL; AWhere, Aret: TIdC_INT; var VTypeS
   {$IFDEF USEINLINE}inline;{$ENDIF}
 begin
   case AWhere of
-    OPENSSL_SSL_CB_ALERT :
+    SSL_CB_ALERT :
     begin
-      VTypeStr := IndyFormat( RSOSSLAlert,[IdSslAlertTypeStringLong(Aret)]);
-      VMsg := String(IdSslAlertTypeStringLong(Aret));
+      VTypeStr := IndyFormat( RSOSSLAlert,[SSL_alert_type_string_long(Aret)]);
+      VMsg := String(SSL_alert_type_string_long(Aret));
     end;
-    OPENSSL_SSL_CB_READ_ALERT :
+    SSL_CB_READ_ALERT :
     begin
-      VTypeStr := IndyFormat(RSOSSLReadAlert,[IdSslAlertTypeStringLong(Aret)]);
-      VMsg := String(IdSslAlertDescStringLong(Aret));
+      VTypeStr := IndyFormat(RSOSSLReadAlert,[SSL_alert_type_string_long(Aret)]);
+      VMsg := String( SSL_alert_desc_string_long(Aret));
     end;
-    OPENSSL_SSL_CB_WRITE_ALERT :
+    SSL_CB_WRITE_ALERT :
     begin
-      VTypeStr := IndyFormat(RSOSSLWriteAlert,[IdSslAlertTypeStringLong(Aret)]);
-      VMsg := String( IdSslAlertDescStringLong(Aret));
+      VTypeStr := IndyFormat(RSOSSLWriteAlert,[SSL_alert_type_string_long(Aret)]);
+      VMsg := String( SSL_alert_desc_string_long(Aret));
     end;
-    OPENSSL_SSL_CB_ACCEPT_LOOP :
+    SSL_CB_ACCEPT_LOOP :
     begin
       VTypeStr :=  RSOSSLAcceptLoop;
-      VMsg := String( IdSslStateStringLong(sslSocket));
+      VMsg := String( SSL_state_string_long(sslSocket));
     end;
-    OPENSSL_SSL_CB_ACCEPT_EXIT :
+    SSL_CB_ACCEPT_EXIT :
     begin
       if ARet < 0  then begin
         VTypeStr := RSOSSLAcceptError;
@@ -687,14 +787,14 @@ begin
           VTypeStr := RSOSSLAcceptExit;
         end;
       end;
-      VMsg := String( IdSslStateStringLong(sslSocket) );
+      VMsg := String( SSL_state_string_long(sslSocket) );
     end;
-    OPENSSL_SSL_CB_CONNECT_LOOP :
+    SSL_CB_CONNECT_LOOP :
     begin
       VTypeStr := RSOSSLConnectLoop;
-      VMsg := String( IdSslStateStringLong(sslSocket) );
+      VMsg := String( SSL_state_string_long(sslSocket) );
     end;
-  OPENSSL_SSL_CB_CONNECT_EXIT :
+  SSL_CB_CONNECT_EXIT :
     begin
       if ARet < 0  then begin
         VTypeStr := RSOSSLConnectError;
@@ -705,45 +805,45 @@ begin
           VTypeStr := RSOSSLConnectExit;
         end;
       end;
-      VMsg := String( IdSslStateStringLong(sslSocket) );
+      VMsg := String( SSL_state_string_long(sslSocket) );
     end;
-  OPENSSL_SSL_CB_HANDSHAKE_START :
+  SSL_CB_HANDSHAKE_START :
     begin
       VTypeStr :=  RSOSSLHandshakeStart;
-      VMsg := String( IdSslStateStringLong(sslSocket) );
+      VMsg := String( SSL_state_string_long(sslSocket) );
     end;
-  OPENSSL_SSL_CB_HANDSHAKE_DONE :
+  SSL_CB_HANDSHAKE_DONE :
     begin
       VTypeStr := RSOSSLHandshakeDone;
-      VMsg := String( IdSslStateStringLong(sslSocket) );
+      VMsg := String( SSL_state_string_long(sslSocket) );
     end;
   end;
 {var LW : TIdC_INT;
 begin
   VMsg := '';
-  LW := Awhere and (not OPENSSL_SSL_ST_MASK);
-  if (LW and OPENSSL_SSL_ST_CONNECT) > 0 then begin
+  LW := Awhere and (not SSL_ST_MASK);
+  if (LW and SSL_ST_CONNECT) > 0 then begin
     VWhereStr :=   'SSL_connect:';
   end else begin
-    if (LW and OPENSSL_SSL_ST_ACCEPT) > 0 then begin
+    if (LW and SSL_ST_ACCEPT) > 0 then begin
       VWhereStr := ' SSL_accept:';
     end else begin
       VWhereStr := '  undefined:';
     end;
   end;
 //  IdSslStateStringLong
-  if (Awhere and OPENSSL_SSL_CB_LOOP) > 0 then begin
+  if (Awhere and SSL_CB_LOOP) > 0 then begin
        VMsg := IdSslStateStringLong(sslSocket);
   end else begin
-    if (Awhere and OPENSSL_SSL_CB_ALERT) > 0 then begin
-       if (Awhere and OPENSSL_SSL_CB_READ > 0) then begin
+    if (Awhere and SSL_CB_ALERT) > 0 then begin
+       if (Awhere and SSL_CB_READ > 0) then begin
          VWhereStr := VWhereStr + ' read:'+ IdSslAlertTypeStringLong(Aret);
        end else begin
          VWhereStr := VWhereStr + 'write:'+ IdSslAlertTypeStringLong(Aret);
        end;;
        VMsg := IdSslAlertDescStringLong(Aret);
     end else begin
-       if (Awhere and OPENSSL_SSL_CB_EXIT) > 0 then begin
+       if (Awhere and SSL_CB_EXIT) > 0 then begin
          if ARet = 0 then begin
 
           VWhereStr := VWhereStr +'failed';
@@ -779,8 +879,9 @@ JPM.
   try
     LockInfoCB.Enter;
     try
-      IdSSLSocket := TIdSSLSocket(IdSslGetAppData(sslSocket));
-      StatusStr := IndyFormat(RSOSSLStatusString, [StrPas(IdSslStateStringLong(sslSocket))]);
+      IdSSLSocket := TIdSSLSocket(
+      SSL_get_app_data(sslSocket));
+      StatusStr := IndyFormat(RSOSSLStatusString, [StrPas(SSL_state_string_long(sslSocket))]);
       if (IdSSLSocket.fParent is TIdSSLIOHandlerSocketOpenSSL) then begin
         TIdSSLIOHandlerSocketOpenSSL(IdSSLSocket.fParent).DoStatusInfo(StatusStr);
 //GetStateVars
@@ -857,7 +958,7 @@ begin
     CallbackLockList.UnlockList;
   end;
   Assert(Lock<>nil);
-  if (mode and OPENSSL_CRYPTO_LOCK) = OPENSSL_CRYPTO_LOCK then begin
+  if (mode and CRYPTO_LOCK) = CRYPTO_LOCK then begin
     Lock.Acquire;
   end else begin
     Lock.Release;
@@ -871,7 +972,7 @@ var
 begin
   with CallbackLockList.LockList do
   try
-    cnt := IdSslCryptoNumLocks;
+    cnt := _CRYPTO_num_locks;
     for i := 0 to cnt-1 do
     begin
       Lock := TIdCriticalSection.Create;
@@ -920,7 +1021,7 @@ procedure IdSslCryptoMallocInit;
 var
  r: Integer;
 begin
- r := IdSslCryptoSetMemFunctions(@IdMalloc, @IdRealloc, @IdFree);
+ r := CRYPTO_set_mem_functions(@IdMalloc, @IdRealloc, @IdFree);
  Assert(r <> 0);
 end;
 {$ENDIF}
@@ -945,13 +1046,13 @@ begin
     IdSslCryptoMallocInit;
     {$ENDIF}
     //required eg to encrypt a private key when writing
-    IdSslAddAllCiphers;
-    IdSslAddAllDigests;
+    OpenSSL_add_all_ciphers;
+    OpenSSL_add_all_digests;
     InitializeRandom;
     // IdSslRandScreen;
-    IdSslLoadErrorStrings;
+    SSL_load_error_strings;
     // Successful loading if true
-    Result := IdSslAddSslAlgorithms > 0;
+    Result := SSLeay_add_ssl_algorithms > 0;
     if not Result then 
     begin
       Exit;
@@ -964,9 +1065,9 @@ begin
     // Handle internal OpenSSL locking
     CallbackLockList := TThreadList.Create;
     PrepareOpenSSLLocking;
-    IdSslSetLockingCallback(SslLockingCallback);
+    CRYPTO_set_locking_callback(SslLockingCallback);
     {$IFNDEF WIN32_OR_WIN64}
-    IdSslSetIdCallback(_GetThreadID);
+    CRYPTO_set_id_callback(_GetThreadID);
     {$ENDIF}
     SSLIsLoaded.Value := True;
     Result := True;
@@ -986,7 +1087,7 @@ begin
   begin
     Exit;
   end;
-  IdSslSetLockingCallback(nil);
+  CRYPTO_set_locking_callback(nil);
   IdSSLOpenSSLHeaders.Unload;
   FreeAndNil(LockInfoCB);
   FreeAndNil(LockPassCB);
@@ -1021,7 +1122,7 @@ var
   tz_m  : Integer;
 begin
   Result := 0;
-  if IdSslUCTTimeDecode(UCTTime, year, month, day, hour, min, sec, tz_h, tz_m) > 0 then begin
+  if UTC_Time_Decode(UCTTime, year, month, day, hour, min, sec, tz_h, tz_m) > 0 then begin
     Result := EncodeDate(year, month, day) + EncodeTime(hour, min, sec, 0);
     AddMins(Result, tz_m);
     AddHrs(Result, tz_h);
@@ -1032,18 +1133,15 @@ end;
 function TranslateInternalVerifyToSSL(Mode: TIdSSLVerifyModeSet): Integer;
 {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-  Result := OPENSSL_SSL_VERIFY_NONE;
-  if sslvrfPeer in Mode then 
-  begin
-    Result := Result or OPENSSL_SSL_VERIFY_PEER;
+  Result := SSL_VERIFY_NONE;
+  if sslvrfPeer in Mode then begin
+    Result := Result or SSL_VERIFY_PEER;
   end;
-  if sslvrfFailIfNoPeerCert in Mode then
-  begin
-    Result:= Result or OPENSSL_SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+  if sslvrfFailIfNoPeerCert in Mode then begin
+    Result:= Result or SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
   end;
-  if sslvrfClientOnce in Mode then
-  begin 
-    Result:= Result or OPENSSL_SSL_VERIFY_CLIENT_ONCE;
+  if sslvrfClientOnce in Mode then begin
+    Result:= Result or SSL_VERIFY_CLIENT_ONCE;
   end;
 end;
 
@@ -1102,21 +1200,21 @@ begin
   try
     VerifiedOK := True;
     try
-      hSSL := IdSslX509StoreCtxGetAppData(ctx);
+      hSSL := X509_STORE_CTX_get_app_data(ctx);
       if hSSL = nil then begin
         Result := Ok;
         Exit;
       end;
-      hcert := IdSslX509StoreCtxGetCurrentCert(ctx);
+      hcert := X509_STORE_CTX_get_current_cert(ctx);
       Certificate := TIdX509.Create(hcert, False); // the certificate is owned by the store
       try
-        IdSSLSocket := TIdSSLSocket(IdSslGetAppData(hSSL));
-        IdSslX509StoreCtxGetError(ctx);
-        Depth := IdSslX509StoreCtxGetErrorDepth(ctx);
+        IdSSLSocket := TIdSSLSocket(SSL_get_app_data(hSSL));
+        X509_STORE_CTX_get_error(ctx);
+        Depth := X509_STORE_CTX_get_error_depth(ctx);
         if not ((Ok > 0) and (IdSSLSocket.fSSLContext.VerifyDepth >= Depth)) then begin
           Ok := 0;
-          {if Error = OPENSSL_X509_V_OK then begin
-            Error := OPENSSL_X509_V_ERR_CERT_CHAIN_TOO_LONG;
+          {if Error = X509_V_OK then begin
+            Error := X509_V_ERR_CERT_CHAIN_TOO_LONG;
           end;}
         end;
         LOk := False;
@@ -1238,10 +1336,9 @@ begin
   with fSSLContext do begin
     Parent := Self;
     {$IFDEF STRING_IS_UNICODE}
-    // explicit convert to Ansi
-    RootCertFile := AnsiString(SSLOptions.RootCertFile);
-    CertFile := AnsiString(SSLOptions.CertFile);
-    KeyFile := AnsiString(SSLOptions.KeyFile);
+    RootCertFile := SSLOptions.RootCertFile;
+    CertFile := SSLOptions.CertFile;
+    KeyFile := SSLOptions.KeyFile;
     {$ELSE}
     RootCertFile := SSLOptions.RootCertFile;
     CertFile := SSLOptions.CertFile;
@@ -1306,6 +1403,14 @@ procedure TIdServerIOHandlerSSLOpenSSL.DoGetPassword(var Password: AnsiString);
 begin
   if Assigned(fOnGetPassword) then  begin
     fOnGetPassword(Password);
+  end;
+end;
+
+procedure TIdServerIOHandlerSSLOpenSSL.DoGetPasswordEx(
+  var VPassword: AnsiString; const AIsWrite: Boolean);
+begin
+  if Assigned(fOnGetPasswordEx) then begin
+    fOnGetPasswordEx(Self,VPassword,AIsWrite);
   end;
 end;
 
@@ -1504,9 +1609,9 @@ begin
       Parent := Self;
       {$IFDEF STRING_IS_UNICODE}
       // explicit convert to Ansi
-      RootCertFile := AnsiString(SSLOptions.RootCertFile);
-      CertFile := AnsiString(SSLOptions.CertFile);
-      KeyFile := AnsiString(SSLOptions.KeyFile);
+      RootCertFile := SSLOptions.RootCertFile;
+      CertFile := SSLOptions.CertFile;
+      KeyFile := SSLOptions.KeyFile;
       {$ELSE}
       RootCertFile := SSLOptions.RootCertFile;
       CertFile := SSLOptions.CertFile;
@@ -1523,7 +1628,6 @@ begin
       fMethod :=  SSLOptions.Method;
       fSSLVersions := SSLOptions.SSLVersions;
       fMode := SSLOptions.Mode;
-
       fSSLContext.InitContext(sslCtxClient);
     end;
   end;
@@ -1550,6 +1654,14 @@ procedure TIdSSLIOHandlerSocketOpenSSL.DoGetPassword(var Password: AnsiString);
 begin
   if Assigned(fOnGetPassword) then begin
     fOnGetPassword(Password);
+  end;
+end;
+
+procedure TIdSSLIOHandlerSocketOpenSSL.DoGetPasswordEx(var VPassword: AnsiString;
+  const AIsWrite: Boolean);
+begin
+  if Assigned(fOnGetPasswordEx) then begin
+    fOnGetPasswordEx(Self,VPassword,AIsWrite);
   end;
 end;
 
@@ -1614,17 +1726,14 @@ function TIdSSLIOHandlerSocketOpenSSL.CheckForError(ALastResult: Integer): Integ
 begin
   if PassThrough then begin
     Result := inherited CheckForError(ALastResult);
-  end else
-  begin
+  end else begin
     Result := fSSLSocket.GetSSLError(ALastResult);
-    if Result = OPENSSL_SSL_ERROR_NONE then
-    begin
+    if Result = SSL_ERROR_NONE then begin
       Result := 0;
       Exit;
     end;
-    if Result = OPENSSL_SSL_ERROR_SYSCALL then
-    begin
-      Result := inherited CheckForError(Id_SOCKET_ERROR);
+    if Result = SSL_ERROR_SYSCALL then begin
+      Result := inherited CheckForError(Integer(Id_SOCKET_ERROR));
       Exit;
     end;
     EIdOpenSSLAPISSLError.RaiseException(fSSLSocket.fSSL, Result, '');
@@ -1664,7 +1773,7 @@ end;
 procedure TIdSSLContext.DestroyContext;
 begin
   if fContext <> nil then begin
-    IdSslCtxFree(fContext);
+    SSL_CTX_free(fContext);
     fContext := nil;
   end;
 end;
@@ -1688,27 +1797,27 @@ begin
   // get SSL method function (SSL2, SSL23, SSL3, TLS)
   SSLMethod := SetSSLMethod;
   // create new SSL context
-  fContext := IdSslCtxNew(SSLMethod);
+  fContext := SSL_CTX_new(SSLMethod);
   if fContext = nil then begin
     raise EIdOSSLCreatingContextError.Create(RSSSLCreatingContextError);
   end;
   //set SSL Versions we will use
   if not (sslvSSLv2 in SSLVersions) then begin
-    IdSslCtxSetOptions(fContext, OPENSSL_SSL_OP_NO_SSLv2);
+    SSL_CTX_set_options(fContext, SSL_OP_NO_SSLv2);
   end;
   if not (sslvSSLv3 in SSLVersions) then begin
-    IdSslCtxSetOptions(fContext,OPENSSL_SSL_OP_NO_SSLv3);
+    SSL_CTX_set_options(fContext, SSL_OP_NO_SSLv3);
   end;
   if not (sslvTLSv1 in SSLVersions) then begin
-    IdSslCtxSetOptions(fContext,OPENSSL_SSL_OP_NO_TLSv1);
+    SSL_CTX_set_options(fContext, SSL_OP_NO_TLSv1);
   end;
-  IdSslCtxSetMode(fContext,OPENSSL_SSL_MODE_AUTO_RETRY);
+  SSL_CTX_set_mode(fContext, SSL_MODE_AUTO_RETRY);
   // assign a password lookup routine
 //  if PasswordRoutineOn then begin
-    IdSslCtxSetDefaultPasswdCb(fContext, @PasswordCallback);
-    IdSslCtxSetDefaultPasswdCbUserdata(fContext, Self);
+    SSL_CTX_set_default_passwd_cb(fContext, @PasswordCallback);
+    SSL_CTX_set_default_passwd_cb_userdata(fContext, Self);
 //  end;
-  IdSSLCtxSetDefaultVerifyPaths(fContext);
+  SSL_CTX_set_default_verify_paths(fContext);
   // load key and certificate files
   if RootCertFile <> '' then begin    {Do not Localize}
     if not LoadRootCert then begin
@@ -1726,14 +1835,13 @@ begin
     end;
   end;
   if StatusInfoOn then begin
-    IdSslCtxSetInfoCallback(fContext, InfoCallback);
+    SSL_CTX_set_info_callback(fContext, InfoCallback);
   end;
   //if_SSL_CTX_set_tmp_rsa_callback(hSSLContext, @RSACallback);
   if fCipherList <> '' then begin    {Do not Localize}
-    error := IdSslCtxSetCipherList(fContext, PAnsiChar(fCipherList));
-  end
-  else begin
-    error := IdSslCtxSetCipherList(fContext, OPENSSL_SSL_DEFAULT_CIPHER_LIST);
+    error := SSL_CTX_set_cipher_list(fContext, PAnsiChar(fCipherList));
+  end else begin
+    error := SSL_CTX_set_cipher_list(fContext, SSL_DEFAULT_CIPHER_LIST);
   end;
   if error <= 0 then begin
     EIdOSSLLoadingKeyError.RaiseException(RSSSLSettingCipherError);
@@ -1742,11 +1850,12 @@ begin
     SetVerifyMode(fVerifyMode, VerifyOn);
   end;
   if CtxMode = sslCtxServer then begin
-    IdSSLCtxSetSessionIdContext(fContext, PByte(@fSessionId), SizeOf(fSessionId));
+    SSL_CTX_set_session_id_context(fContext, PByte(@fSessionId), SizeOf(fSessionId));
   end;
   // CA list
   if RootCertFile <> '' then begin    {Do not Localize}
-    IdSSLCtxSetClientCAList(fContext, IdSSLLoadClientCAFile(PAnsiChar(RootCertFile)));
+    SSL_CTX_set_client_CA_list(fContext,
+    SSL_load_client_CA_file(PAnsiChar(RootCertFile)));
   end
 end;
 
@@ -1755,14 +1864,14 @@ var
   Func: TSSL_CTX_set_verify_callback;
 begin
   if fContext<>nil then begin
-//    IdSSLCtxSetDefaultVerifyPaths(fContext);
+//    SSL_CTX_set_default_verify_paths(fContext);
     if CheckRoutine then begin
       Func := VerifyCallback;
     end else begin
       Func := nil;
     end;
-    IdSslCtxSetVerify(fContext, TranslateInternalVerifyToSSL(Mode), Func);
-    IdSslCtxSetVerifyDepth(fContext, fVerifyDepth);
+    SSL_CTX_set_verify(fContext, TranslateInternalVerifyToSSL(Mode), Func);
+    SSL_CTX_set_verify_depth(fContext, fVerifyDepth);
   end;
 end;
 
@@ -1776,7 +1885,7 @@ begin
   Result := False;
 
   if (Dirs <> '') or (FileName <> '') then begin
-    if IdSslCtxLoadVerifyLocations(fContext, PAnsiChar(FileName), PAnsiChar(Dirs)) <= 0 then begin
+    if SSL_CTX_load_verify_locations(fContext, PAnsiChar(FileName), PAnsiChar(Dirs)) <= 0 then begin
       raise EIdOSSLCouldNotLoadSSLLibrary.Create(RSOSSLCouldNotLoadSSLLibrary);
     end;
   end;
@@ -1792,31 +1901,31 @@ begin
   case fMethod of
     sslvSSLv2:
       case fMode of
-        sslmServer : Result := IdSslMethodServerV2;
-        sslmClient : Result := IdSslMethodClientV2;
+        sslmServer : Result := SSLv2_server_method;
+        sslmClient : Result := SSLv2_client_method;
       else
-        Result := IdSslMethodV2;
+        Result := SSLv2_method;
       end;
     sslvSSLv23:
         case fMode of
-          sslmServer : Result := IdSslMethodServerV23;
-          sslmClient : Result := IdSslMethodClientV23;
+          sslmServer : Result := SSLv23_server_method;
+          sslmClient : Result := SSLv23_client_method;
         else
-          Result := IdSslMethodV23;
+          Result := SSLv23_method;
         end;
     sslvSSLv3:
       case fMode of
-        sslmServer : Result := IdSslMethodServerV3;
-        sslmClient : Result := IdSslMethodClientV3;
+        sslmServer : Result := SSLv3_server_method;
+        sslmClient : Result := SSLv3_client_method;
       else
-        Result := IdSslMethodV3;
+        Result := SSLv3_method;
       end;
     sslvTLSv1:
       case fMode of
-        sslmServer : Result := IdSslMethodServerTLSV1;
-        sslmClient : Result := IdSslMethodClientTLSV1;
+        sslmServer : Result := TLSv1_server_method;
+        sslmClient : Result := TLSv1_client_method;
       else
-        Result := IdSslMethodTLSV1;
+        Result := TLSv1_method;
       end;
   else
     raise EIdOSSLGetMethodError.Create(RSSSLGetMethodError);
@@ -1824,38 +1933,40 @@ begin
 end;
 
 function TIdSSLContext.LoadRootCert: Boolean;
+var LTmp : AnsiString;
 begin
 {  if fVerifyDirs <> '' then begin
-    Result := IdSslCtxLoadVerifyLocations(
+    Result := SSL_CTX_load_verify_locations(
                    fContext,
                    PAnsiChar(RootCertFile),
                    PAnsiChar(fVerifyDirs)) > 0;
   end
   else begin
 }
-    Result := IdSslCtxLoadVerifyLocations(
+    LTmp :=  RootCertFile;
+    Result := SSL_CTX_load_verify_locations(
                    fContext,
-                   PAnsiChar(RootCertFile),
+                   PAnsiChar(LTmp),
                    nil) > 0;
 {  end;}
 end;
 
 function TIdSSLContext.LoadCert: Boolean;
 begin
-  Result := IdSslCtxUseCertificateFile(
+  Result := IndySSL_CTX_use_certificate_file(
                  fContext,
-                 PAnsiChar(CertFile),
-                 OPENSSL_SSL_FILETYPE_PEM) > 0;
+                 CertFile,
+                 SSL_FILETYPE_PEM);
 end;
 
 function TIdSSLContext.LoadKey: Boolean;
 begin
-  Result := IdSslCtxUsePrivateKeyFile(
+  Result := IndySSL_CTX_use_PrivateKey_file(
                  fContext,
-                 PAnsiChar(fsKeyFile),
-                 OPENSSL_SSL_FILETYPE_PEM) > 0;
+                 fsKeyFile,
+                 SSL_FILETYPE_PEM);
   if Result then begin
-    Result := IdSslCtxCheckPrivateKeyFile(fContext) > 0;
+    Result := SSL_CTX_check_private_key(fContext) > 0;
   end;
 end;
 
@@ -1888,9 +1999,9 @@ end;
 destructor TIdSSLSocket.Destroy;
 begin
   if fSSL <> nil then begin
-    //IdSslSetShutdown(fSSL, OPENSSL_SSL_SENT_SHUTDOWN);
-    IdSslShutdown(fSSL);
-    IdSslFree(fSSL);
+    //SSL_set_shutdown(fSSL, SSL_SENT_SHUTDOWN);
+    SSL_shutdown(fSSL);
+    SSL_free(fSSL);
     fSSL := nil;
   end;
   FreeAndNil(fSSLCipher);
@@ -1904,17 +2015,17 @@ begin
   // I found out that SSL layer should not interpret errors, cause they will pop up
   // on the socket layer. Only thing that the SSL layer should consider is key
   // or protocol renegotiation. This is done by loop in read and write
-  Result := IdSslGetError(fSSL, retCode);
+  Result := SSL_get_error(fSSL, retCode);
   case Result of
-    OPENSSL_SSL_ERROR_NONE:
-      Result := OPENSSL_SSL_ERROR_NONE;
-    OPENSSL_SSL_ERROR_WANT_WRITE:
-      Result := OPENSSL_SSL_ERROR_WANT_WRITE;
-    OPENSSL_SSL_ERROR_WANT_READ:
-      Result := OPENSSL_SSL_ERROR_WANT_READ;
-    OPENSSL_SSL_ERROR_ZERO_RETURN:
-      Result := OPENSSL_SSL_ERROR_ZERO_RETURN;
-      //Result := OPENSSL_SSL_ERROR_NONE;
+    SSL_ERROR_NONE:
+      Result := SSL_ERROR_NONE;
+    SSL_ERROR_WANT_WRITE:
+      Result := SSL_ERROR_WANT_WRITE;
+    SSL_ERROR_WANT_READ:
+      Result := SSL_ERROR_WANT_READ;
+    SSL_ERROR_ZERO_RETURN:
+      Result := SSL_ERROR_ZERO_RETURN;
+      //Result := SSL_ERROR_NONE;
       {
       // ssl layer has been disconnected, it is not necessary that also
       // socked has been closed
@@ -1934,11 +2045,11 @@ begin
 
         //raise EIdException.Create(RSOSSLConnectionDropped);
       // X509_LOOKUP event is not really an error, just an event
-    // OPENSSL_SSL_ERROR_WANT_X509_LOOKUP:
+    // SSL_ERROR_WANT_X509_LOOKUP:
         // raise EIdException.Create(RSOSSLCertificateLookup);
-    OPENSSL_SSL_ERROR_SYSCALL:
-      Result := OPENSSL_SSL_ERROR_SYSCALL;
-      // Result := OPENSSL_SSL_ERROR_NONE;
+    SSL_ERROR_SYSCALL:
+      Result := SSL_ERROR_SYSCALL;
+      // Result := SSL_ERROR_NONE;
 
         {//raise EIdException.Create(RSOSSLInternal);
         if (retCode <> 0) or (DataLen <> 0) then begin
@@ -1948,10 +2059,10 @@ begin
           Result := 0;
         end;}
 
-    OPENSSL_SSL_ERROR_SSL:
+    SSL_ERROR_SSL:
       // raise EIdException.Create(RSOSSLInternal);
-      Result := OPENSSL_SSL_ERROR_SSL;
-      // Result := OPENSSL_SSL_ERROR_NONE;
+      Result := SSL_ERROR_SSL;
+      // Result := SSL_ERROR_NONE;
   end;
 end;
 
@@ -1963,15 +2074,15 @@ var
 begin
   Assert(fSSL=nil);
   Assert(fSSLContext<>nil);
-  fSSL := IdSslNew(fSSLContext.fContext);
+  fSSL := SSL_new(fSSLContext.fContext);
   if fSSL = nil then exit;
-  error := IdSslSetAppData(fSSL, Self);
+  error := SSL_set_app_data(fSSL, Self);
   if error <= 0 then begin
     EIdOSSLDataBindingError.RaiseException(fSSL, error, RSSSLDataBindingError);
     Exit;
   end;
-  IdSslSetFd(fSSL, pHandle);
-  error := IdSslAccept(fSSL);
+  SSL_set_fd(fSSL, pHandle);
+  error := SSL_accept(fSSL);
   if error <= 0 then begin
     EIdOSSLAcceptError.RaiseException(fSSL, error, RSSSLAcceptError);
   end;
@@ -1991,19 +2102,19 @@ var
 begin
   Assert(fSSL=nil);
   Assert(fSSLContext<>nil);
-  fSSL := IdSslNew(fSSLContext.fContext);
+  fSSL := SSL_new(fSSLContext.fContext);
   if fSSL = nil then begin
     exit;
   end;
-  error := IdSslSetAppData(fSSL, Self);
+  error := SSL_set_app_data(fSSL, Self);
   if error <= 0 then begin
     EIdOSSLDataBindingError.RaiseException(fSSL, error, RSSSLDataBindingError);
   end;
-  error :=  IdSslSetFd(fSSL, pHandle);
+  error :=  SSL_set_fd(fSSL, pHandle);
   if error <= 0 then begin
     EIdOSSLFDSetError.RaiseException(fSSL, error, RSSSLFDSetError);
   end;
-  error := IdSslConnect(fSSL);
+  error := SSL_connect(fSSL);
   if error <= 0 then begin
     EIdOSSLConnectError.RaiseException(fSSL, error, RSSSLConnectError);
   end;
@@ -2021,16 +2132,16 @@ var
   ret, err: Integer;
 begin
   repeat
-    ret := IdSslRead(fSSL, @ABuffer[0], Length(ABuffer));
+    ret := SSL_read(fSSL, @ABuffer[0], Length(ABuffer));
     if ret > 0 then begin
       Result := ret;
       Exit;
     end;
     err := GetSSLError(ret);
-    if (err = OPENSSL_SSL_ERROR_WANT_READ) or (err = OPENSSL_SSL_ERROR_WANT_WRITE) then begin
+    if (err = SSL_ERROR_WANT_READ) or (err = SSL_ERROR_WANT_WRITE) then begin
       Continue;
     end;
-    if err = OPENSSL_SSL_ERROR_ZERO_RETURN then begin
+    if err = SSL_ERROR_ZERO_RETURN then begin
       Result := 0;
     end else begin
       Result := ret;
@@ -2045,7 +2156,7 @@ var
 begin
   Result := 0;
   repeat
-    ret := IdSslWrite(fSSL, @ABuffer[AOffset], ALength);
+    ret := SSL_write(fSSL, @ABuffer[AOffset], ALength);
     if ret > 0 then begin
       Inc(Result, ret);
       Inc(AOffset, ret);
@@ -2056,10 +2167,10 @@ begin
       Continue;
     end;
     err := GetSSLError(ret);
-    if (err = OPENSSL_SSL_ERROR_WANT_READ) or (err = OPENSSL_SSL_ERROR_WANT_WRITE) then begin
+    if (err = SSL_ERROR_WANT_READ) or (err = SSL_ERROR_WANT_WRITE) then begin
       Continue;
     end;
-    if err = OPENSSL_SSL_ERROR_ZERO_RETURN then begin
+    if err = SSL_ERROR_ZERO_RETURN then begin
       Result := 0;
     end else begin
       Result := ret;
@@ -2073,7 +2184,7 @@ var
   LX509: PX509;
 begin
   if fPeerCert = nil then begin
-    LX509 := IdSslGetPeerCertificate(fSSL);
+    LX509 := SSL_get_peer_certificate(fSSL);
     if LX509 <> nil then begin
       fPeerCert := TIdX509.Create(LX509, False);
     end;
@@ -2096,12 +2207,12 @@ var
 begin
   Result.Length := 0;
   FillChar(tmpArray, SizeOf(TByteArray), 0);
-  if Assigned(IdSslGetSession) then
+  if Assigned(SSL_get_session) then
   begin
     if fSSL<>nil then begin
-      pSession := IdSslGetSession(fSSL);
+      pSession := SSL_get_session(fSSL);
       if pSession <> nil then begin
-        IdSslSessionGetId(pSession, @tmpArray.Data, @tmpArray.Length);
+        SSL_SESSION_get_id(pSession, @tmpArray.Data, @tmpArray.Length);
         Result := tmpArray;
       end;
     end;
@@ -2144,9 +2255,8 @@ var
 begin
   if FX509Name = nil then begin
     Result := '';    {Do not Localize}
-  end
-  else begin
-    Result := String(StrPas(IdSslX509NameOneline(FX509Name, PAnsiChar(@LOneLine), SizeOf(LOneLine))));
+  end else begin
+    Result := String(StrPas(X509_NAME_oneline(FX509Name, PAnsiChar(@LOneLine), SizeOf(LOneLine))));
   end;
 end;
 
@@ -2154,9 +2264,8 @@ function TIdX509Name.GetHash: TULong;
 begin
   if FX509Name = nil then begin
     FillChar(Result, SizeOf(Result), 0)
-  end
-  else begin
-    Result.C1 := IdSslX509NameHash(FX509Name);
+  end else begin
+    Result.C1 := X509_NAME_hash(FX509Name);
   end;
 end;
 
@@ -2188,8 +2297,8 @@ end;
 
 function TIdX509Fingerprints.GetMD5: TEVP_MD;
 begin
-  IdGlobalProtocols.CheckMD5Permitted;
-   IdSslX509Digest(FX509, IdSslEvpMd5, PByte(@Result.MD), Result.Length);
+  CheckMD5Permitted;
+  X509_digest(FX509, EVP_md5, PByte(@Result.MD), Result.Length);
 end;
 
 function TIdX509Fingerprints.GetMD5AsString: String;
@@ -2199,7 +2308,7 @@ end;
 
 function TIdX509Fingerprints.GetSHA1: TEVP_MD;
 begin
-  IdSslX509Digest(FX509, IdSslEvpSHA1, PByte(@Result.MD), Result.Length);
+  X509_digest(FX509, EVP_sha1, PByte(@Result.MD), Result.Length);
 end;
 
 function TIdX509Fingerprints.GetSHA1AsString: String;
@@ -2209,8 +2318,8 @@ end;
 
 function TIdX509Fingerprints.GetSHA224 : TEVP_MD;
 begin
-  if Assigned(IdSslEvpSHA224) then begin
-    IdSslX509Digest(FX509, IdSslEvpSHA224, PByte(@Result.MD), Result.Length);
+  if Assigned(EVP_sha224) then begin
+    X509_digest(FX509, EVP_sha224, PByte(@Result.MD), Result.Length);
   end else begin
     FillChar(Result, SizeOf(Result), 0);
   end;
@@ -2218,7 +2327,7 @@ end;
 
 function TIdX509Fingerprints.GetSHA224AsString : String;
 begin
-  if Assigned(IdSslEvpSHA224) then begin
+  if Assigned(EVP_sha224) then begin
     Result := MDAsString(SHA224);
   end else begin
     Result := '';
@@ -2227,8 +2336,8 @@ end;
 
 function TIdX509Fingerprints.GetSHA256 : TEVP_MD;
 begin
-  if Assigned(IdSslEvpSHA256) then begin
-    IdSslX509Digest(FX509, IdSslEvpSHA256, PByte(@Result.MD), Result.Length);
+  if Assigned(EVP_sha256) then begin
+    X509_digest(FX509, EVP_sha256, PByte(@Result.MD), Result.Length);
   end else begin
     FillChar(Result, SizeOf(Result), 0);
   end;
@@ -2236,7 +2345,7 @@ end;
 
 function TIdX509Fingerprints.GetSHA256AsString : String;
 begin
-  if Assigned(IdSslEvpSHA256) then begin
+  if Assigned(EVP_sha256) then begin
     Result := MDAsString(SHA256);
   end else begin
     Result := '';
@@ -2245,8 +2354,8 @@ end;
 
 function TIdX509Fingerprints.GetSHA384 : TEVP_MD;
 begin
-  if Assigned(IdSslEvpSHA384) then begin
-    IdSslX509Digest(FX509, IdSslEvpSHA384, PByte(@Result.MD), Result.Length);
+  if Assigned(EVP_SHA384) then begin
+    X509_digest(FX509, EVP_SHA384, PByte(@Result.MD), Result.Length);
   end else begin
     FillChar(Result, SizeOf(Result), 0);
   end;
@@ -2254,7 +2363,7 @@ end;
 
 function TIdX509Fingerprints.GetSHA384AsString : String;
 begin
-  if Assigned(IdSslEvpSHA384) then begin
+  if Assigned(EVP_SHA384) then begin
     Result := MDAsString(SHA384);
   end else begin
     Result := '';
@@ -2263,8 +2372,8 @@ end;
 
 function TIdX509Fingerprints.GetSHA512 : TEVP_MD;
 begin
-  if Assigned(IdSslEvpSHA512) then begin
-    IdSslX509Digest(FX509, IdSslEvpSHA512, PByte(@Result.MD), Result.Length);
+  if Assigned(EVP_sha512) then begin
+    X509_digest(FX509, EVP_sha512, PByte(@Result.MD), Result.Length);
   end else begin
     FillChar(Result, SizeOf(Result), 0);
   end;
@@ -2272,7 +2381,7 @@ end;
 
 function TIdX509Fingerprints.GetSHA512AsString : String;
 begin
-  if Assigned(IdSslEvpSHA512) then begin
+  if Assigned(EVP_sha512) then begin
     Result := MDAsString(SHA512);
   end else begin
     Result := '';
@@ -2288,12 +2397,12 @@ end;
 
 function TIdX509SigInfo.GetSigType: TIdC_INT;
 begin
-  Result := IdSslX509GetSignatureType(FX509);
+  Result := X509_get_signature_type(FX509);
 end;
 
 function TIdX509SigInfo.GetSigTypeAsString: String;
 begin
-  Result := String(IdSslOBJNid2ln(SigType));
+  Result := String(OBJ_nid2ln(SigType));
 end;
 
 { TIdX509 }
@@ -2323,7 +2432,7 @@ begin
   free it here!  The memory is owned by the OpenSSL library and will
   crash the library if Indy tries to free its private memory here }
   if FCanFreeX509 then begin
-    IdSslX509Free(FX509);
+    X509_free(FX509);
   end;
   inherited Destroy;
 end;
@@ -2338,14 +2447,14 @@ var
 const
   LBUF_LEN = 1024;
 begin
-  LMem := IdSslBioNew(IdSslBioSMem);
+  LMem := BIO_new(BIO_s_mem);
   try
-     if Assigned(IdSslX509Print) then begin
-       IdSslX509Print(LMem,AX509);
+     if Assigned(X509_print) then begin
+       X509_print(LMem,AX509);
        s := '';
        SetLength(LBuf,LBUF_LEN);
        repeat
-         LRes := IdSslBioRead(LMem,@LBuf[1],LBUF_LEN);
+         LRes := BIO_read(LMem,@LBuf[1],LBUF_LEN);
          if LRes < 1 then begin
            Break;
          end;
@@ -2355,7 +2464,7 @@ begin
        AOut.Text := String(s);
      end;
   finally
-    IdSslBioFree(LMem);
+    BIO_free(LMem);
   end;
 end;
 {$ELSE}
@@ -2377,7 +2486,7 @@ var
   LSN : PASN1_INTEGER;
 begin
   if FX509 <> nil then begin
-    LSN := IdSslX509GetSerialNumber(FX509);
+    LSN := X509_get_serialNumber(FX509);
     Result := BytesToHexString(LSN.data, LSN.length);
   end else begin
     Result := '';
@@ -2386,7 +2495,7 @@ end;
 
 function TIdX509.GetVersion : TIdC_LONG;
 begin
-  Result := IdSslX509GetVersion(FX509);
+  Result := X509_get_version(FX509);
 end;
 
 function TIdX509.RSubject: TIdX509Name;
@@ -2395,7 +2504,7 @@ var
 Begin
   if not Assigned(FSubject) then begin
     if FX509 <> nil then begin
-      Lx509_name := IdSslX509GetSubjectName(FX509);
+      Lx509_name := X509_get_subject_name(FX509);
     end else begin
       Lx509_name := nil;
     end;
@@ -2410,7 +2519,7 @@ var
 begin
   if not Assigned(FIssuer) then begin
     if FX509 <> nil then begin
-      Lx509_name := IdSslX509GetIssuerName(FX509);
+      Lx509_name := X509_get_issuer_name(FX509);
     end else begin
       Lx509_name := nil;
     end;
@@ -2421,7 +2530,7 @@ end;
 
 function TIdX509.RFingerprint: TEVP_MD;
 begin
-  IdSslX509Digest(FX509, IdSslEvpMd5, PByte(@Result.MD), Result.Length);
+  X509_digest(FX509, EVP_md5, PByte(@Result.MD), Result.Length);
 end;
 
 function TIdX509.RFingerprintAsString: String;
@@ -2436,7 +2545,7 @@ begin
   end else begin                                    
     //This is a safe typecast since PASN1_UTCTIME and PASN1_TIME are really
     //pointers to ASN1 strings since ASN1_UTCTIME amd ASM1_TIME are ASN1_STRING.
-    Result := UTCTime2DateTime(PASN1_UTCTIME(IdSslX509GetNotBefore(FX509)));
+    Result := UTCTime2DateTime(PASN1_UTCTIME(X509_get_notBefore(FX509)));
   end;
 end;
 
@@ -2445,7 +2554,7 @@ begin
   if FX509 = nil then begin
     Result := 0
   end else begin
-    Result := UTCTime2DateTime(PASN1_UTCTIME(IdSslX509GetNotAfter(FX509)));
+    Result := UTCTime2DateTime(PASN1_UTCTIME(X509_get_notAfter(FX509)));
   end;
 end;
 
@@ -2467,22 +2576,22 @@ function TIdSSLCipher.GetDescription;
 var
   Buf: Array[0..1024] of AnsiChar;
 begin
-  Result := String(StrPas(IdSSLCipherDescription(IdSSLGetCurrentCipher(FSSLSocket.fSSL), PAnsiChar(@Buf[0]), SizeOf(Buf)-1)));
+  Result := String(StrPas(SSL_CIPHER_description(SSL_get_current_cipher(FSSLSocket.fSSL), PAnsiChar(@Buf[0]), SizeOf(Buf)-1)));
 end;
 
 function TIdSSLCipher.GetName:String;
 begin
-  Result := String(StrPas(IdSSLCipherGetName(IdSSLGetCurrentCipher(FSSLSocket.fSSL))));
+  Result := String(StrPas(SSL_CIPHER_get_name(SSL_get_current_cipher(FSSLSocket.fSSL))));
 end;
 
 function TIdSSLCipher.GetBits:TIdC_INT;
 begin
-  IdSSLCipherGetBits(IdSSLGetCurrentCipher(FSSLSocket.fSSL), Result);
+  SSL_CIPHER_get_bits(SSL_get_current_cipher(FSSLSocket.fSSL), Result);
 end;
 
 function TIdSSLCipher.GetVersion:String;
 begin
-  Result := String(StrPas(IdSSLCipherGetVersion(IdSSLGetCurrentCipher(FSSLSocket.fSSL))));
+  Result := String(StrPas(SSL_CIPHER_get_version(SSL_get_current_cipher(FSSLSocket.fSSL))));
 end;
 
 initialization

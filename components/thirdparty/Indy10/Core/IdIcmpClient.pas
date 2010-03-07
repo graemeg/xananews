@@ -205,9 +205,12 @@ implementation
 uses
   //facilitate inlining only.
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
-    {$IFDEF USE_INLINE}
   Windows,
-    {$ENDIF}
+  {$ENDIF}
+  {$IFDEF USE_VCL_POSIX}
+	  {$IFDEF DARWIN}
+    CoreServices,
+	  {$ENDIF}
   {$ENDIF}
   IdExceptionCore, IdRawHeaders, IdResourceStringsCore,
   IdStack, IdStruct, SysUtils;

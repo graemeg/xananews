@@ -81,6 +81,7 @@ implementation
 
 uses
   Classes,
+  IdFIPS,
   IdGlobal,
   IdGlobalProtocols,
   IdHash,

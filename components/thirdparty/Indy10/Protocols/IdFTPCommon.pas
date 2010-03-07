@@ -654,7 +654,12 @@ const
 //end XAUT Stuff
 
 implementation
-uses IdException;
+uses 
+  {$IFDEF USE_VCL_POSIX}
+  PosixSysTime,
+  PosixTime,
+  {$ENDIF}
+  IdException;
 
 {WS_FTP Pro XAUT Support}
 
@@ -1465,15 +1470,27 @@ This function ensures that 2 digit dates returned
 by some FTP servers are interpretted just like Borland's year
 handling routines.
 }
-
+{$IFDEF HAS_TFormatSettings_Object}
+{For Delphi 2011, we have a format settings object that includes a member
+for two digit year processing.  Use that instead because that is thread-safe.}
+var
+  LFormatSettings: TFormatSettings;
+{$ENDIF}
 begin
   Result := AYear;
   //Y2K Complience for current code
   //Note that some OS/2 servers return years greater than 100 for
   //years such as 2000 and 2003
   if Result < 1000 then begin
+    {$IFDEF HAS_TFormatSettings_Object}
+    try
+       LFormatSettings:= TFormatSettings.Create('');  //use default locale
+       if LFormatSettings.TwoDigitYearCenturyWindow > 0 then begin
+         if Result > LFormatSettings.TwoDigitYearCenturyWindow then begin
+    {$ELSE}
     if TwoDigitYearCenturyWindow > 0 then begin
       if Result > TwoDigitYearCenturyWindow then begin
+    {$ENDIF}
         Inc(Result, ((IndyCurrentYear div 100)-1)*100);
       end else begin
         Inc(Result, (IndyCurrentYear div 100)*100);
@@ -1481,6 +1498,11 @@ begin
     end else begin
       Inc(Result, (IndyCurrentYear div 100)*100);
     end;
+    {$IFDEF HAS_TFormatSettings_Object}
+    finally
+      FreeAndNil(LFormatSettings);
+    end;
+    {$ENDIF}
   end;
 end;
 

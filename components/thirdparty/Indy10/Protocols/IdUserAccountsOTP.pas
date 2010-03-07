@@ -61,7 +61,7 @@ uses
   IdComponent,
   IdException,
   IdUserAccounts,
-  IdGlobal;
+  IdGlobal, SysUtils;
 
 const
   DEF_MAXCount = 900;

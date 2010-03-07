@@ -136,6 +136,10 @@ type
 implementation
 
 uses
+  {$IFDEF USE_VCL_POSIX}
+  PosixSysTime,
+  PosixTime,
+  {$ENDIF}
   IdGlobalProtocols,
   IdAssignedNumbers,
   IdStack,

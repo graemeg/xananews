@@ -237,6 +237,8 @@ var
   LSize: TIdStreamSize;
   S: String;
 begin
+  // RLebeau: TODO - support chunked, gzip, and deflate transfers.
+  
   // RLebeau: determine how many bytes to read
   S := AContext.Headers.Values['Content-Length']; {Do not Localize}
   if S <> '' then

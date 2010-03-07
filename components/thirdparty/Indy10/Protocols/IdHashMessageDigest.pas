@@ -46,7 +46,7 @@ interface
 {$i IdCompilerDefines.inc}
 
 uses
-  IdGlobal, IdHash, Classes;
+  IdFIPS, IdGlobal, IdHash, Classes;
 
 type
   T4x4LongWordRecord = array[0..3] of LongWord;
@@ -72,7 +72,7 @@ type
     procedure MDCoder; override;
     procedure Reset; override;
 
-    function GetHashInst : TIdHashInst; override;
+    function InitHash : TIdHashIntCtx; override;
     function NativeGetHashBytes(AStream: TStream; ASize: TIdStreamSize): TIdBytes; override;
     function HashToHex(const AHash: TIdBytes): String; override;
   public
@@ -89,7 +89,7 @@ type
 
     procedure MDCoder; override;
 
-    function GetHashInst : TIdHashInst; override;
+    function InitHash : TIdHashIntCtx; override;
 
   public
     constructor Create; override;
@@ -100,7 +100,7 @@ type
   protected
     procedure MDCoder; override;
 
-    function GetHashInst : TIdHashInst; override;
+    function InitHash : TIdHashIntCtx; override;
   public
     class function IsIntfAvailable : Boolean; override;
   end;
@@ -109,11 +109,9 @@ implementation
 uses
   {$IFDEF DOTNET}
   System.Security.Cryptography,
+  IdStreamNET,
   {$ELSE}
   IdStreamVCL,
-    {$IFDEF USE_OPENSSL}
-  IdSSLOpenSSLHeaders,
-    {$ENDIF}
   {$ENDIF}
   IdGlobalProtocols;
 
@@ -246,35 +244,21 @@ begin
   end;
 end;
 
-function TIdHashMessageDigest2.GetHashInst: TIdHashInst;
-begin
-  {$IFDEF DOTNET}
-  Result := nil;
-  {$ELSE}
-    {$IFDEF USE_OPENSSL}
-  Result := IdSslEvpMD2;
-    {$ELSE}
-  Result := nil;
-    {$ENDIF}
-  {$ENDIF}
-end;
+
 
 function TIdHashMessageDigest2.HashToHex(const AHash: TIdBytes): String;
 begin
   Result := LongWordHashToHex(AHash, 4);
 end;
 
+function TIdHashMessageDigest2.InitHash: TIdHashIntCtx;
+begin
+  Result := GetMD2HashInst;
+end;
+
 class function TIdHashMessageDigest2.IsIntfAvailable: Boolean;
 begin
-  {$IFDEF DOTNET}
-  Result := False
-  {$ELSE}
-    {$IFDEF USE_OPENSSL}
-  Result := Assigned(IdSslEvpMD2) and IsHashingIntfAvail;
-    {$ELSE}
-  Result := False;
-    {$ENDIF}
-  {$ENDIF}
+  Result := IsHashingIntfAvail and  IsMD2HashIntfAvail;
 end;
 
 { TIdHashMessageDigest4 }
@@ -424,17 +408,9 @@ begin
   end;
 end;
 
-function TIdHashMessageDigest4.GetHashInst: TIdHashInst;
+function TIdHashMessageDigest4.InitHash : TIdHashIntCtx;
 begin
-  {$IFDEF DOTNET}
-  Result := nil;
-  {$ELSE}
-    {$IFDEF USE_OPENSSL}
-  Result := IdSslEvpMD4;
-    {$ELSE}
-  Result := nil;
-    {$ENDIF}
-  {$ENDIF}
+  Result := GetMD4HashInst;
 end;
 
 function TIdHashMessageDigest4.HashToHex(const AHash: TIdBytes): String;
@@ -444,15 +420,7 @@ end;
 
 class function TIdHashMessageDigest4.IsIntfAvailable: Boolean;
 begin
-  {$IFDEF DOTNET}
-  Result := False;
-  {$ELSE}
-    {$IFDEF USE_OPENSSL}
-  Result := Assigned(IdSslEvpMD4) and IsHashingIntfAvail;
-    {$ELSE}
-  Result := False;
-    {$ENDIF}
-  {$ENDIF}
+  Result := IsHashingIntfAvail and IsMD4HashIntfAvail ;
 end;
 
 { TIdHashMessageDigest5 }
@@ -478,30 +446,16 @@ const
   );
 
 {$Q-} // Arithmetic operations performed modulo $100000000
-function TIdHashMessageDigest5.GetHashInst: TIdHashInst;
+
+
+function TIdHashMessageDigest5.InitHash: TIdHashIntCtx;
 begin
-  {$IFDEF DOTNET}
-  Result := System.Security.Cryptography.MD5CryptoServiceProvider.Create;
-  {$ELSE}
-    {$IFDEF USE_OPENSSL}
-  Result := IdSslEvpMD5;
-    {$ELSE}
-  Result := nil;
-    {$ENDIF}
-  {$ENDIF}
+  Result := GetMD5HashInst;
 end;
 
 class function TIdHashMessageDigest5.IsIntfAvailable: Boolean;
 begin
-  {$IFDEF DOTNET}
-  Result := True;
-  {$ELSE}
-    {$IFDEF USE_OPENSSL}
-  Result := Assigned(IdSslEvpMD5) and IsHashingIntfAvail;
-    {$ELSE}
-  Result := False;
-    {$ENDIF}
-  {$ENDIF}
+  Result := IsHashingIntfAvail and IsMD5HashIntfAvail ;
 end;
 
 procedure TIdHashMessageDigest5.MDCoder;

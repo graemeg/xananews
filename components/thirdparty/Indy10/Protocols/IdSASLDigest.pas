@@ -32,7 +32,7 @@ function CalcDigestResponse(const AUserName, APassword, ARealm, ANonce, ACNonce 
   const  AQop, ADigestURI : String; const AAuthzid : String = '') : String;
 
 implementation
-uses IdGlobal, IdGlobalProtocols, IdHash, IdHashMessageDigest, IdResourceStringsProtocols;
+uses IdFIPS, IdGlobal, IdGlobalProtocols, IdHash, IdHashMessageDigest, IdResourceStringsProtocols;
 
 const
   SASL_DIGEST_METHOD = 'AUTHENTICATE:';  {do not localize}

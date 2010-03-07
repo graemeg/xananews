@@ -158,13 +158,12 @@ type
       const ALength, AFlags: Integer; var VIP: string; var VPort: TIdPort;
       AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION): Integer; override;
     function ReceiveMsg(ASocket: TIdStackSocketHandle; var VBuffer: TIdBytes;
-       APkt: TIdPacketInfo;
-      const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION): LongWord; override;
+       APkt: TIdPacketInfo): LongWord; override;
     procedure WSSendTo(ASocket: TIdStackSocketHandle; const ABuffer;
       const ABufferLength, AFlags: Integer;
       const AIP: string; const APort: TIdPort; AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION); override;
-    function WSSocket(AFamily, AStruct, AProtocol: Integer;
-     const AOverlapped: Boolean = False): TIdStackSocketHandle; override;
+    function WSSocket(AFamily : Integer; AStruct : TIdSocketType; AProtocol: Integer;
+      const AOverlapped: Boolean = False): TIdStackSocketHandle; override;
     procedure Disconnect(ASocket: TIdStackSocketHandle); override;
     procedure SetSocketOption(ASocket: TIdStackSocketHandle; ALevel:TIdSocketOptionLevel;
       AOptName: TIdSocketOption; AOptVal: Integer); overload;override;
@@ -477,14 +476,12 @@ begin
 end;
 
 function TIdStackLibc.ReceiveMsg(ASocket: TIdStackSocketHandle;
-  var VBuffer: TIdBytes; APkt: TIdPacketInfo;
-  const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION): LongWord;
+  var VBuffer: TIdBytes; APkt: TIdPacketInfo): LongWord;
 {var
   LIP : String;
   LPort : TIdPort;
   LSize: Cardinal;
-  LAddr4: SockAddr_In;
-  LAddr6: SockAddr_In6;
+  LAddr: SockAddr_In6;
   LMsg : msghdr;
   LMsgBuf : BUF;
   LControl : TIdBytes;
@@ -493,80 +490,89 @@ function TIdStackLibc.ReceiveMsg(ASocket: TIdStackSocketHandle;
   LCurPt6 : Pin6_pktinfo;
   LByte : PByte;
   LDummy, LDummy2 : Cardinal;
-      
+
 begin
-   //we call the macro twice because we specified two possible structures.
-   //Id_IPV6_HOPLIMIT and Id_IPV6_PKTINFO
-   LSize := CMSG_LEN(CMSG_LEN(Length(VBuffer)));
-   SetLength( LControl,LSize);
-    LMsgBuf.len := Length(VBuffer); // Length(VMsgData);
-    LMsgBuf.buf := @VBuffer[0]; // @VMsgData[0];
+  //we call the macro twice because we specified two possible structures.
+  //Id_IPV6_HOPLIMIT and Id_IPV6_PKTINFO
+  LSize := CMSG_LEN(CMSG_LEN(Length(VBuffer)));
+  SetLength( LControl,LSize);
 
-    FillChar(LMsg,SizeOf(LMsg),0);
+  LMsgBuf.len := Length(VBuffer); // Length(VMsgData);
+  LMsgBuf.buf := @VBuffer[0]; // @VMsgData[0];
 
-    LMsg.lpBuffers := @LMsgBuf;
-    LMsg.dwBufferCount := 1;
+  FillChar(LMsg,SizeOf(LMsg),0);
 
-    LMsg.Control.Len := LSize;
-    LMsg.Control.buf := @LControl[0];
+  LMsg.lpBuffers := @LMsgBuf;
+  LMsg.dwBufferCount := 1;
 
+  LMsg.Control.Len := LSize;
+  LMsg.Control.buf := @LControl[0];
 
-    case AIPVersion of
-      Id_IPv4: begin
-        LMsg.name :=  @LAddr4;
-        LMsg.namelen := SizeOf(LAddr4);
+  LMsg.name := PSOCKADDR(@LAddr);
+  LMsg.namelen := SizeOf(LAddr);
 
-        CheckForSocketError(RecvMsg(ASocket,@LMsg,Result,nil,nil));
-        APkt.SourceIP :=  TranslateTInAddrToString(LAddr4.sin_addr,Id_IPv4);
+  CheckForSocketError(RecvMsg(ASocket, @LMsg, Result, @LDummy, LPwsaoverlapped_COMPLETION_ROUTINE(@LDummy2)));
+  APkt.Reset;
 
-        APkt.SourcePort := NToHs(LAddr4.sin_port);
-      end;
-      Id_IPv6: begin
-        LMsg.name := PSOCKADDR( @LAddr6);
-        LMsg.namelen := SizeOf(LAddr6);
-
-        CheckForSocketError( RecvMsg(ASocket,@LMsg,Result,@LDummy,LPwsaoverlapped_COMPLETION_ROUTINE(@LDummy2)));
-        APkt.SourceIP := TranslateTInAddrToString(LAddr6.sin6_addr, Id_IPv6);
-
-        APkt.SourcePort := NToHs(LAddr6.sin6_port);
-      end;
-      else begin
-        Result := 0; // avoid warning
-        IPVersionUnsupported;
-      end;
-    end;
-    LCurCmsg := nil;
-    repeat
-      LCurCmsg := CMSG_NXTHDR(@LMsg,LCurCmsg);
-      if LCurCmsg=nil then
+  case LAddr.sin6_family of
+    Id_PF_INET4: begin
+      with PSOCKADDR(@LAddr)^ do
       begin
-        break;
+        APkt.SourceIP :=  TranslateTInAddrToString(sin_addr, Id_IPv4);
+        APkt.SourcePort := NToHs(sin_port);
       end;
-      case LCurCmsg^.cmsg_type of
-        IP_PKTINFO :     //done this way because IPV6_PKTINF and  IP_PKTINFO
-        //are both 19
-        begin
-          if AIPVersion = Id_IPv4 then
+      APkt.SourceIPVersion := Id_IPv4;
+    end;
+    Id_PF_INET6: begin
+      with LAddr do
+      begin
+        APkt.SourceIP := TranslateTInAddrToString(sin6_addr, Id_IPv6);
+        APkt.SourcePort := NToHs(sin6_port);
+      end;
+      APkt.SourceIPVersion := Id_IPv6;
+    end;
+    else begin
+      Result := 0; // avoid warning
+      IPVersionUnsupported;
+    end;
+  end;
+  LCurCmsg := nil;
+  repeat
+    LCurCmsg := CMSG_NXTHDR(@LMsg,LCurCmsg);
+    if LCurCmsg=nil then
+    begin
+      break;
+    end;
+    case LCurCmsg^.cmsg_type of
+      IP_PKTINFO :     //done this way because IPV6_PKTINF and  IP_PKTINFO
+      //are both 19
+      begin
+        case LAddr.sin6_family of
+          Id_PF_INET4:
           begin
             LCurPt := WSA_CMSG_DATA(LCurCmsg);
             APkt.DestIP := GWindowsStack.TranslateTInAddrToString(LCurPt^.ipi_addr,Id_IPv4);
             APkt.DestIF := LCurPt^.ipi_ifindex;
+            APkt.DestIPVersion := Id_IPv4;
           end;
-          if AIPVersion = Id_IPv6 then
+          Id_PF_INET6:
           begin
             LCurPt6 := WSA_CMSG_DATA(LCurCmsg);
             APkt.DestIP := GWindowsStack.TranslateTInAddrToString(LCurPt6^.ipi6_addr,Id_IPv6);
             APkt.DestIF := LCurPt6^.ipi6_ifindex;
+            APkt.DestIPVersion := Id_IPv6;
           end;
         end;
-        Id_IPV6_HOPLIMIT :
-        begin
-          LByte :=  PByte(WSA_CMSG_DATA(LCurCmsg));
-          APkt.TTL := LByte^;
-        end;
       end;
-    until False; }
+      Id_IPV6_HOPLIMIT :
+      begin
+        LByte :=  PByte(WSA_CMSG_DATA(LCurCmsg));
+        APkt.TTL := LByte^;
+      end;
+    end;
+  until False; }
 begin
+  APkt.Reset;
   Result := 0; // avoid warning
 end;
 
@@ -642,8 +648,8 @@ begin
   end;
 end;
 
-function TIdStackLibc.WSSocket(AFamily, AStruct, AProtocol: Integer;
-     const AOverlapped: Boolean = False): TIdStackSocketHandle; 
+function TIdStackLibc.WSSocket(AFamily : Integer; AStruct : TIdSocketType; AProtocol: Integer;
+      const AOverlapped: Boolean = False): TIdStackSocketHandle; override;
 begin
   Result := Libc.socket(AFamily, AStruct, AProtocol);
 end;

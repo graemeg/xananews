@@ -90,14 +90,18 @@ type
     function GetValue(const AName: string): string;
     {Value property get method}
     function GetParam(const AName, AParam: string): string;
+    function GetAllParams(const AName: string): string;
     {Value property set method}
     procedure SetValue(const AName, AValue: string);
     {Value property set method}
     procedure SetParam(const AName, AParam, AValue: string);
+    procedure SetAllParams(const AName, AValue: string);
     {Gets a value from a string}
-    function GetValueFromLine(ALine : Integer) : String;
-    Function GetNameFromLine(ALine : Integer) : String;
+    function GetValueFromLine(var VLine : Integer) : String;
+    procedure SkipValueAtLine(var VLine : Integer);
   public
+    procedure AddStrings(Strings: TStrings); override;
+    procedure AssignTo(Dest: TPersistent); override;
     { This method extracts "name=value" strings from the ASrc TStrings and adds
       them to this list using our delimiter defined in NameValueSeparator. }
     procedure AddStdValues(ASrc: TStrings);
@@ -118,10 +122,11 @@ type
     { This property works almost exactly as Borland's Names except it uses
       our delimiter defined in NameValueSeparator }
     property Names[Index: Integer]: string read GetName;
-    { This property works almost exactly as Borland's Values except it uses   
+    { This property works almost exactly as Borland's Values except it uses
       our delimiter defined in NameValueSeparator }
     property Values[const Name: string]: string read GetValue write SetValue;
     property Params[const Name, Param: string]: string read GetParam write SetParam;
+    property AllParams[const Name: string]: string read GetAllParams write SetAllParams;
     { This is the separator we need to separate the name from the value }
     property NameValueSeparator : String read FNameValueSeparator
       write FNameValueSeparator;
@@ -148,8 +153,13 @@ procedure TIdHeaderList.AddStdValues(ASrc: TStrings);
 var
   i: integer;
 begin
-  for i := 0 to ASrc.Count - 1 do begin
-    Add(ReplaceOnlyFirst(ASrc[i], '=', NameValueSeparator));    {Do not Localize}
+  BeginUpdate;
+  try
+    for i := 0 to ASrc.Count - 1 do begin
+      Add(ReplaceOnlyFirst(ASrc[i], '=', NameValueSeparator));    {Do not Localize}
+    end;
+  finally
+    EndUpdate;
   end;
 end;
 
@@ -167,12 +177,40 @@ begin
   end;
 end;
 
+procedure TIdHeaderList.AddStrings(Strings: TStrings);
+begin
+  if Strings is TIdHeaderList then begin
+    inherited AddStrings(Strings);
+  end else begin
+    AddStdValues(Strings);
+  end;
+end;
+
+procedure TIdHeaderList.AssignTo(Dest: TPersistent);
+begin
+  if (Dest is TStrings) and not (Dest is TIdHeaderList) then begin
+    ConvertToStdValues(TStrings(Dest));
+  end else begin
+    inherited AssignTo(Dest);
+  end;
+end;
+
 procedure TIdHeaderList.ConvertToStdValues(ADest: TStrings);
 var
-  i: LongInt;
+  idx: Integer;
+  LName, LValue: string;
 begin
-  for i := 0 to Count - 1 do begin
-    ADest.Add(ReplaceOnlyFirst(Strings[i], NameValueSeparator, '='));    {Do not Localize}
+  ADest.BeginUpdate;
+  try
+    idx := 0;
+    while idx < Count do
+    begin
+      LName := GetName(idx);
+      LValue := GetValueFromLine(idx);
+      ADest.Add(LName + '=' + LValue); {do not localize}
+    end;
+  finally
+    ADest.EndUpdate;
   end;
 end;
 
@@ -199,14 +237,22 @@ end;
 
 procedure TIdHeaderList.Extract(const AName: string; ADest: TStrings);
 var
-  idx : LongInt;
+  idx : Integer;
 begin
   if Assigned(ADest) then begin
-    for idx := 0 to Count - 1 do
-    begin
-      if TextIsSame(AName, GetNameFromLine(idx)) then begin
-        ADest.Add(GetValueFromLine(idx));
+    ADest.BeginUpdate;
+    try
+      idx := 0;
+      while idx < Count do
+      begin
+        if TextIsSame(AName, GetName(idx)) then begin
+          ADest.Add(GetValueFromLine(idx));
+        end else begin
+          SkipValueAtLine(idx);
+	end;
       end;
+    finally
+      ADest.EndUpdate;
     end;
   end;
 end;
@@ -214,7 +260,7 @@ end;
 procedure TIdHeaderList.FoldAndInsert(AString : String; Index: Integer);
 var
   LStrs : TStrings;
-  idx : LongInt;
+  idx : Integer;
 begin
   LStrs := FoldLine(AString);
   try
@@ -251,45 +297,40 @@ end;
 
 function TIdHeaderList.GetName(Index: Integer): string;
 var
-  P: Integer;
+  I : Integer;
 begin
   Result := Get(Index);
-  P := IndyPos(FNameValueSeparator, Result);
-  if P <> 0 then begin
-    SetLength(Result, P - 1);
-  end else begin
-    SetLength(Result, 0);
-  end;
-end;
-
-function TIdHeaderList.GetNameFromLine(ALine: Integer): String;
-var
-  p : Integer;
-begin
-  Result := Get(ALine);
 
   {We trim right to remove space to accomodate header errors such as
 
   Message-ID:<asdf@fdfs
   }
-  P := IndyPos(TrimRight(FNameValueSeparator), Result);
+  I := IndyPos(TrimRight(FNameValueSeparator), Result);
 
-  Result := Copy(Result, 1, P - 1);
+  if I <> 0 then begin
+    SetLength(Result, I - 1);
+  end else begin
+    SetLength(Result, 0);
+  end;
 end;
 
 function TIdHeaderList.GetValue(const AName: string): string;
+var
+  idx: Integer;
 begin
-  Result := GetValueFromLine(IndexOfName(AName));
+  idx := IndexOfName(AName);
+  Result := GetValueFromLine(idx);
 end;
 
-function TIdHeaderList.GetValueFromLine(ALine: Integer): String;
+function TIdHeaderList.GetValueFromLine(var VLine: Integer): String;
 var
   LLine, LSep: string;
   P: Integer;
 begin
-  if (ALine >= 0) and (ALine < Count) then begin
-    LLine := Get(ALine);
-
+  if (VLine >= 0) and (VLine < Count) then begin
+    LLine := Get(VLine);
+    Inc(VLine);
+    
     {We trim right to remove space to accomodate header errors such as
 
     Message-ID:<asdf@fdfs
@@ -299,23 +340,36 @@ begin
 
     Result := TrimLeft(Copy(LLine, P + Length(LSep), MaxInt));
     if FUnfoldLines then begin
-      repeat
-        Inc(ALine);
-        if ALine = Count then begin
-          Break;
-        end;
-        LLine := Get(ALine);
+      while VLine < Count do begin
+        LLine := Get(VLine);
         // s[1] is safe since header lines cannot be empty as that causes then end of the header block
         if not CharIsInSet(LLine, 1, LWS) then begin
           Break;
         end;
         Result := Trim(Result) + ' ' + Trim(LLine); {Do not Localize}
-      until False;
+        Inc(VLine);
+      end;
     end;
-    // User may be fetching an folded line diretly.
+    // User may be fetching a folded line directly.
     Result := Trim(Result);
   end else begin
     Result := ''; {Do not Localize}
+  end;
+end;
+
+procedure TIdHeaderList.SkipValueAtLine(var VLine: Integer);
+begin
+  if (VLine >= 0) and (VLine < Count) then begin
+    Inc(VLine);
+    if FUnfoldLines then begin
+      while VLine < Count do begin
+        // s[1] is safe since header lines cannot be empty as that causes then end of the header block
+        if not CharIsInSet(Get(VLine), 1, LWS) then begin
+          Break;
+        end;
+        Inc(VLine);
+      end;
+    end;
   end;
 end;
 
@@ -331,13 +385,26 @@ begin
   end;
 end;
 
+function TIdHeaderList.GetAllParams(const AName: string): string;
+var
+  s: string;
+begin
+  s := Values[AName];
+  if s <> '' then begin
+    Fetch(s, ';'); {do not localize}
+    Result := Trim(s);
+  end else begin
+    Result := '';
+  end;
+end;
+
 function TIdHeaderList.IndexOfName(const AName: string): Integer;
 var
   i: LongInt;
 begin
   Result := -1;
   for i := 0 to Count - 1 do begin
-    if TextIsSame(GetNameFromLine(i), AName) then begin
+    if TextIsSame(GetName(i), AName) then begin
       Result := i;
       Exit;
     end;
@@ -371,6 +438,21 @@ end;
 procedure TIdHeaderList.SetParam(const AName, AParam, AValue: string);
 begin
   Values[AName] := ReplaceHeaderSubItem(Values[AName], AParam, AValue);
+end;
+
+procedure TIdHeaderList.SetAllParams(const AName, AValue: string);
+var
+  LValue: string;
+begin
+  LValue := Values[AName];
+  if LValue <> '' then
+  begin
+    if AValue <> '' then begin
+      Values[AName] := ExtractHeaderItem(LValue) + '; ' + AValue; {do not localize}
+    end else begin
+      Values[AName] := ExtractHeaderItem(LValue);
+    end;
+  end;
 end;
 
 end.

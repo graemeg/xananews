@@ -107,6 +107,11 @@ uses
       {$ENDIF}
     {$ENDIF}
   {$ENDIF}
+  {$IFDEF USE_VCL_POSIX}
+  PosixGlue,
+  PosixSysSelect,
+  PosixSysTime,
+  {$ENDIF}
   {$IFDEF KYLIXCOMPAT}
   Libc,
   {$ENDIF}

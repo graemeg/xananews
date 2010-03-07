@@ -57,15 +57,8 @@ interface
 {$i IdCompilerDefines.inc}
 
 uses
-  {$IFDEF DOTNET}
-  System.Security.Cryptography,
-  IdException,
-  {$ELSE}
-    {$IFDEF USE_OPENSSL}
-  IdSSLOpenSSLHeaders,
-    {$ENDIF}
-  {$ENDIF}
   Classes,
+  IdFIPS,
   IdGlobal;
 
 type
@@ -118,23 +111,10 @@ type
 
   TIdHashClass = class of TIdHash;
 
-  {$IFDEF DOTNET}
-  TIdHashInst = System.Security.Cryptography.HashAlgorithm;
-  TIdHashIntCtx =  TIdHashInst;
-  {$ELSE}
-    {$IFDEF USE_OPENSSL}
-  TIdHashInst = PEVP_MD;
-  TIdHashIntCtx = EVP_MD_CTX;
-    {$ELSE}
-  TIdHashInst = Pointer;
-  TIdHashIntCtx = Pointer;
-    {$ENDIF}
-  {$ENDIF}
   TIdHashIntF = class(TIdHash)
   protected
     function HashToHex(const AHash: TIdBytes): String; override;
-    function GetHashInst : TIdHashInst; virtual; abstract;
-    function InitHash : TIdHashIntCtx; virtual;
+    function InitHash : TIdHashIntCtx; virtual; abstract;
     procedure UpdateHash(ACtx : TIdHashIntCtx; const AIn : TIdBytes);
     function FinalHash(ACtx : TIdHashIntCtx) : TIdBytes;
     function GetHashBytes(AStream: TStream; ASize: TIdStreamSize): TIdBytes; override;
@@ -152,39 +132,18 @@ type
   {$IFDEF DOTNET}
   EIdSecurityAPIException = class(EIdException);
   EIdSHA224NotSupported = class(EIdSecurityAPIException);
-  {$ELSE}
-    {$IFDEF USE_OPENSSL}
-  EIdDigestError = class(EIdOpenSSLAPICryptoError);
-  EIdDigestFinalEx = class(EIdDigestError);
-  EIdDigestInitEx = class(EIdDigestError);
-  EIdDigestUpdate = class(EIdDigestError);
-    {$ENDIF}
   {$ENDIF}
-
-{$IFNDEF DOTNET}
-function IsHashingIntfAvail : Boolean; {$IFDEF USE_INLINE} inline; {$ENDIF}
-{$ENDIF}
 
 implementation
 
 uses
-{$IFNDEF DOTNET}
+  {$IFDEF DOTNET}
+  IdStreamNET,
+  {$ELSE}
   IdStreamVCL,
-  IdCTypes,
-{$ENDIF}
+  {$ENDIF}
   IdGlobalProtocols, SysUtils;
 
-function IsHashingIntfAvail : Boolean;
-begin
-{$IFDEF USE_OPENSSL}
-
-  Result := Assigned(IdSslEvpDigestInitEx) and
-             Assigned(IdSslEvpDigestUpdate) and
-             Assigned(IdSslEvpDigestFinalEx);
-  {$ELSE}
-  Result := False;
-{$ENDIF}
-end;
 { TIdHash }
 
 constructor TIdHash.Create;
@@ -411,12 +370,8 @@ function TIdHashIntf.FinalHash(ACtx: TIdHashIntCtx): TIdBytes;
 {$IFDEF DOTNET}
 var
   LDummy : TIdBytes;
-{$ELSE}
-  {$IFDEF USE_OPENSSL}
-var  
-  LLen, LRet : TIdC_UInt;
-  {$ENDIF}
 {$ENDIF}
+
 begin
   {$IFDEF DOTNET}
   //This is a funny way of coding.  I have to pass a dummy value to
@@ -426,15 +381,7 @@ begin
    ACtx.TransformFinalBlock(LDummy,0,0);
   Result := ACtx.Hash;
   {$ELSE}
-    {$IFDEF USE_OPENSSL}
-  SetLength(Result,OPENSSL_EVP_MAX_MD_SIZE);
-  LRet := IdSslEvpDigestFinalEx(@ACtx,PAnsiChar(@Result[0]),LLen);
-  if LRet <> 1 then begin
-    EIdDigestFinalEx.RaiseException('EVP_DigestFinal_ex error');
-  end;
-  SetLength(Result,LLen);
-  IdSslEvpMDCtxCleanup(@ACtx);
-    {$ENDIF}
+  Result := IdFIPS.FinalHashInst(ACtx);
   {$ENDIF}
 end;
 
@@ -469,30 +416,7 @@ begin
   Result := ToHex(AHash);
 end;
 
-function TIdHashIntf.InitHash: TIdHashIntCtx;
- {$IFNDEF DOTNET}
-   {$IFDEF USE_OPENSSL}
-var
-  LHash : TIdHashInst;
-  LRet : TIdC_Int;
-    {$ENDIF}
- {$ENDIF}
-begin
-  {$IFDEF DOTNET}
-   Result := GetHashInst;
-  {$ELSE}
-    {$IFDEF USE_OPENSSL}
-  LHash := GetHashInst;
-  IdSslEvpMDCtxInit(@Result);
-  LRet := IdSslEvpDigestInitEx(@Result, LHash, nil);
-  if LRet <> 1 then begin
-    EIdDigestInitEx.RaiseException('EVP_DigestInit_ex error');
-  end;
-    {$ELSE}
-  Result := nil;
-    {$ENDIF}
-  {$ENDIF}
-end;
+
 
 {$IFDEF DOTNET}
 class function TIdHashIntf.IsAvailable: Boolean;
@@ -507,6 +431,8 @@ end;
 {$ELSE}
 //done this way so we can override IsAvailble if there is a native
 //implementation.
+
+
 class function TIdHashIntf.IsAvailable: Boolean;
 begin
   Result := IsIntfAvailable;
@@ -519,21 +445,12 @@ end;
 {$ENDIF}
 
 procedure TIdHashIntf.UpdateHash(ACtx: TIdHashIntCtx; const AIn: TIdBytes);
-{$IFNDEF DOTNET}
-  {$IFDEF USE_OPENSSL}
-var LRet : TIdC_Int;
-  {$ENDIF}
-{$ENDIF}
 begin
+   UpdateHashInst(ACtx,AIn);
    {$IFDEF DOTNET}
    ACtx.TransformBlock(AIn,0,Length(AIn),AIn,0);
    {$ELSE}
-     {$IFDEF USE_OPENSSL}
-  LRet := IdSslEvpDigestUpdate(@ACtx,@Ain[0],Length(AIn));
-  if LRet <> 1 then begin
-    EIdDigestInitEx.RaiseException('EVP_DigestUpdate error');
-  end;
-     {$ENDIF}
+
   {$ENDIF}
 end;
 
