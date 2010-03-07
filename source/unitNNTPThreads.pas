@@ -114,7 +114,8 @@ implementation
 uses
   DateUtils,
   IdException, unitNNTPThreadManager, unitNewsReaderOptions, unitMessages,
-  unitCharsetMap, unitMailServices, unitNewsgroups, unitLog, unitSearchString,
+  unitCharsetMap, unitMailServices, unitNewsgroups, unitLog, unitQpcTimer,
+  unitSearchString,
   NewsGlobals,
   IdGlobal, IdReplyRFC, IdStack, IdGlobalProtocols, IdExceptionCore,
   IdAttachmentFile, IdExplicitTLSClientServerBase;
@@ -250,40 +251,67 @@ end;
 procedure TNNTPThread.Execute;
 var
   st: string;
-  timeout, tm: DWORD;
+  sTimeOut, tm: DWORD;
   ServerFault: Boolean;
+  eActive: Boolean;
+  eTimer: Int64;
 begin
+  eActive := False;
+  eTimer := 0;
+
   if Assigned(NNTPAccount) then
   begin
     st := 'NNTP Getter Thread for ' + NNTPAccount.AccountName;
-    timeout := NNTPAccount.NNTPServerSettings.ServerTimeout;
+    sTimeOut := NNTPAccount.NNTPServerSettings.ServerTimeout;
   end
   else
   begin
-    timeout := 0;
+    sTimeOut := 0;
     st := 'NNTP Getter Thread for ???';
   end;
 
   SendMessage(Application.MainForm.Handle, WM_NAMETHREAD, ThreadID, Integer(PChar(st)));
+
   while not Terminated do
   begin
-    if (State = tsDormant) and NNTP.Connected then
-      if timeout = 0 then
-        tm := INFINITE
-      else
-        tm := timeout * 1000
-    else
-      tm := INFINITE;
-    if Trigger.WaitFor(tm) = wrTimeout then
+
+    while not Terminated do
     begin
-      NNTP.Disconnect;
-      Continue;
+      if (State = tsDormant) and NNTP.Connected and (sTimeOut <> 0) then
+        tm := 1000 * sTimeOut
+      else
+        if eActive then
+          tm := 1000
+        else
+          tm := INFINITE;
+
+      case Trigger.WaitFor(tm) of
+        wrTimeout:
+          begin
+            if not eActive or qpcTimerDone(eTimer) then
+            begin
+              eActive := False;
+              NNTP.Disconnect;
+            end;
+            Continue;
+          end;
+
+        wrSignaled:
+          if eActive and not Getter.Terminating and not qpcTimerDone(eTimer) then
+            Continue
+          else
+            Break;
+      end;
     end;
 
     if Getter.Terminating then
       Exit;
 
     State := tsBusy;
+
+    // Minimal wait time after an exception before retrying is 30 seconds.
+    eActive := False;
+    eTimer  := qpcStartTimer(30.0);
 
     if not Terminated then
     try
@@ -347,6 +375,8 @@ begin
     except
       on E: Exception do
       begin
+        eActive := True;
+
         fLastError := E.Message;
         State := tsPending;
 

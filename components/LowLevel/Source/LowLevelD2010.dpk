@@ -44,6 +44,7 @@ contains
   unitExRegSettings in 'unitExRegSettings.pas',
   unitExSettings in 'unitExSettings.pas',
   unitExXMLSettings in 'unitExXMLSettings.pas',
+  unitQpcTimer in 'unitQpcTimer.pas',
   XnClasses in 'XnClasses.pas',
   XnRawByteStrings in 'XnRawByteStrings.pas';
 
