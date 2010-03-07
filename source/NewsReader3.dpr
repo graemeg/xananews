@@ -1,8 +1,10 @@
 program NewsReader3;
 
-{$SetPEFlags 1}  // 1 = IMAGE_FILE_RELOCS_STRIPPED
+{$SetPEFlags $01}  // $01 = IMAGE_FILE_RELOCS_STRIPPED
+                   // $20 = IMAGE_FILE_LARGE_ADDRESS_AWARE
 {$WEAKLINKRTTI ON}
 {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
+
 
 uses
   FastMM4,
