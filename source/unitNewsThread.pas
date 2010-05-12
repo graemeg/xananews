@@ -39,6 +39,7 @@ type
     fSSLHandler: TIdSSLIOHandlerSocketOpenSSL;
     fUISync: TCriticalSection;
     function GetLastResponse: string;
+// TODO:    function VerifyPeer(Certificate: TIdX509; AOk: Boolean; ADepth: Integer): Boolean;
 
   protected
     fSettings: TServerSettings;
@@ -443,8 +444,15 @@ begin
   fSettings := ASettings;
   fTrigger := TEvent.Create(nil, False, False, '');
   fSSLHandler := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+
+// << // TODO: enable certificate verification (also see TTCPThread..VerifyPeer)
+//  fSSLHandler.SSLOptions.VerifyMode := [sslvrfPeer];
   fSSLHandler.SSLOptions.Mode := sslmClient;
   fSSLHandler.SSLOptions.Method := sslvSSLv23;
+//  fSSLHandler.SSLOptions.RootCertFile := '.\mozilla-root-certs.crt';
+//  fSSLHandler.SSLOptions.VerifyDepth := 9;
+//  fSSLHandler.OnVerifyPeer := VerifyPeer;
+// >>
 end;
 
 destructor TTCPThread.Destroy;
@@ -478,6 +486,13 @@ begin
   else
     Result := '';
 end;
+
+// << TODO: add dialog when certificate is invalid
+//function TTCPThread.VerifyPeer(Certificate: TIdX509; AOk: Boolean; ADepth: Integer): Boolean;
+//begin
+//  Result := True; // AOk;
+//end;
+// >>
 
 procedure TTCPThread.GetProgressNumbers(group: TServerAccount; var min, max, pos: Integer);
 begin

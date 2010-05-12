@@ -1225,7 +1225,7 @@ begin
     begin
       str := ParamStr(1);
       cds.dwData := 1;
-      cds.cbData := Length(str) + 1;
+      cds.cbData := Succ(Length(str)) * SizeOf(Char);
       cds.lpData := PChar(str);
       SendMessage(hwnd, WM_COPYDATA, HWND_DESKTOP, Integer(@cds))
     end;
