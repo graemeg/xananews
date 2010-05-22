@@ -2117,6 +2117,7 @@ var
   c: Integer;
   grp: TSubscribedGroup;
   groups: TList;
+  many: Boolean;
 begin
   c := vstSubscribed.SelectedCount;
   grp := GetFocusedGroup;
@@ -2140,11 +2141,21 @@ begin
             Break;
           end;
         end;
+        many := groups.Count > 1;
       finally
         groups.Free;
       end;
 
-      ForEachSelectedGroup(Unsubscribe, False, 1);
+      try
+        if many then
+          ForEachSelectedGroup(Unsubscribe, False, 0)
+        else
+          ForEachSelectedGroup(Unsubscribe, False, 1);
+      finally
+        if many then
+          NNTPAccounts.SaveToRegistry(nil);
+      end;
+
       vstSubscribed.ClearSelection;
       fPrevArticle := nil;
     end;
@@ -7102,21 +7113,19 @@ begin
               if article.IsFromMe then
                 XNOptions.Appearance[apMessagesFromMe].ApplyFontAndGetColor(Canvas.Font)
               else
-                if article.IsXanaNews and not XNOptions.DontHighlightXanaNewsUsers then
-                  XNOptions.Appearance[apXananewsMessages].ApplyFontAndGetColor(Canvas.Font)
-                else
-                begin
-                  if article.IsReply then
-                    XNOptions.Appearance[apReplies].ApplyFontAndGetColor(Canvas.Font)
-                  else
-                    XNOptions.Appearance[apMessagesToMe].ApplyFontAndGetColor(Canvas.Font);
-                end
-              else
-                if article.HasNoReplies and not (XNOptions.Appearance[apChildlessMessages].Equals(XNOptions.Appearance[apMessageHeaders])) then
-                  XNOptions.Appearance[apChildlessMessages].ApplyFontAndGetColor(Canvas.Font)
+                if article.IsReply then
+                  XNOptions.Appearance[apReplies].ApplyFontAndGetColor(Canvas.Font)
                 else
                   if article.IsXanaNews and not XNOptions.DontHighlightXanaNewsUsers then
                     XNOptions.Appearance[apXananewsMessages].ApplyFontAndGetColor(Canvas.Font)
+                  else
+                    XNOptions.Appearance[apMessagesToMe].ApplyFontAndGetColor(Canvas.Font)
+              else
+                if article.IsXanaNews and not XNOptions.DontHighlightXanaNewsUsers then
+                  XNOptions.Appearance[apXananewsMessages].ApplyFontAndGetColor(Canvas.Font)
+                else
+                  if article.HasNoReplies and not (XNOptions.Appearance[apChildlessMessages].Equals(XNOptions.Appearance[apMessageHeaders])) then
+                    XNOptions.Appearance[apChildlessMessages].ApplyFontAndGetColor(Canvas.Font)
                   else
                     if article.IsDormant then
                       XNOptions.Appearance[apDormantMessages].ApplyFontAndGetColor(Canvas.Font);
