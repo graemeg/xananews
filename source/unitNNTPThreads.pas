@@ -168,10 +168,6 @@ begin
       try
         NNTP.GetNewGroupsList(dt, True, '', newGroups);
 
-        if gLogFlag then
-          for I := 0 to newGroups.Count - 1 do
-            LogMessage('[rx] ' + newGroups[i]);
-
         if newGroups.Count > 0 then
         begin
           groups := TNewsgroupsStringList.Create;
@@ -452,8 +448,6 @@ begin
 end;
 
 function TNNTPThread.GetCapabilities: TStringList;
-var
-  I: Integer;
 begin
   Result := NNTPAccount.Capabilities;
 
@@ -463,10 +457,6 @@ begin
     try
       try
         NNTP.GetCapabilities(Result);
-
-        if gLogFlag then
-          for I := 0 to Result.Count - 1 do
-            LogMessage('[rx] ' + Result[I]);
       except
         on e: EIdReplyRFCError do
           case e.ErrorCode of
@@ -595,10 +585,6 @@ var
       try
         try
           NNTP.GetOverviewFMT(Result);
-
-          if gLogFlag then
-            for I := 0 to Result.Count - 1 do
-              LogMessage('[rx] ' + Result[I]);
         except
           on e: EIdReplyRFCError do
             case e.ErrorCode of
@@ -840,8 +826,7 @@ begin
             gtr.CurrentFull := request.Full;
             gtr.CurrentUpdateAll := request.FromArticle = 0;
 
-            fromArticle := request.FromArticle;
-
+            fromArticle  := request.FromArticle;
             articleCount := request.ArticleCount;
 
             fCurrentGetter := gtr;
@@ -913,17 +898,17 @@ begin
           if (fromArticle = 0) or (fromArticle > Integer(NNTP.MsgHigh)) then
             Continue;
 
-          // If we've been asked for headers only, and if the server supports it,
-          // use XOVER to get the headers. It's quick.
           gtr.CurrentMax := NNTP.MsgHigh;
 
           if articleCount = 0 then
-            fExpectedArticles := Integer(NNTP.MsgHigh) - fromArticle
-          else
-            fExpectedArticles := articleCount;
+            articleCount := Integer(NNTP.MsgHigh) - fromArticle + 1;
+
+          fExpectedArticles := articleCount - 1;
           fCurrentArticleNo := 0;
 
           try
+            // If we've been asked for headers only, and if the server supports it,
+            // use XOVER to get the headers. It's quick.
             gtr.CurrentGroup.BeginLock;
             if Assigned(XOverFMT) and (XOverFMT.Count > 0) and not gtr.CurrentFull then
             begin

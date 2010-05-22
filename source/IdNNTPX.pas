@@ -67,9 +67,10 @@ type
     FPipelineCommandStartEvent: TPipelineCommandStartEvent;
     FPipelineCommandAbortEvent: TPipelineCommandAbortEvent;
     FIsConnected: Boolean;
+    function Capture(const AList: TStrings): Integer;
     function ConvertDateTimeDist(ADate: TDateTime; AGMT: Boolean; const ADistributions: string): string;
     function Get(const ACmd: string; const AMsgNo: Cardinal; const AMsgID: string; AHdr: TAnsiStrings; ABody: TStream): Boolean;
-    procedure ReceiveBody(AStream: TStream; const ADelim: string = '');
+    procedure ReceiveBody(const AStream: TStream; const ADelim: string = '');
     function  ReceiveHeader(AMsg: TAnsiStrings; const ADelim: RawByteString = ''): Boolean;
     procedure ReceiveHeaders(AMsg: TAnsiStrings);
     procedure setConnectionResult(const Value: TConnectionResult);
@@ -101,10 +102,10 @@ type
     procedure EndPipeline;
     procedure CancelPipeline;
 
-    procedure GetNewsgroupList(AList: TStrings);
-    procedure GetNewGroupsList(const ADate: TDateTime; const AGMT: Boolean; const ADistributions: string; AList: TStrings);
-    procedure GetCapabilities(const AResponse: TstringList);
-    procedure GetOverviewFMT(const AResponse: TStringList);
+    procedure GetNewsgroupList(const AList: TStrings);
+    procedure GetNewGroupsList(const ADate: TDateTime; const AGMT: Boolean; const ADistributions: string; const AList: TStrings);
+    procedure GetCapabilities(const AList: TstringList);
+    procedure GetOverviewFMT(const AList: TStringList);
     function GetServerDateTime: TDateTime;
     function SelectArticle(const AMsgNo: Cardinal): Boolean;
     procedure SelectGroup(const AGroup: string);
@@ -460,22 +461,22 @@ begin
   Result := Get('Head', AMsgNo, AMsgID, AHdr, nil);
 end;
 
-procedure TidNNTPX.GetNewsgroupList(AList: TStrings);
+procedure TidNNTPX.GetNewsgroupList(const AList: TStrings);
 begin
   SendCmd('LIST', 215);
-  IOHandler.Capture(AList);
+  Capture(AList);
 end;
 
-procedure TidNNTPX.GetCapabilities(const AResponse: TStringList);
+procedure TidNNTPX.GetCapabilities(const AList: TStringList);
 begin
   SendCmd('CAPABILITIES', 101);
-  IOHandler.Capture(AResponse);
+  Capture(AList);
 end;
 
-procedure TidNNTPX.GetOverviewFMT(const AResponse: TStringList);
+procedure TidNNTPX.GetOverviewFMT(const AList: TStringList);
 begin
   SendCmd('LIST OVERVIEW.FMT', 215);
-  IOHandler.Capture(AResponse);
+  Capture(AList);
 end;
 
 function TidNNTPX.GetServerDateTime: TDateTime;
@@ -484,7 +485,7 @@ begin
   Result := FTPMLSToGMTDateTime(LastCmdResult.Text[0]);
 end;
 
-procedure TidNNTPX.ReceiveBody(AStream: TStream; const ADelim: string);
+procedure TidNNTPX.ReceiveBody(const AStream: TStream; const ADelim: string);
 var
   I: Integer;
   sl: TStringList;
@@ -739,10 +740,10 @@ begin
 end;
 
 procedure TIdNNTPX.GetNewGroupsList(const ADate: TDateTime; const AGMT: Boolean;
-  const ADistributions: string; AList: TStrings);
+  const ADistributions: string; const AList: TStrings);
 begin
   SendCmd('NEWGROUPS ' + ConvertDateTimeDist(ADate - OffsetFromUTC, AGMT, ADistributions), 231);
-  IOHandler.Capture(AList);
+  Capture(AList);
 end;
 
 function TidNNTPX.ConvertDateTimeDist(ADate: TDateTime; AGMT: Boolean;
@@ -824,6 +825,17 @@ begin
       fPipeLine.Clear;
   except
   end;
+end;
+
+function TidNNTPX.Capture(const AList: TStrings): Integer;
+var
+  I: Integer;
+begin
+  IOHandler.Capture(AList);
+
+  if gLogFlag then
+    for I := 0 to AList.Count - 1 do
+      LogMessage('[rx] ' + AList[i]);
 end;
 
 procedure TidNNTPX.AddPipelineGetCommand(AArticleNo: Cardinal;

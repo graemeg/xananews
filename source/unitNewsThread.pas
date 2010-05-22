@@ -15,7 +15,7 @@ interface
 
 uses
   Windows, Classes, Graphics, SysUtils, unitNNTPServices, unitMailServices,
-  SyncObjs, IdTCPClient, ConTnrs, unitSettings, unitIdentities,
+  SyncObjs, IdTCPClient, Contnrs, unitSettings, unitIdentities,
   IdMessage, NewsGlobals, IdNNTPX, IdSSLOpenSSL, XnClasses, XnRawByteStrings;
 
 type
