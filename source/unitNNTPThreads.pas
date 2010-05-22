@@ -153,6 +153,7 @@ var
   i: Integer;
   st: string;
   group: string;
+  modified: Boolean;
 begin
   if HoursBetween(Now, NNTPAccount.LastCheckForNewGroups) < 6 then Exit;
 
@@ -176,6 +177,8 @@ begin
           groups.Sorted := True;
           groups.Duplicates := dupIgnore;
 
+          modified := False;
+
           // Check incoming line(s) should be:
           //    group last first p
           // where <group> is the name of the newsgroup, <last> is the number of
@@ -195,7 +198,10 @@ begin
               begin
                 // Received a valid new group, add it to the list if it didn't exist yet.
                 if groups.IndexOf(group) = -1 then
+                begin
                   groups.Add(newGroups[i] + ' *');
+                  modified := True;
+                end;
               end
               else
               begin
@@ -206,9 +212,11 @@ begin
             end;
           end;
 
-          groups.SaveToFile(fileName);
-
-          Synchronize(DoNotifyNewGroups);
+          if modified then
+          begin
+            groups.SaveToFile(fileName);
+            Synchronize(DoNotifyNewGroups);
+          end;
         end;
 
       except
