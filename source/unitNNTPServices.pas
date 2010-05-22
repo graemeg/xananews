@@ -4805,7 +4805,7 @@ procedure TArticleContainer.GatherSubjects(article: TArticleBase);
 var
   count: Integer;
   c, t, old, prev, rest, tail, newc: TArticleBase;
-  subject_table: PPhashItem;
+  subject_table: PHashTable;
   subj: RawByteString;
   hash: DWORD;
 begin
@@ -5485,14 +5485,14 @@ var
   len: Integer;
   ref: RawByteString;
   article, refArticle, prevArticle, prev, rest, tempRoot: TArticleBase;
-  id_table: PPhashItem;
+  id_table: PHashTable;
   hash: DWORD;
   hideReadMessages: Boolean;
   hideIgnoredMessages: Boolean;
   mine: Boolean;
   filters: TFiltersCtnr;
   id: TIdentity;
-  id_not_table: PPhashItem;
+  id_not_table: PHashTable;
   reDo: Boolean;
   Identities: TList;
   articleFromName: string;

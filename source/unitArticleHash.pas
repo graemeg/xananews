@@ -37,306 +37,113 @@ unit unitArticleHash;
 interface
 
 uses
-  Windows, Classes, SysUtils, unitNNTPServices, IniFiles, XnRawByteStrings;
+  Windows, Classes, SysUtils, unitNNTPServices, XnRawByteStrings;
 
+const
+  HASHSIZE = 49157;                     // Prime numbers work best - makes a
+                                        // Huge difference to the distribution
 type
-  PPHashItem = ^PHashItem;
-  PHashItem = ^THashItem;
-  THashItem = packed record
-    Next: PHashItem;
-    article: TArticleBase;
-  end;
+  PHashItem = TArticleBase;
 
-function AllocHashTable: PPHashItem;
+  PPHashItems = ^TPHashItems;
+  TPHashItems = array[0..MaxListSize - 1] of PHashItem;
+
+  PHashTable = ^THashTable;
+  THashTable = array[0..HASHSIZE - 1] of PPHashItems;
+
+{$IFNDEF FPC}
+type
+  PtrInt = Integer;
+  PtrUInt = Cardinal;
+{$ENDIF}
+
+function AllocHashTable: PHashTable;
 function HashOf(const Key: RawByteString): Cardinal;
-function FindHashMessage(table: PPHashItem; hash: DWORD; const msg: RawByteString): TArticleBase;
-function FindHashSubject(table: PPHashItem; hash: DWORD; const subject: RawByteString): TArticleBase;
-procedure AddHash(table: PPHashItem; hash: DWORD; article: TArticleBase);
-procedure ClearHash(table: PPHashItem);
-procedure FreeHashTable(Table: PPHashItem);
+function FindHashMessage(table: PHashTable; hash: DWORD; const msg: RawByteString): TArticleBase;
+function FindHashSubject(table: PHashTable; hash: DWORD; const subject: RawByteString): TArticleBase;
+procedure AddHash(table: PHashTable; hash: DWORD; article: TArticleBase);
+procedure ClearHash(table: PHashTable);
+procedure FreeHashTable(table: PHashTable);
 
 implementation
 
+{$R-,Q-}
+
+procedure AddHash(table: PHashTable; hash: DWORD; article: TArticleBase);
 const
-  hashSize = 49157;                     // Prime numbers work best - makes a
-                                        // Huge difference to the distribution
-(*----------------------------------------------------------------------*
- | procedure AddHash                                                    |
- |                                                                      |
- | Add an article to the hash table at position 'hash'                  |
- |                                                                      |
- | Parameters:                                                          |
- |                                                                      |
- |   table : PPHashItem         The hash table to add to.               |
- |   hash : DWORD               The position to add to.                 |
- |   article : TArticleBase     The article to add                      |
- *----------------------------------------------------------------------*)
-//---------------------------------------------------------------------
-// Actually Delphi does a pretty good job - but to show off, here's an
-// optimised version.
-procedure AddHash(table: PPHashItem; hash: DWORD; article: TArticleBase);
-label
-  collision, done, alloc;
-asm
-  push  edi
-  push  esi
-  push  ebx
-
-  mov   esi, table
-  mov   eax, hash
-  mov   ebx, article
-  shl   eax, 2
-  add   esi, eax                        // esi = table [hash]
-
-  mov   edi, [esi]                      // edi = table [hash]^
-  test  edi, edi
-  jnz   collision
-                                        // empty slot
-  mov   eax, ebx                        // table [hash]^ := article
-  or    eax, $80000000
-  mov   [esi], eax
-  jmp   done
-
-collision:
-  test  edi, $80000000                  // Was it an article?
-  jz    alloc
-
-                                        // Replace it with a node pointing to
-                                        // the article
-
-  mov   eax, 8
-  call  system.@GetMem                  // Create a node
-
-  and   edi, $7fffffff                  // Point it to the articl
-  mov   [eax], 0                        // node^.next := 0
-  mov   [eax + 4], edi
-
-  mov   edi, eax                        // Save this node
-
-alloc:
-  mov   eax, 8
-  call  system.@GetMem                  // Create a node
-
-  mov   [eax], edi                      // 'Next' points to old entry
-  mov   [eax + 4], ebx                  // point to article
-  mov   [esi], eax
-
-done:
-
-  pop   ebx
-  pop   esi
-  pop   edi
-end;
-
-(*
-procedure AddHashX(table: PPHashItem; hash: DWORD; article: TArticleBase);
+  Delta = 4; // must a power of two (2, 4, 8, 16, 32, etc)
 var
-  pp: PPHashItem;
-  p: PHashItem;
-  a: TArticleBase;
+  L: PtrUInt;
+  P: ^PPHashItems;
 begin
-  pp := table;
-  Inc(pp, hash);
-  p := pp^;
+  P := @table^[hash];
 
-  if p = nil then               // First item at this position.  Add the article, + $80000000
-    pp^ := PHashItem($80000000 + DWORD(article))
-  else
-  begin                         // There's already something at this position
-
-                                // If it's an article, replace it with a linked list of
-                                // hash items.
-    if (DWORD(p) and $80000000) <> 0 then
-    begin
-      a := TArticleBase(Integer(p) and $7fffffff);
-      new(p);
-      p^.Next := nil;
-      p^.article := a;
-      pp^ := p;
-    end;
-
-    new(p);                    // Add to the linked list of hash items.
-
-    p^.Next := pp^;
-    p^.article := article;
-    pp^ := p
+  if P^ = nil then
+  begin
+    GetMem(P^, Delta * SizeOf(PHashItem));
+    P^[0] := nil;
   end;
-
+  // Note: P^[0] is used as a "Cardinal" to hold the count of items.
+  L := PtrUInt(P^[0]);
+  Inc(L);
+  if (L and (Delta - 1)) = 0 then
+    ReallocMem(P^, (L + Delta) * SizeOf(PHashItem));
+  P^[0] := PHashItem(L);
+  P^[L] := article;
 end;
-*)
 
-(*----------------------------------------------------------------------*
- | procedure ClearHash                                                  |
- |                                                                      |
- | Clear a hash table.                                                  |
- |                                                                      |
- | Parameters:                                                          |
- |                                                                      |
- |   table : PPHashItem         The table to clear                      |
- *----------------------------------------------------------------------*)
-procedure ClearHash(table: PPHashItem);
+
+procedure ClearHash(table: PHashTable);
 var
   I: Integer;
-  pp: PPHashITem;
-  P, N: PHashItem;
 begin
-  pp := table;
-
-  for I := 0 to hashSize - 1 do
+  for I := 0 to HASHSIZE - 1 do
   begin
-    P := pp^;                           // For each item in the table...
-
-    if (DWORD(p) and $80000000) = 0 then
-      while P <> nil do                 // There's a linked list of hash items...
-      begin                             // Dispose of each element.
-        N := P^.Next;
-        Dispose(P);
-        P := N;
-      end;
-    pp^ := nil;
-
-    Inc(pp);
+    FreeMem(table^[I]);
+    table^[I] := nil;
   end;
 end;
 
 
-(*----------------------------------------------------------------------*
- | function FindHashMessage: TArticleBase                               |
- |                                                                      |
- | Find an article at position 'hash' in the table.                     |
- |                                                                      |
- | Parameters:                                                          |
- |                                                                      |
- |   table: PPHashItem         The table to search.                     |
- |   hash: DWORD               The position to search                   |
- |   const msg: string         The MessageID to search for              |
- |                                                                      |
- | The function returns the 'found' article - or nil                    |
- *----------------------------------------------------------------------*)
-(*function FindHashMessageX(table: PPHashItem; hash: DWORD; const msg: string): TArticleBase;
-asm
-  push  esi
-  push  ebx
-  push  edi
-
-  mov   esi, table
-  mov   eax, hash
-  mov   ebx, msg                        // Msg saved in ebx
-  shl   eax, 2
-  add   esi, eax                        // esi = table [hash]
-  mov   esi, [esi]                      // esi = table [hash]^
-
-  test  esi, esi
-  jz    @nothing                         // Nothing there!
-
-  test  esi, $80000000
-  jz    @list
-
-  and   esi, $7fffffff
-  mov   edx, [esi + $10]
-  mov   eax, ebx
-  call  system.@LStrCmp
-  jnz   @nothing
-
-  mov   eax, esi
-  jmp   @done
-
-@list:
-  mov   edi, [esi + 4]
-  mov   edx, [edi + $10]
-  mov   eax, ebx
-  call system.@LStrCmp
-  jnz   @cycle
-  mov   eax, edi
-  jmp   @done
-
-@cycle:
-  mov   esi, [esi]
-  test  esi, esi
-  jz    @nothing
-  jmp   @list
-
-@nothing:
-  xor   eax, eax
-
-@done:
-  pop   edi
-  pop   ebx
-  pop   esi
-end;*)
-
-function FindHashMessage(table: PPHashItem; hash: DWORD; const msg: RawByteString): TArticleBase;
+function FindHashMessage(table: PHashTable; hash: DWORD; const msg: RawByteString): TArticleBase;
 var
-  pp: PPHashitem;
-  p: PHashItem;
+  L: PtrUInt;
+  P: PPHashItems;
 begin
-  pp := table;
-  Inc(pp, hash);
-  p := pp^;
+  P := table^[hash];
 
-  if p <> nil then
-    if (DWORD(p) and $80000000) <> 0 then        // Position contains a single article.
+  // Note: P^[0] is used as a "Cardinal" to hold the count of items.
+  if P <> nil then
+    for L := PtrUInt(P^[0]) downto 1 do
     begin
-      Result := TArticleBase(DWORD(p) and $7fffffff);
-      if RawCompareStr(Result.RawMessageID, msg) = 0 then   // Is it the right one?
+      Result := P^[L];
+      if RawCompareStr(msg, Result.RawMessageID) = 0 then
         Exit;
-    end
-    else
-    begin                                        // Position contains a linked list of hash items
-      repeat
-        Result := p^.article;                    // Find the article in it
-        if RawCompareStr(Result.RawMessageID, msg) = 0 then
-          Exit;
-        p := p^.next;
-      until p = nil;
     end;
+
   Result := nil;
 end;
 
-(*----------------------------------------------------------------------*
- | function FindHashSubject: TArticleBase                               |
- |                                                                      |
- | Find an article at position 'hash' in the table.                     |
- |                                                                      |
- | Parameters:                                                          |
- |                                                                      |
- |   table: PPHashItem         The table to search.                     |
- |   hash: DWORD               The position to search                   |
- |   const subject: string     The subject to search for                |
- |                                                                      |
- | The function returns the 'found' article - or nil                    |
- *----------------------------------------------------------------------*)
-function FindHashSubject(table: PPHashItem; hash: DWORD; const subject: RawByteString): TArticleBase;
+
+function FindHashSubject(table: PHashTable; hash: DWORD; const subject: RawByteString): TArticleBase;
 var
-  pp: PPHashitem;
-  p: PHashItem;
-  a: TArticleBase;
+  L: PtrUInt;
+  P: PPHashItems;
 begin
-  pp := table;
-  Inc(pp, hash);
-  p := pp^;
+  P := table^[hash];
+
+  // Note: P^[0] is used as a "Cardinal" to hold the count of items.
+  if P <> nil then
+    for L := PtrUInt(P^[0]) downto 1 do
+    begin
+      Result := P^[L];
+      if RawCompareStr(subject, Result.SimplifiedSubject) = 0 then
+        Exit;
+    end;
 
   Result := nil;
-  if p <> nil then
-    if (DWORD(p) and $80000000) <> 0 then        // Position contains a single article.
-    begin
-      a := TArticleBase(DWORD(p) and $7fffffff);
-      if RawCompareStr(a.SimplifiedSubject, subject) = 0 then      // Is it the right one?
-        Result := a;
-    end
-    else
-    begin                                        // Position contains a linked list of hash items
-      repeat
-        a := p^.article;                         // Find the article in it
-        if RawCompareStr(a.SimplifiedSubject, subject) = 0 then
-        begin
-          Result := a;
-          Exit;
-        end;
-        p := p^.next
-      until p = nil;
-    end;
 end;
+
 
 (*----------------------------------------------------------------------*
  | function HashOf: Cardinal                                            |
@@ -365,7 +172,6 @@ begin
   Result := Result mod hashSize
 end;*)
 
-{$R-,Q-}
 function HashOf(const Key: RawByteString): Cardinal;
 {Note: this hash function is described in "The C Programming Language"
        by Brian Kernighan and Donald Ritchie, Prentice Hall}
@@ -375,7 +181,7 @@ begin
   Result := 0;
   for i := 1 to Length(Key) do
     Result := (Result * 31) + Ord(Key[i]);
-  Result := Result mod hashSize;
+  Result := Result mod HASHSIZE;
 end;
 
 (*
@@ -399,33 +205,15 @@ begin
 end;
 *)
 
-(*----------------------------------------------------------------------*
- | function AllocHashTable                                              |
- |                                                                      |
- | Create a hash table.  Must free it with FreeHashTable                |
- |                                                                      |
- | Parameters:                                                          |
- |   None                                                               |
- |                                                                      |
- | The function returns PPHashItem the initialized empty hash table     |
- *----------------------------------------------------------------------*)
-function AllocHashTable: PPHashItem;
+function AllocHashTable: PHashTable;
 begin
-  Result := AllocMem(SizeOf(PHashItem) * hashSize);
+  Result := AllocMem(SizeOf(PPHashItems) * HASHSIZE);
 end;
 
-(*----------------------------------------------------------------------*
- | procedure FreeHashTable                                              |
- |                                                                      |
- | Free a hash table allocated with AllocHashTable                      |
- |                                                                      |
- | Parameters:                                                          |
- |   Table: PPHashItem         // The hash table to clear               |
- *----------------------------------------------------------------------*)
-procedure FreeHashTable(Table: PPHashItem);
+procedure FreeHashTable(table: PHashTable);
 begin
-  ClearHash(Table);
-  FreeMem(Table);
+  ClearHash(table);
+  FreeMem(table);
 end;
 
 end.
