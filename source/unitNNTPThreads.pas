@@ -582,8 +582,6 @@ var
   st: string;
 
   function GetXOverFMT: TStringList;
-  var
-    I: Integer;
   begin
     Result := NNTPAccount.XOverFMT;
 
