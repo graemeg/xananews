@@ -4,8 +4,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, PropertyPageForm, StdCtrls, ExtCtrls, ComCtrls, unitNewsreaderOptions,
-  unitFontDetails;
+  Dialogs, PropertyPageForm, StdCtrls, ExtCtrls, ComCtrls, NewsGlobals,
+  unitNewsReaderOptions, unitFontDetails;
 
 type
   TPropertyPageFontData = class(TPropertyPageData)
@@ -50,12 +50,14 @@ type
     procedure cbBoldClick(Sender: TObject);
     procedure clrBackgroundChange(Sender: TObject);
     procedure clrAlternateBGChange(Sender: TObject);
+    procedure lvFontsResize(Sender: TObject);
   private
     fData: TPropertyPageFontData;
     function FontDetails(i: Integer): TFontDetails;
     procedure PopulateSizes(fontNo, fontSize: Integer);
     procedure PopulatePreview;
     procedure ApplyDataToChildForms;
+    procedure wmDelayedResize(var Msg: TMessage); message WM_DELAYEDRESIZE;
   public
     class function GetDataClass: TPropertyPageDataClass; override;
     procedure PopulateControls(AData: TPropertyPageData); override;
@@ -67,7 +69,7 @@ var
 implementation
 
 uses
-  NewsGlobals, PropertyBaseForm;
+  PropertyBaseForm;
 
 {$R *.dfm}
 
@@ -75,10 +77,83 @@ uses
 
 function TfmPropertyPageFont.FontDetails(i: Integer): TFontDetails;
 begin
-  if i < gFontDetails.Count then
+  if (i >= 0) and (i < gFontDetails.Count) then
     Result := TFontDetails(gFontDetails.Objects[i])
   else
     Result := nil;
+end;
+
+class function TfmPropertyPageFont.GetDataClass: TPropertyPageDataClass;
+begin
+  Result := TPropertyPageFontData;
+end;
+
+procedure TfmPropertyPageFont.lvFontsChange(Sender: TObject;
+  Item: TListItem; Change: TItemChange);
+var
+  sel: TListItem;
+begin
+  if Populating then Exit;
+  sel := lvFonts.ItemFocused;
+  if Assigned(sel) and sel.Selected then
+  begin
+    fData.fFontName := sel.Caption;
+    PopulateSizes(sel.Index, rePreview.Font.Size);
+    PopulatePreview;
+    ApplyDataToChildForms;
+  end;
+end;
+
+procedure TfmPropertyPageFont.lvFontsData(Sender: TObject; Item: TListItem);
+var
+  st: string;
+  details: TFontDetails;
+begin
+  details := FontDetails(Item.Index);
+  if Assigned(details) then
+  begin
+    Item.Caption := details.Name;
+    if details.Fixed then
+      st := '*'
+    else
+      st := '';
+    Item.SubItems.Add(st);
+    if details.TrueType then
+      st := '*'
+    else
+      st := '';
+    Item.SubItems.Add(st);
+  end;
+end;
+
+procedure TfmPropertyPageFont.lvFontsResize(Sender: TObject);
+begin
+  PostMessage(Handle, WM_DELAYEDRESIZE, 0, 0);
+end;
+
+procedure TfmPropertyPageFont.lvSizesChange(Sender: TObject;
+  Item: TListItem; Change: TItemChange);
+var
+  sel: TListItem;
+begin
+  if Populating then Exit;
+  sel := lvSizes.ItemFocused;
+  if Assigned(sel) and (sel.Caption <> '')then
+  begin
+    fData.fFontSize := StrToInt(sel.Caption);
+    PopulatePreview;
+    ApplyDataToChildForms;
+  end;
+end;
+
+procedure TfmPropertyPageFont.lvSizesData(Sender: TObject;
+  Item: TListItem);
+var
+  details: TFontDetails;
+begin
+  details := FontDetails(lvFonts.ItemIndex);
+  if Assigned(details) then
+    Item.Caption := IntToStr(details.Size[Item.Index]);
 end;
 
 procedure TfmPropertyPageFont.PopulateControls(AData: TPropertyPageData);
@@ -133,6 +208,15 @@ begin
   PopulatePreview;
 end;
 
+procedure TfmPropertyPageFont.PopulatePreview;
+begin
+  rePreview.Color := 1;
+  rePreview.Color := fData.fBackgroundColor;
+  rePreview.Font.Name := fData.fFontname;
+  rePreview.Font.Size := fData.fFontSize;
+  rePreview.Font.Style := fData.fFontStyle;
+end;
+
 procedure TfmPropertyPageFont.PopulateSizes(fontNo, fontSize: Integer);
 var
   details: TFontDetails;
@@ -164,65 +248,18 @@ begin
   end;
 end;
 
-procedure TfmPropertyPageFont.lvFontsData(Sender: TObject; Item: TListItem);
+procedure TfmPropertyPageFont.wmDelayedResize(var Msg: TMessage);
 var
-  st: string;
-  details: TFontDetails;
+  hasScrollBar: Boolean;
+  offset: Integer;
 begin
-  details := FontDetails(Item.Index);
-  if Assigned(details) then
-  begin
-    Item.Caption := details.Name;
-    if details.Fixed then
-      st := '*'
-    else
-      st := '';
-    Item.SubItems.Add(st);
-    if details.TrueType then
-      st := '*'
-    else
-      st := '';
-    Item.SubItems.Add(st);
-  end;
-end;
+  hasScrollBar := (GetWindowLong(lvFonts.Handle, GWL_STYLE) and WS_VSCROLL) <> 0;
+  if not hasScrollBar then
+    offset := GetSystemMetrics(SM_CXVSCROLL)
+  else
+    offset := 0;
 
-procedure TfmPropertyPageFont.lvSizesData(Sender: TObject; Item: TListItem);
-var
-  details: TFontDetails;
-begin
-  details := FontDetails(lvFonts.ItemIndex);
-  if Assigned(details) then
-    Item.Caption := IntToStr(details.Size[Item.Index]);
-end;
-
-procedure TfmPropertyPageFont.lvFontsChange(Sender: TObject;
-  Item: TListItem; Change: TItemChange);
-var
-  sel: TListItem;
-begin
-  if Populating then Exit;
-  sel := lvFonts.ItemFocused;
-  if Assigned(sel) then
-  begin
-    fData.fFontName := sel.Caption;
-    PopulateSizes(sel.Index, rePreview.Font.Size);
-    PopulatePreview;
-    ApplyDataToChildForms;
-  end;
-end;
-
-class function TfmPropertyPageFont.GetDataClass: TPropertyPageDataClass;
-begin
-  Result := TPropertyPageFontData;
-end;
-
-procedure TfmPropertyPageFont.PopulatePreview;
-begin
-  rePreview.Color := 1;
-  rePreview.Color := fData.fBackgroundColor;
-  rePreview.Font.Name := fData.fFontname;
-  rePreview.Font.Size := fData.fFontSize;
-  rePreview.Font.Style := fData.fFontStyle;
+  lvFonts.Columns[0].Width := lvFonts.ClientWidth - lvFonts.Columns[1].Width - lvFonts.Columns[2].Width - 2 - offset;
 end;
 
 procedure TfmPropertyPageFont.ApplyDataToChildForms;
@@ -259,21 +296,6 @@ begin
   fFontStyle := app.FontStyle;
   fBackgroundColor := app.BackgroundColor;
   fAlternateBGColor := app.AlternateBGColor;
-end;
-
-procedure TfmPropertyPageFont.lvSizesChange(Sender: TObject;
-  Item: TListItem; Change: TItemChange);
-var
-  sel: TListItem;
-begin
-  if Populating then Exit;
-  sel := lvSizes.ItemFocused;
-  if Assigned(sel) then
-  begin
-    fData.fFontSize := StrToInt(sel.Caption);
-    PopulatePreview;
-    ApplyDataToChildForms;
-  end;
 end;
 
 procedure TfmPropertyPageFont.cbBoldClick(Sender: TObject);

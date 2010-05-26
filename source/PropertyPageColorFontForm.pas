@@ -4,15 +4,15 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, PropertyPageForm, StdCtrls, ExtCtrls, unitNewsReaderOptions,
-  ComCtrls, unitFontDetails;
+  Dialogs, PropertyPageForm, StdCtrls, ExtCtrls, ComCtrls, NewsGlobals,
+  unitNewsReaderOptions, unitFontDetails;
 
 type
   TPropertyPageColorFontData = class(TPropertyPageData)
   private
     fFontSize: Integer;
     fFontStyle: TFontStyles;
-    fFontname: string;
+    fFontName: string;
     fFontColor: TColor;
     fBackgroundColor: TColor;
   protected
@@ -29,6 +29,7 @@ type
     Bevel2: TBevel;
     rePreview: TRichEdit;
     lvFonts: TListView;
+    lvSizes: TListView;
     gbFontEffects: TGroupBox;
     cbBold: TCheckBox;
     cbUnderline: TCheckBox;
@@ -39,20 +40,20 @@ type
     clrFont: TColorBox;
     clrBackground: TColorBox;
     lblBackground: TLabel;
-    lvSizes: TListView;
     procedure lvFontsData(Sender: TObject; Item: TListItem);
+    procedure lvSizesData(Sender: TObject; Item: TListItem);
     procedure lvFontsChange(Sender: TObject; Item: TListItem; Change: TItemChange);
     procedure lvFontsResize(Sender: TObject);
-    procedure lvSizesData(Sender: TObject; Item: TListItem);
     procedure lvSizesChange(Sender: TObject; Item: TListItem; Change: TItemChange);
     procedure cbBoldClick(Sender: TObject);
     procedure clrFontChange(Sender: TObject);
     procedure clrBackgroundChange(Sender: TObject);
   private
     fData: TPropertyPageColorFontData;
-    procedure PopulateSizes(fontNo, fontSize: Integer);
     function FontDetails(i: Integer): TFontDetails;
+    procedure PopulateSizes(fontNo, fontSize: Integer);
     procedure PopulatePreview;
+    procedure wmDelayedResize(var Msg: TMessage); message WM_DELAYEDRESIZE;
   public
     class function GetDataClass: TPropertyPageDataClass; override;
     procedure PopulateControls(AData: TPropertyPageData); override;
@@ -64,7 +65,7 @@ var
 implementation
 
 uses
-  ConTnrs, NewsGlobals;
+  Contnrs;
 
 {$R *.dfm}
 
@@ -143,9 +144,9 @@ var
 begin
   if Populating then Exit;
   sel := lvFonts.ItemFocused;
-  if Assigned(sel) then
+  if Assigned(sel) and sel.Selected then
   begin
-    fData.fFontname := sel.Caption;
+    fData.fFontName := sel.Caption;
     PopulateSizes(sel.Index, rePreview.Font.Size);
     PopulatePreview;
   end;
@@ -174,17 +175,8 @@ begin
 end;
 
 procedure TfmPropertyPageColorFont.lvFontsResize(Sender: TObject);
-var
-  hasScrollBar: Boolean;
-  offset: Integer;
 begin
-  hasScrollBar := (GetWindowLong(lvFonts.Handle, GWL_STYLE) and WS_VSCROLL) <> 0;
-  if not hasScrollBar then
-    offset := GetSystemMetrics(SM_CXVSCROLL)
-  else
-    offset := 0;
-
-  lvFonts.Columns[0].Width := lvFonts.ClientWidth - lvFonts.Columns[1].Width - lvFonts.Columns[2].Width - 2 - offset;
+  PostMessage(Handle, WM_DELAYEDRESIZE, 0, 0);
 end;
 
 procedure TfmPropertyPageColorFont.lvSizesChange(Sender: TObject;
@@ -194,7 +186,7 @@ var
 begin
   if Populating then Exit;
   sel := lvSizes.ItemFocused;
-  if Assigned(sel) then
+  if Assigned(sel) and (sel.Caption <> '')then
   begin
     fData.fFontSize := StrToInt(sel.Caption);
     PopulatePreview;
@@ -296,6 +288,20 @@ begin
   end;
 end;
 
+procedure TfmPropertyPageColorFont.wmDelayedResize(var Msg: TMessage);
+var
+  hasScrollBar: Boolean;
+  offset: Integer;
+begin
+  hasScrollBar := (GetWindowLong(lvFonts.Handle, GWL_STYLE) and WS_VSCROLL) <> 0;
+  if not hasScrollBar then
+    offset := GetSystemMetrics(SM_CXVSCROLL)
+  else
+    offset := 0;
+
+  lvFonts.Columns[0].Width := lvFonts.ClientWidth - lvFonts.Columns[1].Width - lvFonts.Columns[2].Width - 2 - offset;
+end;
+
 { TPropertyPageColorFontData }
 
 function TPropertyPageColorFontData.Apply: Boolean;
@@ -371,8 +377,7 @@ var
   cb: TCheckBox;
   style: TFontStyle;
 begin
-  if Populating then Exit;
-  if not (Sender is TCheckBox) then Exit;
+  if Populating or not (Sender is TCheckBox) then Exit;
   cb := TCheckbox(Sender);
 
   if Sender = cbBold then

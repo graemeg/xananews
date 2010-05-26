@@ -55,6 +55,8 @@ const
   WM_SPECIALKEY = WM_APP + $424;
   WM_SETIDENTITY = WM_APP + $425;
 
+  WM_DELAYEDRESIZE = WM_APP + $430;
+
   DefaultMaxLineLength = 72;
 
 type

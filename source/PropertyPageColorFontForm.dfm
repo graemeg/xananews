@@ -235,15 +235,17 @@ inherited fmPropertyPageColorFont: TfmPropertyPageColorFont
     Columns = <
       item
         Caption = 'Font Name'
-        Width = 114
+        Width = 130
       end
       item
+        Alignment = taCenter
         Caption = 'Fixed'
         Width = 40
       end
       item
+        Alignment = taCenter
         Caption = 'Truetype'
-        Width = 55
+        Width = 60
       end>
     ColumnClick = False
     GridLines = True
