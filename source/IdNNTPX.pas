@@ -921,10 +921,13 @@ procedure TidNNTPX.ProcessPipeline;
         LogMessage('[rx] ' + str);
         if not ValidResponse(str) then
         begin
-          repeat
-            str := IOHandler.ReadLn;
-            LogMessage('[rx] ' + str);
-          until str = '.';
+          if str <> '.' then                    // Work around for Jive forums.
+          begin
+            repeat
+              str := IOHandler.ReadLn;
+              LogMessage('[rx] ' + str);
+            until str = '.';
+          end;
 
           str := '';
         end;
