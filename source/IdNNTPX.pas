@@ -836,6 +836,8 @@ begin
   if gLogFlag then
     for I := 0 to AList.Count - 1 do
       LogMessage('[rx] ' + AList[i]);
+
+  Result := AList.Count;
 end;
 
 procedure TidNNTPX.AddPipelineGetCommand(AArticleNo: Cardinal;
