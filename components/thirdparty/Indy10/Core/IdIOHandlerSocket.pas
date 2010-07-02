@@ -189,8 +189,8 @@ type
     procedure SetDestination(const AValue: string); override;
     function GetTransparentProxy: TIdCustomTransparentProxy; virtual;
     procedure SetTransparentProxy(AProxy: TIdCustomTransparentProxy); virtual;
+    function GetUseNagle: Boolean;
     procedure SetUseNagle(AValue: Boolean);
-    procedure SetNagleOpt(AEnabled: Boolean);
     //
     function SourceIsAvailable: Boolean; override;
     function CheckForError(ALastResult: Integer): Integer; override;
@@ -212,12 +212,12 @@ type
     property OnSocketAllocated: TNotifyEvent read FOnSocketAllocated write FOnSocketAllocated;
   published
     property BoundIP: string read FBoundIP write FBoundIP;
-    property BoundPort: TIdPort read FBoundPort write FBoundPort default 0;
+    property BoundPort: TIdPort read FBoundPort write FBoundPort default IdBoundPortDefault;
     property DefaultPort: TIdPort read FDefaultPort write FDefaultPort;
     property IPVersion: TIdIPVersion read FIPVersion write FIPVersion default ID_DEFAULT_IP_VERSION;
     property ReuseSocket: TIdReuseSocket read FReuseSocket write FReuseSocket default rsOSDependent;
     property TransparentProxy: TIdCustomTransparentProxy read GetTransparentProxy write SetTransparentProxy;
-    property UseNagle: boolean read FUseNagle write SetUseNagle default True;
+    property UseNagle: boolean read GetUseNagle write SetUseNagle default True;
   end;
 
 implementation
@@ -264,11 +264,11 @@ begin
     ClientPortMax := BoundPortMax;
     // Turn on Reuse if specified
     if (FReuseSocket = rsTrue) or ((FReuseSocket = rsOSDependent) and (GOSType = otUnix)) then begin
-      FBinding.SetSockOpt(Id_SOL_SOCKET, Id_SO_REUSEADDR, Id_SO_True);
+      SetSockOpt(Id_SOL_SOCKET, Id_SO_REUSEADDR, Id_SO_True);
     end;
     Bind;
     // Turn off Nagle if specified
-    SetNagleOpt(UseNagle);
+    UseNagle := Self.FUseNagle;
     DoAfterBind;
   end;
 end;
@@ -442,18 +442,20 @@ begin
   Result := FTransparentProxy;
 end;
 
-procedure TIdIOHandlerSocket.SetUseNagle(AValue: Boolean);
+function TIdIOHandlerSocket.GetUseNagle: Boolean;
 begin
-  if FUseNagle <> AValue then begin
-    FUseNagle := AValue;
-    SetNagleOpt(FUseNagle);
+  if FBinding <> nil then begin
+    Result := FBinding.UseNagle;
+  end else begin
+    Result := FUseNagle;
   end;
 end;
 
-procedure TIdIOHandlerSocket.SetNagleOpt(AEnabled: Boolean);
+procedure TIdIOHandlerSocket.SetUseNagle(AValue: Boolean);
 begin
-  if BindingAllocated then begin
-    FBinding.SetSockOpt(Id_SOCKETOPTIONLEVEL_TCP, Id_TCP_NODELAY, Integer(not AEnabled));
+  FUseNagle := AValue;
+  if FBinding <> nil then begin
+    FBinding.UseNagle := AValue;
   end;
 end;
 

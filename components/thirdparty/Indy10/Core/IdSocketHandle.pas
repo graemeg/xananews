@@ -162,19 +162,23 @@ type
     FPort: TIdPort;
     FPeerPort: TIdPort;
     FReadSocketList: TIdSocketList;
+    FSocketType : TIdSocketType;
     FOverLapped: Boolean;
     FIPVersion: TIdIPVersion;
     FConnectionHandle: TIdCriticalSection;
     FBroadcastEnabled: Boolean;
+    FUseNagle : Boolean;
     //
     function BindPortReserved: Boolean;
     procedure BroadcastEnabledChanged;
     procedure SetBroadcastEnabled(const AValue: Boolean);
+    procedure Disconnect; virtual;
     procedure SetBroadcastFlag(const AEnabled: Boolean);
     procedure SetOverLapped(const AValue: Boolean);
     procedure SetHandle(AHandle: TIdStackSocketHandle);
     procedure SetIPVersion(const Value: TIdIPVersion);
-    function TryBind: Boolean;
+    procedure SetUseNagle(const AValue: Boolean);
+    function TryBind(APort: TIdPort): Boolean;
   public
     function Accept(ASocket: TIdStackSocketHandle): Boolean;
     procedure AllocateSocket(const ASocketType: TIdSocketType = Id_SOCK_STREAM;
@@ -219,12 +223,14 @@ type
     procedure SetLoopBack(const AValue: Boolean);
     procedure SetMulticastTTL(const AValue: Byte);
     procedure SetTTL(const AValue: Integer);
+    procedure SetNagleOpt(const AEnabled: Boolean);
     //
     property HandleAllocated: Boolean read FHandleAllocated;
     property Handle: TIdStackSocketHandle read FHandle;
     property OverLapped: Boolean read FOverLapped write SetOverLapped;
     property PeerIP: string read FPeerIP;
     property PeerPort: TIdPort read FPeerPort;
+    property SocketType : TIdSocketType read FSocketType;
   published
     property BroadcastEnabled: Boolean read FBroadcastEnabled write SetBroadcastEnabled default False;
     property ClientPortMin : TIdPort read FClientPortMin write FClientPortMin default DEF_PORT_ANY;
@@ -232,6 +238,7 @@ type
     property IP: string read FIP write FIP;
     property IPVersion: TIdIPVersion read FIPVersion write SetIPVersion default ID_DEFAULT_IP_VERSION;
     property Port: TIdPort read FPort write FPort;
+    property UseNagle: Boolean read FUseNagle write SetUseNagle default True;
   end;
 
   TIdSocketHandleEvent = procedure(AHandle: TIdSocketHandle) of object;
@@ -255,6 +262,11 @@ begin
   SetHandle(GStack.NewSocketHandle(ASocketType, AProtocol, FIPVersion, FOverLapped));
 end;
 
+procedure TIdSocketHandle.Disconnect;
+begin
+  GStack.Disconnect(Handle);
+end;
+
 procedure TIdSocketHandle.CloseSocket;
 begin
   if HandleAllocated then begin
@@ -263,7 +275,7 @@ begin
       // may then call (in other threads) Connected, which in turn looks at
       // FHandleAllocated.
       FHandleAllocated := False;
-      GStack.Disconnect(Handle);
+      Disconnect;
       SetHandle(Id_INVALID_SOCKET);
     finally
       FConnectionHandle.Leave;
@@ -356,7 +368,7 @@ begin
     end else if not BindPortReserved then begin
       raise EIdCanNotBindPortInRange.CreateFmt(RSCannotBindRange, [FClientPortMin, FClientPortMax]);
     end;
-  end else if not TryBind then begin
+  end else if not TryBind(Port) then begin
     raise EIdCouldNotBindSocket.Create(RSCouldNotBindSocket);
   end;
 end;
@@ -450,6 +462,7 @@ end;
 constructor TIdSocketHandle.Create(ACollection: TCollection);
 begin
   inherited Create(ACollection);
+  FUseNagle := True;
   FConnectionHandle := TIdCriticalSection.Create;
   FReadSocketList := TIdSocketList.CreateSocketList;
   Reset;
@@ -531,10 +544,10 @@ begin
   FIPVersion := ID_DEFAULT_IP_VERSION;
 end;
 
-function TIdSocketHandle.TryBind: Boolean;
+function TIdSocketHandle.TryBind(APort: TIdPort): Boolean;
 begin
   try
-    GStack.Bind(Handle, FIP, FPort, FIPVersion);
+    GStack.Bind(Handle, FIP, APort, FIPVersion);
     Result := True;
     UpdateBindingLocal;
   except
@@ -546,10 +559,9 @@ function TIdSocketHandle.BindPortReserved: Boolean;
 var
   i : TIdPort;
 begin
-  Result := false;
+  Result := False;
   for i := FClientPortMax downto FClientPortMin do begin
-    FPort := i;
-    if TryBind then begin
+    if TryBind(i) then begin
       Result := True;
       Exit;
     end;
@@ -568,6 +580,8 @@ begin
 end;
 
 procedure TIdSocketHandle.SetHandle(AHandle: TIdStackSocketHandle);
+var
+  LOpt: Integer;
 begin
   if FHandle <> Id_INVALID_SOCKET then begin
     FReadSocketList.Remove(FHandle);
@@ -576,6 +590,14 @@ begin
   FHandleAllocated := FHandle <> Id_INVALID_SOCKET;
   if FHandleAllocated then begin
     FReadSocketList.Add(FHandle);
+    GetSockOpt(Id_SOL_SOCKET, Id_SO_TYPE, FSocketType);
+    //Get the NODELAY Socket option if we have a TCP Socket.
+    if SocketType = Id_SOCK_STREAM then begin
+      GetSockOpt(Id_SOCKETOPTIONLEVEL_TCP, Id_TCP_NODELAY, LOpt);
+      FUseNagle := (LOpt = 0);
+    end;
+  end else begin
+    FSocketType := Id_SOCK_UNKNOWN;
   end;
 end;
 
@@ -609,12 +631,28 @@ begin
   GStack.SetMulticastTTL(Handle, AValue, FIPVersion);
 end;
 
+procedure TIdSocketHandle.SetNagleOpt(const AEnabled: Boolean);
+begin
+  { You only want to set a Nagle option for TCP.}
+  if HandleAllocated and (SocketType = Id_SOCK_STREAM) then begin
+    SetSockOpt(Id_SOCKETOPTIONLEVEL_TCP, Id_TCP_NODELAY, Integer(not AEnabled));
+  end;
+end;
+
 procedure TIdSocketHandle.SetTTL(const AValue: Integer);
 begin
   if FIPVersion = Id_IPv4 then begin
     SetSockOpt(Id_SOL_IP, Id_SO_IP_TTL, AValue);
   end else begin
     SetSockOpt(Id_SOL_IPv6, Id_IPV6_UNICAST_HOPS, AValue);
+  end;
+end;
+
+procedure TIdSocketHandle.SetUseNagle(const AValue: Boolean);
+begin
+  if FUseNagle <> AValue then begin
+    FUseNagle := AValue;
+    SetNagleOpt(FUseNagle);
   end;
 end;
 

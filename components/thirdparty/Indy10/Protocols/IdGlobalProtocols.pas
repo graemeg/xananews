@@ -393,6 +393,8 @@ type
     Windows2003Server, Windows2003AdvancedServer);
   {$ENDIF}
 
+  TIdHeaderQuotingType = (QuotePlain, QuoteRFC822, QuoteMIME, QuoteHTTP);
+
   //
   EIdExtensionAlreadyExists = class(EIdException);
 // Procs - KEEP THESE ALPHABETICAL!!!!!
@@ -407,15 +409,17 @@ type
   procedure CommaSeparatedToStringList(AList: TStrings; const Value:string);
   function CompareDateTime(const ADateTime1, ADateTime2 : TDateTime) : Integer;
 
-  function ContentTypeToEncoding(const AContentType: string): TIdTextEncoding;
+  function ContentTypeToEncoding(const AContentType: string; AQuoteType: TIdHeaderQuotingType): TIdTextEncoding;
   function CharsetToEncoding(const ACharset: string): TIdTextEncoding;
 
-  function ReadStringAsContentType(AStream: TStream; const AContentType: String
+  function ReadStringAsContentType(AStream: TStream; const AContentType: String;
+    AQuoteType: TIdHeaderQuotingType
     {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}): String;
   function ReadStringAsCharset(AStream: TStream; const ACharset: String
     {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}): String;
 
-  procedure ReadStringsAsContentType(AStream: TStream; AStrings: TStrings; const AContentType: string
+  procedure ReadStringsAsContentType(AStream: TStream; AStrings: TStrings; const AContentType: String;
+    AQuoteType: TIdHeaderQuotingType
     {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF});
   procedure ReadStringsAsCharset(AStream: TStream; AStrings: TStrings; const ACharset: string
     {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF});
@@ -438,8 +442,12 @@ type
   function DomainName(const AHost: String): String;
   function EnsureMsgIDBrackets(const AMsgID: String): String;
   function ExtractHeaderItem(const AHeaderLine: String): String;
-  function ExtractHeaderSubItem(const AHeaderLine,ASubItem: String): String;
-  function ReplaceHeaderSubItem(const AHeaderLine, ASubItem, AValue: String): String;
+  function ExtractHeaderSubItem(const AHeaderLine, ASubItem: String; AQuoteType: TIdHeaderQuotingType): String;
+  function ReplaceHeaderSubItem(const AHeaderLine, ASubItem, AValue: String; AQuoteType: TIdHeaderQuotingType): String; overload;
+  function ReplaceHeaderSubItem(const AHeaderLine, ASubItem, AValue: String; var VOld: String; AQuoteType: TIdHeaderQuotingType): String; overload;
+  function IsHeaderMediaType(const AHeaderLine, AMediaType: String): Boolean;
+  function IsHeaderMediaTypes(const AHeaderLine: String; const AMediaTypes: array of String): Boolean;
+  function IsHeaderValue(const AHeaderLine: String; const AValue: String): Boolean;
   function FileSizeByName(const AFilename: TIdFileName): Int64;
   {$IFDEF WIN32_OR_WIN64_OR_WINCE}
   function IsVolume(const APathName : TIdFileName) : Boolean;
@@ -513,8 +521,9 @@ type
   function IndyWrapText(const ALine, ABreakStr, ABreakChars : string; MaxCol: Integer): string;
  
   //The following is for working on email headers and message part headers...
-  function RemoveHeaderEntry(const AHeader, AEntry: string): string;
-  function RemoveHeaderEntries(const AHeader: string; AEntries: array of string): string;
+  function RemoveHeaderEntry(const AHeader, AEntry: string; AQuoteType: TIdHeaderQuotingType): string; overload;
+  function RemoveHeaderEntry(const AHeader, AEntry: string; var VOld: String; AQuoteType: TIdHeaderQuotingType): string; overload;
+  function RemoveHeaderEntries(const AHeader: string; AEntries: array of string; AQuoteType: TIdHeaderQuotingType): string;
 
   {
     Three functions for easier manipulating of strings.  Don't know of any
@@ -1392,7 +1401,7 @@ begin
   LOldErrorMode := SetErrorMode(SEM_FAILCRITICALERRORS);
   try
     {$ENDIF}
-  Result := CopyFile(PIdFileNameChar(Source), PIdFileNameChar(Destination), False);
+    Result := CopyFile(PIdFileNameChar(Source), PIdFileNameChar(Destination), False);
     {$IFDEF WIN32_OR_WIN64}
   finally
     SetErrorMode(LOldErrorMode);
@@ -1637,7 +1646,7 @@ begin
       end;
     {$IFDEF WIN32_OR_WIN64}
     finally
-     SetErrorMode(LOldErrorMode);
+      SetErrorMode(LOldErrorMode);
     end;
     {$ENDIF}
   end;
@@ -2168,7 +2177,7 @@ type
     Offset: String;
   end;
 const
-  cTimeZones: array[0..89] of TimeZoneOffset = (
+  cTimeZones: array[0..90] of TimeZoneOffset = (
     (TimeZone:'A';    Offset:'+0100'), // Alpha Time Zone - Military                             {do not localize}
     (TimeZone:'ACDT'; Offset:'+1030'), // Australian Central Daylight Time                       {do not localize}
     (TimeZone:'ACST'; Offset:'+0930'), // Australian Central Standard Time                       {do not localize}
@@ -2236,7 +2245,7 @@ const
     (TimeZone:'MST';  Offset:'-0700'), // Mountain Standard Time - North America                 {do not localize}
     (TimeZone:'N';    Offset:'-0100'), // November Time Zone - Military                          {do not localize}
     (TimeZone:'NDT';  Offset:'-0230'), // Newfoundland Daylight Time - North America             {do not localize}
-    (TimeZone:'NFT';  Offset:'+1130'), // Norfolk (Island), Time - Australia                      {do not localize}
+    (TimeZone:'NFT';  Offset:'+1130'), // Norfolk (Island), Time - Australia                     {do not localize}
     (TimeZone:'NST';  Offset:'-0330'), // Newfoundland Standard Time - North America             {do not localize}
     (TimeZone:'O';    Offset:'-0200'), // Oscar Time Zone - Military                             {do not localize}
     (TimeZone:'P';    Offset:'-0300'), // Papa Time Zone - Military                              {do not localize}
@@ -2247,6 +2256,7 @@ const
     (TimeZone:'S';    Offset:'-0600'), // Sierra Time Zone - Military                            {do not localize}
     (TimeZone:'T';    Offset:'-0700'), // Tango Time Zone - Military                             {do not localize}
     (TimeZone:'U';    Offset:'-0800'), // Uniform Time Zone - Military                           {do not localize}
+    (TimeZone:'UT';   Offset:'+0000'), // Universal Time - Europe                                {do not localize}
     (TimeZone:'UTC';  Offset:'+0000'), // Coordinated Universal Time - Europe                    {do not localize}
     (TimeZone:'V';    Offset:'-0900'), // Victor Time Zone - Military                            {do not localize}
     (TimeZone:'W';    Offset:'-1000'), // Whiskey Time Zone - Military                           {do not localize}
@@ -2403,51 +2413,81 @@ begin
     Add('.nml=animation/narrative');    {Do not Localize}
 
     { Audio }
+    Add('.aac=audio/mp4');
+    Add('.aif=audio/x-aiff');    {Do not Localize}
+    Add('.aifc=audio/x-aiff');    {Do not Localize}
     Add('.aiff=audio/x-aiff');    {Do not Localize}
+
     Add('.au=audio/basic');    {Do not Localize}
-    Add('.mid=midi/mid');    {Do not Localize}
+    Add('.gsm=audio/x-gsm');    {Do not Localize}
+    Add('.kar=audio/midi');    {Do not Localize}
+    Add('.m3u=audio/mpegurl');    {Do not Localize}
+    Add('.m4a=audio/x-mpg');    {Do not Localize}
+    Add('.mid=audio/midi');    {Do not Localize}
+    Add('.midi=audio/midi');    {Do not Localize}
+    Add('.mpega=audio/x-mpg');    {Do not Localize}
+    Add('.mp2=audio/x-mpg');    {Do not Localize}
     Add('.mp3=audio/x-mpg');    {Do not Localize}
+    Add('.mpga=audio/x-mpg');    {Do not Localize}
     Add('.m3u=audio/x-mpegurl');    {Do not Localize}
+    Add('.pls=audio/x-scpls');   {Do not Localize}
     Add('.qcp=audio/vnd.qcelp');    {Do not Localize}
     Add('.ra=audio/x-realaudio');    {Do not Localize}
+    Add('.ram=audio/x-pn-realaudio');    {Do not Localize}
+    Add('.rm=audio/x-pn-realaudio');    {Do not Localize}
+    Add('.sd2=audio/x-sd2');    {Do not Localize}
+    Add('.sid=audio/prs.sid');   {Do not Localize}
+    Add('.snd=audio/basic');   {Do not Localize}
     Add('.wav=audio/x-wav');    {Do not Localize}
-    Add('.gsm=audio/x-gsm');    {Do not Localize}
     Add('.wax=audio/x-ms-wax');    {Do not Localize}
     Add('.wma=audio/x-ms-wma');    {Do not Localize}
-    Add('.ram=audio/x-pn-realaudio');    {Do not Localize}
+
     Add('.mjf=audio/x-vnd.AudioExplosion.MjuiceMediaFile');    {Do not Localize}
 
     { Image }
+    Add('.art=image/x-jg');    {Do not Localize}
     Add('.bmp=image/bmp');    {Do not Localize}
+    Add('.cdr=image/x-coreldraw');    {Do not Localize}
+    Add('.cdt=image/x-coreldrawtemplate');    {Do not Localize}
+    Add('.cpt=image/x-corelphotopaint');    {Do not Localize}
+    Add('.djv=image/vnd.djvu');    {Do not Localize}
+    Add('.djvu=image/vnd.djvu');    {Do not Localize}
     Add('.gif=image/gif');    {Do not Localize}
+    Add('.ief=image/ief');    {Do not Localize}
+    Add('.ico=image/x-icon');    {Do not Localize}
+    Add('.jng=image/x-jng');    {Do not Localize}
     Add('.jpg=image/jpeg');    {Do not Localize}
     Add('.jpeg=image/jpeg');    {Do not Localize}
     Add('.jpe=image/jpeg');    {Do not Localize}
-    Add('.pict=image/x-pict');    {Do not Localize}
-    Add('.png=image/x-png');    {Do not Localize}
-    Add('.svg=image/svg-xml');    {Do not Localize}
-    Add('.tif=image/x-tiff');    {Do not Localize}
-    Add('.rf=image/vnd.rn-realflash');    {Do not Localize}
-    Add('.rp=image/vnd.rn-realpix');    {Do not Localize}
-    Add('.ico=image/x-icon');    {Do not Localize}
-    Add('.art=image/x-jg');    {Do not Localize}
-    Add('.pntg=image/x-macpaint');    {Do not Localize}
-    Add('.qtif=image/x-quicktime');    {Do not Localize}
-    Add('.sgi=image/x-sgi');    {Do not Localize}
-    Add('.targa=image/x-targa');    {Do not Localize}
-    Add('.xbm=image/xbm');    {Do not Localize}
-    Add('.psd=image/x-psd');    {Do not Localize}
-    Add('.pnm=image/x-portable-anymap');    {Do not Localize}
+    Add('.pat=image/x-coreldrawpattern');   {Do not Localize}
+    Add('.pcx=image/pcx');    {Do not Localize}
     Add('.pbm=image/x-portable-bitmap');    {Do not Localize}
     Add('.pgm=image/x-portable-graymap');    {Do not Localize}
+    Add('.pict=image/x-pict');    {Do not Localize}
+    Add('.png=image/x-png');    {Do not Localize}
+    Add('.pnm=image/x-portable-anymap');    {Do not Localize}
+    Add('.pntg=image/x-macpaint');    {Do not Localize}
     Add('.ppm=image/x-portable-pixmap');    {Do not Localize}
+    Add('.psd=image/x-psd');    {Do not Localize}
+    Add('.qtif=image/x-quicktime');    {Do not Localize}
+    Add('.ras=image/x-cmu-raster');    {Do not Localize}
+    Add('.rf=image/vnd.rn-realflash');    {Do not Localize}
     Add('.rgb=image/x-rgb');    {Do not Localize}
+    Add('.rp=image/vnd.rn-realpix');    {Do not Localize}
+    Add('.sgi=image/x-sgi');    {Do not Localize}
+    Add('.svg=image/svg-xml');    {Do not Localize}
+    Add('.svgz=image/svg-xml');    {Do not Localize}
+    Add('.targa=image/x-targa');    {Do not Localize}
+    Add('.tif=image/x-tiff');    {Do not Localize}
+    Add('.wbmp=image/vnd.wap.wbmp');    {Do not Localize}
+    Add('.xbm=image/xbm');    {Do not Localize}
     Add('.xbm=image/x-xbitmap');    {Do not Localize}
     Add('.xpm=image/x-xpixmap');    {Do not Localize}
     Add('.xwd=image/x-xwindowdump');    {Do not Localize}
 
     { Text }
     Add('.323=text/h323');    {Do not Localize}
+
     Add('.xml=text/xml');    {Do not Localize}
     Add('.uls=text/iuls');    {Do not Localize}
     Add('.txt=text/plain');    {Do not Localize}
@@ -2459,8 +2499,18 @@ begin
     Add('.vcf=text/x-vcard');    {Do not Localize}
 
     { Video }
+    Add('.asf=video/x-ms-asf');    {Do not Localize}
+    Add('.asx=video/x-ms-asf');    {Do not Localize}
     Add('.avi=video/x-msvideo');    {Do not Localize}
+    Add('.dl=video/dl');    {Do not Localize}
+    Add('.dv=video/dv');  {Do not Localize}
     Add('.flc=video/flc');    {Do not Localize}
+    Add('.fli=video/fli');    {Do not Localize}
+    Add('.gl=video/gl');    {Do not Localize}
+    Add('.lsf=video/x-la-asf');    {Do not Localize}
+    Add('.lsx=video/x-la-asf');    {Do not Localize}
+    Add('.mng=video/x-mng');    {Do not Localize}
+
     Add('.mp2=video/mpeg');    {Do not Localize}
     Add('.mp3=video/mpeg');    {Do not Localize}
     Add('.mp4=video/mpeg');    {Do not Localize}
@@ -2468,7 +2518,11 @@ begin
     Add('.mpa=video/mpeg');    {Do not Localize}
     Add('.mpe=video/mpeg');    {Do not Localize}
     Add('.mpg=video/mpeg');    {Do not Localize}
+    Add('.moov=video/quicktime');     {Do not Localize}
     Add('.mov=video/quicktime');    {Do not Localize}
+    Add('.mxu=video/vnd.mpegurl');   {Do not Localize}
+    Add('.qt=video/quicktime');    {Do not Localize}
+    Add('.qtc=video/x-qtc'); {Do not loccalize}
     Add('.rv=video/vnd.rn-realvideo');    {Do not Localize}
     Add('.ivf=video/x-ivf');    {Do not Localize}
     Add('.wm=video/x-ms-wm');    {Do not Localize}
@@ -2481,15 +2535,22 @@ begin
     Add('.movie=video/x-sgi-movie');    {Do not Localize}
 
     { Application }
+    Add('.7z=application/x-7z-compressed');   {Do not Localize}
+    Add('.a=application/x-archive');   {Do not Localize}
     Add('.aab=application/x-authorware-bin');    {Do not Localize}
     Add('.aam=application/x-authorware-map');    {Do not Localize}
     Add('.aas=application/x-authorware-seg');    {Do not Localize}
     Add('.abw=application/x-abiword');    {Do not Localize}
+    Add('.ace=application/x-ace-compressed');  {Do not Localize}
     Add('.ai=application/postscript');    {Do not Localize}
+    Add('.alz=application/x-alz-compressed');    {Do not Localize}
+    Add('.ani=application/x-navi-animation');   {Do not Localize}
     Add('.arj=application/x-arj');    {Do not Localize}
     Add('.asf=application/vnd.ms-asf');    {Do not Localize}
     Add('.bat=application/x-msdos-program');    {Do not Localize}
     Add('.bcpio=application/x-bcpio');    {Do not Localize}
+    Add('.boz=application/x-bzip2');     {Do not Localize}
+    Add('.bz=application/x-bzip');
     Add('.bz2=application/x-bzip2');    {Do not Localize}
     Add('.cab=application/vnd.ms-cab-compressed');    {Do not Localize}
     Add('.cat=application/vnd.ms-pki.seccat');    {Do not Localize}
@@ -2509,6 +2570,7 @@ begin
     Add('.crd=application/x-mscardfile');    {Do not Localize}
     Add('.crl=application/pkix-crl');    {Do not Localize}
     Add('.csh=application/x-csh');    {Do not Localize}
+    Add('.dar=application/x-dar');    {Do not Localize}
     Add('.dbf=application/x-dbase');    {Do not Localize}
     Add('.dcr=application/x-director');    {Do not Localize}
     Add('.deb=application/x-debian-package');    {Do not Localize}
@@ -2529,6 +2591,7 @@ begin
     Add('.fif=application/fractals');    {Do not Localize}
     Add('.flm=application/vnd.kde.kivio');    {Do not Localize}
     Add('.fml=application/x-file-mirror-list');    {Do not Localize}
+    Add('.gzip=application/x-gzip');  {Do not Localize}
     Add('.gnumeric=application/x-gnumeric');    {Do not Localize}
     Add('.gtar=application/x-gtar');    {Do not Localize}
     Add('.gz=application/x-gzip');    {Do not Localize}
@@ -2553,7 +2616,11 @@ begin
     Add('.lha=application/x-lzh');    {Do not Localize}
     Add('.lcc=application/fastman');    {Do not Localize}
     Add('.lrm=application/vnd.ms-lrm');    {Do not Localize}
+    Add('.lz=application/x-lzip');    {Do not Localize}
     Add('.lzh=application/x-lzh');    {Do not Localize}
+    Add('.lzma=application/x-lzma');  {Do not Localize}
+    Add('.lzo=application/x-lzop'); {Do not Localize}
+    Add('.lzx=application/x-lzx');
     Add('.m13=application/x-msmediaview');    {Do not Localize}
     Add('.m14=application/x-msmediaview');    {Do not Localize}
     Add('.mpp=application/vnd.ms-project');    {Do not Localize}
@@ -2618,8 +2685,6 @@ begin
     Add('.rss=application/rss+xml');    {Do not Localize}
     Add('.scm=application/x-icq-scm');    {Do not Localize}
     Add('.ser=application/java-serialized-object');    {Do not Localize}
-    Add('.sh=application/x-sh');    {Do not Localize}
-    Add('.shar=application/x-shar');    {Do not Localize}
     Add('.scd=application/x-msschedule');    {Do not Localize}
     Add('.sda=application/vnd.stardivision.draw');    {Do not Localize}
     Add('.sdc=application/vnd.stardivision.calc');    {Do not Localize}
@@ -2627,8 +2692,11 @@ begin
     Add('.sdp=application/x-sdp');    {Do not Localize}
     Add('.setpay=application/set-payment-initiation');    {Do not Localize}
     Add('.setreg=application/set-registration-initiation');    {Do not Localize}
+    Add('.sh=application/x-sh');    {Do not Localize}
+    Add('.shar=application/x-shar');    {Do not Localize}
     Add('.shw=application/presentations');    {Do not Localize}
     Add('.sit=application/x-stuffit');    {Do not Localize}
+    Add('.sitx=application/x-stuffitx');  {Do not localize}
     Add('.skd=application/x-koan');    {Do not Localize}
     Add('.skm=application/x-koan');    {Do not Localize}
     Add('.skp=application/x-koan');    {Do not Localize}
@@ -2648,6 +2716,7 @@ begin
     Add('.sv4cpio=application/x-sv4cpio');    {Do not Localize}
     Add('.sv4crc=application/x-sv4crc');    {Do not Localize}
     Add('.swf=application/x-shockwave-flash');    {Do not Localize}
+    Add('.swf1=application/x-shockwave-flash');    {Do not Localize}
     Add('.sxc=application/vnd.sun.xml.calc');    {Do not Localize}
     Add('.sxi=application/vnd.sun.xml.impress');    {Do not Localize}
     Add('.sxm=application/vnd.sun.xml.math');    {Do not Localize}
@@ -2659,13 +2728,19 @@ begin
     Add('.tex=application/x-tex');    {Do not Localize}
     Add('.texi=application/x-texinfo');    {Do not Localize}
     Add('.texinfo=application/x-texinfo');    {Do not Localize}
+    Add('.tbz=application/x-bzip-compressed-tar');   {Do not Localize}
+    Add('.tbz2=application/x-bzip-compressed-tar');   {Do not Localize}
+    Add('.tgz=application/x-compressed-tar');    {Do not Localize}
+    Add('.tlz=application/x-lzma-compressed-tar');    {Do not Localize}
     Add('.tr=application/x-troff');    {Do not Localize}
     Add('.trm=application/x-msterminal');    {Do not Localize}
     Add('.troff=application/x-troff');    {Do not Localize}
     Add('.tsp=application/dsptype');    {Do not Localize}
-    Add('.tgz=application/x-compressed');    {Do not Localize}
     Add('.torrent=application/x-bittorrent');    {Do not Localize}
     Add('.ttz=application/t-time');    {Do not Localize}
+    Add('.txz=application/x-xz-compressed-tar'); {Do not localize}
+    Add('.udeb=application/x-debian-package');    {Do not Localize}
+
     Add('.uin=application/x-icq');    {Do not Localize}
     Add('.urls=application/x-url-list');    {Do not Localize}
     Add('.ustar=application/x-ustar');    {Do not Localize}
@@ -2714,18 +2789,22 @@ begin
     if a web-browser shows all of the 8bit charactors.
     }
     //of course, we have to add this :-).
+    Add('.asm=text/x-asm');   {Do not Localize}
     Add('.p=text/x-pascal');    {Do not Localize}
     Add('.pas=text/x-pascal');    {Do not Localize}
-    Add('.h++=text/x-c++hdr');    {Do not Localize}
-    Add('.hpp=text/x-c++hdr');    {Do not Localize}
-    Add('.hxx=text/x-c++hdr');    {Do not Localize}
-    Add('.hh=text/x-c++hdr');    {Do not Localize}
+
+    Add('.cs=text/x-csharp'); {Do not Localize}
+
+    Add('.c=text/x-csrc');    {Do not Localize}
     Add('.c++=text/x-c++src');    {Do not Localize}
     Add('.cpp=text/x-c++src');    {Do not Localize}
     Add('.cxx=text/x-c++src');    {Do not Localize}
     Add('.cc=text/x-c++src');    {Do not Localize}
-    Add('.h=text/x-chdr');    {Do not Localize}
-    Add('.c=text/x-csrc');    {Do not Localize}
+    Add('.h=text/x-chdr'); {Do not localize}
+    Add('.h++=text/x-c++hdr');    {Do not Localize}
+    Add('.hpp=text/x-c++hdr');    {Do not Localize}
+    Add('.hxx=text/x-c++hdr');    {Do not Localize}
+    Add('.hh=text/x-c++hdr');    {Do not Localize}
     Add('.java=text/x-java');    {Do not Localize}
 
     { WEB }
@@ -2915,6 +2994,7 @@ var
   LExt: string;
 begin
   LExt := IndyLowerCase(ExtractFileExt(AFileName));
+
   Index := FFileExt.IndexOf(LExt);
   if Index = -1 then begin
     BuildCache;
@@ -3513,11 +3593,17 @@ begin
 end;
 
 const
-  token_specials = '()<>@,;:\"/[]?='; {do not localize}
+  QuoteSpecials: array[TIdHeaderQuotingType] of String = (
+    {Plain } '',                    {do not localize}
+    {RFC822} '()<>@,;:\"./',        {do not localize}
+    {MIME  } '()<>@,;:\"/[]?=',     {do not localize}
+    {HTTP  } '()<>@,;:\"/[]?={} '#9 {do not localize}
+    );
 
-procedure SplitHeaderSubItems(AHeaderLine: String; AItems: TStrings);
+procedure SplitHeaderSubItems(AHeaderLine: String; AItems: TStrings;
+  AQuoteType: TIdHeaderQuotingType);
 var
-  LName, LValue: String;
+  LName, LValue, LSep: String;
   I: Integer;
 
   function FetchQuotedString(var VHeaderLine: string): string;
@@ -3527,6 +3613,7 @@ var
     I := 1;
     while I <= Length(VHeaderLine) do begin
       if VHeaderLine[I] = '\' then begin
+        // TODO: disable this logic for HTTP 1.0
         if I < Length(VHeaderLine) then begin
           Delete(VHeaderLine, I, 1);
         end;
@@ -3542,7 +3629,8 @@ var
   end;
 
 begin
-  Fetch(AHeaderLine, ';'); { do not localize}
+  Fetch(AHeaderLine, ';'); {do not localize}
+  LSep := CharRange(#0, #32) + QuoteSpecials[AQuoteType] + #127;
   while AHeaderLine <> '' do
   begin
     AHeaderLine := TrimLeft(AHeaderLine);
@@ -3554,8 +3642,8 @@ begin
     if TextStartsWith(AHeaderLine, '"') then {do not localize}
     begin
       LValue := FetchQuotedString(AHeaderLine);
-    end else  begin
-      I := FindFirstOf(' ' + token_specials, AHeaderLine);
+    end else begin
+      I := FindFirstOf(LSep, AHeaderLine);
       if I <> 0 then
       begin
         LValue := Copy(AHeaderLine, 1, I-1);
@@ -3574,7 +3662,8 @@ begin
   end;
 end;
 
-function ExtractHeaderSubItem(const AHeaderLine, ASubItem: String): String;
+function ExtractHeaderSubItem(const AHeaderLine, ASubItem: String;
+  AQuoteType: TIdHeaderQuotingType): String;
 var
   LItems: TStringList;
   {$IFNDEF VCL_6_OR_ABOVE}
@@ -3585,7 +3674,7 @@ begin
   Result := '';
   LItems := TStringList.Create;
   try
-    SplitHeaderSubItems(AHeaderLine, LItems);
+    SplitHeaderSubItems(AHeaderLine, LItems, AQuoteType);
     {$IFDEF VCL_6_OR_ABOVE}
     LItems.CaseSensitive := False;
     Result := LItems.Values[ASubItem];
@@ -3605,14 +3694,23 @@ begin
   end;
 end;
 
-function ReplaceHeaderSubItem(const AHeaderLine, ASubItem, AValue: String): String;
+function ReplaceHeaderSubItem(const AHeaderLine, ASubItem, AValue: String;
+  AQuoteType: TIdHeaderQuotingType): String;
+var
+  LOld: String;
+begin
+  Result := ReplaceHeaderSubItem(AHeaderLine, ASubItem, AValue, LOld, AQuoteType);
+end;
+
+function ReplaceHeaderSubItem(const AHeaderLine, ASubItem, AValue: String;
+  var VOld: String; AQuoteType: TIdHeaderQuotingType): String;
 var
   LItems: TStringList;
   I: Integer;
+  {$IFNDEF HAS_TSTRINGS_VALUEFROMINDEX}
   LTmp: string;
-  {$IFNDEF VCL_6_OR_ABOVE}
-  LValue: string;
   {$ENDIF}
+  LValue: string;
 
   {$IFNDEF VCL_6_OR_ABOVE}
   function FindIndexOfItem: Integer;
@@ -3634,18 +3732,31 @@ var
   function QuoteString(const S: String): String;
   var
     I: Integer;
-    LQuotesNeeded: Boolean;
+    LAddQuotes: Boolean;
+    LNeedQuotes, LNeedEscape: String;
   begin
     Result := '';
-    LQuotesNeeded := False;
+    if Length(S) = 0 then begin
+      Exit;
+    end;
+    LAddQuotes := False;
+    LNeedQuotes := CharRange(#0, #32) + QuoteSpecials[AQuoteType] + #127;
+    // TODO: disable this logic for HTTP 1.0
+    LNeedEscape := '"\'; {Do not Localize}
+    if AQuoteType in [QuoteRFC822, QuoteMIME] then begin
+      LNeedEscape := LNeedEscape + CR; {Do not Localize}
+    end;
     for I := 1 to Length(S) do begin
-      if CharIsInSet(S, I, token_specials) then begin
+      if CharIsInSet(S, I, LNeedEscape) then begin
+        LAddQuotes := True;
         Result := Result + '\'; {do not localize}
-        LQuotesNeeded := True;
+      end
+      else if CharIsInSet(S, I, LNeedQuotes) then begin
+        LAddQuotes := True;
       end;
       Result := Result + S[I];
     end;
-    if LQuotesNeeded then begin
+    if LAddQuotes then begin
       Result := '"' + Result + '"';
     end;
   end;
@@ -3654,12 +3765,19 @@ begin
   Result := '';
   LItems := TStringList.Create;
   try
-    SplitHeaderSubItems(AHeaderLine, LItems);
+    SplitHeaderSubItems(AHeaderLine, LItems, AQuoteType);
     {$IFDEF VCL_6_OR_ABOVE}
     LItems.CaseSensitive := False;
-    LItems.Values[ASubItem] := Trim(AValue);
+    I := LItems.IndexOfName(ASubItem);
     {$ELSE}
     I := FindIndexOfItem;
+    {$ENDIF}
+    if I >= 0 then begin
+      VOld := LItems.Strings[I];
+      Fetch(VOld, '=');
+    end else begin
+      VOld := '';
+    end;
     LValue := Trim(AValue);
     if LValue <> '' then begin
       if I < 0 then begin
@@ -3670,18 +3788,54 @@ begin
     else if I >= 0 then begin
       LItems.Delete(I);
     end;
-    {$ENDIF}
     Result := ExtractHeaderItem(AHeaderLine);
     if Result <> '' then begin
       for I := 0 to LItems.Count-1 do begin
+        {$IFDEF HAS_TSTRINGS_VALUEFROMINDEX}
+        Result := Result + '; ' + LItems.Names[I] + '=' + QuoteString(LItems.ValueFromIndex[I]); {do not localize}
+        {$ELSE}
         LTmp := LItems.Strings[I];
-        // TODO - escapse special characters
         Result := Result + '; ' + LItems.Names[I] + '=' + QuoteString(Copy(LTmp, Pos('=', LTmp)+1, MaxInt)); {do not localize}
+        {$ENDIF}
       end;
     end;
   finally
     LItems.Free;
   end;
+end;
+
+function MediaTypeMatches(const AValue, AMediaType: String): Boolean;
+begin
+  if Pos('/', AMediaType) > 0 then begin {do not localize}
+    Result := TextIsSame(AValue, AMediaType);
+  end else begin
+    Result := TextStartsWith(AValue, AMediaType + '/'); {do not localize}
+  end;
+end;
+
+function IsHeaderMediaType(const AHeaderLine, AMediaType: String): Boolean;
+begin
+  Result := MediaTypeMatches(ExtractHeaderItem(AHeaderLine), AMediaType);
+end;
+
+function IsHeaderMediaTypes(const AHeaderLine: String; const AMediaTypes: array of String): Boolean;
+var
+  LHeader: String;
+  I: Integer;
+begin
+  Result := False;
+  LHeader := ExtractHeaderItem(AHeaderLine);
+  for I := Low(AMediaTypes) to High(AMediaTypes) do begin
+    if MediaTypeMatches(LHeader, AMediaTypes[I]) then begin
+      Result := True;
+      Exit;
+    end;
+  end;
+end;
+
+function IsHeaderValue(const AHeaderLine: String; const AValue: String): Boolean;
+begin
+  Result := TextIsSame(ExtractHeaderItem(AHeaderLine), AValue);
 end;
 
 function GetClockValue : Int64;
@@ -3880,21 +4034,30 @@ end;
 
 //The following is for working on email headers and message part headers.
 //For example, to remove the boundary from the ContentType header, call
-//ContentType := RemoveHeaderEntry(ContentType, 'boundary');
-function RemoveHeaderEntry(const AHeader, AEntry: string): string;
+//ContentType := RemoveHeaderEntry(ContentType, 'boundary', QuoteMIME);
+function RemoveHeaderEntry(const AHeader, AEntry: string;
+  AQuoteType: TIdHeaderQuotingType): string;
 {$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
-  Result := ReplaceHeaderSubItem(AHeader, AEntry, '');
+  Result := ReplaceHeaderSubItem(AHeader, AEntry, '', AQuoteType);
 end;
 
-function RemoveHeaderEntries(const AHeader: string; AEntries: array of string): string;
+function RemoveHeaderEntry(const AHeader, AEntry: string; var VOld: String;
+  AQuoteType: TIdHeaderQuotingType): string;
+{$IFDEF USE_INLINE}inline;{$ENDIF}
+begin
+  Result := ReplaceHeaderSubItem(AHeader, AEntry, '', VOld, AQuoteType);
+end;
+
+function RemoveHeaderEntries(const AHeader: string; AEntries: array of string;
+  AQuoteType: TIdHeaderQuotingType): string;
 var
   I: Integer;
 begin
   Result := AHeader;
   if Length(AEntries) > 0 then begin
     for I := Low(AEntries) to High(AEntries) do begin
-      Result := ReplaceHeaderSubItem(Result, AEntries[I], '');
+      Result := ReplaceHeaderSubItem(Result, AEntries[I], '', AQuoteType);
     end;
   end;
 end;
@@ -3970,11 +4133,12 @@ begin
   end;
 end;
 
-function ContentTypeToEncoding(const AContentType: String): TIdTextEncoding;
+function ContentTypeToEncoding(const AContentType: String;
+  AQuoteType: TIdHeaderQuotingType): TIdTextEncoding;
 var
   LCharset: String;
 begin
-  LCharset := ExtractHeaderSubItem(AContentType, 'charset');  {do not localize}
+  LCharset := ExtractHeaderSubItem(AContentType, 'charset', AQuoteType);  {do not localize}
   Result := CharsetToEncoding(LCharset);
 end;
 
@@ -4043,14 +4207,15 @@ begin
   end;
 end;
 
-function ReadStringAsContentType(AStream: TStream; const AContentType: String
+function ReadStringAsContentType(AStream: TStream; const AContentType: String;
+  AQuoteType: TIdHeaderQuotingType
   {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
 ): String;
 var
   LEncoding: TIdTextEncoding;
 begin
   Result := '';
-  LEncoding := ContentTypeToEncoding(AContentType);
+  LEncoding := ContentTypeToEncoding(AContentType, AQuoteType);
   {$IFNDEF DOTNET}
   try
   {$ENDIF}
@@ -4062,13 +4227,14 @@ begin
   {$ENDIF}
 end;
 
-procedure ReadStringsAsContentType(AStream: TStream; AStrings: TStrings; const AContentType: string
+procedure ReadStringsAsContentType(AStream: TStream; AStrings: TStrings;
+  const AContentType: String; AQuoteType: TIdHeaderQuotingType
   {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
 );
 var
   LEncoding: TIdTextEncoding;
 begin
-  LEncoding := ContentTypeToEncoding(AContentType);
+  LEncoding := ContentTypeToEncoding(AContentType, AQuoteType);
   {$IFNDEF DOTNET}
   try
   {$ENDIF}

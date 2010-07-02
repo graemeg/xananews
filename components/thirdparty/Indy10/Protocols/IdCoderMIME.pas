@@ -94,9 +94,9 @@ var
   LPos: Integer;
 begin
   if Length(FLeftFromLastTime) > 0 then begin
-    LPos := Length(FLeftFromLastTime)+1;
+    LPos := Length(FLeftFromLastTime);
     SetLength(FLeftFromLastTime, 4);
-    while LPos <= 4 do begin
+    while LPos < 4 do begin
       FLeftFromLastTime[LPos] := Ord(FFillChar);
       Inc(LPos);
     end;
@@ -126,8 +126,8 @@ begin
   LMod := Length(LIn) mod 4;
   if LMod <> 0 then begin
     LDiv := (Length(LIn) div 4) * 4;
-    FLeftFromLastTime := Copy(LIn, LDiv+1, Length(LIn)-LDiv);
-    LIn := Copy(LIn, 1, LDiv);
+    FLeftFromLastTime := Copy(LIn, LDiv, Length(LIn)-LDiv);
+    LIn := Copy(LIn, 0, LDiv);
   end else begin
     SetLength(FLeftFromLastTime, 0);
   end;

@@ -37,7 +37,7 @@ uses
   IdGlobal;
 
 const
-  {$IFDEF LINUX}
+  {$IFDEF UNIX}
   tpListener = tpNormal;
   {$ELSE}
   tpListener = tpHighest;

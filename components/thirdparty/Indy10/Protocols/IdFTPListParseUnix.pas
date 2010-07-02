@@ -192,7 +192,6 @@ implementation
 uses
   IdException,
   IdGlobal, IdFTPCommon, IdGlobalProtocols,
-  IdHeaderCoderUTF,  //here so we can decode UTF... filenames
   SysUtils;
 
 { TIdFTPLPUnix }
@@ -202,6 +201,7 @@ class function TIdFTPLPUnix.CheckListing(AListing: TStrings;
 var
   i : Integer;
 begin
+  // TODO: return True if ASysDescript starts with 'Unix'?
   Result := False;
   for i := 0 to AListing.Count - 1 do
   begin
@@ -753,7 +753,7 @@ begin
     end;
   end;
 
-  LI.FileName := TIdTextEncoding.UTF8.GetString(ToBytes(LName, Indy8BitEncoding));
+  LI.FileName := LName;
   Result := True;
 end;
 

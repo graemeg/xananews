@@ -167,7 +167,7 @@ uses
   IdGlobal, IdStack,
   IdExceptionCore, IdGlobalProtocols, IdHeaderList, IdCustomTCPServer,
   IdTCPConnection, IdThread, IdCookie, IdHTTPHeaderInfo, IdStackConsts,
-  IdBaseComponent,
+  IdBaseComponent, IdThreadSafe,
   SysUtils;
 
 type
@@ -199,11 +199,12 @@ type
   TIdCustomHTTPServer = class;
 
   //events
-  TOnSessionEndEvent = procedure(Sender: TIdHTTPSession) of object;
-  TOnSessionStartEvent = procedure(Sender: TIdHTTPSession) of object;
-  TOnCreateSession = procedure(ASender:TIdContext;
+  TIdHTTPSessionEndEvent = procedure(Sender: TIdHTTPSession) of object;
+  TIdHTTPSessionStartEvent = procedure(Sender: TIdHTTPSession) of object;
+  TIdHTTPCreateSession = procedure(ASender:TIdContext;
     var VHTTPSession: TIdHTTPSession) of object;
-  TOnCreatePostStream = procedure(AContext: TIdContext; AHeaders: TIdHeaderList; var VPostStream: TStream) of object;
+  TIdHTTPCreatePostStream = procedure(AContext: TIdContext; AHeaders: TIdHeaderList; var VPostStream: TStream) of object;
+  TIdHTTPDoneWithPostStream = procedure(AContext: TIdContext; ARequestInfo: TIdHTTPRequestInfo; var VCanFree: Boolean) of object;
   TIdHTTPParseAuthenticationEvent = procedure(AContext: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String; var VHandled: Boolean) of object;
   TIdHTTPCommandEvent = procedure(AContext: TIdContext;
     ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo) of object;
@@ -213,7 +214,7 @@ type
   TIdHTTPInvalidSessionEvent = procedure(AContext: TIdContext;
     ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo;
     var VContinueProcessing: Boolean; const AInvalidSessionID: String) of object;
-  TIdHTTPHeadersAvailableEvent = procedure(AContext: TIdContext; AHeaders: TIdHeaderList; var VContinueProcessing: Boolean) of object;
+  TIdHTTPHeadersAvailableEvent = procedure(AContext: TIdContext; const AUri: string; AHeaders: TIdHeaderList; var VContinueProcessing: Boolean) of object;
   TIdHTTPHeadersBlockedEvent = procedure(AContext: TIdContext; AHeaders: TIdHeaderList; var VResponseNo: Integer; var VResponseText, VContentText: String) of object;
   TIdHTTPHeaderExpectationsEvent = procedure(AContext: TIdContext; const AExpectations: String; var VContinueProcessing: Boolean) of object;
   TIdHTTPQuerySSLPortEvent = procedure(APort: TIdPort; var VUseSSL: Boolean) of object;
@@ -228,7 +229,7 @@ type
   TIdHTTPRequestInfo = class(TIdRequestHeaderInfo)
   protected
     FAuthExists: Boolean;
-    FCookies: TIdServerCookies;
+    FCookies: TIdCookies;
     FParams: TStrings;
     FPostStream: TStream;
     FRawHTTPCommand: string;
@@ -256,7 +257,7 @@ type
     property AuthUsername: string read FAuthUsername;
     property Command: string read FCommand;
     property CommandType: THTTPCommandType read FCommandType;
-    property Cookies: TIdServerCookies read FCookies;
+    property Cookies: TIdCookies read FCookies;
     property Document: string read FDocument write FDocument; // writable for isapi compatibility. Use with care
     property URI: string read FURI;
     property Params: TStrings read FParams;
@@ -274,7 +275,7 @@ type
     FAuthRealm: string;
     FConnection: TIdTCPConnection;
     FResponseNo: Integer;
-    FCookies: TIdServerCookies;
+    FCookies: TIdCookies;
     FContentStream: TStream;
     FContentText: string;
     FCloseConnection: Boolean;
@@ -285,7 +286,7 @@ type
     FSession: TIdHTTPSession;
     //
     procedure ReleaseContentStream;
-    procedure SetCookies(const AValue: TIdServerCookies);
+    procedure SetCookies(const AValue: TIdCookies);
     procedure SetHeaders; override;
     procedure SetResponseNo(const AValue: Integer);
     procedure SetCloseConnection(const Value: Boolean);
@@ -307,7 +308,7 @@ type
     property CloseConnection: Boolean read FCloseConnection write SetCloseConnection;
     property ContentStream: TStream read FContentStream write FContentStream;
     property ContentText: string read FContentText write FContentText;
-    property Cookies: TIdServerCookies read FCookies write SetCookies;
+    property Cookies: TIdCookies read FCookies write SetCookies;
     property FreeContentStream: Boolean read FFreeContentStream write FFreeContentStream;
     // writable for isapi compatibility. Use with care
     property HeaderHasBeenWritten: Boolean read FHeaderHasBeenWritten write FHeaderHasBeenWritten;
@@ -347,8 +348,8 @@ type
   TIdHTTPCustomSessionList = class(TIdBaseComponent)
   private
     FSessionTimeout: Integer;
-    FOnSessionEnd: TOnSessionEndEvent;
-    FOnSessionStart: TOnSessionStartEvent;
+    FOnSessionEnd: TIdHTTPSessionEndEvent;
+    FOnSessionStart: TIdHTTPSessionStartEvent;
   protected
     // remove a session from the session list. Called by the session on "Free"
     procedure RemoveSession(Session: TIdHTTPSession); virtual; abstract;
@@ -361,8 +362,31 @@ type
     procedure Add(ASession: TIdHTTPSession); virtual; Abstract;
   published
     property SessionTimeout: Integer read FSessionTimeout write FSessionTimeout;
-    property OnSessionEnd: TOnSessionEndEvent read FOnSessionEnd write FOnSessionEnd;
-    property OnSessionStart: TOnSessionStartEvent read FOnSessionStart write FOnSessionStart;
+    property OnSessionEnd: TIdHTTPSessionEndEvent read FOnSessionEnd write FOnSessionEnd;
+    property OnSessionStart: TIdHTTPSessionStartEvent read FOnSessionStart write FOnSessionStart;
+  end;
+
+  TIdThreadSafeMimeTable = class(TIdThreadSafe)
+  protected
+    FTable: TIdMimeTable;
+    function GetLoadTypesFromOS: Boolean;
+    procedure SetLoadTypesFromOS(AValue: Boolean);
+    function GetOnBuildCache: TNotifyEvent;
+    procedure SetOnBuildCache(AValue: TNotifyEvent);
+  public
+    constructor Create(const AutoFill: Boolean = True); reintroduce;
+    destructor Destroy; override;
+    procedure BuildCache;
+    procedure AddMimeType(const Ext, MIMEType: string; const ARaiseOnError: Boolean = True);
+    function GetFileMIMEType(const AFileName: string): string;
+    function GetDefaultFileExt(const MIMEType: string): string;
+    procedure LoadFromStrings(const AStrings: TStrings; const MimeSeparator: Char = '=');    {Do not Localize}
+    procedure SaveToStrings(const AStrings: TStrings; const MimeSeparator: Char = '=');    {Do not Localize}
+    function Lock: TIdMimeTable; reintroduce;
+    procedure Unlock; reintroduce;
+    //
+    property LoadTypesFromOS: Boolean read GetLoadTypesFromOS write SetLoadTypesFromOS;
+    property OnBuildCache: TNotifyEvent read GetOnBuildCache write SetOnBuildCache;
   end;
 
   TIdCustomHTTPServer = class(TIdCustomTCPServer)
@@ -371,17 +395,18 @@ type
     FKeepAlive: Boolean;
     FParseParams: Boolean;
     FServerSoftware: string;
-    FMIMETable: TIdMimeTable;
+    FMIMETable: TIdThreadSafeMimeTable;
     FSessionList: TIdHTTPCustomSessionList;
     FSessionState: Boolean;
     FSessionTimeOut: Integer;
     //
-    FOnCreatePostStream: TOnCreatePostStream;
-    FOnCreateSession: TOnCreateSession;
+    FOnCreatePostStream: TIdHTTPCreatePostStream;
+    FOnDoneWithPostStream: TIdHTTPDoneWithPostStream;
+    FOnCreateSession: TIdHTTPCreateSession;
     FOnInvalidSession: TIdHTTPInvalidSessionEvent;
     FOnParseAuthentication: TIdHTTPParseAuthenticationEvent;
-    FOnSessionEnd: TOnSessionEndEvent;
-    FOnSessionStart: TOnSessionStartEvent;
+    FOnSessionEnd: TIdHTTPSessionEndEvent;
+    FOnSessionStart: TIdHTTPSessionStartEvent;
     FOnCommandGet: TIdHTTPCommandEvent;
     FOnCommandOther: TIdHTTPCommandEvent;
     FOnCommandError: TIdHTTPCommandError;
@@ -394,18 +419,19 @@ type
     FMaximumHeaderLineCount: Integer;
     //
     procedure CreatePostStream(ASender: TIdContext; AHeaders: TIdHeaderList; var VPostStream: TStream); virtual;
-    procedure DoOnCreateSession(AContext:TIdContext; var VNewSession: TIdHTTPSession); virtual;
-    procedure DoInvalidSession(AContext:TIdContext;
-     ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo;
-     var VContinueProcessing: Boolean; const AInvalidSessionID: String); virtual;
+    procedure DoneWithPostStream(ASender: TIdContext; ARequestInfo: TIdHTTPRequestInfo); virtual;
+    procedure DoOnCreateSession(AContext: TIdContext; var VNewSession: TIdHTTPSession); virtual;
+    procedure DoInvalidSession(AContext: TIdContext;
+      ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo;
+      var VContinueProcessing: Boolean; const AInvalidSessionID: String); virtual;
     procedure DoCommandGet(AContext: TIdContext; ARequestInfo: TIdHTTPRequestInfo;
-     AResponseInfo: TIdHTTPResponseInfo); virtual;
+      AResponseInfo: TIdHTTPResponseInfo); virtual;
     procedure DoCommandOther(AContext: TIdContext; ARequestInfo: TIdHTTPRequestInfo;
-     AResponseInfo: TIdHTTPResponseInfo); virtual;
+      AResponseInfo: TIdHTTPResponseInfo); virtual;
     procedure DoCommandError(AContext: TIdContext; ARequestInfo: TIdHTTPRequestInfo;
       AResponseInfo: TIdHTTPResponseInfo; AException: Exception); virtual;
     procedure DoConnect(AContext: TIdContext); override;
-    function DoHeadersAvailable(ASender: TIdContext; AHeaders: TIdHeaderList): Boolean; virtual;
+    function DoHeadersAvailable(ASender: TIdContext; const AUri: String; AHeaders: TIdHeaderList): Boolean; virtual;
     procedure DoHeadersBlocked(ASender: TIdContext; AHeaders: TIdHeaderList; var VResponseNo: Integer; var VResponseText, VContentText: String); virtual;
     function DoHeaderExpectations(ASender: TIdContext; const AExpectations: String): Boolean; virtual;
     function DoParseAuthentication(ASender: TIdContext; const AAuthType, AAuthData: String; var VUsername, VPassword: String): Boolean;
@@ -420,7 +446,8 @@ type
      var VContinueProcessing: Boolean): TIdHTTPSession;
     procedure InitComponent; override;
     { to be published in TIdHTTPServer}
-    property OnCreatePostStream: TOnCreatePostStream read FOnCreatePostStream write FOnCreatePostStream;
+    property OnCreatePostStream: TIdHTTPCreatePostStream read FOnCreatePostStream write FOnCreatePostStream;
+    property OnDoneWithPostStream: TIdHTTPDoneWithPostStream read FOnDoneWithPostStream write FOnDoneWithPostStream;
     property OnCommandGet: TIdHTTPCommandEvent read FOnCommandGet write FOnCommandGet;
   public
     function CreateSession(AContext:TIdContext;
@@ -429,33 +456,29 @@ type
     destructor Destroy; override;
     function EndSession(const SessionName: string): boolean;
     //
-    property MIMETable: TIdMimeTable read FMIMETable;
+    property MIMETable: TIdThreadSafeMimeTable read FMIMETable;
     property SessionList: TIdHTTPCustomSessionList read FSessionList;
   published
-    property MaximumHeaderLineCount: Integer read FMaximumHeaderLineCount write FMaximumHeaderLineCount default Id_TId_HTTPMaximumHeaderLineCount;
     property AutoStartSession: boolean read FAutoStartSession write FAutoStartSession default Id_TId_HTTPAutoStartSession;
     property DefaultPort default IdPORT_HTTP;
+    property KeepAlive: Boolean read FKeepAlive write FKeepAlive default Id_TId_HTTPServer_KeepAlive;
+    property MaximumHeaderLineCount: Integer read FMaximumHeaderLineCount write FMaximumHeaderLineCount default Id_TId_HTTPMaximumHeaderLineCount;
+    property ParseParams: boolean read FParseParams write FParseParams default Id_TId_HTTPServer_ParseParams;
+    property ServerSoftware: string read FServerSoftware write FServerSoftware;
+    property SessionState: Boolean read FSessionState write SetSessionState default Id_TId_HTTPServer_SessionState;
+    property SessionTimeOut: Integer read FSessionTimeOut write FSessionTimeOut default Id_TId_HTTPSessionTimeOut;
+    //
+    property OnCommandError: TIdHTTPCommandError read FOnCommandError write FOnCommandError;
+    property OnCommandOther: TIdHTTPCommandEvent read FOnCommandOther write FOnCommandOther;
+    property OnCreateSession: TIdHTTPCreateSession read FOnCreateSession write FOnCreateSession;
     property OnInvalidSession: TIdHTTPInvalidSessionEvent read FOnInvalidSession write FOnInvalidSession;
-    property OnSessionStart: TOnSessionStartEvent read FOnSessionStart write FOnSessionStart;
-    property OnSessionEnd: TOnSessionEndEvent read FOnSessionEnd write FOnSessionEnd;
-    property OnCreateSession: TOnCreateSession read FOnCreateSession write FOnCreateSession;
     property OnHeadersAvailable: TIdHTTPHeadersAvailableEvent read FOnHeadersAvailable write FOnHeadersAvailable;
     property OnHeadersBlocked: TIdHTTPHeadersBlockedEvent read FOnHeadersBlocked write FOnHeadersBlocked;
     property OnHeaderExpectations: TIdHTTPHeaderExpectationsEvent read FOnHeaderExpectations write FOnHeaderExpectations;
-    property KeepAlive: Boolean read FKeepAlive write FKeepAlive
-     default Id_TId_HTTPServer_KeepAlive;
-    property ParseParams: boolean read FParseParams write FParseParams
-     default Id_TId_HTTPServer_ParseParams;
-    property ServerSoftware: string read FServerSoftware write FServerSoftware;
-    property SessionState: Boolean read FSessionState write SetSessionState
-     default Id_TId_HTTPServer_SessionState;
-    property SessionTimeOut: Integer read FSessionTimeOut write FSessionTimeOut
-     default Id_TId_HTTPSessionTimeOut;
-    property OnCommandOther: TIdHTTPCommandEvent read FOnCommandOther
-     write FOnCommandOther;
-    property OnCommandError: TIdHTTPCommandError read FOnCommandError write FOnCommandError;
-    property OnQuerySSLPort: TIdHTTPQuerySSLPortEvent read FOnQuerySSLPort write FOnQuerySSLPort;
     property OnParseAuthentication: TIdHTTPParseAuthenticationEvent read FOnParseAuthentication write FOnParseAuthentication;
+    property OnQuerySSLPort: TIdHTTPQuerySSLPortEvent read FOnQuerySSLPort write FOnQuerySSLPort;
+    property OnSessionStart: TIdHTTPSessionStartEvent read FOnSessionStart write FOnSessionStart;
+    property OnSessionEnd: TIdHTTPSessionEndEvent read FOnSessionEnd write FOnSessionEnd;
   end;
 
   TIdHTTPDefaultSessionList = Class(TIdHTTPCustomSessionList)
@@ -492,13 +515,17 @@ uses
   System.IO,
   System.Threading,
     {$ENDIF}
+    {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  Windows,
+    {$ENDIF}
   {$ENDIF}
   {$IFDEF VCL_2010_OR_ABOVE}
     {$IFDEF WIN32_OR_WIN64_OR_WINCE}
   Windows,
     {$ENDIF}
   {$ENDIF}
-  IdCoderMIME, IdResourceStringsProtocols, IdURI, IdIOHandlerSocket, IdSSL;
+  IdCoderMIME, IdResourceStringsProtocols, IdURI, IdIOHandler, IdIOHandlerSocket,
+  IdSSL, IdResourceStringsCore;
 
 const
   SessionCapacity = 128;
@@ -563,6 +590,111 @@ type
     procedure Run; override;
   end; // class
 
+function InternalReadLn(AIOHandler: TIdIOHandler): String;
+begin
+  Result := AIOHandler.ReadLn;
+  if AIOHandler.ReadLnTimedout then begin
+    raise EIdReadTimeout.Create(RSReadTimeout);
+  end;
+end;
+
+{ TIdThreadSafeMimeTable }
+
+constructor TIdThreadSafeMimeTable.Create(const AutoFill: Boolean = True);
+begin
+  inherited Create;
+  FTable := TIdMimeTable.Create(AutoFill);
+end;
+
+destructor TIdThreadSafeMimeTable.Destroy;
+begin
+  inherited Lock; try
+    FreeAndNil(FTable);
+  finally inherited Unlock; end;
+  inherited Destroy;
+end;
+
+function TIdThreadSafeMimeTable.GetLoadTypesFromOS: Boolean;
+begin
+  with Lock do try
+    Result := LoadTypesFromOS;
+  finally Unlock; end;
+end;
+
+procedure TIdThreadSafeMimeTable.SetLoadTypesFromOS(AValue: Boolean);
+begin
+  with Lock do try
+    LoadTypesFromOS := AValue;
+  finally Unlock; end;
+end;
+
+function TIdThreadSafeMimeTable.GetOnBuildCache: TNotifyEvent;
+begin
+  with Lock do try
+    Result := OnBuildCache;
+  finally Unlock; end;
+end;
+
+procedure TIdThreadSafeMimeTable.SetOnBuildCache(AValue: TNotifyEvent);
+begin
+  with Lock do try
+    OnBuildCache := AValue;
+  finally Unlock; end;
+end;
+
+procedure TIdThreadSafeMimeTable.BuildCache;
+begin
+  with Lock do try
+    BuildCache;
+  finally Unlock; end;
+end;
+
+procedure TIdThreadSafeMimeTable.AddMimeType(const Ext, MIMEType: string; const ARaiseOnError: Boolean = True);
+begin
+  with Lock do try
+    AddMimeType(Ext, MIMEType, ARaiseOnError);
+  finally Unlock; end;
+end;
+
+function TIdThreadSafeMimeTable.GetFileMIMEType(const AFileName: string): string;
+begin
+  with Lock do try
+    Result := GetFileMIMEType(AFileName);
+  finally Unlock; end;
+end;
+
+function TIdThreadSafeMimeTable.GetDefaultFileExt(const MIMEType: string): string;
+begin
+  with Lock do try
+    Result := GetDefaultFileExt(MIMEType);
+  finally Unlock; end;
+end;
+
+procedure TIdThreadSafeMimeTable.LoadFromStrings(const AStrings: TStrings; const MimeSeparator: Char = '=');    {Do not Localize}
+begin
+  with Lock do try
+    LoadFromStrings(AStrings, MimeSeparator);
+  finally Unlock; end;
+end;
+
+procedure TIdThreadSafeMimeTable.SaveToStrings(const AStrings: TStrings; const MimeSeparator: Char = '=');    {Do not Localize}
+begin
+  with Lock do try
+    SaveToStrings(AStrings, MimeSeparator);
+  finally Unlock; end;
+end;
+
+function TIdThreadSafeMimeTable.Lock: TIdMimeTable;
+begin
+  inherited Lock;
+  Result := FTable;
+end;
+
+procedure TIdThreadSafeMimeTable.Unlock;
+begin
+  inherited Unlock;
+end;
+
 { TIdCustomHTTPServer }
 
 procedure TIdCustomHTTPServer.InitComponent;
@@ -572,7 +704,7 @@ begin
   DefaultPort := IdPORT_HTTP;
   ParseParams := Id_TId_HTTPServer_ParseParams;
   FSessionList := TIdHTTPDefaultSessionList.Create(Self);
-  FMIMETable := TIdMimeTable.Create(False);
+  FMIMETable := TIdThreadSafeMimeTable.Create(False);
   FSessionTimeOut := Id_TId_HTTPSessionTimeOut;
   FAutoStartSession := Id_TId_HTTPAutoStartSession;
   FKeepAlive := Id_TId_HTTPServer_KeepAlive;
@@ -692,11 +824,12 @@ begin
   end;
 end;
 
-function TIdCustomHTTPServer.DoHeadersAvailable(ASender: TIdContext; AHeaders: TIdHeaderList): Boolean;
+function TIdCustomHTTPServer.DoHeadersAvailable(ASender: TIdContext; const AUri: String;
+  AHeaders: TIdHeaderList): Boolean;
 begin
   Result := True;
   if Assigned(OnHeadersAvailable) then begin
-    OnHeadersAvailable(ASender, AHeaders, Result);
+    OnHeadersAvailable(ASender, AUri, AHeaders, Result);
   end;
 end;
 
@@ -727,22 +860,17 @@ var
   procedure ReadCookiesFromRequestHeader;
   var
     LRawCookies: TStringList;
-    i: Integer;
-    S: String;
   begin
-    LRawCookies := TStringList.Create; try
-      LRequestInfo.RawHeaders.Extract('cookie', LRawCookies);    {Do not Localize}
-      for i := 0 to LRawCookies.Count -1 do begin
-        S := LRawCookies[i];
-        while IndyPos(';', S) > 0 do begin    {Do not Localize}
-          LRequestInfo.Cookies.AddSrcCookie(Fetch(S, ';'));    {Do not Localize}
-          S := Trim(S);
-        end;
-        if S <> '' then begin
-          LRequestInfo.Cookies.AddSrcCookie(S);
-        end;
-      end;
-    finally FreeAndNil(LRawCookies); end;
+    LRawCookies := TStringList.Create;
+    try
+      LRequestInfo.RawHeaders.Extract('Cookie', LRawCookies);    {Do not Localize}
+      LRequestInfo.Cookies.AddClientCookies(LRawCookies);
+      LRawCookies.Clear;
+      LRequestInfo.RawHeaders.Extract('Cookie2', LRawCookies);    {Do not Localize}
+      LRequestInfo.Cookies.AddClientCookies2(LRawCookies);
+    finally
+      FreeAndNil(LRawCookies);
+    end;
   end;
 
   function GetRemoteIP(ASocket: TIdIOHandlerSocket): String;
@@ -762,7 +890,7 @@ var
     LMajor, LMinor: Integer;
   begin
     // let the user decide if the request headers are acceptable
-    Result := DoHeadersAvailable(AContext, LRequestInfo.RawHeaders);
+    Result := DoHeadersAvailable(AContext, LRequestInfo.URI, LRequestInfo.RawHeaders);
     if not Result then begin
       DoHeadersBlocked(AContext, LRequestInfo.RawHeaders, LResponseNo, LResponseText, LContentText);
       LResponseInfo.ResponseNo := LResponseNo;
@@ -825,6 +953,77 @@ var
     end;
   end;
 
+  function PreparePostStream: Boolean;
+  var
+    I, Size: Integer;
+    S: String;
+    LIOHandler: TIdIOHandler;
+  begin
+    Result := False;
+    LIOHandler := AContext.Connection.IOHandler;
+
+    // RLebeau 1/6/2009: don't create the PostStream unless there is
+    // actually something to read. This should make it easier for the
+    // request handler to know when to use the PostStream and when to
+    // use the (Unparsed)Params instead...
+
+    if (LRequestInfo.TransferEncoding <> '') and
+      (not TextIsSame(LRequestInfo.TransferEncoding, 'identity')) then {do not localize}
+    begin
+      if IndyPos('chunked', LowerCase(LRequestInfo.TransferEncoding)) = 0 then begin {do not localize}
+        LResponseInfo.ResponseNo := 400; // bad request
+        LResponseInfo.CloseConnection := True;
+        LResponseInfo.WriteHeader;
+        Exit;
+      end;
+      CreatePostStream(AContext, LRequestInfo.RawHeaders, LRequestInfo.FPostStream);
+      if LRequestInfo.FPostStream = nil then begin
+        LRequestInfo.FPostStream := TMemoryStream.Create;
+      end;
+      LRequestInfo.PostStream.Position := 0;
+      repeat
+        S := InternalReadLn(LIOHandler);
+        I := IndyPos(';', S); {do not localize}
+        if I > 0 then begin
+          S := Copy(S, 1, I - 1);
+        end;
+        Size := IndyStrToInt('$' + Trim(S), 0);      {do not localize}
+        if Size = 0 then begin
+          Break;
+        end;
+        LIOHandler.ReadStream(LRequestInfo.PostStream, Size);
+        InternalReadLn(LIOHandler); // CRLF at end of chunk data
+      until False;
+      // skip trailer headers
+      repeat until InternalReadLn(LIOHandler) = '';
+      LRequestInfo.PostStream.Position := 0;
+    end
+    else if LRequestInfo.HasContentLength then
+    begin
+      CreatePostStream(AContext, LRequestInfo.RawHeaders, LRequestInfo.FPostStream);
+      if LRequestInfo.FPostStream = nil then begin
+        LRequestInfo.FPostStream := TMemoryStream.Create;
+      end;
+      LRequestInfo.PostStream.Position := 0;
+      if LRequestInfo.ContentLength > 0 then begin
+        LIOHandler.ReadStream(LRequestInfo.PostStream, LRequestInfo.ContentLength);
+        LRequestInfo.PostStream.Position := 0;
+      end;
+    end
+    else begin
+      if LIOHandler.InputBufferIsEmpty then begin
+        LIOHandler.CheckForDataOnSource(1);
+      end;
+      if not LIOHandler.InputBufferIsEmpty then begin
+        LResponseInfo.ResponseNo := 411; // length required
+        LResponseInfo.CloseConnection := True;
+        LResponseInfo.WriteHeader;
+        Exit;
+      end;
+    end;
+    Result := True;
+  end;
+
 var
   i: integer;
   s, LInputLine, LRawHTTPCommand, LCmd, LContentType, LAuthType: String;
@@ -838,8 +1037,7 @@ begin
     try
       repeat
         with AContext.Connection do begin
-          LInputLine := IOHandler.ReadLn;
-          Assert(not IOHandler.ReadLnTimedOut);
+          LInputLine := InternalReadLn(IOHandler);
           i := RPos(' ', LInputLine, -1);    {Do not Localize}
           if i = 0 then begin
             raise EIdHTTPErrorParsingCommand.Create(RSHTTPErrorParsingCommand);
@@ -863,7 +1061,7 @@ begin
 
               // Retrieve the HTTP header
               LRequestInfo.RawHeaders.Clear;
-              IOHandler.Capture(LRequestInfo.RawHeaders, '');    {Do not Localize}
+              IOHandler.Capture(LRequestInfo.RawHeaders, '', False);    {Do not Localize}
               LRequestInfo.ProcessHeaders;
 
               LResponseInfo.CloseConnection := not (FKeepAlive and
@@ -872,16 +1070,15 @@ begin
               {TODO Check for 1.0 only at this point}
               LCmd := UpperCase(Fetch(LInputLine, ' '));    {Do not Localize}
 
+              s := LRequestInfo.MethodOverride;
+              if s <> '' then begin
+                LCmd := UpperCase(s);
+              end;
+
               LRequestInfo.FRawHTTPCommand := LRawHTTPCommand;
               LRequestInfo.FRemoteIP := GetRemoteIP(Socket);
               LRequestInfo.FCommand := LCmd;
               LRequestInfo.FCommandType := DecodeHTTPCommand(LCmd);
-
-              // RLebeau 12/14/2005: provide the user with the headers and let the
-              // user decide whether the response processing should continue...
-              if not HeadersCanContinue then begin
-                Break;
-              end;
 
               // GET data - may exist with POSTs also
               LRequestInfo.QueryParams := LInputLine;
@@ -890,6 +1087,8 @@ begin
               // Host
               // the next line is done in TIdHTTPRequestInfo.ProcessHeaders()...
               // LRequestInfo.FHost := LRequestInfo.Headers.Values['host'];    {Do not Localize}
+
+              LRequestInfo.FURI := LInputLine;
 
               // Parse the document input line
               if LInputLine = '*' then begin    {Do not Localize}
@@ -900,13 +1099,18 @@ begin
                   // SG 29/11/01: Per request of Doychin
                   // Try to fill the "host" parameter
                   LRequestInfo.FDocument := TIdURI.URLDecode(LURI.Path) + TIdURI.URLDecode(LURI.Document);
-                  LRequestInfo.FURI := LURI.Path + LURI.Document;
                   if (Length(LURI.Host) > 0) and (Length(LRequestInfo.FHost) = 0) then begin
                     LRequestInfo.FHost := LURI.Host;
                   end;
                 finally
                   FreeAndNil(LURI);
                 end;
+              end;
+
+              // RLebeau 12/14/2005: provide the user with the headers and let the
+              // user decide whether the response processing should continue...
+              if not HeadersCanContinue then begin
+                Break;
               end;
 
               // retreive the base ContentType with attributes omitted
@@ -920,35 +1124,16 @@ begin
               // If only the first, the solution is easy. If both - need more
               // investigation.
 
-              // RLebeau 1/6/2009: don't create the PostStream unless there is
-              // actually something to read. This should make it easier for the
-              // request handler to know when to use the PostStream and when to
-              // use the (Unparsed)Params instead...
+              if not PreparePostStream then begin
+                Break;
+              end;
 
-              LRequestInfo.PostStream := nil;
-
-              if (LRequestInfo.ContentLength > 0) or
-                ((LRequestInfo.CommandType = hcPOST) and (not LRequestInfo.HasContentLength)) then
-              begin
-                CreatePostStream(AContext, LRequestInfo.RawHeaders, LRequestInfo.FPostStream);
-                if LRequestInfo.FPostStream = nil then begin
-                  LRequestInfo.FPostStream := TMemoryStream.Create;
-                end;
-                LRequestInfo.PostStream.Position := 0;
-
-                if LRequestInfo.ContentLength > 0 then begin
-                  IOHandler.ReadStream(LRequestInfo.PostStream, LRequestInfo.ContentLength);
-                end else begin
-                  IOHandler.ReadStream(LRequestInfo.PostStream, -1, True);
-                end;
-                LRequestInfo.PostStream.Position := 0;
-
+              if LRequestInfo.PostStream <> nil then begin
                 if TextIsSame(LContentType, ContentTypeFormUrlencoded) then
                 begin
                   // TODO: need to decode percent-encoded octets before the CharSet can then be applied...
                   LRequestInfo.FormParams := ReadStringAsCharSet(LRequestInfo.PostStream, LRequestInfo.CharSet);
-                  // Workaround to keep the WebappDbg.exe working
-                  //FreeAndNil(LRequestInfo.FPostStream); // don't need the PostStream anymore
+                  DoneWithPostStream(AContext, LRequestInfo); // don't need the PostStream anymore
                 end;
               end;
 
@@ -1154,6 +1339,20 @@ begin
   end;
 end;
 
+procedure TIdCustomHTTPServer.DoneWithPostStream(ASender: TIdContext;
+  ARequestInfo: TIdHTTPRequestInfo);
+var
+  LCanFree: Boolean;
+begin
+  LCanFree := True;
+  if Assigned(FOnDoneWithPostStream) then begin
+    FOnDoneWithPostStream(ASender, ARequestInfo, LCanFree);
+  end;
+  if LCanFree then begin
+    FreeAndNil(ARequestInfo.FPostStream);
+  end;
+end;
+
 { TIdHTTPSession }
 
 constructor TIdHTTPSession.Create(AOwner: TIdHTTPCustomSessionList);
@@ -1238,7 +1437,7 @@ constructor TIdHTTPRequestInfo.Create;
 begin
   inherited Create;
   FCommandType := hcUnknown;
-  FCookies := TIdServerCookies.Create(self);
+  FCookies := TIdCookies.Create(Self);
   FParams  := TStringList.Create;
   ContentLength := -1;
 end;
@@ -1303,7 +1502,7 @@ begin
   ContentLength := GFContentLength;
   {Some clients may not support folded lines}
   RawHeaders.FoldLines := False;
-  FCookies := TIdServerCookies.Create(self);
+  FCookies := TIdCookies.Create(Self);
   {TODO Specify version - add a class method dummy that calls version}
   ServerSoftware := GServerSoftware;
   ContentType := ''; //GContentType;
@@ -1341,7 +1540,7 @@ begin
   FCloseConnection := Value;
 end;
 
-procedure TIdHTTPResponseInfo.SetCookies(const AValue: TIdServerCookies);
+procedure TIdHTTPResponseInfo.SetCookies(const AValue: TIdCookies);
 begin
   FCookies.Assign(AValue);
 end;
@@ -1360,15 +1559,8 @@ begin
     if FLastModified > 0 then begin
       Values['Last-Modified'] := LocalDateTimeToHttpStr(FLastModified); {do not localize}
     end;
-    if AuthRealm <> '' then {Do not Localize}
-    begin
-      ResponseNo := 401;
+    if AuthRealm <> '' then begin
       Values['WWW-Authenticate'] := 'Basic realm="' + AuthRealm + '"';    {Do not Localize}
-      if (Length(FContentText) = 0) and not Assigned(FContentStream) then
-      begin
-        Values['Content-Type'] := 'text/html';    {Do not Localize}
-        FContentText := '<HTML><BODY><B>' + IntToStr(ResponseNo) + ' ' + RSHTTPUnauthorized + '</B></BODY></HTML>';    {Do not Localize}
-      end;
     end;
   end;
 end;
@@ -1513,11 +1705,23 @@ var
   i: Integer;
   LEncoding: TIdTextEncoding;
   LBufferingStarted: Boolean;
+  LCookie: TIdNetscapeCookie;
 begin
   if HeaderHasBeenWritten then begin
     EIdHTTPHeaderAlreadyWritten.Toss(RSHTTPHeaderAlreadyWritten);
   end;
   FHeaderHasBeenWritten := True;
+
+  if AuthRealm <> '' then
+  begin
+    ResponseNo := 401;
+    if (Length(ContentText) = 0) and not Assigned(ContentStream) then
+    begin
+      ContentType := 'text/html; charset=utf-8';    {Do not Localize}
+      ContentText := '<HTML><BODY><B>' + IntToStr(ResponseNo) + ' ' + RSHTTPUnauthorized + '</B></BODY></HTML>';    {Do not Localize}
+      ContentLength := -1; // calculated below
+    end;
+  end;
 
   // RLebeau: according to RFC 2616 Section 4.4:
   //
@@ -1571,7 +1775,12 @@ begin
     FConnection.IOHandler.Write(RawHeaders);
     // Write cookies
     for i := 0 to Cookies.Count - 1 do begin
-      FConnection.IOHandler.WriteLn('Set-Cookie: ' + Cookies[i].ServerCookie);    {Do not Localize}
+      LCookie := Cookies[i];
+      if LCookie is TIdCookieRFC2965 then begin
+        FConnection.IOHandler.WriteLn('Set-Cookie2: ' + LCookie.ServerCookie);    {Do not Localize}
+      end else begin
+        FConnection.IOHandler.WriteLn('Set-Cookie: ' + LCookie.ServerCookie);    {Do not Localize}
+      end;
     end;
     // HTTP headers end with a double CR+LF
     FConnection.IOHandler.WriteLn;

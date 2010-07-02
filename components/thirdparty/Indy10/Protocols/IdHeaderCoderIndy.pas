@@ -15,6 +15,10 @@ type
     class function CanHandle(const ACharSet: String): Boolean; override;
   end;
 
+  // RLebeau 4/17/10: this forces C++Builder to link to this unit so
+  // RegisterHeaderCoder can be called correctly at program startup...
+  (*$HPPEMIT '#pragma link "IdHeaderCoderIndy"'*)
+
 implementation
 
 {$IFNDEF DOTNET_OR_ICONV}

@@ -1057,6 +1057,28 @@ type
     {$ENDIF}
   end;
 
+  TIdStreamReadEvent = procedure(var VBuffer: TIdBytes; AOffset, ACount: Longint; var VResult: Longint) of object;
+  TIdStreamWriteEvent = procedure(const ABuffer: TIdBytes; AOffset, ACount: Longint; var VResult: Longint) of object;
+  TIdStreamSeekEvent = procedure(const AOffset: Int64; AOrigin: TSeekOrigin; var VPosition: Int64) of object;
+  TIdStreamSetSizeEvent = procedure(const ANewSize: Int64) of object;
+
+  TIdEventStream = class(TIdBaseStream)
+  protected
+    FOnRead: TIdStreamReadEvent;
+    FOnWrite: TIdStreamWriteEvent;
+    FOnSeek: TIdStreamSeekEvent;
+    FOnSetSize: TIdStreamSetSizeEvent;
+    function IdRead(var VBuffer: TIdBytes; AOffset, ACount: Longint): Longint; override;
+    function IdWrite(const ABuffer: TIdBytes; AOffset, ACount: Longint): Longint; override;
+    function IdSeek(const AOffset: Int64; AOrigin: TSeekOrigin): Int64; override;
+    procedure IdSetSize(ASize: Int64); override;
+  public
+    property OnRead: TIdStreamReadEvent read FOnRead write FOnRead;
+    property OnWrite: TIdStreamWriteEvent read FOnWrite write FOnWrite;
+    property OnSeek: TIdStreamSeekEvent read FOnSeek write FOnSeek;
+    property OnSetSize: TIdStreamSetSizeEvent read FOnSetSize write FOnSetSize;
+  end;
+
 const
   {$IFDEF UNIX}
   GOSType = otUnix;
@@ -5833,6 +5855,39 @@ end;
   {$ENDIF}
 
 {$ENDIF}
+
+function TIdEventStream.IdRead(var VBuffer: TIdBytes; AOffset, ACount: Longint): Longint;
+begin
+  Result := 0;
+  if Assigned(FOnRead) then begin
+    FOnRead(VBuffer, AOffset, ACount, Result);
+  end;
+end;
+
+function TIdEventStream.IdWrite(const ABuffer: TIdBytes; AOffset, ACount: Longint): Longint;
+begin
+  if Assigned(FOnWrite) then begin
+    Result := 0;
+    FOnWrite(ABuffer, AOffset, ACount, Result);
+  end else begin
+    Result := ACount;
+  end;
+end;
+
+function TIdEventStream.IdSeek(const AOffset: Int64; AOrigin: TSeekOrigin): Int64;
+begin
+  Result := 0;
+  if Assigned(FOnSeek) then begin
+    FOnSeek(AOffset, AOrigin, Result);
+  end;
+end;
+
+procedure TIdEventStream.IdSetSize(ASize: Int64);
+begin
+  if Assigned(FOnSetSize) then begin
+    FOnSetSize(ASize);
+  end;
+end;
 
 procedure AppendBytes(var VBytes: TIdBytes; const AToAdd: TIdBytes; const AIndex: Integer = 0; const ALength: Integer = -1);
 var

@@ -169,7 +169,8 @@ type
 implementation
 
 uses
-  IdMessage, IdGlobalProtocols, IdResourceStringsProtocols, IdMessageCoder, SysUtils;
+  IdMessage, IdGlobalProtocols, IdResourceStringsProtocols, IdMessageCoder, IdCoderHeader,
+  SysUtils;
 
 { TIdMessagePart }
 
@@ -197,8 +198,8 @@ begin
     raise EIdCanNotCreateMessagePart.Create(RSTIdMessagePartCreate);
   end;
   FIsEncoded := False;
-  FHeaders := TIdHeaderList.Create;
-  FExtraHeaders := TIdHeaderList.Create;
+  FHeaders := TIdHeaderList.Create(QuoteRFC822);
+  FExtraHeaders := TIdHeaderList.Create(QuoteRFC822);
   FParentPart := -1;
 end;
 
@@ -236,19 +237,18 @@ end;
 
 function TIdMessagePart.GetCharSet(AHeader: string): String;
 begin
-  Result := ExtractHeaderSubItem(AHeader, 'CHARSET'); {do not localize}
+  Result := ExtractHeaderSubItem(AHeader, 'charset', QuoteMIME); {do not localize}
 end;
 
 function TIdMessagePart.ResolveContentType(AContentType: string): string;
 var
-  LTemp: string;
   LMsg: TIdMessage;
   LParts: TIdMessageParts;
 begin
   //This extracts 'text/plain' from 'text/plain; charset="xyz"; boundary="123"'
   //or, if '', it finds the correct default value for MIME messages.
   if AContentType <> '' then begin
-    Result := Trim(Fetch(AContentType, ';'));  {do not localize}
+    Result := ExtractHeaderItem(AContentType);
   end else begin
     //If it is MIME, then we need to find the correct default...
     LParts := MessageParts;
@@ -258,8 +258,7 @@ begin
         //There is an exception if we are a child of multipart/digest...
         if ParentPart <> -1 then begin
           AContentType := LParts.Items[ParentPart].Headers.Values['Content-Type'];  {do not localize}
-          LTemp := Trim(Fetch(AContentType, ';'));  {do not localize}
-          if TextIsSame(LTemp, 'multipart/digest') then begin  {do not localize}
+          if IsHeaderMediaType(AContentType, 'multipart/digest') then begin  {do not localize}
             Result := 'message/rfc822';  {do not localize}
             Exit;
           end;
@@ -316,13 +315,15 @@ end;
 
 procedure TIdMessagePart.SetContentDisposition(const Value: string);
 var
-  LTmp: string;
+  LFileName: string;
 begin
-  Headers.Values['Content-Disposition'] := RemoveHeaderEntry(Value, 'filename'); {do not localize}
+  Headers.Values['Content-Disposition'] := RemoveHeaderEntry(Value, 'filename', LFileName, QuoteMIME); {do not localize}
   {RLebeau: override the current value only if the header specifies a new one}
-  LTmp := ExtractHeaderSubItem(Value, 'filename'); {do not localize}
-  if LTmp <> '' then begin
-    FFileName := LTmp;
+  if LFileName <> '' then begin
+    LFileName := DecodeHeader(LFileName);
+  end;
+  if LFileName <> '' then begin
+    FFileName := LFileName;
   end;
 end;
 
@@ -338,17 +339,17 @@ end;
 
 procedure TIdMessagePart.SetContentType(const Value: string);
 var
-  LTmp: string;
+  LTmp, LCharSet, LName: string;
 begin
-  Headers.Values['Content-Type'] := RemoveHeaderEntries(Value, ['charset', 'name']); {do not localize}
+  LTmp := RemoveHeaderEntry(Value, 'charset', LCharSet, QuoteMIME);{do not localize}
+  LTmp := RemoveHeaderEntry(LTmp, 'name', LName, QuoteMIME);{do not localize}
+  Headers.Values['Content-Type'] := LTmp;
   {RLebeau: override the current values only if the header specifies new ones}
-  LTmp := ExtractHeaderSubItem(Value, 'charset'); {do not localize}
-  if LTmp <> '' then begin
-    FCharSet := LTmp;
+  if LCharSet <> '' then begin
+    FCharSet := LCharSet;
   end;
-  LTmp := ExtractHeaderSubItem(Value, 'name'); {do not localize}
-  if LTmp <> '' then begin
-    FName := LTmp;
+  if LName <> '' then begin
+    FName := LName;
   end;
 end;
 

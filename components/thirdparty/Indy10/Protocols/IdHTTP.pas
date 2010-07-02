@@ -660,7 +660,7 @@ end;
 
 function IsContentTypeHtml(AInfo: TIdEntityHeaderInfo) : Boolean;
 begin
-  Result := TextIsSame(ExtractHeaderItem(AInfo.ContentType), 'text/html'); {do not localize}
+  Result := IsHeaderMediaType(AInfo.ContentType, 'text/html'); {do not localize}
 end;
 
 destructor TIdCustomHTTP.Destroy;
@@ -754,7 +754,7 @@ begin
   if Assigned(AStrings) then begin
     if hoForceEncodeParams in FOptions then begin
       EncodeRequestParams(AStrings);
-    end;
+        end;
     if AStrings.Count > 1 then begin
       // break trailing CR&LF
       Result := StringReplace(Trim(AStrings.Text), sLineBreak, '&',[rfReplaceAll]);
@@ -896,34 +896,14 @@ begin
 end;
 
 procedure TIdCustomHTTP.SetCookies(AURL: TIdURI; ARequest: TIdHTTPRequest);
-var
-  S: string;
 begin
-  if Assigned(FCookieManager) then begin
+  if Assigned(FCookieManager) then
+  begin
     // Send secure cookies only if we have Secured connection
-    S := FCookieManager.GenerateCookieList(AURL, TextIsSame(AURL.Protocol, 'HTTPS')); {do not localize}
-    if Length(S) > 0 then begin
-      ARequest.RawHeaders.Values['Cookie'] := S;  {do not localize}
-
-      // RLebeau: per RFC 2965:
-      //
-      // "A user agent that supports both this specification and Netscape-style
-      // cookies SHOULD send a Cookie request header that follows the older
-      // Netscape specification if it received the cookie in a Set-Cookie
-      // response header and not in a Set-Cookie2 response header.  However,
-      // it SHOULD send the following request header as well:
-      //
-      // Cookie2: $Version="1"
-      //
-      // The Cookie2 header advises the server that the user agent understands
-      // new-style cookies.  If the server understands new-style cookies, as
-      // well, it SHOULD continue the stateful session by sending a Set-
-      // Cookie2 response header, rather than Set-Cookie.  A server that does
-      // not understand new-style cookies will simply ignore the Cookie2
-      // request header.
-
-      ARequest.RawHeaders.Values['Cookie2'] := '$Version="1"';  {do not localize}
-    end;
+    FCookieManager.GenerateClientCookies(
+      AURL,
+      TextIsSame(AURL.Protocol, 'HTTPS'), {do not localize}
+      ARequest.RawHeaders);
   end;
 end;
 
@@ -1212,7 +1192,9 @@ begin
     // The URL part is not URL encoded at this place
     ARequest.URL := URL.GetPathAndParams;
 
-    if ARequest.Method = Id_HTTPMethodOptions then begin
+    if TextIsSame(ARequest.Method, Id_HTTPMethodOptions) or
+      TextIsSame(ARequest.MethodOverride, Id_HTTPMethodOptions) then
+    begin
       if TextIsSame(LURI.Document, '*') then begin     {do not localize}
         ARequest.URL := LURI.Document;
       end;
@@ -1222,13 +1204,14 @@ begin
     FURI.IPVersion := ARequest.IPVersion;
 
     // Check for valid HTTP request methods
-    if PosInStrArray(ARequest.Method, [Id_HTTPMethodTrace, Id_HTTPMethodPut, Id_HTTPMethodOptions, Id_HTTPMethodDelete], False) > -1 then begin
+    if (PosInStrArray(ARequest.Method, [Id_HTTPMethodTrace, Id_HTTPMethodPut, Id_HTTPMethodOptions, Id_HTTPMethodDelete], False) > -1) or
+      (PosInStrArray(ARequest.MethodOverride, [Id_HTTPMethodTrace, Id_HTTPMethodPut, Id_HTTPMethodOptions, Id_HTTPMethodDelete], False) > -1) then
+    begin
       if ProtocolVersion <> pv1_1 then  begin
         raise EIdException.Create(RSHTTPMethodRequiresVersion);
       end;
     end;
 
-    //IsStringInArray(ARequest.Method , [Id_HTTPMethodPost, Id_HTTPMethodPut]) then begin
     if Assigned(ARequest.Source) then begin
       ARequest.ContentLength := ARequest.Source.Size;
     end else begin
@@ -1331,12 +1314,12 @@ begin
       with LLocalHTTP do begin
         Request.UserAgent := ARequest.UserAgent;
         Request.Host := ARequest.Host;
-        Request.ContentLength := ARequest.ContentLength;
         Request.Pragma := 'no-cache';                       {do not localize}
         Request.URL := URL.Host + ':' + URL.Port;
         Request.Method := Id_HTTPMethodConnect;
         Request.ProxyConnection := 'keep-alive';            {do not localize}
 
+        // TODO: change this to nil so data is discarded without wasting memory?
         Response.ContentStream := TMemoryStream.Create;
         try
           try
@@ -1385,7 +1368,6 @@ begin
   // restrict which HTTP methods can post (except logically for GET and HEAD),
   // especially since TIdCustomHTTP.PrepareRequest() does not differentiate when
   // setting up the 'Content-Length' header ...
-  //if PosInStrArray(ARequest.Method, [Id_HTTPMethodPost, Id_HTTPMethodPut], False) > -1 then
   if ARequest.Source <> nil then begin
     IOHandler.Write(ARequest.Source, 0, False);
   end;
@@ -1398,9 +1380,27 @@ end;
 
 procedure TIdCustomHTTP.ProcessCookies(ARequest: TIdHTTPRequest; AResponse: TIdHTTPResponse);
 var
-  Cookies, Cookies2: TStringList;
+  Temp, Cookies, Cookies2: TStringList;
   i, j: Integer;
+  S, Cur: String;
+
+  // RLebeau: a single Set-Cookie header can have more than 1 cookie in it...
+  procedure ReadCookies(AHeaders: TIdHeaderList; const AHeader: String; ACookies: TStrings);
+  var
+    k: Integer;
+  begin
+    Temp.Clear;
+    AHeaders.Extract(AHeader, Temp);
+    for k := 0 to Temp.Count-1 do begin
+      S := Temp[k];
+      while ExtractNextCookie(S, Cur, True) do begin
+        ACookies.Add(Cur);
+      end;
+    end;
+  end;
+
 begin
+  Temp := nil;
   Cookies := nil;
   Cookies2 := nil;
   try
@@ -1410,14 +1410,16 @@ begin
     end;
 
     if Assigned(FCookieManager) then begin
+      Temp := TStringList.Create;
       Cookies := TStringList.Create;
       Cookies2 := TStringList.Create;
 
-      AResponse.RawHeaders.Extract('Set-cookie', Cookies);    {do not localize}
-      AResponse.RawHeaders.Extract('Set-cookie2', Cookies2);  {do not localize}
+      ReadCookies(AResponse.RawHeaders, 'Set-Cookie', Cookies);  {do not localize}
+      ReadCookies(AResponse.RawHeaders, 'Set-Cookie2', Cookies2);  {do not localize}
 
-      FMetaHTTPEquiv.RawHeaders.Extract('Set-cookie', Cookies);    {do not localize}
-      FMetaHTTPEquiv.RawHeaders.Extract('Set-cookie2', Cookies2);  {do not localize}
+      ReadCookies(FMetaHTTPEquiv.RawHeaders, 'Set-Cookie', Cookies);    {do not localize}
+      ReadCookies(FMetaHTTPEquiv.RawHeaders, 'Set-Cookie2', Cookies2);  {do not localize}
+
       // RLebeau: per RFC 2965:
       //
       // "User agents that receive in the same response both a
@@ -1433,15 +1435,15 @@ begin
       end;
 
       for i := 0 to Cookies.Count - 1 do begin
-        CookieManager.AddCookie(Cookies[i], FURI);
+        CookieManager.AddServerCookie(Cookies[i], FURI);
       end;
 
       for i := 0 to Cookies2.Count - 1 do begin
-        CookieManager.AddCookie2(Cookies2[i], FURI);
+        CookieManager.AddServerCookie2(Cookies2[i], FURI);
       end;
-      
     end;
   finally
+    FreeAndNil(Temp);
     FreeAndNil(Cookies);
     FreeAndNil(Cookies2);
   end;
@@ -1725,7 +1727,7 @@ begin
   URL.Port := IntToStr(Value);
 end;
 }
-procedure TIdCustomHTTP.SetRequestHEaders(Value: TIdHTTPRequest);
+procedure TIdCustomHTTP.SetRequestHeaders(Value: TIdHTTPRequest);
 begin
   FHTTPProto.Request.Assign(Value);
 end;
@@ -2016,6 +2018,7 @@ begin
       end;
       }
       Request.Method := LMethod;
+      Request.MethodOverride := '';
     end else begin
       Result := wnJustExit;
       Response.Location := LLocation;
@@ -2098,7 +2101,10 @@ begin
       DiscardContent;
       Result := wnAuthRequest;
     end else begin
-      if (Request.Method = Id_HTTPMethodHead) or (LResponseCode = 204) then begin
+      if TextIsSame(Request.Method, Id_HTTPMethodHead) or
+        TextIsSame(Request.MethodOverride, Id_HTTPMethodHead) or
+        (LResponseCode = 204) then
+      begin
         // Have noticed one case where a non-conforming server did send an
         // entity body in response to a HEAD request, so just ignore anything
         // the server may send by accident
@@ -2139,6 +2145,7 @@ end;
 
 function TIdCustomHTTP.InternalReadLn: String;
 begin
+  IOHandler.ReadTimeout := ConnectTimeout;
   Result := IOHandler.ReadLn;
   if IOHandler.ReadLnTimedout then begin
     raise EIdReadTimeout.Create(RSReadTimeout);

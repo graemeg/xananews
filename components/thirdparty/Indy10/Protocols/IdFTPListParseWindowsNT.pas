@@ -108,6 +108,10 @@ const
   // RegisterFTPListParser can be called correctly at program startup...
   (*$HPPEMIT '#pragma link "IdFTPListParseWindowsNT"'*)
 
+{
+Thanks to Craig Peterson of Scooter Software for his verison of
+TIdFTPLPWindowsNT.CheckListing.
+}
 implementation
 
 uses
@@ -117,6 +121,26 @@ uses
 
 { TIdFTPLPWindowsNT }
 
+{
+IMPORTANT!!!
+
+This parser actually handles some variations in the IIS FTP Server.  In addition,
+it also handles some similar formats such as one found in Windows CE and in Rhinosoft's
+-h:DOS DIR parameter.
+
+To do all of this, the detector routine must use string positions because there
+are some relatively similar but unrelated patterns.
+
+Since this is such a highly used parser, it's a good idea to have
+raw directory lines in comments with the line position 1 so that it could be
+cut and pasted into a test program.  In addition, I use something like
+"
+         1         2         3         4         5
+1234567890123456789012345678901234567890123456789012345678901234567890
+"
+above a section so that we more easily see the column positions in the string.
+The header is not part of the actual listing.
+}
 class function TIdFTPLPWindowsNT.CheckListing(AListing: TStrings;
   const ASysDescript: String; const ADetails: Boolean): Boolean;
 var
@@ -124,12 +148,20 @@ var
   i : Integer;
   SData : String;
 begin
+
   //maybe, we are dealing with this pattern
-  //2002-09-02  18:48       <DIR>          DOS dir 2
+{
+         1         2         3         4         5
+1234567890123456789012345678901234567890123456789012345678901234567890
+2002-09-02  18:48       <DIR>          DOS dir 2
+}
   //
   //or
-  //2002-09-02  19:06                9,730 DOS file 2
-
+{
+         1         2         3         4         5
+1234567890123456789012345678901234567890123456789012345678901234567890
+2002-09-02  19:06                9,730 DOS file 2
+}
   //
   //
   //Those were obtained from soem comments in some FileZilla source-code.
@@ -140,12 +172,19 @@ begin
   //FTP Service on WIndowsXP Pro when I enabled the "FtpDirBrowseShowLongDate"
   //metadata property.
   //
-  //02-16-2005  04:16AM       <DIR>          pub
+{
+         1         2         3         4         5
+1234567890123456789012345678901234567890123456789012345678901234567890
 
+02-16-2005  04:16AM       <DIR>          pub
+}
   //Also, this really should cover a dir form that might be used on some FTP servers.
   //Serv-U uses this if you specify -h:"DOS" when retreiving a DIR with LIST:
   //
 {
+         1         2         3         4         5
+1234567890123456789012345678901234567890123456789012345678901234567890
+
 09/09/2008  03:51 PM    <DIR>          .
 09/09/2008  03:51 PM    <DIR>          ..
 04/29/2008  01:39 PM               802 00index.txt
@@ -166,7 +205,6 @@ begin
          1         2         3         4         5
 1234567890123456789012345678901234567890123456789012345678901234567890
 "
-                       //  <DI
 01-01-98  08:00AM          <DIR>                  Flash File Store
 01-01-98  08:00AM          <DIR>                  SDMMC Disk
 06-26-06  10:49AM          <DIR>                  install
@@ -184,51 +222,36 @@ begin
 "
 }
   Result := False;
-  for i := 0 to AListing.Count - 1 do
-  begin
-    if (AListing[i] <> '') and (not IsSubDirContentsBanner(AListing[i])) then
-    begin
+  for i := 0 to AListing.Count - 1 do begin
+    if (AListing[i] <> '') and (not IsSubDirContentsBanner(AListing[i])) then begin
       SData := UpperCase(AListing[i]);
-      sDir := Copy(SData, 25, 5);
-      //maybe this is two spacs off.  We don't use TrimLeft at this point
-      //because we can't assume that this is a valid WIndows FTP Service listing.
-
-      if sDir = '  <DI' then begin   {do not localize}
-        sDir := Copy(SData, 27, 5);
-      end else begin
-        sDir := Copy(SData, 26,28);
-        Result := TextStartsWith(sDir,'  <DI') or IsNumeric(TrimLeft(sDir));
-        if not Result then begin
-           Exit;
-        end;
-
+      if IndyPos(' <DIR> ', SData) in [22..26] then begin {do not localize}
+        sDir := '<DIR>'; {do not localize}
       end;
+      sSize := Copy(SData, 20, 19);
+{       Handle Windows CE listings with 2 less spaces for sizes
+         1         2         3         4         5
+1234567890123456789012345678901234567890123456789012345678901234567890
 
-      sDir := TrimLeft(sDir);
-      //This is a workaround for large file sizes such as:
-
-      //09-08-05  10:22AM            628551680 Test.txt
-      //09-08-05  10:23AM            628623360 Test2.txt
-
-      if IsNumeric(TrimLeft(sDir)) then begin
-        sDir := '';
+04-15-09  07:44                 4608 AxcessE.exe
+}
+      if (Length(sSize) = 19) and IsNumeric(sSize[17]) and (sSize[18] = ' ') then begin
+        SetLength(sSize, 17);
       end;
-      sSize := StringReplace(TrimLeft(Copy(SData, 20, 19)), ',', '', [rfReplaceAll]);    {Do not Localize}
+      sSize := StringReplace(TrimLeft(sSize), ',', '', [rfReplaceAll]);
       //VM/BFS does share the date/time format as MS-DOS for the first two columns
-  //    if CharIsInSet(SData, 3, '/-') and CharIsInSet(SData, 6, '/-') then
-      if IsMMDDYY(Copy(SData, 1, 8), '-') or IsMMDDYY(Copy(SData, 1, 8), '/') then
-      begin
+  //    if ((CharIsInSet(SData, 3, ['/', '-'])) and (CharIsInSet(SData, 6, ['/', '-']))) then
+      if IsMMDDYY(Copy(SData, 1, 8), '-') or IsMMDDYY(Copy(SData, 1, 8), '/') then begin
         if sDir = '<DIR>' then begin {do not localize}
           Result := not IsVMBFS(SData);
-        end
-        else if (sDir = '') and (IndyStrToInt64(sSize, -1) <> -1) then
-        begin
+        end else begin
+          if (sDir = '') and (IndyStrToInt64(sSize, -1) <> -1) then begin
           //may be a file - see if we can get the size if sDir is empty
-          Result := not IsVMBFS(SData);
+            Result := not IsVMBFS(SData);
+          end;
         end;
       end
-      else if IsYYYYMMDD(SData) then
-      begin
+      else if IsYYYYMMDD(SData) then begin
         if sDir = '<DIR>' then begin {do not localize}
           Result := not IsVMBFS(SData);
         end
@@ -237,13 +260,16 @@ begin
           Result := not IsVMBFS(SData);
         end;
       end
-      else if IsMMDDYY(SData, '-') then {do not localize}
-      begin
-        {
-        It might be like this:
-        02-16-2005  04:16AM       <DIR>          pub
-        02-14-2005  07:22AM              9112103 ethereal-setup-0.10.9.exe
-        }
+      else if IsMMDDYY(SData, '-') then begin {do not localize}
+{
+It might be like this:
+
+         1         2         3         4         5
+1234567890123456789012345678901234567890123456789012345678901234567890
+
+02-16-2005  04:16AM       <DIR>          pub
+02-14-2005  07:22AM              9112103 ethereal-setup-0.10.9.exe
+ }
         if sDir = '<DIR>' then begin {do not localize}
           Result := not IsVMBFS(SData);
         end
@@ -254,6 +280,7 @@ begin
     end;
   end;
 end;
+
 
 class function TIdFTPLPWindowsNT.GetIdent: String;
 begin
@@ -279,8 +306,7 @@ begin
   //Note that there is quite a bit of duplicate code in this if.
   //That is because there are two similar forms but the dates are in
   //different forms and have to be processed differently.
-  if IsNumeric(AItem.Data, 4) and (not IsNumeric(AItem.Data, 1, 5)) then
-  begin
+  if IsNumeric(AItem.Data, 4) and (not IsNumeric(AItem.Data, 1, 5)) then begin
     LModified := Copy(AItem.Data, 1, 4) + '/' +  {do not localize}
                  Copy(AItem.Data, 6, 2) + '/' +  {do not localize}
                  Copy(AItem.Data, 9, 2) + ' ';   {do not localize}
@@ -297,8 +323,7 @@ begin
     except
       AItem.ModifiedDate := 0.0;
     end;
-  end else
-  begin
+  end else begin
     LBuffer := AItem.Data;
     //get the date
     LModified := Fetch(LBuffer);
@@ -327,8 +352,7 @@ begin
       LValue := StringReplace(LValue, ',', '', [rfReplaceAll]);    {Do not Localize}
     end;
     // What did we get?
-    if TextIsSame(LValue, '<DIR>') then    {Do not Localize}
-    begin
+    if TextIsSame(LValue, '<DIR>') then begin   {Do not Localize}
       AItem.ItemType := ditDirectory;
       //must contain 17 spaces for WinCE pattern
       if TextStartsWith(LBuffer,'                 ') then begin
@@ -338,12 +362,9 @@ begin
       end;
       AItem.SizeAvail := False;
       Break;
-    end else
-    begin
-      if not TextIsSame(LValue, 'AM') then
-      begin
-        if TextIsSame(LValue, 'PM') then
-        begin
+    end else begin
+      if not TextIsSame(LValue, 'AM') then begin
+        if TextIsSame(LValue, 'PM') then begin
           AItem.ModifiedDate := AItem.ModifiedDate + EncodeTime(12,0,0,0);
         end else begin
           AItem.ItemType := ditFile;
@@ -363,8 +384,7 @@ begin
   // Rest of the buffer is item name
   AItem.LocalFileName := LName;
   LName := Copy(LBuffer, LPosMarker, MaxInt);
-  if APath <> '' then
-  begin
+  if APath <> '' then begin
     //MS_DOS_CURDIR
     AItem.LocalFileName := LName;
     LName := APath + PATH_FILENAME_SEP_DOS + LName;
@@ -383,14 +403,11 @@ var
   LPathSpec : String;
   LItem : TIdFTPListItem;
 begin
-  for i := 0 to AListing.Count -1 do
-  begin
-    if AListing[i] <> '' then
-    begin
+  for i := 0 to AListing.Count -1 do begin
+    if AListing[i] <> '' then begin
       if IsSubDirContentsBanner(AListing[i]) then begin
         LPathSpec := Copy(AListing[i], 1, Length(AListing[i])-1);
-      end else
-      begin
+      end else begin
         LItem := MakeNewItem(ADir);
         LItem.Data := AListing[i];
         Result := ParseLine(LItem, LPathSpec);

@@ -18,6 +18,7 @@
 
 {$UNDEF USE_OPENSSL}
 {$UNDEF USE_ZLIB_UNIT}
+{$UNDEF USE_SSPI}
 
 // $DEFINE the following if the global objects in the IdStack and IdThread
 // units should be freed on finalization
@@ -304,6 +305,7 @@
     // class properties are broken in C++Builder 2007, causing AVs at compile-time
     {$DEFINE HAS_CLASSPROPERTIES}
   {$ENDIF}
+  {$DEFINE HAS_CLASSVARS}
   {$DEFINE HAS_DEPRECATED}
   {$DEFINE HAS_REMOVEFREENOTIFICATION}
 {$ENDIF}
@@ -383,6 +385,7 @@
     {$DEFINE HAS_TCharacter}
   {$ENDIF}
   {$DEFINE HAS_CLASSPROPERTIES}
+  {$DEFINE HAS_CLASSVARS}
   {$DEFINE HAS_DEPRECATED}
   {$DEFINE HAS_DEPRECATED_MSG}
   {$DEFINE HAS_REMOVEFREENOTIFICATION}
@@ -430,9 +433,14 @@
     {$DEFINE HAS_TCharacter}
   {$ENDIF}
   {$DEFINE HAS_CLASSPROPERTIES}
+  {$DEFINE HAS_CLASSVARS}
+  {$DEFINE HAS_CLASSCONSTRUCTOR}
+  {$DEFINE HAS_CLASSDESTRUCTOR}
+  {$DEFINE HAS_DELAYLOAD}
   {$DEFINE HAS_DEPRECATED}
   {$DEFINE HAS_DEPRECATED_MSG}
   {$DEFINE HAS_REMOVEFREENOTIFICATION}
+  {$DEFINE HAS_TSTRINGS_VALUEFROMINDEX}
 {$ENDIF}
 
 //Delphi & C++Builder 2011 (Fulcrum)
@@ -482,6 +490,10 @@
     {$DEFINE HAS_TInterlocked}
   {$ENDIF}
   {$DEFINE HAS_CLASSPROPERTIES}
+  {$DEFINE HAS_CLASSVARS}
+  {$DEFINE HAS_CLASSCONSTRUCTOR}
+  {$DEFINE HAS_CLASSDESTRUCTOR}
+  {$DEFINE HAS_DELAYLOAD}
   {$DEFINE HAS_DEPRECATED}
   {$DEFINE HAS_DEPRECATED_MSG}
   {$DEFINE HAS_REMOVEFREENOTIFICATION}
@@ -649,9 +661,13 @@
 {$ENDIF}
 
 {$IFDEF WIN32_OR_WIN64}
+  {$DEFINE WIN32_OR_WIN64_OR_WINCE}
   {$DEFINE USE_OPENSSL}
   {$DEFINE USE_ZLIB_UNIT}
-  {$DEFINE WIN32_OR_WIN64_OR_WINCE}
+  {$DEFINE USE_SSPI}
+  {$IFDEF STRING_IS_UNICODE}
+    {$DEFINE SSPI_UNICODE}
+  {$ENDIF}
 {$ENDIF}
 
 // High-performance counters are not reliable on multi-core systems, and have
@@ -667,10 +683,10 @@
 {$ENDIF}
 
 {$IFDEF UNIX}
-    {$DEFINE USE_OPENSSL}
-    {$DEFINE USE_ZLIB_UNIT}
+  {$DEFINE USE_OPENSSL}
+  {$DEFINE USE_ZLIB_UNIT}
 {$ENDIF}
-    
+
 {$IFDEF FPC_REQUIRES_PROPER_ALIGNMENT}
   {$DEFINE REQUIRES_PROPER_ALIGNMENT}
 {$ENDIF}
@@ -911,6 +927,23 @@ it's a LongInt.
   {$ENDIF}
 {$ENDIF}
 
+{Take advantage of some TCP features specific to some stacks.
+They work somewhat similarly but there's a key difference.
+In Linux, TCP_CORK is turned on to send fixed packet sizes and
+when turned-off (uncorked), any remaining data is sent. With 
+TCP_NOPUSH, this might not happen and remaining data is only sent
+before disconnect.}
+{$UNDEF HAS_TCP_NOPUSH}
+{$UNDEF HAS_TCP_CORK}
+{$IFDEF BSD}
+  {$DEFINE HAS_TCP_NOPUSH}
+{$ENDIF}
+{$IFDEF LINUX}
+  {$DEFINE HAS_TCP_CORK}
+{$ENDIF}
+{$IFDEF SOLARIS}
+  {$DEFINE HAS_TCP_CORK}
+{$ENDIF}
 
 {$IFDEF DEBUG}
   {$UNDEF USE_INLINE}

@@ -24,6 +24,9 @@ uses
     {$IFDEF USE_OPENSSL}
   IdAuthenticationNTLM,
     {$ENDIF}
+    {$IFDEF USE_SSPI}
+  IdAuthenticationSSPI,
+    {$ENDIF}
   {$ENDIF}
   IdAuthenticationDigest;
 

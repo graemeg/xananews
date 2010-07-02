@@ -223,6 +223,7 @@ contains
   IdSSL in 'IdSSL.pas',
   IdSSLOpenSSL in 'IdSSLOpenSSL.pas',
   IdSSLOpenSSLHeaders in 'IdSSLOpenSSLHeaders.pas',
+  IdSSLOpenSSLUtils in 'IdSSLOpenSSLUtils.pas',
   IdServerInterceptLogBase in 'IdServerInterceptLogBase.pas',
   IdServerInterceptLogEvent in 'IdServerInterceptLogEvent.pas',
   IdServerInterceptLogFile in 'IdServerInterceptLogFile.pas',

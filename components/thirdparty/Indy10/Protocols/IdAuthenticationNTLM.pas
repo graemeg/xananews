@@ -64,6 +64,10 @@ Type
     function KeepAlive: Boolean; override;
   end;
 
+  // RLebeau 4/17/10: this forces C++Builder to link to this unit so
+  // RegisterAuthenticationMethod can be called correctly at program startup...
+  (*$HPPEMIT '#pragma link "IdAuthenticationNTLM"'*)
+
 implementation
 
 uses
@@ -74,6 +78,7 @@ uses
   IdResourceStringsProtocols,
   IdSSLOpenSSLHeaders,
   IdSSLOpenSSL,
+  IdSSLOpenSSLUtils,
   IdNTLM,
   SysUtils;
 
@@ -82,7 +87,7 @@ uses
 constructor TIdNTLMAuthentication.Create;
 begin
   inherited Create;
-  if not LoadOpenSSLLibrary then begin
+  if not IdSSLOpenSSLUtils.LoadOpenSSLLibrary then begin
     raise EIdOSSLCouldNotLoadSSLLibrary.Create(RSOSSLCouldNotLoadSSLLibrary);
   end;
 end;

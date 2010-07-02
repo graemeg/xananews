@@ -192,11 +192,7 @@ var
   begin
     if Item.ContentID <> '' then begin
       Result := EnsureMsgIDBrackets(Item.ContentID);
-    end
-    else if Item.FileName <> '' then begin
-      Result := EnsureMsgIDBrackets(ExtractFileName(Item.FileName));
-    end
-    else begin
+    end else begin
       Result := '';
     end;
   end;
@@ -251,7 +247,7 @@ begin
     LMsgAttachment.ContentTransfer := LMsgBldrAttachment.ContentTransfer;
     if ParentPart > -1 then
     begin
-      if TextStartsWith(LMsgAttachment.ContentType, 'image/') then begin {do not localize}
+      if IsHeaderMediaType(LMsgAttachment.ContentType, 'image') then begin {do not localize}
         LMsgAttachment.ContentDisposition := 'inline'; {do not localize}
       end;
       LMsgAttachment.ParentPart := ParentPart;

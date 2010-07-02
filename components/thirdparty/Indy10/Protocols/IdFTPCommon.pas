@@ -1472,9 +1472,13 @@ handling routines.
 }
 {$IFDEF HAS_TFormatSettings_Object}
 {For Delphi 2011, we have a format settings object that includes a member
-for two digit year processing.  Use that instead because that is thread-safe.}
+for two digit year processing.  Use that instead because that is thread-safe.
+
+Also note, that in this version, TFormatSettings is not an object at all, it's a
+record with associated functions and procedures plus a creator.  Since we allocate
+it on the stack with the definition, we can't "free" it with FreeAndNil.  }
 var
-  LFormatSettings: TFormatSettings;
+  LFormatSettings: SysUtils.TFormatSettings;
 {$ENDIF}
 begin
   Result := AYear;
@@ -1483,7 +1487,6 @@ begin
   //years such as 2000 and 2003
   if Result < 1000 then begin
     {$IFDEF HAS_TFormatSettings_Object}
-    try
        LFormatSettings:= TFormatSettings.Create('');  //use default locale
        if LFormatSettings.TwoDigitYearCenturyWindow > 0 then begin
          if Result > LFormatSettings.TwoDigitYearCenturyWindow then begin
@@ -1499,9 +1502,7 @@ begin
       Inc(Result, (IndyCurrentYear div 100)*100);
     end;
     {$IFDEF HAS_TFormatSettings_Object}
-    finally
-      FreeAndNil(LFormatSettings);
-    end;
+
     {$ENDIF}
   end;
 end;

@@ -101,17 +101,31 @@ uses
 type
   TIdEncoder = class(TIdBaseComponent)
   public
-    function Encode(const AIn: string; AEncoding: TIdTextEncoding = nil): string; overload;
-    procedure Encode(const AIn: string; ADestStrings: TStrings; AEncoding: TIdTextEncoding = nil); overload;
-    procedure Encode(const AIn: string; ADestStream: TStream; AEncoding: TIdTextEncoding = nil); overload;
+    function Encode(const AIn: string; AByteEncoding: TIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+      ): string; overload;
+    procedure Encode(const AIn: string; ADestStrings: TStrings; AByteEncoding: TIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+      ); overload;
+    procedure Encode(const AIn: string; ADestStream: TStream; AByteEncoding: TIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+      ); overload;
 
     function Encode(ASrcStream: TStream; const ABytes: Integer = -1): string; overload;
     procedure Encode(ASrcStream: TStream; ADestStrings: TStrings; const ABytes: Integer = -1); overload;
     procedure Encode(ASrcStream: TStream; ADestStream: TStream; const ABytes: Integer = -1); overload; virtual; abstract;
 
-    class function EncodeString(const AIn: string; AEncoding: TIdTextEncoding = nil): string; overload;
-    class procedure EncodeString(const AIn: string; ADestStrings: TStrings; AEncoding: TIdTextEncoding = nil); overload;
-    class procedure EncodeString(const AIn: string; ADestStream: TStream; AEncoding: TIdTextEncoding = nil); overload;
+    class function EncodeString(const AIn: string; AByteEncoding: TIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+      ): string; overload;
+    class procedure EncodeString(const AIn: string; ADestStrings: TStrings;
+      AByteEncoding: TIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+      ); overload;
+    class procedure EncodeString(const AIn: string; ADestStream: TStream;
+      AByteEncoding: TIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+      ); overload;
 
     class function EncodeBytes(const ABytes: TIdBytes): string;
   end;
@@ -128,7 +142,9 @@ type
     procedure Decode(const AIn: string); overload;
     procedure Decode(ASrcStream: TStream; const ABytes: Integer = -1); overload; virtual; abstract;
 
-    class function DecodeString(const AIn: string): string;
+    class function DecodeString(const AIn: string; AByteEncoding: TIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
+      ): string;
     class function DecodeBytes(const AIn: string): TIdBytes;
   end;
 
@@ -170,7 +186,9 @@ begin
   end;
 end;
 
-class function TIdDecoder.DecodeString(const AIn: string): string;
+class function TIdDecoder.DecodeString(const AIn: string; AByteEncoding: TIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
+  ): string;
 var
   LDecoder: TIdDecoder;
   LStream: TMemoryStream;
@@ -186,7 +204,10 @@ begin
         LDecoder.DecodeEnd;
       end;
       LStream.Position := 0;
-      Result := IdGlobal.ReadStringFromStream(LStream, -1, Indy8BitEncoding);
+      if AByteEncoding = nil then begin
+        AByteEncoding := Indy8BitEncoding;
+      end;
+      Result := ReadStringFromStream(LStream, -1, AByteEncoding{$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF});
     finally
       FreeAndNil(LDecoder);
     end;
@@ -223,17 +244,19 @@ end;
 
 { TIdEncoder }
 
-function TIdEncoder.Encode(const AIn: string; AEncoding: TIdTextEncoding = nil): string;
+function TIdEncoder.Encode(const AIn: string; AByteEncoding: TIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+  ): string;
 var
   LStream: TMemoryStream;
 begin
   if AIn <> '' then begin
     LStream := TMemoryStream.Create;
     try
-      if AEncoding = nil then begin
-        AEncoding := Indy8BitEncoding;
+      if AByteEncoding = nil then begin
+        AByteEncoding := Indy8BitEncoding;
       end;
-      WriteStringToStream(LStream, AIn, AEncoding);
+      WriteStringToStream(LStream, AIn, AByteEncoding{$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF});
       LStream.Position := 0;
       Result := Encode(LStream);
     finally
@@ -244,16 +267,19 @@ begin
   end;
 end;
 
-procedure TIdEncoder.Encode(const AIn: string; ADestStrings: TStrings; AEncoding: TIdTextEncoding = nil);
+procedure TIdEncoder.Encode(const AIn: string; ADestStrings: TStrings;
+  AByteEncoding: TIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+  );
 var
   LStream: TMemoryStream;
 begin
   LStream := TMemoryStream.Create;
   try
-    if AEncoding = nil then begin
-      AEncoding := Indy8BitEncoding;
+    if AByteEncoding = nil then begin
+      AByteEncoding := Indy8BitEncoding;
     end;
-    WriteStringToStream(LStream, AIn, AEncoding);
+    WriteStringToStream(LStream, AIn, AByteEncoding{$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF});
     LStream.Position := 0;
     Encode(LStream, ADestStrings);
   finally
@@ -261,16 +287,19 @@ begin
   end;
 end;
 
-procedure TIdEncoder.Encode(const AIn: string; ADestStream: TStream; AEncoding: TIdTextEncoding = nil);
+procedure TIdEncoder.Encode(const AIn: string; ADestStream: TStream;
+  AByteEncoding: TIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+  );
 var
   LStream: TMemoryStream;
 begin
   LStream := TMemoryStream.Create;
   try
-    if AEncoding = nil then begin
-      AEncoding := Indy8BitEncoding;
+    if AByteEncoding = nil then begin
+      AByteEncoding := Indy8BitEncoding;
     end;
-    WriteStringToStream(LStream, AIn, AEncoding);
+    WriteStringToStream(LStream, AIn, AByteEncoding{$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF});
     LStream.Position := 0;
     Encode(LStream, ADestStream);
   finally
@@ -307,31 +336,39 @@ begin
   end;
 end;
 
-class function TIdEncoder.EncodeString(const AIn: string; AEncoding: TIdTextEncoding = nil): string;
+class function TIdEncoder.EncodeString(const AIn: string; AByteEncoding: TIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+  ): string;
 begin
   with Create(nil) do
   try
-    Result := Encode(AIn, AEncoding);
+    Result := Encode(AIn, AByteEncoding{$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF});
   finally
     Free;
   end;
 end;
 
-class procedure TIdEncoder.EncodeString(const AIn: string; ADestStrings: TStrings; AEncoding: TIdTextEncoding = nil);
+class procedure TIdEncoder.EncodeString(const AIn: string; ADestStrings: TStrings;
+  AByteEncoding: TIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+  );
 begin
   with Create(nil) do
   try
-    Encode(AIn, ADestStrings, AEncoding);
+    Encode(AIn, ADestStrings, AByteEncoding{$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF});
   finally
     Free;
   end;
 end;
 
-class procedure TIdEncoder.EncodeString(const AIn: string; ADestStream: TStream; AEncoding: TIdTextEncoding = nil);
+class procedure TIdEncoder.EncodeString(const AIn: string; ADestStream: TStream;
+  AByteEncoding: TIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+  );
 begin
   with Create(nil) do
   try
-    Encode(AIn, ADestStream, AEncoding);
+    Encode(AIn, ADestStream, AByteEncoding{$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF});
   finally
     Free;
   end;

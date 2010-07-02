@@ -68,7 +68,7 @@ interface
 {$i IdCompilerDefines.inc}
 
 uses
-  Classes;
+  Classes, IdGlobalProtocols;
 
 type
   TIdHeaderList = class(TStringList)
@@ -77,7 +77,9 @@ type
     FUnfoldLines : Boolean;
     FFoldLines : Boolean;
     FFoldLinesLength : Integer;
+    FQuoteType: TIdHeaderQuotingType;
     //
+    procedure AssignTo(Dest: TPersistent); override;
     {This deletes lines which were folded}
     Procedure DeleteFoldedLines(Index : Integer);
     {This folds one line into several lines}
@@ -101,7 +103,6 @@ type
     procedure SkipValueAtLine(var VLine : Integer);
   public
     procedure AddStrings(Strings: TStrings); override;
-    procedure AssignTo(Dest: TPersistent); override;
     { This method extracts "name=value" strings from the ASrc TStrings and adds
       them to this list using our delimiter defined in NameValueSeparator. }
     procedure AddStdValues(ASrc: TStrings);
@@ -111,7 +112,7 @@ type
     { This method extracts all of the values from this list and puts them in the
       ADest TStrings as "name=value" strings.}
     procedure ConvertToStdValues(ADest: TStrings);
-    constructor Create;
+    constructor Create(AQuoteType: TIdHeaderQuotingType);
     { This method, given a name specified by AName, extracts all of the values
       for that name and puts them in a new string list (just the values) one
       per line in the ADest TIdStrings.}
@@ -145,7 +146,7 @@ implementation
 uses
   IdException,
   IdGlobal,
-  IdGlobalProtocols, SysUtils;
+  SysUtils;
 
 { TIdHeaderList }
 
@@ -214,7 +215,7 @@ begin
   end;
 end;
 
-constructor TIdHeaderList.Create;
+constructor TIdHeaderList.Create(AQuoteType: TIdHeaderQuotingType);
 begin
   inherited Create;
   FNameValueSeparator := ': ';    {Do not Localize}
@@ -223,6 +224,7 @@ begin
   { 78 was specified by a message draft available at
     http://www.imc.org/draft-ietf-drums-msg-fmt }
   FFoldLinesLength := 78;
+  FQuoteType := AQuoteType;
 end;
 
 procedure TIdHeaderList.DeleteFoldedLines(Index: Integer);
@@ -376,10 +378,24 @@ end;
 function TIdHeaderList.GetParam(const AName, AParam: string): string;
 var
   s: string;
+  LQuoteType: TIdHeaderQuotingType;
 begin
   s := Values[AName];
   if s <> '' then begin
-    Result := ExtractHeaderSubItem(s, AParam);
+    LQuoteType := FQuoteType;
+    case LQuoteType of
+      QuoteRFC822: begin
+        if PosInStrArray(AName, ['Content-Type', 'Content-Dosposition'], False) <> -1 then begin {Do not Localize}
+          LQuoteType := QuoteMIME;
+        end;
+      end;
+      QuoteMIME: begin
+        if PosInStrArray(AName, ['Content-Type', 'Content-Disposition'], False) = -1 then begin {Do not Localize}
+          LQuoteType := QuoteRFC822;
+        end;
+      end;
+    end;
+    Result := ExtractHeaderSubItem(s, AParam, LQuoteType);
   end else begin
     Result := '';
   end;
@@ -436,8 +452,23 @@ begin
 end;
 
 procedure TIdHeaderList.SetParam(const AName, AParam, AValue: string);
+var
+  LQuoteType: TIdHeaderQuotingType;
 begin
-  Values[AName] := ReplaceHeaderSubItem(Values[AName], AParam, AValue);
+  LQuoteType := FQuoteType;
+  case LQuoteType of
+    QuoteRFC822: begin
+      if PosInStrArray(AName, ['Content-Type', 'Content-Disposition'], False) <> -1 then begin {Do not Localize}
+        LQuoteType := QuoteMIME;
+      end;
+    end;
+    QuoteMIME: begin
+      if PosInStrArray(AName, ['Content-Type', 'Content-Disposition'], False) = -1 then begin {Do not Localize}
+        LQuoteType := QuoteRFC822;
+      end;
+    end;
+  end;
+  Values[AName] := ReplaceHeaderSubItem(Values[AName], AParam, AValue, LQuoteType);
 end;
 
 procedure TIdHeaderList.SetAllParams(const AName, AValue: string);
@@ -447,11 +478,11 @@ begin
   LValue := Values[AName];
   if LValue <> '' then
   begin
+    LValue := ExtractHeaderItem(LValue);
     if AValue <> '' then begin
-      Values[AName] := ExtractHeaderItem(LValue) + '; ' + AValue; {do not localize}
-    end else begin
-      Values[AName] := ExtractHeaderItem(LValue);
+      LValue := LValue + '; ' + AValue; {do not localize}
     end;
+    Values[AName] := LValue;
   end;
 end;
 

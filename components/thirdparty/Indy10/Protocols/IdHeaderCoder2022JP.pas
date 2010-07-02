@@ -17,8 +17,14 @@ type
     class function CanHandle(const ACharSet: String): Boolean; override;
   end;
 
+  // RLebeau 4/17/10: this forces C++Builder to link to this unit so
+  // RegisterHeaderCoder can be called correctly at program startup...
+  (*$HPPEMIT '#pragma link "IdHeaderCoder2022JP"'*)
+
 implementation
-uses SysUtils;
+
+uses
+  SysUtils;
 
 const
   // RLebeau 1/7/09: using integers for #128-#255 because in D2009, the compiler

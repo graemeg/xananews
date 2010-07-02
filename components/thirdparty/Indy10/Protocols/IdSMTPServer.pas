@@ -154,7 +154,7 @@ type
     function CreateGreeting: TIdReply; override;
     function CreateReplyUnknownCommand: TIdReply; override;
     //
-    procedure DoAuthLogin(ASender: TIdCommand; const Login: string);
+    procedure DoAuthLogin(ASender: TIdCommand; const Mechanism, InitialResponse: string);
     //
     //command handlers
     procedure CommandNOOP(ASender: TIdCommand);
@@ -496,6 +496,7 @@ end;
 procedure TIdSMTPServer.CommandAUTH(ASender: TIdCommand);
 var
   LContext: TIdSMTPServerContext;
+  S, LMech: String;
 begin
   LContext := TIdSMTPServerContext(ASender.Context);
   //Note you can not use PIPELINING with AUTH
@@ -513,7 +514,9 @@ begin
     Exit;
   end;
   if Length(ASender.UnparsedParams) > 0 then begin
-    DoAuthLogin(ASender, ASender.UnparsedParams);
+    S := ASender.UnparsedParams;
+    LMech := Fetch(S);
+    DoAuthLogin(ASender, LMech, Trim(S));
   end else begin
     CmdSyntaxError(ASender);
   end;
@@ -542,10 +545,9 @@ begin
   end;
 end;
 
-procedure TIdSMTPServer.DoAuthLogin(ASender: TIdCommand; const Login: string);
+procedure TIdSMTPServer.DoAuthLogin(ASender: TIdCommand; const Mechanism, InitialResponse: string);
 var
-  S: string;
-  LUsername, LPassword: string;
+  S, LUsername, LPassword: string;
   LAuthFailed: Boolean;
   LAccepted: Boolean;
   LContext : TIdSMTPServerContext;
@@ -553,45 +555,49 @@ var
   LDecoder: TIdDecoderMIME;
 begin
   LContext := TIdSMTPServerContext(ASender.Context);
-  LAuthFailed := False;
+  LAuthFailed := True;
   LContext.PipeLining := False;
-  if TextIsSame(Login, 'LOGIN') then begin   {Do not Localize}
+
+  if TextIsSame(Mechanism, 'LOGIN') then begin   {Do not Localize}
     // LOGIN USING THE LOGIN AUTH - BASE64 ENCODED
     try
       LEncoder := TIdEncoderMIME.Create;
       try
-        // Encoding a string literal?
-        s := LEncoder.Encode('Username:');     {Do not Localize}
-        //  s := SendRequest( '334 ' + s );    {Do not Localize}
-        ASender.Reply.SetReply(334, s);    {Do not Localize}
-        ASender.SendReply;
-        s := Trim(LContext.Connection.IOHandler.ReadLn);
-        if s <> '' then begin   {Do not Localize}
-          LDecoder := TIdDecoderMIME.Create;
-          try
-            LUsername := LDecoder.DecodeString(s);
-            // What? Encode this string literal?
-            s := LEncoder.Encode('Password:');    {Do not Localize}
-            ASender.Reply.SetReply(334, s);    {Do not Localize}
+        LDecoder := TIdDecoderMIME.Create;
+        try
+          if InitialResponse = '' then begin
+            // no [initial-response] parameter specified
+            // Encoding a string literal?
+            S := LEncoder.Encode('Username:');    {Do not Localize}
+            ASender.Reply.SetReply(334, S);       {Do not Localize}
             ASender.SendReply;
-            s := Trim(ASender.Context.Connection.IOHandler.ReadLn);
-            if s <> '' then begin
-              LPassword := LDecoder.DecodeString(s);
-            end else begin
-              LAuthFailed := True;
-            end;
-          // when TIdDecoderMime.DecodeString(s) raise a exception,catch it and set AuthFailed as true
-          finally
-            FreeAndNil(LDecoder);
+            S := Trim(LContext.Connection.IOHandler.ReadLn);
+          end
+          else if InitialResponse = '=' then begin    {Do not Localize}
+            // empty [initial-response] parameter value
+            S := '';
+          end else begin
+            S := InitialResponse;
           end;
-        end else begin
-          LAuthFailed := True;
+          if S <> '' then begin   {Do not Localize}
+            LUsername := LDecoder.DecodeString(S);
+          end;
+          // What? Encode this string literal?
+          S := LEncoder.Encode('Password:');    {Do not Localize}
+          ASender.Reply.SetReply(334, S);       {Do not Localize}
+          ASender.SendReply;
+          S := Trim(ASender.Context.Connection.IOHandler.ReadLn);
+          if S <> '' then begin
+            LPassword := LDecoder.DecodeString(S);
+          end;
+          LAuthFailed := False;
+        finally
+          FreeAndNil(LDecoder);
         end;
       finally
         FreeAndNil(LEncoder);
       end;
     except
-      LAuthFailed := True;
     end;
   end;
 
@@ -603,13 +609,14 @@ begin
       FOnUserLogin(LContext, LUsername, LPassword, LAccepted);
     end;
     LContext.LoggedIn := LAccepted;
-    LContext.Username := LUsername;
     if LAccepted then begin
+      LContext.Username := LUsername;
       SetEnhReply(ASender.Reply, 235, Id_EHR_SEC_OTHER_OK, ' welcome ' + Trim(LUsername), LContext.EHLO);    {Do not Localize}
       ASender.SendReply;
       Exit;
     end;
   end;
+
   AuthFailed(ASender);
 end;
 

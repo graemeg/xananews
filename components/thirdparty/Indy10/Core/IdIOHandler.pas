@@ -478,7 +478,7 @@ type
     procedure InterceptReceive(var VBuffer: TIdBytes);
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
     procedure PerformCapture(const ADest: TObject; out VLineCount: Integer;
-     const ADelim: string; AIsRFCMessage: Boolean; AByteEncoding: TIdTextEncoding = nil
+     const ADelim: string; AUsesDotTransparency: Boolean; AByteEncoding: TIdTextEncoding = nil
      {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
      ); virtual;
     procedure RaiseConnClosedGracefully;
@@ -569,7 +569,8 @@ type
     procedure Write(AValue: Word; AConvert: Boolean = True); overload;
     procedure Write(AValue: SmallInt; AConvert: Boolean = True); overload;
     procedure Write(AValue: Int64; AConvert: Boolean = True); overload;
-    procedure Write(AStream: TStream; ASize: TIdStreamSize = 0; AWriteByteCount: Boolean = False); overload; virtual;
+    procedure Write(AStream: TStream; ASize: TIdStreamSize = 0;
+      AWriteByteCount: Boolean = False); overload; virtual;
     procedure WriteRFCStrings(AStrings: TStrings; AWriteTerminator: Boolean = True;
       AByteEncoding: TIdTextEncoding = nil
       {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
@@ -594,11 +595,11 @@ type
       {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
       ); overload; // .Net overload
     procedure Capture(ADest: TStream; ADelim: string;
-      AIsRFCMessage: Boolean = True; AByteEncoding: TIdTextEncoding = nil
+      AUsesDotTransparency: Boolean = True; AByteEncoding: TIdTextEncoding = nil
       {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
       ); overload;
     procedure Capture(ADest: TStream; out VLineCount: Integer;
-      const ADelim: string = '.'; AIsRFCMessage: Boolean = True;
+      const ADelim: string = '.'; AUsesDotTransparency: Boolean = True;
       AByteEncoding: TIdTextEncoding = nil
       {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
       ); overload;
@@ -606,11 +607,11 @@ type
       {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
       ); overload; // .Net overload
     procedure Capture(ADest: TStrings; const ADelim: string;
-      AIsRFCMessage: Boolean = True; AByteEncoding: TIdTextEncoding = nil
+      AUsesDotTransparency: Boolean = True; AByteEncoding: TIdTextEncoding = nil
       {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
       ); overload;
     procedure Capture(ADest: TStrings; out VLineCount: Integer;
-      const ADelim: string = '.'; AIsRFCMessage: Boolean = True;
+      const ADelim: string = '.'; AUsesDotTransparency: Boolean = True;
       AByteEncoding: TIdTextEncoding = nil
       {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
       ); overload;
@@ -1457,15 +1458,16 @@ begin
   // Check here as this side may have closed the socket
   CheckForDisconnect(ARaiseExceptionIfDisconnected);
   if SourceIsAvailable then begin
-    LByteCount := 0;
     repeat
+      LByteCount := 0;
       if Readable(ATimeout) then begin
         if Opened then begin
           // No need to call AntiFreeze, the Readable does that.
           if SourceIsAvailable then begin
             // TODO: Whey are we reallocating LBuffer every time? This should
             // be a one time operation per connection.
-            SetLength(LBuffer, RecvBufferSize); try
+            SetLength(LBuffer, RecvBufferSize);
+            try
               LByteCount := ReadDataFromSource(LBuffer);
               if LByteCount > 0 then begin
                 SetLength(LBuffer, LByteCount);
@@ -1477,15 +1479,16 @@ begin
                 //TODO: If not intercept, we can skip this step
                 InputBuffer.Write(LBuffer);
               end;
-            finally LBuffer := nil; end;
-          end else begin
+            finally
+              LBuffer := nil;
+            end;
+          end
+          else if ARaiseExceptionIfDisconnected then begin
             EIdClosedSocket.Toss(RSStatusDisconnected);
           end;
-        end else begin
-          LByteCount := 0;
-          if ARaiseExceptionIfDisconnected then begin
-            EIdNotConnected.Toss(RSNotConnected);
-          end;
+        end
+        else if ARaiseExceptionIfDisconnected then begin
+          EIdNotConnected.Toss(RSNotConnected);
         end;
         if LByteCount < 0 then
         begin
@@ -1493,12 +1496,12 @@ begin
           FClosedGracefully := True;
           Close;
           // Do not raise unless all data has been read by the user
-          if InputBufferIsEmpty then begin
+          if InputBufferIsEmpty and ARaiseExceptionIfDisconnected then begin
             RaiseError(LLastError);
           end;
           LByteCount := 0;
-        end;
-        if LByteCount = 0 then begin
+        end
+        else if LByteCount = 0 then begin
           FClosedGracefully := True;
         end;
         // Check here as other side may have closed connection
@@ -1779,16 +1782,17 @@ begin
     // EIdConnClosedGracefully exception that breaks the loop
     // prematurely and thus leave unread bytes in the InputBuffer.
     // Let the loop catch the exception before exiting...
+
+    SetLength(LBuf, RecvBufferSize); // preallocate the buffer
     repeat
       if AReadUntilDisconnect then begin
-        i := RecvBufferSize;
+        i := Length(LBuf);
       end else begin
-        i := IndyMin(LByteCount, RecvBufferSize);
+        i := IndyMin(LByteCount, Length(LBuf));
         if i < 1 then begin
           Break;
         end;
       end;
-      SetLength(LBuf, 0); // clear the buffer
       //TODO: Improve this - dont like the use of the exception handler
       //DONE -oAPR: Dont use a string, use a memory buffer or better yet the buffer itself.
       try
@@ -1801,7 +1805,7 @@ begin
             // than actually requested, so don't extract too
             // many bytes here...
             i := IndyMin(i, FInputBuffer.Size);
-            FInputBuffer.ExtractToBytes(LBuf, i);
+            FInputBuffer.ExtractToBytes(LBuf, i, False);
             if (E is EIdConnClosedGracefully) and AReadUntilDisconnect then begin
               Break;
             end else begin
@@ -1826,37 +1830,6 @@ begin
     end;
     LBuf := nil;
   end;
-end;
-
-{ TIdDiscardStream }
-
-type
-  TIdDiscardStream = class(TIdBaseStream)
-  protected
-    function IdRead(var VBuffer: TIdBytes; AOffset, ACount: Longint): Longint; override;
-    function IdWrite(const ABuffer: TIdBytes; AOffset, ACount: Longint): Longint; override;
-    function IdSeek(const AOffset: Int64; AOrigin: TSeekOrigin): Int64; override;
-    procedure IdSetSize(ASize: Int64); override;
-  end;
-
-function TIdDiscardStream.IdRead(var VBuffer: TIdBytes; AOffset, ACount: Longint): Longint;
-begin
-  Result := 0;
-end;
-
-function TIdDiscardStream.IdSeek(const AOffset: Int64; AOrigin: TSeekOrigin): Int64;
-begin
-  Result := 0;
-end;
-
-procedure TIdDiscardStream.IdSetSize(ASize: Int64);
-begin
-//
-end;
-
-function TIdDiscardStream.IdWrite(const ABuffer: TIdBytes; AOffset, ACount: Longint): Longint;
-begin
-  Result := ACount;
 end;
 
 procedure TIdIOHandler.Discard(AByteCount: Int64);
@@ -2001,7 +1974,7 @@ end;
 
 procedure TIdIOHandler.PerformCapture(const ADest: TObject;
   out VLineCount: Integer; const ADelim: string;
-  AIsRFCMessage: Boolean; AByteEncoding: TIdTextEncoding = nil
+  AUsesDotTransparency: Boolean; AByteEncoding: TIdTextEncoding = nil
   {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
   );
 var
@@ -2044,9 +2017,9 @@ begin
           raise EIdMaxCaptureLineExceeded.Create(RSMaximumNumberOfCaptureLineExceeded);
         end;
       end;
-      // For RFC 822 retrieves
+      // For RFC retrieves that use dot transparency
       // No length check necessary, if only one byte it will be byte x + #0.
-      if AIsRFCMessage then begin
+      if AUsesDotTransparency then begin
         if TextStartsWith(s, '..') then begin
           Delete(s, 1, 1);
         end;
@@ -2210,37 +2183,37 @@ begin
 end;
 
 procedure TIdIOHandler.Capture(ADest: TStream; out VLineCount: Integer;
-  const ADelim: string = '.'; AIsRFCMessage: Boolean = True;
+  const ADelim: string = '.'; AUsesDotTransparency: Boolean = True;
   AByteEncoding: TIdTextEncoding = nil
   {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
   );
 {$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
 begin
-  PerformCapture(ADest, VLineCount, ADelim, AIsRFCMessage, AByteEncoding
+  PerformCapture(ADest, VLineCount, ADelim, AUsesDotTransparency, AByteEncoding
     {$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF}
     );
 end;
 
 procedure TIdIOHandler.Capture(ADest: TStream; ADelim: string;
-  AIsRFCMessage: Boolean = True; AByteEncoding: TIdTextEncoding = nil
+  AUsesDotTransparency: Boolean = True; AByteEncoding: TIdTextEncoding = nil
   {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
   );
 var
   LLineCount: Integer;
 begin
-  PerformCapture(ADest, LLineCount, '.', AIsRFCMessage, AByteEncoding   {do not localize}
+  PerformCapture(ADest, LLineCount, '.', AUsesDotTransparency, AByteEncoding   {do not localize}
     {$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF}
     );
 end;
 
 procedure TIdIOHandler.Capture(ADest: TStrings; out VLineCount: Integer;
-  const ADelim: string = '.'; AIsRFCMessage: Boolean = True;
+  const ADelim: string = '.'; AUsesDotTransparency: Boolean = True;
   AByteEncoding: TIdTextEncoding = nil
   {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
   );
 {$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
 begin
-  PerformCapture(ADest, VLineCount, ADelim, AIsRFCMessage, AByteEncoding
+  PerformCapture(ADest, VLineCount, ADelim, AUsesDotTransparency, AByteEncoding
     {$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF}
     );
 end;
@@ -2257,13 +2230,13 @@ begin
 end;
 
 procedure TIdIOHandler.Capture(ADest: TStrings; const ADelim: string;
-  AIsRFCMessage: Boolean = True; AByteEncoding: TIdTextEncoding = nil
+  AUsesDotTransparency: Boolean = True; AByteEncoding: TIdTextEncoding = nil
   {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
   );
 var
   LLineCount: Integer;
 begin
-  PerformCapture(ADest, LLineCount, ADelim, AIsRFCMessage, AByteEncoding
+  PerformCapture(ADest, LLineCount, ADelim, AUsesDotTransparency, AByteEncoding
     {$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF}
     );
 end;

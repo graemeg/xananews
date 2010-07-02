@@ -337,11 +337,7 @@ var
   ESC: string;
   CharCode: Integer;
   IsUTF8: boolean;
-  {$IFDEF VCL_2009_OR_ABOVE}
-  r: RawByteString;
-  {$ELSE}
-  r : AnsiString;
-  {$ENDIF}
+  r : TIdBytes;
 begin
   IsUTF8 := false;
   Result := '';    {Do not Localize}
@@ -350,12 +346,12 @@ begin
   // S.G. 27/11/2002: well, a space
   // ASrc := StringReplace(ASrc, '+', ' ', [rfReplaceAll]);  {do not localize}
   i := 1;
-  j := 1;
+  j := 0;
   SetLength(r, Length(ASrc));
   while i <= Length(ASrc) do begin
     if ASrc[i] <> '%' then begin  {do not localize}
       Result := Result + ASrc[i]; // Copy the char
-      r[j] := AnsiChar(Ord(ASrc[i]));
+      r[j] := Byte(ASrc[i]);
       Inc(i); // Then skip it
       Inc(j);
     end else begin
@@ -367,18 +363,22 @@ begin
         try
           CharCode := IndyStrToInt('$' + ESC);  {do not localize}
           Result := Result + Char(CharCode);
-          r[j] := AnsiChar(CharCode);
+          r[j] := Byte(CharCode);
           Inc(j);
+          // RLebeau: UTF-8 is NOT guaranteed in all environments.  Some
+          // systems do use other encodings in their URLs.  To detect this,
+          // we would have to analyze the decoded bytes, or just require
+          // the caller to specify the encodin up front instead...
           IsUTF8 := true;
         except end;
       end else
       begin
         // unicode ESC code
 
-        // RLebeau 5/10/2006: under Win32, the character will end
+        // RLebeau 5/10/2006: under Win32, the character will likely end
         // up as '?' in the Result when converted from Unicode to Ansi,
         // but at least the URL will be parsed properly
-        
+
         ESC := Copy(ASrc, i+1, 4); // Copy the escape code
         Inc(i, 5); // Then skip it.
         try
@@ -387,6 +387,14 @@ begin
         except end;
       end;
     end;
+  end;
+
+  {If UTF8 characters have been found in the Result string, then do a conversion.
+  This assumes that no UTF16 characters have been added to the Result}
+  if IsUTF8 then
+  begin
+    SetLength(r, j);
+    Result := TIdTextEncoding.UTF8.GetString(r);
   end;
 end;
 

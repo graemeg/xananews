@@ -629,7 +629,7 @@ begin
   Recipients.Clear;
   Priority := ID_MSG_PRIORITY;
   ReceiptRecipient.Text := '';
-  ContentType := '';
+  FContentType := '';
   FCharSet := '';
   ContentTransferEncoding := '';
   ContentDisposition := '';
@@ -658,15 +658,15 @@ begin
   FCcList := TIdEmailAddressList.Create(Self);
   FMessageParts := TIdMessageParts.Create(Self);
   FNewsGroups := TStringList.Create;
-  FHeaders := TIdHeaderList.Create;
+  FHeaders := TIdHeaderList.Create(QuoteRFC822);
   FFromList := TIdEmailAddressList.Create(Self);
   FReplyTo := TIdEmailAddressList.Create(Self);
   FSender := TIdEmailAddressItem.Create;
-  FExtraHeaders := TIdHeaderList.Create;
+  FExtraHeaders := TIdHeaderList.Create(QuoteRFC822);
   FReceiptRecipient := TIdEmailAddressItem.Create;
   NoDecode := ID_MSG_NODECODE;
   FMIMEBoundary := TIdMIMEBoundary.Create;
-  FLastGeneratedHeaders := TIdHeaderList.Create;
+  FLastGeneratedHeaders := TIdHeaderList.Create(QuoteRFC822);
   Clear;
   FEncoding := meDefault;
 end;
@@ -711,7 +711,7 @@ var
   ISOCharset: string;
   HeaderEncoding: Char;
   LN: Integer;
-  LEncoding, LMIMEBoundary, LContentType: string;
+  LEncoding, LMIMEBoundary: string;
   LDate: TDateTime;
   LReceiptRecipient: string;
 begin
@@ -800,7 +800,7 @@ begin
       Values['Bcc'] := EncodeAddress(BCCList, HeaderEncoding, ISOCharSet); {do not localize}
     end;
     Values['Newsgroups'] := NewsGroups.CommaText; {do not localize}
-    if Encoding = meMIME then
+    if Self.Encoding = meMIME then
     begin
       if IsMsgSinglePartMime then begin
         {This is a single-part MIME: the part may be a text part or an attachment.
@@ -821,14 +821,11 @@ begin
         Values['Content-Disposition'] := '';
       end else begin
         if FContentType <> '' then begin
-          LContentType := FContentType;
-          if FCharSet <> '' then begin
-            LContentType := ReplaceHeaderSubItem(LContentType, 'charset', FCharSet);  {do not localize}
-          end;
+          Values['Content-Type'] := FContentType;  {do not localize}
+          Params['Content-Type', 'charset'] := FCharSet;  {do not localize}
           if (MessageParts.Count > 0) and (LMIMEBoundary <> '') then begin
-            LContentType := ReplaceHeaderSubItem(LContentType, 'boundary', LMIMEBoundary);  {do not localize}
+            Params['Content-Type', 'boundary'] := LMIMEBoundary;  {do not localize}
           end;
-          Values['Content-Type'] := LContentType; {do not localize}
         end;
         {CC2: We may have MIME with no parts if ConvertPreamble is True}
         Values['MIME-Version'] := '1.0'; {do not localize}
@@ -836,12 +833,9 @@ begin
       end;
     end else begin
       //CC: non-MIME can have ContentTransferEncoding of base64, quoted-printable...
+      Values['Content-Type'] := FContentType;  {do not localize}
+      Params['Content-Type', 'charset'] := FCharSet;  {do not localize}
       Values['Content-Transfer-Encoding'] := ContentTransferEncoding; {do not localize}
-      LContentType := FContentType;
-      if (LContentType <> '') and (FCharSet <> '') then begin
-        LContentType := ReplaceHeaderSubItem(LContentType, 'charset', FCharSet);  {do not localize}
-      end;
-      Values['Content-Type'] := LContentType;  {do not localize}
     end;
     Values['Sender'] := Sender.Text; {do not localize}
     Values['Reply-To'] := EncodeAddress(ReplyTo, HeaderEncoding, ISOCharSet); {do not localize}
@@ -923,13 +917,33 @@ var
   end;
 
 begin
+  // RLebeau: per RFC 2045 Section 5.2:
+  //
+  // Default RFC 822 messages without a MIME Content-Type header are taken
+  // by this protocol to be plain text in the US-ASCII character set,
+  // which can be explicitly specified as:
+  //
+  //   Content-type: text/plain; charset=us-ascii
+  //
+  // This default is assumed if no Content-Type header field is specified.
+  // It is also recommend that this default be assumed when a
+  // syntactically invalid Content-Type header field is encountered. In
+  // the presence of a MIME-Version header field and the absence of any
+  // Content-Type header field, a receiving User Agent can also assume
+  // that plain US-ASCII text was the sender's intent.  Plain US-ASCII
+  // text may still be assumed in the absence of a MIME-Version or the
+  // presence of an syntactically invalid Content-Type header field, but
+  // the sender's intent might have been otherwise.
+
   FContentType := Headers.Values['Content-Type']; {do not localize}
   if FContentType = '' then begin
     FContentType := 'text/plain';  {do not localize}
-    FCharSet := '';
+    FCharSet := 'us-ascii';  {do not localize}
   end else begin
-    FCharSet := ExtractHeaderSubItem(FContentType, 'charset');// Headers.Params['Content-Type', 'charset'];  {do not localize}
-    FContentType := RemoveHeaderEntry(FContentType, 'charset');  {do not localize}
+    FContentType := RemoveHeaderEntry(FContentType, 'charset', FCharSet, QuoteMIME);  {do not localize}
+    if (FCharSet = '') and IsHeaderMediaType(FContentType, 'text') then begin  {do not localize}
+      FCharSet := 'us-ascii';  {do not localize}
+    end;
   end;
 
   ContentTransferEncoding := Headers.Values['Content-Transfer-Encoding']; {do not localize}
@@ -943,14 +957,19 @@ begin
   {CC2: Added support for BCCList...}
   BCCList.EMailAddresses := DecodeHeader(Headers.Values['Bcc']); {do not localize}
   Organization := Headers.Values['Organization']; {do not localize}
-  ReceiptRecipient.Text := Headers.Values['Disposition-Notification-To']; {do not localize}
 
+  ReceiptRecipient.Text := Headers.Values['Disposition-Notification-To']; {do not localize}
   if Length(ReceiptRecipient.Text) = 0 then begin
     ReceiptRecipient.Text := Headers.Values['Return-Receipt-To']; {do not localize}
   end;
 
   References := Headers.Values['References']; {do not localize}
+
   ReplyTo.EmailAddresses := Headers.Values['Reply-To']; {do not localize}
+  if Length(ReplyTo.EmailAddresses) = 0 then begin
+    ReplyTo.EmailAddresses := Headers.Values['Return-Path'];
+  end;
+
   Date := GMTToLocalDateTime(Headers.Values['Date']); {do not localize}
   Sender.Text := Headers.Values['Sender']; {do not localize}
 
@@ -959,12 +978,13 @@ begin
   end else begin
     Priority := GetMsgPriority(Headers.Values['X-Priority']) {do not localize}
   end;
+
   {Note that the following code ensures MIMEBoundary.Count is 0 for single-part MIME messages...}
-  LBoundary := Headers.Params['Content-Type', 'boundary'];  {do not localize}
-  FContentType := RemoveHeaderEntry(FContentType, 'boundary');  {do not localize}
+  FContentType := RemoveHeaderEntry(FContentType, 'boundary', LBoundary, QuoteMIME);  {do not localize}
   if LBoundary <> '' then begin
     MIMEBoundary.Push(LBoundary, -1);
   end;
+
   {CC2: Set MESSAGE_LEVEL "encoding" (really the format or layout)}
   LMIMEVersion := Headers.Values['MIME-Version']; {do not localize}
   if LMIMEVersion = '' then begin
@@ -991,13 +1011,40 @@ end;
 
 procedure TIdMessage.SetContentType(const AValue: String);
 var
-  LCharSet: string;
+  LCharSet: String;
 begin
-  FContentType := RemoveHeaderEntry(AValue, 'charset'); {do not localize}
-  {RLebeau: override the current CharSet only if the header specifies a new value}
-  LCharSet := ExtractHeaderSubItem(AValue, 'charset'); {do not localize}
-  if LCharSet <> '' then begin
-    FCharSet := LCharSet;
+  // RLebeau: per RFC 2045 Section 5.2:
+  //
+  // Default RFC 822 messages without a MIME Content-Type header are taken
+  // by this protocol to be plain text in the US-ASCII character set,
+  // which can be explicitly specified as:
+  //
+  //   Content-type: text/plain; charset=us-ascii
+  //
+  // This default is assumed if no Content-Type header field is specified.
+  // It is also recommend that this default be assumed when a
+  // syntactically invalid Content-Type header field is encountered. In
+  // the presence of a MIME-Version header field and the absence of any
+  // Content-Type header field, a receiving User Agent can also assume
+  // that plain US-ASCII text was the sender's intent.  Plain US-ASCII
+  // text may still be assumed in the absence of a MIME-Version or the
+  // presence of an syntactically invalid Content-Type header field, but
+  // the sender's intent might have been otherwise.
+
+  if AValue <> '' then
+  begin
+    FContentType := RemoveHeaderEntry(AValue, 'charset', LCharSet, QuoteMIME); {do not localize}
+    if (LCharSet = '') and IsHeaderMediaType(FContentType, 'text') then begin {do not localize}
+      LCharSet := 'us-ascii'; {do not localize}
+    end;
+    {RLebeau: override the current CharSet only if the header specifies a new value}
+    if LCharSet <> '' then begin
+      FCharSet := LCharSet;
+    end;
+  end else
+  begin
+    FContentType := 'text/plain'; {do not localize}
+    FCharSet := 'us-ascii'; {do not localize}
   end;
 end;
 

@@ -2287,14 +2287,15 @@ begin
   if IsExtSupported('CLNT') then begin {do not localize}
     LClnt := FClientInfo.ClntOutput;
     if LClnt = '' then begin
-      LClnt := gsIdProductName + gsIdVersion;
+      LClnt := gsIdProductName + ' '+ gsIdVersion;
     end;
     SendCmd('CLNT '+ LClnt);  {do not localize}
   end;
 
   if IsExtSupported('UTF8') then begin {do not localize}
     // trying non-standard UTF-8 extension first, many servers use this...
-    if SendCmd('OPTS UTF8 ON') <> 200 then begin {do not localize}
+    // Cerberus and RaidenFTP return 220, but TitanFTP and Gene6 return 200 instead...
+    if not SendCmd('OPTS UTF8 ON') in [200, 220] then begin {do not localize}
       // trying draft-ietf-ftpext-utf-8-option-00.txt next...
       if SendCmd('OPTS UTF-8 NLST') <> 200 then begin {do not localize}
         Exit;
@@ -2380,7 +2381,7 @@ begin
             if CheckAccount then begin
               SendCmd('ACCT ' + FAccount, [202, 230, 500]);  {do not localize}
             end else begin
-              RaiseExceptionForLastCmdResult
+              RaiseExceptionForLastCmdResult;
             end;
           end;
         end;
@@ -2391,7 +2392,7 @@ begin
             if CheckAccount then begin
               SendCmd('ACCT ' + FAccount, [202, 230, 500]);  {do not localize}
             end else begin
-              RaiseExceptionForLastCmdResult
+              RaiseExceptionForLastCmdResult;
             end;
          end;
         end;
@@ -2407,7 +2408,7 @@ begin
             if CheckAccount then begin
               SendCmd('ACCT ' + FAccount, [202, 230, 500]);  {do not localize}
             end else begin
-              RaiseExceptionForLastCmdResult
+              RaiseExceptionForLastCmdResult;
             end;
           end;
         end;
@@ -2416,10 +2417,10 @@ begin
         SendCmd('PASS ' + GetLoginPassword, [230, 331]);  {do not localize}
         if IsAccountNeeded then
         begin
-    	  if CheckAccount then begin
+          if CheckAccount then begin
             SendCmd('ACCT ' + FAccount, [202, 230, 500]);  {do not localize}
           end else begin
-            RaiseExceptionForLastCmdResult
+            RaiseExceptionForLastCmdResult;
           end;
         end;
       end;
@@ -2435,10 +2436,10 @@ begin
       if SendCmd('USER ' + FUserName, [230, 232, 331]) = 331 then begin {do not localize}
         SendCmd('PASS ' + GetLoginPassword, [230, 332]); {do not localize}
         if IsAccountNeeded then begin
-     	  if CheckAccount then begin
+          if CheckAccount then begin
             SendCmd('ACCT ' + FAccount, [202, 230, 500]);  {do not localize}
           end else begin
-            RaiseExceptionForLastCmdResult
+            RaiseExceptionForLastCmdResult;
           end;
         end;
       end;
@@ -2452,7 +2453,7 @@ begin
             if CheckAccount then begin
               SendCmd('ACCT ' + FAccount, [202, 230, 500]);  {do not localize}
             end else begin
-              RaiseExceptionForLastCmdResult
+              RaiseExceptionForLastCmdResult;
             end;
           end;
         end;
@@ -2461,10 +2462,10 @@ begin
       if SendCmd('USER ' + FUserName, [230, 232, 331]) = 331 then begin  {do not localize}
         SendCmd('PASS ' + GetLoginPassword, [230, 332]); {do not localize}
         if IsAccountNeeded then begin
-     	  if CheckAccount then begin
+          if CheckAccount then begin
             SendCmd('ACCT ' + FAccount, [202, 230, 500]);  {do not localize}
           end else begin
-            RaiseExceptionForLastCmdResult
+            RaiseExceptionForLastCmdResult;
           end;
         end;
       end;
@@ -2476,14 +2477,14 @@ begin
         if Length(ProxySettings.Password) > 0 then begin
           SendCmd('PASS ' + GetLoginPassword + '@' + ProxySettings.Password, [230, 332]); {do not localize}
         end else begin
-	  //// needs otp ////
+          //// needs otp ////
           SendCmd('PASS ' + GetLoginPassword, [230,332]);  {do not localize}
         end;
         if IsAccountNeeded then begin
           if CheckAccount then begin
             SendCmd('ACCT ' + FAccount, [202, 230, 500]);  {do not localize}
           end else begin
-            RaiseExceptionForLastCmdResult
+            RaiseExceptionForLastCmdResult;
           end;
         end;
       end;
@@ -2503,7 +2504,7 @@ begin
           if CheckAccount then begin
             SendCmd('ACCT ' + FAccount, [202, 230, 500]);
           end else begin
-            RaiseExceptionForLastCmdResult
+            RaiseExceptionForLastCmdResult;
           end;
         end;
       end;
@@ -2517,7 +2518,7 @@ begin
              if CheckAccount then begin
                SendCmd('ACCT ' + FAccount, [202, 230, 500]);  {do not localize}
              end else begin
-               RaiseExceptionForLastCmdResult
+               RaiseExceptionForLastCmdResult;
              end;
            end;
          end;
@@ -2547,9 +2548,9 @@ send ("USER %FwUserId$%HostUserId$%HostAddress")
         if SendCmd('PASS ' + ProxySettings.UserName + '$' + GetLoginPassword, [230,232,202,332]) = 332 then begin
           if IsAccountNeeded then begin
             if CheckAccount then begin
-	      SendCmd('ACCT ' + FAccount, [202, 230, 500]);  {do not localize}
+              SendCmd('ACCT ' + FAccount, [202, 230, 500]);  {do not localize}
             end else begin
-              RaiseExceptionForLastCmdResult
+              RaiseExceptionForLastCmdResult;
             end;
           end;
         end;
@@ -3314,19 +3315,27 @@ end;
 procedure TIdFTP.FXPSendFile(AFromSite, AToSite: TIdFTP; const ASourceFile, ADestFile: String);
 var
   LDestFile : String;
+  LToReply, LFromReply: SmallInt;
 begin
   LDestFile := ADestFile;
   if LDestFile = '' then begin
     LDestFile := ASourceFile;
   end;
-  AToSite.IOHandler.WriteLn('STOR ' + LDestFile); {do not localize}
-  AFromSite.IOHandler.WriteLn('RETR ' + ASourceFile); {do not localize}
-  AToSite.GetResponse([110, 125, 150]);
-  AFromSite.GetResponse([110, 125, 150]);
-  //AToSite.SendCmd( 'STOR ' + LDestFile,[110, 125, 150] ); {do not localize}
-  //AFromSite.SendCmd( 'RETR ' + ASourceFile,[110, 125, 150] ); {do not localize}
-  AToSite.GetResponse([225, 226, 250]);
-  AFromSite.GetResponse([225, 226, 250]);
+  AToSite.SendCmd('STOR ' + LDestFile, [110, 125, 150]); {do not localize}
+  try
+    AFromSite.SendCmd('RETR ' + ASourceFile, [110, 125, 150]); {do not localize}
+  except
+    AToSite.Abort;
+    raise;
+  end;
+  LToReply := AToSite.GetResponse;
+  LFromReply := AFromSite.GetResponse;
+  if not (LToReply in [225, 226, 250]) then begin
+    AToSite.RaiseExceptionForLastCmdResult;
+  end;
+  if not (LFromReply in [225, 226, 250]) then begin
+    AFromSite.RaiseExceptionForLastCmdResult;
+  end;
 end;
 
 procedure TIdFTP.FXPSetTransferPorts(AFromSite, AToSite: TIdFTP; const ATargetUsesPasv: Boolean);

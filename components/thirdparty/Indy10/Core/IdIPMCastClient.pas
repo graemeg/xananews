@@ -86,6 +86,7 @@ type
     FCurrentBinding: TIdSocketHandle;
     FListenerThread: TIdIPMCastListenerThread;
     FOnIPMCastRead: TIPMCastReadEvent;
+    FReuseSocket: TIdReuseSocket;
     FThreadedEvent: boolean;
     //
     procedure CloseBinding; override;
@@ -107,8 +108,9 @@ type
     property BufferSize: Integer read FBufferSize write FBufferSize default ID_UDP_BUFFERSIZE;
     property DefaultPort: integer read GetDefaultPort write SetDefaultPort;
     property MulticastGroup;
-    property OnIPMCastRead: TIPMCastReadEvent read FOnIPMCastRead write FOnIPMCastRead;
+    property ReuseSocket: TIdReuseSocket read FReuseSocket write FReuseSocket default rsOSDependent;
     property ThreadedEvent: boolean read FThreadedEvent write FThreadedEvent default DEF_IMP_THREADEDEVENT;
+    property OnIPMCastRead: TIPMCastReadEvent read FOnIPMCastRead write FOnIPMCastRead;
   end;
 
 implementation
@@ -180,6 +182,9 @@ begin
 {$ELSE}
       Bindings[i].AllocateSocket(Id_SOCK_DGRAM);
 {$ENDIF}
+      if (FReuseSocket = rsTrue) or ((FReuseSocket = rsOSDependent) and (GOSType = otUnix)) then begin
+        Bindings[i].SetSockOpt(Id_SOL_SOCKET, Id_SO_REUSEADDR, Id_SO_True);
+      end;
       Bindings[i].Bind;
       Bindings[i].AddMulticastMembership(FMulticastGroup);
     end;
@@ -228,7 +233,7 @@ begin
   inherited Create(True);
   FAcceptWait := 1000;
   FBufferSize := AOwner.BufferSize;
-  SetLength(FBuffer,FBufferSize);
+  FBuffer := nil;
   FServer := AOwner;
 end;
 
@@ -247,16 +252,17 @@ var
   i: Integer;
   LBuffer : TIdBytes;
 begin
-  SetLength(LBuffer,4096);
+  SetLength(LBuffer, FBufferSize);
+
   // create a socket list to select for read
   LReadList := TIdSocketList.CreateSocketList;
-
   try
     // fill list of socket handles for reading
     for i := 0 to FServer.Bindings.Count - 1 do
     begin
       LReadList.Add(FServer.Bindings[i].Handle);
     end;
+
     // select the handles for reading
     LReadList.SelectRead(AcceptWait);
 

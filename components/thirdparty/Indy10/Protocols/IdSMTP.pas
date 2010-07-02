@@ -246,7 +246,7 @@ type
     property DidAuthenticate: Boolean read FDidAuthenticate;
   published
     property AuthType: TIdSMTPAuthenticationType read FAuthType write FAuthType
-    default DEF_SMTP_AUTH;
+     default DEF_SMTP_AUTH;
     property Host;
     property Password;
     property Port default IdPORT_SMTP;

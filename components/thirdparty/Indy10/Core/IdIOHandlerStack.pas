@@ -218,6 +218,7 @@ type
     FLastSocketError: Integer;
     FExceptionMessage: string;
     procedure Execute; override;
+    procedure DoTerminate; override;
   public
     constructor Create(ABinding: TIdSocketHandle); reintroduce;
     property Terminated;
@@ -236,13 +237,13 @@ procedure TIdIOHandlerStack.ConnectClient;
   procedure DoConnectTimeout(ATimeout: Integer);
   var
     LSleepTime: Integer;
-    LInfinite: Boolean;
+    LThread: TIdConnectThread;
   begin
     if ATimeout = IdTimeoutDefault then begin
       ATimeout := IdTimeoutInfinite;
     end;
-    LInfinite := ATimeout = IdTimeoutInfinite;
-    with TIdConnectThread.Create(Binding) do try
+    LThread := TIdConnectThread.Create(Binding);
+    try
       // IndySleep
       if TIdAntiFreezeBase.ShouldUse then begin
         LSleepTime := IndyMin(GAntiFreeze.IdleTimeOut, 125);
@@ -250,41 +251,36 @@ procedure TIdIOHandlerStack.ConnectClient;
         LSleepTime := 125;
       end;
 
-      if LInfinite then begin
-        ATimeout := LSleepTime + 1;
+      if ATimeout = IdTimeoutInfinite then begin
+        while not LThread.Terminated do begin
+          IndySleep(LSleepTime);
+          TIdAntiFreezeBase.DoProcess;
+        end;
+      end else
+      begin
+        while (ATimeout > 0) and (not LThread.Terminated) do begin
+          IndySleep(IndyMin(ATimeout, LSleepTime));
+          TIdAntiFreezeBase.DoProcess;
+          Dec(ATimeout, IndyMin(ATimeout, LSleepTime));
+        end;
       end;
 
-      while ATimeout > LSleepTime do begin
-        if Terminated then begin
-          ATimeout := 0;
-          Break;
-        end;
-
-        IndySleep(LSleepTime);
-
-        if not LInfinite then begin
-          ATimeout := ATimeout - LSleepTime;
-        end;
-
-        TIdAntiFreezeBase.DoProcess;
-      end;
-
-      IndySleep(ATimeout);
-
-      if Terminated then begin
-        if FExceptionMessage <> '' then begin
-          if FLastSocketError <> 0 then begin
-            raise EIdSocketError.CreateError(FLastSocketError, FExceptionMessage);
+      if LThread.Terminated then begin
+        if LThread.FExceptionMessage <> '' then begin
+          if LThread.FLastSocketError <> 0 then begin
+            raise EIdSocketError.CreateError(LThread.FLastSocketError, LThread.FExceptionMessage);
           end;
-          EIdConnectException.Toss(FExceptionMessage);
+          EIdConnectException.Toss(LThread.FExceptionMessage);
         end;
       end else begin
-        Terminate;
+        LThread.Terminate;
         Close;
-        WaitFor;
+        LThread.WaitFor;
         EIdConnectTimeout.Toss(RSConnectTimeout);
       end;
-    finally Free; end;
+    finally
+      LThread.Free;
+    end;
   end;
 
 var
@@ -430,8 +426,13 @@ begin
       end;
     end;
   end;
+end;
+
+procedure TIdConnectThread.DoTerminate;
+begin
   // Necessary as caller checks this
   Terminate;
+  inherited;
 end;
 
 initialization

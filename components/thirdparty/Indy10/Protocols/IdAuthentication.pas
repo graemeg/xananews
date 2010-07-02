@@ -117,34 +117,35 @@ type
 implementation
 
 uses
-  IdCoderMIME, IdResourceStringsProtocols, SysUtils;
+  IdCoderMIME, IdGlobalProtocols, IdResourceStringsProtocols, SysUtils;
 
 var
   AuthList: TStringList = nil;
 
 procedure RegisterAuthenticationMethod(const MethodName: String; const AuthClass: TIdAuthenticationClass);
+var
+  I: Integer;
 begin
   if not Assigned(AuthList) then begin
     AuthList := TStringList.Create;
   end;
-
-  if AuthList.IndexOf(MethodName) < 0 then begin
+  I := AuthList.IndexOf(MethodName);
+  if I < 0 then begin
     AuthList.AddObject(MethodName, TObject(AuthClass));
-  end
-  else begin
-    raise EIdAlreadyRegisteredAuthenticationMethod.CreateFmt(RSHTTPAuthAlreadyRegistered,
-      [AuthClass.ClassName]);
+  end else begin
+    //raise EIdAlreadyRegisteredAuthenticationMethod.CreateFmt(RSHTTPAuthAlreadyRegistered, [AuthClass.ClassName]);
+    AuthList.Objects[I] := TObject(AuthClass);
   end;
 end;
 
 procedure UnregisterAuthenticationMethod(const MethodName: String);
 var
-  i: Integer;
+  I: Integer;
 begin
   if Assigned(AuthList) then begin
-    i := AuthList.IndexOf(MethodName);
-    if i >= 0 then begin
-      AuthList.Delete(i);
+    I := AuthList.IndexOf(MethodName);
+    if I >= 0 then begin
+      AuthList.Delete(I);
     end;
   end;
 end;
@@ -166,8 +167,8 @@ end;
 constructor TIdAuthentication.Create;
 begin
   inherited Create;
-  FAuthParams := TIdHeaderList.Create;
-  FParams := TIdHeaderList.Create;
+  FAuthParams := TIdHeaderList.Create(QuoteHTTP);
+  FParams := TIdHeaderList.Create(QuoteHTTP);
   FCurrentStep := 0;
 end;
 

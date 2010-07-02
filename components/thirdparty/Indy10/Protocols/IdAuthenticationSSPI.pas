@@ -43,6 +43,7 @@ interface
 {$i IdCompilerDefines.inc}
 
 uses
+  IdGlobal,
   IdAuthentication,
   IdCoder,
   Windows,
@@ -118,7 +119,7 @@ type
   public
     class procedure RaiseIfError(aStatus: SECURITY_STATUS; const aFunctionName: string);
     function IsAvailable: Boolean;
-    property FunctionTable: PSecurityFunctionTable read GetFunctionTable;
+    property FunctionTable: SecurityFunctionTable read GetFunctionTable;
   public
     constructor Create;
     destructor Destroy; override;
@@ -207,7 +208,8 @@ type
   protected
     procedure CheckHasHandle;
     procedure CheckCredentials;
-    function DoInitialize(aTokenSourceName: {$IFDEF SSPI_UNICODE}PWideChar{$ELSE}PAnsiChar{$ENDIF}; var aIn, aOut: SecBufferDesc;
+    function DoInitialize(const aTokenSourceName: {$IFDEF SSPI_UNICODE}TIdUnicodeString{$ELSE}AnsiString{$ENDIF};
+      var aIn, aOut: SecBufferDesc;
       const errorsToIgnore: array of SECURITY_STATUS): SECURITY_STATUS;
     procedure DoRelease; virtual;
     function GetRequestedFlags: ULONG; virtual; abstract;
@@ -241,7 +243,7 @@ type
   public
     constructor Create(ACredentials: TSSPICredentials);
     function UpdateAndGenerateReply(
-      const aFromPeerToken: string; var aToPeerToken: string): Boolean;
+      const aFromPeerToken: TIdBytes; var aToPeerToken: TIdBytes): Boolean;
   end;
 
   TSSPIClientConnectionContext = class(TCustomSSPIConnectionContext)
@@ -256,7 +258,7 @@ type
       ): SECURITY_STATUS; override;
   public
     function GenerateInitialChallenge(const aTargetName: string;
-      var aToPeerToken: string): Boolean;
+      var aToPeerToken: TIdBytes): Boolean;
   public
     constructor Create(aCredentials: TSSPICredentials);
   end;
@@ -269,8 +271,8 @@ type
   public
     procedure SetCredentials(const aDomain, aUserName, aPassword: string);
     procedure SetCredentialsAsCurrentUser;
-    function InitAndBuildType1Message: string;
-    function UpdateAndBuildType3Message(const aServerType2Message: string): string;
+    function InitAndBuildType1Message: TIdBytes;
+    function UpdateAndBuildType3Message(const aServerType2Message: TIdBytes): TIdBytes;
   public
     constructor Create;
     destructor Destroy; override;
@@ -293,11 +295,14 @@ type
     property Domain: String read GetDomain write SetDomain;
   end;
 
+  // RLebeau 4/17/10: this forces C++Builder to link to this unit so
+  // RegisterAuthenticationMethod can be called correctly at program startup...
+  (*$HPPEMIT '#pragma link "IdAuthenticationSSPI"'*)
+
 implementation
 
 uses
   IdGlobalCore,
-  IdGlobal,
   IdGlobalProtocols,
   IdException,
   IdCoderMIME,
@@ -305,7 +310,8 @@ uses
   IdHeaderList;
 
 var
-  g: TSSPIInterface = nil;
+  gSSPIInterface: TSSPIInterface = nil;
+  gAuthRegistered: Boolean = False;
 
 { ESSPIException }
 
@@ -474,7 +480,7 @@ function TSSPIInterface.IsAvailable: Boolean;
           Assigned({$IFDEF SSPI_UNICODE}QuerySecurityPackageInfoW{$ELSE}QuerySecurityPackageInfoA{$ENDIF}) and
           Assigned(FreeContextBuffer) and
           Assigned(DeleteSecurityContext) and
-          Assigned(FreeCredentialHandle) and
+          Assigned(FreeCredentialsHandle) and
           Assigned({$IFDEF SSPI_UNICODE}AcquireCredentialsHandleW{$ELSE}AcquireCredentialsHandleA{$ENDIF}) and
           Assigned({$IFDEF SSPI_UNICODE}InitializeSecurityContextW{$ELSE}InitializeSecurityContextA{$ENDIF}) and
           Assigned(AcceptSecurityContext) and
@@ -552,12 +558,12 @@ end;
 
 constructor TCustomSSPIPackage.Create(const aPkgName: {$IFDEF SSPI_UNICODE}TIdUnicodeString{$ELSE}AnsiString{$ENDIF});
 begin
-  g.RaiseIfError(
+  gSSPIInterface.RaiseIfError(
     {$IFDEF SSPI_UNICODE}
-    g.FunctionTable.QuerySecurityPackageInfoW(PWideChar(aPkgName), @fInfo),
+    gSSPIInterface.FunctionTable.QuerySecurityPackageInfoW(PWideChar(aPkgName), @fInfo),
     'QuerySecurityPackageInfoW' {Do not translate}
     {$ELSE}
-    g.FunctionTable.QuerySecurityPackageInfoA(PAnsiChar(aPkgName), @fInfo),
+    gSSPIInterface.FunctionTable.QuerySecurityPackageInfoA(PAnsiChar(aPkgName), @fInfo),
     'QuerySecurityPackageInfoA' {Do not translate}
     {$ENDIF}
     );
@@ -567,8 +573,8 @@ end;
 destructor TCustomSSPIPackage.Destroy;
 begin
   if fInfo <> nil then begin
-    g.RaiseIfError(
-      g.FunctionTable.FreeContextBuffer(fInfo), 'FreeContextBuffer');  {Do not localize}
+    gSSPIInterface.RaiseIfError(
+      gSSPIInterface.FunctionTable.FreeContextBuffer(fInfo), 'FreeContextBuffer');  {Do not localize}
   end;
   inherited Destroy;
 end;
@@ -620,8 +626,8 @@ begin
   else
     raise ESSPIException.Create(RSHTTPSSPIUnknwonCredentialUse);
   end;
-  g.RaiseIfError(
-    g.FunctionTable.{$IFDEF SSPI_UNICODE}AcquireCredentialsHandleW{$ELSE}AcquireCredentialsHandleA{$ENDIF}(
+  gSSPIInterface.RaiseIfError(
+    gSSPIInterface.FunctionTable.{$IFDEF SSPI_UNICODE}AcquireCredentialsHandleW{$ELSE}AcquireCredentialsHandleA{$ENDIF}(
     pszPrincipal, {$IFDEF SSPI_UNICODE}PSEC_WCHAR{$ELSE}PSEC_CHAR{$ENDIF}(Package.Name), cu, pvLogonId, pAuthData, nil, nil,
     @fHandle, @fExpiry),
     {$IFDEF SSPI_UNICODE}
@@ -635,9 +641,9 @@ end;
 
 procedure TSSPICredentials.DoRelease;
 begin
-  g.RaiseIfError(
-    g.FunctionTable.FreeCredentialHandle(@fHandle),
-    'FreeCredentialHandle');      {Do not translate}
+  gSSPIInterface.RaiseIfError(
+    gSSPIInterface.FunctionTable.FreeCredentialsHandle(@fHandle),
+    'FreeCredentialsHandle');      {Do not translate}
   SecInvalidateHandle(fHandle);
 end;
 
@@ -748,7 +754,7 @@ begin
   fHasHandle := True;
 end;
 
-function TSSPIContext.DoInitialize(aTokenSourceName: {$IFDEF SSPI_UNICODE}PWideChar{$ELSE}PAnsiChar{$ENDIF};
+function TSSPIContext.DoInitialize(const aTokenSourceName: {$IFDEF SSPI_UNICODE}TIdUnicodeString{$ELSE}AnsiString{$ENDIF};
   var aIn, aOut: SecBufferDesc;
   const errorsToIgnore: array of SECURITY_STATUS): SECURITY_STATUS;
 var
@@ -764,8 +770,9 @@ begin
     tmp2 := nil;
   end;
   Result :=
-    g.FunctionTable.{$IFDEF SSPI_UNICODE}InitializeSecurityContextW{$ELSE}InitializeSecurityContextA{$ENDIF}(
-    Credentials.Handle, tmp, aTokenSourceName,
+    gSSPIInterface.FunctionTable.{$IFDEF SSPI_UNICODE}InitializeSecurityContextW{$ELSE}InitializeSecurityContextA{$ENDIF}(
+    Credentials.Handle, tmp,
+    {$IFDEF SSPI_UNICODE}PWideChar{$ELSE}PAnsiChar{$ENDIF}(aTokenSourceName),
     GetRequestedFlags, 0, SECURITY_NATIVE_DREP, tmp2, 0,
     @fHandle, @aOut, @r, @fExpiry
     );
@@ -777,8 +784,8 @@ end;
 
 procedure TSSPIContext.DoRelease;
 begin
-  g.RaiseIfError(
-    g.FunctionTable.DeleteSecurityContext(@fHandle), 'DeleteSecurityContext'); {Do not translate}
+  gSSPIInterface.RaiseIfError(
+    gSSPIInterface.FunctionTable.DeleteSecurityContext(@fHandle), 'DeleteSecurityContext'); {Do not translate}
 end;
 
 procedure TSSPIContext.Release;
@@ -830,29 +837,21 @@ begin
 end;
 
 function TCustomSSPIConnectionContext.UpdateAndGenerateReply
-  (const aFromPeerToken: string; var aToPeerToken: string): Boolean;
+  (const aFromPeerToken: TIdBytes; var aToPeerToken: TIdBytes): Boolean;
 var
   fOutBuff: SecBuffer;
-  {$IFDEF STRING_IS_UNICODE}
-  lFromToken, lToToken: AnsiString;
-  {$ENDIF}
 begin
   Result := False;
-
-  {$IFDEF STRING_IS_UNICODE}
-  lFromToken := AnsiString(aFromPeerToken); // explicit convert to Ansi
-  lToToken := AnsiString(aToPeerToken); // explicit convert to Ansi
-  {$ENDIF}
 
   { check credentials }
   CheckCredentials;
   { prepare input buffer }
 
-  fInBuff.cbBuffer := Length({$IFDEF STRING_IS_UNICODE}lFromToken{$ELSE}aFromPeerToken{$ENDIF});
+  fInBuff.cbBuffer := Length(aFromPeerToken);
 
   //Assert(Length(aFromPeerToken)>0);
   if fInBuff.cbBuffer > 0 then begin
-    fInBuff.pvBuffer := @{$IFDEF STRING_IS_UNICODE}lFromToken{$ELSE}aFromPeerToken{$ENDIF}[1];
+    fInBuff.pvBuffer := @aFromPeerToken[0];
   end;
 
   { prepare output buffer }
@@ -872,11 +871,11 @@ begin
       SEC_I_COMPLETE_NEEDED,
         SEC_I_COMPLETE_AND_CONTINUE:
         begin
-          if not Assigned(g.FunctionTable.CompleteAuthToken) then begin
+          if not Assigned(gSSPIInterface.FunctionTable.CompleteAuthToken) then begin
             raise ESSPIException.Create(RSHTTPSSPICompleteTokenNotSupported);
           end;
-          fStatus := g.FunctionTable.CompleteAuthToken(Handle, @fOutBuffDesc);
-          g.RaiseIfError(fStatus, 'CompleteAuthToken');   {Do not translate}
+          fStatus := gSSPIInterface.FunctionTable.CompleteAuthToken(Handle, @fOutBuffDesc);
+          gSSPIInterface.RaiseIfError(fStatus, 'CompleteAuthToken');   {Do not translate}
         end;
     end;
     Result :=
@@ -885,12 +884,7 @@ begin
       (fOutBuff.cbBuffer > 0);
     if Result then begin
       with fOutBuff do begin
-        {$IFDEF STRING_IS_UNICODE}
-        SetString(lToToken, PAnsiChar(pvBuffer), cbBuffer);
-        aToPeerToken := string(lToToken); // expicit convert to Unicode
-        {$ELSE}
-        SetString(aToPeerToken, PAnsiChar(pvBuffer), cbBuffer);
-        {$ENDIF}
+        aToPeerToken := RawToBytes(pvBuffer^, cbBuffer);
       end;
     end;
   finally
@@ -936,25 +930,16 @@ end;
 function TSSPIClientConnectionContext.DoUpdateAndGenerateReply
   (var aIn, aOut: SecBufferDesc;
   const aErrorsToIgnore: array of SECURITY_STATUS): SECURITY_STATUS;
-{$IFDEF STRING_IS_UNICODE}
-var
-  lTargetName: AnsiString;
-{$ENDIF}
 begin
-  {$IFDEF STRING_IS_UNICODE}
-  lTargetName := AnsiString(fTargetName); // explcit convert to Ansi
-  {$ENDIF}
-  Result := DoInitialize(
-    PAnsiChar({$IFDEF STRING_IS_UNICODE}lTargetName{$ELSE}fTargetName{$ENDIF}),
-    aIn, aOut, []);
+  Result := DoInitialize(fTargetName, aIn, aOut, []);
 end;
 
 function TSSPIClientConnectionContext.GenerateInitialChallenge
-  (const aTargetName: string; var aToPeerToken: string): Boolean;
+  (const aTargetName: string; var aToPeerToken: TIdBytes): Boolean;
 begin
   Release;
   fTargetName := aTargetName;
-  Result := UpdateAndGenerateReply('', aToPeerToken);   {Do not translate}
+  Result := UpdateAndGenerateReply(nil, aToPeerToken);   {Do not translate}
 end;
 
 { TIndySSPINTLMClient }
@@ -985,12 +970,12 @@ begin
   fCredentials.Acquire(scuOutBound);
 end;
 
-function TIndySSPINTLMClient.InitAndBuildType1Message: string;
+function TIndySSPINTLMClient.InitAndBuildType1Message: TIdBytes;
 begin
   fContext.GenerateInitialChallenge('', Result);
 end;
 
-function TIndySSPINTLMClient.UpdateAndBuildType3Message(const aServerType2Message: string): string;
+function TIndySSPINTLMClient.UpdateAndBuildType3Message(const aServerType2Message: TIdBytes): TIdBytes;
 begin
   fContext.UpdateAndGenerateReply(aServerType2Message, Result);
 end;
@@ -1047,9 +1032,10 @@ end;
 
 function TIdSSPINTLMAuthentication.Authentication: string;
 var
-  S: string;
+  buf: TIdBytes;
 begin
   Result := '';
+  buf := nil;
   case FCurrentStep of
     1:
       begin
@@ -1058,7 +1044,7 @@ begin
         end else begin
           FSSPIClient.SetCredentials(Domain, Username, Password);
         end;
-        Result := 'NTLM ' + TIdEncoderMIME.EncodeString(FSSPIClient.InitAndBuildType1Message);  {Do not translate}
+        Result := 'NTLM ' + TIdEncoderMIME.EncodeBytes(FSSPIClient.InitAndBuildType1Message);  {Do not translate}
         FNTLMInfo := '';    {Do not translate}
       end;
     2:
@@ -1073,8 +1059,9 @@ begin
           Abort;
         end;
 
-        S := TIdDecoderMIME.DecodeString(FNTLMInfo);
-        Result := 'NTLM ' + TIdEncoderMIME.EncodeString(FSSPIClient.UpdateAndBuildType3Message(S));  {Do not translate}
+        buf := TIdDecoderMIME.DecodeBytes(FNTLMInfo);
+        Result := 'NTLM ' + TIdEncoderMIME.EncodeBytes(FSSPIClient.UpdateAndBuildType3Message(buf));  {Do not translate}
+
         FCurrentStep := 3;
       end;
     3: begin
@@ -1122,17 +1109,18 @@ begin
 end;
 
 initialization
-  g := TSSPIInterface.Create;
-  if g.IsAvailable then begin
+  gSSPIInterface := TSSPIInterface.Create;
+  if gSSPIInterface.IsAvailable then begin
     RegisterAuthenticationMethod('NTLM', TIdSSPINTLMAuthentication); {do not localize}
     RegisterAuthenticationMethod('Negotiate', TIdSSPINTLMAuthentication); {do not localize}
+    gAuthRegistered := True;
   end;
 finalization
-  if g.IsAvailable then begin
+  if gAuthRegistered then begin
     UnregisterAuthenticationMethod('NTLM'); {do not localize}
     UnregisterAuthenticationMethod('Negotiate'); {do not localize}
   end;
-  FreeAndNil(g);
+  FreeAndNil(gSSPIInterface);
 
 end.
 

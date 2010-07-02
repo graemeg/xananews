@@ -429,7 +429,7 @@ var
     T := T + BeginEncode;
     if L < AP then AP := L + 1;
     LQ := InEncode;
-    InEncode := 0;
+    InEncode := -1;
     EncLen := Length(BeginEncode) + 2;
 
     case PosInStrArray(HeaderEncoding, ['Q', 'B'], False) of {Do not Localize}
@@ -558,7 +558,7 @@ begin
   L := Length(Buf);
   P := 0;
   T := '';  {Do not Localize}
-  InEncode := 0;
+  InEncode := -1;
   while P < L do
   begin
     Q := P;
@@ -574,19 +574,19 @@ begin
       Inc(P);
     end;
     if NeedEncode then begin
-      if InEncode = 0 then begin
+      if InEncode = -1 then begin
         T := T + BytesToString(Buf, Q, R - Q);
         InEncode := R;
       end;
     end else
     begin
-      if InEncode <> 0 then begin
+      if InEncode <> -1 then begin
         EncodeWord(Q);
       end;
       T := T + BytesToString(Buf, Q, P - Q);
     end;
   end;
-  if InEncode <> 0 then begin
+  if InEncode <> -1 then begin
     EncodeWord(P);
   end;
   Result := T;

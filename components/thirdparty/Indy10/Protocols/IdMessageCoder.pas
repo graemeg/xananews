@@ -79,7 +79,7 @@ uses
   IdBaseComponent;
 
 type
-  TIdMessageCoderPartType = (mcptUnknown, mcptText, mcptAttachment, mcptIgnore);
+  TIdMessageCoderPartType = (mcptText, mcptAttachment, mcptIgnore, mcptEOF);
 
   TIdMessageDecoder = class(TIdComponent)
   protected

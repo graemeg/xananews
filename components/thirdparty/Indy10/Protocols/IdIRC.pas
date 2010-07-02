@@ -1315,7 +1315,7 @@ begin
   453  ERR_NICKLOST     
   455  ERR_HOSTILENAME  Unreal    
   456  ERR_ACCEPTFULL     
-  457  ERR_ACCEPTEXIST     
+  457  ERR_ACCEPTEXIST
   458  ERR_ACCEPTNOT     
   459  ERR_NOHIDING  Unreal   Not allowed to become an invisible operator?  
   460  ERR_NOTFORHALFOPS  Unreal    
@@ -1326,7 +1326,7 @@ begin
   465  ERR_YOUREBANNEDCREEP  RFC1459  :<reason>  Returned to a client after an attempt to register on a server configured to ban connections from that client  
   466  ERR_YOUWILLBEBANNED  RFC1459   Sent by a server to a user to inform that access to the server will soon be denied  
   467  ERR_KEYSET  RFC1459  <channel> :<reason>  Returned when the channel key for a channel has already been set  
-  468  ERR_INVALIDUSERNAME  ircu    
+  468  ERR_INVALIDUSERNAME  ircu
   468  ERR_ONLYSERVERSCANCHANGE  Bahamut, Unreal    
   469  ERR_LINKSET  Unreal    
   470  ERR_LINKCHANNEL  Unreal    
@@ -1435,7 +1435,7 @@ begin
   972  ERR_CANNOTDOCOMMAND  Unreal   Works similarly to all of KineIRCd's CANNOT* numerics. This one indicates that a command could not be performed for an arbitrary reason. For example, a halfop trying to kick an op.  
   973  ERR_CANNOTCHANGEUMODE  KineIRCd  <mode_char> :<reason>  Reply to MODE when a user cannot change a user mode  
   974  ERR_CANNOTCHANGECHANMODE  KineIRCd  <mode_char> :<reason>  Reply to MODE when a user cannot change a channel mode  
-  975  ERR_CANNOTCHANGESERVERMODE  KineIRCd  <mode_char> :<reason>  Reply to MODE when a user cannot change a server mode  
+  975  ERR_CANNOTCHANGESERVERMODE  KineIRCd  <mode_char> :<reason>  Reply to MODE when a user cannot change a server mode
   976  ERR_CANNOTSENDTONICK  KineIRCd  <nick> :<reason>  Returned from NOTICE, PRIVMSG or other commands to notify the user that they cannot send a message to a particular client. Similar to ERR_CANNOTSENDTOCHAN. KineIRCd uses this in conjunction with user-mode +R to allow users to block people who are not identified to services (spam avoidance)  
   977  ERR_UNKNOWNSERVERMODE  KineIRCd  <modechar> :<info>  Returned by MODE to inform the client they used an unknown server mode character.  
   979  ERR_SERVERMODELOCK  KineIRCd  <target> :<info>  Returned by MODE to inform the client the server has been set mode +L by an administrator to stop server modes being changed  
@@ -1537,7 +1537,7 @@ begin
               if Assigned(FOnCTCPQry) then begin
                 FOnCTCPQry(ASender.Context, FSenderNick, FSenderHost, LTarget, LCTCP, LData);
               end;
-              CTCPReply(FSenderNick, 'ERRMSG', LCTCP +' ' + LData + ' :unknown query'); {do not localize}
+              CTCPReply(FSenderNick, 'ERRMSG', LCTCP +' ' + LData + ' unknown query'); {do not localize}
             end;
           1: { SOUND }
             begin
@@ -1549,7 +1549,7 @@ begin
               if Assigned(FOnCTCPQry) then begin
                 FOnCTCPQry(ASender.Context, FSenderNick, FSenderHost, LTarget, LCTCP, LData);
               end;
-              CTCPReply(FSenderNick, 'ERRMSG', LCTCP +' ' + LData + ' :unknown query'); {do not localize}
+              CTCPReply(FSenderNick, 'ERRMSG', LCTCP +' ' + LData + ' unknown query'); {do not localize}
             end;
           2: { PING }
             begin
@@ -1566,32 +1566,34 @@ begin
               if Assigned(FOnCTCPQry) then begin
                 FOnCTCPQry(ASender.Context, FSenderNick, FSenderHost, LTarget, LCTCP, LData);
               end;
-              CTCPReply(FSenderNick, LCTCP, ':' + DateTimeToStr(Now)); {do not localize}
+              // AWinkelsdorf 3/10/2010 ToDo: CTCP Ping might need a CTIME result but
+              // many clients do not send the required CTIME with the Ping Query...
+              CTCPReply(FSenderNick, LCTCP, DateTimeToStr(Now)); {do not localize}
             end;
           3: { FINGER }
             begin
-              CTCPReply(FSenderNick, LCTCP, ':' + Replies.Finger); {do not localize}
+              CTCPReply(FSenderNick, LCTCP, Replies.Finger); {do not localize}
             end;
           4: { USERINFO }
             begin
-              CTCPReply(FSenderNick, LCTCP, ':' + Replies.UserInfo); {do not localize}
+              CTCPReply(FSenderNick, LCTCP, Replies.UserInfo); {do not localize}
             end;
           5: { VERSION }
             begin
-              CTCPReply(FSenderNick, LCTCP, ':' + Replies.Version); {do not localize}
+              CTCPReply(FSenderNick, LCTCP, Replies.Version); {do not localize}
             end;
           6: { CLIENTINFO }
             begin
               // TODO: add OnClientInfoQuery event to handle per-command queries
-              CTCPReply(FSenderNick, LCTCP, ':' + Replies.ClientInfo); {do not localize}
+              CTCPReply(FSenderNick, LCTCP, Replies.ClientInfo); {do not localize}
             end;
           7: { TIME }
             begin
-              CTCPReply(FSenderNick, LCTCP, IndyFormat(RSIRCTimeIsNow, [DateTimeToStr(Now)]));
+              CTCPReply(FSenderNick, LCTCP, DateTimeToStr(Now));
             end;
           8: { ERROR }
             begin
-              CTCPReply(FSenderNick, LCTCP, LData + ' :No Error'); {do not localize}
+              CTCPReply(FSenderNick, LCTCP, LData + ' No Error'); {do not localize}
             end;
           9: { DCC }
             begin
@@ -1603,14 +1605,14 @@ begin
               if Assigned(FOnCTCPQry) then begin
                 FOnCTCPQry(ASender.Context, FSenderNick, FSenderHost, LTarget, LCTCP, LData);
               end;
-              CTCPReply(FSenderNick, LCTCP, LData + ' :unknown query'); {do not localize}
+              CTCPReply(FSenderNick, LCTCP, LData + ' unknown query'); {do not localize}
             end;
           else
             begin
               if Assigned(FOnCTCPQry) then begin
                 FOnCTCPQry(ASender.Context, FSenderNick, FSenderHost, LTarget, LCTCP, LData);
               end;
-              CTCPReply(FSenderNick, LCTCP, LData + ' :unknown query'); {do not localize}
+              CTCPReply(FSenderNick, LCTCP, LData + ' unknown query'); {do not localize}
             end;
         end;
       end;
@@ -2112,26 +2114,46 @@ begin
 end;
 
 procedure TIdIRC.CommandNAMEREPLY(ASender: TIdCommand);
+var
+  i: Integer;
+  LNames: string;
+  LNameList: TStringList;
 begin
   if not Assigned(FNames) then begin
     FNames := TStringList.Create;
   end;
-  // TODO: use a collection instead
-  if ASender.Params.Count > 1 then begin
-    FNames.Add(ASender.Params[0] + ' ' + ASender.Params[1]); {do not localize}
+  // AWinkelsdorf 3/10/2010 Rewrote logic to split Names into single Lines of FNames
+  if ASender.Params.Count >= 4 then begin // Names are in [3]
+    LNames := StringsReplace(ASender.Params[3], [' '], [',']); {do not localize}
+    LNameList := TStringList.Create;
+    try
+      LNameList.CommaText := LNames;
+      for i := 0 to LNameList.Count - 1 do
+      begin
+        if LNameList[i] <> '' then
+          FNames.Add(LNameList[i]);
+      end;
+    finally
+      LNameList.Free;
+    end;
   end else begin
     FNames.Add(ASender.Params[0]);
   end;
 end;
 
 procedure TIdIRC.CommandENDOFNAMES(ASender: TIdCommand);
+var
+  LChannel: string;
 begin
   if not Assigned(FNames) then begin
     FNames := TStringList.Create;
   end;
-  FNames.Add(ASender.Params[0]);
+  LChannel := '';
+  if ASender.Params.Count > 0 then begin
+    LChannel := ASender.Params[1];
+  end;
   if Assigned(FOnNickList) then begin
-    OnNicknamesListReceived(ASender.Context, FSenderNick, FNames);
+    OnNicknamesListReceived(ASender.Context, LChannel, FNames);
   end;
   FNames.Clear;
 end;

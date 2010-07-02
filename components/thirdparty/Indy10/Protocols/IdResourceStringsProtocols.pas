@@ -202,7 +202,6 @@ resourcestring
   // MessageClient Strings
   RSMsgClientEncodingText = 'Encoding text';
   RSMsgClientEncodingAttachment = 'Encoding attachment';
-  RSMsgClientUnkownMessagePartType = 'Unknown Message Part Type.';
   RSMsgClientInvalidEncoding = 'Invalid Encoding. UU only allows Body and Attachments.';
   RSMsgClientInvalidForTransferEncoding = 'Message parts cannot be used in a message which has a ContentTransferEncoding value.';
 
@@ -516,6 +515,7 @@ resourcestring
   RSSSLAcceptError = 'Error accepting connection with SSL.';
   RSSSLConnectError = 'Error connecting with SSL.';
   RSSSLSettingCipherError = 'SetCipher failed.';
+  RSSSLCreatingSessionError = 'Error creating SSL session.';
   RSSSLCreatingContextError = 'Error creating SSL context.';
   RSSSLLoadingRootCertError = 'Could not load root certificate.';
   RSSSLLoadingCertError = 'Could not load certificate.';
@@ -864,17 +864,18 @@ resourcestring
   {LPR Messages}
   RSLPRError = 'Reply %d on Job ID %s';
   RSLPRUnknown = 'Unknown';
+  RSCannotBindRange = 'Cannot bind to a LPR port from range %d to %d (No free Port)';
 
   {IRC Messages}
   RSIRCCanNotConnect = 'IRC Connect Failed';
-  RSIRCNotConnected = 'Not connected to server.';
-  RSIRCClientVersion =  'TIdIRC 1.061 by Steve Williams';
-  RSIRCClientInfo = '%s Non-visual component for 32-bit Delphi.';
-  RSIRCNick = 'Nick';
-  RSIRCAltNick = 'OtherNick';
-  RSIRCUserName = 'ircuser';
-  RSIRCRealName = 'Real name';
-  RSIRCTimeIsNow = 'Local time is %s';
+  // RSIRCNotConnected = 'Not connected to server.';
+  // RSIRCClientVersion =  'TIdIRC 1.061 by Steve Williams';
+  // RSIRCClientInfo = '%s Non-visual component for 32-bit Delphi.';
+  // RSIRCNick = 'Nick';
+  // RSIRCAltNick = 'OtherNick';
+  // RSIRCUserName = 'ircuser';
+  // RSIRCRealName = 'Real name';
+  // RSIRCTimeIsNow = 'Local time is %s'; // difficult to strip for clients
 
   {HL7 Lower Layer Protocol Messages}
   RSHL7StatusStopped           = 'Stopped';
@@ -981,11 +982,15 @@ resourcestring
   {$ENDIF}
 
   // TIdURI
-  {$IFNDEF HAS_TCharacter}
+  {$IFDEF DOTNET}
+  RSUTF16InvalidSurrogatePair = 'Characters at Index %d are not a valid UTF-16 Surrogate Pair';
+  {$ELSE}
+    {$IFNDEF HAS_TCharacter}
   RSUTF16IndexOutOfRange = 'Character Index %d out of Range, Length = %d';
   RSUTF16InvalidHighSurrogate = 'Character at Index %d is not a valid UTF-16 High Surrogate';
   RSUTF16InvalidLowSurrogate = 'Character at Index %d is not a valid UTF-16 Low Surrogate';
   RSUTF16MissingLowSurrogate = 'Missing a Low Surrogate in UTF-16 sequence';
+    {$ENDIF}
   {$ENDIF}
 
   // Message Header Encoding

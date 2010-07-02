@@ -15,8 +15,14 @@ type
     class function CanHandle(const ACharSet: String): Boolean; override;
   end;
 
+  // RLebeau 4/17/10: this forces C++Builder to link to this unit so
+  // RegisterHeaderCoder can be called correctly at program startup...
+  (*$HPPEMIT '#pragma link "IdHeaderCoderUTF"'*)
+
 implementation
-uses SysUtils;
+
+uses
+  SysUtils;
 
 class function TIdHeaderCoderUTF.Decode(const ACharSet: string; const AData: TIdBytes): String;
 var

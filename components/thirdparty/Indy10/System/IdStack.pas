@@ -359,6 +359,8 @@ var
 
 implementation
 
+{$O-}
+
 uses
   //done this way so we can have a separate stack for FPC under Unix systems
   {$IFDEF UNIX}

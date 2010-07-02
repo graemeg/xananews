@@ -294,7 +294,9 @@ const
   Id_SOCK_RAW        = SocketType.Raw;            // /* raw-protocol interface */
   Id_SOCK_RDM        = SocketType.Rdm;            // /* reliably-delivered message */
   Id_SOCK_SEQPACKET  = SocketType.Seqpacket;      // /* sequenced packet stream */
+  Id_SOCK_UNKNOWN    = SocketType.Unknown;        // /* unknown */
   {$ELSE}
+  Id_SOCK_UNKNOWN    = TIdSocketType(0);
   Id_SOCK_STREAM     = TIdSocketType(SOCK_STREAM);      //1               /* stream socket */
   Id_SOCK_DGRAM      = TIdSocketType(SOCK_DGRAM);       //2               /* datagram socket */
   Id_SOCK_RAW        = TIdSocketType(SOCK_RAW);         //3               /* raw-protocol interface */
@@ -384,6 +386,7 @@ const
   Id_SO_RCVBUF           =  SO_RCVBUF;
   Id_SO_REUSEADDR        =  SO_REUSEADDR;
   Id_SO_SNDBUF           =  SO_SNDBUF;
+  Id_SO_TYPE             =  SO_TYPE;
   {$ELSE}
 {
 SocketOptionName.AcceptConnection;// Socket is listening.
@@ -470,6 +473,9 @@ SocketOptionName.UseLoopback;//  Bypass hardware when possible.
   Id_INVALID_SOCKET        = INVALID_SOCKET;
   Id_SOCKET_ERROR          = SOCKET_ERROR;
   Id_SOCKETOPTIONLEVEL_TCP = Id_IPPROTO_TCP; // BGO: rename to Id_SOL_TCP
+     {$IFDEF HAS_TCP_CORK}
+  Id_TCP_CORK = TCP_CORK;
+     {$ENDIF}
   {$ELSE}
   Id_TCP_NODELAY           = SocketOptionName.NoDelay;
   Id_INVALID_SOCKET        = nil;

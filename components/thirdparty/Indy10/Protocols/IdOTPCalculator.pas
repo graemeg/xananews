@@ -60,7 +60,7 @@ interface
 
 uses
   IdException;
-  
+
 type
   TIdOTPCalculator = class
   public

@@ -126,7 +126,7 @@ begin
       if Idx = -1 then begin
         raise EIdTFTPOptionNegotiationFailed.Create('');
       end;
-    
+
       LOptValue := BytesToString(OptionPacket, LOffset, Idx-LOffset, TIdTextEncoding.ASCII);
       LOffset := Idx+1;
 
@@ -240,7 +240,7 @@ begin
           TFTP_DATA:
             begin
               if TerminateTransfer then begin
-                // have already reeached the max block counter allowed, can't validate any more...
+                // have already reached the max block counter allowed, can't validate any more...
                 SendError(Self, FPeerIP, FPeerPort, ErrIllegalOperation, '');
                 raise EIdTFTPException.CreateFmt(RSTFTPUnexpectedOp, [FPeerIP, FPeerPort]);
               end;
@@ -263,12 +263,13 @@ begin
                   TerminateTransfer := True; // end of transfer, a block counter cannot wrap back to 0
                 end else begin
                   ExpectedBlockCtr := BlockCtr + 1;
+                  TerminateTransfer := Length(Buffer) < BufferSize;
                 end;
               end;
             end;
           TFTP_ERROR:
             begin
-	      RaiseError(Buffer);
+            RaiseError(Buffer);
             end;
           TFTP_OACK:
             begin
@@ -277,7 +278,7 @@ begin
           else
             begin
               SendError(Self, FPeerIP, FPeerPort, ErrIllegalOperation, '');
-	      raise EIdTFTPException.CreateFmt(RSTFTPUnexpectedOp, [FPeerIP, FPeerPort]);
+              raise EIdTFTPException.CreateFmt(RSTFTPUnexpectedOp, [FPeerIP, FPeerPort]);
             end;
         end;
       until False;
@@ -367,7 +368,7 @@ begin
     try
       repeat
         SetLength(Buffer, BufferSize);
-        DataLen := ReceiveBuffer(Buffer, FPeerIP, FPeerPort, IndyMin(500, ReceiveTimeout));
+        DataLen := ReceiveBuffer(Buffer, FPeerIP, FPeerPort, IndyMax(500, ReceiveTimeout));
         if DataLen <= 0 then begin
           if TerminateTransfer then begin
             Break;
@@ -410,12 +411,12 @@ begin
               end;
             end;
           TFTP_ERROR:
-	    begin
-	      RaiseError(Buffer);
+            begin
+              RaiseError(Buffer);
             end;
           TFTP_OACK:
-	    begin
-	      CheckOptionAck(Buffer, False);
+            begin
+              CheckOptionAck(Buffer, False);
            end;
          else
             begin

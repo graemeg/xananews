@@ -84,6 +84,10 @@ type
     property Postbody: TStringList read FPostbody write FPostbody;
   end;
 
+  // RLebeau 4/17/10: this forces C++Builder to link to this unit so
+  // RegisterAuthenticationMethod can be called correctly at program startup...
+  (*$HPPEMIT '#pragma link "IdAuthenticationDigest"'*)
+
 implementation
 
 uses
@@ -224,7 +228,11 @@ begin
 
           for i := LParams.Count-1 downto 0 do
           begin
+            {$IFDEF HAS_TSTRINGS_VALUEFROMINDEX}
+            LParams.ValueFromIndex[i] := RemoveQuote(LParams.ValueFromIndex[i]);
+            {$ELSE}
             LParams.Values[LParams.Names[i]] := RemoveQuote(LParams.Values[LParams.Names[i]]);
+            {$ENDIF}
           end;
 
           FRealm := LParams.Values['realm']; {do not localize}

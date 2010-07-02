@@ -700,14 +700,25 @@ end;
 
 type
   TIdHTTPWebBrokerBridgeRequestHandler = class(TWebRequestHandler)
+  {$IFDEF HAS_CLASSVARS}
   private
    class var FWebRequestHandler: TIdHTTPWebBrokerBridgeRequestHandler;
+  {$ENDIF}
   public
     constructor Create(AOwner: TComponent); override;
+    {$IFDEF HAS_CLASSVARS}
+      {$IFDEF HAS_CLASSDESTRUCTOR}
     class destructor Destroy;
+      {$ENDIF}
+    {$ENDIF}
     destructor Destroy; override;
     procedure Run(AThread: TIdContext; ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo);
   end;
+
+{$IFNDEF HAS_CLASSVARS}
+var
+  IndyWebRequestHandler: TIdHTTPWebBrokerBridgeRequestHandler = nil;
+{$ENDIF}
 
 { TIdHTTPWebBrokerBridgeRequestHandler }
 
@@ -748,26 +759,42 @@ begin
   inherited;
 end;
 
+{$IFDEF HAS_CLASSVARS}
+  {$IFDEF HAS_CLASSDESTRUCTOR}
 class destructor TIdHTTPWebBrokerBridgeRequestHandler.Destroy;
 begin
   FreeAndNil(FWebRequestHandler);
 end;
+  {$ENDIF}
+{$ENDIF}
 
 function IdHTTPWebBrokerBridgeRequestHandler: TWebRequestHandler;
 begin
+  {$IFDEF HAS_CLASSVARS}
   if not Assigned(TIdHTTPWebBrokerBridgeRequestHandler.FWebRequestHandler) then
     TIdHTTPWebBrokerBridgeRequestHandler.FWebRequestHandler := TIdHTTPWebBrokerBridgeRequestHandler.Create(nil);
   Result := TIdHTTPWebBrokerBridgeRequestHandler.FWebRequestHandler;
+  {$ELSE}
+  if not Assigned(IndyWebRequestHandler) then
+    IndyWebRequestHandler := TIdHTTPWebBrokerBridgeRequestHandler.Create(nil);
+  Result := IndyWebRequestHandler;
+  {$ENDIF}
 end;
 
 procedure TIdHTTPWebBrokerBridge.DoCommandGet(AThread: TIdContext;
  ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo);
 begin
-  if FWebModuleClass <> nil then
+  if FWebModuleClass <> nil then begin
     // FWebModuleClass, RegisterWebModuleClass supported for backward compatability
     RunWebModuleClass(AThread, ARequestInfo, AResponseInfo)
-  else
+  end else
+  begin
+    {$IFDEF HAS_CLASSVARS}
     TIdHTTPWebBrokerBridgeRequestHandler.FWebRequestHandler.Run(AThread, ARequestInfo, AResponseInfo);
+    {$ELSE}
+    IndyWebRequestHandler.Run(AThread, ARequestInfo, AResponseInfo);
+    {$ENDIF}
+  end;
 end;
 
 procedure TIdHTTPWebBrokerBridge.RunWebModuleClass(AThread: TIdContext;
@@ -784,12 +811,12 @@ begin
   LRequest := TIdHTTPAppRequest.Create(AThread, ARequestInfo, AResponseInfo);
   try
     LResponse := TIdHTTPAppResponse.Create(LRequest, AThread, ARequestInfo, AResponseInfo);
-	try
+    try
       // WebBroker will free it and we cannot change this behaviour
       AResponseInfo.FreeContentStream := False;
       // There are better ways in D6, but this works in D5
       LWebModule := FWebModuleClass.Create(nil) as TCustomWebDispatcher;
-	  try
+      try
         {$IFDEF VCL_6_OR_ABOVE}
         if Supports(LWebModule, IWebRequestHandler, WebRequestHandler) then begin
           try
@@ -807,11 +834,11 @@ begin
           LResponse.SendResponse;
         end;
       finally
-	    FreeAndNil(LWebModule);
-	  end;
+        FreeAndNil(LWebModule);
+      end;
     finally
-	  FreeAndNil(LResponse);
-	end;
+      FreeAndNil(LResponse);
+    end;
   finally
     FreeAndNil(LRequest);
   end;
@@ -826,6 +853,15 @@ end;
 
 initialization
   WebReq.WebRequestHandlerProc := IdHTTPWebBrokerBridgeRequestHandler;
+{$IFDEF HAS_CLASSVARS}
+  {$IFNDEF HAS_CLASSDESTRUCTOR}
+finalization
+  FreeAndNil(TIdHTTPWebBrokerBridgeRequestHandler.FWebRequestHandler);
+  {$ENDIF}
+{$ELSE}
+finalization
+  FreeAndNil(IndyWebRequestHandler);
+{$ENDIF}
 
 end.
 

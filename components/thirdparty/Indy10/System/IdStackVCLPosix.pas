@@ -17,6 +17,7 @@ ways.
 {$WARN UNIT_PLATFORM OFF}
 uses
   Classes,
+  IdCTypes,
     PosixSysSelect,
   PosixSysSocket,
   PosixSysTime,
@@ -138,11 +139,14 @@ type
     procedure AddLocalAddressesToList(AAddresses: TStrings); override;
   end;
 
-
 implementation
+
+{$O-}
+
 uses
   IdResourceStrings,
   IdException,
+  IdVCLPosixSupplemental,
   PosixBase,
   PosixArpaInet,
   PosixErrno,
@@ -158,6 +162,7 @@ uses
   {$IFDEF LINUX}  //this LINUX ifdef is deliberate
     {$DEFINE HAS_MSG_NOSIGNAL}
   {$ENDIF}
+
 
 const
   {$IFDEF HAS_MSG_NOSIGNAL}

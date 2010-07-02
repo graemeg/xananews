@@ -208,10 +208,6 @@ type
     FStatusList: TIdSMTPRelayStatusList;
     FDNSServer: String;
     FOnDirectSMTPStatus: TIdSMTPRelayStatus;
-    FMailAgent: string;
-    FHeloName : String;
-    FPipeline : Boolean;
-    FUseEHLO : Boolean;
     FSSLOptions : TIdSSLSupportOptions;
     FRelaySender: String;
     procedure Connect(AEMailAddress : TIdEMailAddressItem); reintroduce;
@@ -478,7 +474,7 @@ var
             end;
             if Trim(MailAgent) <> '' then
             begin
-              ALMsg.ExtraHeaders.Values[XMAILER_HEADER] := Trim(MailAgent);
+              ALMsg.Headers.Values[XMAILER_HEADER] := Trim(MailAgent);
             end;
             InternalSend(ALMsg, AFrom, AEmailAddresses);
             EMailSent := True;

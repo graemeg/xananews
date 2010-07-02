@@ -162,7 +162,11 @@ begin
     if IsCurrentThread(LThread) then begin
       LThread.FreeOnTerminate := True;
     end else begin
+      {$IFDEF VCL_2010_OR_ABOVE}
+      LThread.Suspended := False;
+      {$ELSE}
       LThread.Resume;
+      {$ENDIF}
       LThread.WaitFor;
       LThread.Free;
     end;
@@ -180,7 +184,11 @@ begin
       while Count > 0 do begin
         with TIdThreadWithTask(Items[0]) do begin
           Terminate;
+          {$IFDEF VCL_2010_OR_ABOVE}
+          Suspended := False;
+          {$ELSE}
           Resume;
+          {$ENDIF}
           WaitFor;
           Free;
         end;

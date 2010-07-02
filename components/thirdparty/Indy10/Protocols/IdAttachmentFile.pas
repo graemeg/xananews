@@ -68,6 +68,9 @@ type
 implementation
 
 uses
+  {$IFDEF USE_VCL_POSIX}
+  PosixUnistd,
+  {$ENDIF}
   {$IFDEF KYLIXCOMPAT}
   Libc,
   {$ENDIF}
