@@ -7,14 +7,17 @@ uses
 
 type
   TCaptionedDockTreeEx = class(TCaptionedDockTree)
+{$if CompilerVersion < 22.0} // 22.0 = Delphi XE
   private
     FGrabberSize: Integer;
   protected
     function AdjustCaptionRect(const ARect: TRect): TRect; override;
     procedure AdjustDockRect(Control: TControl; var ARect: TRect); override;
-//    procedure PaintDockFrame(Canvas: TCanvas; Control: TControl; const ARect: TRect); override;
   public
     constructor Create(DockSite: TWinControl); override;
+{$ifelse}
+  public
+{$ifend}
     class function GetParentFormState(const Control: TControl): TParentFormState; override;
   end;
 
@@ -24,6 +27,7 @@ implementation
 uses
   Types, ExtCtrls, Forms, GraphUtil;
 
+{$if CompilerVersion < 22.0}
 procedure TCaptionedDockTreeEx.AdjustDockRect(Control: TControl;
   var ARect: TRect);
 begin
@@ -55,6 +59,7 @@ begin
   inherited;
   FGrabberSize := GetSystemMetrics(SM_CYMENUSIZE) + 2;
 end;
+{$ifend}
 
 class function TCaptionedDockTreeEx.GetParentFormState(const Control: TControl): TParentFormState;
 begin
@@ -80,22 +85,15 @@ begin
   begin
     Result.StartColor := clActiveBorder;
     Result.EndColor := GetHighlightColor(clActiveBorder, 22);
-    Result.FontColor := clBtnText;
+    Result.FontColor := clCaptionText;
   end
   else
   begin
-    Result.StartColor := GetHighlightColor(clBtnFace, 5);
+    Result.StartColor := GetShadowColor(clBtnFace, -25);
     Result.EndColor := GetHighlightColor(clBtnFace, 15);
     Result.FontColor := clBtnText;
   end;
 end;
-
-//procedure TCaptionedDockTreeEx.PaintDockFrame(Canvas: TCanvas;
-//  Control: TControl; const ARect: TRect);
-//begin
-//  Canvas.Font.Assign(Application.MainForm.Font);
-//  inherited;
-//end;
 
 initialization
   DefaultDockTreeClass := TCaptionedDockTreeEx;
