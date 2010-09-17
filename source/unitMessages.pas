@@ -1027,7 +1027,6 @@ var
   x: DWORD;
   jpg: TJPegImage;
   p: pbmf;
-  spos: Int64;
   sz: DWORD;
 begin
   if not fGotGraphic then
@@ -1132,12 +1131,10 @@ begin
             // hmmm, it failed... maybe the poster used the wrong extension
             // for the graphic, try again based on some file header information...
             FreeAndNil(fGraphic);
-            spos := DecodedData.Position;
-            try
-              DecodedData.Read(Buffer, SizeOf(Buffer));
-            finally
-              DecodedData.Position := spos;
-            end;
+
+            DecodedData.Seek(0, soBeginning);
+            DecodedData.Read(Buffer, SizeOf(Buffer));
+            DecodedData.Seek(0, soBeginning);
 
             case Buffer of
               $4947: gc := TGifImage;
