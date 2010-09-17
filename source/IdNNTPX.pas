@@ -145,6 +145,7 @@ type
   end;
 
   EIdNNTPConnectionRefused = class(EIdReplyRFCError);
+  EIdNNTPAuthenticationRequired = class(EIdException);
 
 procedure ParseXOVER(const Aline: RawByteString; var AArticleIndex: Cardinal;
   var ASubject,
@@ -654,20 +655,30 @@ begin
 
   if (Result = 480) or (Result = 450) then
   begin
-    LogMessage('[tx] AuthInfo User <username>');
-    Result := inherited SendCmd('AuthInfo User ' + Username, [281, 381]);
-    LogMessage('[rx] ' + IntToStr(LastCmdResult.NumericCode) + ' ' + LastCmdResult.Text.Text, False, False);
-
-    if Result = 381 then
+    if UserName <> '' then
     begin
-      LogMessage('[tx] AuthInfo Pass <password>');
-      inherited SendCmd('AuthInfo Pass ' + Password, [281]);
+      LogMessage('[tx] AuthInfo User <username>');
+      Result := inherited SendCmd('AuthInfo User ' + Username, [281, 381]);
       LogMessage('[rx] ' + IntToStr(LastCmdResult.NumericCode) + ' ' + LastCmdResult.Text.Text, False, False);
-    end;
 
-    LogMessage('[tx] ' + AOut);
-    Result := inherited SendCmd(AOut, AResponse, AEncoding);
-    LogMessage('[rx] ' + IntToStr(LastCmdResult.NumericCode) + ' ' + LastCmdResult.Text.Text, False, False);
+      if Result = 381 then
+      begin
+        if Password <> '' then
+        begin
+          LogMessage('[tx] AuthInfo Pass <password>');
+          inherited SendCmd('AuthInfo Pass ' + Password, [281]);
+          LogMessage('[rx] ' + IntToStr(LastCmdResult.NumericCode) + ' ' + LastCmdResult.Text.Text, False, False);
+        end
+        else
+          raise EIdNNTPAuthenticationRequired.Create('Authentication failed, use a valid non-empty password');
+      end;
+
+      LogMessage('[tx] ' + AOut);
+      Result := inherited SendCmd(AOut, AResponse, AEncoding);
+      LogMessage('[rx] ' + IntToStr(LastCmdResult.NumericCode) + ' ' + LastCmdResult.Text.Text, False, False);
+    end
+    else
+      raise EIdNNTPAuthenticationRequired.Create('Authentication failed, use a valid non-empty username');
   end
   else
     Result := CheckResponse(Result, AResponse);
