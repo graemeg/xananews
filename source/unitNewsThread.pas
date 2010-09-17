@@ -273,7 +273,7 @@ type
   TAttachment = class
   private
     fSize: Integer;
-    fDate: Integer;
+    fDate: TDateTime;
     fDirectory: string;
     fFileName: string;
     fInline: Boolean;
@@ -282,7 +282,7 @@ type
     constructor Create(APathName: string);
     property FileName: string read fFileName;
     property Directory: string read fDirectory;
-    property Date: Integer read fDate;
+    property Date: TDateTime read fDate;
     property Size: Integer read fSize;
     property IsInline: Boolean read fInline;
     property PathName: string read GetPathName;
@@ -2095,7 +2095,11 @@ begin
     fDirectory := ExtractFilePath(APathName);
     fFilename := f.Name;
     fSize := f.Size;
-    fDate := f.Time;
+    {$if CompilerVersion >= 22.0} // 22.0 = Delphi XE
+      fDate := f.TimeStamp;
+    {$else}
+      fDate := FileDateToDateTime(f.Time);
+    {$ifend}
     fInline := True;
     FindClose(f);
   end

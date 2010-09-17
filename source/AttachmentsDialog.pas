@@ -44,7 +44,7 @@ begin
 
   Item.Caption := attachment.FileName;
   Item.SubItems.Add(attachment.Directory);
-  Item.SubItems.Add(DateToStr(FileDateToDateTime(attachment.Date)));
+  Item.SubItems.Add(DateToStr(attachment.Date));
   Item.SubItems.Add(IntToStr(attachment.Size));
 end;
 
