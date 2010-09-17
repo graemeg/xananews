@@ -1,0 +1,98 @@
+﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		<PropertyGroup>
+			<ProjectGuid>{86f9878d-6ea7-4638-a02a-875a697202af}</ProjectGuid>
+		</PropertyGroup>
+		<ItemGroup>
+			<Projects Include="components\ImageTypes\Source\ImageTypesD2011.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="components\LowLevel\Source\LowLevelD2011.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="components\MiscUnits\Source\MiscUnitsD2011.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD2011.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD2011D.dproj">
+				<Dependencies/>
+			</Projects>
+			<Projects Include="source\NewsReader3.dproj">
+				<Dependencies/>
+			</Projects>
+		</ItemGroup>
+		<ProjectExtensions>
+			<Borland.Personality>Default.Personality.12</Borland.Personality>
+			<Borland.ProjectType/>
+			<BorlandProject>
+				<BorlandProject>
+					<Default.Personality/>
+				</BorlandProject>
+			</BorlandProject>
+		</ProjectExtensions>
+		<Target Name="ImageTypesD2011">
+			<MSBuild Projects="components\ImageTypes\Source\ImageTypesD2011.dproj"/>
+		</Target>
+		<Target Name="ImageTypesD2011:Clean">
+			<MSBuild Targets="Clean" Projects="components\ImageTypes\Source\ImageTypesD2011.dproj"/>
+		</Target>
+		<Target Name="ImageTypesD2011:Make">
+			<MSBuild Targets="Make" Projects="components\ImageTypes\Source\ImageTypesD2011.dproj"/>
+		</Target>
+		<Target Name="LowLevelD2011">
+			<MSBuild Projects="components\LowLevel\Source\LowLevelD2011.dproj"/>
+		</Target>
+		<Target Name="LowLevelD2011:Clean">
+			<MSBuild Targets="Clean" Projects="components\LowLevel\Source\LowLevelD2011.dproj"/>
+		</Target>
+		<Target Name="LowLevelD2011:Make">
+			<MSBuild Targets="Make" Projects="components\LowLevel\Source\LowLevelD2011.dproj"/>
+		</Target>
+		<Target Name="MiscUnitsD2011">
+			<MSBuild Projects="components\MiscUnits\Source\MiscUnitsD2011.dproj"/>
+		</Target>
+		<Target Name="MiscUnitsD2011:Clean">
+			<MSBuild Targets="Clean" Projects="components\MiscUnits\Source\MiscUnitsD2011.dproj"/>
+		</Target>
+		<Target Name="MiscUnitsD2011:Make">
+			<MSBuild Targets="Make" Projects="components\MiscUnits\Source\MiscUnitsD2011.dproj"/>
+		</Target>
+		<Target Name="VirtualTreesD2011">
+			<MSBuild Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD2011.dproj"/>
+		</Target>
+		<Target Name="VirtualTreesD2011:Clean">
+			<MSBuild Targets="Clean" Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD2011.dproj"/>
+		</Target>
+		<Target Name="VirtualTreesD2011:Make">
+			<MSBuild Targets="Make" Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD2011.dproj"/>
+		</Target>
+		<Target Name="VirtualTreesD2011D">
+			<MSBuild Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD2011D.dproj"/>
+		</Target>
+		<Target Name="VirtualTreesD2011D:Clean">
+			<MSBuild Targets="Clean" Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD2011D.dproj"/>
+		</Target>
+		<Target Name="VirtualTreesD2011D:Make">
+			<MSBuild Targets="Make" Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesD2011D.dproj"/>
+		</Target>
+		<Target Name="NewsReader3">
+			<MSBuild Projects="source\NewsReader3.dproj"/>
+		</Target>
+		<Target Name="NewsReader3:Clean">
+			<MSBuild Targets="Clean" Projects="source\NewsReader3.dproj"/>
+		</Target>
+		<Target Name="NewsReader3:Make">
+			<MSBuild Targets="Make" Projects="source\NewsReader3.dproj"/>
+		</Target>
+		<Target Name="Build">
+			<CallTarget Targets="ImageTypesD2011;LowLevelD2011;MiscUnitsD2011;VirtualTreesD2011;VirtualTreesD2011D;NewsReader3"/>
+		</Target>
+		<Target Name="Clean">
+			<CallTarget Targets="ImageTypesD2011:Clean;LowLevelD2011:Clean;MiscUnitsD2011:Clean;VirtualTreesD2011:Clean;VirtualTreesD2011D:Clean;NewsReader3:Clean"/>
+		</Target>
+		<Target Name="Make">
+			<CallTarget Targets="ImageTypesD2011:Make;LowLevelD2011:Make;MiscUnitsD2011:Make;VirtualTreesD2011:Make;VirtualTreesD2011D:Make;NewsReader3:Make"/>
+		</Target>
+		<Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+	</Project>

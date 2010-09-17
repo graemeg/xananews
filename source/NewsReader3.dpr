@@ -8,7 +8,6 @@ program NewsReader3;
 
 uses
   FastMM4,
-//  SafeMMInstall,
 {$ifdef madExcept}
   madExcept,
   madLinkDisAsm,
@@ -161,6 +160,10 @@ begin
   begin
     Application.Initialize;
     Application.MainFormOnTaskBar := True;
+
+    SetThreadLocale(GetUserDefaultLCID);
+    GetFormatSettings;
+
     ShowSplash;
     Application.Title := 'XanaNews';
     Application.HelpFile := 'XanaNews.chm';
