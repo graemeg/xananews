@@ -15,7 +15,7 @@ type
     procedure AdjustDockRect(Control: TControl; var ARect: TRect); override;
   public
     constructor Create(DockSite: TWinControl); override;
-{$ifelse}
+{$else}
   public
 {$ifend}
     class function GetParentFormState(const Control: TControl): TParentFormState; override;
