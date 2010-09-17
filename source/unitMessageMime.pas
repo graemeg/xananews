@@ -221,7 +221,8 @@ begin
   begin
     DecodeHeader;
     if fHeaderDecoded then
-      if not Assigned(fMIMEHeader) or (CompareText(fMIMEHeader.ContentType_Type, 'text') = 0) then
+      if not Assigned(fMIMEHeader) or
+        (SameText(fMIMEHeader.ContentType_Type, 'text') and not SameText(fMIMEHeader.ContentDisposition, 'attachment')) then
       begin
         if not Assigned(fBody) then
           fBody := TAnsiStringList.Create;
