@@ -682,19 +682,22 @@ begin
           FindClose(f);
         end;
 
-      gDefaultISpellLanguage := SpellerForLocale(GetThreadLocale);
+      if Assigned(gISpellLanguages) then
+      begin
+        gDefaultISpellLanguage := SpellerForLocale(GetThreadLocale);
 
-      if gDefaultISpellLanguage = -1 then
-        gDefaultISpellLanguage := SpellerForLocale(GetUserDefaultLCID);
+        if gDefaultISpellLanguage = -1 then
+          gDefaultISpellLanguage := SpellerForLocale(GetUserDefaultLCID);
 
-      if gDefaultISpellLanguage = -1 then
-        gDefaultISpellLanguage := SpellerForLocale(GetSystemDefaultLCID);
+        if gDefaultISpellLanguage = -1 then
+          gDefaultISpellLanguage := SpellerForLocale(GetSystemDefaultLCID);
 
-      if gDefaultISpellLanguage = -1 then
-        gDefaultISpellLanguage := SpellerForLocale(1033); // US English
+        if gDefaultISpellLanguage = -1 then
+          gDefaultISpellLanguage := SpellerForLocale(1033); // US English
 
-      if (gDefaultISpellLanguage = -1) and (gISpellLanguages.Count > 0) then
-        gDefaultISpellLanguage := 0;
+        if (gDefaultISpellLanguage = -1) and (gISpellLanguages.Count > 0) then
+          gDefaultISpellLanguage := 0;
+      end;
     end;
   finally
     sections.Free;
