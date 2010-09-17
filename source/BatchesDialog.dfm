@@ -4,7 +4,6 @@ object dlgBatches: TdlgBatches
   HelpType = htKeyword
   HelpKeyword = 'Batch Mode'
   Anchors = [akTop]
-  AutoScroll = False
   Caption = 'Batches'
   ClientHeight = 343
   ClientWidth = 485
@@ -41,9 +40,7 @@ object dlgBatches: TdlgBatches
       end
       item
         Caption = 'Run at Startup'
-        Width = -2
-        WidthType = (
-          -2)
+        Width = 197
       end>
     ColumnClick = False
     Constraints.MinWidth = 393

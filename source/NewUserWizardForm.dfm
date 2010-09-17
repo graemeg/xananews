@@ -32,6 +32,7 @@ object frmNewUserWizard: TfrmNewUserWizard
     Height = 337
     ActivePage = tsConnection
     Anchors = [akLeft, akTop, akRight, akBottom]
+    Style = tsFlatButtons
     TabOrder = 0
     OnChange = PageControl1Change
     object tsUserDetails: TTabSheet
@@ -88,14 +89,14 @@ object frmNewUserWizard: TfrmNewUserWizard
       object edYourName: TEdit
         Left = 144
         Top = 104
-        Width = 313
+        Width = 305
         Height = 21
         TabOrder = 0
       end
       object edYourEMail: TEdit
         Left = 144
         Top = 160
-        Width = 313
+        Width = 305
         Height = 21
         TabOrder = 1
       end
@@ -159,14 +160,14 @@ object frmNewUserWizard: TfrmNewUserWizard
       object edAccountName: TEdit
         Left = 144
         Top = 104
-        Width = 313
+        Width = 305
         Height = 21
         TabOrder = 0
       end
       object edServerName: TEdit
         Left = 144
         Top = 160
-        Width = 313
+        Width = 305
         Height = 21
         TabOrder = 1
       end
@@ -240,7 +241,7 @@ object frmNewUserWizard: TfrmNewUserWizard
       object edServerUserName: TEdit
         Left = 168
         Top = 136
-        Width = 289
+        Width = 281
         Height = 21
         Enabled = False
         TabOrder = 1
@@ -248,7 +249,7 @@ object frmNewUserWizard: TfrmNewUserWizard
       object edServerPassword: TEdit
         Left = 168
         Top = 208
-        Width = 289
+        Width = 281
         Height = 21
         Enabled = False
         TabOrder = 2
@@ -307,7 +308,6 @@ object frmNewUserWizard: TfrmNewUserWizard
         Height = 21
         Style = csDropDownList
         Enabled = False
-        ItemHeight = 13
         TabOrder = 1
       end
     end
@@ -315,6 +315,9 @@ object frmNewUserWizard: TfrmNewUserWizard
       Caption = 'tsFinished'
       ImageIndex = 4
       TabVisible = False
+      DesignSize = (
+        459
+        327)
       object Label21: TLabel
         Left = 8
         Top = 24
@@ -331,8 +334,9 @@ object frmNewUserWizard: TfrmNewUserWizard
       object Label22: TLabel
         Left = 8
         Top = 72
-        Width = 457
+        Width = 433
         Height = 57
+        Anchors = [akLeft, akTop, akRight]
         AutoSize = False
         Caption = 
           'You have successfully entered all the information required to st' +

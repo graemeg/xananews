@@ -56,7 +56,7 @@ type
     procedure cbAlwaysConnectUsingClick(Sender: TObject);
     procedure cbServerLogonClick(Sender: TObject);
   private
-    function CurrentPageOK : boolean;
+    function CurrentPageOK: boolean;
   protected
     procedure UpdateActions; override;
   public
@@ -67,44 +67,43 @@ var
 
 implementation
 
-uses NewsGlobals;
+uses
+  NewsGlobals;
 
 {$R *.dfm}
 
 procedure TfrmNewUserWizard.FormShow(Sender: TObject);
 var
-  i : Integer;
-  g : TGIFImage;
-  rs : TResourceStream;
+  i: Integer;
+  g: TGIFImage;
+  rs: TResourceStream;
 begin
-  g := Nil;
+  g := nil;
   try
     rs := TResourceStream.Create(HInstance, Application.Title, 'GIF');
     try
       if rs.Size > 0 then
       begin
-        g := TGifImage.Create;
+        g := TGIFImage.Create;
         g.LoadFromStream(rs);
-        Image1.Picture.Assign(g)
-      end
+        Image1.Picture.Assign(g);
+      end;
     finally
       g.Free;
-      rs.Free
+      rs.Free;
     end;
   except
   end;
 
-
-  if g = Nil then
-    if Assigned (Application.Icon) then
+  if g = nil then
+    if Assigned(Application.Icon) then
       Image1.Picture.Icon := Application.Icon;
 
   LoadRASEntries;
   PageControl1.ActivePageIndex := 0;
-  PageControl1Change (nil);
-  for i := 0 to Length (RasEntries) - 1 do
-    cbRasEntries.Items.Add(RasEntries [i].szEntryName);
-
+  PageControl1Change(nil);
+  for i := 0 to Length(RasEntries) - 1 do
+    cbRasEntries.Items.Add(RasEntries[i].szEntryName);
 end;
 
 procedure TfrmNewUserWizard.btnBackClick(Sender: TObject);
@@ -113,8 +112,8 @@ begin
     if ActivePageIndex > 0 then
     begin
       ActivePageIndex := ActivePageIndex - 1;
-      PageControl1Change (nil)
-    end
+      PageControl1Change(nil);
+    end;
 end;
 
 procedure TfrmNewUserWizard.btnNextClick(Sender: TObject);
@@ -123,19 +122,19 @@ begin
     if ActivePageIndex < PageCount - 1 then
     begin
       ActivePageIndex := ActivePageIndex + 1;
-      PageControl1Change (nil)
-    end
+      PageControl1Change(nil);
+    end;
 end;
 
 procedure TfrmNewUserWizard.UpdateActions;
 var
-  activePage : Integer;
+  activePage: Integer;
 begin
   activePage := PageControl1.ActivePageIndex;
   btnNext.Enabled := CurrentPageOK and (activePage < PageControl1.PageCount);
   btnBack.Enabled := activePage > 0;
 
-  if activePage = PageControl1.PageCount -1 then
+  if activePage = PageControl1.PageCount - 1 then
   begin
     btnNext.Caption := rstOK;
     btnNext.Default := True;
@@ -146,38 +145,39 @@ begin
     btnNext.Caption := rstNext;
     btnNext.Default := False;
     btnNext.ModalResult := mrNone;
-  end
+  end;
 end;
 
 function TfrmNewUserWizard.CurrentPageOK: boolean;
 begin
-  result := True;
+  Result := True;
   case PageControl1.ActivePageIndex of
-    0 : result := edYourName.Text <> '';
-    1 : result := (edServerName.Text <> '') and (edAccountName.Text <> '');
-    2 : result := (not cbServerLogon.Checked) or ((edServerUserName.Text <> '') and (edServerPassword.Text <> ''));
-    3 : result := (not cbAlwaysConnectUsing.Checked) or (cbRASEntries.Text <> '');
-  end
+    0: Result := edYourName.Text <> '';
+    1: Result := (edServerName.Text <> '') and (edAccountName.Text <> '');
+    2: Result := (not cbServerLogon.Checked) or
+        ((edServerUserName.Text <> '') and (edServerPassword.Text <> ''));
+    3: Result := (not cbAlwaysConnectUsing.Checked) or (cbRasEntries.Text <> '');
+  end;
 end;
 
 procedure TfrmNewUserWizard.PageControl1Change(Sender: TObject);
 begin
   case PageControl1.ActivePageIndex of
-    0 : ActiveControl := edYourName;
-    1 : ActiveControl := edAccountName;
-    2 : ActiveControl := cbServerLogon;
-    3 : ActiveControl := cbAlwaysConnectUsing
-  end
+    0: ActiveControl := edYourName;
+    1: ActiveControl := edAccountName;
+    2: ActiveControl := cbServerLogon;
+    3: ActiveControl := cbAlwaysConnectUsing;
+  end;
 end;
 
 procedure TfrmNewUserWizard.cbAlwaysConnectUsingClick(Sender: TObject);
 begin
-  cbRasEntries.Enabled := cbAlwaysConnectUsing.Checked
+  cbRasEntries.Enabled := cbAlwaysConnectUsing.Checked;
 end;
 
 procedure TfrmNewUserWizard.cbServerLogonClick(Sender: TObject);
 var
-  enable : boolean;
+  enable: boolean;
 begin
   enable := cbServerLogon.Checked;
 
@@ -187,8 +187,7 @@ begin
   sb4.Enabled := enable;
 
   edServerUserName.Enabled := enable;
-  edServerPassword.Enabled := enable
-
+  edServerPassword.Enabled := enable;
 end;
 
 end.
