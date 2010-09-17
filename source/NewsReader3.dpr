@@ -2,8 +2,11 @@ program NewsReader3;
 
 {$SetPEFlags $21}  // $01 = IMAGE_FILE_RELOCS_STRIPPED
                    // $20 = IMAGE_FILE_LARGE_ADDRESS_AWARE
-{$WEAKLINKRTTI ON}
-{$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
+
+{$if CompilerVersion >= 21.0}
+  {$WEAKLINKRTTI ON}
+  {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
+{$ifend}
 
 
 uses
