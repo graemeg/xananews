@@ -17,7 +17,6 @@ var
   crit: TCriticalSection = nil;
   lf: TFileStream = nil;
 
-
 procedure CloseLogFile;
 begin
   FreeAndNil(lf);
@@ -43,14 +42,14 @@ begin
           begin
             if dt <> -1 then
               RenameFile(gMessageBaseRoot + '\log.txt', gMessageBaseRoot + '\log-' + FormatDateTime('yyyymmdd', dt) + '.txt');
-            lf := TFileStream.Create(gMessageBaseRoot + '\log.txt', fmCreate);
-            FreeAndNil(lf);
+            // Create a new log file and directly free the reference to it with the "bad" access rights.
+            TFileStream.Create(gMessageBaseRoot + '\log.txt', fmCreate).Free;
           end;
           lf := TFileStream.Create(gMessageBaseRoot + '\log.txt', fmOpenReadWrite or fmShareDenyNone);
           lf.Seek(0, soEnd);
         end;
 
-        msg := FormatDateTime('hh:nn:ss.zzz', Now) + ' TID=' + IntToStr(GetCurrentThreadID) + '- ' + msg;
+        msg := FormatDateTime('yyyymmdd hh:nn:ss.zzz', Now) + ' TID=' + IntToStr(GetCurrentThreadID) + '- ' + msg;
         if AddCRLF then
           msg := msg +  #13#10;
 
