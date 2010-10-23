@@ -1,7 +1,6 @@
 object dlgMailAccounts: TdlgMailAccounts
   Left = 339
   Top = 122
-  AutoScroll = False
   Caption = 'Mail Accounts'
   ClientHeight = 343
   ClientWidth = 485

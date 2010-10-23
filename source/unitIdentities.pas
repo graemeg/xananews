@@ -54,6 +54,7 @@ type
     property IsDefault: Boolean read fIsDefault write fIsDefault;
     property SigFile: string read fSigFile write fSigFile;
     function ChooseSignature(sigOverride: string): string;
+    function GetFullyQualifiedSigFilename(const filename: string): string;
     procedure AssignTo(id: TIdentity);
   end;
 
@@ -119,14 +120,14 @@ begin
         Result := True;
       end
       else
-        dlg.Identity.Free
+        dlg.Identity.Free;
     except
       dlg.Identity.Free;
-      raise
-    end
+      raise;
+    end;
   finally
-    dlg.Free
-  end
+    dlg.Free;
+  end;
 end;
 
 function TIdentities.Delete(idx: Integer): Boolean;
@@ -318,6 +319,7 @@ end;
 
 function TIdentity.ChooseSignature(sigOverride: string): string;
 var
+  filename: string;
   f: TFileStream;
   rdr: TStreamTextReader;
   idx: TList;
@@ -358,11 +360,12 @@ begin
     useSigFile := True;       // this one.  But if this value contains
   end;                        // '%sigfile', then use both.
 
-  if useSigFile and (SigFile <> '') and FileExists(sigFile) then
+  filename := GetFullyQualifiedSigFilename(fSigFile);
+  if useSigFile and (fSigFile <> '') and FileExists(filename) then
   begin
     rdr := nil;
     idx := nil;
-    f := TFileStream.Create(sigFile, fmOpenRead or fmShareDenyNone);
+    f := TFileStream.Create(filename, fmOpenRead or fmShareDenyNone);
     try
       rdr := TStreamTextReader.Create(f);
       idx := TList.Create;
@@ -395,6 +398,19 @@ begin
   Result := TrimRightWhitespace(Result, #13#10#9' ') + #13#10;
 end;
 
+function TIdentity.GetFullyQualifiedSigFilename(const filename: string): string;
+begin
+  if (filename <> '') and (Pos(':', filename) = 0) and (Copy(filename, 1, 2) <> '\\') then
+  begin
+    if filename[1] = '\' then
+      Result := ExtractFileDrive(gXanaNewsDir) + filename
+    else
+      Result := ExpandFileName(gXanaNewsDir + '\' + filename);
+  end
+  else
+    Result := filename;
+end;
+
 procedure TIdentity.Load(rootReg: TExSettings; const AName: string);
 var
   reg: TExSettings;
@@ -402,21 +418,13 @@ begin
   fName := AName;
   reg := CreateChildSettings(rootReg, AName);
   try
-
     fUserName := reg.StringValue['User Name'];
     fEMailAddress := reg.StringValue['EMail Address'];
     fReplyAddress := reg.StringValue['Reply Address'];
     fOrganization := reg.StringValue['Organization'];
     fSignature := reg.StringValue['Signature'];
     fSigFile := reg.StringValue['SigFile'];
-
-    if (fSigFile <> '') and (Pos(':', fSigFile) = 0) and (Copy(fSigFile, 1, 2) <> '\\') then
-    begin
-      fSigFile := gMessageBaseRoot + '\' + fSigFile;
-      reg.StringValue['SigFile'] := fSigFile
-    end;
-    fXFace := reg.StringValue['XFace'];
-    fXFace := StringReplace(fXFace, #13#10' ', '', [rfReplaceAll]);
+    fXFace := StringReplace(reg.StringValue['XFace'], #13#10' ', '', [rfReplaceAll]);
     fIsDefault := reg.BooleanValue['Default'];
   finally
     reg.Free;
@@ -434,8 +442,8 @@ begin
     reg.StringValue['Reply Address'] := ReplyAddress;
     reg.StringValue['Organization'] := Organization;
     reg.StringValue['Signature'] := Signature;
+    reg.StringValue['SigFile'] := fSigFile;
     reg.StringValue['XFace'] := XFace;
-    reg.StringValue['SigFile'] := SigFile;
     reg.BooleanValue['Default'] := fIsDefault;
   finally
     reg.Free;

@@ -520,7 +520,7 @@ end;
 destructor TBufferedFileWriter.Destroy;
 begin
   inherited Destroy;  // Note: needs to be first to flush the buffers!
-  FreeAndnil(fStream);
+  fStream.Free;
 end;
 
 { TMappedFileStream }

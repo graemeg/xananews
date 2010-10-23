@@ -330,7 +330,6 @@ object fmNewsgroupStatistics: TfmNewsgroupStatistics
     Width = 105
     Height = 21
     Anchors = [akLeft, akBottom]
-    ItemHeight = 13
     TabOrder = 7
     Text = '[No limit]'
     OnKeyPress = cbResultsKeyPress

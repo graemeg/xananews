@@ -132,9 +132,7 @@ begin
   fLevel2QuoteFont.Free;
   fLevel3QuoteFont.Free;
   fSignatureFont.Free;
-
-  FreeAndNil(fFormatter);
-
+  fFormatter.Free;
   inherited Destroy;
 end;
 

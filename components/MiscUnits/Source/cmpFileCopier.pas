@@ -312,7 +312,7 @@ end;
 
 constructor TFileCopier.Create(AOwner: TComponent);
 begin
-  inherited;
+  inherited Create(AOwner);
 
   fSourceFiles := TStringList.Create;
   fRecursive := True;
@@ -323,8 +323,8 @@ destructor TFileCopier.Destroy;
 begin
   while Assigned(fCopierThread) do
     Sleep(500);
-  FreeAndNil(fSourceFiles);
-  inherited;
+  fSourceFiles.Free;
+  inherited Destroy;
 end;
 
 procedure TFileCopier.DoCopyFile;

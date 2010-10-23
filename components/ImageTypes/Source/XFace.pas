@@ -136,7 +136,7 @@ begin
   dst := CreateCompatibleDC(0);
   SelectObject(dst, DIB);
 
-  if(Invert) then
+  if Invert then
     StretchBlt(dst, 0, 0, 48, 48, src, 0, 0, Bitmap.Width, Bitmap.Height, NOTSRCCOPY)
   else
     StretchBlt(dst, 0, 0, 48, 48, src, 0, 0, Bitmap.Width, Bitmap.Height, SRCCOPY);
@@ -199,7 +199,7 @@ initialization
   try
     DIB := CreateDIBSection(dc, xBI, DIB_RGB_COLORS, Pixels, 0, 0);
   finally
-    ReleaseDC(0, dc)
+    ReleaseDC(0, dc);
   end;
 
 finalization

@@ -300,8 +300,8 @@ end;
 
 procedure TfmNewsgroupStatistics.btnStartClick(Sender: TObject);
 begin
-  FreeAndnil(fStatistics);
-  FreeAndnil(fStatisticContainer);
+  FreeAndNil(fStatistics);
+  FreeAndNil(fStatisticContainer);
   PostMessage(handle, WM_SETUP, 0, 0);
 end;
 

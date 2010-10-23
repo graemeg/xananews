@@ -529,7 +529,7 @@ begin
       page := pnlOptions.Controls[1] as TfmPropertyPage;
 
       if Assigned(details) and (page.ClassType <> details.fPropertyPageClass) then
-        FreeAndnil(page);
+        FreeAndNil(page);
     end
     else
       page := nil;
