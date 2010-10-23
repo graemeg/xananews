@@ -65,16 +65,15 @@ object dlgIdentity: TdlgIdentity
   end
   object Label37: TLabel
     Left = 16
-    Top = 366
+    Top = 380
     Width = 34
     Height = 13
     Anchors = [akLeft, akBottom]
     Caption = 'X-Face'
-    ExplicitTop = 383
   end
   object Label6: TLabel
     Left = 208
-    Top = 350
+    Top = 364
     Width = 383
     Height = 49
     Anchors = [akLeft, akRight, akBottom]
@@ -83,7 +82,6 @@ object dlgIdentity: TdlgIdentity
       'An X-Face is a small monochrome picture that is sent along with ' +
       'your messages.  '
     WordWrap = True
-    ExplicitTop = 367
   end
   object Label7: TLabel
     Left = 16
@@ -116,16 +114,25 @@ object dlgIdentity: TdlgIdentity
   end
   object Label10: TLabel
     Left = 16
-    Top = 318
+    Top = 332
     Width = 64
     Height = 13
     Anchors = [akLeft, akBottom]
     Caption = 'Signature File'
-    ExplicitTop = 335
+  end
+  object Label11: TLabel
+    Left = 24
+    Top = 302
+    Width = 386
+    Height = 13
+    Anchors = [akLeft, akBottom]
+    Caption = 
+      '%sigfile% is replaced with a  (random) signature/quote from the ' +
+      'below signature file'
   end
   object btnOK: TButton
     Left = 438
-    Top = 422
+    Top = 430
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -134,11 +141,10 @@ object dlgIdentity: TdlgIdentity
     ModalResult = 1
     TabOrder = 11
     OnClick = btnOKClick
-    ExplicitTop = 439
   end
   object btnCancel: TButton
     Left = 518
-    Top = 422
+    Top = 430
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -146,7 +152,6 @@ object dlgIdentity: TdlgIdentity
     Caption = 'Cancel'
     ModalResult = 2
     TabOrder = 12
-    ExplicitTop = 439
   end
   object edName: TEdit
     Left = 120
@@ -202,18 +207,16 @@ object dlgIdentity: TdlgIdentity
     Anchors = [akLeft, akTop, akRight, akBottom]
     ScrollBars = ssVertical
     TabOrder = 5
-    ExplicitHeight = 108
   end
   object Panel1: TPanel
     Left = 56
-    Top = 350
+    Top = 364
     Width = 50
     Height = 50
     Anchors = [akLeft, akBottom]
     AutoSize = True
     BevelOuter = bvLowered
     TabOrder = 8
-    ExplicitTop = 367
     object imgXFace: TImage
       Left = 1
       Top = 1
@@ -224,53 +227,49 @@ object dlgIdentity: TdlgIdentity
   end
   object btnLoadXFace: TButton
     Left = 112
-    Top = 348
+    Top = 362
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = 'Load...'
     TabOrder = 9
     OnClick = btnLoadXFaceClick
-    ExplicitTop = 365
   end
   object btnClearXFace: TButton
     Left = 112
-    Top = 378
+    Top = 392
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = 'Clear'
     TabOrder = 10
     OnClick = btnClearXFaceClick
-    ExplicitTop = 395
   end
   object edSigFile: TEdit
     Left = 120
-    Top = 314
+    Top = 328
     Width = 447
     Height = 21
     Anchors = [akLeft, akRight, akBottom]
     TabOrder = 6
-    ExplicitTop = 331
   end
   object btnSigFile: TButton
     Left = 574
-    Top = 312
+    Top = 326
     Width = 25
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = '...'
     TabOrder = 7
     OnClick = btnSigFileClick
-    ExplicitTop = 329
   end
   object OpenPictureDialog1: TOpenPictureDialog
     Left = 130
-    Top = 392
+    Top = 406
   end
   object pomXFace: TPopupMenu
     Left = 94
-    Top = 392
+    Top = 406
     object actXFaceCopy: TMenuItem
       Caption = 'Copy'
       ShortCut = 16451
@@ -294,6 +293,6 @@ object dlgIdentity: TdlgIdentity
       '(*.*)|*.*'
     Options = [ofHideReadOnly, ofFileMustExist, ofEnableSizing]
     Left = 166
-    Top = 392
+    Top = 406
   end
 end
