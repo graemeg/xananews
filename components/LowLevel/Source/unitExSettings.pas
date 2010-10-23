@@ -227,6 +227,7 @@ end;
 destructor TExSettings.Destroy;
 begin
   Close;
+  inherited Destroy;
 end;
 
 procedure TExSettings.EndUpdate;
