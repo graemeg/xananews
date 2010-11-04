@@ -6,8 +6,6 @@ inherited fmOptions: TfmOptions
   Caption = 'XanaNews Options'
   ExplicitLeft = 604
   ExplicitTop = 165
-  ExplicitWidth = 587
-  ExplicitHeight = 402
   PixelsPerInch = 96
   TextHeight = 13
   inherited Splitter1: TSplitter
@@ -29,14 +27,14 @@ inherited fmOptions: TfmOptions
     ExplicitWidth = 185
   end
   inherited pnlButtons: TPanel
-    object Button1: TButton [0]
+    object btnDefaultNewsreader: TButton [0]
       Left = 0
       Top = 10
-      Width = 145
+      Width = 185
       Height = 25
-      Caption = 'Set as Default Newsreader'
+      Caption = ' Set as Default Newsreader'
       TabOrder = 0
-      OnClick = Button1Click
+      OnClick = btnDefaultNewsreaderClick
     end
     inherited btnOK: TButton
       TabOrder = 1
@@ -53,9 +51,10 @@ inherited fmOptions: TfmOptions
   end
   inherited PersistentPosition1: TPersistentPosition
     SubKey = 'Position\Options'
-    Left = 160
+    Left = 176
+    Top = 330
   end
   inherited PopupMenu1: TPopupMenu
-    Left = 192
+    Left = 208
   end
 end

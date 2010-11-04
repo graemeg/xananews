@@ -9,9 +9,9 @@ uses
 
 type
   TfmOptions = class(TfmPropertyBase)
-    Button1: TButton;
+    btnDefaultNewsreader: TButton;
     procedure FormShow(Sender: TObject);
-    procedure Button1Click(Sender: TObject);
+    procedure btnDefaultNewsreaderClick(Sender: TObject);
   public
     constructor Create(AOwner: TComponent); override;
   end;
@@ -22,7 +22,7 @@ var
 implementation
 
 uses
-  Registry, PropertyPageForm, unitNewsReaderOptions, NewsGlobals, MainForm,
+  ShellAPI, Registry, PropertyPageForm, unitNewsReaderOptions, NewsGlobals, MainForm,
   PropertyPageGeneralForm,
   PropertyPageEnterKeyForm,
   PropertyPageConnectionForm,
@@ -45,6 +45,23 @@ uses
   PropertyPageShortcutsForm;
 
 {$R *.dfm}
+
+function IsVistaOrLater: Boolean;
+begin
+  Result := (Win32MajorVersion >= 6);
+end;
+
+function StartElevated(const commandline: string): Boolean;
+var
+  filename: string;
+  filepath: string;
+begin
+  filename := Application.ExeName;
+  filepath := ExtractFilePath(filename);
+
+  Result := ShellExecute(0, 'runas', PChar(filename), PChar(commandline),
+    PChar(filepath), SW_SHOW) > 32;
+end;
 
 { TfmOptions }
 
@@ -115,9 +132,11 @@ begin
   AddPropertyPageDetails(TfmPropertyPageExtraPosting, page, '', rstDefaultSettingsHelp, '', Integer(NNTPAccounts.NNTPSettings));
   AddPropertyPageDetails(TfmPropertyPageQuoting, page, '', rstDefaultSettingsHelp, '', Integer(NNTPAccounts.PostingSettings));
   AddPropertyPageDetails(TfmPropertyPageFilters, page, '', '', '', Integer(NNTPAccounts));
+
+  btnDefaultNewsreader.ElevationRequired := IsVistaOrLater;
 end;
 
-procedure TfmOptions.Button1Click(Sender: TObject);
+procedure TfmOptions.btnDefaultNewsreaderClick(Sender: TObject);
 var
   reg, reg1: TRegistry;
 
@@ -148,46 +167,55 @@ var
   end;
 
 begin
-  reg1 := nil;
-  reg := TRegistry.Create(KEY_READ or KEY_WRITE);
-  try
+  if IsVistaOrLater then
+  begin
+    // A second elevated instance will create/write the necessary registry entries.
+    StartElevated('-sadnr');
+  end
+  else
+  begin
     if MessageBox(Handle, PChar(rstConfirmDefaultNewsreader), PChar(Application.Title), MB_YESNO or MB_ICONQUESTION or MB_DEFBUTTON2) <> IDYES then
       Exit;
-    reg.RootKey := HKEY_LOCAL_MACHINE;
 
+    reg1 := nil;
+    reg := TRegistry.Create(KEY_READ or KEY_WRITE);
     try
-      if reg.OpenKey('\Software\Clients\News', True) then
-      begin
-        reg1 := TRegistry.Create(KEY_READ or KEY_WRITE);
-        reg1.RootKey := reg.CurrentKey;
-        if reg1.OpenKey('XanaNews', True) then
+      reg.RootKey := HKEY_LOCAL_MACHINE;
+
+      try
+        if reg.OpenKey('\Software\Clients\News', True) then
         begin
-          reg1.WriteString('', 'XanaNews');
-          SetProtocol(reg1.CurrentKey, 'news');
-          SetProtocol(reg1.CurrentKey, 'snews');
-          SetProtocol(reg1.CurrentKey, 'nntp');
+          reg1 := TRegistry.Create(KEY_READ or KEY_WRITE);
+          reg1.RootKey := reg.CurrentKey;
+          if reg1.OpenKey('XanaNews', True) then
+          begin
+            reg1.WriteString('', 'XanaNews');
+            SetProtocol(reg1.CurrentKey, 'news');
+            SetProtocol(reg1.CurrentKey, 'snews');
+            SetProtocol(reg1.CurrentKey, 'nntp');
 
-          if reg1.OpenKey('shell\open\command', True) then
-            reg1.WriteString('', '"' + ParamStr(0) + '"');
+            if reg1.OpenKey('shell\open\command', True) then
+              reg1.WriteString('', '"' + ParamStr(0) + '"');
+          end;
+
+          reg.WriteString('', 'XanaNews');
+
+          FreeAndNil(reg);
+          FreeAndNil(reg1);
+
+          reg := TRegistry.Create(KEY_READ or KEY_WRITE);
+          reg.RootKey := HKEY_CLASSES_ROOT;
+          SetClasses('nntp');
+          SetClasses('news');
+          SetClasses('snews');
         end;
-
-        reg.WriteString('', 'XanaNews');
-
-        FreeAndNil(reg);
-        FreeAndNil(reg1);
-
-        reg := TRegistry.Create(KEY_READ or KEY_WRITE);
-        reg.RootKey := HKEY_CLASSES_ROOT;
-        SetClasses('nntp');
-        SetClasses('news');
-        SetClasses('snews');
+      except
+        ShowMessage(rstAdminOnly);
       end;
-    except
-      ShowMessage(rstAdminOnly);
+    finally
+      reg1.Free;
+      reg.Free;
     end;
-  finally
-    reg1.Free;
-    reg.Free;
   end;
 end;
 
