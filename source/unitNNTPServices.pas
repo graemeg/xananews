@@ -425,6 +425,7 @@ type
     function MarkOnLeave: Boolean; virtual;
     function FindMsgID(const msgID: RawByteString): TArticleBase;
     function FindUniqueID(const msgID: RawByteString): TArticleBase; virtual;
+    function FindMyXRef(const xref: string): TArticleBase;
 
     function FindArticleNo(cno: Integer): TArticleBase; virtual;
     function LoadGetArticleCount: Integer;
@@ -4799,6 +4800,19 @@ end;
 function TArticleContainer.FindUniqueID(const msgID: RawByteString): TArticleBase;
 begin
   Result := FindMsgID(msgID);
+end;
+
+function TArticleContainer.FindMyXRef(const xref: string): TArticleBase;
+var
+  i: Integer;
+begin
+  Result := nil;
+  for i := 0 to LoadGetArticleCount - 1 do
+    if ArticleBase[i].IsMine and (ArticleBase[i].Header['X-Ref'] = xref) then
+    begin
+      Result := ArticleBase[i];
+      Break;
+    end;
 end;
 
 procedure TArticleContainer.GatherSubjects(article: TArticleBase);

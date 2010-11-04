@@ -10293,7 +10293,12 @@ begin
       begin
         ctnr := NNTPAccounts.FindArticleContainer(accountName, groupName);
         if Assigned(ctnr) then
+        begin
           mart := ctnr.FindMsgID(msgID);
+          // Some servers do change message-ids, try finding it based on the X-Ref header line.
+          if not Assigned(mart) then
+            mart := ctnr.FindMyXRef(art.Header['X-Ref']);
+        end;
       end;
     end
     else
