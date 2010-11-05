@@ -38,14 +38,15 @@ type
     btnRun: TButton;
     btnClose: TButton;
     procedure btnAddClick(Sender: TObject);
-    procedure FormShow(Sender: TObject);
-    procedure btnRemoveClick(Sender: TObject);
     procedure btnPropertiesClick(Sender: TObject);
+    procedure btnRemoveClick(Sender: TObject);
     procedure btnRunClick(Sender: TObject);
+    procedure FormShow(Sender: TObject);
   private
     fBatch: TNNTPBatch;
     function EditBatch(batch: TNNTPBatch): Boolean;
   protected
+    procedure InitListView;
     procedure UpdateActions; override;
   public
     property batch: TNNTPBatch read fBatch;
@@ -56,50 +57,12 @@ var
 
 implementation
 
-uses BatchDialog, NewsGlobals;
+uses
+  BatchDialog, NewsGlobals;
 
 {$R *.dfm}
 
 { TdlgBatches }
-
-procedure TdlgBatches.UpdateActions;
-var
-  selected: Boolean;
-begin
-  selected := Assigned(lvBatches.selected);
-  btnRemove.Enabled := selected;
-  btnProperties.Enabled := selected;
-  btnRun.Enabled := selected;
-end;
-
-procedure TdlgBatches.btnAddClick(Sender: TObject);
-var
-  batch: TNNTPBatch;
-begin
-  batch := TNNTPBatch.Create('');
-  try
-    if EditBatch(batch) and (batch.BatchName <> '') then
-    begin
-      NNTPAccounts.AddBatch(batch);
-      NNTPAccounts.SaveToRegistry;
-      with lvBatches.Items.Add do
-      begin
-        Caption := batch.BatchName;
-        SubItems.Add(batch.BatchTime);
-        if batch.RunAtStart then
-          SubItems.Add('Yes')
-        else
-          SubItems.Add('No');
-        data := batch;
-      end;
-    end
-    else
-      batch.Free;
-  except
-    batch.Free;
-    raise;
-  end;
-end;
 
 function TdlgBatches.EditBatch(batch: TNNTPBatch): Boolean;
 var
@@ -128,8 +91,7 @@ begin
         for i := 0 to dlg.lvActions.Items.Count - 1 do
           if dlg.lvActions.Items[i].Checked then
           begin
-            p := oldNames.IndexOf(dlg.lvActions.Items[i].Caption + '_' +
-                dlg.lvActions.Items[i].SubItems[0]);
+            p := oldNames.IndexOf(dlg.lvActions.Items[i].Caption + '_' + dlg.lvActions.Items[i].SubItems[0]);
 
             if p >= 0 then
             begin
@@ -164,11 +126,11 @@ begin
   end;
 end;
 
-procedure TdlgBatches.FormShow(Sender: TObject);
+procedure TdlgBatches.InitListView;
 var
   i: Integer;
 begin
-  AdjustFormConstraints(self);
+  lvBatches.Clear;
   lvBatches.Items.BeginUpdate;
   try
     for i := 0 to NNTPAccounts.BatchesCount - 1 do
@@ -183,29 +145,47 @@ begin
         data := NNTPAccounts.Batches[i];
       end;
   finally
-    lvBatches.Items.EndUpdate
+    lvBatches.Items.EndUpdate;
   end;
-
-  if lvBatches.Items.Count > 0 then
-    lvBatches.Items[0].selected := True;
 end;
 
-procedure TdlgBatches.btnRemoveClick(Sender: TObject);
+procedure TdlgBatches.UpdateActions;
+var
+  selected: Boolean;
+begin
+  selected := Assigned(lvBatches.selected);
+  btnRemove.Enabled := selected;
+  btnProperties.Enabled := selected;
+  btnRun.Enabled := selected;
+end;
+
+
+procedure TdlgBatches.btnAddClick(Sender: TObject);
 var
   batch: TNNTPBatch;
   idx: Integer;
 begin
-  if Assigned(lvBatches.selected) then
-  begin
-    batch := TNNTPBatch(lvBatches.selected.data);
-    idx := NNTPAccounts.IndexOfBatch(batch);
-
-    if idx >= 0 then
+  batch := TNNTPBatch.Create('');
+  try
+    if EditBatch(batch) and (batch.BatchName <> '') then
     begin
-      NNTPAccounts.DeleteBatch(idx);
+      NNTPAccounts.AddBatch(batch);
       NNTPAccounts.SaveToRegistry;
-      lvBatches.DeleteSelected;
-    end;
+
+      InitListView;
+
+      idx := NNTPAccounts.IndexOfBatch(batch);
+      if idx <> -1 then
+      begin
+        lvBatches.Items[idx].Selected := True;
+        lvBatches.Items[idx].MakeVisible(False);
+      end;
+    end
+    else
+      batch.Free;
+  except
+    batch.Free;
+    raise;
   end;
 end;
 
@@ -231,12 +211,41 @@ begin
   end;
 end;
 
-procedure TdlgBatches.btnRunClick(Sender: TObject);
+procedure TdlgBatches.btnRemoveClick(Sender: TObject);
+var
+  batch: TNNTPBatch;
+  idx: Integer;
 begin
   if Assigned(lvBatches.selected) then
-    fBatch := TNNTPBatch(lvBatches.selected.data)
+  begin
+    batch := TNNTPBatch(lvBatches.selected.data);
+    idx := NNTPAccounts.IndexOfBatch(batch);
+
+    if idx >= 0 then
+    begin
+      NNTPAccounts.DeleteBatch(idx);
+      NNTPAccounts.SaveToRegistry;
+      lvBatches.DeleteSelected;
+    end;
+  end;
+end;
+
+procedure TdlgBatches.btnRunClick(Sender: TObject);
+begin
+  if Assigned(lvBatches.Selected) then
+    fBatch := TNNTPBatch(lvBatches.Selected.Data)
   else
     fBatch := nil;
+end;
+
+procedure TdlgBatches.FormShow(Sender: TObject);
+begin
+  AdjustFormConstraints(Self);
+
+  InitListView;
+
+  if lvBatches.Items.Count > 0 then
+    lvBatches.Items[0].selected := True;
 end;
 
 end.

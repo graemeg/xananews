@@ -1063,6 +1063,11 @@ end;
 
 { TNNTPAccounts }
 
+function SortBatchesFunction(Item1, Item2: Pointer): Integer;
+begin
+  Result := AnsiCompareStr(TNNTPBatch(Item1).BatchName, TNNTPBatch(Item2).BatchName);
+end;
+
 procedure TNNTPAccounts.Add(account: TNNTPAccount);
 begin
   account.fOwner := Self;
@@ -1073,6 +1078,7 @@ end;
 procedure TNNTPAccounts.AddBatch(batch: TNNTPBatch);
 begin
   fBatches.Add(batch);
+  fBatches.Sort(SortBatchesFunction);
 end;
 
 procedure TNNTPAccounts.AddBozoMatching(art: TArticleBase);
@@ -1733,6 +1739,7 @@ begin
           end;
         end;
       end;
+      fBatches.Sort(SortBatchesFunction);
     end;
   finally
     reg2.Free;
