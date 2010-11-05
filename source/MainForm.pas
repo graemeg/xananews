@@ -2658,6 +2658,8 @@ begin
       else
         settings := grp.DisplaySettings;
 
+    dlg.rgManagementAction.ItemIndex := settings.MessagebaseManagementAction;
+
     if settings.MessagebaseManagementDefault then
       dlg.rbMoreThanAMonth.Checked := True
     else
@@ -2701,11 +2703,10 @@ begin
         if Assigned(fn) and Assigned(pc) then
           fn(pc, dlg.rgManagementAction.ItemIndex in [1, 3], Integer(filter));
 
+        settings.MessagebaseManagementAction := dlg.rgManagementAction.ItemIndex;
         if not dlg.rbOlderThan.Checked then
-        begin
           settings.MessagebaseManagementDefault := dlg.rbMoreThanAMonth.Checked;
-          NNTPAccounts.SaveToRegistry;
-        end;
+        NNTPAccounts.SaveToRegistry;
 
       finally
         filter.Free;
@@ -2713,10 +2714,10 @@ begin
 
       Refresh_vstArticles;
       Refresh_vstSubscribed;
-    end
+    end;
   finally
-    dlg.Free
-  end
+    dlg.Free;
+  end;
 end;
 
 procedure TfmMain.actToolsNewsgroupStatisticsExecute(Sender: TObject);
