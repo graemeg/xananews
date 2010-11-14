@@ -131,7 +131,8 @@ uses
   unitNewUserWizard in 'unitNewUserWizard.pas',
   XnCaptionedDockTree in 'XnCaptionedDockTree.pas',
   XnCoderQuotedPrintable in 'XnCoderQuotedPrintable.pas',
-  XnCoderUUE in 'XnCoderUUE.pas';
+  XnCoderUUE in 'XnCoderUUE.pas',
+  unitDefaultNewsreader in 'unitDefaultNewsreader.pas';
 
 {$R *.res}
 {$R I.RES}
@@ -159,6 +160,9 @@ end;
 
 begin
 //  OutputDebugString('SAMPLING OFF');
+  if CheckSetAsDefaultNewsreader then
+    Exit;
+
   if TfmMain.CheckRunOnce then
   begin
     Application.Initialize;
@@ -171,6 +175,6 @@ begin
     Application.Title := 'XanaNews';
     Application.HelpFile := 'XanaNews.chm';
     Application.CreateForm(TfmMain, fmMain);
-    Application.Run
-  end
+    Application.Run;
+  end;
 end.

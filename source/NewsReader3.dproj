@@ -5,7 +5,7 @@
 			<Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
 			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
 			<DCC_DependencyCheckOutputName>..\bin\NewsReader3.exe</DCC_DependencyCheckOutputName>
-			<ProjectVersion>12.2</ProjectVersion>
+			<ProjectVersion>12.3</ProjectVersion>
 			<Config Condition="'$(Config)'==''">Release</Config>
 			<Platform Condition="'$(Platform)'==''">Win32</Platform>
 			<Base>True</Base>
@@ -325,6 +325,7 @@
 			<DCCReference Include="XnCaptionedDockTree.pas"/>
 			<DCCReference Include="XnCoderQuotedPrintable.pas"/>
 			<DCCReference Include="XnCoderUUE.pas"/>
+			<DCCReference Include="unitDefaultNewsreader.pas"/>
 			<BuildConfiguration Include="Debug">
 				<Key>Cfg_2</Key>
 				<CfgParent>Base</CfgParent>
@@ -342,7 +343,7 @@
 			</BuildConfiguration>
 		</ItemGroup>
 		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')" Project="$(BDS)\Bin\CodeGear.Delphi.Targets"/>
-		<Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\8.0\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\8.0\UserTools.proj"/>
+		<Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
 		<ProjectExtensions>
 			<Borland.Personality>Delphi.Personality.12</Borland.Personality>
 			<Borland.ProjectType>VCLApplication</Borland.ProjectType>
@@ -358,7 +359,7 @@
 						<VersionInfo Name="MajorVer">1</VersionInfo>
 						<VersionInfo Name="MinorVer">19</VersionInfo>
 						<VersionInfo Name="Release">1</VersionInfo>
-						<VersionInfo Name="Build">315</VersionInfo>
+						<VersionInfo Name="Build">320</VersionInfo>
 						<VersionInfo Name="Debug">False</VersionInfo>
 						<VersionInfo Name="PreRelease">False</VersionInfo>
 						<VersionInfo Name="Special">False</VersionInfo>
@@ -370,7 +371,7 @@
 					<VersionInfoKeys>
 						<VersionInfoKeys Name="CompanyName">Colin Wilson</VersionInfoKeys>
 						<VersionInfoKeys Name="FileDescription">XanaNews News Reader</VersionInfoKeys>
-						<VersionInfoKeys Name="FileVersion">1.19.1.315</VersionInfoKeys>
+						<VersionInfoKeys Name="FileVersion">1.19.1.320</VersionInfoKeys>
 						<VersionInfoKeys Name="InternalName">XanaNews</VersionInfoKeys>
 						<VersionInfoKeys Name="LegalCopyright">Copyright (c) XanaNews 2010</VersionInfoKeys>
 						<VersionInfoKeys Name="LegalTrademarks">All Rights Reserved</VersionInfoKeys>
