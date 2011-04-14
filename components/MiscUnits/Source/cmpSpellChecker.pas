@@ -234,12 +234,19 @@ begin
     ch := ws[p];
 
     // Keep track of 'start of line' so we can
-    // detect quoted lines.
+    // detect quoted lines and signatures.
     if (ch = #$d) or (ch = #$a) then
       lp := 0
     else
       if lp = 1 then
+      begin
         InQuoteLine := Pos(ch, QuoteChars) > 0;
+        if (ch = '-') and (ws[p+1] = '-') and (ws[p+2] = ' ') and (ws[p+3] = #$D) and (ws[p+4] = #$A) then
+        begin
+          Result := True;
+          Exit;
+        end;
+      end;
 
     if IsWideCharAlNum(ch) or (Word(ch) = Word('''')) then
     begin

@@ -106,11 +106,11 @@ object fmSpellChecker: TfmSpellChecker
     AutoURLDetect = False
     AutoURLExecute = False
     BevelWidth = 0
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clBlack
-    Font.Height = -11
-    Font.Name = 'MS Sans Serif'
-    Font.Style = []
+    font.Charset = ANSI_CHARSET
+    font.Color = clBlack
+    font.Height = -11
+    font.Name = 'MS Sans Serif'
+    font.Style = []
     HideSelection = False
     ParentFont = False
     TabOrder = 0

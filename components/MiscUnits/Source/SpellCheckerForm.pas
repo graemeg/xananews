@@ -31,22 +31,22 @@ type
     procedure btnAddClick(Sender: TObject);
     procedure btnSkipAllClick(Sender: TObject);
   private
-    fChecker : TCWSpellChecker;
-    fText : WideString;
-    fBadWord : WideString;
-    fBadSS : Integer;
-    fIgnoreWords : TStringList;
-    fSS, fSE : Integer;
+    fChecker: TCWSpellChecker;
+    fText: WideString;
+    fBadWord: WideString;
+    fBadSS: Integer;
+    fIgnoreWords: TStringList;
+    fSS, fSE: Integer;
     fQuoteChars: string;
-    procedure ErrorFoundAt (ss, se : Integer; suggestions : TStrings);
+    procedure ErrorFoundAt(ss, se: Integer; suggestions: TStrings);
     procedure NextWord;
-    function GetChangedWord : WideString;
+    function GetChangedWord: WideString;
   protected
     procedure UpdateActions; override;
   public
     destructor Destroy; override;
-    procedure Initialize (checker : TCWSpellChecker; ss, se : Integer; suggestions : TStrings);
-    property QuoteChars : string read fQuoteChars write fQuoteChars;
+    procedure Initialize(checker: TCWSpellChecker; ss, se: Integer; suggestions: TStrings);
+    property QuoteChars: string read fQuoteChars write fQuoteChars;
   end;
 
 var
@@ -54,13 +54,15 @@ var
 
 implementation
 
-uses unitCharsetMap;
+uses
+  unitCharsetMap;
 
 {$R *.dfm}
 
 { TfmSpellChecker }
 
-procedure TfmSpellChecker.Initialize(checker : TCWSpellChecker; ss, se : Integer; suggestions : TStrings);
+procedure TfmSpellChecker.Initialize(checker: TCWSpellChecker; ss, se: Integer;
+  suggestions: TStrings);
 begin
   fChecker := checker;
   fText := fChecker.ExRichEdit.Text;
@@ -69,28 +71,25 @@ begin
   fChecker.ExRichEdit.SetRawSelection(ss, se);
   fSS := ss;
   fSE := se;
-  reText.SetRawSelection (ss, se);
+  reText.SetRawSelection(ss, se);
   fBadWord := fChecker.ExRichEdit.SelText;
 
-  ErrorFoundAt (ss, se, suggestions);
+  ErrorFoundAt(ss, se, suggestions);
 end;
-
 
 procedure TfmSpellChecker.FormDestroy(Sender: TObject);
 begin
-  fmSpellChecker := Nil
+  fmSpellChecker := nil;
 end;
 
-procedure TfmSpellChecker.FormClose(Sender: TObject;
-  var Action: TCloseAction);
+procedure TfmSpellChecker.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-  Action := caFree
+  Action := caFree;
 end;
 
-procedure TfmSpellChecker.ErrorFoundAt(ss, se: Integer;
-  suggestions: TStrings);
+procedure TfmSpellChecker.ErrorFoundAt(ss, se: Integer; suggestions: TStrings);
 var
-  i : Integer;
+  i: Integer;
 begin
   fBadSS := ss;
 
@@ -99,16 +98,16 @@ begin
     lvSuggestions.Items.Clear;
     for i := 0 to suggestions.Count - 1 do
       with lvSuggestions.Items.Add do
-        Caption := suggestions [i];
+        Caption := suggestions[i];
   finally
-    lvSuggestions.Items.EndUpdate
-  end
+    lvSuggestions.Items.EndUpdate;
+  end;
 end;
 
 procedure TfmSpellChecker.UpdateActions;
 var
-  errorFound : boolean;
-  canChange : boolean;
+  errorFound: Boolean;
+  canChange: Boolean;
 begin
   errorFound := fBadWord <> '';
 
@@ -126,19 +125,19 @@ begin
     btnSkipAll.Enabled := False;
     btnChange.Enabled := False;
     btnChangeAll.Enabled := False;
-  end
+  end;
 end;
 
 procedure TfmSpellChecker.btnSkipClick(Sender: TObject);
 begin
-  NextWord
+  NextWord;
 end;
 
 procedure TfmSpellChecker.NextWord;
 var
-  ss, se : Integer;
-  suggestions : TStrings;
-  ok : boolean;
+  ss, se: Integer;
+  suggestions: TStrings;
+  ok: Boolean;
 begin
   repeat
     reText.GetRawSelection(ss, se);
@@ -149,23 +148,24 @@ begin
       if not ok then
       begin
         fChecker.ExRichEdit.SetRawSelection(ss, se);
-        reText.SetRawSelection (ss, se);
+        reText.SetRawSelection(ss, se);
         fBadWord := fChecker.ExRichEdit.SelText;
-        if not Assigned (fIgnoreWords) or (fIgnoreWords.IndexOf(fBadWord) = -1) then
+        if not Assigned(fIgnoreWords) or
+          (fIgnoreWords.IndexOf(fBadWord) = -1) then
         begin
-          ErrorFoundAt (ss, se, suggestions);
-          break
-        end
+          ErrorFoundAt(ss, se, suggestions);
+          Break;
+        end;
       end
       else
       begin
         ModalResult := mrOK;
-        break
+        Break;
       end
     finally
-      suggestions.Free
-    end
-  until False
+      suggestions.Free;
+    end;
+  until False;
 end;
 
 procedure TfmSpellChecker.btnChangeClick(Sender: TObject);
@@ -179,15 +179,15 @@ begin
   begin
     fChecker.ExRichEdit.SelText := lvSuggestions.Selected.Caption;
     fText := fChecker.ExRichEdit.Text;
-    reText.SelText := lvSuggestions.Selected.Caption
+    reText.SelText := lvSuggestions.Selected.Caption;
   end;
-  NextWord
+  NextWord;
 end;
 
 procedure TfmSpellChecker.btnChangeAllClick(Sender: TObject);
 var
-  ss : Integer;
-  newWord : string;
+  ss: Integer;
+  newWord: string;
 begin
   if reText.Text <> fText then
     newWord := GetChangedWord
@@ -196,77 +196,78 @@ begin
 
   ss := fBadSS - 1;
 
-  fText := Copy (fText, 1, ss) + StringReplace (Copy (fText, ss + 1, MaxInt), fBadWord, newWord, [rfReplaceAll, rfIgnoreCase]);
+  fText := Copy(fText, 1, ss) + StringReplace(Copy(fText, ss + 1, MaxInt),
+    fBadWord, newWord, [rfReplaceAll, rfIgnoreCase]);
   fChecker.ExRichEdit.Text := fText;
   reText.Text := fText;
 
-  reText.SetRawSelection(ss + 1, ss + 1 + Length (newWord));
+  reText.SetRawSelection(ss + 1, ss + 1 + Length(newWord));
 
   NextWord;
 end;
 
 procedure TfmSpellChecker.lvSuggestionsDblClick(Sender: TObject);
 begin
-  btnChangeClick (nil)
+  btnChangeClick(nil);
 end;
 
 function TfmSpellChecker.GetChangedWord: WideString;
 var
-  changedText : WideString;
-  p, l, ew : Integer;
-  ch : WideChar;
+  changedText: WideString;
+  p, l, ew: Integer;
+  ch: WideChar;
 begin
   changedText := reText.Text;
-  l := Length (changedText);
+  l := Length(changedText);
   p := fBadSS;
 
   ew := -1;
 
   while p < l do
   begin
-    ch := changedText [p];
+    ch := changedText[p];
 
-    if IsWideCharAlNum (ch) or (word (ch) = Word ('''')) then
+    if IsWideCharAlNum(ch) or (word(ch) = word('''')) then
       ew := p
     else
-      break;
+      Break;
 
-    Inc (p)
+    Inc(p)
   end;
 
   if ew = -1 then
-    result := ''
+    Result := ''
   else
-    result := Copy (changedText, fBadSS, ew - fBadSS + 1);
+    Result := Copy(changedText, fBadSS, ew - fBadSS + 1);
 end;
 
 procedure TfmSpellChecker.btnAddClick(Sender: TObject);
 begin
-  fChecker.Add (fBadWord);
-  NextWord
+  fChecker.Add(fBadWord);
+  NextWord;
 end;
 
 destructor TfmSpellChecker.Destroy;
 begin
   fIgnoreWords.Free;
 
-  inherited;
+  inherited Destroy;
 end;
 
 procedure TfmSpellChecker.btnSkipAllClick(Sender: TObject);
 begin
-  if not Assigned (fIgnoreWords) then
+  if not Assigned(fIgnoreWords) then
   begin
     fIgnoreWords := TStringList.Create;
-    fIgnoreWords.CaseSensitive := False
+    fIgnoreWords.CaseSensitive := False;
   end;
   fIgnoreWords.Add(fBadWord);
-  NextWord
+  NextWord;
 end;
 
 procedure TfmSpellChecker.FormShow(Sender: TObject);
 begin
-  reText.SetRawSelection (fSS, fSE);
+  reText.SetRawSelection(fSS, fSE);
 end;
 
 end.

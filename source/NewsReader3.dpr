@@ -11,6 +11,8 @@ program NewsReader3;
 
 uses
   FastMM4,
+//  ScaleMM2,
+//  SynScaleMM,
 {$ifdef madExcept}
   madExcept,
   madLinkDisAsm,
