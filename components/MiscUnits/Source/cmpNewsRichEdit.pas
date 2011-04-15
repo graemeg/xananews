@@ -270,7 +270,7 @@ begin
     begin                       // of a highlighted block - before the terminating
       fInHighlight := False;    // indicators.  Clear the highlight flags and skip
                                 // the terminating indicators
-      while (p^ = '*') or (p^ = '/') or (p^ = '_') do
+      while (p^ = '*') or (p^ = '/') or (p^ = '_') or (p^ = '+') do
       begin
         Inc(p);
         Inc(i);
@@ -380,7 +380,7 @@ begin
       fEOL := False;
 
                                 // Is it an indicator char, with the previous char = whitespace ???
-      if ((pc = ' ') or (pc = #13) or (pc = #10)) and ((c = '*') or (c = '/') or (c = '_')) then
+      if ((pc = ' ') or (pc = #13) or (pc = #10)) and ((c = '*') or (c = '/') or (c = '_') or (c = '+')) then
       begin
                                 // This *may* be the start of highlighted text!
         p1 := p;
@@ -388,13 +388,13 @@ begin
         n := 0;
         c := p1^;
                                 // Group all potential indicator chars together.
-        while (c = '*') or (c = '/') or (c = '_') do
+        while (c = '*') or (c = '/') or (c = '_') or (c = '+') do
         begin
           Inc(n);
           if c = '*' then
             hl := hl + [fsBold]
           else
-            if c = '/' then
+            if (c = '/') or (c = '+') then
               hl := hl + [fsItalic]
             else
               if c = '_' then
@@ -412,11 +412,11 @@ begin
         end;
 
                                 // Did we have whitespace, indicator chars, alpha chars, indicator chars ???
-        if (p1^ = '*') or (p1^ = '/') or (p1^ = '_') then
+        if (p1^ = '*') or (p1^ = '/') or (p1^ = '_') or (p1^ = '+') then
         begin
           repeat
             Inc(p1);
-          until not ((p1^ = '*') or (p1^ = '/') or (p1^ = '_'));
+          until not ((p1^ = '*') or (p1^ = '/') or (p1^ = '_') or (p1^ = '+'));
 
                                 // It looks like a highlighted word - but be careful we're not
                                 // in the middle of a URL or filename!
