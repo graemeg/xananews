@@ -175,6 +175,21 @@ var
       Result := True;
   end;
 
+  function IsUrl: Boolean;
+  begin
+    Result := False;
+    // Is it a start of an url?  If so, skip the rest till a whitespace is found.
+    if ((l - p) >= 2) and (ch = ':') and (ws[p+1] = '/') and (ws[p+2] = '/')  then
+    begin
+      Result := True;
+      while (p <= l) and not (ch in [#$D, #$A, ' ']) do
+      begin
+        Inc(p);
+        ch := ws[p];
+      end;
+    end;
+  end;
+
 begin
   l := Length(ws);
   if l = 0 then
@@ -195,13 +210,13 @@ begin
     while (p <= l) do
     begin
       ch := ws[p];
-      if (ch = #$a) or (ch = #$d) then
+      if (ch = #$A) or (ch = #$D) then
         Break
       else
         Inc(p);
     end;
 
-    while (p <= l) and ((ch = #$a) or (ch = #$d)) do
+    while (p <= l) and ((ch = #$A) or (ch = #$D)) do
     begin
       Inc(p);
       ch := ws[p];
@@ -219,7 +234,7 @@ begin
   while (lp > 1) do
   begin
     ch := ws[lp - 1];
-    if (ch = #$d) or (ch = #$a) then
+    if (ch = #$D) or (ch = #$A) then
     begin
       InQuoteLine := Pos(ws[lp], QuoteChars) > 0;
       Break;
@@ -235,13 +250,13 @@ begin
 
     // Keep track of 'start of line' so we can
     // detect quoted lines and signatures.
-    if (ch = #$d) or (ch = #$a) then
+    if (ch = #$D) or (ch = #$A) then
       lp := 0
     else
       if lp = 1 then
       begin
         InQuoteLine := Pos(ch, QuoteChars) > 0;
-        if (ch = '-') and (ws[p+1] = '-') and (ws[p+2] = ' ') and (ws[p+3] = #$D) and (ws[p+4] = #$A) then
+        if ((l - p) >= 4) and (ch = '-') and (ws[p+1] = '-') and (ws[p+2] = ' ') and (ws[p+3] = #$D) and (ws[p+4] = #$A) then
         begin
           Result := True;
           Exit;
@@ -254,11 +269,12 @@ begin
         sw := p;
       ew := p;
     end
-    else if sw <> -1 then
-      if not InQuoteLine then
-        Result := DoCheck // End of word found.  Check it.
-      else
-        sw := -1;
+    else
+      if sw <> -1 then
+        if not InQuoteLine and not IsUrl then
+          Result := DoCheck // End of word found.  Check it.
+        else
+          sw := -1;
     Inc(p);
     Inc(lp);
   end;

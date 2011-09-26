@@ -102,6 +102,16 @@ begin
   finally
     lvSuggestions.Items.EndUpdate;
   end;
+
+  if lvSuggestions.Items.Count > 0 then
+  begin
+    lvSuggestions.ItemFocused := lvSuggestions.Items[0];
+    lvSuggestions.Selected    := lvSuggestions.Items[0];
+    ActiveControl := lvSuggestions;
+
+    btnFinish.Default := False;
+    btnChange.Default := True;
+  end;
 end;
 
 procedure TfmSpellChecker.UpdateActions;
@@ -161,7 +171,7 @@ begin
       begin
         ModalResult := mrOK;
         Break;
-      end
+      end;
     finally
       suggestions.Free;
     end;
@@ -232,7 +242,7 @@ begin
     else
       Break;
 
-    Inc(p)
+    Inc(p);
   end;
 
   if ew = -1 then
