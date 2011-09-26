@@ -7117,19 +7117,19 @@ begin
                 if article.IsReply then
                   XNOptions.Appearance[apReplies].ApplyFontAndGetColor(Canvas.Font)
                 else
-                  if article.IsXanaNews and not XNOptions.DontHighlightXanaNewsUsers then
+                  if Assigned(article.Parent) and article.IsXanaNews and not XNOptions.DontHighlightXanaNewsUsers then
                     XNOptions.Appearance[apXananewsMessages].ApplyFontAndGetColor(Canvas.Font)
                   else
                     XNOptions.Appearance[apMessagesToMe].ApplyFontAndGetColor(Canvas.Font)
+            else
+              if article.IsXanaNews and not XNOptions.DontHighlightXanaNewsUsers then
+                XNOptions.Appearance[apXananewsMessages].ApplyFontAndGetColor(Canvas.Font)
               else
-                if article.IsXanaNews and not XNOptions.DontHighlightXanaNewsUsers then
-                  XNOptions.Appearance[apXananewsMessages].ApplyFontAndGetColor(Canvas.Font)
+                if article.HasNoReplies and not (XNOptions.Appearance[apChildlessMessages].Equals(XNOptions.Appearance[apMessageHeaders])) then
+                  XNOptions.Appearance[apChildlessMessages].ApplyFontAndGetColor(Canvas.Font)
                 else
-                  if article.HasNoReplies and not (XNOptions.Appearance[apChildlessMessages].Equals(XNOptions.Appearance[apMessageHeaders])) then
-                    XNOptions.Appearance[apChildlessMessages].ApplyFontAndGetColor(Canvas.Font)
-                  else
-                    if article.IsDormant then
-                      XNOptions.Appearance[apDormantMessages].ApplyFontAndGetColor(Canvas.Font);
+                  if article.IsDormant then
+                    XNOptions.Appearance[apDormantMessages].ApplyFontAndGetColor(Canvas.Font);
       end;
     end;
 
@@ -9779,7 +9779,10 @@ begin
             if not article.HasMsg or (MessageScrollBox1.VertScrollBar.Position + pageIncrement >= MessageScrollBox1.VertScrollBar.Range) then
               NextArticle([naMarkAsRead, naUnreadOnly, naCanWrap, naCanLeaveGroup, naCircularAccounts], GetFocusedArticle)
             else
+            begin
+              pageIncrement := pageIncrement - MessageScrollBox1.LineHeight;
               MessageScrollBox1.VertScrollBar.Position := MessageScrollBox1.VertScrollBar.Position + pageIncrement;
+            end;
           end;
       end;
 
