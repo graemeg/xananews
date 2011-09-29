@@ -6,7 +6,7 @@
 			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
 			<DCC_DependencyCheckOutputName>..\bin\NewsReader3.exe</DCC_DependencyCheckOutputName>
 			<ProjectVersion>13.4</ProjectVersion>
-			<Config Condition="'$(Config)'==''">Full Debug mode</Config>
+			<Config Condition="'$(Config)'==''">Release</Config>
 			<Base>True</Base>
 			<AppType>Application</AppType>
 			<FrameworkType>VCL</FrameworkType>
@@ -31,6 +31,12 @@
 			<CfgParent>Base</CfgParent>
 			<Base>true</Base>
 		</PropertyGroup>
+		<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
+			<Cfg_1_Win32>true</Cfg_1_Win32>
+			<CfgParent>Cfg_1</CfgParent>
+			<Cfg_1>true</Cfg_1>
+			<Base>true</Base>
+		</PropertyGroup>
 		<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_2)'!=''">
 			<Cfg_2>true</Cfg_2>
 			<CfgParent>Base</CfgParent>
@@ -51,8 +57,8 @@
 			<Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
 			<Icon_MainIcon>XanaNews_Icon.ico</Icon_MainIcon>
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-			<VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.19.1.325;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2011;LegalTrademarks=All Rights Reserved;OriginalFilename=NewsReader3.exe;ProductName=XanaNews;ProductVersion=1.19.1.320;Comments=</VerInfo_Keys>
-			<VerInfo_Build>325</VerInfo_Build>
+			<VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.19.1.328;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2011;LegalTrademarks=All Rights Reserved;OriginalFilename=NewsReader3.exe;ProductName=XanaNews;ProductVersion=1.19.1.320;Comments=</VerInfo_Keys>
+			<VerInfo_Build>328</VerInfo_Build>
 			<VerInfo_MinorVer>19</VerInfo_MinorVer>
 			<VerInfo_Release>1</VerInfo_Release>
 			<VerInfo_Locale>2057</VerInfo_Locale>
@@ -88,6 +94,11 @@
 			<DCC_AssertionsAtRuntime>false</DCC_AssertionsAtRuntime>
 			<Version>7.0</Version>
 			<DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
+			<VerInfo_Build>328</VerInfo_Build>
+			<VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=1.19.1.328;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+			<VerInfo_Locale>1033</VerInfo_Locale>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_2)'!=''">
 			<Manifest_File>None</Manifest_File>

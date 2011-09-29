@@ -231,7 +231,6 @@ object fmMain: TfmMain
         DragHeight = 20
         DragMode = dmAutomatic
         Header.AutoSizeIndex = -1
-        Header.DefaultHeight = 17
         Header.Font.Charset = DEFAULT_CHARSET
         Header.Font.Color = clWindowText
         Header.Font.Height = -11
@@ -332,7 +331,6 @@ object fmMain: TfmMain
           Anchors = [akLeft, akTop, akRight, akBottom]
           BevelInner = bvNone
           Header.AutoSizeIndex = 0
-          Header.DefaultHeight = 17
           Header.Font.Charset = DEFAULT_CHARSET
           Header.Font.Color = clWindowText
           Header.Font.Height = -11
@@ -472,7 +470,6 @@ object fmMain: TfmMain
       Font.Name = 'Tahoma'
       Font.Style = []
       Header.AutoSizeIndex = 0
-      Header.DefaultHeight = 17
       Header.MainColumn = -1
       Header.Options = [hoColumnResize, hoDrag]
       Header.ParentFont = True
@@ -527,7 +524,6 @@ object fmMain: TfmMain
         HelpKeyword = 'Workspace'
         Align = alClient
         Header.AutoSizeIndex = -1
-        Header.DefaultHeight = 17
         Header.Options = [hoAutoResize, hoColumnResize, hoDrag]
         Header.ParentFont = True
         HintAnimation = hatNone

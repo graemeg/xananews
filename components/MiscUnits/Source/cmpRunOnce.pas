@@ -36,6 +36,9 @@ type
 
 implementation
 
+type
+  PDWORD_PTR = ^DWORD_PTR;
+
 function SendMessageTimeout(hWnd: HWND; Msg: UINT; wParam: WPARAM;
   lParam: LPARAM; fuFlags, uTimeout: UINT; lpdwResult: PDWORD_PTR): LRESULT;
   stdcall; external user32 name 'SendMessageTimeoutW';

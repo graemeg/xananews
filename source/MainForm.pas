@@ -1174,6 +1174,13 @@ type
     class function CheckRunOnce: Boolean;
   end;
 
+type
+  PDWORD_PTR = ^DWORD_PTR;
+
+function SendMessageTimeout(hWnd: HWND; Msg: UINT; wParam: WPARAM;
+  lParam: LPARAM; fuFlags, uTimeout: UINT; lpdwResult: PDWORD_PTR): LRESULT;
+  stdcall; external user32 name 'SendMessageTimeoutW';
+
 var
   fmMain: TfmMain;
   gUniqueMessage: DWORD;
@@ -1219,7 +1226,7 @@ var
   cds: TCopyDataStruct;
   str: string;
 begin
-  if (SendMessageTimeout(hwnd, lParam, 0, 0, SMTO_BLOCK or SMTO_ABORTIFHUNG, 1000, msgResult) <> 0) and (msgResult = $F00B00) then
+  if (SendMessageTimeout(hwnd, lParam, 0, 0, SMTO_BLOCK or SMTO_ABORTIFHUNG, 1000, @msgResult) <> 0) and (msgResult = $F00B00) then
   begin
     if ParamCount >= 1 then
     begin
