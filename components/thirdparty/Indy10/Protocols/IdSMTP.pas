@@ -217,6 +217,7 @@ type
     FAuthType: TIdSMTPAuthenticationType;
     // This is just an internal flag we use to determine if we already authenticated to the server.
     FDidAuthenticate: Boolean;
+    FValidateAuthLoginCapability: Boolean;
     // FSASLMechanisms : TIdSASLList;
     FSASLMechanisms : TIdSASLEntries;
     //
@@ -238,7 +239,7 @@ type
     procedure Connect; override;
     procedure Disconnect(ANotifyPeer: Boolean); override;
     procedure DisconnectNotifyPeer; override;
-    class procedure QuickSend(const AHost, ASubject, ATo, AFrom, AText: string); overload; {$IFDEF HAS_DEPRECATED}deprecated{$IFDEF HAS_DEPRECATED_MSG} 'Use newer overload of QuickSend()'{$ENDIF};{$ENDIF}
+    class procedure QuickSend(const AHost, ASubject, ATo, AFrom, AText: string); overload; {$IFDEF HAS_DEPRECATED}deprecated{$IFDEF HAS_DEPRECATED_MSG} 'Use ContentType overload of QuickSend()'{$ENDIF};{$ENDIF}
     class procedure QuickSend(const AHost, ASubject, ATo, AFrom, AText, AContentType, ACharset, AContentTransferEncoding: string); overload;
     procedure Expand(AUserName : String; AResults : TStrings); virtual;
     function Verify(AUserName : String) : String; virtual;
@@ -254,6 +255,8 @@ type
     property SASLMechanisms : TIdSASLEntries read FSASLMechanisms write SetSASLMechanisms;
     property UseTLS;
     property Username;
+    property ValidateAuthLoginCapability: Boolean read FValidateAuthLoginCapability
+      write FValidateAuthLoginCapability default True;
     //
     property OnTLSNotAvailable;
   end;
@@ -319,41 +322,44 @@ begin
     satDefault:
       begin
         if Username <> '' then begin
-          s := SASLMechanisms.ParseCapaReply(Capabilities);
-          try
-            //many servers today do not use username/password authentication
-            if s.IndexOf('LOGIN') > -1 then begin
-              with TIdEncoderMIME.Create(nil) do try
-                SendCmd('AUTH LOGIN', 334);
-                SendCmd(Encode(Username), 334);
-                SendCmd(Encode(Password), 235);
-              finally
-                Free;
+          if FValidateAuthLoginCapability then begin
+            s := TStringList.Create;
+            try
+              SASLMechanisms.ParseCapaReplyToList(Capabilities, s);
+              //many servers today do not use username/password authentication
+              if s.IndexOf('LOGIN') = -1 then begin
+                Result := False;
+                Exit;
               end;
-              FDidAuthenticate := True;
+            finally
+              FreeAndNil(s);
+            end;
+          end;
+          with TIdEncoderMIME.Create(nil) do try
+            SendCmd('AUTH LOGIN', 334);
+            if SendCmd(Encode(Username), [235, 334]) = 334 then begin
+              SendCmd(Encode(Password), 235);
             end;
           finally
-            FreeAndNil(s);
+            Free;
           end;
+          FDidAuthenticate := True;
         end;
 {
         RLebeau: TODO - implement the following code in the future
         instead of the code above.  This way, TIdSASLLogin can be utilized.
 
-        if SASLMechanisms.Count = 0 then begin
-          EIdSASLMechNeeded.Toss(RSASLRequired);
-        end;
-        FDidAuthenticate := SASLMechanisms.LoginSASL('AUTH', 'LOGIN', ['235'], ['334'], Self, Capabilities);
+        SASLMechanisms.LoginSASL('AUTH', 'LOGIN', ['235'], ['334'], Self, Capabilities);
+        FDidAuthenticate := True;
 }
       end;
     satSASL:
       begin
-        if SASLMechanisms.Count = 0 then begin
-          EIdSASLMechNeeded.Toss(RSASLRequired);
-        end;
-        FDidAuthenticate := SASLMechanisms.LoginSASL('AUTH',FHost,IdGSKSSN_smtp, ['235'], ['334'], Self, Capabilities); {do not localize}
+        SASLMechanisms.LoginSASL('AUTH', FHost, IdGSKSSN_smtp, ['235'], ['334'], Self, Capabilities); {do not localize}
+        FDidAuthenticate := True;
       end;
   end;
+
   Result := FDidAuthenticate;
 end;
 
@@ -375,6 +381,7 @@ begin
   inherited InitComponent;
   FSASLMechanisms := TIdSASLEntries.Create(Self);
   FAuthType := DEF_SMTP_AUTH;
+  FValidateAuthLoginCapability := True;
 end;
 
 procedure TIdSMTP.DisconnectNotifyPeer;

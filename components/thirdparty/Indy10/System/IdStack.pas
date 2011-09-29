@@ -313,6 +313,8 @@ type
     //multicast stuff Kudzu permitted me to add here.
     function IsValidIPv4MulticastGroup(const Value: string): Boolean;
     function IsValidIPv6MulticastGroup(const Value: string): Boolean;
+    procedure SetKeepAliveValues(ASocket: TIdStackSocketHandle;
+      const AEnabled: Boolean; const ATimeMS, AInterval: Integer); virtual;
     procedure SetMulticastTTL(AHandle: TIdStackSocketHandle;
       const AValue : Byte; const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION); virtual; abstract;
     procedure SetLoopBack(AHandle: TIdStackSocketHandle; const AValue: Boolean;
@@ -374,7 +376,7 @@ uses
   IdStackUnix,
     {$ENDIF}
   {$ENDIF}
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
     {$IFDEF USE_INLINE}
   Windows,
     {$ENDIF}
@@ -724,8 +726,11 @@ begin
     Id_WSAEMSGSIZE: Result        := RSStackEMSGSIZE;
     Id_WSAEPROTOTYPE: Result      := RSStackEPROTOTYPE;
     Id_WSAENOPROTOOPT: Result     := RSStackENOPROTOOPT;
+
     Id_WSAEPROTONOSUPPORT: Result := RSStackEPROTONOSUPPORT;
+    {$IFNDEF BEOS}
     Id_WSAESOCKTNOSUPPORT: Result := RSStackESOCKTNOSUPPORT;
+    {$ENDIF}
     Id_WSAEOPNOTSUPP: Result      := RSStackEOPNOTSUPP;
     Id_WSAEPFNOSUPPORT: Result    := RSStackEPFNOSUPPORT;
     Id_WSAEAFNOSUPPORT: Result    := RSStackEAFNOSUPPORT;
@@ -740,7 +745,9 @@ begin
     Id_WSAEISCONN: Result         := RSStackEISCONN;
     Id_WSAENOTCONN: Result        := RSStackENOTCONN;
     Id_WSAESHUTDOWN: Result       := RSStackESHUTDOWN;
+    {$IFNDEF BEOS}
     Id_WSAETOOMANYREFS: Result    := RSStackETOOMANYREFS;
+    {$ENDIF}
     Id_WSAETIMEDOUT: Result       := RSStackETIMEDOUT;
     Id_WSAECONNREFUSED: Result    := RSStackECONNREFUSED;
     Id_WSAELOOP: Result           := RSStackELOOP;
@@ -901,6 +908,12 @@ begin
   Result := not Word(LCRC);
 end;
 
+procedure TIdStack.SetKeepAliveValues(ASocket: TIdStackSocketHandle;
+  const AEnabled: Boolean; const ATimeMS, AInterval: Integer);
+begin
+  SetSocketOption(ASocket, Id_SOL_SOCKET, Id_SO_KEEPALIVE, iif(AEnabled, 1, 0));
+end;
+
 initialization
   //done this way so we can have a separate stack just for FPC under Unix systems
   GStackClass :=
@@ -915,7 +928,7 @@ initialization
       TIdStackUnix;
       {$ENDIF}
     {$ENDIF}
-    {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+    {$IFDEF WINDOWS}
     TIdStackWindows;
     {$ENDIF}
     {$IFDEF DOTNET}

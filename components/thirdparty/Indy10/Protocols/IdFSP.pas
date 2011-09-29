@@ -410,11 +410,11 @@ uses
   Libc,
   {$ENDIF}
   {$IFDEF USE_VCL_POSIX}
-  PosixSysSelect,
-  PosixSysTime,
-  PosixUnistd,
+  Posix.SysSelect,
+  Posix.SysTime,
+  Posix.Unistd,
   {$ENDIF}
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
     {$IFDEF USE_INLINE}
   Windows,
     {$ELSE}

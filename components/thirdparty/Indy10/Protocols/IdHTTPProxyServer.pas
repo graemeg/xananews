@@ -136,6 +136,7 @@ type
     FCommand: String;
     FDocument: String;
     FOutboundClient: TIdTCPConnection;
+    FTarget: String;
     FTransferMode: TIdHTTPProxyTransferMode;
     FTransferSource: TIdHTTPProxyTransferSource;
   public
@@ -145,6 +146,7 @@ type
     property Command: String read FCommand;
     property Document: String read FDocument;
     property OutboundClient: TIdTCPConnection read FOutboundClient;
+    property Target: String read FTarget;
     property TransferMode: TIdHTTPProxyTransferMode read FTransferMode write FTransferMode;
     property TransferSource: TIdHTTPProxyTransferSource read FTransferSource;
   end;
@@ -192,6 +194,7 @@ end;
 destructor TIdHTTPProxyServerContext.Destroy;
 begin
   FreeAndNil(FHeaders);
+  inherited Destroy;
 end;
 
 { TIdHTTPProxyServer }
@@ -307,10 +310,11 @@ begin
 
   LContext := TIdHTTPProxyServerContext(ASender.Context);
   LContext.FCommand := ASender.CommandHandler.Command;
+  LContext.FTarget := ASender.Params.Strings[0];
 
   LContext.FOutboundClient := TIdTCPClient.Create(nil);
   try
-    LURI := TIdURI.Create(ASender.Params.Strings[0]);
+    LURI := TIdURI.Create(LContext.Target);
     try
       TIdTCPClient(LContext.FOutboundClient).Host := LURI.Host;
       TIdTCPClient(LContext.FOutboundClient).Port := IndyStrToInt(LURI.Port, 80);
@@ -360,7 +364,8 @@ begin
 
   LContext := TIdHTTPProxyServerContext(ASender.Context);
   LContext.FCommand := ASender.CommandHandler.Command;
-
+  LContext.FTarget := ASender.Params.Strings[0];
+ 
   LContext.FOutboundClient := TIdTCPClient.Create(nil);
   try
     LClientToServerStream := nil;
@@ -369,7 +374,7 @@ begin
       LClientToServerStream := TIdTCPStream.Create(LContext.FOutboundClient);
       LServerToClientStream := TIdTCPStream.Create(LContext.Connection);
 
-      LRemoteHost := ASender.Params.Strings[0];
+      LRemoteHost := LContext.Target;
       TIdTCPClient(LContext.FOutboundClient).Host := Fetch(LRemoteHost, ':', True);
       TIdTCPClient(LContext.FOutboundClient).Port := IndyStrToInt(LRemoteHost, 443);
 
@@ -412,22 +417,22 @@ begin
 
               if not LContext.Connection.IOHandler.InputBufferIsEmpty then
               begin
-                LContext.Connection.IOHandler.ReadStream(LClientToServerStream, -1, True);
+                LContext.Connection.IOHandler.InputBuffer.ExtractToStream(LClientToServerStream);
               end;
               if not LContext.FOutboundClient.IOHandler.InputBufferIsEmpty then
               begin
-                LContext.FOutboundClient.IOHandler.ReadStream(LServerToClientStream, -1, True);
+                LContext.FOutboundClient.IOHandler.InputBuffer.ExtractToStream(LServerToClientStream);
               end;
-            end;        
+            end;
           end;
 
           if LContext.FOutboundClient.Connected and (not LContext.Connection.IOHandler.InputBufferIsEmpty) then
           begin
-            LContext.Connection.IOHandler.ReadStream(LClientToServerStream, -1, True);
+            LContext.Connection.IOHandler.InputBuffer.ExtractToStream(LClientToServerStream);
           end;
           if LContext.Connection.Connected and (not LContext.FOutboundClient.IOHandler.InputBufferIsEmpty) then
           begin
-            LContext.FOutboundClient.IOHandler.ReadStream(LServerToClientStream, -1, True);
+            LContext.FOutboundClient.IOHandler.InputBuffer.ExtractToStream(LServerToClientStream);
           end;
         finally
           LContext.FOutboundClient.Disconnect;

@@ -80,6 +80,10 @@ type
     function GetDateVariable(Index: Integer): TDateTime; override;
     function GetIntegerVariable(Index: Integer): Integer; override;
     function GetStringVariable(Index: Integer): AnsiString; override;
+    {$IFDEF VCL_XE_OR_ABOVE}
+    function GetRemoteIP: string; override;
+    function GetRawPathInfo: AnsiString; override;
+    {$ENDIF}
   public
     constructor Create(AThread: TIdContext; ARequestInfo: TIdHTTPRequestInfo;
      AResponseInfo: TIdHTTPResponseInfo);
@@ -147,7 +151,6 @@ type
      AResponseInfo: TIdHTTPResponseInfo); override;
     procedure InitComponent; override;
   public
-
     procedure RegisterWebModuleClass(AClass: TComponentClass);
   end;
 
@@ -280,6 +283,18 @@ function TIdHTTPAppRequest.GetIntegerVariable(Index: Integer): Integer;
 begin
   Result := StrToIntDef(string(GetStringVariable(Index)), -1)
 end;
+
+{$IFDEF VCL_XE_OR_ABOVE}
+function TIdHTTPAppRequest.GetRawPathInfo: AnsiString;
+begin
+  Result := AnsiString(FRequestInfo.URI);
+end;
+
+function TIdHTTPAppRequest.GetRemoteIP: string;
+begin
+  Result := String(FRequestInfo.RemoteIP);
+end;
+{$ENDIF}
 
 function TIdHTTPAppRequest.GetStringVariable(Index: Integer): AnsiString;
 var
@@ -668,19 +683,24 @@ begin
 end;
 
 procedure TIdHTTPAppResponse.MoveCookiesAndCustomHeaders;
-Var
+var
   i: Integer;
+  LSrcCookie: TCookie;
+  LDestCookie: TIdCookie;
 begin
   for i := 0 to Cookies.Count - 1 do begin
-    with FResponseInfo.Cookies.Add do begin
-      CookieText := string(Cookies[i].HeaderValue);
-    end;
+    LSrcCookie := Cookies[i];
+    LDestCookie := FResponseInfo.Cookies.Add;
+    LDestCookie.CookieName := String(HTTPEncode(LSrcCookie.Name));
+    LDestCookie.Value := String(HTTPEncode(LSrcCookie.Value));
+    LDestCookie.Domain := String(LSrcCookie.Domain);
+    LDestCookie.Path := String(LSrcCookie.Path);
+    LDestCookie.Expires := LSrcCookie.Expires;
+    LDestCookie.Secure := LSrcCookie.Secure;
+    // TODO: LDestCookie.HttpOnly := LSrcCookie.HttpOnly;
   end;
   FResponseInfo.CustomHeaders.Clear;
-  for i := 0 to CustomHeaders.Count - 1 do begin
-    FResponseInfo.CustomHeaders.Values[CustomHeaders.Names[i]] :=
-      CustomHeaders.Values[CustomHeaders.Names[i]];
-  end;
+  FResponseInfo.CustomHeaders.AddStdValues(CustomHeaders);
 end;
 
 { TIdHTTPWebBrokerBridge }

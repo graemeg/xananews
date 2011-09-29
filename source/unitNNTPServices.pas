@@ -5428,14 +5428,14 @@ begin
 
     fSortBuf.Sort(CompareThreads);
 
-    root := TArticle(fSortBuf.List^[0]);
+    root := TArticle(fSortBuf.List[0]);
     p := root;
     ct := fSortBuf.Count;
     i := 1;
 
     while i < ct do
     begin
-      p.fSibling := TArticle(fSortBuf.List^[i]);
+      p.fSibling := TArticle(fSortBuf.List[i]);
       p := p.fSibling;
       Inc(i);
     end;
@@ -5478,7 +5478,7 @@ begin
       begin
         SortSiblings(l.fChild);
         if i < c then
-          n := TArticle(fThreads.List^[i])
+          n := TArticle(fThreads.List[i])
         else
           n := nil;
         l.fSibling := n;
@@ -5585,7 +5585,7 @@ begin
             articleFromEmail := article.FromEmail;
             for j := 0 to Identities.Count - 1 do
             begin
-              id := TIdentity(Identities.List^[j]);
+              id := TIdentity(Identities.List[j]);
               mine := (articleFromName = id.UserName) and (articleFromEmail = id.EMailAddress);
               if mine then
                 Break;
@@ -6833,7 +6833,7 @@ begin
   if not fArticlesLoaded then
     LoadArticles;
   if idx < fArticles.Count then
-    Result := TArticleBase(fArticles.List^[idx])
+    Result := TArticleBase(fArticles.List[idx])
   else
     Result := nil;
 end;

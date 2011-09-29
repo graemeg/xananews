@@ -205,8 +205,8 @@ implementation
 
 uses
   {$IFDEF USE_VCL_POSIX}
-  PosixSysSelect,
-  PosixSysTime,
+  Posix.SysSelect,
+  Posix.SysTime,
   {$ENDIF}
   IdAntiFreezeBase, IdResourceStringsCore, IdResourceStrings, IdStackConsts, IdException,
   IdTCPConnection, IdComponent, IdIOHandler;
@@ -311,7 +311,7 @@ begin
       if Assigned(OnStatus) then begin
         DoStatus(hsResolving, [LHost]);
       end;
-      LIP := GStack.ResolveHost(LHost, FIPVersion);
+      LIP := GStack.ResolveHost(LHost, LIPVersion);
     end else begin
       LIP := LHost;
     end;

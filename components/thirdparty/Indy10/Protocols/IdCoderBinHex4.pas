@@ -168,6 +168,9 @@ type
     procedure AddByteCRC(var ACRC: Word; AByte: Byte);
     procedure InitComponent; override;
   public
+    {$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
+    constructor Create(AOwner: TComponent); reintroduce; overload;
+    {$ENDIF}
     procedure Encode(ASrcStream: TStream; ADestStream: TStream; const ABytes: Integer = -1); override;
     //We need to specify this value before calling Encode...
     property FileName: String read FFileName write FFileName;
@@ -177,6 +180,9 @@ type
   protected
     procedure InitComponent; override;
   public
+    {$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
+    constructor Create(AOwner: TComponent); reintroduce; overload;
+    {$ENDIF}
     procedure Decode(ASrcStream: TStream; const ABytes: Integer = -1); override;
   end;
 
@@ -198,6 +204,13 @@ uses
   IdResourceStrings;
 
 { TIdDecoderBinHex4 }
+
+{$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
+constructor TIdDecoderBinHex4.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+end;
+{$ENDIF}
 
 procedure TIdDecoderBinHex4.InitComponent;
 begin
@@ -327,10 +340,19 @@ begin
 
   //At this point, LOut[LN] points to the actual data (the data fork, if there
   //is one, or else the resource fork if there is no data fork).
-  TIdStreamHelper.Write(FStream, LOut, LForkLength, LN);
+  if Assigned(FStream) then begin
+    TIdStreamHelper.Write(FStream, LOut, LForkLength, LN);
+  end;
 end;
 
 { TIdEncoderBinHex4 }
+
+{$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
+constructor TIdEncoderBinHex4.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+end;
+{$ENDIF}
 
 procedure TIdEncoderBinHex4.InitComponent;
 begin

@@ -13,6 +13,15 @@ type
     fRendering: Boolean;
     fNavigating: Boolean;
     fXanaLink: string;
+{$if CompilerVersion >= 23.0}
+    procedure DoOnDocumentComplete(Sender: TObject; const pDisp: IDispatch; const URL: OleVariant);
+    procedure DoOnBeforeNavigate2(ASender: TObject; const pDisp: IDispatch; const URL: OleVariant;
+                                                    const Flags: OleVariant;
+                                                    const TargetFrameName: OleVariant;
+                                                    const PostData: OleVariant;
+                                                    const Headers: OleVariant;
+                                                    var Cancel: WordBool);
+{$else}
     procedure DoOnDocumentComplete(Sender: TObject; const pDisp: IDispatch; var URL: OleVariant);
     procedure DoOnBeforeNavigate2(Sender: TObject; const pDisp: IDispatch; var URL: OleVariant;
                                   var Flags: OleVariant;
@@ -20,6 +29,7 @@ type
                                   var PostData: OleVariant;
                                   var Headers: OleVariant;
                                   var Cancel: WordBool);
+{$ifend}
 
     procedure DoOnNewWindow2(Sender: TObject; var ppDisp: IDispatch; var Cancel: WordBool);
     procedure RecalcHeight;
@@ -122,9 +132,20 @@ begin
   end;
 end;
 
+{$if CompilerVersion >= 23.0}
+procedure THTMLStringsDisplayObjectLink.DoOnBeforeNavigate2(ASender: TObject;
+  const pDisp: IDispatch;
+  const URL: OleVariant;
+  const Flags: OleVariant;
+  const TargetFrameName: OleVariant;
+  const PostData: OleVariant;
+  const Headers: OleVariant;
+  var Cancel: WordBool);
+{$else}
 procedure THTMLStringsDisplayObjectLink.DoOnBeforeNavigate2(
   Sender: TObject; const pDisp: IDispatch; var URL, Flags, TargetFrameName,
   PostData, Headers: OleVariant; var Cancel: WordBool);
+{$ifend}
 var
   urlStr: string;
 begin
@@ -138,8 +159,13 @@ begin
   end;
 end;
 
+{$if CompilerVersion >= 23.0}
+procedure THTMLStringsDisplayObjectLink.DoOnDocumentComplete(
+  Sender: TObject; const pDisp: IDispatch; const URL: OleVariant);
+{$else}
 procedure THTMLStringsDisplayObjectLink.DoOnDocumentComplete(
   Sender: TObject; const pDisp: IDispatch; var URL: OleVariant);
+{$ifend}
 var
   ctrl: TExWebBrowser;
   doc: IHTMLDocument2;

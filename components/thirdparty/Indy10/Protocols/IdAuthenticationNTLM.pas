@@ -78,7 +78,6 @@ uses
   IdResourceStringsProtocols,
   IdSSLOpenSSLHeaders,
   IdSSLOpenSSL,
-  IdSSLOpenSSLUtils,
   IdNTLM,
   SysUtils;
 
@@ -87,7 +86,7 @@ uses
 constructor TIdNTLMAuthentication.Create;
 begin
   inherited Create;
-  if not IdSSLOpenSSLUtils.LoadOpenSSLLibrary then begin
+  if not LoadOpenSSLLibrary then begin
     raise EIdOSSLCouldNotLoadSSLLibrary.Create(RSOSSLCouldNotLoadSSLLibrary);
   end;
 end;

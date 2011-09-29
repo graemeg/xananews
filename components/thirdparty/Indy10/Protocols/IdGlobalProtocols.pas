@@ -1,4 +1,4 @@
-{
+    {
   $Project$
   $Workfile$
   $Revision$
@@ -325,7 +325,7 @@ interface
 
 uses
   Classes,
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
   Windows,
   {$ENDIF}
   IdCharsets,
@@ -381,7 +381,7 @@ type
     function _Release: Integer;
   end;
 
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
   TIdWin32Type = (Win32s,
     WindowsNT40PreSP6Workstation, WindowsNT40PreSP6Server, WindowsNT40PreSP6AdvancedServer,
     WindowsNT40Workstation, WindowsNT40Server, WindowsNT40AdvancedServer,
@@ -397,7 +397,8 @@ type
 
   //
   EIdExtensionAlreadyExists = class(EIdException);
-// Procs - KEEP THESE ALPHABETICAL!!!!!
+
+  // Procs - KEEP THESE ALPHABETICAL!!!!!
 
 //  procedure BuildMIMETypeMap(dest: TIdStringList);
   // TODO: IdStrings have optimized SplitColumns* functions, can we remove it?
@@ -415,12 +416,29 @@ type
   function ReadStringAsContentType(AStream: TStream; const AContentType: String;
     AQuoteType: TIdHeaderQuotingType
     {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}): String;
+
+  procedure ReadStringsAsContentType(AStream: TStream; AStrings: TStrings;
+    const AContentType: String; AQuoteType: TIdHeaderQuotingType
+    {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF});
+
+  procedure WriteStringAsContentType(AStream: TStream; const AStr, AContentType: String;
+    AQuoteType: TIdHeaderQuotingType
+    {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF});
+
+  procedure WriteStringsAsContentType(AStream: TStream; const AStrings: TStrings;
+    const AContentType: String; AQuoteType: TIdHeaderQuotingType
+    {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF});
+
+  procedure WriteStringAsCharset(AStream: TStream; const AStr, ACharset: string
+    {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF});
+
+  procedure WriteStringsAsCharset(AStream: TStream; const AStrings: TStrings;
+    const ACharset: string
+    {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF});
+
   function ReadStringAsCharset(AStream: TStream; const ACharset: String
     {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}): String;
 
-  procedure ReadStringsAsContentType(AStream: TStream; AStrings: TStrings; const AContentType: String;
-    AQuoteType: TIdHeaderQuotingType
-    {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF});
   procedure ReadStringsAsCharset(AStream: TStream; AStrings: TStrings; const ACharset: string
     {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF});
 
@@ -447,9 +465,11 @@ type
   function ReplaceHeaderSubItem(const AHeaderLine, ASubItem, AValue: String; var VOld: String; AQuoteType: TIdHeaderQuotingType): String; overload;
   function IsHeaderMediaType(const AHeaderLine, AMediaType: String): Boolean;
   function IsHeaderMediaTypes(const AHeaderLine: String; const AMediaTypes: array of String): Boolean;
+  function ExtractHeaderMediaType(const AHeaderLine: String): String;
+  function ExtractHeaderMediaSubType(const AHeaderLine: String): String;
   function IsHeaderValue(const AHeaderLine: String; const AValue: String): Boolean;
   function FileSizeByName(const AFilename: TIdFileName): Int64;
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
   function IsVolume(const APathName : TIdFileName) : Boolean;
   {$ENDIF}
   //MLIST FTP DateTime conversion functions
@@ -465,6 +485,7 @@ type
   function GetGMTDateByName(const AFileName : TIdFileName) : TDateTime;
   function GmtOffsetStrToDateTime(const S: string): TDateTime;
   function GMTToLocalDateTime(S: string): TDateTime;
+  function CookieStrToLocalDateTime(S: string): TDateTime;
   function IdGetDefaultCharSet : TIdCharSet;
   function IntToBin(Value: LongWord): string;
   function IndyComputerName : String; // DotNet: see comments regarding GDotNetComputerName below
@@ -535,11 +556,16 @@ type
   function TrimAllOf(const ATrim, AText: string): string;
   procedure ParseMetaHTTPEquiv(AStream: TStream; AStr : TStrings);
 
+type
+  TIdEncodingNeededEvent = function(const ACharset: String): TIdTextEncoding;
+
 var
   {$IFDEF UNIX}
   // For linux the user needs to set these variables to be accurate where used (mail, etc)
   GIdDefaultCharSet : TIdCharSet = idcs_ISO_8859_1; // idcsISO_8859_1;
   {$ENDIF}
+
+  GIdEncodingNeeded: TIdEncodingNeededEvent = nil;
 
   IndyFalseBoolStrs : array of String;
   IndyTrueBoolStrs : array of String;
@@ -578,20 +604,17 @@ uses
       {$ENDIF}
     {$ENDIF}
     {$IFDEF USE_VCL_POSIX}
-	  {$IFDEF DARWIN}
-    CoreServices,
-	  {$ENDIF}
+      {$IFDEF DARWIN}
+    Macapi.CoreServices,
+      {$ENDIF}
     DateUtils,
-    PosixSysStat, PosixSysTime, PosixTime, PosixUnistd,
+    Posix.SysStat, Posix.SysTime, Posix.Time, Posix.Unistd,
     {$ENDIF}
   {$ENDIF}
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
   Messages,
   Registry,
   {$ENDIF}
-    {$IFDEF USE_VCL_POSIX}
-
-    {$ENDIF}
   {$IFDEF DOTNET}
   System.IO,
   System.Text,
@@ -600,9 +623,6 @@ uses
   IdResourceStringsCore,
   IdResourceStringsProtocols,
   IdStack;
-
-
-
 
 //
 
@@ -695,14 +715,14 @@ begin
 end;
 
 function IndyCurrentYear : Integer;
-{$IFDEF VCL_2007_OR_ABOVE}
+{$IFDEF HAS_CurrentYear}
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 {$ELSE}
 var
   LYear, LMonth, LDay : Word;
 {$ENDIF}
 begin
-  {$IFDEF VCL_2007_OR_ABOVE}
+  {$IFDEF HAS_CurrentYear}
   Result := CurrentYear;
   {$ELSE}
   DecodeDate(Now, LYear, LMonth, LDay);
@@ -730,7 +750,7 @@ begin
 {$ENDIF}
 end;
 
-{$IFDEF WIN32_OR_WIN64_OR_WINCE}
+{$IFDEF WINDOWS}
 var
   ATempPath: TIdFileName;
 {$ENDIF}
@@ -817,7 +837,7 @@ end;
 function LongWordToFourChar(AValue : LongWord): string;
 {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-  Result := BytesToString(ToBytes(AValue), Indy8BitEncoding);
+  Result := BytesToStringRaw(ToBytes(AValue));
 end;
 
 procedure WordToTwoBytes(AWord : Word; ByteArray: TIdBytes; Index: integer);
@@ -836,7 +856,7 @@ begin
     {$IFDEF STRING_IS_UNICODE}
     Result := TwoCharToWord(Value[1], Value[2]);
     {$ELSE}
-    Result := Word(Pointer(Value)^);
+    Result := PWord(Pointer(Value))^;
     {$ENDIF}
   end else begin
     Result := 0;
@@ -847,7 +867,7 @@ function WordToStr(const Value: Word): String;
 {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   {$IFDEF STRING_IS_UNICODE}
-  Result := BytesToString(ToBytes(Value), Indy8BitEncoding);
+  Result := BytesToStringRaw(ToBytes(Value));
   {$ELSE}
   SetLength(Result, SizeOf(Value));
   Move(Value, Result[1], SizeOf(Value));
@@ -1370,7 +1390,7 @@ end;
   {$DEFINE NATIVEFILEAPI}
   {$DEFINE NATIVECOPYAPI}
 {$ENDIF}
-{$IFDEF WIN32_OR_WIN64_OR_WINCE}
+{$IFDEF WINDOWS}
   {$DEFINE NATIVEFILEAPI}
   {$DEFINE NATIVECOPYAPI}
 {$ENDIF}
@@ -1396,7 +1416,7 @@ begin
   System.IO.File.Copy(Source, Destination, True);
   Result := True; // or you'll get an exception
   {$ENDIF}
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
     {$IFDEF WIN32_OR_WIN64}
   LOldErrorMode := SetErrorMode(SEM_FAILCRITICALERRORS);
   try
@@ -1448,7 +1468,7 @@ begin
   {$ENDIF}
 end;
 
-{$IFDEF WIN32_OR_WIN64_OR_WINCE}
+{$IFDEF WINDOWS}
 function TempPath: TIdFileName;
 var
   i: Integer;
@@ -1477,7 +1497,7 @@ begin
   lExt := '.tmp';
   {$ENDIF}
 
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
   if lPath = '' then begin
     lPath := ATempPath;
   end;
@@ -1574,7 +1594,7 @@ begin
   end;
 end;
 
-{$IFDEF WIN32_OR_WIN64_OR_WINCE}
+{$IFDEF WINDOWS}
 function IsVolume(const APathName : TIdFileName) : Boolean;
   {$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
@@ -1590,7 +1610,7 @@ var
   LFile : System.IO.FileInfo;
 {$ELSE}
   {$IFDEF USE_INLINE} inline; {$ENDIF}
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
 var
   LHandle : THandle;
   LRec : TWin32FindData;
@@ -1620,7 +1640,7 @@ begin
     Result := LFile.Length;
   end;
   {$ENDIF}
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
     Result := -1;
   //check to see if something like "a:\" is specified and fail in that case.
   //FindFirstFile would probably succede even though a drive is not a proper
@@ -1676,7 +1696,7 @@ begin
 end;
 
 function GetGMTDateByName(const AFileName : TIdFileName) : TDateTime;
-{$IFDEF WIN32_OR_WIN64_OR_WINCE}
+{$IFDEF WINDOWS}
 var
   LRec : TWin32FindData;
   LHandle : THandle;
@@ -1703,7 +1723,7 @@ var
 {$ENDIF}
 begin
   Result := -1;
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
   if not IsVolume(AFileName) then begin
     {$IFDEF WIN32_OR_WIN64}
     LOldErrorMode := SetErrorMode(SEM_FAILCRITICALERRORS);
@@ -1771,38 +1791,44 @@ begin
     Result := Copy(AStr, LStrLen - Len+1, Len);
   end;
 end;
-
 function TimeZoneBias: TDateTime;
 {$IFDEF USE_INLINE} inline; {$ENDIF}
+{$IFNDEF FPC}
   {$IFDEF UNIX}
 var
   T: Time_T;
   TV: TimeVal;
-      {$IFDEF USE_VCL_POSIX}
+    {$IFDEF USE_VCL_POSIX}
   UT: tm;
-      {$ELSE}
+    {$ELSE}
   UT: TUnixTime;
-      {$ENDIF}
+    {$ENDIF}
   {$ENDIF}
+{$ENDIF}
 begin
+{$IFNDEF FPC}
   {$IFDEF UNIX}
- {from http://edn.embarcadero.com/article/27890 }
+  // TODO: use -OffsetFromUTC here. It has this same Unix logic in it
+  {from http://edn.embarcadero.com/article/27890 }
   gettimeofday(TV, nil);
   T := TV.tv_sec;
     {$IFDEF USE_VCL_POSIX}
   localtime_r(T, UT);
-    // __tm_gmtoff is the bias in seconds from the UTC to the current time.
-    // so I multiply by -1 to compensate for this.
+// __tm_gmtoff is the bias in seconds from the UTC to the current time.
+// so I multiply by -1 to compensate for this.
   Result := (UT.tm_gmtoff / 60 / 60 / 24);
     {$ELSE}
   localtime_r(@T, UT);
-    // __tm_gmtoff is the bias in seconds from the UTC to the current time.
-    // so I multiply by -1 to compensate for this.
+// __tm_gmtoff is the bias in seconds from the UTC to the current time.
+// so I multiply by -1 to compensate for this.
   Result := (UT.__tm_gmtoff / 60 / 60 / 24);
     {$ENDIF}
   {$ELSE}
   Result := -OffsetFromUTC;
   {$ENDIF}
+{$ELSE}
+  Result := -OffsetFromUTC;
+{$ENDIF}
 end;
 
 function IndyStrToBool(const AString : String) : Boolean;
@@ -1824,7 +1850,7 @@ begin
 end;
 
 function IndySetLocalTime(Value: TDateTime): Boolean;
-{$IFNDEF WIN32_OR_WIN64_OR_WINCE}
+{$IFNDEF WINDOWS}
   {$IFDEF USE_INLINE}inline;{$ENDIF}
 {$ELSE}
 var
@@ -1844,7 +1870,7 @@ begin
   //TODO: Figure out how to do this
   {$ENDIF}
 
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
   {I admit that this routine is a little more complicated than the one
   in Indy 8.0.  However, this routine does support Windows NT privileges
   meaning it will work if you have administrative rights under that OS
@@ -2324,6 +2350,235 @@ begin
   end;
 end;
 
+{$IFNDEF HAS_TryStrToInt}
+function TryStrToInt(const S: string; out Value: Integer): Boolean;
+{$IFDEF USE_INLINE}inline;{$ENDIF}
+var
+  E: Integer;
+begin
+  Val(S, Value, E);
+  Result := E = 0;
+end;
+{$ENDIF}
+
+{ Using the algorithm defined in cookie-draft-23 section 5.1.1 }
+function CookieStrToLocalDateTime(S: string): TDateTime;
+const
+  {
+  delimiter       = %x09 / %x20-2F / %x3B-40 / %x5B-60 / %x7B-7E
+  non-delimiter   = %x00-08 / %x0A-1F / DIGIT / ":" / ALPHA / %x7F-FF
+  }
+  cDelimiters = #9' !"#$%&''()*+,-./;<=>?@[\]^_`{|}~';
+var
+  LStartPos, LEndPos: Integer;
+  LFoundTime, LFoundDayOfMonth, LFoundMonth, LFoundYear: Boolean;
+  LHour, LMinute, LSecond: Integer;
+  LYear, LMonth, LDayOfMonth: Integer;
+
+  function ExtractDigits(var AStr: String; MinDigits, MaxDigits: Integer): String;
+  var
+    LLength: Integer;
+  begin
+    Result := '';
+    LLength := 0;
+    while (LLength < Length(AStr)) and (LLength < MaxDigits) do
+    begin
+      if not IsNumeric(AStr[LLength+1]) then begin
+        Break;
+      end;
+      Inc(LLength);
+    end;
+    if (LLength > 0) and (LLength >= MinDigits) then begin
+      Result := Copy(AStr, 1, LLength);
+      AStr := Copy(AStr, LLength+1, MaxInt);
+    end;
+  end;
+
+  function ParseTime(const AStr: String): Boolean;
+  var
+    S, LTemp: String;
+  begin
+    {
+    non-digit       = %x00-2F / %x3A-FF
+    time            = hms-time ( non-digit *OCTET )
+    hms-time        = time-field ":" time-field ":" time-field
+    time-field      = 1*2DIGIT
+    }
+    Result := False;
+    S := AStr;
+
+    LTemp := ExtractDigits(S, 1, 2);
+    if (LTemp = '') or (not CharEquals(S, 1, ':')) then begin
+      Exit;
+    end;
+    if not TryStrToInt(LTemp, LHour) then begin
+      Exit;
+    end;
+    IdDelete(S, 1, 1);
+
+    LTemp := ExtractDigits(S, 1, 2);
+    if (LTemp = '') or (not CharEquals(S, 1, ':')) then begin
+      Exit;
+    end;
+    if not TryStrToInt(LTemp, LMinute) then begin
+      Exit;
+    end;
+    IdDelete(S, 1, 1);
+
+    LTemp := ExtractDigits(S, 1, 2);
+    if LTemp = '' then begin
+      Exit;
+    end;
+    if S <> '' then begin
+      if IsNumeric(S, 1, 1) then begin
+        raise Exception.Create('Invalid Cookie Time');
+      end;
+    end;
+    if not TryStrToInt(LTemp, LSecond) then begin
+      Exit;
+    end;
+
+    if LHour > 23 then begin
+      raise Exception.Create('Invalid Cookie Time');
+    end;
+    if LMinute > 59 then begin
+      raise Exception.Create('Invalid Cookie Time');
+    end;
+    if LSecond > 59 then begin
+      raise Exception.Create('Invalid Cookie Time');
+    end;
+
+    Result := True;
+  end;
+
+  function ParseDayOfMonth(const AStr: String): Boolean;
+  var
+    S, LTemp: String;
+  begin
+    {
+    non-digit       = %x00-2F / %x3A-FF
+    day-of-month    = 1*2DIGIT ( non-digit *OCTET )
+    }
+    Result := False;
+    S := AStr;
+
+    LTemp := ExtractDigits(S, 1, 2);
+    if LTemp = '' then begin
+      Exit;
+    end;
+    if S <> '' then begin
+      if IsNumeric(AStr, 1, 3) then begin
+        raise Exception.Create('Invalid Cookie Day of Month');
+      end;
+    end;
+    if not TryStrToInt(LTemp, LDayOfMonth) then begin
+      Exit;
+    end;
+    if (LDayOfMonth < 1) or (LDayOfMonth > 31) then begin
+      raise Exception.Create('Invalid Cookie Day of Month');
+    end;
+
+    Result := True;
+  end;
+
+  function ParseMonth(const AStr: String): Boolean;
+  begin
+    {
+    month           = ( "jan" / "feb" / "mar" / "apr" /
+                       "may" / "jun" / "jul" / "aug" /
+                       "sep" / "oct" / "nov" / "dec" ) *OCTET
+    }
+    LMonth := PosInStrArray(Copy(AStr, 1, 3), ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'], False) + 1;
+    Result := LMonth <> 0;
+  end;
+
+  function ParseYear(const AStr: String): Boolean;
+  var
+    S, LTemp: String;
+  begin
+    // year            = 2*4DIGIT ( non-digit *OCTET )
+    Result := False;
+    S := AStr;
+
+    LTemp := ExtractDigits(S, 2, 4);
+    if (LTemp = '') or IsNumeric(S, 1, 1) then begin
+      Exit;
+    end;
+    if not TryStrToInt(AStr, LYear) then begin
+      Exit;
+    end;
+    if (LYear >= 70) and (LYear <= 99) then begin
+      Inc(LYear, 1900);
+    end
+    else if (LYear >= 0) and (LYear <= 69) then begin
+      Inc(LYear, 2000);
+    end;
+    if LYear < 1601 then begin
+      raise Exception.Create('Invalid Cookie Year');
+    end;
+
+    Result := True;
+  end;
+
+  procedure ProcessToken(const AStr: String);
+  begin
+    if not LFoundTime then begin
+      if ParseTime(AStr) then begin
+        LFoundTime := True;
+        Exit;
+      end;
+    end;
+    if not LFoundDayOfMonth then begin
+      if ParseDayOfMonth(AStr) then begin
+        LFoundDayOfMonth := True;
+        Exit;
+      end;
+    end;
+    if not LFoundMonth then begin
+      if ParseMonth(AStr) then begin
+        LFoundMonth := True;
+        Exit;
+      end;
+    end;
+    if not LFoundYear then begin
+      if ParseYear(AStr) then begin
+        LFoundYear := True;
+        Exit;
+      end;
+    end;
+  end;
+
+begin
+  LFoundTime := False;
+  LFoundDayOfMonth := False;
+  LFoundMonth := False;
+  LFoundYear := False;
+
+  try
+    LEndPos := 0;
+    repeat
+      LStartPos := FindFirstNotOf(cDelimiters, S, -1, LEndPos+1);
+      if LStartPos = 0 then begin
+        Break;
+      end;
+      LEndPos := FindFirstOf(cDelimiters, S, -1, LStartPos+1);
+      if LEndPos = 0 then begin
+        ProcessToken(Copy(S, LStartPos, MaxInt));
+        Break;
+      end;
+      ProcessToken(Copy(S, LStartPos, LEndPos-LStartPos));
+    until False;
+
+    if (not LFoundDayOfMonth) or (not LFoundMonth) or (not LFoundYear) or (not LFoundTime) then begin
+      raise Exception.Create('Invalid Cookie Date format');
+    end;
+
+    Result := EncodeDate(LYear, LMonth, LDayOfMonth) + EncodeTime(LHour, LMinute, LSecond, 0) + OffsetFromUTC;
+  except
+    Result := 0.0;
+  end;
+end;
+
 { Takes a cardinal (DWORD)  value and returns the string representation of it's binary value}    {Do not Localize}
 function IntToBin(Value: LongWord): string;
 var
@@ -2389,7 +2644,7 @@ end;
 {$ENDIF}
 
 procedure FillMimeTable(const AMIMEList: TStrings; const ALoadFromOS: Boolean = True);
-{$IFDEF WIN32_OR_WIN64_OR_WINCE}
+{$IFDEF WINDOWS}
 var
   reg: TRegistry;
   KeyList: TStringList;
@@ -2824,7 +3079,7 @@ begin
     Exit;
   end;
 
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
   // Build the file type/MIME type map
   Reg := TRegistry.Create;
   try
@@ -3193,373 +3448,425 @@ end;
 {** HTML Parsing code for extracting Metadata.  It can also be the basis of a Full HTML parser ***}
 
 const
- HTML_DOCWHITESPACE = #0+#9+#10+#13+#32;
- HTML_ALLOWABLE_ALPHANUMBERIC = 'abcdefghijklmnopqrstuvwxyz'+
-         'ABCDEFGHIJKLMNOPQRSTUVWXYZ'+
-         '1234567890-';
- HTML_QUOTECHARS = '''"';
- HTML_MainDocParts : array [0..2] of string = ('TITLE','HEAD', 'BODY');
- HTML_HeadDocAttrs : array [0..3] of string = ('META','TITLE','SCRIPT','LINK');
+ HTML_DOCWHITESPACE = #0+#9+#10+#13+#32;                       {do not localize}
+ HTML_ALLOWABLE_ALPHANUMBERIC = 'abcdefghijklmnopqrstuvwxyz'+  {do not localize}
+         'ABCDEFGHIJKLMNOPQRSTUVWXYZ'+                         {do not localize}
+         '1234567890-_:.';                                     {do not localize}
+ HTML_QUOTECHARS = '''"';                                      {do not localize}
+ HTML_MainDocParts : array [0..2] of string = ('TITLE','HEAD', 'BODY'); {do not localize}
+ HTML_HeadDocAttrs : array [0..3] of string = ('META','TITLE','SCRIPT','LINK'); {do not localize}
+ HTML_MetaAttrs : array [0..1] of string = ('HTTP-EQUIV', 'charset'); {do not localize}
 
-procedure DiscardUntilEndOfTag(const AStr : String; var VPos : Integer; const ALen : Integer); {$IFDEF USE_INLINE}inline; {$ENDIF}
+function ParseUntilEndOfTag(const AStr : String; var VPos : Integer;
+  const ALen : Integer): String; {$IFDEF USE_INLINE}inline;{$ENDIF}
+var
+  LStart: Integer;
 begin
-  repeat
-    if VPos <= ALen then begin
-      if AStr[VPos] = '>' then begin
-        break;
-      end else begin
-        Inc(VPos);
-      end;
-    end else begin
-      break;
+  LStart := VPos;
+  while VPos <= ALen do begin
+    if AStr[VPos] = '>' then begin {do not localize}
+      Break;
     end;
-  until False;
+    Inc(VPos);
+  end;
+  Result := Copy(AStr, LStart, VPos - LStart);
 end;
 
-function ExtractDocWhiteSpace(const AStr : String; var VPos : Integer; const ALen : Integer) : String;  {$IFDEF USE_INLINE}inline; {$ENDIF}
+procedure DiscardUntilEndOfTag(const AStr : String; var VPos : Integer;
+  const ALen : Integer); {$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
-  Result := '';
-  repeat
-    //pass any whitespace
-    if VPos <= ALen then begin
-      if CharIsInSet(AStr,VPos,HTML_DOCWHITESPACE) then begin
-         Result := Result + AStr[VPos];
-         inc(VPos);
-       end else begin
-         break;
-       end;
-     end else begin
-        break;
+  while VPos <= ALen do begin
+    if AStr[VPos] = '>' then begin {do not localize}
+      Break;
     end;
-  until False;
+    Inc(VPos);
+  end;
+end;
+
+function ExtractDocWhiteSpace(const AStr : String; var VPos : Integer;
+  const ALen : Integer) : String;  {$IFDEF USE_INLINE}inline;{$ENDIF}
+var
+  LStart: Integer;
+begin
+  LStart := VPos;
+  while VPos <= ALen do begin
+    if not CharIsInSet(AStr, VPos, HTML_DOCWHITESPACE) then begin
+      Break;
+    end;
+    Inc(VPos);
+  end;
+  Result := Copy(AStr, LStart, VPos-LStart);
 end;
 
 procedure DiscardDocWhiteSpace(const AStr : String; var VPos : Integer; const ALen : Integer);  {$IFDEF USE_INLINE}inline; {$ENDIF}
 begin
-  repeat
-    //pass any whitespace
-    if VPos <= ALen then begin
-      if CharIsInSet(AStr,VPos,HTML_DOCWHITESPACE) then begin
-         inc(VPos);
-       end else begin
-         break;
-       end;
-     end else begin
-        break;
+  while VPos <= ALen do begin
+    if not CharIsInSet(AStr, VPos, HTML_DOCWHITESPACE) then begin
+      Break;
     end;
-  until False;
+    Inc(VPos);
+  end;
 end;
 
-function ParseWord(const AStr : String; var VPos : Integer; const ALen : Integer) : String;  {$IFDEF USE_INLINE}inline; {$ENDIF}
+function ParseWord(const AStr : String; var VPos : Integer;
+  const ALen : Integer) : String;  {$IFDEF USE_INLINE}inline;{$ENDIF}
+var
+  LStart: Integer;
 begin
-  Result := '';
-   repeat
-     if VPos <= ALen then begin
-      if CharIsInSet(AStr,VPos,HTML_ALLOWABLE_ALPHANUMBERIC) then begin
-         Result := Result + AStr[VPos];
-         inc(VPos);
-       end else begin
-         break;
-       end;
-     end else begin
-        break;
-     end;
-   until False;;
+  LStart := VPos;
+  while VPos <= ALen do begin
+    if not CharIsInSet(AStr, VPos, HTML_ALLOWABLE_ALPHANUMBERIC) then begin
+      Break;
+    end;
+    Inc(VPos);
+  end;
+  Result := Copy(AStr, LStart, VPos-LStart);
+end;
+
+procedure DiscardWord(const AStr : String; var VPos : Integer;
+  const ALen : Integer);  {$IFDEF USE_INLINE}inline;{$ENDIF}
+begin
+  while VPos <= ALen do begin
+    if not CharIsInSet(AStr, VPos, HTML_ALLOWABLE_ALPHANUMBERIC) then begin
+      Break;
+    end;
+    Inc(VPos);
+  end;
 end;
 
 function ParseUntil(const AStr : String; const AChar : Char;
-  var VPos : Integer; const ALen : Integer) : String;  {$IFDEF USE_INLINE}inline; {$ENDIF}
-
+  var VPos : Integer; const ALen : Integer) : String;  {$IFDEF USE_INLINE}inline;{$ENDIF}
+var
+  LStart: Integer;
 begin
-  Result := '';
-  repeat
-    if VPos <= ALen then begin
-      if AStr[VPos] = AChar then begin
-         break;
-       end else begin
-         Result := Result + AStr[VPos];
-         inc(VPos);
-       end;
-     end else begin
-        break;
+  LStart := VPos;
+  while VPos <= ALen do begin
+    if AStr[VPos] = AChar then begin
+      Break;
     end;
-  until False;
+    Inc(VPos);
+  end;
+  Result := Copy(AStr, LStart, VPos-LStart);
 end;
 
 procedure DiscardUntil(const AStr : String; const AChar : Char;
-  var VPos : Integer; const ALen : Integer);  {$IFDEF USE_INLINE}inline; {$ENDIF}
+  var VPos : Integer; const ALen : Integer);  {$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
-  repeat
-    if VPos <= ALen then begin
-      if AStr[VPos] = AChar then begin
-         break;
-       end else begin
-         inc(VPos);
-       end;
-     end else begin
-        break;
+  while VPos <= ALen do begin
+    if AStr[VPos] = AChar then begin
+      Break;
     end;
-  until False;
+    Inc(VPos);
+  end;
 end;
 
-function ParseHTTPMetaEquiveData(const AStr : String; var VPos : Integer; const ALen : Integer) : String;  {$IFDEF USE_INLINE}inline; {$ENDIF}
-var LQuoteChar : Char;
+function ParseUntilCharOrEndOfTag(const AStr : String; const AChar: Char;
+  var VPos : Integer; const ALen : Integer): String; {$IFDEF USE_INLINE}inline;{$ENDIF}
+var
+  LStart: Integer;
+begin
+  LStart := VPos;
+  while VPos <= ALen do begin
+    if (AStr[VPos] = AChar) or (AStr[VPos] = '>') then begin {do not localize}
+      Break;
+    end;
+    Inc(VPos);
+  end;
+  Result := Copy(AStr, LStart, VPos - LStart);
+end;
+
+procedure DiscardUntilCharOrEndOfTag(const AStr : String; const AChar: Char;
+  var VPos : Integer; const ALen : Integer); {$IFDEF USE_INLINE}inline;{$ENDIF}
+begin
+  while VPos <= ALen do begin
+    if (AStr[VPos] = AChar) or (AStr[VPos] = '>') then begin {do not localize}
+      Break;
+    end;
+    Inc(VPos);
+  end;
+end;
+
+function ParseHTTPMetaEquiveData(const AStr : String; var VPos : Integer;
+  const ALen : Integer) : String;  {$IFDEF USE_INLINE}inline;{$ENDIF}
+var
+  LQuoteChar : Char;
   LWord : String;
 begin
   Result := '';
-  DiscardDocWhiteSpace(Astr,VPos,ALen);
-  if IdGlobal.CharIsInSet(AStr,VPos,HTML_QUOTECHARS) then begin
+  DiscardDocWhiteSpace(AStr, VPos, ALen);
+  if CharIsInSet(AStr, VPos, HTML_QUOTECHARS) then begin
     LQuoteChar := AStr[VPos];
     Inc(VPos);
-  end else begin
-    LQuoteChar := ' ';
-  end;
-  if VPos > ALen then begin
-    exit;
-  end;
-  Result := ParseUntil(AStr,LQuoteChar,VPos,ALen)+':';
-  repeat
-    Inc(VPos);
-    DiscardDocWhiteSpace(Astr,VPos,ALen);
-    if AStr[VPos]='/' then begin
-      Inc(VPos);
-    end;
-    if AStr[VPos]='>' then begin
-      break;
-    end;
-    LWord := ParseWord(AStr,VPos,ALen);
     if VPos > ALen then begin
-      break;
+      Exit;
     end;
-    if AStr[VPos]='=' then begin
-       Inc(VPos);
-       DiscardDocWhiteSpace(Astr,VPos,ALen);
-       if IdGlobal.CharIsInSet(AStr,VPos,HTML_QUOTECHARS) then begin
-         LQuoteChar := AStr[VPos];
-         Inc(VPos);
-       end else begin
-         LQuoteChar := ' ';
-       end;
-       if TextIsSame(LWord,'CONTENT') then begin
-         Result := Result + ' '+ParseUntil(AStr,LQuoteChar,VPos,ALen);
-       end else begin
-         DiscardUntil(AStr,LQuoteChar,VPos,ALen);
-       end;
+    LWord := ParseUntil(AStr, LQuoteChar, VPos, ALen);
+    Inc(VPos);
+  end else begin
+    if VPos > ALen then begin
+      Exit;
+    end;
+    LWord := ParseWord(AStr, VPos, ALen);
+  end;
+  Result := LWord + ':'; {do not localize}
+  repeat
+    DiscardDocWhiteSpace(AStr, VPos, ALen);
+    if VPos > ALen then begin
+      Break;
+    end;
+    if AStr[VPos] = '/' then begin {do not localize}
+      Inc(VPos);
+      if VPos > ALen then begin
+        Break;
+      end;
+    end;
+    if AStr[VPos] = '>' then begin {do not localize}
+      Break;
+    end;
+    LWord := ParseWord(AStr, VPos, ALen);
+    if VPos > ALen then begin
+      Break;
+    end;
+    if AStr[VPos] = '=' then begin {do not localize}
+      Inc(VPos);
+      DiscardDocWhiteSpace(AStr, VPos, ALen);
+      if CharIsInSet(AStr, VPos, HTML_QUOTECHARS) then begin
+        LQuoteChar := AStr[VPos];
+        Inc(VPos);
+        if TextIsSame(LWord, 'CONTENT') then begin
+          Result := Result + ' ' + ParseUntil(AStr, LQuoteChar, VPos, ALen);
+        end else begin
+          DiscardUntil(AStr, LQuoteChar, VPos, ALen);
+        end;
+        Inc(VPos);
+      end else begin
+        if TextIsSame(LWord, 'CONTENT') then begin
+          Result := Result + ' ' + ParseUntilCharOrEndOfTag(AStr, ' ', VPos, ALen); {do not localize}
+        end else begin
+          DiscardUntilCharOrEndOfTag(AStr, ' ', VPos, ALen); {do not localize}
+        end;
+      end;
     end;
   until False;
 end;
 
-function ParseForEndOfComment(const AStr : String; var VPos : Integer; const ALen : Integer) : String;   {$IFDEF USE_INLINE}inline; {$ENDIF}
-var i : Integer;
-  LTmp : String;
+function ParseMetaCharsetData(const AStr : String; var VPos : Integer;
+  const ALen : Integer) : String;  {$IFDEF USE_INLINE}inline;{$ENDIF}
+var
+  LQuoteChar : Char;
+  LWord : String;
 begin
-  Result := ParseUntil(AStr,'-',VPos,ALen);
-  i := 0;
-  repeat
+  Result := '';
+  DiscardDocWhiteSpace(AStr, VPos, ALen);
+  if CharIsInSet(AStr, VPos, HTML_QUOTECHARS) then begin
+    LQuoteChar := AStr[VPos];
+    Inc(VPos);
     if VPos > ALen then begin
-      exit;
+      Exit;
     end;
-    if AStr[VPos]='-' then begin
-      Inc(i);
-      LTmp := LTmp + '-';
-      Inc(VPos);
-      if (i >= 2) and (AStr[VPos]='>') then begin
-        Delete(LTmp,1,2);
-        Result := Result + LTmp;
-        break;
-      end else begin
-        if AStr[VPos] <> '-' then begin
-           i := 0;
-           Result := Result + LTmp;
-        end;
-      end;
-    end else begin
-      Result := Result + AStr[VPos];
-      Inc(VPos);
+    LWord := ParseUntil(AStr, LQuoteChar, VPos, ALen);
+    Inc(VPos);
+  end else begin
+    if VPos > ALen then begin
+      Exit;
     end;
-  until False;
+    LWord := ParseWord(AStr, VPos, ALen);
+  end;
+  DiscardUntilEndOfTag(AStr, VPos, ALen);
+  Result := 'Content-Type: text/html; charset="' + LWord + '"'; {do not localize}
 end;
 
 procedure DiscardToEndOfComment(const AStr : String; var VPos : Integer; const ALen : Integer);  {$IFDEF USE_INLINE}inline; {$ENDIF}
-var i : Integer;
+var
+  i : Integer;
 begin
-  DiscardUntil(AStr,'-',VPos,ALen);
+  DiscardUntil(AStr, '-', VPos, ALen); {do not localize}
   i := 0;
-  repeat
-    if VPos > ALen then begin
-      exit;
-    end;
-    if AStr[VPos]='-' then begin
-      Inc(i);
-      Inc(VPos);
-      if (i >= 2) and (AStr[VPos]='>') then begin
-        break;
-      end else begin
-        if AStr[VPos] <> '-' then begin
-           i := 0;
-        end;
+  while VPos <= ALen do begin
+    if AStr[VPos] = '-' then begin {do not localize}
+      if i < 2 then begin
+        Inc(i);
       end;
     end else begin
-      Inc(VPos);
+      if (AStr[VPos] = '>') and (i = 2) then begin {do not localize}
+        Break;
+      end;
+      i := 0;
     end;
-  until False;
+    Inc(VPos);
+  end;
 end;
 
 function ParseForCloseTag(const AStr, ATagWord : String; var VPos : Integer; const ALen : Integer) : String; {$IFDEF USE_INLINE}inline; {$ENDIF}
-var LWord, LTmp : String;
+var
+  LWord, LTmp : String;
 begin
   Result := '';
-  repeat
-    if VPos > ALen then begin
-      exit;
-    end;
-    Result := Result + ParseUntil(AStr,'<',VPos,ALen);
+  while VPos <= ALen do begin
+    Result := Result + ParseUntil(AStr, '<', VPos, ALen); {do not localize}
     if AStr[VPos] = '<' then begin
       Inc(VPos);
     end;
-    LTmp := '<'+ExtractDocWhiteSpace(Astr,VPos,ALen);
-    if AStr[VPos] = '/' then begin
+    LTmp := '<' + ExtractDocWhiteSpace(AStr, VPos, ALen); {do not localize}
+    if AStr[VPos] = '/' then begin {do not localize}
       Inc(VPos);
-      LTmp := LTmp + '/';
-      LWord := ParseWord(AStr,VPos,ALen);
-      if TextIsSame(LWord,ATagWord) then begin
-        DiscardUntil(AStr,'>',VPos,ALen);
-        break;
-      end else begin
-        Result := Result + LTmp + LWord + ParseUntil(AStr,'>',VPos,ALen);
-        Inc(VPos);
+      LTmp := LTmp + '/'; {do not localize}
+      LWord := ParseWord(AStr, VPos, ALen);
+      if TextIsSame(LWord, ATagWord) then begin
+        DiscardUntilEndOfTag(AStr, VPos, ALen);
+        Break;
       end;
-    end else begin
-        Result := Result + LTmp + LWord + ParseUntil(AStr,'>',VPos,ALen);
-        Inc(VPos);
     end;
-  until False;
+    Result := Result + LTmp + LWord + ParseUntilEndOfTag(AStr, VPos, ALen); {do not localize}
+    Inc(VPos);
+  end;
 end;
 
 procedure DiscardUntilCloseTag(const AStr, ATagWord : String; var VPos : Integer;
   const ALen : Integer; const AIsScript : Boolean = False);  {$IFDEF USE_INLINE}inline; {$ENDIF}
-var LWord, LTmp : String;
+var
+  LWord, LTmp : String;
 begin
-  repeat
-    if VPos > ALen then begin
-      exit;
-    end;
-    DiscardUntil(AStr,'<',VPos,ALen);
-    if AStr[VPos] = '<' then begin
+  while VPos <= ALen do begin
+    DiscardUntil(AStr, '<', VPos, ALen); {do not localize}
+    if AStr[VPos] = '<' then begin {do not localize}
       Inc(VPos);
     end;
-    LTmp := '<'+ExtractDocWhiteSpace(Astr,VPos,ALen);
-    if AStr[VPos] = '/' then begin
+    LTmp := '<' + ExtractDocWhiteSpace(AStr, VPos, ALen);
+    if AStr[VPos] = '/' then begin {do not localize}
       Inc(VPos);
-      LTmp := LTmp + '/';
-      LWord := ParseWord(AStr,VPos,ALen);
-      if TextIsSame(LWord,ATagWord) then begin
-       DiscardUntil(AStr,'>',VPos,ALen);
-        break;
-      end else begin
-        if not AIsScript then begin
-          DiscardUntil(AStr,'>',VPos,ALen);
-        end;
-        Inc(VPos);
+      LTmp := LTmp + '/'; {do not localize}
+      LWord := ParseWord(AStr, VPos, ALen);
+      if TextIsSame(LWord, ATagWord) then begin
+        DiscardUntilEndOfTag(AStr, VPos, ALen);
+        Break;
       end;
-    end else begin
-      if Not AIsScript then begin
-        DiscardUntil(AStr,'>',VPos,ALen);
-      end;
-      Inc(VPos);
     end;
-  until False;
+    if not AIsScript then begin
+      DiscardUntilEndOfTag(AStr, VPos, ALen);
+    end;
+    Inc(VPos);
+  end;
 end;
 
 procedure ParseMetaHTTPEquiv(AStream: TStream; AStr : TStrings);
 type
-  TIdHTMLMode = (none,html,title,head,body,comment);
-
+  TIdHTMLMode = (none, html, title, head, body, comment);
 var
   LRawData : String;
   LWord : String;
   LMode : TIdHTMLMode;
   LPos : Integer;
   LLen : Integer;
-
 begin
 //  AStr.Clear;
   AStream.Position := 0;
-  LRawData := ReadStringFromStream(AStream);
+  LRawData := ReadStringFromStream(AStream, -1, Indy8BitEncoding{$IFDEF STRING_IS_ANSI}, Indy8BitEncoding{$ENDIF});
   LMode := none;
   LPos := 0;
   LLen := Length(LRawData);
   repeat
     Inc(LPos);
     if LPos > LLen then begin
-      break;
+      Break;
     end;
-    if LRawData[LPos] = '<' then begin
+    if LRawData[LPos] = '<' then begin {do not localize}
       Inc(LPos);
-      if LRawData[LPos] = '?' then begin
-        Inc(LPos);
+      if LPos > LLen then begin
+        Break;
       end;
-      if LRawData[LPos] = '!' then begin
+      if LRawData[LPos] = '?' then begin {do not localize}
         Inc(LPos);
+        if LPos > LLen then begin
+          Break;
+        end;
+      end
+      else if LRawData[LPos] = '!' then begin {do not localize}
+        Inc(LPos);
+        if LPos > LLen then begin
+          Break;
+        end;
+        //we have to handle comments separately since they appear in any mode.
+        if Copy(LRawData, LPos, 2) = '--' then begin {do not localize}
+          Inc(LPos, 2);
+          DiscardToEndOfComment(LRawData, LPos, LLen);
+          Continue;
+        end;
       end;
-      DiscardDocWhiteSpace(LRawData,LPos,LLen);
-      LWord := ParseWord(LRawData,LPos,LLen);
-      //we have to handle comments separately since they appear in any mode.
-      if TextStartsWith(LWord,'--') then begin
-        ParseForEndOfComment(LRawData,LPos,LLen);
-      end else begin
-        case LMode  of
-          none :
-          begin
-            DiscardUntilEndOfTag(LRawData,LPos,LLen);
-            if UpperCase(LWord) = 'HTML'  then begin
-               LMOde := html;
-            end;
+      DiscardDocWhiteSpace(LRawData, LPos, LLen);
+      LWord := ParseWord(LRawData, LPos, LLen);
+      case LMode of
+        none :
+        begin
+          DiscardUntilEndOfTag(LRawData, LPos, LLen);
+          if TextIsSame(LWord, 'HTML') then begin
+            LMode := html;
           end;
-          html :
-          begin
-            DiscardUntilEndOfTag(LRawData,LPos,LLen);
-            case PosInStrArray(LWord,HTML_MainDocParts,False) of
-              0 : LMode := title;//title
-              1 : LMode := head; //head
-              2 : LMode := body;
-            end;
+        end;
+        html :
+        begin
+          DiscardUntilEndOfTag(LRawData, LPos, LLen);
+          case PosInStrArray(LWord, HTML_MainDocParts, False) of
+            0 : LMode := title;//title
+            1 : LMode := head; //head
+            2 : LMode := body; //body
           end;
-          head :
-          begin
-            case IdGlobal.PosInStrArray(LWord,HTML_HeadDocAttrs,False) of
-              0 : //'META',
-              begin
-                DiscardDocWhiteSpace(LRawData,LPos,LLen);
-                LWord := ParseWord(LRawData,LPos,LLen);
-                if TextIsSame(LWord,'HTTP-EQUIV') then begin
-                  if LRawData[LPos]='=' then begin
+        end;
+        head :
+        begin
+          case PosInStrArray(LWord, HTML_HeadDocAttrs, False) of
+            0 : //'META'
+            begin
+              DiscardDocWhiteSpace(LRawData, LPos, LLen);
+              LWord := ParseWord(LRawData, LPos, LLen);
+              // '<meta http-equiv="..." content="...">'
+              // '<meta charset="...">' (used in HTML5)
+              // TODO: use ParseUntilEndOfTag() here
+              case PosInStrArray(LWord, HTML_MetaAttrs, False) of {do not localize}
+                0: // HTTP-EQUIV
+                begin
+                  DiscardDocWhiteSpace(LRawData, LPos, LLen);
+                  if LRawData[LPos] = '=' then begin {do not localize}
                     Inc(LPos);
-                    AStr.Add( ParseHTTPMetaEquiveData(LRawData,LPos,LLen));
+                    if LPos > LLen then begin
+                      Break;
+                    end;
+                    AStr.Add( ParseHTTPMetaEquiveData(LRawData, LPos, LLen) );
                   end;
                 end;
-              end;
-              1 :  //'TITLE'
-              begin
-                DiscardUntilEndOfTag(LRawData,LPos,LLen);
-                DiscardUntilCloseTag(LRawData,'TITLE',LPos,LLen);
-              end;
-              //'SCRIPT'
-              2 :
-              begin
-                DiscardUntilEndOfTag(LRawData,LPos,LLen);
-                DiscardUntilCloseTag(LRawData,'SCRIPT',LPos,LLen,True);
-              end;
-              //'LINK'
-              3 :
-              begin
-                DiscardUntilEndOfTag(LRawData,LPos,LLen);
+                1: // charset
+                begin
+                  DiscardDocWhiteSpace(LRawData, LPos, LLen);
+                  if LRawData[LPos] = '=' then begin {do not localize}
+                    Inc(LPos);
+                    if LPos > LLen then begin
+                      Break;
+                    end;
+                    AStr.Add( ParseMetaCharsetData(LRawData, LPos, LLen) );
+                  end;
+                end;
+              else
+                DiscardUntilEndOfTag(LRawData, LPos, LLen);
               end;
             end;
+            1 :  //'TITLE'
+            begin
+              DiscardUntilEndOfTag(LRawData, LPos, LLen);
+              DiscardUntilCloseTag(LRawData, 'TITLE', LPos, LLen); {do not localize}
+            end;
+            2 : //'SCRIPT'
+            begin
+              DiscardUntilEndOfTag(LRawData, LPos, LLen);
+              DiscardUntilCloseTag(LRawData, 'SCRIPT', LPos, LLen, True); {do not localize}
+            end;
+            3 : //'LINK'
+            begin
+              DiscardUntilEndOfTag(LRawData, LPos, LLen); {do not localize}
+            end;
           end;
-          body: begin
-            exit;
-          end;
+        end;
+        body: begin
+          Exit;
         end;
       end;
     end;
@@ -3666,7 +3973,7 @@ function ExtractHeaderSubItem(const AHeaderLine, ASubItem: String;
   AQuoteType: TIdHeaderQuotingType): String;
 var
   LItems: TStringList;
-  {$IFNDEF VCL_6_OR_ABOVE}
+  {$IFNDEF HAS_TStringList_CaseSensitive}
   I: Integer;
   LTmp: string;
   {$ENDIF}
@@ -3675,7 +3982,7 @@ begin
   LItems := TStringList.Create;
   try
     SplitHeaderSubItems(AHeaderLine, LItems, AQuoteType);
-    {$IFDEF VCL_6_OR_ABOVE}
+    {$IFDEF HAS_TStringList_CaseSensitive}
     LItems.CaseSensitive := False;
     Result := LItems.Values[ASubItem];
     {$ELSE}
@@ -3707,12 +4014,12 @@ function ReplaceHeaderSubItem(const AHeaderLine, ASubItem, AValue: String;
 var
   LItems: TStringList;
   I: Integer;
-  {$IFNDEF HAS_TSTRINGS_VALUEFROMINDEX}
+  {$IFNDEF HAS_TStrings_ValueFromIndex}
   LTmp: string;
   {$ENDIF}
   LValue: string;
 
-  {$IFNDEF VCL_6_OR_ABOVE}
+  {$IFNDEF HAS_TStringList_CaseSensitive}
   function FindIndexOfItem: Integer;
   var
     I: Integer;
@@ -3766,7 +4073,7 @@ begin
   LItems := TStringList.Create;
   try
     SplitHeaderSubItems(AHeaderLine, LItems, AQuoteType);
-    {$IFDEF VCL_6_OR_ABOVE}
+    {$IFDEF HAS_TStringList_CaseSensitive}
     LItems.CaseSensitive := False;
     I := LItems.IndexOfName(ASubItem);
     {$ELSE}
@@ -3791,7 +4098,7 @@ begin
     Result := ExtractHeaderItem(AHeaderLine);
     if Result <> '' then begin
       for I := 0 to LItems.Count-1 do begin
-        {$IFDEF HAS_TSTRINGS_VALUEFROMINDEX}
+        {$IFDEF HAS_TStrings_ValueFromIndex}
         Result := Result + '; ' + LItems.Names[I] + '=' + QuoteString(LItems.ValueFromIndex[I]); {do not localize}
         {$ELSE}
         LTmp := LItems.Strings[I];
@@ -3833,6 +4140,34 @@ begin
   end;
 end;
 
+function ExtractHeaderMediaType(const AHeaderLine: String): String;
+var
+  S: String;
+  I: Integer;
+begin
+  S := ExtractHeaderItem(AHeaderLine);
+  I := Pos('/', S);
+  if I > 0 then begin
+    Result := Copy(S, 1, I-1);
+  end else begin
+    Result := '';
+  end;
+end;
+
+function ExtractHeaderMediaSubType(const AHeaderLine: String): String;
+var
+  S: String;
+  I: Integer;
+begin
+  S := ExtractHeaderItem(AHeaderLine);
+  I := Pos('/', S);
+  if I > 0 then begin
+    Result := Copy(S, I+1, Length(S));
+  end else begin
+    Result := '';
+  end;
+end;
+
 function IsHeaderValue(const AHeaderLine: String; const AValue: String): Boolean;
 begin
   Result := TextIsSame(ExtractHeaderItem(AHeaderLine), AValue);
@@ -3842,7 +4177,7 @@ function GetClockValue : Int64;
 {$IFDEF DOTNET}
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 {$ENDIF}
-{$IFDEF WIN32_OR_WIN64_OR_WINCE}
+{$IFDEF WINDOWS}
 type
   TLong64Rec = record
     case LongInt of
@@ -3861,7 +4196,7 @@ var
   {$ENDIF}
 {$ENDIF}
 begin
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
     {$IFDEF WINCE}
     // TODO
     {$ELSE}
@@ -3893,7 +4228,7 @@ end;
 {$ENDIF}
 {$IFDEF FPC}
   {$IFNDEF CPUI386}
-     {$DEFINE NO_NATIVE_X86}
+    {$DEFINE NO_NATIVE_X86}
   {$ENDIF}
 {$ENDIF}
 
@@ -3935,7 +4270,7 @@ var
   LHost: array[1..255] of AnsiChar;
   i: LongWord;
 {$ENDIF}
-{$IFDEF WIN32_OR_WIN64_OR_WINCE}
+{$IFDEF WINDOWS}
 var
   i: LongWord;
 {$ENDIF}
@@ -3952,13 +4287,13 @@ begin
   Result := GetHostName;
     {$ENDIF}
     {$IFDEF USE_VCL_POSIX}
-  if PosixUnistd.gethostname(@LHost[1], 255) <> -1 then begin
+  if Posix.Unistd.gethostname(@LHost[1], 255) <> -1 then begin
     i := IndyPos(#0, String(LHost));
     SetString(Result, PAnsiChar(@LHost[1]), i-1);
   end;
     {$ENDIF}
   {$ENDIF}
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
     {$IFDEF WINCE}
       {$WARNING To Do - find some way to get the Computer Name.}
     {$ELSE}
@@ -3995,7 +4330,7 @@ begin
   // with Byte order. (though we have to concern ourselves once we start
   // writing to some stream or Bytes
   {$ENDIF}
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
   // Many defaults are set here when the choice is ambiguous. However for
   // IdMessage OnInitializeISO can be used by user to choose other.
   case SysLocale.PriLangID of
@@ -4142,7 +4477,17 @@ begin
   Result := CharsetToEncoding(LCharset);
 end;
 
-//TODO:  Figure out what should happen with Unicode content type.
+{$IFNDEF DOTNET_OR_ICONV}
+  // SysUtils.TEncoding.GetEncoding() in Delphi 2009 and 2010 does not
+  // implement UTF-7 and UTF-16 correctly.  This was fixed in Delphi XE...
+  {$DEFINE USE_TIdTextEncoding_GetEncoding}
+  {$IFDEF TIdTextEncoding_IS_NATIVE}
+    {$IFDEF BROKEN_TEncoding_GetEncoding}
+      {$UNDEF USE_TIdTextEncoding_GetEncoding}
+    {$ENDIF}
+  {$ENDIF}
+{$ENDIF}
+
 function CharsetToEncoding(const ACharset: String): TIdTextEncoding;
 {$IFNDEF DOTNET_OR_ICONV}
 var
@@ -4152,6 +4497,14 @@ begin
   Result := nil;
   if ACharSet <> '' then
   begin
+    // let the user provide a custom encoding first, if desired...
+    if Assigned(GIdEncodingNeeded) then begin
+      Result := GIdEncodingNeeded(ACharSet);
+      if Assigned(Result) then begin
+        Exit;
+      end;
+    end;
+
     // RLebeau 3/13/09: if there is a problem initializing an encoding
     // class for the requested charset, either because the charset is
     // not known to Indy, or because the OS does not support it natively,
@@ -4160,13 +4513,50 @@ begin
     // at least the error won't cause exceptions in the user's code, and
     // maybe the user will know how to encode/decode the data manually
     // as a workaround...
+
+    // RLebeau: on non-DotNet systems, setting the AOwnedByIndy parameter
+    // of Indy...Encoding() to False so that the caller does not have to
+    // figure out whether or not to free the output TIdTextEncoding.
+    // Standard TIdTextEncoding objects are owned by the RTL, and the
+    // encoding objects that Indy...Encoding() normally return are owned
+    // by IdGlobal.pas, and thus should not be freed.  Objects returned
+    // by TIdTextEncoding.GetEncoding() and Indy...Encoding(False) are
+    // not owned by anyone and must always be freed.
+
     try
       {$IFDEF DOTNET_OR_ICONV}
       Result := TIdTextEncoding.GetEncoding(ACharset);
       {$ELSE}
       CP := CharsetToCodePage(ACharset);
-      if CP <> 0 then begin
-        Result := TIdTextEncoding.GetEncoding(CP);
+      case CP of
+        20127:
+          // RLebeau: 20127 is the official codepage for ASCII,
+          // but not all OS versions support that codepage...
+          Result := IndyASCIIEncoding(False);
+        65001:
+          // RLebeau: UTF-8 is handled separate from other standard
+          // encodings because we need to avoid the MB_ERR_INVALID_CHARS
+          // flag regardless of whether TIdTextEncoding is implemented
+          // natively or manually...
+          Result := IndyUTF8Encoding(False);
+        {$IFNDEF USE_TIdTextEncoding_GetEncoding}
+        1200:
+          Result := TIdUTF16LittleEndianEncoding.Create;
+        1201:
+          Result := TIdUTF16BigEndianEncoding.Create;
+        65000:
+          Result := TIdUTF7Encoding.Create;
+        {$ENDIF}
+      else
+        begin
+          if CP <> 0 then begin
+            {$IFDEF USE_TIdTextEncoding_GetEncoding}
+            Result := TIdTextEncoding.GetEncoding(CP);
+            {$ELSE}
+            Result := TIdMBCSEncoding.Create(CP);
+            {$ENDIF}
+          end;
+        end;
       end;
       {$ENDIF}
     except end;
@@ -4175,7 +4565,7 @@ begin
   {JPM - I have decided to temporarily make this 8-bit because I'm concerned
   about how binary files will be handled by the ASCII encoder (where there may
   be 8bit byte-values.  In addition, there are numerous charsets for various
-  languages and code that does some special mapping for them would be a mess.}
+  languages and codepages that do some special mapping for them would be a mess.}
 
   {RLebeau: technically, we should be returning a 7-bit encoding, as the
   default charset for "text/" content types is "us-ascii".}
@@ -4192,19 +4582,83 @@ begin
       Exit;
     end;
     }
-    {$IFDEF DOTNET}
-    Result := Indy8BitEncoding;
-    {$ELSE}
-    {Rlebeau: Setting the AOwnedByIndy parameter of Indy8BitEncoding() to False.
-    This way, the caller does not have to figure out whether or not to free the
-    output TIdTextEncoding.  Standard TIdTextEncoding objects (ASCII, UTF8, etc)
-    are owned by the RTL, and the 8-bit encoding object that Indy8BitEncoding()
-    normally returns is owned by IdGlobal.pas, and thus should not be freed.
-    Objects returned by TIdTextEncoding.GetEncoding() and Indy8BitEncoding(False)
-    are not owned by anyone and must always be freed.}
-    Result := Indy8BitEncoding(False);
-    {$ENDIF}
+    Result := Indy8BitEncoding{$IFNDEF DOTNET}(False){$ENDIF};
   end;
+end;
+
+procedure WriteStringAsContentType(AStream: TStream; const AStr, AContentType: String;
+  AQuoteType: TIdHeaderQuotingType
+  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF});
+var
+  LEncoding: TIdTextEncoding;
+begin
+  LEncoding := ContentTypeToEncoding(AContentType, AQuoteType);
+  {$IFNDEF DOTNET}
+  try
+  {$ENDIF}
+    WriteStringToStream(AStream, AStr, LEncoding{$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF});
+  {$IFNDEF DOTNET}
+  finally
+    LEncoding.Free;
+  end;
+  {$ENDIF}
+end;
+
+procedure WriteStringsAsContentType(AStream: TStream; const AStrings: TStrings;
+  const AContentType: String; AQuoteType: TIdHeaderQuotingType
+  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF});
+var
+  LEncoding: TIdTextEncoding;
+begin
+  LEncoding := ContentTypeToEncoding(AContentType, AQuoteType);
+  {$IFNDEF DOTNET}
+  try
+  {$ENDIF}
+    // RLebeau 10/06/2010: not using TStrings.SaveToStream() in D2009+
+    // anymore, as it may save a BOM which we do not want here...
+    WriteStringToStream(AStream, AStrings.Text, LEncoding{$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF});
+  {$IFNDEF DOTNET}
+  finally
+    LEncoding.Free;
+  end;
+  {$ENDIF}
+end;
+
+procedure WriteStringAsCharset(AStream: TStream; const AStr, ACharset: string
+  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF});
+var
+  LEncoding: TIdTextEncoding;
+begin
+  LEncoding := CharsetToEncoding(ACharset);
+  {$IFNDEF DOTNET}
+  try
+  {$ENDIF}
+    WriteStringToStream(AStream, AStr, LEncoding{$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF});
+  {$IFNDEF DOTNET}
+  finally
+    LEncoding.Free;
+  end;
+  {$ENDIF}
+end;
+
+procedure WriteStringsAsCharset(AStream: TStream; const AStrings: TStrings;
+  const ACharset: string
+  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF});
+var
+  LEncoding: TIdTextEncoding;
+begin
+  LEncoding := CharsetToEncoding(ACharset);
+  {$IFNDEF DOTNET}
+  try
+  {$ENDIF}
+    // RLebeau 10/06/2010: not using TStrings.SaveToStream() in D2009+
+    // anymore, as it may save a BOM which we do not want here...
+    WriteStringToStream(AStream, AStrings.Text, LEncoding{$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF});
+  {$IFNDEF DOTNET}
+  finally
+    LEncoding.Free;
+  end;
+  {$ENDIF}
 end;
 
 function ReadStringAsContentType(AStream: TStream; const AContentType: String;
@@ -4313,7 +4767,7 @@ begin
 end;
 
 initialization
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
   ATempPath := TempPath;
   {$ENDIF}
   SetLength(IndyFalseBoolStrs, 1);

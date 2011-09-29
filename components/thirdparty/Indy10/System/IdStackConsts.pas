@@ -81,7 +81,7 @@ uses
   {$ENDIF}
   //TODO:  I'm not really sure how other platforms are supported with asockets header
   //Do I use the sockets unit or do something totally different for each platform
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
   IdWship6, //for some constants that supplement IdWinsock
   IdWinsock2;
   {$ENDIF}
@@ -109,7 +109,7 @@ uses
 	systems, platform warnings are not going to be too helpful.
 	}
      {$WARN SYMBOL_PLATFORM OFF}
-      PosixErrno,PosixNetDB, PosixNetinetIn, PosixSysSocket;
+      Posix.Errno,Posix.NetDB, Posix.NetinetIn, Posix.SysSocket;
     {$ENDIF}
     {$IFDEF KYLIXCOMPAT}
     libc;
@@ -200,7 +200,7 @@ const
   Id_IP_HDR_INCLUDED      = IP_HDRINCL; // TODO integrate into IdStackConsts
   {$ENDIF}
 
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
   Id_IPV6_HDRINCL         = IPV6_HDRINCL;
   Id_IPV6_UNICAST_HOPS    = IPV6_UNICAST_HOPS;
   Id_IPV6_MULTICAST_IF    = IPV6_MULTICAST_IF;
@@ -429,7 +429,9 @@ SocketOptionName.ReceiveTimeout;//  Receive time out. This option applies only t
 SocketOptionName.SendBuffer;//  Specifies the total per-socket buffer space reserved for sends. This is unrelated to the maximum message size or the size of a TCP window.
 SocketOptionName.SendLowWater;//  Specifies the total per-socket buffer space reserved for receives. This is unrelated to the maximum message size or the size of a TCP window.
 SocketOptionName.SendTimeout;//  Send timeout. This option applies only to synchronous methods; it has no effect on asynchronous methods such as BeginSend.
-SocketOptionName.Type;//  Get socket type.
+}
+  Id_SO_TYPE             = SocketOptionName.Type;//  Get socket type.
+{
 SocketOptionName.TypeOfService;//  Change the IP header type of service field.
 SocketOptionName.UnblockSource;//  Unblock a previously blocked source.
 SocketOptionName.UseLoopback;//  Bypass hardware when possible.
@@ -489,7 +491,7 @@ SocketOptionName.UseLoopback;//  Bypass hardware when possible.
   Id_SD_Send = SHUT_WR;
   Id_SD_Both = SHUT_RDWR;
   //
-  //Temp defines.  They should be in Delphi's PosixErrno.pas
+  //Temp defines.  They should be in Delphi's Posix.Errno.pas
   ESOCKTNOSUPPORT	= 44;		//* Socket type not supported */
   EPFNOSUPPORT = 46;		//* Protocol family not supported */
   ESHUTDOWN = 58;		//* Can't send after socket shutdown */
@@ -587,6 +589,17 @@ SocketOptionName.UseLoopback;//  Bypass hardware when possible.
   Id_SD_Recv = SHUT_RD;
   Id_SD_Send = SHUT_WR;
   Id_SD_Both = SHUT_RDWR;
+    {$IFDEF BEOS}
+  {work around incomplete definitions in BeOS FPC compiler.}
+  EDESTADDRREQ = (B_POSIX_ERROR_BASE + 48);
+  EHOSTDOWN = (B_POSIX_ERROR_BASE + 45);
+   
+  ESysENOTSOCK = ENOTSOCK;
+  ESysEDESTADDRREQ = EDESTADDRREQ;
+  ESysEMSGSIZE = EMSGSIZE;
+  ESysEOPNOTSUPP = EOPNOTSUPP;
+  ESysEHOSTDOWN = EHOSTDOWN;
+    {$ENDIF}
   //
   Id_WSAEINTR           = ESysEINTR;
   Id_WSAEBADF           = ESysEBADF;
@@ -603,7 +616,9 @@ SocketOptionName.UseLoopback;//  Bypass hardware when possible.
   Id_WSAEPROTOTYPE      = ESysEPROTOTYPE;
   Id_WSAENOPROTOOPT     = ESysENOPROTOOPT;
   Id_WSAEPROTONOSUPPORT = ESysEPROTONOSUPPORT;
+  {$IFNDEF BEOS}
   Id_WSAESOCKTNOSUPPORT = ESysESOCKTNOSUPPORT;
+  {$ENDIF}
   Id_WSAEOPNOTSUPP      = ESysEOPNOTSUPP;
   Id_WSAEPFNOSUPPORT    = ESysEPFNOSUPPORT;
   Id_WSAEAFNOSUPPORT    = ESysEAFNOSUPPORT;
@@ -618,7 +633,9 @@ SocketOptionName.UseLoopback;//  Bypass hardware when possible.
   Id_WSAEISCONN         = ESysEISCONN;
   Id_WSAENOTCONN        = ESysENOTCONN;
   Id_WSAESHUTDOWN       = ESysESHUTDOWN;
+  {$IFNDEF BEOS}
   Id_WSAETOOMANYREFS    = ESysETOOMANYREFS;
+  {$ENDIF}
   Id_WSAETIMEDOUT       = ESysETIMEDOUT;
   Id_WSAECONNREFUSED    = ESysECONNREFUSED;
   Id_WSAELOOP           = ESysELOOP;
@@ -628,7 +645,7 @@ SocketOptionName.UseLoopback;//  Bypass hardware when possible.
   Id_WSAENOTEMPTY       = ESysENOTEMPTY;
   {$ENDIF}
 
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
   // Shutdown Options
   Id_SD_Recv = 0;
   Id_SD_Send = 1;

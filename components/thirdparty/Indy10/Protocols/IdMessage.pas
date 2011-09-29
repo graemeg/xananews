@@ -711,7 +711,7 @@ var
   ISOCharset: string;
   HeaderEncoding: Char;
   LN: Integer;
-  LEncoding, LMIMEBoundary: string;
+  LEncoding, LCharSet, LMIMEBoundary: string;
   LDate: TDateTime;
   LReceiptRecipient: string;
 begin
@@ -742,6 +742,8 @@ begin
       end;
     end;
   end;
+  {RLebeau: should we validate the TIdMessage.ContentTransferEncoding property as well?}
+  
   {CC2: We dont support attachments in an encoded body.
   Change it to a supported combination...}
   if MessageParts.Count > 0 then begin
@@ -800,6 +802,9 @@ begin
       Values['Bcc'] := EncodeAddress(BCCList, HeaderEncoding, ISOCharSet); {do not localize}
     end;
     Values['Newsgroups'] := NewsGroups.CommaText; {do not localize}
+
+    // RLebeau: Delphi XE introduces a new TStrings.Encoding property,
+    // so we have to qualify which Encoding property to access here...
     if Self.Encoding = meMIME then
     begin
       if IsMsgSinglePartMime then begin
@@ -821,8 +826,12 @@ begin
         Values['Content-Disposition'] := '';
       end else begin
         if FContentType <> '' then begin
+          LCharSet := FCharSet;
+          if (LCharSet = '') and IsHeaderMediaType(FContentType, 'text') then begin {do not localize}
+            LCharSet := 'us-ascii';  {do not localize}
+          end;
           Values['Content-Type'] := FContentType;  {do not localize}
-          Params['Content-Type', 'charset'] := FCharSet;  {do not localize}
+          Params['Content-Type', 'charset'] := LCharSet;  {do not localize}
           if (MessageParts.Count > 0) and (LMIMEBoundary <> '') then begin
             Params['Content-Type', 'boundary'] := LMIMEBoundary;  {do not localize}
           end;
@@ -833,8 +842,12 @@ begin
       end;
     end else begin
       //CC: non-MIME can have ContentTransferEncoding of base64, quoted-printable...
+      LCharSet := FCharSet;
+      if (LCharSet = '') and IsHeaderMediaType(FContentType, 'text') then begin {do not localize}
+        LCharSet := 'us-ascii';  {do not localize}
+      end;
       Values['Content-Type'] := FContentType;  {do not localize}
-      Params['Content-Type', 'charset'] := FCharSet;  {do not localize}
+      Params['Content-Type', 'charset'] := LCharSet;  {do not localize}
       Values['Content-Transfer-Encoding'] := ContentTransferEncoding; {do not localize}
     end;
     Values['Sender'] := Sender.Text; {do not localize}
@@ -949,14 +962,15 @@ begin
   ContentTransferEncoding := Headers.Values['Content-Transfer-Encoding']; {do not localize}
   ContentDisposition := Headers.Values['Content-Disposition'];  {do not localize}
   Subject := DecodeHeader(Headers.Values['Subject']); {do not localize}
-  FromList.EMailAddresses := DecodeHeader(Headers.Values['From']); {do not localize}
+  DecodeAddresses(Headers.Values['From'], FromList); {do not localize}
   MsgId := Headers.Values['Message-Id']; {do not localize}
   CommaSeparatedToStringList(Newsgroups, Headers.Values['Newsgroups']); {do not localize}
-  Recipients.EMailAddresses := DecodeHeader(Headers.Values['To']); {do not localize}
-  CCList.EMailAddresses := DecodeHeader(Headers.Values['Cc']); {do not localize}
+  DecodeAddresses(Headers.Values['To'], Recipients); {do not localize}
+  DecodeAddresses(Headers.Values['Cc'], CCList); {do not localize}
   {CC2: Added support for BCCList...}
-  BCCList.EMailAddresses := DecodeHeader(Headers.Values['Bcc']); {do not localize}
+  DecodeAddresses(Headers.Values['Bcc'], BCCList); {do not localize}
   Organization := Headers.Values['Organization']; {do not localize}
+  InReplyTo := Headers.Values['In-Reply-To']; {do not localize}
 
   ReceiptRecipient.Text := Headers.Values['Disposition-Notification-To']; {do not localize}
   if Length(ReceiptRecipient.Text) = 0 then begin
@@ -965,9 +979,9 @@ begin
 
   References := Headers.Values['References']; {do not localize}
 
-  ReplyTo.EmailAddresses := Headers.Values['Reply-To']; {do not localize}
+  DecodeAddresses(Headers.Values['Reply-To'], ReplyTo); {do not localize}
   if Length(ReplyTo.EmailAddresses) = 0 then begin
-    ReplyTo.EmailAddresses := Headers.Values['Return-Path'];
+    DecodeAddresses(Headers.Values['Return-Path'], ReplyTo); {do not localize}
   end;
 
   Date := GMTToLocalDateTime(Headers.Values['Date']); {do not localize}
@@ -990,6 +1004,8 @@ begin
   if LMIMEVersion = '' then begin
     Encoding := mePlainText;
   end else begin
+    // TODO: this should be true if a MIME boundary is present.
+    // The MIME version is optional...
     Encoding := meMIME;
   end;
 end;
@@ -1034,9 +1050,17 @@ begin
   if AValue <> '' then
   begin
     FContentType := RemoveHeaderEntry(AValue, 'charset', LCharSet, QuoteMIME); {do not localize}
+
+    {RLebeau: the ContentType property is streamed after the CharSet property,
+    so do not overwrite it during streaming}
+    if csReading in ComponentState then begin
+      Exit;
+    end;
+
     if (LCharSet = '') and IsHeaderMediaType(FContentType, 'text') then begin {do not localize}
       LCharSet := 'us-ascii'; {do not localize}
     end;
+
     {RLebeau: override the current CharSet only if the header specifies a new value}
     if LCharSet <> '' then begin
       FCharSet := LCharSet;
@@ -1044,7 +1068,12 @@ begin
   end else
   begin
     FContentType := 'text/plain'; {do not localize}
-    FCharSet := 'us-ascii'; {do not localize}
+
+    {RLebeau: the ContentType property is streamed after the CharSet property,
+    so do not overwrite it during streaming}
+    if not (csReading in ComponentState) then begin
+      FCharSet := 'us-ascii'; {do not localize}
+    end;
   end;
 end;
 

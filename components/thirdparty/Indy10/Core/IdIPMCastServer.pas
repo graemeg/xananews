@@ -86,7 +86,9 @@ type
     procedure SetTTL(const AValue: Byte); virtual;
     procedure InitComponent; override;
   public
-    procedure Send(const AData: string); overload;
+    procedure Send(const AData: string; AByteEncoding: TIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+      ); overload;
     procedure Send(const ABuffer : TIdBytes); overload;
     destructor Destroy; override;
     //
@@ -99,6 +101,7 @@ type
     property MulticastGroup;
     property IPVersion;
     property Port;
+    property ReuseSocket;
     property TimeToLive: Byte read FTimeToLive write SetTTL default DEF_IMP_TTL;
   end;
 
@@ -142,7 +145,13 @@ begin
   if Assigned(FBinding) then
   begin
     if FBinding.HandleAllocated then begin
-      FBinding.DropMulticastMembership(FMulticastGroup);
+      // RLebeau: DropMulticastMembership() can raise an exception if
+      // the network cable has been pulled out.
+      // TODO: update DropMulticastMembership() to not raise an exception...
+      try
+        FBinding.DropMulticastMembership(FMulticastGroup);
+      except
+      end;
     end;
     FreeAndNil(FBinding);
   end;
@@ -167,6 +176,7 @@ begin
     {$ENDIF}
     FBinding.IP := FBoundIP;
     FBinding.Port := FBoundPort;
+    FBinding.ReuseSocket := FReuseSocket;
     FBinding.Bind;
     //Multicast.IMRMultiAddr :=  GBSDStack.StringToTIn4Addr(FMulticastGroup);
     //Hope the following is correct for StringToTIn4Addr(), should be checked...
@@ -186,9 +196,11 @@ begin
   Binding.SendTo(AHost, APort, ABuffer, Binding.IPVersion);
 end;
 
-procedure TIdIPMCastServer.Send(const AData: string);
+procedure TIdIPMCastServer.Send(const AData: string; AByteEncoding: TIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+  );
 begin
-  MulticastBuffer(FMulticastGroup, FPort, ToBytes(AData));
+  MulticastBuffer(FMulticastGroup, FPort, ToBytes(AData, AByteEncoding{$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF}));
 end;
 
 procedure TIdIPMCastServer.Send(const ABuffer : TIdBytes);

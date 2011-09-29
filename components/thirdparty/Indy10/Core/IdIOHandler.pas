@@ -754,9 +754,9 @@ uses
   Windows,
   {$ENDIF}
   {$IFDEF USE_VCL_POSIX}
-	  {$IFDEF DARWIN}
-    CoreServices,
-	  {$ENDIF}
+    {$IFDEF DARWIN}
+  Macapi.CoreServices,
+    {$ENDIF}
   {$ENDIF}
   IdStack, IdStackConsts, IdResourceStrings, SysUtils;
 
@@ -1196,7 +1196,7 @@ function TIdIOHandler.ReadLongInt(AConvert: Boolean): LongInt;
 var
   LBytes: TIdBytes;
 begin
-  ReadBytes(LBytes, SizeOf(Integer), False);
+  ReadBytes(LBytes, SizeOf(LongInt), False);
   Result := BytesToLongInt(LBytes);
   if AConvert then begin
     Result := LongInt(GStack.NetworkToHost(LongWord(Result)));
@@ -1218,7 +1218,7 @@ function TIdIOHandler.ReadLongWord(AConvert: Boolean): LongWord;
 var
   LBytes: TIdBytes;
 begin
-  ReadBytes(LBytes, SizeOf(LBytes), False);
+  ReadBytes(LBytes, SizeOf(LongWord), False);
   Result := BytesToLongWord(LBytes);
   if AConvert then begin
     Result := GStack.NetworkToHost(Result);
@@ -1383,7 +1383,7 @@ begin
     VMsgEnd := True;
     Exit;
   end;
-  if TextStartsWith(Result, '.') then begin {do not localize}
+  if TextStartsWith(Result, '..') then begin {do not localize}
     Delete(Result, 1, 1);
   end;
   VMsgEnd := False;
@@ -1464,8 +1464,13 @@ begin
         if Opened then begin
           // No need to call AntiFreeze, the Readable does that.
           if SourceIsAvailable then begin
-            // TODO: Whey are we reallocating LBuffer every time? This should
-            // be a one time operation per connection.
+            // TODO: Whey are we reallocating LBuffer every time? This
+	    // should be a one time operation per connection.
+
+            // RLebeau: because the Intercept does not allow the buffer
+            // size to be specified, and the Intercept could potentially
+            // resize the buffer...
+
             SetLength(LBuffer, RecvBufferSize);
             try
               LByteCount := ReadDataFromSource(LBuffer);
@@ -1557,13 +1562,7 @@ begin
     ASize := AStream.Size;
     AStream.Position := 0;
   end;
-
-  //else ">0" ACount bytes
-  {$IFDEF STREAM_SIZE_64}
-  if (ASize > High(Integer)) and (not LargeStream) then begin
-    EIdIOHandlerRequiresLargeStream.Toss(RSRequiresLargeStream);
-  end;
-  {$ENDIF}
+  //else ">0" number of bytes
 
   // RLebeau 3/19/2006: DO NOT ENABLE WRITE BUFFERING IN THIS METHOD!
   //
@@ -1579,24 +1578,28 @@ begin
     if LargeStream then begin
       Write(Int64(ASize));
     end else begin
+      {$IFDEF STREAM_SIZE_64}
+      if ASize > High(Integer) then begin
+        EIdIOHandlerRequiresLargeStream.Toss(RSRequiresLargeStream);
+      end;
+      {$ENDIF}
       Write(Integer(ASize));
     end;
   end;
 
   BeginWork(wmWrite, ASize);
   try
+    SetLength(LBuffer, FSendBufferSize);
     while ASize > 0 do begin
-      SetLength(LBuffer, FSendBufferSize); //BGO: bad for speed
-      LBufSize := IndyMin(ASize, FSendBufferSize);
+      LBufSize := IndyMin(ASize, Length(LBuffer));
       // Do not use ReadBuffer. Some source streams are real time and will not
       // return as much data as we request. Kind of like recv()
       // NOTE: We use .Size - size must be supported even if real time
       LBufSize := TIdStreamHelper.ReadBytes(AStream, LBuffer, LBufSize);
-      if LBufSize = 0 then begin
+      if LBufSize <= 0 then begin
         raise EIdNoDataToRead.Create(RSIdNoDataToRead);
       end;
-      SetLength(LBuffer, LBufSize);
-      Write(LBuffer);
+      Write(LBuffer, LBufSize);
       // RLebeau: DoWork() is called in WriteDirect()
       //DoWork(wmWrite, LBufSize);
       Dec(ASize, LBufSize);
@@ -2257,9 +2260,7 @@ procedure TIdIOHandler.Write(const ABuffer: TIdBytes; const ALength: Integer = -
   const AOffset: Integer = 0);
 var
   LLength: Integer;
-  LTemp: TIdBytes;
 begin
-  LTemp := nil; // keep the compiler happy
   LLength := IndyLength(ABuffer, ALength, AOffset);
   if LLength > 0 then begin
     if FWriteBuffer = nil then begin
@@ -2357,7 +2358,7 @@ begin
   FLargeStream := False;
   FReadTimeOut := IdTimeoutDefault;
   FInputBuffer := TIdBuffer.Create(BufferRemoveNotify);
-  FDefStringEncoding := TIdTextEncoding.ASCII;
+  FDefStringEncoding := IndyASCIIEncoding;
   {$IFDEF STRING_IS_ANSI}
   FDefAnsiEncoding := TIdTextEncoding.Default;
   {$ENDIF}
@@ -2384,23 +2385,27 @@ var
 begin
   // Check if disconnected
   CheckForDisconnect(True, True);
-  // TODO: pass offset/size parameters to the Intercept
-  // so that a copy is no longer needed here
-  LTemp := ToBytes(ABuffer, ALength, AOffset);
   if Intercept <> nil then begin
+    // TODO: pass offset/size parameters to the Intercept
+    // so that a copy is no longer needed here
+    LTemp := ToBytes(ABuffer, ALength, AOffset);
     Intercept.Send(LTemp);
+    LSize := Length(LTemp);
+    LPos := 0;
+  end else begin
+    LTemp := ABuffer;
+    LSize := IndyLength(LTemp, ALength, AOffset);
+    LPos := AOffset;
   end;
-  LSize := Length(LTemp);
-  LPos := 0;
-  while LPos < LSize do
+  while LSize > 0 do
   begin
-    LByteCount := WriteDataToTarget(LTemp, LPos, LSize - LPos);
+    LByteCount := WriteDataToTarget(LTemp, LPos, LSize);
     if LByteCount < 0 then
     begin
-      LLastError := GStack.CheckForSocketError(LByteCount, [ID_WSAESHUTDOWN, Id_WSAECONNABORTED, Id_WSAECONNRESET]);
+      LLastError := CheckForError(LByteCount);
       FClosedGracefully := True;
       Close;
-      GStack.RaiseSocketError(LLastError);
+      RaiseError(LLastError);
     end;
     // TODO - Have a AntiFreeze param which allows the send to be split up so that process
     // can be called more. Maybe a prop of the connection, MaxSendSize?
@@ -2412,6 +2417,7 @@ begin
     CheckForDisconnect;
     DoWork(wmWrite, LByteCount);
     Inc(LPos, LByteCount);
+    Dec(LSize, LByteCount);
   end;
 end;
 

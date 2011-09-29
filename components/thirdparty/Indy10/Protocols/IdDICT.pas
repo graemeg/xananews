@@ -85,6 +85,9 @@ type
     procedure InternalGetList(const ACmd : String; AENtries : TCollection);
     procedure InternalGetStrs(const ACmd : String; AStrs : TStrings);
   public
+    {$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
+    constructor Create(AOwner: TComponent); reintroduce; overload;
+    {$ENDIF}
     destructor Destroy; override;
     procedure Connect; override;
     procedure DisconnectNotifyPeer; override;
@@ -120,6 +123,13 @@ const
 
 { TIdDICT }
 
+{$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
+constructor TIdDICT.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+end;
+{$ENDIF}
+
 procedure TIdDICT.Connect;
 var
   LBuf : String;
@@ -132,7 +142,7 @@ begin
   FServer := '';
   try
     inherited Connect;
-    IOHandler.DefStringEncoding := TIdTextEncoding.UTF8;
+    IOHandler.DefStringEncoding := IndyUTF8Encoding;
     GetResponse(220);
     if LastCmdResult.Text.Count > 0 then begin
       // 220 pan.alephnull.com dictd 1.8.0/rf on Linux 2.4.18-14 <auth.mime> <258510.25288.1078409724@pan.alephnull.com>
@@ -166,7 +176,7 @@ begin
         end;
       end;
     end else begin
-       FSASLMechanisms.LoginSASL('SASLAUTH',FHost, 'dict', ['230'], ['330'], Self, FCapabilities, ''); {do not localize}
+      FSASLMechanisms.LoginSASL('SASLAUTH',FHost, 'dict', ['230'], ['330'], Self, FCapabilities, ''); {do not localize}
     end;
     if FTryMIME and IsCapaSupported('MIME') then begin {do not localize}
       SendCmd('OPTION MIME'); {do not localize}

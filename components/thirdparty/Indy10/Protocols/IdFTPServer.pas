@@ -1272,8 +1272,8 @@ uses
     {$ENDIF}
   {$ENDIF}
   {$IFDEF USE_VCL_POSIX}
-  PosixSysSelect,
-  PosixSysTime,
+  Posix.SysSelect,
+  Posix.SysTime,
   {$ENDIF}
   IdFIPS,
   IdHash, IdHashCRC, IdHashMessageDigest, IdHashSHA, IdIOHandlerSocket,
@@ -3494,7 +3494,6 @@ const
   DEF_BLOCKSIZE = 10*10240;
   {CH DEF_CHECKCMD_WAIT = 1; }
 var
-  LMemStream: TStream;
   LContext : TIdFTPServerContext;
   LCmdQueue : TStringList;
   LLine : String;
@@ -3597,9 +3596,9 @@ var
     }
     if PosInStrArray(ASender.CommandHandler.Command, ['LIST', 'NLST', 'MLSD'], False) > -1 then begin
       if AContext.NLSTUtf8 then begin
-        LEncoding := TIdTextEncoding.UTF8;
+        LEncoding := IndyUTF8Encoding;
       end else begin
-        LEncoding := TIdTextEncoding.ASCII;
+        LEncoding := IndyASCIIEncoding;
       end;
     end else begin
       LEncoding := Indy8BitEncoding;
@@ -3673,13 +3672,13 @@ begin
                   end;
                 ftpStor:
                   if Assigned(LContext.FDataChannel.Data) then begin
-                    LMemStream := TMemoryStream.Create;
+                    LStrm := TMemoryStream.Create;
                     try
                       ReadFromStream(LContext, LCmdQueue, LStrm);
                       //TODO;
-                     // SplitLines(LMemStream.Memory, LMemStream.Size, TStrings(LContext.FDataChannel.FData));
+                     // SplitLines(TMemoryStream(LStrm).Memory, LMemStream.Size, LContext.FDataChannel.FData as TStrings);
                     finally
-                      FreeAndNil(LMemStream);
+                      FreeAndNil(LStrm);
                     end;
                   end;//ftpStor
               end;//case
@@ -3802,9 +3801,9 @@ begin
         //reply could throw off a FTP client.
         LContext.Connection.IOHandler.WriteLn(IndyFormat('213-%s', [RSFTPDataConnToOpen])); {Do not Localize}
         if TIdFTPServerContext(ASender.Context).NLSTUtf8 then begin
-          LEncoding := TIdTextEncoding.UTF8;
+          LEncoding := IndyUTF8Encoding;
         end else begin
-          LEncoding := TIdTextEncoding.ASCII;
+          LEncoding := IndyASCIIEncoding;
         end;
         LContext.Connection.IOHandler.Write(LStream, False, LEncoding);
         ASender.PerformReply := True;
@@ -6771,14 +6770,14 @@ begin
       Exit;
     end;
     // enable UTF-8 over control connection
-    LContext.Connection.IOHandler.DefStringEncoding := TIdTextEncoding.UTF8;
+    LContext.Connection.IOHandler.DefStringEncoding := IndyUTF8Encoding;
   end else begin
     // OPTS UTF8 <ON|OFF>
     // non-standard Microsoft IE implementation!!!!
     case PosInStrArray(s, OnOffStates, False) of
       0: begin // 'ON'
            LContext.NLSTUtf8 := True;
-           LContext.Connection.IOHandler.DefStringEncoding := TIdTextEncoding.UTF8;
+           LContext.Connection.IOHandler.DefStringEncoding := IndyUTF8Encoding;
          end;
       1: begin // 'OFF'
            LContext.NLSTUtf8 := False;

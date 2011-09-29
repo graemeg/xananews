@@ -36,7 +36,7 @@ unit IdZLib;
 
 interface
 
-{$i IdCompilerDefines.inc}
+{$I IdCompilerDefines.inc}
 
 uses
   SysUtils,
@@ -184,11 +184,14 @@ function CCheck(code: Integer): Integer;
 const
   //winbit constants
   MAX_WBITS = IdZLibHeaders.MAX_WBITS;
+  {$EXTERNALSYM MAX_WBITS}
   GZIP_WINBITS = MAX_WBITS + 16; //GZip format
+  {$EXTERNALSYM GZIP_WINBITS}
   //negative values mean do not add any headers
   //adapted from "Enhanced zlib implementation"
   //by Gabriel Corneanu <gabrielcorneanu(AT)yahoo.com>
   RAW_WBITS = -MAX_WBITS; //raw stream (without any header)
+  {$EXTERNALSYM RAW_WBITS}
 
 implementation
 
@@ -258,9 +261,17 @@ begin
   if AStream is TCustomMemoryStream then begin
     Result := TCustomMemoryStream(AStream).Memory;
   end
+  {$IFDEF STRING_IS_ANSI}
+  // In D2009, the DataString property was changed to use a getter method
+  // that returns a temporary string, so it is not a direct access to the
+  // stream contents anymore.  TStringStream was updated to derive from
+  // TBytesStream now, which is a TCustomMemoryStream descendant, and so
+  // will be handled above...
   else if AStream is TStringStream then begin
     Result := Pointer(TStringStream(AStream).DataString);
-  end else begin
+  end
+  {$ENDIF}
+  else begin
     Result := nil;
   end;
   if Result <> nil then

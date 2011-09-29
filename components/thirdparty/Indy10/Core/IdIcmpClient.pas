@@ -178,6 +178,8 @@ type
     property ReplyData: string read FReplydata;
     property ReplyStatus: TReplyStatus read FReplyStatus;
 
+    property OnReply: TOnReplyEvent read FOnReply write FOnReply;
+
   public
     destructor Destroy; override;
     procedure Send(const AHost: string; const APort: TIdPort; const ABuffer : TIdBytes); override;
@@ -197,20 +199,20 @@ type
     {$ENDIF}
     property PacketSize;
     property ReceiveTimeout default Id_TIDICMP_ReceiveTimeout;
-    property OnReply: TOnReplyEvent read FOnReply write FOnReply;
+    property OnReply;
   end;
 
 implementation
 
 uses
   //facilitate inlining only.
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
   Windows,
   {$ENDIF}
   {$IFDEF USE_VCL_POSIX}
-	  {$IFDEF DARWIN}
-    CoreServices,
-	  {$ENDIF}
+    {$IFDEF DARWIN}
+    Macapi.CoreServices,
+    {$ENDIF}
   {$ENDIF}
   IdExceptionCore, IdRawHeaders, IdResourceStringsCore,
   IdStack, IdStruct, SysUtils;
@@ -413,7 +415,7 @@ begin
       Id_ICMP_ECHOREPLY, Id_ICMP_ECHO:
       begin
         FReplyStatus.ReplyStatusType := rsEcho;
-        FReplyData := BytesToString(FBufReceive, LIdx, -1, Indy8BitEncoding);
+        FReplyData := BytesToStringRaw(FBufReceive, LIdx, -1);
         // result is only valid if the seq. number is correct
       end;
       Id_ICMP_UNREACH:
@@ -477,7 +479,7 @@ begin
         RTTime := GetTickDiff(BytesToLongWord(FBufReceive, LIpHeaderLen+8+8), Ticks); //pOriginalICMP^.icmp_dun.ts.otime;
 
         // move to offset
-        // pOriginalICMP := Pointer(Cardinal(pOriginalIP) + (iIpHeaderLen));
+        // pOriginalICMP := Pointer(PtrUInt(pOriginalIP) + (iIpHeaderLen));
         // extract information from original ICMP frame
         // ActualSeqID := pOriginalICMP^.icmp_hun.echo.seq;
         // RTTime := Ticks - pOriginalICMP^.icmp_dun.ts.otime;

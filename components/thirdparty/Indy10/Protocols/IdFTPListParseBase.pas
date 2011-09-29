@@ -498,7 +498,8 @@ begin
   LI := AItem as TIdMLSTFTPListItem;
   LFacts := TStringList.Create;
   try
-    LI.FileName := ParseFacts(AItem.Data, LFacts);
+    LI.FileName := ParseFactsMLS(AItem.Data, LFacts);
+
     LI.LocalFileName := AItem.FileName;
 
     LBuffer := LFacts.Values['type']; {do not localize}

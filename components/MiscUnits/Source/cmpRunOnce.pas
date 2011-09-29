@@ -36,6 +36,10 @@ type
 
 implementation
 
+function SendMessageTimeout(hWnd: HWND; Msg: UINT; wParam: WPARAM;
+  lParam: LPARAM; fuFlags, uTimeout: UINT; lpdwResult: PDWORD_PTR): LRESULT;
+  stdcall; external user32 name 'SendMessageTimeoutW';
+
 { TRunOnce }
 
 function TRunOnce.CheckOtherApp(hwnd: HWND): boolean;
@@ -46,7 +50,7 @@ begin
   if hwnd <> TForm (Owner).Handle then
   begin
     if GetWindowLong (hwnd, GWL_USERDATA) = $badf00d then
-      if (SendMessageTimeout (hwnd, fUniqueMessage, 0, 0, SMTO_BLOCK or SMTO_ABORTIFHUNG, 1000, msgResult) <> 0) and (msgResult = fUniqueMessage) then
+      if (SendMessageTimeout (hwnd, fUniqueMessage, 0, 0, SMTO_BLOCK or SMTO_ABORTIFHUNG, 1000, @msgResult) <> 0) and (msgResult = fUniqueMessage) then
       begin
         fOtherWindowHandle := hwnd;
         result := True

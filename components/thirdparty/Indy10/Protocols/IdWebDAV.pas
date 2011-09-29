@@ -185,10 +185,10 @@ begin
   begin
     s := '<?xml version="1.0" encoding="utf-8" ?>' +  {do not localize}
          '<propertyupdate xmlns:D="DAV:"><set><prop>' +  {do not localize}
-         '<comment>' + AComment + '</comment></set></set></propertyupdate>';  {do not localize}
+         '<comment>' + AComment + '</comment></prop></set></propertyupdate>';  {do not localize}
     LXML := TMemoryStream.Create;
     try
-      WriteStringToStream(LXML, s, TIdTextEncoding.UTF8);
+      WriteStringToStream(LXML, s, IndyUTF8Encoding);
       LXML.Position := 0;
       DoRequest(Id_HTTPMethodPropPatch, AURL, LXML, nil, []);
     finally
@@ -207,10 +207,10 @@ begin
   begin
     s := '<?xml version="1.0" encoding="utf-8" ?>' +   {do not localize}
          '<propertyupdate xmlns:D="DAV:"><set><prop>' +  {do not localize}
-         '<comment>' + AComment + '</comment></set></set></propertyupdate>';  {do not localize}
+         '<comment>' + AComment + '</comment></prop></set></propertyupdate>';  {do not localize}
     LXML := TMemoryStream.Create;
     try
-      WriteStringToStream(LXML, s, TIdTextEncoding.UTF8);
+      WriteStringToStream(LXML, s, IndyUTF8Encoding);
       LXML.Position := 0;
       DoRequest(Id_HTTPMethodPropPatch, AURL, LXML, nil, []);
     finally
@@ -296,7 +296,7 @@ begin
     Request.CustomHeaders.Values['If'] := '';  {do not localize}
   end;
   try
-    inherited Put(AURL, ASource, nil);
+    inherited Put(AURL, ASource, TStream(nil));
   finally
     if ALockToken <> '' then begin
       Request.CustomHeaders.Values['If'] := '';  {do not localize}

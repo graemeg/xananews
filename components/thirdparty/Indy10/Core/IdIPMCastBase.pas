@@ -39,6 +39,9 @@ interface
 //here to flip FPC into Delphi mode
 
 uses
+  {$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
+  Classes,
+  {$ENDIF}
   IdComponent, IdException, IdGlobal, IdSocketHandle,
   IdStack;
 
@@ -64,13 +67,16 @@ configuration.}
 {Organization-Local scope is intended to span multiple sites
 belonging to a single organization.}
     IdIPv6MC_Global);
+
   TIdIPMCValidScopes = 0..$F;
+
   TIdIPMCastBase = class(TIdComponent)
   protected
     FDsgnActive: Boolean;
     FMulticastGroup: String;
     FPort: Integer;
     FIPVersion: TIdIPVersion;
+    FReuseSocket: TIdReuseSocket;
     //
     procedure CloseBinding; virtual; abstract;
     function GetActive: Boolean; virtual;
@@ -88,6 +94,9 @@ belonging to a single organization.}
     property IPVersion: TIdIPVersion read GetIPVersion write SetIPVersion default ID_DEFAULT_IP_VERSION;
     procedure InitComponent; override;
   public
+    {$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
+    constructor Create(AOwner: TComponent); reintroduce; overload;
+    {$ENDIF}
     function IsValidMulticastGroup(const Value: string): Boolean;
 {These two items are helper functions that allow you to specify the scope for
 a Variable Scope Multicast Addresses.  Some are listed in IdAssignedNumbers
@@ -96,6 +105,8 @@ MulticastGroup property because you need to specify the scope.  This provides
 you with more flexibility than you would get with IPv4 multicasting.}
     class function SetIPv6AddrScope(const AVarIPv6Addr : String; const AScope : TIdIPMv6Scope ) : String; overload;
     class function SetIPv6AddrScope(const AVarIPv6Addr : String; const AScope : TIdIPMCValidScopes): String; overload;
+    //
+    property ReuseSocket: TIdReuseSocket read FReuseSocket write FReuseSocket default rsOSDependent;
   published
   end;
 
@@ -115,6 +126,13 @@ uses
 
 { TIdIPMCastBase }
 
+{$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
+constructor TIdIPMCastBase.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+end;
+{$ENDIF}
+
 function TIdIPMCastBase.GetIPVersion: TIdIPVersion;
 begin
   Result := FIPVersion;
@@ -125,6 +143,7 @@ begin
   inherited InitComponent;
   FMultiCastGroup := Id_IPMC_All_Systems;
   FIPVersion := ID_DEFAULT_IP_VERSION;
+  FReuseSocket := rsOSDependent;
 end;
 
 function TIdIPMCastBase.GetActive: Boolean;

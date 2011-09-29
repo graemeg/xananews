@@ -239,6 +239,8 @@ type
     FURI: string;
     FCommand: string;
     FVersion: string;
+    FVersionMajor: Integer;
+    FVersionMinor: Integer;
     FAuthUsername: string;
     FAuthPassword: string;
     FUnparsedParams: string;
@@ -248,8 +250,10 @@ type
     //
     procedure DecodeAndSetParams(const AValue: String); virtual;
   public
-    constructor Create; override;
+    constructor Create(AOwner: TPersistent); override;
     destructor Destroy; override;
+    //
+    function IsVersionAtLeast(const AMajor, AMinor: Integer): Boolean;
     property Session: TIdHTTPSession read FSession;
     //
     property AuthExists: Boolean read FAuthExists;
@@ -268,6 +272,8 @@ type
     property FormParams: string read FFormParams write FFormParams; // writable for isapi compatibility. Use with care
     property QueryParams: string read FQueryParams write FQueryParams; // writable for isapi compatibility. Use with care
     property Version: string read FVersion;
+    property VersionMajor: Integer read FVersionMajor;
+    property VersionMinor: Integer read FVersionMinor;
   end;
 
   TIdHTTPResponseInfo = class(TIdResponseHeaderInfo)
@@ -284,6 +290,7 @@ type
     FResponseText: string;
     FHTTPServer: TIdCustomHTTPServer;
     FSession: TIdHTTPSession;
+    FRequestInfo: TIdHTTPRequestInfo;
     //
     procedure ReleaseContentStream;
     procedure SetCookies(const AValue: TIdCookies);
@@ -295,7 +302,7 @@ type
     procedure SetServer(const Value: string);
   public
     procedure CloseSession;
-    constructor Create(AConnection: TIdTCPConnection; AServer: TIdCustomHTTPServer ); reintroduce;
+    constructor Create(AServer: TIdCustomHTTPServer; ARequestInfo: TIdHTTPRequestInfo; AConnection: TIdTCPConnection); reintroduce;
     destructor Destroy; override;
     procedure Redirect(const AURL: string);
     procedure WriteHeader;
@@ -454,7 +461,7 @@ type
      HTTPResponse: TIdHTTPResponseInfo;
      HTTPRequest: TIdHTTPRequestInfo): TIdHTTPSession;
     destructor Destroy; override;
-    function EndSession(const SessionName: string): boolean;
+    function EndSession(const SessionName: String; const RemoteIP: String = ''): Boolean;
     //
     property MIMETable: TIdThreadSafeMimeTable read FMIMETable;
     property SessionList: TIdHTTPCustomSessionList read FSessionList;
@@ -500,6 +507,26 @@ type
     function GetSession(const SessionID, RemoteIP: string): TIdHTTPSession; override;
   end;
 
+  TIdHTTPRangeStream = class(TIdBaseStream)
+  private
+    FSourceStream: TStream;
+    FOwnsSource: Boolean;
+    FRangeStart, FRangeEnd: Int64;
+    FResponseCode: Integer;
+  protected
+    function IdRead(var VBuffer: TIdBytes; AOffset, ACount: Longint): Longint; override;
+    function IdWrite(const ABuffer: TIdBytes; AOffset, ACount: Longint): Longint; override;
+    function IdSeek(const AOffset: Int64; AOrigin: TSeekOrigin): Int64; override;
+    procedure IdSetSize(ASize: Int64); override;
+  public
+    constructor Create(ASource: TStream; ARangeStart, ARangeEnd: Int64; AOwnsSource: Boolean = True);
+    destructor Destroy; override;
+    property ResponseCode: Integer read FResponseCode;
+    property RangeStart: Int64 read FRangeStart;
+    property RangeEnd: Int64 read FRangeEnd;
+    property SourceStream: TStream read FSourceStream;
+  end;
+
 implementation
 
 uses
@@ -507,25 +534,25 @@ uses
   Libc,
   {$ENDIF}
   {$IFDEF USE_VCL_POSIX}
-  PosixSysSelect,
-  PosixSysTime,
+  Posix.SysSelect,
+  Posix.SysTime,
   {$ENDIF}
   {$IFDEF DOTNET}
     {$IFDEF USE_INLINE}
   System.IO,
   System.Threading,
     {$ENDIF}
-    {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+    {$IFDEF WINDOWS}
   Windows,
     {$ENDIF}
   {$ENDIF}
   {$IFDEF VCL_2010_OR_ABOVE}
-    {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+    {$IFDEF WINDOWS}
   Windows,
     {$ENDIF}
   {$ENDIF}
   IdCoderMIME, IdResourceStringsProtocols, IdURI, IdIOHandler, IdIOHandlerSocket,
-  IdSSL, IdResourceStringsCore;
+  IdSSL, IdResourceStringsCore, IdStream;
 
 const
   SessionCapacity = 128;
@@ -695,6 +722,97 @@ begin
   inherited Unlock;
 end;
 
+{ TIdHTTPRangeStream }
+
+constructor TIdHTTPRangeStream.Create(ASource: TStream; ARangeStart, ARangeEnd: Int64;
+  AOwnsSource: Boolean = True);
+var
+  LSize: Int64;
+begin
+  inherited Create;
+  FSourceStream := ASource;
+  FOwnsSource := AOwnsSource;
+  FResponseCode := 200;
+  if (ARangeStart > -1) or (ARangeEnd > -1) then begin
+    LSize := ASource.Size;
+    if ARangeStart > -1 then begin
+      // requesting prefix range from BOF
+      if ARangeStart >= LSize then begin
+        // range unsatisfiable
+        FResponseCode := 416;
+        Exit;
+      end;
+      if ARangeEnd > -1 then begin
+        if ARangeEnd < ARangeStart then begin
+          // invalid syntax
+          Exit;
+        end;
+        ARangeEnd := IndyMin(ARangeEnd, LSize-1);
+      end else begin
+        ARangeEnd := LSize-1;
+      end;
+    end else begin
+      // requesting suffix range from EOF
+      if ARangeEnd = 0 then begin
+        // range unsatisfiable
+        FResponseCode := 416;
+        Exit;
+      end;
+      ARangeStart := IndyMax(LSize - ARangeEnd, 0);
+      ARangeEnd := LSize-1;
+    end;
+    FResponseCode := 206;
+    FRangeStart := ARangeStart;
+    FRangeEnd := ARangeEnd;
+  end;
+end;
+
+destructor TIdHTTPRangeStream.Destroy;
+begin
+  if FOwnsSource then begin
+    FSourceStream.Free;
+  end;
+  inherited Destroy;
+end;
+
+function TIdHTTPRangeStream.IdRead(var VBuffer: TIdBytes; AOffset, ACount: Longint): Longint;
+begin
+  if FResponseCode = 206 then begin
+    ACount := Longint(IndyMin(Int64(ACount), (FRangeEnd+1) - FSourceStream.Position));
+  end;
+  Result := TIdStreamHelper.ReadBytes(FSourceStream, VBuffer, ACount, AOffset);
+end;
+
+function TIdHTTPRangeStream.IdSeek(const AOffset: Int64; AOrigin: TSeekOrigin): Int64;
+var
+  LOffset: Int64;
+begin
+  if FResponseCode = 206 then begin
+    case AOrigin of
+      soBeginning: LOffset := FRangeStart + AOffset;
+      soCurrent: LOffset := FSourceStream.Position + AOffset;
+      soEnd: LOffset := (FRangeEnd+1) + AOffset;
+    else
+      // TODO: move this into IdResourceStringsProtocols.pas
+      raise EIdException.Create('Unknown Seek Origin'); {do not localize}
+    end;
+    LOffset := IndyMax(LOffset, FRangeStart);
+    LOffset := IndyMin(LOffset, FRangeEnd+1);
+    Result := TIdStreamHelper.Seek(FSourceStream, LOffset, soBeginning) - FRangeStart;
+  end else begin
+    Result := TIdStreamHelper.Seek(FSourceStream, AOffset, AOrigin);
+  end;
+end;
+
+function TIdHTTPRangeStream.IdWrite(const ABuffer: TIdBytes; AOffset, ACount: Longint): Longint;
+begin
+  Result := 0;
+end;
+
+procedure TIdHTTPRangeStream.IdSetSize(ASize: Int64);
+begin
+end;
+
 { TIdCustomHTTPServer }
 
 procedure TIdCustomHTTPServer.InitComponent;
@@ -755,7 +873,7 @@ begin
       CookieName := GSessionIDCookie;
       Value := Result.SessionID;
       Path := '/';    {Do not Localize}
-      MaxAge := -1; // By default the cookies wil be valid until the user has closed his browser window.
+      // By default the cookie will be valid until the user has closed his browser window.
       // MaxAge := SessionTimeOut div 1000;
     end;
     HTTPResponse.FSession := Result;
@@ -865,9 +983,6 @@ var
     try
       LRequestInfo.RawHeaders.Extract('Cookie', LRawCookies);    {Do not Localize}
       LRequestInfo.Cookies.AddClientCookies(LRawCookies);
-      LRawCookies.Clear;
-      LRequestInfo.RawHeaders.Extract('Cookie2', LRawCookies);    {Do not Localize}
-      LRequestInfo.Cookies.AddClientCookies2(LRawCookies);
     finally
       FreeAndNil(LRawCookies);
     end;
@@ -887,7 +1002,6 @@ var
   var
     LResponseNo: Integer;
     LResponseText, LContentText, S: String;
-    LMajor, LMinor: Integer;
   begin
     // let the user decide if the request headers are acceptable
     Result := DoHeadersAvailable(AContext, LRequestInfo.URI, LRequestInfo.RawHeaders);
@@ -906,13 +1020,9 @@ var
       Exit;
     end;
 
-    // get the HTTP version and check for v1.1 'Host' and 'Expect' headers...
-    S := LRequestInfo.Version;
-    Fetch(S, '/');  {Do not localize}
-    LMajor := IndyStrToInt(Fetch(S, '.'), -1);  {Do not Localize}
-    LMinor := IndyStrToInt(S, -1);
+    // check for HTTP v1.1 'Host' and 'Expect' headers...
 
-    if (LMajor < 1) or ((LMajor = 1) and (LMinor < 1)) then begin
+    if not LRequestInfo.IsVersionAtLeast(1, 1) then begin
       Exit;
     end;
 
@@ -1042,9 +1152,9 @@ begin
           if i = 0 then begin
             raise EIdHTTPErrorParsingCommand.Create(RSHTTPErrorParsingCommand);
           end;
-          LRequestInfo := TIdHTTPRequestInfo.Create;
+          LRequestInfo := TIdHTTPRequestInfo.Create(Self);
           try
-            LResponseInfo := TIdHTTPResponseInfo.Create(AContext.Connection, Self);
+            LResponseInfo := TIdHTTPResponseInfo.Create(Self, LRequestInfo, AContext.Connection);
             try
               // SG 05.07.99
               // Set the ServerSoftware string to what it's supposed to be.    {Do not Localize}
@@ -1057,6 +1167,12 @@ begin
               // Retrieve the HTTP version
               LRawHTTPCommand := LInputLine;
               LRequestInfo.FVersion := Copy(LInputLine, i + 1, MaxInt);
+
+              s := LRequestInfo.Version;
+              Fetch(s, '/');  {Do not localize}
+              LRequestInfo.FVersionMajor := IndyStrToInt(Fetch(s, '.'), -1);  {Do not Localize}
+              LRequestInfo.FVersionMinor := IndyStrToInt(S, -1);
+
               SetLength(LInputLine, i - 1);
 
               // Retrieve the HTTP header
@@ -1064,6 +1180,7 @@ begin
               IOHandler.Capture(LRequestInfo.RawHeaders, '', False);    {Do not Localize}
               LRequestInfo.ProcessHeaders;
 
+              // TODO: HTTP 1.1 connections are keep-alive by default
               LResponseInfo.CloseConnection := not (FKeepAlive and
                 TextIsSame(LRequestInfo.Connection, 'Keep-alive')); {Do not Localize}
 
@@ -1131,8 +1248,8 @@ begin
               if LRequestInfo.PostStream <> nil then begin
                 if TextIsSame(LContentType, ContentTypeFormUrlencoded) then
                 begin
-                  // TODO: need to decode percent-encoded octets before the CharSet can then be applied...
-                  LRequestInfo.FormParams := ReadStringAsCharSet(LRequestInfo.PostStream, LRequestInfo.CharSet);
+                  // decoding percent-encoded octets and applying the CharSet is handled by DecodeAndSetParams() further below...
+                  LRequestInfo.FormParams := ReadStringFromStream(LRequestInfo.PostStream, -1, Indy8BitEncoding{$IFDEF STRING_IS_ANSI}, Indy8BitEncoding{$ENDIF});
                   DoneWithPostStream(AContext, LRequestInfo); // don't need the PostStream anymore
                 end;
               end;
@@ -1241,11 +1358,11 @@ begin
   end;
 end;
 
-function TIdCustomHTTPServer.EndSession(const SessionName: string): boolean;
+function TIdCustomHTTPServer.EndSession(const SessionName: String; const RemoteIP: String = ''): Boolean;
 var
   ASession: TIdHTTPSession;
 begin
-  ASession := SessionList.GetSession(SessionName, '');    {Do not Localize}
+  ASession := SessionList.GetSession(SessionName, RemoteIP);    {Do not Localize}
   Result := Assigned(ASession);
   if Result then begin
     FreeAndNil(ASession);
@@ -1257,29 +1374,29 @@ function TIdCustomHTTPServer.GetSessionFromCookie(AContext: TIdContext;
   var VContinueProcessing: Boolean): TIdHTTPSession;
 var
   LIndex: Integer;
-  LSessionId: String;
+  LSessionID: String;
 begin
   Result := nil;
   VContinueProcessing := True;
   if SessionState then
   begin
-    LIndex := AHTTPRequest.Cookies.GetCookieIndex(0, GSessionIDCookie);
-    while (Result = nil) and (LIndex >= 0) and VContinueProcessing do
+    LIndex := AHTTPRequest.Cookies.GetCookieIndex(GSessionIDCookie);
+    while LIndex >= 0 do
     begin
-      LSessionId := AHTTPRequest.Cookies.Items[LIndex].Value;
-      Result := FSessionList.GetSession(LSessionID, AHTTPrequest.RemoteIP);
-      if not Assigned(Result) then begin
-        DoInvalidSession(AContext, AHTTPRequest, AHTTPResponse, VContinueProcessing, LSessionId);
-        if not VContinueProcessing then begin
-          Break;
-        end;
+      LSessionID := AHTTPRequest.Cookies[LIndex].Value;
+      Result := FSessionList.GetSession(LSessionID, AHTTPRequest.RemoteIP);
+      if Assigned(Result) then begin
+        Break;
       end;
-      Inc(LIndex);
-      LIndex := AHTTPRequest.Cookies.GetCookieIndex(LIndex, GSessionIDCookie);
+      DoInvalidSession(AContext, AHTTPRequest, AHTTPResponse, VContinueProcessing, LSessionID);
+      if not VContinueProcessing then begin
+        Break;
+      end;
+      LIndex := AHTTPRequest.Cookies.GetCookieIndex(GSessionIDCookie, LIndex+1);
     end;    { while }
     // check if a session was returned. If not and if AutoStartSession is set to
     // true, Create a new session
-    if FAutoStartSession and VContinueProcessing and (Result = nil) then begin
+    if (Result = nil) and VContinueProcessing and FAutoStartSession then begin
       Result := CreateSession(AContext, AHTTPResponse, AHTTPrequest);
     end;
   end;
@@ -1303,7 +1420,7 @@ begin
       // Session events
       FSessionList.OnSessionStart := FOnSessionStart;
       FSessionList.OnSessionEnd := FOnSessionEnd;
-      // If session handeling is enabled, create the housekeeper thread
+      // If session handling is enabled, create the housekeeper thread
       if SessionState then
         FSessionCleanupThread := TIdHTTPSessionCleanerThread.Create(FSessionList);
     end else
@@ -1405,8 +1522,9 @@ end;
 
 procedure TIdHTTPSession.DoSessionEnd;
 begin
-  if assigned(FOwner) and assigned(FOwner.FOnSessionEnd) then
-    FOwner.FOnSessionEnd(self);
+  if Assigned(FOwner) and Assigned(FOwner.FOnSessionEnd) then begin
+    FOwner.FOnSessionEnd(Self);
+  end;
 end;
 
 function TIdHTTPSession.IsSessionStale: boolean;
@@ -1433,9 +1551,9 @@ end;
 
 { TIdHTTPRequestInfo }
 
-constructor TIdHTTPRequestInfo.Create;
+constructor TIdHTTPRequestInfo.Create(AOwner: TPersistent);
 begin
-  inherited Create;
+  inherited Create(AOwner);
   FCommandType := hcUnknown;
   FCookies := TIdCookies.Create(Self);
   FParams  := TStringList.Create;
@@ -1446,27 +1564,36 @@ procedure TIdHTTPRequestInfo.DecodeAndSetParams(const AValue: String);
 var
   i, j : Integer;
   s: string;
+  LEncoding: TIdTextEncoding;
 begin
   // Convert special characters
   // ampersand '&' separates values    {Do not Localize}
-  // TODO: need to decode UTF-8 octets...
   Params.BeginUpdate;
   try
     Params.Clear;
-    i := 1;
-    while i <= Length(AValue) do
-    begin
-      j := i;
-      while (j <= Length(AValue)) and (AValue[j] <> '&') do {do not localize}
+    LEncoding := CharsetToEncoding(CharSet);
+    {$IFNDEF DOTNET}
+    try
+    {$ENDIF}
+      i := 1;
+      while i <= Length(AValue) do
       begin
-        Inc(j);
+        j := i;
+        while (j <= Length(AValue)) and (AValue[j] <> '&') do {do not localize}
+        begin
+          Inc(j);
+        end;
+        s := Copy(AValue, i, j-i);
+        // See RFC 1866 section 8.2.1. TP
+        s := StringReplace(s, '+', ' ', [rfReplaceAll]);  {do not localize}
+        Params.Add(TIdURI.URLDecode(s, LEncoding));
+        i := j + 1;
       end;
-      s := Copy(AValue, i, j-i);
-      // See RFC 1866 section 8.2.1. TP
-      s := StringReplace(s, '+', ' ', [rfReplaceAll]);  {do not localize}
-      Params.Add(TIdURI.URLDecode(s));
-      i := j + 1;
+    {$IFNDEF DOTNET}
+    finally
+      LEncoding.Free;
     end;
+    {$ENDIF}
   finally
     Params.EndUpdate;
   end;
@@ -1480,36 +1607,52 @@ begin
   inherited Destroy;
 end;
 
+function TIdHTTPRequestInfo.IsVersionAtLeast(const AMajor, AMinor: Integer): Boolean;
+begin
+  Result := (FVersionMajor > AMajor) or
+            ((FVersionMajor = AMajor) and (FVersionMinor >= AMinor));
+end;
+
 { TIdHTTPResponseInfo }
 
 procedure TIdHTTPResponseInfo.CloseSession;
 var
   i: Integer;
 begin
-  i := Cookies.GetCookieIndex(0, GSessionIDCookie);
-  if i > -1 then begin
+  i := Cookies.GetCookieIndex(GSessionIDCookie);
+  while i > -1 do begin
     Cookies.Delete(i);
+    i := Cookies.GetCookieIndex(GSessionIDCookie, i);
   end;
-  Cookies.Add.CookieName := GSessionIDCookie;
+  with Cookies.Add do begin
+    CookieName := GSessionIDCookie;
+    Expires := Date-7;
+  end;
   FreeAndNil(FSession);
 end;
 
-constructor TIdHTTPResponseInfo.Create(AConnection: TIdTCPConnection; AServer: TIdCustomHTTPServer);
+constructor TIdHTTPResponseInfo.Create(AServer: TIdCustomHTTPServer;
+  ARequestInfo: TIdHTTPRequestInfo; AConnection: TIdTCPConnection);
 begin
-  inherited Create;
+  inherited Create(AServer);
+
+  FRequestInfo := ARequestInfo;
+  FConnection := AConnection;
+  FHttpServer := AServer;
 
   FFreeContentStream := True;
+
+  ResponseNo := GResponseNo;
+  ContentType := ''; //GContentType;
   ContentLength := GFContentLength;
+
   {Some clients may not support folded lines}
   RawHeaders.FoldLines := False;
   FCookies := TIdCookies.Create(Self);
+
   {TODO Specify version - add a class method dummy that calls version}
   ServerSoftware := GServerSoftware;
-  ContentType := ''; //GContentType;
 
-  FConnection := AConnection;
-  FHttpServer := AServer;
-  ResponseNo := GResponseNo;
 end;
 
 destructor TIdHTTPResponseInfo.Destroy;
@@ -1631,7 +1774,8 @@ begin
   end;
   ContentLength := FileSizeByName(AFile);
   if Length(ContentDisposition) = 0 then begin
-    ContentDisposition := IndyFormat('attachment: filename="%s";', [ExtractFileName(AFile)]);
+    // TODO: use EncodeHeader() here...
+    ContentDisposition := IndyFormat('attachment; filename="%s";', [ExtractFileName(AFile)]);
   end;
   WriteHeader;
   EnableTransferFile := not (AContext.Connection.IOHandler is TIdSSLIOHandlerSocketBase);
@@ -1645,19 +1789,30 @@ var
   LReqDate : TDateTime;
 begin
   LFileDate := IndyFileAge(AFile);
-  LReqDate := GMTToLocalDateTime(ARequestInfo.RawHeaders.Values['If-Modified-Since']);  {do not localize}
-
-  // if the file date in the If-Modified-Since header is within 2 seconds of the
-  // actual file, then we will send a 304. We don't use the ETag - offers nothing
-  // over the file date for static files on windows. Linux: consider using iNode
-  if (LReqDate <> 0) and (abs(LReqDate - LFileDate) < 2 * (1 / (24 * 60 * 60))) then
+  if (LFileDate = 0.0) and (not FileExists(AFile)) then
   begin
-    ResponseNo := 304;
+    ResponseNo := 404;
     Result := 0;
   end else
   begin
-    Date := LFileDate;
-    Result := ServeFile(AContext, AFile);
+    LReqDate := GMTToLocalDateTime(ARequestInfo.RawHeaders.Values['If-Modified-Since']);  {do not localize}
+    // if the file date in the If-Modified-Since header is within 2 seconds of the
+    // actual file, then we will send a 304. We don't use the ETag - offers nothing
+    // over the file date for static files on windows. Linux: consider using iNode
+
+    // RLebeau 2/21/2011: TODO - make use of ETag. It is supposed to be updated
+    // whenever the file contents change, regardless of the file's timestamps.
+
+    if (LReqDate <> 0) and (abs(LReqDate - LFileDate) < 2 * (1 / (24 * 60 * 60))) then
+    begin
+      ResponseNo := 304;
+      Result := 0;
+    end else
+    begin
+      Date := LFileDate;
+      LastModified := LFileDate;
+      Result := ServeFile(AContext, AFile);
+    end;
   end;
 end;
 
@@ -1705,7 +1860,6 @@ var
   i: Integer;
   LEncoding: TIdTextEncoding;
   LBufferingStarted: Boolean;
-  LCookie: TIdNetscapeCookie;
 begin
   if HeaderHasBeenWritten then begin
     EIdHTTPHeaderAlreadyWritten.Toss(RSHTTPHeaderAlreadyWritten);
@@ -1715,10 +1869,10 @@ begin
   if AuthRealm <> '' then
   begin
     ResponseNo := 401;
-    if (Length(ContentText) = 0) and not Assigned(ContentStream) then
+    if (Length(ContentText) = 0) and (not Assigned(ContentStream)) then
     begin
       ContentType := 'text/html; charset=utf-8';    {Do not Localize}
-      ContentText := '<HTML><BODY><B>' + IntToStr(ResponseNo) + ' ' + RSHTTPUnauthorized + '</B></BODY></HTML>';    {Do not Localize}
+      ContentText := '<HTML><BODY><B>' + IntToStr(ResponseNo) + ' ' + ResponseText + '</B></BODY></HTML>';    {Do not Localize}
       ContentLength := -1; // calculated below
     end;
   end;
@@ -1768,19 +1922,12 @@ begin
   end;
   try
     // Write HTTP status response
-    // Client will be forced to close the connection. We are not going to support
-    // keep-alive feature for now
     FConnection.IOHandler.WriteLn('HTTP/1.1 ' + IntToStr(ResponseNo) + ' ' + ResponseText);    {Do not Localize}
     // Write headers
     FConnection.IOHandler.Write(RawHeaders);
     // Write cookies
     for i := 0 to Cookies.Count - 1 do begin
-      LCookie := Cookies[i];
-      if LCookie is TIdCookieRFC2965 then begin
-        FConnection.IOHandler.WriteLn('Set-Cookie2: ' + LCookie.ServerCookie);    {Do not Localize}
-      end else begin
-        FConnection.IOHandler.WriteLn('Set-Cookie: ' + LCookie.ServerCookie);    {Do not Localize}
-      end;
+      FConnection.IOHandler.WriteLn('Set-Cookie: ' + Cookies[i].ServerCookie);    {Do not Localize}
     end;
     // HTTP headers end with a double CR+LF
     FConnection.IOHandler.WriteLn;
@@ -1823,6 +1970,9 @@ begin
       if ASessionList[i] <> nil then
       begin
         TIdHTTPSession(ASessionList[i]).DoSessionEnd;
+        // must set the owner to nil or the session will try to fire the
+        // OnSessionEnd event again, and also remove itself from the session
+        // list and deadlock
         TIdHTTPSession(ASessionList[i]).FOwner := nil;
         TIdHTTPSession(ASessionList[i]).Free;
       end;
@@ -1852,7 +2002,7 @@ begin
   Result := CreateSession(RemoteIP, SessionID);
 end;
 
-destructor TIdHTTPDefaultSessionList.destroy;
+destructor TIdHTTPDefaultSessionList.Destroy;
 begin
   Clear;
   FreeAndNil(FSessionList);
@@ -1874,7 +2024,7 @@ begin
       ASession := TIdHTTPSession(ASessionList[i]);
       Assert(ASession <> nil);
       // the stale sessions check has been removed... the cleanup thread should suffice plenty
-      if TextIsSame(ASession.FSessionID, SessionID) and ((length(RemoteIP) = 0) or TextIsSame(ASession.RemoteHost, RemoteIP)) then
+      if TextIsSame(ASession.FSessionID, SessionID) and ((Length(RemoteIP) = 0) or TextIsSame(ASession.RemoteHost, RemoteIP)) then
       begin
         // Session found
         ASession.FLastTimeStamp := Now;
@@ -1943,8 +2093,8 @@ procedure TIdHTTPDefaultSessionList.RemoveSessionFromLockedList(AIndex: Integer;
   ALockedSessionList: TList);
 begin
   TIdHTTPSession(ALockedSessionList[AIndex]).DoSessionEnd;
-  // must set the owner to nil or the session will try to remove itself from the
-  // session list and deadlock
+  // must set the owner to nil or the session will try to fire the OnSessionEnd
+  // event again, and also remove itself from the session list and deadlock
   TIdHTTPSession(ALockedSessionList[AIndex]).FOwner := nil;
   TIdHTTPSession(ALockedSessionList[AIndex]).Free;
   ALockedSessionList.Delete(AIndex);

@@ -544,7 +544,8 @@ type
     function  GetItem(Index: Integer): TIdImapMessagePart;
     procedure SetItem(Index: Integer; const Value: TIdImapMessagePart);
   public
-    function  Add: TIdImapMessagePart;
+    constructor Create(AOwner: TPersistent); reintroduce;
+    function  Add: TIdImapMessagePart; reintroduce;
     property  Items[Index: Integer]: TIdImapMessagePart read GetItem write SetItem; default;
   end;
 
@@ -706,8 +707,10 @@ varies between servers.  A typical line that gets parsed into this is:
     FCapabilities: TStrings;
     FLineStruct: TIdIMAPLineStruct;
     function  GetReplyClass:TIdReplyClass; override;
+    function  GetSupportsTLS: Boolean; override;
     function  CheckConnectionState(AAllowedState: TIdIMAP4ConnectionState): TIdIMAP4ConnectionState; overload;
     function  CheckConnectionState(const AAllowedStates: array of TIdIMAP4ConnectionState): TIdIMAP4ConnectionState; overload;
+    function  CheckReplyForCapabilities: Boolean;
     procedure BeginWorkForPart(ASender: TObject; AWorkMode: TWorkMode; AWorkCountMax: Int64);
     procedure DoWorkForPart(ASender: TObject; AWorkMode: TWorkMode; AWorkCount: Int64);
     procedure EndWorkForPart(ASender: TObject; AWorkMode: TWorkMode);
@@ -722,10 +725,6 @@ varies between servers.  A typical line that gets parsed into this is:
     { General Functions }
     function  ArrayToNumberStr (const AMsgNumList: array of Integer): String;
     function  MessageFlagSetToStr (const AFlags: TIdMessageFlagsSet): String;
-    //This function is needed because when using the regular DateToStr with dd/MMM/yyyy
-    //(which is the IMAP needed convension) may give the month as the local language
-    //three letter month instead of the English month needed.
-    function  DateToIMAPDateStr (const ADate: TDateTime): String;
     procedure StripCRLFs(var AText: string); overload; virtual;  //Allow users to optimise
     procedure StripCRLFs(ASourceStream, ADestStream: TStream); overload;
     { Parser Functions }
@@ -793,6 +792,7 @@ varies between servers.  A typical line that gets parsed into this is:
     { TIdIMAP4 Commands }
     destructor Destroy; override;
     //Requests a listing of capabilities that the server supports...
+    function  Capability: Boolean; overload;
     function  Capability(ASlCapability: TStrings): Boolean; overload;
     function  FindHowServerCreatesFolders: TIdIMAP4FolderTreatment;
     procedure DoAlert(const AMsg: String);
@@ -1097,11 +1097,11 @@ uses
   {$IFDEF KYLIXCOMPAT}
   Libc,
     {$IFDEF MACOSX}
-  PosixUnistd,
+  Posix.Unistd,
     {$ENDIF}
   {$ENDIF}
   //facilitate inlining only.
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
     {$IFDEF USE_INLINE}
   Windows,
     {$ELSE}
@@ -1136,7 +1136,9 @@ uses
   IdBuffer,
   IdAttachmentMemory,
   IdReplyIMAP4,
-  IdTCPConnection, SysUtils;
+  IdTCPConnection,
+  IdSSL,
+  SysUtils;
 
 type
   TIdIMAP4FetchDataItem = (
@@ -1526,6 +1528,11 @@ begin
   FBoundary := '';          {Do not Localize}
 end;
 
+constructor TIdImapMessageParts.Create(AOwner: TPersistent);
+begin
+  inherited Create(AOwner, TIdImapMessagePart);
+end;
+
 function TIdImapMessageParts.GetItem(Index: Integer): TIdImapMessagePart;
 begin
   Result := TIdImapMessagePart(inherited GetItem(Index));
@@ -1588,6 +1595,11 @@ begin
   Result := TIdReplyIMAP4;
 end;
 
+function TIdIMAP4.GetSupportsTLS: Boolean;
+begin
+  Result := IsCapabilityListed('STARTTLS'); //do not localize
+end;
+
 function TIdIMAP4.CheckConnectionState(AAllowedState: TIdIMAP4ConnectionState): TIdIMAP4ConnectionState;
 begin
   Result := CheckConnectionState([AAllowedState]);
@@ -1608,46 +1620,56 @@ begin
   raise EIdConnectionStateError.CreateFmt(RSIMAP4ConnectionStateError, [GetConnectionStateName]);
 end;
 
+function TIdIMAP4.CheckReplyForCapabilities: Boolean;
+var
+  I: Integer;
+begin
+  FCapabilities.Clear;
+  FHasCapa := False;
+  with TIdReplyIMAP4(FLastCmdResult).Extra do begin
+    for I := 0 to Count-1 do begin
+      if TextStartsWith(Strings[I], 'CAPABILITY ') then begin {Do not Localize}
+        BreakApart(Strings[I], ' ', FCapabilities);           {Do not Localize}
+        FCapabilities.Delete(0);
+        FHasCapa := True;
+        Break;
+      end;
+    end;
+  end;
+  Result := FHasCapa;
+end;
+
 function TIdIMAP4.FindHowServerCreatesFolders: TIdIMAP4FolderTreatment;
 var
   LUsersFolders: TStringList;
   LN: integer;
   LInbox: string;
   LTestFolder: string;
-  LFound: Boolean;
 begin
   LUsersFolders := TStringList.Create;
   try
+    {$IFDEF HAS_TStringList_CaseSensitive}
+    LUsersFolders.CaseSensitive := False;
+    {$ENDIF}
     //Get folder names...
     if (not ListMailBoxes(LUsersFolders)) or (LUsersFolders.Count = 0) then begin
       Result := ftCannotRetrieveAnyFolders;
       Exit;
     end;
+
     //Do we have an Inbox?
-    LInbox := '';
-    for LN := 0 to LUsersFolders.Count-1 do begin
-      if TextIsSame(LUsersFolders.Strings[LN], 'INBOX') then begin      {Do not Localize}
-        LInbox := LUsersFolders.Strings[LN];
-        break;
-      end;
-    end;
-    if LInbox = '' then begin
+    LN := IndyIndexOf(LUsersFolders, 'INBOX'); {Do not Localize}
+    if LN = -1 then begin
       Result := ftCannotTestBecauseHasNoInbox;
       Exit;
     end;
+    LInbox := LUsersFolders.Strings[LN];
 
     //Make sure our test folder does not already exist at the top level...
     LTestFolder := 'CiaransTestFolder';                     {Do not Localize}
-    repeat
-      LFound := False;
-      for LN := 0 to LUsersFolders.Count-1 do begin
-        if TextIsSame(LUsersFolders.Strings[LN], LTestFolder) then begin
-          LTestFolder := LTestFolder + '9';                 {Do not Localize}
-          LFound := True;
-          Break;
-        end;
-      end;
-    until not LFound;
+    while IndyIndexOf(LUsersFolders, LTestFolder) <> -1 do begin
+      LTestFolder := LTestFolder + '9';                 {Do not Localize}
+    end;
 
     //Try to create LTestFolder at the top level...
     if CreateMailbox(LTestFolder) then begin
@@ -1659,16 +1681,9 @@ begin
 
     //See if our test folder does not exist under INBOX...
     LTestFolder := LInbox + FMailBoxSeparator + 'CiaransTestFolder';      {Do not Localize}
-    repeat
-      LFound := False;
-      for LN := 0 to LUsersFolders.Count-1 do begin
-        if TextIsSame(LUsersFolders.Strings[LN], LTestFolder) then begin
-          LTestFolder := LTestFolder + '9';                 {Do not Localize}
-          LFound := True;
-          Break;
-        end;
-      end;
-    until not LFound;
+    while IndyIndexOf(LUsersFolders, LTestFolder) <> -1 do begin
+      LTestFolder := LTestFolder + '9';                 {Do not Localize}
+    end;
 
     //Try to create LTestFolder under Inbox...
     if CreateMailbox(LTestFolder) then begin
@@ -1878,6 +1893,7 @@ end;
 function TIdIMAP4.SendCmd(const ATag, AOut: string; AExpectedResponses: array of String): string;
 var
   LDataInBuffer: Boolean;
+  LCmd: String;
 begin
   if (AOut <> #0) then begin
     repeat
@@ -1887,9 +1903,12 @@ begin
         IOHandler.ReadLnWait;
       end;
     until not LDataInBuffer;
+    LCmd := ATag + ' ' + AOut;
     {CC3: Catch "Connection reset by peer"...}
     try
-      IOHandler.WriteLn(ATag + ' ' + AOut);                     {Do not Localize}
+      CheckConnected;
+      PrepareCmd(LCmd);
+      IOHandler.WriteLn(LCmd);                     {Do not Localize}
     except
       on E: EIdSocketError do begin
         if E.LastError = 10054 then begin
@@ -1923,46 +1942,51 @@ begin
 end;
 
 procedure TIdIMAP4.Login;
+var
+  LIO: TIdSSLIOHandlerSocketBase;
 begin
   try
-    if UseTLS in ExplicitTLSVals then begin
-      if SupportsTLS then begin
-        if SendCmd(NewCmdCounter, 'STARTTLS', []) = IMAP_OK then begin  {Do not Localize}
-          TLSHandshake;
-          //obtain capabilities again - RFC2595
-          Capability(FCapabilities);
+    if (IOHandler is TIdSSLIOHandlerSocketBase) and (UseTLS in ExplicitTLSVals) then begin
+      LIO := TIdSSLIOHandlerSocketBase(IOHandler);
+      //we check passthrough because we can either be using TLS currently with
+      //implicit TLS support or because STARTLS was issued previously.
+      if LIO.PassThrough then begin
+        if SupportsTLS then begin
+          if SendCmd(NewCmdCounter, 'STARTTLS', []) = IMAP_OK then begin  {Do not Localize}
+            TLSHandshake;
+            //obtain capabilities again - RFC2595
+            Capability;
+          end else begin
+            ProcessTLSNegCmdFailed;
+          end;
         end else begin
-          ProcessTLSNegCmdFailed;
+          ProcessTLSNotAvail;
         end;
-      end else begin
-        ProcessTLSNotAvail;
       end;
     end;
-    if LastCmdResult.Code = IMAP_OK then begin
-      FConnectionState := csNonAuthenticated;
-      FCmdCounter := 0;
-      if FAuthType = iatUserPass then begin
-        if Length(Password) <> 0 then begin                              {Do not Localize}
-          SendCmd(NewCmdCounter, IMAP4Commands[cmdLogin] + ' ' + Username + ' ' + Password, []);   {Do not Localize}
-        end else begin
-          SendCmd(NewCmdCounter, IMAP4Commands[cmdLogin] + ' ' + Username, []);          {Do not Localize}
-        end;
-        if LastCmdResult.Code = IMAP_OK then begin
-          FConnectionState := csAuthenticated;
-          Capability(FCapabilities);
-        end;
+    FConnectionState := csNonAuthenticated;
+    FCmdCounter := 0;
+    if FAuthType = iatUserPass then begin
+      if Length(Password) <> 0 then begin                              {Do not Localize}
+        SendCmd(NewCmdCounter, IMAP4Commands[cmdLogin] + ' ' + Username + ' ' + Password, ['OK']);   {Do not Localize}
       end else begin
-        if Capability(FCapabilities) then begin
-          FSASLMechanisms.LoginSASL('AUTHENTICATE', FHost, IdGSKSSN_imap, ['* OK'], ['* +'], Self, FCapabilities);     {Do not Localize}
-        end;
+        SendCmd(NewCmdCounter, IMAP4Commands[cmdLogin] + ' ' + Username, ['OK']);          {Do not Localize}
       end;
-    end else begin
-      if LastCmdResult.Code = IMAP_PREAUTH then begin
-        FConnectionState := csAuthenticated;
-        FCmdCounter := 0;
+      if LastCmdResult.Code <> IMAP_OK then begin
+        RaiseExceptionForLastCmdResult;
       end;
+    end else
+    begin
+      if not FHasCapa then begin
+        Capability;
+      end;
+      FSASLMechanisms.LoginSASL('AUTHENTICATE', FHost, IdGSKSSN_imap, ['* OK'], ['* +'], Self, FCapabilities);     {Do not Localize}
     end;
-    Capability(FCapabilities);
+    FConnectionState := csAuthenticated;
+    // RLebeau: check if the response includes new Capabilities, if not then query for them...
+    if not CheckReplyForCapabilities then begin
+      Capability;
+    end;
   except
     Disconnect;
     raise;
@@ -1975,31 +1999,36 @@ begin
   an unsuccessful connect after a previous successful connect (such as when a
   client program changes users) can leave it as csAuthenticated.}
   FConnectionState := csNonAuthenticated;
-  {CC2: Don't call Connect if already connected, this could be just a change of user}
-  if not Connected then begin
-    inherited Connect;
-  end;
   try
-    GetResponse;
-   // if PosInStrArray(LastCmdResult.Code, [IMAP_OK, IMAP_PREAUTH]) = -1 then begin
-      {Should have got OK or PREAUTH in the greeting.  Happened with some server,
-      may need further investigation and coding...}
-  //  end;
-    {CC7: Save FGreetingBanner so the user can use it to determine what type of
-    server he is connected to...}
-    if LastCmdResult.Text.Count > 0 then begin
-      FGreetingBanner := LastCmdResult.Text[0];
-    end else begin
-      FGreetingBanner := '';
+    {CC2: Don't call Connect if already connected, this could be just a change of user}
+    if not Connected then begin
+      inherited Connect;
+      GetResponse;
+       // if PosInStrArray(LastCmdResult.Code, [IMAP_OK, IMAP_PREAUTH]) = -1 then begin
+        {Should have got OK or PREAUTH in the greeting.  Happened with some server,
+        may need further investigation and coding...}
+      //  end;
+      {CC7: Save FGreetingBanner so the user can use it to determine what type of
+      server he is connected to...}
+      if LastCmdResult.Text.Count > 0 then begin
+        FGreetingBanner := LastCmdResult.Text[0];
+      end else begin
+        FGreetingBanner := '';
+      end;
+      if LastCmdResult.Code = IMAP_PREAUTH then begin
+        FConnectionState := csAuthenticated;
+        FCmdCounter := 0;
+        Capability;
+      end;
     end;
     if AAutoLogin then begin
       Login;
     end;
-    Result := True;
   except
     Disconnect(False);
     raise;
   end;
+  Result := True;
 end;
 
 procedure TIdIMAP4.InitComponent;
@@ -2010,6 +2039,9 @@ begin
   Port := IdPORT_IMAP4;
   FLineStruct := TIdIMAPLineStruct.Create;
   FCapabilities := TStringList.Create;
+  {$IFDEF HAS_TStringList_CaseSensitive}
+  TStringList(FCapabilities).CaseSensitive := False;
+  {$ENDIF}
   FMUTF7 := TIdMUTF7.Create;
 
   //Todo:  Not sure which number is appropriate.  Should be tested further.
@@ -2052,41 +2084,34 @@ begin
 end;
 
 function TIdIMAP4.IsCapabilityListed(ACapability: string):Boolean;
-var
-  LCapabilities: TStringList;
-  LN: Integer;
 begin
-  Result := False;
-  LCapabilities := TStringList.Create;
-  try
-    if Capability(LCapabilities) then begin
-      for LN := 0 to LCapabilities.Count-1 do begin
-        if TextIsSame(ACapability, LCapabilities.Strings[LN]) then begin
-          Result := True;
-          Exit;
-        end;
-      end;
-    end;
-  finally
-    FreeAndNil(LCapabilities);
+  if not FHasCapa then begin
+    Capability;
   end;
+  Result := IndyIndexOf(TStringList(FCapabilities), ACapability) <> -1;
 end;
 
+function TIdIMAP4.Capability: Boolean;
+begin
+  FHasCapa := Capability(FCapabilities);
+  Result := FHasCapa;
+end;
 
 function TIdIMAP4.Capability(ASlCapability: TStrings): Boolean;
 begin
   //Available in any state.
-  ASlCapability.Clear;
   Result := False;
+  ASlCapability.Clear;
   SendCmd(NewCmdCounter, (IMAP4Commands[CmdCapability]), [IMAP4Commands[CmdCapability]]);
   if LastCmdResult.Code = IMAP_OK then begin
     if LastCmdResult.Text.Count > 0 then begin
       BreakApart(LastCmdResult.Text[0], ' ', ASlCapability);        {Do not Localize}
     end;
-    ASlCapability.Delete(0);
+    if ASlCapability.Count > 0 then begin
+      ASlCapability.Delete(0);
+    end;
     Result := True;
   end;
-  FHasCapa := Result;
 end;
 
 function TIdIMAP4.GetCmdCounter: String;
@@ -2262,82 +2287,110 @@ begin
   end;
 end;
 
+//This function is needed because when using the regular DateToStr with dd/MMM/yyyy
+//(which is the IMAP needed convension) may give the month as the local language
+//three letter month instead of the English month needed.
+function DateToIMAPDateStr (const ADate: TDateTime): String;
+var
+  LDay, LMonth, LYear : Word;
+begin
+  {Do not use the global settings from the system unit here because:
+  1) It might not be thread safe
+  2) Changing the settings could create problems for a user who's local date conventions
+  are diffrent than dd-mm-yyyy.  Some people prefer mm-dd-yyy.  Don't mess with a user's display settings.
+  3) Using the display settings for dates may not always work as expected if a user
+  changes their settings at a time between whn you do it but before the date is formatted.
+  }
+  DecodeDate(ADate, LYear, LMonth, LDay);
+  Result := IndyFormat('%.2d-%s-%.4d', [LDay, UpperCase(monthnames[LMonth]), LYear]);  {Do not Localize}
+end;
+
+function SearchRecToStr(const ASearchInfo: array of TIdIMAP4SearchRec) : String;
+var
+  Ln : Integer;
+begin
+  Result := '';
+  for Ln := Low(ASearchInfo) to High(ASearchInfo) do begin
+    case ASearchInfo[Ln].SearchKey of
+      skAll:
+        Result := Result + IMAP4SearchKeys[skAll] + ' ';                             {Do not Localize}
+      skAnswered:
+        Result := Result + IMAP4SearchKeys[skAnswered] + ' ';                             {Do not Localize}
+      skBcc:
+        Result := Result + IMAP4SearchKeys[skBcc] + ' "' + ASearchInfo[Ln].Text + '" ';               {Do not Localize}
+      skBefore:
+        Result := Result + IMAP4SearchKeys[skBefore] + ' ' + DateToIMAPDateStr ( ASearchInfo[Ln].Date ) + ' ';    {Do not Localize}
+      skBody:
+        Result := Result + IMAP4SearchKeys[skBody] + ' "' + ASearchInfo[Ln].Text + '" ';              {Do not Localize}
+      skCc:
+        Result := Result + IMAP4SearchKeys[skCc] + ' "' + ASearchInfo[Ln].Text + '" ';                {Do not Localize}
+      skDeleted:
+        Result := Result + IMAP4SearchKeys[skDeleted] + ' ';                            {Do not Localize}
+      skDraft:
+        Result := Result + IMAP4SearchKeys[skDraft] + ' ';                              {Do not Localize}
+      skFlagged:
+        Result := Result + IMAP4SearchKeys[skFlagged] + ' ';                            {Do not Localize}
+      skFrom:
+        Result := Result + IMAP4SearchKeys[skFrom] + ' "' + ASearchInfo[Ln].Text + '" ';              {Do not Localize}
+      skLarger:
+        Result := Result + IMAP4SearchKeys[skLarger] + ' ' + IntToStr ( ASearchInfo[Ln].Size ) + ' ';         {Do not Localize}
+      skNew:
+        Result := Result + IMAP4SearchKeys[skNew] + ' ';                              {Do not Localize}
+      skNot:
+        Result := Result + IMAP4SearchKeys[skNot] + ' ';                              {Do not Localize}
+      skOld:
+        Result := Result + IMAP4SearchKeys[skOld] + ' ';                              {Do not Localize}
+      skOn:
+        Result := Result + IMAP4SearchKeys[skOn] + ' ' + DateToIMAPDateStr ( ASearchInfo[Ln].Date ) + ' ';      {Do not Localize}
+      skOr:
+        Result := Result + IMAP4SearchKeys[skOr] + ' ';                               {Do not Localize}
+      skRecent:
+        Result := Result + IMAP4SearchKeys[skRecent] + ' ';                             {Do not Localize}
+      skSeen:
+        Result := Result + IMAP4SearchKeys[skSeen] + ' ';                               {Do not Localize}
+      skSentBefore:
+        Result := Result + IMAP4SearchKeys[skSentBefore] + ' ' + DateToIMAPDateStr ( ASearchInfo[Ln].Date ) + ' ';  {Do not Localize}
+      skSentOn:
+        Result := Result + IMAP4SearchKeys[skSentOn] + ' ' + DateToIMAPDateStr ( ASearchInfo[Ln].Date ) + ' ';    {Do not Localize}
+      skSentSince:
+        Result := Result + IMAP4SearchKeys[skSentSince] + ' ' + DateToIMAPDateStr ( ASearchInfo[Ln].Date ) + ' ';   {Do not Localize}
+      skSince:
+        Result := Result + IMAP4SearchKeys[skSince] + ' ' + DateToIMAPDateStr ( ASearchInfo[Ln].Date ) + ' ';     {Do not Localize}
+      skSmaller:
+        Result := Result + IMAP4SearchKeys[skSmaller] + ' ' + IntToStr ( ASearchInfo[Ln].Size ) + ' ';        {Do not Localize}
+      skSubject:
+        Result := Result + IMAP4SearchKeys[skSubject] + ' "' + ASearchInfo[Ln].Text + '" ';             {Do not Localize}
+      skText:
+        Result := Result + IMAP4SearchKeys[skText] + ' "' + ASearchInfo[Ln].Text + '" ';              {Do not Localize}
+      skTo:
+        Result := Result + IMAP4SearchKeys[skTo] + ' "' + ASearchInfo[Ln].Text + '" ';                {Do not Localize}
+      skUID:
+        Result := Result + IMAP4SearchKeys[skUID] + ' ' + ASearchInfo[Ln].Text + ' ';                 {Do not Localize}
+      skUnanswered:
+        Result := Result + IMAP4SearchKeys[skUnanswered] + ' ';                           {Do not Localize}
+      skUndeleted:
+        Result := Result + IMAP4SearchKeys[skUndeleted] + ' ';                            {Do not Localize}
+      skUndraft:
+        Result := Result + IMAP4SearchKeys[skUndraft] + ' ';                            {Do not Localize}
+      skUnflagged:
+        Result := Result + IMAP4SearchKeys[skUnflagged] + ' ';                            {Do not Localize}
+      skUnKeyWord:
+        Result := Result + IMAP4SearchKeys[skUnKeyWord] + ' ';                            {Do not Localize}
+      skUnseen:
+        Result := Result + IMAP4SearchKeys[skUnseen] + ' ';                             {Do not Localize}
+    end;
+  end;
+  Result := TrimRight(Result);
+end;
+
 function TIdIMAP4.SearchMailBox(const ASearchInfo: array of TIdIMAP4SearchRec): Boolean;
 var
   LSearchStr : String;
-  Ln : Integer;
 begin
   Result := False;
-  for Ln := Low(ASearchInfo) to High(ASearchInfo) do begin
-    case ASearchInfo[Ln].SearchKey of
-      skAnswered:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skAnswered] + ' ';                             {Do not Localize}
-      skBcc:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skBcc] + ' "' + ASearchInfo[Ln].Text + '" ';               {Do not Localize}
-      skBefore:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skBefore] + ' ' + DateToIMAPDateStr ( ASearchInfo[Ln].Date ) + ' ';    {Do not Localize}
-      skBody:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skBody] + ' "' + ASearchInfo[Ln].Text + '" ';              {Do not Localize}
-      skCc:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skCc] + ' "' + ASearchInfo[Ln].Text + '" ';                {Do not Localize}
-      skDeleted:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skDeleted] + ' ';                            {Do not Localize}
-      skDraft:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skDraft] + ' ';                              {Do not Localize}
-      skFlagged:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skFlagged] + ' ';                            {Do not Localize}
-      skFrom:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skFrom] + ' "' + ASearchInfo[Ln].Text + '" ';              {Do not Localize}
-      skLarger:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skLarger] + ' ' + IntToStr ( ASearchInfo[Ln].Size ) + ' ';         {Do not Localize}
-      skNew:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skNew] + ' ';                              {Do not Localize}
-      skNot:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skNot] + ' ';                              {Do not Localize}
-      skOld:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skOld] + ' ';                              {Do not Localize}
-      skOn:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skOn] + ' ' + DateToIMAPDateStr ( ASearchInfo[Ln].Date ) + ' ';      {Do not Localize}
-      skOr:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skOr] + ' ';                               {Do not Localize}
-      skRecent:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skRecent] + ' ';                             {Do not Localize}
-      skSeen:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skSeen] + ' ';                               {Do not Localize}
-      skSentBefore:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skSentBefore] + ' ' + DateToIMAPDateStr ( ASearchInfo[Ln].Date ) + ' ';  {Do not Localize}
-      skSentOn:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skSentOn] + ' ' + DateToIMAPDateStr ( ASearchInfo[Ln].Date ) + ' ';    {Do not Localize}
-      skSentSince:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skSentSince] + ' ' + DateToIMAPDateStr ( ASearchInfo[Ln].Date ) + ' ';   {Do not Localize}
-      skSince:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skSince] + ' ' + DateToIMAPDateStr ( ASearchInfo[Ln].Date ) + ' ';     {Do not Localize}
-      skSmaller:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skSmaller] + ' ' + IntToStr ( ASearchInfo[Ln].Size ) + ' ';        {Do not Localize}
-      skSubject:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skSubject] + ' "' + ASearchInfo[Ln].Text + '" ';             {Do not Localize}
-      skText:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skText] + ' "' + ASearchInfo[Ln].Text + '" ';              {Do not Localize}
-      skTo:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skTo] + ' "' + ASearchInfo[Ln].Text + '" ';                {Do not Localize}
-      skUID:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skUID] + ' ' + ASearchInfo[Ln].Text + ' ';                 {Do not Localize}
-      skUnanswered:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skUnanswered] + ' ';                           {Do not Localize}
-      skUndeleted:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skUndeleted] + ' ';                            {Do not Localize}
-      skUndraft:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skUndraft] + ' ';                            {Do not Localize}
-      skUnflagged:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skUnflagged] + ' ';                            {Do not Localize}
-      skUnKeyWord:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skUnKeyWord] + ' ';                            {Do not Localize}
-      skUnseen:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skUnseen] + ' ';                             {Do not Localize}
-    end;
-  end;
+  LSearchStr := SearchRecToStr(ASearchInfo);
   CheckConnectionState(csSelected);
-  SendCmd(NewCmdCounter, (IMAP4Commands[cmdSearch] + ' ' + Trim (LSearchStr)), [IMAP4Commands[cmdSearch]]);           {Do not Localize}
+  SendCmd(NewCmdCounter, (IMAP4Commands[cmdSearch] + ' ' + LSearchStr), [IMAP4Commands[cmdSearch]]);           {Do not Localize}
   if LastCmdResult.Code = IMAP_OK then begin
     ParseSearchResult(FMailBox, LastCmdResult.Text);
     Result := True;
@@ -2347,81 +2400,11 @@ end;
 function TIdIMAP4.UIDSearchMailBox(const ASearchInfo: array of TIdIMAP4SearchRec) : Boolean;
 var
   LSearchStr : String;
-  Ln : Integer;
 begin
   Result := False;
-  for Ln := Low(ASearchInfo) to High(ASearchInfo) do begin
-    case ASearchInfo[Ln].SearchKey of
-      skAnswered:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skAnswered] + ' ';                             {Do not Localize}
-      skBcc:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skBcc] + ' "' + ASearchInfo[Ln].Text + '" ';               {Do not Localize}
-      skBefore:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skBefore] + ' ' + DateToIMAPDateStr ( ASearchInfo[Ln].Date ) + ' ';    {Do not Localize}
-      skBody:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skBody] + ' "' + ASearchInfo[Ln].Text + '" ';              {Do not Localize}
-      skCc:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skCc] + ' "' + ASearchInfo[Ln].Text + '" ';                {Do not Localize}
-      skDeleted:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skDeleted] + ' ';                            {Do not Localize}
-      skDraft:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skDraft] + ' ';                              {Do not Localize}
-      skFlagged:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skFlagged] + ' ';                            {Do not Localize}
-      skFrom:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skFrom] + ' "' + ASearchInfo[Ln].Text + '" ';              {Do not Localize}
-      //skHeader: //Need to check
-      //skKeyword: //Need to check
-      skLarger:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skLarger] + ' ' + IntToStr ( ASearchInfo[Ln].Size ) + ' ';         {Do not Localize}
-      skNew:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skNew] + ' ';                              {Do not Localize}
-      skNot:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skNot] + ' ';                              {Do not Localize}
-      skOld:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skOld] + ' ';                              {Do not Localize}
-      skOn:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skOn] + ' ' + DateToIMAPDateStr ( ASearchInfo[Ln].Date ) + ' ';      {Do not Localize}
-      skOr:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skOr] + ' ';                               {Do not Localize}
-      skRecent:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skRecent] + ' ';                             {Do not Localize}
-      skSeen:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skSeen] + ' ';                               {Do not Localize}
-      skSentBefore:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skSentBefore] + ' ' + DateToIMAPDateStr ( ASearchInfo[Ln].Date ) + ' ';  {Do not Localize}
-      skSentOn:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skSentOn] + ' ' + DateToIMAPDateStr ( ASearchInfo[Ln].Date ) + ' ';    {Do not Localize}
-      skSentSince:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skSentSince] + ' ' + DateToIMAPDateStr ( ASearchInfo[Ln].Date ) + ' ';   {Do not Localize}
-      skSince:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skSince] + ' ' + DateToIMAPDateStr ( ASearchInfo[Ln].Date ) + ' ';     {Do not Localize}
-      skSmaller:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skSmaller] + ' ' + IntToStr ( ASearchInfo[Ln].Size ) + ' ';        {Do not Localize}
-      skSubject:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skSubject] + ' "' + ASearchInfo[Ln].Text + '" ';             {Do not Localize}
-      skText:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skText] + ' "' + ASearchInfo[Ln].Text + '" ';              {Do not Localize}
-      skTo:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skTo] + ' "' + ASearchInfo[Ln].Text + '" ';                {Do not Localize}
-      skUID:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skUID] + ' ' + ASearchInfo[Ln].Text + ' ';                 {Do not Localize}
-      skUnanswered:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skUnanswered] + ' ';                           {Do not Localize}
-      skUndeleted:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skUndeleted] + ' ';                            {Do not Localize}
-      skUndraft:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skUndraft] + ' ';                            {Do not Localize}
-      skUnflagged:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skUnflagged] + ' ';                            {Do not Localize}
-      skUnKeyWord:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skUnKeyWord] + ' ';                            {Do not Localize}
-      skUnseen:
-        LSearchStr := LSearchStr + IMAP4SearchKeys[skUnseen] + ' ';                             {Do not Localize}
-    end;
-  end;
+  LSearchStr := SearchRecToStr(ASearchInfo);
   CheckConnectionState(csSelected);
-  SendCmd(NewCmdCounter, (IMAP4Commands[cmdUID] + ' ' + IMAP4Commands[cmdSearch] + ' ' + Trim (LSearchStr)),          {Do not Localize}
+  SendCmd(NewCmdCounter, (IMAP4Commands[cmdUID] + ' ' + IMAP4Commands[cmdSearch] + ' ' + LSearchStr),          {Do not Localize}
     [IMAP4Commands[cmdSearch], IMAP4Commands[cmdUID]]);                                     {Do not Localize}
   if LastCmdResult.Code = IMAP_OK then begin
     ParseSearchResult(FMailBox, LastCmdResult.Text);
@@ -3083,7 +3066,7 @@ begin
   if AUseFirstPartInsteadOfText then begin
     {In this case, we need the body structure to find out what
     encoding has been applied to part 1...}
-    LParts := TIdImapMessageParts.Create(nil, TIdImapMessagePart);
+    LParts := TIdImapMessageParts.Create(nil);
     try
       if AUseUID then begin
         if not UIDRetrieveStructure(IntToStr(AMsgNum), LParts) then begin
@@ -5011,7 +4994,7 @@ begin
       {CCB: AMB.State ambiguous unless coded response received - default to msReadOnly...}
       if TextIsSame(LStr, '[READ-WRITE]') then begin {Do not Localize}
         AMB.State := msReadWrite;
-      end else {if SameText ( LStr, '[READ-ONLY]' ) then} begin {Do not Localize}
+      end else {if TextIsSame(LStr, '[READ-ONLY]') then} begin {Do not Localize}
         AMB.State := msReadOnly;
       end;
     end;
@@ -5564,21 +5547,6 @@ begin
   end;
 end;
 
-function TIdIMAP4.DateToIMAPDateStr(const ADate: TDateTime): String;
-var
-  LDay, LMonth, LYear : Word;
-begin
-  {Do not use the global settings from the system unit here because:
-  1) It might not be thread safe
-  2) Changing the settings could create problems for a user who's local date conventions
-  are diffrent than dd-mm-yyyy.  Some people prefer mm-dd-yyy.  Don't mess with a user's display settings.
-  3) Using the display settings for dates may not always work as expected if a user
-  changes their settings at a time between whn you do it but before the date is formatted.
-  }
-  DecodeDate(ADate, LYear, LMonth, LDay);
-  Result := IndyFormat('%.2d-%s-%.4d', [LDay, UpperCase(monthnames[LMonth]), LYear]);  {Do not Localize}
-end;
-
 procedure TIdIMAP4.StripCRLFs(ASourceStream, ADestStream: TStream);
 var
   LByte: TIdBytes;
@@ -5651,13 +5619,14 @@ var
 const
   SContentType = 'Content-Type'; {do not localize}
 
-  procedure CaptureAndDecodeCharSet;
+  // TODO - move this procedure into TIdIOHandler as a new Capture method?
+  procedure CaptureAndDecodeCharset;
   var
     LMStream: TMemoryStream;
   begin
     LMStream := TMemoryStream.Create;
     try
-      IOHandler.Capture(LMStream, LDelim, True, Indy8BitEncoding());
+      IOHandler.Capture(LMStream, LDelim, True, Indy8BitEncoding(){$IFDEF STRING_IS_ANSI}, Indy8BitEncoding(){$ENDIF});
       LMStream.Position := 0;
       ReadStringsAsCharSet(LMStream, AMsg.Body, AMsg.CharSet{$IFDEF STRING_IS_ANSI}, Indy8BitEncoding(){$ENDIF});
     finally
@@ -5789,7 +5758,7 @@ Begin
             line in an email that starts with '.' and the receiver is
             required to strip it off.  This ensures that the end-of-message
             line '.' cannot appear in the message body.}
-            if TextStartsWith(LLine, '.') then begin   {Do not Localize}
+            if TextStartsWith(LLine, '..') then begin   {Do not Localize}
               Delete(LLine,1,1);
             end;
             AMsg.Body.Add(LLine);

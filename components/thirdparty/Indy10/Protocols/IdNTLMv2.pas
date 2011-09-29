@@ -1,77 +1,68 @@
 unit IdNTLMv2;
 
 interface
+
 {$i IdCompilerDefines.inc}
 
 uses
   IdGlobal,
   IdStruct
-  {$IFNDEF DOTNET}, IdCTypes, IdSSLOpenSSLHeaders{$ENDIF};
+  {$IFNDEF DOTNET}, IdCTypes, IdSSLOpenSSLHeaders{$ENDIF}
+  ;
 
 type
   ProtocolArray = array [ 1.. 8] of AnsiChar;
   nonceArray = Array[ 1.. 8] of AnsiChar;
-
-{$IFNDEF DOTNET}
-  Pdes_key_schedule = ^des_key_schedule;
-  {$IFNDEF WIN32_OR_WIN64_OR_WINCE}
-  FILETIME = record
-     dwLowDateTime : LongWord;
-     dwHighDateTime : LongWord;
-  end;
-  {$ENDIF}
-{$ENDIF}
 
 const
 //These are from:
 //  http://svn.xmpp.ru/repos/tkabber/trunk/tkabber/jabberlib/ntlm.tcl
 // and the code is under a BSD license
   IdNTLMSSP_NEGOTIATE_UNICODE                  = $00000001;  //A - NTLMSSP_NEGOTIATE_UNICODE
-	IdNTLM_NEGOTIATE_OEM                         = $00000002;  //B - NTLM_NEGOTIATE_OEM
-	IdNTLMSSP_REQUEST_TARGET                     = $00000004;  //C - NTLMSSP_REQUEST_TARGET
-	IdNTLM_Unknown1                              = $00000008;  //r9 - should be zero
-	IdNTLMSSP_NEGOTIATE_SIGN                     = $00000010;  //D - NTLMSSP_NEGOTIATE_SIGN
-	IdNTLMSSP_NEGOTIATE_SEAL                     = $00000020;  //E - NTLMSSP_NEGOTIATE_SEAL
-	IdNTLMSSP_NEGOTIATE_DATAGRAM                 = $00000040;  //F - NTLMSSP_NEGOTIATE_DATAGRAM
-	IdNTLMSSP_NEGOTIATE_LM_KEY                   = $00000080;  //G - NTLMSSP_NEGOTIATE_LM_KEY
+  IdNTLM_NEGOTIATE_OEM                         = $00000002;  //B - NTLM_NEGOTIATE_OEM
+  IdNTLMSSP_REQUEST_TARGET                     = $00000004;  //C - NTLMSSP_REQUEST_TARGET
+  IdNTLM_Unknown1                              = $00000008;  //r9 - should be zero
+  IdNTLMSSP_NEGOTIATE_SIGN                     = $00000010;  //D - NTLMSSP_NEGOTIATE_SIGN
+  IdNTLMSSP_NEGOTIATE_SEAL                     = $00000020;  //E - NTLMSSP_NEGOTIATE_SEAL
+  IdNTLMSSP_NEGOTIATE_DATAGRAM                 = $00000040;  //F - NTLMSSP_NEGOTIATE_DATAGRAM
+  IdNTLMSSP_NEGOTIATE_LM_KEY                   = $00000080;  //G - NTLMSSP_NEGOTIATE_LM_KEY
   //mentioned in http://svn.xmpp.ru/repos/tkabber/trunk/tkabber/jabberlib/ntlm.tcl
   //and http://doc.ddart.net/msdn/header/include/ntlmsp.h.html from an old ntlmsp.h
   //header.  MS now says that is unused so it should be zero.
-	IdNTLMSSP_NEGOTIATE_NETWARE                  = $00000100;  //r8 - should be zero
-	IdNTLMSSP_NEGOTIATE_NTLM                     = $00000200;  //H - NTLMSSP_NEGOTIATE_NTLM
-	IdNTLMSSP_NEGOTIATE_NT_ONLY                  = $00000400;  //I - NTLMSSP_NEGOTIATE_NT_ONLY
-	IdNTLMSSP_ANONYMOUS                          = $00000800;  //J -
-	IdNTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED      = $00001000;  //K - NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED
-	IdNTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED = $00002000;  //L - NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED
+  IdNTLMSSP_NEGOTIATE_NETWARE                  = $00000100;  //r8 - should be zero
+  IdNTLMSSP_NEGOTIATE_NTLM                     = $00000200;  //H - NTLMSSP_NEGOTIATE_NTLM
+  IdNTLMSSP_NEGOTIATE_NT_ONLY                  = $00000400;  //I - NTLMSSP_NEGOTIATE_NT_ONLY
+  IdNTLMSSP_ANONYMOUS                          = $00000800;  //J -
+  IdNTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED      = $00001000;  //K - NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED
+  IdNTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED = $00002000;  //L - NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED
 //mentioned in http://svn.xmpp.ru/repos/tkabber/trunk/tkabber/jabberlib/ntlm.tcl
   //and http://doc.ddart.net/msdn/header/include/ntlmsp.h.html from an old ntlmsp.h
   //header.  MS now says that is unused so it should be zero.
-	IdNTLMSSP_NEGOTIATE_LOCAL_CALL               = $00004000;  //r6 - should be zero
+  IdNTLMSSP_NEGOTIATE_LOCAL_CALL               = $00004000;  //r6 - should be zero
 
-	IdNTLMSSP_NEGOTIATE_ALWAYS_SIGN              = $00008000;  //M - NTLMSSP_NEGOTIATE_ALWAYS_SIGN
-	IdNTLMSSP_TARGET_TYPE_DOMAIN                 = $00010000;  //N - NTLMSSP_TARGET_TYPE_DOMAIN
-	IdNTLMSSP_TARGET_TYPE_SERVER                 = $00020000;  //O - NTLMSSP_TARGET_TYPE_SERVER
-	IdNTLMSSP_TARGET_TYPE_SHARE                  = $00040000;  //P - NTLMSSP_TARGET_TYPE_SHARE
+  IdNTLMSSP_NEGOTIATE_ALWAYS_SIGN              = $00008000;  //M - NTLMSSP_NEGOTIATE_ALWAYS_SIGN
+  IdNTLMSSP_TARGET_TYPE_DOMAIN                 = $00010000;  //N - NTLMSSP_TARGET_TYPE_DOMAIN
+  IdNTLMSSP_TARGET_TYPE_SERVER                 = $00020000;  //O - NTLMSSP_TARGET_TYPE_SERVER
+  IdNTLMSSP_TARGET_TYPE_SHARE                  = $00040000;  //P - NTLMSSP_TARGET_TYPE_SHARE
   IdNTLMSSP_NEGOTIATE_EXTENDED_SESSIONSECURITY = $00080000;  //Q - NTLMSSP_NEGOTIATE_NTLM2
-//was  NTLMSSP_REQUEST_INIT_RESPONSE          0x100000 
-	IdNTLMSSP_NEGOTIATE_IDENTIFY                 = $00100000;  //R - NTLMSSP_NEGOTIATE_IDENTIFY
+//was  NTLMSSP_REQUEST_INIT_RESPONSE          0x100000
+  IdNTLMSSP_NEGOTIATE_IDENTIFY                 = $00100000;  //R - NTLMSSP_NEGOTIATE_IDENTIFY
 
-	IdNTLMSSP_REQUEST_ACCEPT_RESPONSE            = $00200000;  //r5 - should be zero
+  IdNTLMSSP_REQUEST_ACCEPT_RESPONSE            = $00200000;  //r5 - should be zero
   //mentioned in http://doc.ddart.net/msdn/header/include/ntlmsp.h.html from an old ntlmsp.h
   //header.  MS now says that is unused so it should be zero.
-	IdIdNTLMSSP_REQUEST_NON_NT_SESSION_KEY       = $00400000;  //S  - NTLMSSP_REQUEST_NON_NT_SESSION_KEY
-	IdNTLMSSP_NEGOTIATE_TARGET_INFO              = $00800000;  //T  - NTLMSSP_NEGOTIATE_TARGET_INFO
-	IdNTLM_Unknown4                              = $01000000;  //r4 - should be zero
-	IdNTLMSSP_NEGOTIATE_VERSION                  = $02000000;  //U  - NTLMSSP_NEGOTIATE_VERSION
+  IdIdNTLMSSP_REQUEST_NON_NT_SESSION_KEY       = $00400000;  //S  - NTLMSSP_REQUEST_NON_NT_SESSION_KEY
+  IdNTLMSSP_NEGOTIATE_TARGET_INFO              = $00800000;  //T  - NTLMSSP_NEGOTIATE_TARGET_INFO
+  IdNTLM_Unknown4                              = $01000000;  //r4 - should be zero
+  IdNTLMSSP_NEGOTIATE_VERSION                  = $02000000;  //U  - NTLMSSP_NEGOTIATE_VERSION
                                     //     400000
- 	IdNTLM_Unknown6                              = $04000000;  //r3 - should be zero
+  IdNTLM_Unknown6                              = $04000000;  //r3 - should be zero
 
-	IdNTLM_Unknown7                              = $08000000;  //r2 - should be zero
-	IdNTLM_Unknown8                              = $10000000;  //r1 - should be zero
-	IdNTLMSSP_NEGOTIATE_128                      = $20000000;  //V - NTLMSSP_NEGOTIATE_128
-	IdNTLMSSP_NEGOTIATE_KEY_EXCH                 = $40000000;  //W - NTLMSSP_NEGOTIATE_KEY_EXCH
-	IdNTLMSSP_NEGOTIATE_56                       = $80000000;  //X - NTLMSSP_NEGOTIATE_56
-
+  IdNTLM_Unknown7                              = $08000000;  //r2 - should be zero
+  IdNTLM_Unknown8                              = $10000000;  //r1 - should be zero
+  IdNTLMSSP_NEGOTIATE_128                      = $20000000;  //V - NTLMSSP_NEGOTIATE_128
+  IdNTLMSSP_NEGOTIATE_KEY_EXCH                 = $40000000;  //W - NTLMSSP_NEGOTIATE_KEY_EXCH
+  IdNTLMSSP_NEGOTIATE_56                       = $80000000;  //X - NTLMSSP_NEGOTIATE_56
 
 const
     //LC2 supports NTLMv2 only
@@ -184,13 +175,13 @@ uses
   System.Security.Cryptography,
   System.Text,
   {$ELSE}
-  {$IFDEF FPC}
-    , DynLibs  // better add DynLibs only for fpc
-  {$ENDIF}
-    {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+    {$IFDEF FPC}
+  DynLibs,  // better add DynLibs only for fpc
+    {$ENDIF}
+    {$IFDEF WINDOWS}
     //Windows should really not be included but this protocol does use
     //some windows internals and is Windows-based.
-    Windows,
+  Windows,
     {$ENDIF}
   {$ENDIF}
   IdFIPS,
@@ -200,21 +191,30 @@ uses
   IdHashMessageDigest,
   IdCoderMIME;
 
-
-{$IFDEF DOTNET}
 const
+{$IFDEF DOTNET}
   MAGIC : array [ 0.. 7] of byte = ( $4b, $47, $53, $21, $40, $23, $24, $25);
 {$ELSE}
-Const
   Magic: des_cblock = ( $4B, $47, $53, $21, $40, $23, $24, $25 );
   Magic_const : array [0..7] of byte = ( $4b, $47, $53, $21, $40, $23, $24, $25 );
 {$ENDIF}
-   TYPE1_MARKER = 1;
-   TYPE2_MARGER = 2;
-   TYPE3_MARKER = 3;
+  TYPE1_MARKER = 1;
+  TYPE2_MARGER = 2;
+  TYPE3_MARKER = 3;
 
 //const
 //  NUL_USER_SESSION_KEY : TIdBytes[0..15] = ($00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00);
+
+{$IFNDEF DOTNET}
+type
+  Pdes_key_schedule = ^des_key_schedule;
+  {$IFNDEF WINDOWS}
+  FILETIME = record
+    dwLowDateTime : LongWord;
+    dwHighDateTime : LongWord;
+  end;
+  {$ENDIF}
+{$ENDIF}
 
 function NulUserSessionKey : TIdBytes;
 begin
@@ -277,7 +277,7 @@ var
   {$ENDIF}
 {$ENDIF}
 begin
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
     {$IFDEF WINCE}
     // TODO
     {$ELSE}
@@ -540,22 +540,28 @@ user@DOMAIN
 end;
 
 {$IFDEF DOTNET}
+
 function NTLMFunctionsLoaded : Boolean;
 {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := True;
 end;
+
 {$ELSE}
 
 function NTLMFunctionsLoaded : Boolean;
 begin
-  Result := Assigned( des_set_odd_parity) and
-    Assigned( DES_set_key) and
-    Assigned( DES_ecb_encrypt);
+  Result := IdSSLOpenSSLHeaders.Load;
+  if Result then begin
+    Result := Assigned(des_set_odd_parity) and
+      Assigned(DES_set_key) and
+      Assigned(DES_ecb_encrypt);
+  end;
 end;
 
 function LoadRC4 : Boolean;
-var h : Integer;
+var
+  h : Integer;
 begin
   Result := IdSSLOpenSSLHeaders.Load;
   if Result then begin
@@ -1089,10 +1095,10 @@ end;
 
 //function SetupLMResponse(const APassword : String; nonce : TIdBytes): TIdBytes;
 function CreateModNTLMv1Response(var Vntlmseshash : TIdBytes; const AUsername : String; const APassword : String; cnonce, nonce : TIdBytes; var LMFeild : TIdBytes): TIdBytes;
-var LChall, LTmp : TIdBytes;
+var
+  LChall, LTmp : TIdBytes;
   lntlmseshash : TIdBytes;
   LPassHash : TIdBytes;
-
 begin
   CheckMD5Permitted;
   //LM feild value for Type3 message
@@ -1632,9 +1638,9 @@ begin
   end;
 //  if ToHex(NTOWFv1('Password') ) <> UpperCase('e52cac67419a9a224a3b108f3fa6cb6d') then
   if ToHex(LMOWFv1(
-    TIdTextEncoding.ASCII.GetBytes(Uppercase( 'Password')),
-    TIdTextEncoding.ASCII.GetBytes(Uppercase( 'User')),
-    TIdTextEncoding.ASCII.GetBytes(Uppercase( 'Domain')))) <>
+    IndyASCIIEncoding.GetBytes(Uppercase( 'Password')),
+    IndyASCIIEncoding.GetBytes(Uppercase( 'User')),
+    IndyASCIIEncoding.GetBytes(Uppercase( 'Domain')))) <>
     Uppercase('e52cac67419a9a224a3b108f3fa6cb6d') then
 
   begin

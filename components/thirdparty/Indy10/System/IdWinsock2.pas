@@ -167,12 +167,17 @@ To deal with this, I use the FPC predefined FPC_REQUIRES_PROPER_ALIGNMENT.
     {$PACKRECORDS C}
   {$ENDIF}
 {$ELSE}
-   {$MINENUMSIZE 4}
-  {$IFDEF REQUIRES_PROPER_ALIGNMENT}
-   {$ALIGN ON}
+  {$IFDEF WIN64}
+    {$ALIGN ON}
+    {$MINENUMSIZE 4}
   {$ELSE}
-    {$ALIGN OFF}
-    {$WRITEABLECONST OFF}
+    {$MINENUMSIZE 4}
+    {$IFDEF REQUIRES_PROPER_ALIGNMENT}
+      {$ALIGN ON}
+    {$ELSE}
+      {$ALIGN OFF}
+      {$WRITEABLECONST OFF}
+    {$ENDIF}
   {$ENDIF}
 {$ENDIF}
 
@@ -193,7 +198,7 @@ type
   end;
 
 const
-  {$IFDEF UNDER_CE}
+  {$IFDEF WINCE}
   WINSOCK2_DLL = 'ws2.dll'; {Do not Localize}
   {$ELSE}
   WINSOCK2_DLL = 'WS2_32.DLL';   {Do not Localize}
@@ -224,15 +229,15 @@ type
   PWSAEVENT = ^WSAEVENT;
   {$EXTERNALSYM LPWSAEVENT}
   LPWSAEVENT = PWSAEVENT;
-  {$IFNDEF FPC}
-  {$IFNDEF VCL_2007_OR_ABOVE}
-      {$EXTERNALSYM ULONG_PTR}
-      {$IFDEF CPU64}
-  ULONG_PTR = Int64;
-      {$ELSE}
-  ULONG_PTR = DWORD;
-      {$ENDIF}
-    {$ENDIF}
+
+  {$IFNDEF HAS_ULONG_PTR}
+  {$EXTERNALSYM ULONG_PTR}
+  ULONG_PTR = PtrUInt;
+  {$ENDIF}
+
+  {$IFNDEF HAS_DWORD_PTR}
+  {$EXTERNALSYM DWORD_PTR}
+  DWORD_PTR = PtrUInt;
   {$ENDIF}
 
 const
@@ -480,7 +485,7 @@ const
   {$EXTERNALSYM IPPORT_REGISTERED_MIN}
   IPPORT_REGISTERED_MIN  = IPPORT_RESERVED;
 
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   {$EXTERNALSYM IPPORT_REGISTERED_MAX}
   IPPORT_REGISTERED_MAX = $bfff;
   {$EXTERNALSYM IPPORT_DYNAMIC_MIN}
@@ -647,7 +652,7 @@ const
                                     // connection is not ack-ed to the
                                     // other side until conditional
                                     // function returns CF_ACCEPT
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   {$EXTERNALSYM SO_RANDOMIZE_PORT}
   SO_RANDOMIZE_PORT        = $3005;    // randomize assignment of wildcard ports
   {$EXTERNALSYM SO_PORT_SCALABILITY}
@@ -702,7 +707,7 @@ const
   AF_UNKNOWN1     = 20;              // somebody is using this!
   {$EXTERNALSYM AF_BAN}
   AF_BAN          = 21;              // banyan
-  {$IFDEF UNDER_CE}
+  {$IFDEF WINCE}
   {$EXTERNALSYM AF_IRDA}
   AF_IRDA         = 22;              //* IrDA */
   {$ELSE}
@@ -715,7 +720,7 @@ const
   AF_CLUSTER      = 24;              // microsoft Wolfpack
   {$EXTERNALSYM AF_12844}
   AF_12844        = 25;              // ieeE 1284.4 WG AF
-  {$IFDEF UNDER_CE}
+  {$IFDEF WINCE}
   {$EXTERNALSYM AF_ATM}
   AF_ATM          = 26;              //* Native ATM Services */
   {$ELSE}
@@ -1114,7 +1119,7 @@ const
   {$EXTERNALSYM WSAEREFUSED}
   WSAEREFUSED             = WSABASEERR+112;
 
-  {$IFDEF UNDER_CE}
+  {$IFDEF WINCE}
   WSAEDUPLICATE_NAME      = WSABASEERR+900;
   {$ENDIF}
 
@@ -1361,7 +1366,7 @@ type
   PWSAOverlapped  = ^TWSAOverlapped;
   {$EXTERNALSYM LPWSAOVERLAPPED}
   LPWSAOVERLAPPED = PWSAOverlapped;
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   {$EXTERNALSYM WSC_PROVIDER_INFO_TYPE}
   {$EXTERNALSYM PROVIDERINFOLSPCATEGORIES}
   {$EXTERNALSYM PROVIDERINFOAUDIT}
@@ -1462,6 +1467,7 @@ const
 type
   {$EXTERNALSYM GROUP}
   GROUP = DWORD;
+  PGROUP = ^GROUP;
 
 //  WinSock 2 extension -- data type for WSAEnumNetworkEvents()
   {$EXTERNALSYM WSANETWORKEVENTS}
@@ -1537,10 +1543,9 @@ type
 
 //  WinSock 2 extension -- WSAPROTOCOL_INFO structure
 
-
-{$IFNDEF FPC}
+{$IFNDEF HAS_LPGUID}
 type
-  {$IFNDEF VCL_2007_OR_ABOVE}
+  {$IFNDEF HAS_PGUID}
   {$NODEFINE PGUID}
   PGUID = ^TGUID;
   {$ENDIF}
@@ -1740,7 +1745,7 @@ const
   {$EXTERNALSYM IOC_VENDOR}
   IOC_VENDOR    = $18000000;
 
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
 ///*
 // * WSK-specific IO control codes are Winsock2 codes with the highest-order
 // * 3 bits of the Vendor/AddressFamily-specific field set to 1.
@@ -1788,11 +1793,11 @@ const
   SIO_NSP_NOTIFY_CHANGE               =  DWORD(IOC_IN or IOC_WS2 or 25);
   {$EXTERNALSYM SIO_ADDRESS_LIST_SORT}
   SIO_ADDRESS_LIST_SORT               = DWORD(IOC_INOUT or IOC_WS2 or 25);
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   {$EXTERNALSYM SIO_RESERVED_1}
-  SIO_RESERVED_1 = DWORD(IOC_IN or IOC_WS2 or 26);
+  SIO_RESERVED_1                      = DWORD(IOC_IN or IOC_WS2 or 26);
   {$EXTERNALSYM SIO_RESERVED_2}
-  SIO_RESERVED_2 = DWORD(IOC_IN or IOC_WS2 or 33);
+  SIO_RESERVED_2                      = DWORD(IOC_IN or IOC_WS2 or 33);
   {$ENDIF}
 
 //  WinSock 2 extension -- manifest constants for SIO_TRANSLATE_HANDLE ioctl
@@ -2134,7 +2139,7 @@ const
   {$EXTERNALSYM MSG_MCAST}
   MSG_MCAST     =  $0800;
 
-{$IFNDEF UNDER_CE}
+{$IFNDEF WINCE}
   //Windows Vista WSAPoll
 //* Event flag definitions for WSAPoll(). */
   {$EXTERNALSYM POLLRDNORM}
@@ -2287,7 +2292,7 @@ type
   {$EXTERNALSYM LPWSANAMESPACE_INFOW}
   LPWSANAMESPACE_INFOW = PWSANAMESPACE_INFOW;
 
-{$IFNDEF UNDER_CE}
+{$IFNDEF WINCE}
   {$EXTERNALSYM WSANAMESPACE_INFOEXW}
   WSANAMESPACE_INFOEXW = record
      NSProviderId : TGUID;
@@ -2343,7 +2348,7 @@ type
   LPWSANAMESPACE_INFOEX = PWSANAMESPACE_INFOEX;
   LPFN_WSAENUMNAMESPACEPROVIDERSEX = LPFN_WSAENUMNAMESPACEPROVIDERSEXA;
   {$ENDIF}
-{$ENDIF} // UNDER_CE
+{$ENDIF} // WINCE
 
   {$NODEFINE TWSANameSpace_Info}
   {$EXTERNALSYM WSANAMESPACE_INFO}
@@ -2361,7 +2366,7 @@ type
   LPWSANAMESPACE_INFO = LPWSANAMESPACE_INFOA;
   {$ENDIF}
 
-  {$IFDEF UNDER_CE}
+  {$IFDEF WINCE}
   {$EXTERNALSYM DSCP_TRAFFIC_TYPE}
   {$EXTERNALSYM DSCPTYPENOTSET}
   {$EXTERNALSYM DSCPBESTEFFORT}
@@ -2416,21 +2421,26 @@ type
   {$EXTERNALSYM LPWSAMSG}
   LPWSAMSG = PWSAMSG;
 
-  {$EXTERNALSYM WSACMSGHDR}
-  WSACMSGHDR = record
-    cmsg_len: UINT;
+  {$EXTERNALSYM _WSACMSGHDR}
+  _WSACMSGHDR = record
+    cmsg_len: SIZE_T;
     cmsg_level: Integer;
     cmsg_type: Integer;
     { followed by UCHAR cmsg_data[] }
   end;
+  {$EXTERNALSYM WSACMSGHDR}
+  WSACMSGHDR = _WSACMSGHDR;
+  {$EXTERNALSYM cmsghdr}
+  cmsghdr = _WSACMSGHDR;
   {$NODEFINE TWSACMsgHdr}
   TWSACMsgHdr = WSACMSGHDR;
   {$EXTERNALSYM PWSACMSGHDR}
   PWSACMSGHDR = ^TWSACMsgHdr;
   {$EXTERNALSYM LPWSACMSGHDR}
   LPWSACMSGHDR = PWSACMSGHDR;
-
-{$IFNDEF UNDER_CE}
+  {$EXTERNALSYM  CMSGHDR}
+  PCMSGHDR = ^CMSGHDR;
+{$IFNDEF WINCE}
   {$EXTERNALSYM WSAPOLLFD}
   WSAPOLLFD = record
     fd : TSocket;
@@ -2450,10 +2460,10 @@ type
 type
   {$EXTERNALSYM LPCONDITIONPROC}
   LPCONDITIONPROC = function(lpCallerId: LPWSABUF; lpCallerData: LPWSABUF; lpSQOS, pGQOS: LPQOS;
-    lpCalleeId,lpCalleeData: LPWSABUF; g: GROUP; dwCallbackData: DWORD): Integer; stdcall;
+    lpCalleeId,lpCalleeData: LPWSABUF; g: PGROUP; dwCallbackData: DWORD_PTR): Integer; stdcall;
   {$EXTERNALSYM LPWSAOVERLAPPED_COMPLETION_ROUTINE}
-  LPWSAOVERLAPPED_COMPLETION_ROUTINE = procedure(const dwError, cbTransferred: DWORD;
-    const lpOverlapped : LPWSAOVERLAPPED; const dwFlags: DWORD); stdcall;
+  LPWSAOVERLAPPED_COMPLETION_ROUTINE = procedure(dwError, cbTransferred: DWORD;
+    lpOverlapped: LPWSAOVERLAPPED; dwFlags: DWORD); stdcall;
 
   {$EXTERNALSYM WSACOMPLETIONTYPE}
   {$EXTERNALSYM NSP_NOTIFY_IMMEDIATELY}
@@ -2563,7 +2573,7 @@ type
   LPFN_GETHOSTBYNAME = function(name: PAnsiChar): PHostEnt; stdcall;
   {$EXTERNALSYM LPFN_GETHOSTNAME}
   LPFN_GETHOSTNAME = function(name: PAnsiChar; len: Integer): Integer; stdcall;
-{$IFDEF UNDER_CE}
+{$IFDEF WINCE}
   // WinCE specific for setting the host name
   {$EXTERNALSYM LPFN_SETHOSTNAME} 
   LPFN_SETHOSTNAME = function(pName : PAnsiChar; len : Integer) : Integer; stdcall;
@@ -2580,7 +2590,7 @@ type
   LPFN_WSASETLASTERROR = procedure(const iError: Integer); stdcall;
   {$EXTERNALSYM LPFN_WSAGETLASTERROR}
   LPFN_WSAGETLASTERROR = function: Integer; stdcall;
-{$IFNDEF UNDER_CE}
+{$IFNDEF WINCE}
   {$EXTERNALSYM LPFN_WSACANCELASYNCREQUEST}
   LPFN_WSACANCELASYNCREQUEST = function(hAsyncTaskHandle: THandle): Integer; stdcall;
   {$EXTERNALSYM LPFN_WSAISBLOCKING}
@@ -2633,7 +2643,7 @@ type
     lpOutputBuffer: Pointer; dwReceiveDataLength, dwLocalAddressLength,
     dwRemoteAddressLength: DWORD; var lpdwBytesReceived: DWORD;
     lpOverlapped: POverlapped): BOOL; stdcall;
-  {$IFNDEF UNDER_CE}   
+  {$IFNDEF WINCE}
   {$EXTERNALSYM LPFN_WSACONNECTBYLIST}
   LPFN_WSACONNECTBYLIST = function(const s : TSocket; SocketAddressList : PSOCKET_ADDRESS_LIST;
     var LocalAddressLength : DWORD;  LocalAddress : LPSOCKADDR;
@@ -2675,7 +2685,7 @@ type
   {$EXTERNALSYM LPFN_WSACREATEEVENT}
   LPFN_WSACREATEEVENT  = function: WSAEVENT; stdcall;
 
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   {$EXTERNALSYM LPFN_WSADUPLICATESOCKETA}
   LPFN_WSADUPLICATESOCKETA = function(const s : TSocket; const dwProcessId : DWORD; lpProtocolInfo : LPWSAPROTOCOL_INFOA) : Integer; stdcall;
   {$EXTERNALSYM LPFN_WSADUPLICATESOCKETW}
@@ -2873,7 +2883,7 @@ type
     var LocalSockaddr: TSockAddr; var LocalSockaddrLength: Integer;
     var RemoteSockaddr: TSockAddr; var RemoteSockaddrLength: Integer); stdcall;
 
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   //This is defined in the Windows Mobile 6 Standard SDK Refresh
   //but I'm not sure what .DLL the function is in.  I also couldn't find a WSAID
   //constant for it.
@@ -2891,7 +2901,7 @@ type
   {$EXTERNALSYM LPFN_TRANSMITPACKETS}
   LPFN_TRANSMITPACKETS = function(s: TSocket; lpPacketArray: LPTRANSMIT_PACKETS_ELEMENT; nElementCount: DWORD; nSendSize: DWORD; lpOverlapped: LPWSAOVERLAPPED; dwFlags: DWORD): BOOL; stdcall;
   //Windows Vista, Windows Server 2008
-{$IFNDEF UNDER_CE}
+{$IFNDEF WINCE}
   {$EXTERNALSYM LPFN_WSASENDMSG}
   LPFN_WSASENDMSG = function(const s : TSocket; lpMsg : LPWSAMSG; const dwFlags : DWORD; var lpNumberOfBytesSent : DWORD;  lpOverlapped : LPWSAOVERLAPPED;  lpCompletionRoutine : LPWSAOVERLAPPED_COMPLETION_ROUTINE) : Integer; stdcall;
   {$EXTERNALSYM LPFN_WSAPOLL}
@@ -2913,13 +2923,13 @@ const
   WSAID_TRANSMITFILE: TGuid = (D1:$b5367df0; D2:$cbac; D3:$11cf; D4:($95, $ca, $00, $80, $5f, $48, $a1, $92));
   {$EXTERNALSYM WSAID_TRANSMITPACKETS}
   WSAID_TRANSMITPACKETS: TGuid = (D1:$d9689da0;D2:$1f90;D3:$11d3;D4:($99,$71,$00,$c0,$4f,$68,$c8,$76));
-{$IFNDEF UNDER_CE}
+{$IFNDEF WINCE}
   {$EXTERNALSYM WSAID_WSAPOLL}
   WSAID_WSAPOLL: TGuid = (D1:$18C76F85;D2:$DC66;D3:$4964;D4:($97,$2E,$23,$C2,$72,$38,$31,$2B));
 {$ENDIF}
   {$EXTERNALSYM WSAID_WSARECVMSG}
   WSAID_WSARECVMSG: TGuid = (D1:$f689d7c8;D2:$6f1f;D3:$436b;D4:($8a,$53,$e5,$4f,$e3,$51,$c3,$22));
-{$IFNDEF UNDER_CE}
+{$IFNDEF WINCE}
   {$EXTERNALSYM WSAID_WSASENDMSG}
   WSAID_WSASENDMSG : TGuid = (D1:$a441e712;D2:$754f;D3:$43ca;D4:($84,$a7,$0d,$ee,$44,$cf,$60,$6d));
 {$ENDIF}
@@ -2982,7 +2992,7 @@ var
   gethostbyname : LPFN_GETHOSTBYNAME = nil;
   {$EXTERNALSYM gethostname}
   gethostname : LPFN_GETHOSTNAME = nil;
-  {$IFDEF UNDER_CE}
+  {$IFDEF WINCE}
   {$EXTERNALSYM sethostname}
   sethostname : LPFN_SETHOSTNAME = nil;
   {$ENDIF}
@@ -2998,7 +3008,7 @@ var
   WSASetLastError : LPFN_WSASETLASTERROR = nil;
   {$EXTERNALSYM WSAGetLastError}
   WSAGetLastError : LPFN_WSAGETLASTERROR = nil;
-{$IFNDEF UNDER_CE}
+{$IFNDEF WINCE}
   {$EXTERNALSYM WSAIsblocking}
   WSAIsBlocking : LPFN_WSAISBLOCKING = nil;
   {$EXTERNALSYM WSAUnhookBlockingHook}
@@ -3040,7 +3050,7 @@ var
   WSAConnect : LPFN_WSACONNECT = nil;
   {$EXTERNALSYM WSACreateEvent}
   WSACreateEvent : LPFN_WSACREATEEVENT = nil;
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   {$EXTERNALSYM WSADuplicateSocketA}
   WSADuplicateSocketA : LPFN_WSADUPLICATESOCKETA = nil;
   {$EXTERNALSYM WSADuplicateSocketW}
@@ -3161,7 +3171,7 @@ var
   AcceptEx : LPFN_ACCEPTEX = nil;
   {$EXTERNALSYM GetAcceptExSockaddrs}
   GetAcceptExSockaddrs : LPFN_GETACCEPTEXSOCKADDRS = nil;
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   //This is defined in the Windows Mobile 6 Standard SDK Refresh
   //but I'm not sure what .DLL the function is in.  I also couldn't find a WSAID
   //constant for it.
@@ -3176,7 +3186,7 @@ var
   WSARecvMsg : LPFN_WSARECVMSG = nil;
   {$EXTERNALSYM TransmitPackets}
   TransmitPackets : LPFN_TRANSMITPACKETS = nil;
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   //Windows Vista, Windows Server 2008
   {$EXTERNALSYM WSASendMsg}
   WSASendMsg: LPFN_WSASENDMSG = nil;
@@ -3211,21 +3221,43 @@ var
   {$EXTERNALSYM FD_ZERO}
   procedure FD_ZERO(var FDSet: TFDSet);
 
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
+//Posix aliases for helper macros
+//    #define CMSGHDR_ALIGN WSA_CMSGHDR_ALIGN
+  {$EXTERNALSYM CMSGHDR_ALIGN}
+  function CMSGHDR_ALIGN(const Alength: SIZE_T): SIZE_T;
+// #define CMSGDATA_ALIGN WSA_CMSGDATA_ALIGN
+  {$EXTERNALSYM CMSGDATA_ALIGN}
+  function CMSGDATA_ALIGN(const Alength: PtrUInt): PtrUInt;
+//#define CMSG_FIRSTHDR WSA_CMSG_FIRSTHDR
+  {$EXTERNALSYM CMSG_FIRSTHDR}
+  function CMSG_FIRSTHDR(const msg: LPWSAMSG): LPWSACMSGHDR;
+// #define CMSG_NXTHDR WSA_CMSG_NXTHDR
+  {$EXTERNALSYM CMSG_NXTHDR}
+  function CMSG_NXTHDR(const msg: LPWSAMSG; const cmsg: LPWSACMSGHDR): LPWSACMSGHDR;
+// #define CMSG_SPACE WSA_CMSG_SPACE
+  {$EXTERNALSYM CMSG_SPACE}
+  function CMSG_SPACE(const Alength: PtrUInt): PtrUInt;
+// #define CMSG_LEN WSA_CMSG_LEN
+  {$EXTERNALSYM CMSG_LEN}
+  function CMSG_LEN(const Alength: SIZE_T): SIZE_T;
+//
   {$EXTERNALSYM WSA_CMSGHDR_ALIGN}
   function WSA_CMSGHDR_ALIGN(const Alength: PtrUInt): PtrUInt;
   {$EXTERNALSYM WSA_CMSGDATA_ALIGN}
   function WSA_CMSGDATA_ALIGN(const Alength: PtrUInt): PtrUInt;
   {$EXTERNALSYM WSA_CMSG_FIRSTHDR}
   function WSA_CMSG_FIRSTHDR(const msg: LPWSAMSG): LPWSACMSGHDR;
+// #define CMSG_FIRSTHDR WSA_CMSG_FIRSTHDR
   {$EXTERNALSYM WSA_CMSG_NXTHDR}
   function WSA_CMSG_NXTHDR(const msg: LPWSAMSG; const cmsg: LPWSACMSGHDR): LPWSACMSGHDR;
+
   {$EXTERNALSYM WSA_CMSG_DATA}
   function WSA_CMSG_DATA(const cmsg: LPWSACMSGHDR): PByte;
   {$EXTERNALSYM WSA_CMSG_SPACE}
-  function WSA_CMSG_SPACE(const Alength: PtrUInt): PtrUInt;
+  function WSA_CMSG_SPACE(const Alength: SIZE_T): SIZE_T;
   {$EXTERNALSYM WSA_CMSG_LEN}
-  function WSA_CMSG_LEN(const Alength: PtrUInt): PtrUInt;
+  function WSA_CMSG_LEN(const Alength: SIZE_T): SIZE_T;
   {$ENDIF}
 
 //=============================================================
@@ -3301,7 +3333,7 @@ const
   {$EXTERNALSYM SIOCGMSFILTER}
   SIOCGMSFILTER             = IOC_IN or ((SizeOf(u_long) and IOCPARM_MASK) shl 16) or (Ord('t') shl 8) or (127 or IOC_IN);    {Do not Localize}
 
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   //Windows 2008 and Windows Vista SP1 additions
   {$EXTERNALSYM SIO_IDEAL_SEND_BACKLOG_QUERY}
   SIO_IDEAL_SEND_BACKLOG_QUERY = IOC_OUT or ((SizeOf(u_long) and IOCPARM_MASK) shl 16) or (Ord('t') shl 8) or 123;
@@ -3309,7 +3341,7 @@ const
   SIO_IDEAL_SEND_BACKLOG_CHANGE = IOC_VOID or (Ord('t') shl 8) or 122;
   {$ENDIF}
 
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
 // Options for use with [gs]etsockopt at the IP level.
   {$EXTERNALSYM IP_OPTIONS}
   IP_OPTIONS                =  1; // set/get IP options
@@ -3387,7 +3419,7 @@ const
   IP_ORIGINAL_ARRIVAL_IF   = 47; // Original Arrival Interface Index.  (Windows 7)
 
 
-  {$IFDEF UNDER_CE}
+  {$IFDEF WINCE}
   {$EXTERNALSYM IP_DSCP_TRAFFIC_TYPE}
   IP_DSCP_TRAFFIC_TYPE    = 100; //* differential services */
   {$EXTERNALSYM IP_RELOAD_DSCP_MAPPINGS}
@@ -3456,7 +3488,7 @@ type
   {$EXTERNALSYM LPIN6_ADDR}
   LPIN6_ADDR = PIN6_ADDR;
 
-{$IFNDEF UNDER_CE}
+{$IFNDEF WINCE}
   {$IFNDEF NO_REDECLARE}
   // Argument structure for IPV6_JOIN_GROUP and IPV6_LEAVE_GROUP
   {$EXTERNALSYM ipv6_mreq}
@@ -3555,7 +3587,12 @@ type
   function IN6ADDR_ISANY(sa: PSockAddrIn6): Boolean;
   {$EXTERNALSYM IN6ADDR_ISLOOPBACK}
   function IN6ADDR_ISLOOPBACK(sa: PSockAddrIn6): Boolean;
-
+  {$EXTERNALSYM IN6_IS_ADDR_SUBNET_ROUTER_ANYCAST}
+  function IN6_IS_ADDR_SUBNET_ROUTER_ANYCAST(const a : PIn6Addr) : Boolean;
+  {$EXTERNALSYM IN6_IS_ADDR_SUBNET_RESERVED_ANYCAST}
+  function IN6_IS_ADDR_SUBNET_RESERVED_ANYCAST(const a: PIn6Addr) : Boolean;
+  {$EXTERNALSYM IN6_IS_ADDR_ANYCAST}
+  function IN6_IS_ADDR_ANYCAST(const a: PIn6Addr) : Boolean;
   {$EXTERNALSYM IN6_ADDR_EQUAL}
   function IN6_ADDR_EQUAL(const a: PIn6Addr; const b: PIn6Addr): Boolean;
   {$EXTERNALSYM IN6_IS_ADDR_UNSPECIFIED}
@@ -3564,6 +3601,9 @@ type
   function IN6_IS_ADDR_LOOPBACK(const a: PIn6Addr): Boolean;
   {$EXTERNALSYM IN6_IS_ADDR_MULTICAST}
   function IN6_IS_ADDR_MULTICAST(const a: PIn6Addr): Boolean;
+  {$EXTERNALSYM IN6_IS_ADDR_EUI64}
+  function IN6_IS_ADDR_EUI64(const a : PIn6Addr) : Boolean;
+
   {$EXTERNALSYM IN6_IS_ADDR_LINKLOCAL}
   function IN6_IS_ADDR_LINKLOCAL(const a: PIn6Addr): Boolean;
   {$EXTERNALSYM IN6_IS_ADDR_SITELOCAL}
@@ -3582,6 +3622,9 @@ type
   function IN6_IS_ADDR_MC_ORGLOCAL(const a: PIn6Addr): Boolean;
   {$EXTERNALSYM IN6_IS_ADDR_MC_GLOBAL}
   function IN6_IS_ADDR_MC_GLOBAL(const a: PIn6Addr): Boolean;
+
+  {$EXTERNALSYM IN6_SET_ADDR_UNSPECIFIED}
+  procedure IN6_SET_ADDR_UNSPECIFIED(a : PIN6_ADDR);
 
 // Possible flags for the  iiFlags - bitmask
 const
@@ -3660,7 +3703,7 @@ type
   {$EXTERNALSYM ProviderType_Service}
   // The Pascal compiler in Delphi/BCB prior to v6 does not
   // support specifying values for individual enum items
-  {$IFDEF VCL_6_OR_ABOVE}
+  {$IFDEF HAS_ENUM_ELEMENT_VALUES}
   NAPI_PROVIDER_TYPE = (ProviderType_Application = 1, ProviderType_Service);
   {$ELSE}
   NAPI_PROVIDER_TYPE = (nptUnused, ProviderType_Application, ProviderType_Service);
@@ -3798,7 +3841,7 @@ type
   {$EXTERNALSYM SYSTEM_CRITICAL_SOCKET}
   // The Pascal compiler in Delphi/BCB prior to v6 does not
   // support specifying values for individual enum items
-  {$IFDEF VCL_6_OR_ABOVE}
+  {$IFDEF HAS_ENUM_ELEMENT_VALUES}
   SOCKET_USAGE_TYPE = (SYSTEM_CRITICAL_SOCKET = 1);
   {$ELSE}
   SOCKET_USAGE_TYPE = (sutUnused, SYSTEM_CRITICAL_SOCKET);
@@ -3845,7 +3888,7 @@ type
     {$ENDIF}
   {$ENDIF}
 
-{$IFNDEF UNDER_CE}
+{$IFNDEF WINCE}
 type
 // structure for IP_PKTINFO option
   {$EXTERNALSYM IN_PKTINFO}
@@ -3905,13 +3948,17 @@ const
 type
   {$NODEFINE PAddrInfo}
   PAddrInfo = ^ADDRINFO;
+  {$NODEFINE PPaddrinfo}
+  PPaddrinfo = ^PAddrInfo;
+  {$NODEFINE PPaddrinfoW}
+  PPaddrinfoW = ^PAddrInfoW;
   {$EXTERNALSYM ADDRINFO}
   ADDRINFO = record
     ai_flags        : Integer;      // AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST
     ai_family       : Integer;      // PF_xxx
     ai_socktype     : Integer;      // SOCK_xxx
     ai_protocol     : Integer;      // 0 or IPPROTO_xxx for IPv4 and IPv6
-    ai_addrlen      : ULONG;        // Length of ai_addr
+    ai_addrlen      : size_t;        // Length of ai_addr
     ai_canonname    : PAnsiChar;    // Canonical name for nodename
     ai_addr         : PSOCKADDR;    // Binary address
     ai_next         : PAddrInfo;    // Next structure in linked list
@@ -3929,7 +3976,7 @@ type
     ai_family       : Integer;      // PF_xxx
     ai_socktype     : Integer;      // SOCK_xxx
     ai_protocol     : Integer;      // 0 or IPPROTO_xxx for IPv4 and IPv6
-    ai_addrlen      : ULONG;        // Length of ai_addr
+    ai_addrlen      : size_t;        // Length of ai_addr
     ai_canonname    : PWideChar;    // Canonical name for nodename
     ai_addr         : PSOCKADDR;    // Binary address
     ai_next         : PAddrInfoW;   // Next structure in linked list
@@ -3942,15 +3989,17 @@ type
 // Flags used in "hints" argument to getaddrinfo()
 const
   {$EXTERNALSYM AI_PASSIVE}
-  AI_PASSIVE            = $1;   // Socket address will be used in bind() call
+  AI_PASSIVE            = $00000001;   // Socket address will be used in bind() call
   {$EXTERNALSYM AI_CANONNAME}
-  AI_CANONNAME          = $2;   // Return canonical name in first ai_canonname
+  AI_CANONNAME          = $00000002;   // Return canonical name in first ai_canonname
   {$EXTERNALSYM AI_NUMERICHOST}
-  AI_NUMERICHOST        = $4;   // Nodename must be a numeric address string
+  AI_NUMERICHOST        = $00000004;   // Nodename must be a numeric address string
   {$EXTERNALSYM AI_NUMERICSERV}
   AI_NUMERICSERV        = $00000008;  // Servicename must be a numeric port number
   {$EXTERNALSYM AI_ALL}
   AI_ALL                = $00000100;  // Query both IP6 and IP4 with AI_V4MAPPED
+  {$EXTERNALSYM AI_ADDRCONFIG}
+  AI_ADDRCONFIG         = $00000400;  // Resolution only if global address configured
   {$EXTERNALSYM AI_V4MAPPED}
   AI_V4MAPPED           = $00000800;  // On v6 failure, query v4 and convert to V4MAPPED format (Vista or later)
   {$EXTERNALSYM AI_NON_AUTHORITATIVE}
@@ -3974,11 +4023,11 @@ type
     ai_family : Integer;      // PF_xxx
     ai_socktype : Integer;    // SOCK_xxx
     ai_protocol : Integer;    // 0 or IPPROTO_xxx for IPv4 and IPv6
-    ai_addrlen : Integer; // size_t;     // Length of ai_addr
+    ai_addrlen : size_t;     // Length of ai_addr
     ai_canonname : PAnsiChar;   // Canonical name for nodename
     ai_addr : Psockaddr;        // Binary address
     ai_blob : Pointer;
-    ai_bloblen : Integer;  //size_t
+    ai_bloblen : size_t;
     ai_provider : LPGUID;
     ai_next : PADDRINFOEXA;        // Next structure in linked list
   end;
@@ -3995,11 +4044,11 @@ type
     ai_family : Integer;      // PF_xxx
     ai_socktype : Integer;    // SOCK_xxx
     ai_protocol : Integer;    // 0 or IPPROTO_xxx for IPv4 and IPv6
-    ai_addrlen : Integer; // size_t;     // Length of ai_addr
+    ai_addrlen : size_t;     // Length of ai_addr
     ai_canonname : PWideChar;   // Canonical name for nodename
     ai_addr : Psockaddr;        // Binary address
     ai_blob : Pointer;
-    ai_bloblen : Integer;  //size_t
+    ai_bloblen : size_t;
     ai_provider : LPGUID;
     ai_next : PADDRINFOEXW;        // Next structure in linked list
   end;
@@ -5026,7 +5075,7 @@ const
   SIZE_TADDRINFO = DWORD(SizeOf(TAddrInfo));
   {$EXTERNALSYM SIZE_SOCKADDR_STORAGE}
   SIZE_SOCKADDR_STORAGE = DWORD(sizeof(SOCKADDR_STORAGE));
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   {$EXTERNALSYM SIZE_TWSAMSG}
   SIZE_TWSAMSG = DWORD(SizeOf(TWSAMSG));
   {$ENDIF}
@@ -5034,6 +5083,35 @@ const
   SIZE_GUID = DWORD(SizeOf(TGuid));
   {$EXTERNALSYM SIZE_INTEGER}
   SIZE_INTEGER = DWORD(SizeOf(Integer));
+
+//=============================================================
+
+//  Copyright (c) Microsoft Corporation. All rights reserved.
+//
+//  Module Name:
+//
+//    mstcpip.h
+//
+//  Abstract:
+//
+//    This module contains Microsoft-specific extensions to the core
+//    Winsock definitions.
+//
+//  Environment:
+//
+//    user mode or kernel mode
+
+type
+  {$EXTERNALSYM tcp_keepalive}
+  tcp_keepalive = record
+    onoff: u_long;
+    keepalivetime: u_long;
+    keepaliveinterval: u_long;
+  end;
+
+const
+  {$EXTERNALSYM SIO_KEEPALIVE_VALS}
+  SIO_KEEPALIVE_VALS = DWORD(IOC_IN or IOC_VENDOR or 4);
 
 //=============================================================
 implementation
@@ -5130,13 +5208,13 @@ a version of GetProcAddress in the FreePascal dynlibs unit but that does a
 conversion from ASCII to Unicode which might not be necessary since most calls
 pass a constant anyway.
 }
-function FixupStub(hDll: THandle; const AName:{$IFDEF UNDER_CE}TIdUnicodeString{$ELSE}string{$ENDIF}): Pointer;
+function FixupStub(hDll: THandle; const AName:{$IFDEF WINCE}TIdUnicodeString{$ELSE}string{$ENDIF}): Pointer;
 {$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
   if hDll = 0 then begin
     raise EIdWinsockStubError.Build(WSANOTINITIALISED, RSWinsockCallError, [AName]);
   end;
-  Result := Windows.GetProcAddress(hDll, {$IFDEF UNDER_CE}PWideChar{$ELSE}PChar{$ENDIF}(AName));
+  Result := Windows.GetProcAddress(hDll, {$IFDEF WINCE}PWideChar{$ELSE}PChar{$ENDIF}(AName));
   if Result = nil then begin
     raise EIdWinsockStubError.Build(WSAEINVAL, RSWinsockCallError, [AName]);
   end;
@@ -5316,7 +5394,7 @@ begin
   Result := gethostbyname(name);
 end;
 
-{$IFDEF UNDER_CE}
+{$IFDEF WINCE}
 function Stub_sethostname(pName : PAnsiChar; cName : Integer) : Integer; stdcall;
 begin
   @sethostname := FixupStub(hWinSockDll, 'sethostname'); {Do not Localize}
@@ -5366,7 +5444,7 @@ begin
   Result := WSAGetLastError;
 end;
 
-{$IFNDEF UNDER_CE}
+{$IFNDEF WINCE}
 function Stub_WSAIsBlocking: BOOL; stdcall;
 begin
   @WSAIsBlocking := FixupStub(hWinSockDll, 'WSAIsBlocking'); {Do not Localize}
@@ -5470,7 +5548,7 @@ begin
   Result := WSACreateEvent;
 end;
 
-{$IFNDEF UNDER_CE}
+{$IFNDEF WINCE}
 function Stub_WSADuplicateSocketA(const s: TSocket; const dwProcessId: DWORD; lpProtocolInfo: LPWSAPROTOCOL_INFOA): Integer; stdcall;
 begin
   @WSADuplicateSocketA := FixupStub(hWinSockDll, 'WSADuplicateSocketA'); {Do not Localize}
@@ -5534,7 +5612,7 @@ begin
   Result := WSAGetOverlappedResult(s, AOverlapped, lpcbTransfer, fWait, lpdwFlags);
 end;
 
-{$IFNDEF UNDER_CE}
+{$IFNDEF WINCE}
 function Stub_WSAGetQOSByName(const s: TSocket; lpQOSName: LPWSABUF; lpQOS: LPQOS): WordBool; stdcall;
 begin
   @WSAGetQOSByName := FixupStub(hWinSockDll, 'WSAGetQOSByName'); {Do not Localize}
@@ -5608,7 +5686,7 @@ begin
   Result := WSASend(s, lpBuffers, dwBufferCount, lpNumberOfBytesSent, dwFlags, AOverlapped, lpCompletionRoutine);
 end;
 
-{$IFNDEF UNDER_CE}
+{$IFNDEF WINCE}
 function Stub_WSASendDisconnect(const s: TSocket; lpOutboundDisconnectData: LPWSABUF): Integer; stdcall;
 begin
   @WSASendDisconnect := FixupStub(hWinSockDll, 'WSASendDisconnect'); {Do not Localize}
@@ -5913,7 +5991,7 @@ begin
     dwLocalAddressLength, dwRemoteAddressLength, lpdwBytesReceived, lpOverlapped);
 end;
 
-{$IFNDEF UNDER_CE}
+{$IFNDEF WINCE}
 function Stub_WSARecvEx(s: TSocket; var buf; len: Integer; var flags: Integer): Integer; stdcall;
 begin
   LoadMSWSock;
@@ -5948,7 +6026,7 @@ begin
   Result := TransmitPackets(s, lpPacketArray, nElementCount, nSendSize, lpOverlapped, dwFlags);
 end;
 
-{$IFNDEF UNDER_CE}
+{$IFNDEF WINCE}
 function Stub_WSASendMsg(const s : TSocket; lpMsg : LPWSAMSG; const dwFlags : DWORD; var lpNumberOfBytesSent : DWORD;  lpOverlapped : LPWSAOVERLAPPED;  lpCompletionRoutine : LPWSAOVERLAPPED_COMPLETION_ROUTINE) : Integer; stdcall;
 begin
   @WSASendMsg := FixupStubEx(s, 'WSASendMsg', WSAID_WSASENDMSG); {Do not localize}
@@ -5986,7 +6064,7 @@ begin
   select                           := Stub_select;
   send                             := Stub_send;
   sendto                           := Stub_sendto;
-  {$IFDEF UNDER_CE}
+  {$IFDEF WINCE}
   sethostname                      := Stub_sethostname;
   {$ENDIF}  
   setsockopt                       := Stub_setsockopt;
@@ -6001,7 +6079,7 @@ begin
   getprotobyname                   := Stub_getprotobyname;
   //extensions
   __WSAFDIsSet                     := Stub___WSAFDIsSet;
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   AcceptEx                         := Stub_AcceptEx;
   //GetAcceptExSockaddrs is loaded by Stub_AcceptEx
   ConnectEx                        := Stub_ConnectEx;
@@ -6010,7 +6088,7 @@ begin
   TransmitPackets                  := Stub_TransmitPackets;
   {$ENDIF}
   WSAAccept                        := Stub_WSAAccept;
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   WSACancelAsyncRequest            := Stub_WSACancelAsyncRequest;
   WSAAsyncGetHostByAddr            := Stub_WSAAsyncGetHostByAddr;
   WSAAsyncGetHostByName            := Stub_WSAAsyncGetHostByName;
@@ -6023,14 +6101,14 @@ begin
   WSAAddressToStringA              := Stub_WSAAddressToStringA;
   WSAAddressToStringW              := Stub_WSAAddressToStringW;
   WSAAddressToString               := Stub_WSAAddressToString;
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   WSACancelBlockingCall            := Stub_WSACancelBlockingCall;
   {$ENDIF}
   WSACleanup                       := Stub_WSACleanup;
   WSACloseEvent                    := Stub_WSACloseEvent;
   WSAConnect                       := Stub_WSAConnect;
   WSACreateEvent                   := Stub_WSACreateEvent;
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   WSADuplicateSocketA              := Stub_WSADuplicateSocketA;
   WSADuplicateSocketW              := Stub_WSADuplicateSocketW;
   WSADuplicateSocket               := Stub_WSADuplicateSocket;
@@ -6045,7 +6123,7 @@ begin
   WSAEventSelect                   := Stub_WSAEventSelect;
   WSAGetLastError                  := Stub_WSAGetLastError;
   WSAGetOverlappedResult           := Stub_WSAGetOverlappedResult;
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   WSAGetQOSByName                  := Stub_WSAGetQOSByName;
   WSAGetServiceClassInfoA          := Stub_WSAGetServiceClassInfoA;
   WSAGetServiceClassInfoW          := Stub_WSAGetServiceClassInfoW;
@@ -6056,13 +6134,13 @@ begin
   {$ENDIF}
   WSAHtonl                         := Stub_WSAHtonl;
   WSAHtons                         := Stub_WSAHtons;
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   WSAInstallServiceClassA          := Stub_WSAInstallServiceClassA;
   WSAInstallServiceClassW          := Stub_WSAInstallServiceClassW;
   WSAInstallServiceClass           := Stub_WSAInstallServiceClass;
   {$ENDIF}
   WSAIoctl                         := Stub_WSAIoctl;
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   WSAIsBlocking                    := Stub_WSAIsBlocking;
   {$ENDIF}
   WSAJoinLeaf                      := Stub_WSAJoinLeaf;
@@ -6079,12 +6157,12 @@ begin
 
   WSANtohl                         := Stub_WSANtohl;
   WSANtohs                         := Stub_WSANtohs;
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   WSAPoll                          := Stub_WSAPoll;
   WSAProviderConfigChange          := Stub_WSAProviderConfigChange;
   {$ENDIF}
   WSARecv                          := Stub_WSARecv;
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   WSARecvDisconnect                := Stub_WSARecvDisconnect;
   WSARecvEx                        := Stub_WSARecvEx;
   {$ENDIF}
@@ -6093,12 +6171,12 @@ begin
   WSARemoveServiceClass            := Stub_WSARemoveServiceClass;
   WSAResetEvent                    := Stub_WSAResetEvent;
   WSASend                          := Stub_WSASend;
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   WSASendDisconnect                := Stub_WSASendDisconnect;
   WSASendMsg                       := Stub_WSASendMsg;
   {$ENDIF}
   WSASendTo                        := Stub_WSASendTo;
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   WSASetBlockingHook               := Stub_WSASetBlockingHook;
   {$ENDIF}
   WSASetEvent                      := Stub_WSASetEvent;
@@ -6113,7 +6191,7 @@ begin
   WSAStringToAddressA              := Stub_WSAStringToAddressA;
   WSAStringToAddressW              := Stub_WSAStringToAddressW;
   WSAStringToAddress               := Stub_WSAStringToAddress;
-  {$IFNDEF UNDER_CE}
+  {$IFNDEF WINCE}
   WSAUnhookBlockingHook            := Stub_WSAUnhookBlockingHook;
   {$ENDIF}
   WSAWaitForMultipleEvents         := Stub_WSAWaitForMultipleEvents;
@@ -6198,7 +6276,51 @@ begin
   FDSet.fd_count := 0;
 end;
 
-function WSA_CMSGHDR_ALIGN(const Alength: PtrUint): PtrUInt;
+//Posix aliases
+//    #define CMSGHDR_ALIGN WSA_CMSGHDR_ALIGN
+function CMSGHDR_ALIGN(const Alength: SIZE_T): SIZE_T;
+{$IFDEF USE_INLINE}inline;{$ENDIF}
+begin
+  Result := WSA_CMSGHDR_ALIGN(Alength);
+end;
+
+// #define CMSGDATA_ALIGN WSA_CMSGDATA_ALIGN
+function CMSGDATA_ALIGN(const Alength: PtrUInt): PtrUInt;
+ {$IFDEF USE_INLINE}inline;{$ENDIF}
+begin
+  Result := WSA_CMSGDATA_ALIGN(Alength);
+end;
+
+//#define CMSG_FIRSTHDR WSA_CMSG_FIRSTHDR
+function CMSG_FIRSTHDR(const msg: LPWSAMSG): LPWSACMSGHDR;
+{$IFDEF USE_INLINE}inline;{$ENDIF}
+begin
+  Result := WSA_CMSG_FIRSTHDR(msg);
+end;
+
+// #define CMSG_NXTHDR WSA_CMSG_NXTHDR
+function CMSG_NXTHDR(const msg: LPWSAMSG; const cmsg: LPWSACMSGHDR): LPWSACMSGHDR;
+{$IFDEF USE_INLINE}inline;{$ENDIF}
+begin
+  Result := WSA_CMSG_NXTHDR(msg, cmsg);
+end;
+
+// #define CMSG_SPACE WSA_CMSG_SPACE
+function CMSG_SPACE(const Alength: PtrUInt): PtrUInt;
+{$IFDEF USE_INLINE}inline;{$ENDIF}
+begin
+  Result := WSA_CMSG_SPACE(ALength);
+end;
+
+// #define CMSG_LEN WSA_CMSG_LEN
+function CMSG_LEN(const Alength: SIZE_T): SIZE_T;
+{$IFDEF USE_INLINE}inline;{$ENDIF}
+begin
+  Result := WSA_CMSG_LEN(ALength);
+end;
+
+//
+function WSA_CMSGHDR_ALIGN(const Alength: SIZE_T): SIZE_T;
 type
   {$IFDEF WIN32}
   {$ALIGN ON}
@@ -6215,7 +6337,7 @@ type
   end;  
   {$ENDIF}
 var
-  Alignment: PtrUInt;
+  Alignment: SIZE_T;
   Tmp: ^TempRec;
 begin
   Tmp := nil;
@@ -6265,7 +6387,7 @@ begin
   Result := WSA_CMSGDATA_ALIGN(PtrUInt(SIZE_WSACMSGHDR + WSA_CMSGHDR_ALIGN(Alength)));
 end;
 
-function WSA_CMSG_LEN(const Alength: PtrUInt): PtrUInt;
+function WSA_CMSG_LEN(const Alength: SIZE_T): SIZE_T;
 {$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
   Result := (WSA_CMSGDATA_ALIGN(SizeOf(WSACMSGHDR)) + Alength);
@@ -6396,6 +6518,56 @@ begin
   end;
 end;
 
+function IN6_IS_ADDR_EUI64(const a : PIn6Addr) : Boolean;
+{$IFDEF USE_INLINE}inline;{$ENDIF}
+    //
+    // Format prefixes 001 through 111, except for multicast.
+    //
+begin
+  if a <> nil then begin
+    Result := ((a^.s6_addr[0] and $e0) <> 0 ) and (not IN6_IS_ADDR_MULTICAST(a));
+  end else begin
+    Result := False;
+  end;
+end;
+
+function IN6_IS_ADDR_SUBNET_ROUTER_ANYCAST(const a : PIn6Addr) : Boolean;
+{$IFDEF USE_INLINE}inline;{$ENDIF}
+//
+//  Is this the subnet router anycast address?
+//  See RFC 2373.
+//
+begin
+  if a <> nil then begin
+    Result := IN6_IS_ADDR_EUI64(a) and (a^.word[4] = 0) and
+      (a^.word[5] = 0) and (a^.word[6]=0) and (a^.word[7]=0);
+  end else begin
+    Result := False;
+  end;
+end;
+
+function IN6_IS_ADDR_SUBNET_RESERVED_ANYCAST(const a: PIn6Addr) : Boolean;
+{$IFDEF USE_INLINE}inline;{$ENDIF}
+begin
+   if a <> nil then begin
+     Result := IN6_IS_ADDR_EUI64(a) and (a^.word[4] = $fffd) and
+       (a^.word[5] = $ffff) and (a^.word[6] = $ffff) and
+       ((a^.word[7] and $80ff) = $80ff);
+   end else begin
+     Result := False;
+   end;
+end;
+
+function IN6_IS_ADDR_ANYCAST(const a: PIn6Addr) : Boolean;
+{$IFDEF USE_INLINE}inline;{$ENDIF}
+begin
+  if a <> nil then begin
+    Result := IN6_IS_ADDR_SUBNET_RESERVED_ANYCAST(a) or IN6_IS_ADDR_SUBNET_ROUTER_ANYCAST(a);
+  end else begin
+    Result := False;
+  end;
+end;
+
 function IN6_IS_ADDR_LINKLOCAL(const a: PIn6Addr): Boolean;
 {$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
@@ -6500,6 +6672,19 @@ begin
   end else begin
     Result := False;
   end;
+end;
+
+procedure IN6_SET_ADDR_UNSPECIFIED(a : PIN6_ADDR);
+{$IFDEF USE_INLINE}inline;{$ENDIF}
+begin
+   system.FillChar(a^.s6_addr, SizeOf(IN6_ADDR), 0 );
+end;
+
+procedure IN6_SET_ADDR_LOOPBACK(a : PIN6_ADDR);
+{$IFDEF USE_INLINE}inline;{$ENDIF}
+begin
+  system.FillChar(a^.s6_addr, SizeOf(IN6_ADDR), 0 );
+  a^.s6_addr[15] := 1;
 end;
 
 //  A macro convenient for setting up NETBIOS SOCKADDRs.

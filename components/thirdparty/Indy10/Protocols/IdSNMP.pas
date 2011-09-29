@@ -63,7 +63,8 @@ uses
   IdException,
   IdGlobal,
   IdUDPBase,
-  IdUDPClient;
+  IdUDPClient,
+  IdSocketHandle;
 
 const
   //PDU type
@@ -113,8 +114,8 @@ type
 
     constructor Create (AOwner : TIdSNMP);
     destructor  Destroy; override;
-    function    EncodeTrap: integer;
-    function    DecodeTrap: integer;
+    function    EncodeTrap: Boolean;
+    function    DecodeTrap: Boolean;
     procedure   DecodeBuf(Buffer: string);
     function    EncodeBuf: string;
     procedure   Clear;
@@ -134,33 +135,40 @@ type
   protected
     fCommunity: string;
     fTrapPort: TIdPort;
+    fTrapRecvBinding: TIdSocketHandle;
     procedure SetCommunity(const Value: string);
+    procedure SetTrapPort(const AValue: TIdPort);
     procedure InitComponent; override;
+    function GetBinding: TIdSocketHandle; override;
+    procedure CloseBinding; override;
   public
     Query : TSNMPInfo;
     Reply : TSNMPInfo;
     Trap  : TSNMPInfo;
+    {$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
+    constructor Create(AOwner: TComponent); reintroduce; overload;
+    {$ENDIF}
     destructor Destroy; override;
     function SendQuery : Boolean;
     function QuickSend(const Mib, DestCommunity, DestHost: string; var Value: string):Boolean;
     function QuickSendTrap(const DestHost, Enterprise, DestCommunity: string;
                       DestPort: TIdPort; Generic, Specific: integer;
-		      MIBName, MIBValue: TStrings): integer;
+                      MIBName, MIBValue: TStrings): Boolean;
     function QuickReceiveTrap(var SrcHost, Enterprise, SrcCommunity: string;
                       var SrcPort: TIdPort; var Generic, Specific, Seconds: integer;
-		      MIBName, MIBValue: TStrings): integer;
-    function SendTrap: integer;
-    function ReceiveTrap: integer;
+                      MIBName, MIBValue: TStrings): Boolean;
+    function SendTrap: Boolean;
+    function ReceiveTrap: Boolean;
   published
     property Port default 161;
-    property TrapPort : TIdPort read fTrapPort Write fTrapPort default 162;
+    property TrapPort : TIdPort read fTrapPort write SetTrapPort default 162;
     property Community : string read fCommunity write SetCommunity;
   end;
 
 implementation
 
 uses
-  IdStack, SysUtils;
+  IdStack, IdStackConsts, SysUtils;
 
 //Hernan Sanchez
 function IPToID(Host: string): string;
@@ -182,9 +190,45 @@ begin
   Result := Result + Chr(i);
 end;
 
+function MibIntToASNObject(const OID: String; const Value: Integer; const ObjType: Integer = ASN1_INT): String;
+  {$IFDEF USE_INLINE}inline;{$ENDIF}
+begin
+  Result := ASNObject(MibToID(OID), ASN1_OBJID) + ASNObject(ASNEncInt(Value), ObjType);
+end;
+
+function MibUIntToASNObject(const OID: String; const Value, ObjType: Integer): String;
+  {$IFDEF USE_INLINE}inline;{$ENDIF}
+begin
+  Result := ASNObject(MibToID(OID), ASN1_OBJID) + ASNObject(ASNEncUInt(Value), ObjType);
+end;
+
+function MibObjIDToASNObject(const ObjID, Value: String): String;
+  {$IFDEF USE_INLINE}inline;{$ENDIF}
+begin
+  Result := ASNObject(MibToID(ObjID), ASN1_OBJID) + ASNObject(MibToID(Value), ASN1_OBJID);
+end;
+
+function MibIPAddrToASNObject(const OID, Value: String): String;
+  {$IFDEF USE_INLINE}inline;{$ENDIF}
+begin
+  Result := ASNObject(MibToID(OID), ASN1_OBJID) + ASNObject(IPToID(Value), ASN1_IPADDR);
+end;
+
+function MibNullToASNObject(const OID: String): String;
+  {$IFDEF USE_INLINE}inline;{$ENDIF}
+begin
+  Result := ASNObject(MibToID(OID), ASN1_OBJID) + ASNObject('', ASN1_NULL); {Do not Localize}
+end;
+
+function MibStrToASNObject(const OID, Value: String; const ObjType: Integer = ASN1_OCTSTR): String;
+  {$IFDEF USE_INLINE}inline;{$ENDIF}
+begin
+  Result := ASNObject(MibToID(OID), ASN1_OBJID) + ASNObject(Value, ObjType);
+end;
+
 {========================== SNMP INFO OBJECT ==================================}
 
-{ TIdSNMPInfo }
+{ TSNMPInfo }
 
 (*----------------------------------------------------------------------------*
  | constructor TSNMPInfo.Create ()                                            |
@@ -287,31 +331,28 @@ begin
     end;
     case objType of
       ASN1_INT:
-        s := ASNObject(MibToID(MIBOID[n]), ASN1_OBJID) +
-          ASNObject(ASNEncInt(IndyStrToInt(MIBValue[n], 0)), objType);
+        s := MibIntToASNObject(MIBOID[n], IndyStrToInt(MIBValue[n], 0));
       ASN1_COUNTER, ASN1_GAUGE, ASN1_TIMETICKS:
-        s := ASNObject(MibToID(MIBOID[n]), ASN1_OBJID) +
-          ASNObject(ASNEncUInt(IndyStrToInt(MIBValue[n], 0)), objType);
+        s := MibUIntToASNObject(MIBOID[n], IndyStrToInt(MIBValue[n], 0), objType);
       ASN1_OBJID:
-        s := ASNObject(MibToID(MIBOID[n]), ASN1_OBJID) +
-          ASNObject(MibToID(MIBValue[n]), objType);
+        s := MibObjIDToASNObject(MIBOID[n], MIBValue[n]);
       ASN1_IPADDR:
-        s := ASNObject(MibToID(MIBOID[n]), ASN1_OBJID) +
-          ASNObject(IPToID(MIBValue[n]), objType);
+        s := MibIPAddrToASNObject(MIBOID[n], MIBValue[n]);
       ASN1_NULL:
-        s := ASNObject(MibToID(MIBOID[n]), ASN1_OBJID) +
-          ASNObject('', ASN1_NULL);    {Do not Localize}
+        s := MibNullToASNObject(MIBOID[n]);
       else
-        s := ASNObject(MibToID(MIBOID[n]), ASN1_OBJID) +
-          ASNObject(MIBValue[n], objType);
+        s := MibStrToASNObject(MIBOID[n], MIBValue[n], objType);
     end;
-    data := data + ASNObject(s, $30);
+    data := data + ASNObject(s, ASN1_SEQ);
   end;
-  data := ASNObject(data, $30);
-  data := ASNObject(char(ID),2)+ASNObject(char(ErrorStatus),2)
-         + ASNObject(char(ErrorIndex),2)+data;
-  data := ASNObject(char(Version),2)+ASNObject(Community,4)+ASNObject(data,PDUType);
-  data := ASNObject(data, $30);
+  data := ASNObject(char(ID), ASN1_INT)
+         + ASNObject(char(ErrorStatus), ASN1_INT)
+         + ASNObject(char(ErrorIndex), ASN1_INT)
+         + ASNObject(data, ASN1_SEQ);
+  data := ASNObject(char(Version), ASN1_INT)
+         + ASNObject(Community, ASN1_OCTSTR)
+         + ASNObject(data, PDUType);
+  data := ASNObject(data, ASN1_SEQ);
   Result := data;
 end;
 
@@ -415,28 +456,46 @@ end;
  |                                                                            |
  | The function returns 1 for historical reasons!                             |
  *----------------------------------------------------------------------------*)
-function TSNMPInfo.EncodeTrap: integer;
+function TSNMPInfo.EncodeTrap: Boolean;
 var
   s: string;
   n: integer;
+  objType: PtrUInt;
 begin
   Buffer := '';    {Do not Localize}
   for n := 0 to MIBOID.Count-1 do
   begin
-    s := ASNObject(MibToID(MIBOID[n]), ASN1_OBJID)
-      + ASNObject(MIBValue[n], ASN1_OCTSTR);
+    objType := PtrUInt(MIBValue.Objects[n]);
+    if objType = 0 then begin
+      objType := ASN1_OCTSTR;
+    end;
+    case objType of
+      ASN1_INT:
+        s := MibIntToASNObject(MIBOID[n], IndyStrToInt(MIBValue[n], 0));
+      ASN1_COUNTER, ASN1_GAUGE, ASN1_TIMETICKS:
+        s := MibUIntToASNObject(MIBOID[n], IndyStrToInt(MIBValue[n], 0), objType);
+      ASN1_OBJID:
+        s := MibObjIDToASNObject(MIBOID[n], MIBValue[n]);
+      ASN1_IPADDR:
+        s := MibIPAddrToASNObject(MIBOID[n], MIBValue[n]);
+      ASN1_NULL:
+        s := MibNullToASNObject(MIBOID[n]);
+      else
+        s := MibStrToASNObject(MIBOID[n], MIBValue[n], objType);
+    end;
     Buffer := Buffer + ASNObject(s, ASN1_SEQ);
   end;
-  Buffer := ASNObject(Buffer, ASN1_SEQ);
-  Buffer := ASNObject(ASNEncInt(GenTrap), ASN1_INT)
-    + ASNObject(ASNEncInt(SpecTrap), ASN1_INT)
-    + ASNObject(ASNEncInt(TimeTicks), ASN1_TIMETICKS) + Buffer;
   Buffer := ASNObject(MibToID(Enterprise), ASN1_OBJID)
-    + ASNObject(IPToID(Host), ASN1_IPADDR) + Buffer;
+    + ASNObject(IPToID(Host), ASN1_IPADDR)
+    + ASNObject(ASNEncInt(GenTrap), ASN1_INT)
+    + ASNObject(ASNEncInt(SpecTrap), ASN1_INT)
+    + ASNObject(ASNEncInt(TimeTicks), ASN1_TIMETICKS)
+    + ASNObject(Buffer, ASN1_SEQ);
   Buffer := ASNObject(Char(Version), ASN1_INT)
-    + ASNObject(Community, ASN1_OCTSTR) + ASNObject(Buffer, PDUType);
+    + ASNObject(Community, ASN1_OCTSTR)
+    + ASNObject(Buffer, PDUType);
   Buffer := ASNObject(Buffer, ASN1_SEQ);
-  Result := 1;
+  Result := True;
 end;
 
 (*----------------------------------------------------------------------------*
@@ -446,7 +505,7 @@ end;
  |                                                                            |
  | The function returns 1.                                                    |
  *----------------------------------------------------------------------------*)
-function TSNMPInfo.DecodeTrap: integer;
+function TSNMPInfo.DecodeTrap: Boolean;
 var
   Pos, EndPos, vt: integer;
   Sm, Sv: string;
@@ -469,7 +528,7 @@ begin
     Sv := ASNItem(Pos, Buffer, vt);
     MIBAdd(Sm, Sv, vt);
   end;
-  Result := 1;
+  Result := True;
 end;
 
 (*----------------------------------------------------------------------------*
@@ -502,6 +561,13 @@ end;
  | Parameters:                                                                |
  |   aOwner : TComponent                                                      |
  *----------------------------------------------------------------------------*)
+{$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
+constructor TIdSNMP.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+end;
+{$ENDIF}
+
 procedure TIdSNMP.InitComponent;
 begin
   inherited InitComponent;
@@ -527,7 +593,45 @@ begin
   FreeAndNil(Reply);
   FreeAndNil(Query);
   FreeAndNil(Trap);
-  inherited destroy;
+  inherited Destroy;
+end;
+
+(*----------------------------------------------------------------------------*
+ | function TIdSNMP.GetBinding                                                |
+ |                                                                            |
+ | Prepare socket handles for use.                                            |
+ *----------------------------------------------------------------------------*)
+function TIdSNMP.GetBinding: TIdSocketHandle;
+begin
+  Result := inherited GetBinding;
+  if fTrapRecvBinding = nil then begin
+    fTrapRecvBinding := TIdSocketHandle.Create(nil);
+  end;
+  with fTrapRecvBinding do
+  begin
+    if (not HandleAllocated) and (fTrapPort <> 0) then begin
+      {$IFDEF LINUX}
+      AllocateSocket(LongInt(Id_SOCK_DGRAM));
+      {$ELSE}
+      AllocateSocket(Id_SOCK_DGRAM);
+      {$ENDIF}
+      IP := Result.IP;
+      Port := fTrapPort;
+      IPVersion := Self.IPVersion;
+      Bind;
+    end;
+  end;
+end;
+
+(*----------------------------------------------------------------------------*
+ | procedure TIdSNMP.CloseBinding                                             |
+ |                                                                            |
+ | Clean up socket handles.                                                   |
+ *----------------------------------------------------------------------------*)
+procedure TIdSNMP.CloseBinding;
+begin
+  FreeAndNil(fTrapRecvBinding);
+  inherited CloseBinding;
 end;
 
 (*----------------------------------------------------------------------------*
@@ -556,16 +660,16 @@ function TIdSNMP.SendQuery: Boolean;
 begin
   Reply.Clear;
   Query.Buffer := Query.EncodeBuf;
-  Send(Query.Host, Query.Port, Query.Buffer, Indy8BitEncoding);
+  Send(Query.Host, Query.Port, Query.Buffer, Indy8BitEncoding{$IFDEF STRING_IS_ANSI}, Indy8BitEncoding{$ENDIF});
   try
-    Reply.Buffer := ReceiveString(Query.Host, Query.Port, FReceiveTimeout, Indy8BitEncoding);
+    Reply.Buffer := ReceiveString(Query.Host, Query.Port, FReceiveTimeout, Indy8BitEncoding{$IFDEF STRING_IS_ANSI}, Indy8BitEncoding{$ENDIF});
   except
     on e : EIdSocketError do
     begin
       if e.LastError = 10054 then begin
         Reply.Buffer := '';    {Do not Localize}
       end else begin
-        raise
+        raise;
       end;
     end;
   end;
@@ -609,27 +713,47 @@ end;
  |                                                                            |
  | The function returns 1                                                     |
  *----------------------------------------------------------------------------*)
-function TIdSNMP.SendTrap: integer;
+function TIdSNMP.SendTrap: Boolean;
 begin
   Trap.PDUType := PDUTrap;
   Trap.EncodeTrap;
   Send(Trap.Host, Trap.Port, Trap.Buffer, Indy8BitEncoding);
-  Result := 1;
+  Result := True;
 end;
 
-function TIdSNMP.ReceiveTrap: integer;
+function TIdSNMP.ReceiveTrap: Boolean;
+var
+  i, LMSec: Integer;
+  LBuffer : TIdBytes;
+  LIPVersion: TIdIPVersion;
 begin
+  Result := False;
   Trap.PDUType := PDUTrap;
-  Result := 0;
-  Trap.Buffer := ReceiveString(Trap.Host, Trap.Port, FReceiveTimeout, Indy8BitEncoding);
+
+  LMSec := ReceiveTimeOut;
+  if (LMSec = IdTimeoutDefault) or (LMSec = 0) then begin
+    LMSec := IdTimeoutInfinite;
+  end;
+
+  GetBinding; // make sure fTrapBinding is allocated
+  SetLength(LBuffer, BufferSize);
+
+  if not fTrapRecvBinding.Readable(LMSec) then begin
+    Trap.Host := '';    {Do not Localize}
+    Trap.Port := 0;
+    Exit;
+  end;
+
+  i := fTrapRecvBinding.RecvFrom(LBuffer, Trap.Host, Trap.Port, LIPVersion);
+  Trap.Buffer := BytesToString(LBuffer, 0, i, Indy8BitEncoding);
   if Trap.Buffer <> '' then begin    {Do not Localize}
     Trap.DecodeTrap;
-    Result := 1;
+    Result := True;
   end;
 end;
 
 function TIdSNMP.QuickSendTrap(const DestHost, Enterprise, DestCommunity: string;
-  DestPort: TIdPort; Generic, Specific: integer; MIBName, MIBValue: TStrings): integer;
+  DestPort: TIdPort; Generic, Specific: integer; MIBName, MIBValue: TStrings): Boolean;
 var
   i: integer;
 begin
@@ -646,12 +770,12 @@ end;
 
 function TIdSNMP.QuickReceiveTrap(var SrcHost, Enterprise, SrcCommunity: string;
   var SrcPort: TIdPort; var Generic, Specific, Seconds: integer;
-  MIBName, MIBValue: TStrings): integer;
+  MIBName, MIBValue: TStrings): Boolean;
 var
   i: integer;
 begin
   Result := ReceiveTrap;
-  if Result <> 0 then
+  if Result then
   begin
     SrcHost := Trap.Host;
     SrcPort := Trap.Port;
@@ -747,6 +871,24 @@ begin
     Reply.Community := Value;
     Trap.Community := Value
   end
+end;
+
+(*----------------------------------------------------------------------------*
+ | TIdSNMP.SetTrapPort                                                        |
+ |                                                                            |
+ | Setter for the TrapPort property.                                          |
+ |                                                                            |
+ | Parameters:                                                                |
+ |   const Value: TIdPort       The new port value                            |
+ *----------------------------------------------------------------------------*)
+procedure TIdSNMP.SetTrapPort(const AValue: TIdPort);
+begin
+  if fTrapPort <> AValue then begin
+    if Assigned(fTrapRecvBinding) then begin
+      fTrapRecvBinding.CloseSocket;
+    end;
+    fTrapPort := AValue;
+  end;
 end;
 
 end.

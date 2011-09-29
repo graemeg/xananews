@@ -168,6 +168,7 @@ type
     FConnectionHandle: TIdCriticalSection;
     FBroadcastEnabled: Boolean;
     FUseNagle : Boolean;
+    FReuseSocket: TIdReuseSocket;
     //
     function BindPortReserved: Boolean;
     procedure BroadcastEnabledChanged;
@@ -220,6 +221,7 @@ type
     procedure UpdateBindingPeer;
     procedure AddMulticastMembership(const AGroupIP: String);
     procedure DropMulticastMembership(const AGroupIP: String);
+    procedure SetKeepAliveValues(const AEnabled: Boolean; const ATimeMS, AInterval: Integer);
     procedure SetLoopBack(const AValue: Boolean);
     procedure SetMulticastTTL(const AValue: Byte);
     procedure SetTTL(const AValue: Integer);
@@ -238,6 +240,7 @@ type
     property IP: string read FIP write FIP;
     property IPVersion: TIdIPVersion read FIPVersion write SetIPVersion default ID_DEFAULT_IP_VERSION;
     property Port: TIdPort read FPort write FPort;
+    property ReuseSocket: TIdReuseSocket read FReuseSocket write FReuseSocket default rsOSDependent;
     property UseNagle: Boolean read FUseNagle write SetUseNagle default True;
   end;
 
@@ -362,6 +365,13 @@ end;
 
 procedure TIdSocketHandle.Bind;
 begin
+  SetSockOpt(Id_SOL_SOCKET, Id_SO_REUSEADDR,
+    iif(
+      (FReuseSocket = rsTrue) or ((FReuseSocket = rsOSDependent) and (GOSType = otUnix)),
+      Id_SO_True,
+      Id_SO_False
+    )
+  );
   if (Port = 0) and (FClientPortMin <> 0) and (FClientPortMax <> 0) then begin
     if (FClientPortMin > FClientPortMax) then begin
       raise EIdInvalidPortRange.CreateFmt(RSInvalidPortRange, [FClientPortMin, FClientPortMax]);
@@ -388,6 +398,7 @@ var
 begin
   LIP := Trim(AIP);
   if LIP = '' then begin
+    // TODO: on Windows, use WSAIoctl(SIO_GET_BROADCAST_ADDRESS) instead
     LIP := '255.255.255.255'; {Do not Localize}
   end else begin
     LIP := GStack.ResolveHost(LIP, IPVersion);
@@ -463,6 +474,7 @@ constructor TIdSocketHandle.Create(ACollection: TCollection);
 begin
   inherited Create(ACollection);
   FUseNagle := True;
+  FReuseSocket := rsOSDependent;
   FConnectionHandle := TIdCriticalSection.Create;
   FReadSocketList := TIdSocketList.CreateSocketList;
   Reset;
@@ -619,6 +631,12 @@ end;
 procedure TIdSocketHandle.DropMulticastMembership(const AGroupIP: String);
 begin
   GStack.DropMulticastMembership(Handle, AGroupIP, FIP, FIPVersion);
+end;
+
+procedure TIdSocketHandle.SetKeepAliveValues(const AEnabled: Boolean;
+  const ATimeMS, AInterval: Integer);
+begin
+  GStack.SetKeepAliveValues(Handle, AEnabled, ATimeMS, AInterval);
 end;
 
 procedure TIdSocketHandle.SetLoopBack(const AValue: Boolean);

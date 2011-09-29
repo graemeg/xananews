@@ -189,7 +189,7 @@ CFLAG= /MD /Ox /W3 /Gs0 /GF /Gy /nologo
 
 interface
 
-{$i IdCompilerDefines.inc}
+{$I IdCompilerDefines.inc}
 
 {$IFNDEF USE_OPENSSL}
   {$message error Should not compile if USE_OPENSSL is not defined!!!}
@@ -199,9 +199,13 @@ interface
 {$IFNDEF FPC}
   {$IFDEF WIN32}
     {$ALIGN OFF}
-  {$ELSE}
+  {$ENDIF}
+  {$IFDEF WIN64}
+    {$ALIGN ON}
+  {$ENDIF}
+  {$IFNDEF WIN32_OR_WIN64}
     {$IFNDEF VCL_CROSS_COMPILE}
-      {$message error alignment!}
+      {$message error error alignment!}
     {$ENDIF}
   {$ENDIF}
 {$ELSE}
@@ -771,6 +775,7 @@ my $default_depflags = " -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_CAPIENG -DOPENSSL_NO
   {$UNDEF OPENSSL_NO_CMS}
   {$UNDEF OPENSSL_NO_CAPIENG}
 {$ENDIF}
+
 // the following emits are a workaround to a
 // name conflict with Win32 API header files
 (*$HPPEMIT '#include <time.h>'*)
@@ -785,21 +790,45 @@ my $default_depflags = " -DOPENSSL_NO_CAMELLIA -DOPENSSL_NO_CAPIENG -DOPENSSL_NO
 (*$HPPEMIT '#undef OCSP_REQUEST'*)
 (*$HPPEMIT '#undef OCSP_RESPONSE'*)
 {$ENDIF}
+
+// the following emits are a workaround to allow
+// compiling in C++ without having to re-define
+// OpenSSL data types and without having to
+// include the OpenSSL header files
+(*$HPPEMIT 'namespace Idsslopensslheaders'*)
+(*$HPPEMIT '{'*)
+(*$HPPEMIT '	typedef void SSL;'*)
+(*$HPPEMIT '	typedef SSL* PSSL;'*)
+(*$HPPEMIT '	typedef void SSL_CTX;'*)
+(*$HPPEMIT '	typedef void* PSSL_CTX;'*)
+(*$HPPEMIT '	typedef void SSL_METHOD;'*)
+(*$HPPEMIT '	typedef void* PSSL_METHOD;'*)
+(*$HPPEMIT '	typedef void X509;'*)
+(*$HPPEMIT '	typedef X509* PX509;'*)
+(*$HPPEMIT '	typedef void X509_NAME;'*)
+(*$HPPEMIT '	typedef X509_NAME* PX509_NAME;'*)
+(*$HPPEMIT '}'*)
+(*$HPPEMIT 'struct RSA;'*)
+(*$HPPEMIT 'typedef RSA* PRSA;'*)
+
 uses
   IdException,
   IdGlobal,
   {$IFDEF KYLIXCOMPAT}
    libc,
   {$ENDIF}
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
+  Windows,
   IdWinsock2,
   {$ENDIF}
   {$IFDEF USE_VCL_POSIX}
-  PosixSysSocket,
-  PosixSysTime,
+  Posix.SysSocket,
+  Posix.SysTime,
+  Posix.SysTypes,
   {$ENDIF}
   {$IFDEF USE_BASEUNIX}
     baseunix,
+    sockets,
   {$ENDIF}
   SysUtils, 
   IdCTypes;
@@ -3266,11 +3295,17 @@ const
   ASN1_PKEY_ALIAS	 = $1;
   {$EXTERNALSYM ASN1_PKEY_DYNAMIC}
   ASN1_PKEY_DYNAMIC	= $2;
+  {$EXTERNALSYM ASN1_PKEY_SIGPARAM_NULL}
   ASN1_PKEY_SIGPARAM_NULL	= $4;
+  {$EXTERNALSYM ASN1_PKEY_CTRL_PKCS7_SIGN}
   ASN1_PKEY_CTRL_PKCS7_SIGN	= $1;
+  {$EXTERNALSYM ASN1_PKEY_CTRL_PKCS7_ENCRYPT}
   ASN1_PKEY_CTRL_PKCS7_ENCRYPT = $2;
+  {$EXTERNALSYM ASN1_PKEY_CTRL_DEFAULT_MD_NID}
   ASN1_PKEY_CTRL_DEFAULT_MD_NID	= $3;
+  {$EXTERNALSYM ASN1_PKEY_CTRL_CMS_SIGN}
   ASN1_PKEY_CTRL_CMS_SIGN	= $5;
+  {$EXTERNALSYM ASN1_PKEY_CTRL_CMS_ENVELOPE}
   ASN1_PKEY_CTRL_CMS_ENVELOPE	= $7;
 
   {$EXTERNALSYM EVP_PKEY_OP_UNDEFINED}
@@ -4746,12 +4781,12 @@ const
   {$EXTERNALSYM OBJ_R_UNKNOWN_NID}
   OBJ_R_UNKNOWN_NID = 101;
   {$EXTERNALSYM OPENSSL_VERSION_NUMBER}
-  OPENSSL_VERSION_NUMBER = $1000001f;   // MMNNFFPPS Major, Minor, Fix, Patch, Status
+  OPENSSL_VERSION_NUMBER = $1000004f;   // MMNNFFPPS Major, Minor, Fix, Patch, Status
   {$EXTERNALSYM OPENSSL_VERSION_TEXT}
 {$IFDEF OPENSSL_FIPS}
-  OPENSSL_VERSION_TEXT	= 'OpenSSL 1.0.0a-fips 1 Jun 2010'; {Do not localize}
+  OPENSSL_VERSION_TEXT	= 'OpenSSL 1.0.0d-fips 8 Feb 2011'; {Do not localize}
 {$ELSE}
-  OPENSSL_VERSION_TEXT = 'OpenSSL 1.0.0a 1 Jun 2010';   {Do not localize}
+  OPENSSL_VERSION_TEXT = 'OpenSSL 1.0.0d 8 Feb 2011';   {Do not localize}
 {$ENDIF}
   {$EXTERNALSYM OPENSSL_VERSION_PTEXT}
   OPENSSL_VERSION_PTEXT = ' part of '+ OPENSSL_VERSION_TEXT;  {Do not localize}
@@ -9220,7 +9255,9 @@ const
   {$EXTERNALSYM CMS_RECIPINFO_AGREE}
   CMS_RECIPINFO_AGREE	 = 1;
   {$EXTERNALSYM CMS_RECIPINFO_KEK}
-  CMS_RECIPINFO_KEK	 = 2;CMS_RECIPINFO_PASS	 = 3;
+  CMS_RECIPINFO_KEK	 = 2;
+  {$EXTERNALSYM CMS_RECIPINFO_PASS}
+  CMS_RECIPINFO_PASS	 = 3;
   {$EXTERNALSYM CMS_RECIPINFO_OTHER}
   CMS_RECIPINFO_OTHER	 = 4;
 
@@ -9662,124 +9699,124 @@ const
   ERR_TXT_MALLOCED = $01;
   {$EXTERNALSYM ERR_TXT_STRING}
   ERR_TXT_STRING = $02;
-  {$EXTERNALSYM ERR_NUM_ERRORS}  
+  {$EXTERNALSYM ERR_NUM_ERRORS}
   ERR_NUM_ERRORS = 16;
 
 const
   // library
-  {$EXTERNALSYM ERR_LIB_NONE}  
+  {$EXTERNALSYM ERR_LIB_NONE}
   ERR_LIB_NONE = 1;
-  {$EXTERNALSYM ERR_LIB_SYS}    
+  {$EXTERNALSYM ERR_LIB_SYS}
   ERR_LIB_SYS  = 2;
-  {$EXTERNALSYM ERR_LIB_BN}    
+  {$EXTERNALSYM ERR_LIB_BN}
   ERR_LIB_BN   = 3;
-  {$EXTERNALSYM ERR_LIB_RSA}   
+  {$EXTERNALSYM ERR_LIB_RSA}
   ERR_LIB_RSA  = 4;
-  {$EXTERNALSYM ERR_LIB_DH}   
+  {$EXTERNALSYM ERR_LIB_DH}
   ERR_LIB_DH   = 5;
-  {$EXTERNALSYM ERR_LIB_EVP}     
-  ERR_LIB_EVP  = 6;  
-  {$EXTERNALSYM ERR_LIB_BUF}    
+  {$EXTERNALSYM ERR_LIB_EVP}
+  ERR_LIB_EVP  = 6;
+  {$EXTERNALSYM ERR_LIB_BUF}
   ERR_LIB_BUF  = 7;
-  {$EXTERNALSYM ERR_LIB_OBJ}    
+  {$EXTERNALSYM ERR_LIB_OBJ}
   ERR_LIB_OBJ  = 8;
-  {$EXTERNALSYM ERR_LIB_PEM}    
+  {$EXTERNALSYM ERR_LIB_PEM}
   ERR_LIB_PEM  = 9;
-  {$EXTERNALSYM ERR_LIB_DSA}    
+  {$EXTERNALSYM ERR_LIB_DSA}
   ERR_LIB_DSA  = 10;
-  {$EXTERNALSYM ERR_LIB_X509}    
+  {$EXTERNALSYM ERR_LIB_X509}
   ERR_LIB_X509 = 11;
 //  ERR_LIB_METH = 12;
-  {$EXTERNALSYM ERR_LIB_ASN1}  
+  {$EXTERNALSYM ERR_LIB_ASN1}
   ERR_LIB_ASN1 = 13;
-  {$EXTERNALSYM ERR_LIB_CONF}    
+  {$EXTERNALSYM ERR_LIB_CONF}
   ERR_LIB_CONF = 14;
-  {$EXTERNALSYM ERR_LIB_CRYPTO}    
+  {$EXTERNALSYM ERR_LIB_CRYPTO}
   ERR_LIB_CRYPTO = 15;
-  {$EXTERNALSYM ERR_LIB_EC}   
+  {$EXTERNALSYM ERR_LIB_EC}
   ERR_LIB_EC = 16;
-  {$EXTERNALSYM ERR_LIB_SSL}  
+  {$EXTERNALSYM ERR_LIB_SSL}
   ERR_LIB_SSL    = 20;
 //  ERR_LIB_SSL23 = 21;
 //  ERR_LIB_SSL2  = 22;
 //  ERR_LIB_SSL3  = 23;
 //  ERR_LIB_RSAREF = 30;
 //  ERR_LIB_PROXY = 31;
-  {$EXTERNALSYM ERR_LIB_BIO}  
+  {$EXTERNALSYM ERR_LIB_BIO}
   ERR_LIB_BIO  = 32;
   {$EXTERNALSYM ERR_LIB_PKCS7}
   ERR_LIB_PKCS7 = 33;
-  {$EXTERNALSYM ERR_LIB_X509V3}  
+  {$EXTERNALSYM ERR_LIB_X509V3}
   ERR_LIB_X509V3 = 34;
-  {$EXTERNALSYM ERR_LIB_PKCS12}  
+  {$EXTERNALSYM ERR_LIB_PKCS12}
   ERR_LIB_PKCS12  = 35;
-  {$EXTERNALSYM ERR_LIB_RAND}  
+  {$EXTERNALSYM ERR_LIB_RAND}
   ERR_LIB_RAND   = 36;
-  {$EXTERNALSYM ERR_LIB_DSO} 
+  {$EXTERNALSYM ERR_LIB_DSO}
   ERR_LIB_DSO   = 37;
-  {$EXTERNALSYM ERR_LIB_ENGINE}   
+  {$EXTERNALSYM ERR_LIB_ENGINE}
   ERR_LIB_ENGINE = 38;
-  {$EXTERNALSYM ERR_LIB_OCSP}     
+  {$EXTERNALSYM ERR_LIB_OCSP}
   ERR_LIB_OCSP = 39;
-  {$EXTERNALSYM ERR_LIB_UI}     
+  {$EXTERNALSYM ERR_LIB_UI}
   ERR_LIB_UI    = 40;
-  {$EXTERNALSYM ERR_LIB_COMP}    
+  {$EXTERNALSYM ERR_LIB_COMP}
   ERR_LIB_COMP  = 41;
-  {$EXTERNALSYM ERR_LIB_ECDSA}     
+  {$EXTERNALSYM ERR_LIB_ECDSA}
   ERR_LIB_ECDSA = 42;
-  {$EXTERNALSYM ERR_LIB_ECDH}   
+  {$EXTERNALSYM ERR_LIB_ECDH}
   ERR_LIB_ECDH  = 43;
-  {$EXTERNALSYM ERR_LIB_STORE}     
+  {$EXTERNALSYM ERR_LIB_STORE}
   ERR_LIB_STORE = 44;
-  {$EXTERNALSYM ERR_LIB_FIPS}  
+  {$EXTERNALSYM ERR_LIB_FIPS}
   ERR_LIB_FIPS = 45;
-  {$EXTERNALSYM ERR_LIB_CMS}    
+  {$EXTERNALSYM ERR_LIB_CMS}
   ERR_LIB_CMS = 46;
-  {$EXTERNALSYM ERR_LIB_TS}    
+  {$EXTERNALSYM ERR_LIB_TS}
   ERR_LIB_TS	=	47;
-  {$EXTERNALSYM ERR_LIB_HMAC}    
+  {$EXTERNALSYM ERR_LIB_HMAC}
   ERR_LIB_HMAC	=	48;
-  {$EXTERNALSYM ERR_LIB_JPAKE}     
+  {$EXTERNALSYM ERR_LIB_JPAKE}
   //OpenSSL 0.9.8n was 47
   ERR_LIB_JPAKE = 49;
 //* fatal error */
-  {$EXTERNALSYM ERR_R_FATAL} 
-  ERR_R_FATAL	= 64;  
+  {$EXTERNALSYM ERR_R_FATAL}
+  ERR_R_FATAL	= 64;
 //was  ERR_R_FATAL = 32;
-  {$EXTERNALSYM ERR_R_MALLOC_FAILURE} 
+  {$EXTERNALSYM ERR_R_MALLOC_FAILURE}
   ERR_R_MALLOC_FAILURE = (1 or ERR_R_FATAL);
-  {$EXTERNALSYM ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED}   
+  {$EXTERNALSYM ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED}
   ERR_R_SHOULD_NOT_HAVE_BEEN_CALLED = (2 or ERR_R_FATAL);
-  {$EXTERNALSYM ERR_R_PASSED_NULL_PARAMETER}     
+  {$EXTERNALSYM ERR_R_PASSED_NULL_PARAMETER}
   ERR_R_PASSED_NULL_PARAMETER = (3 or ERR_R_FATAL);
-  {$EXTERNALSYM ERR_R_INTERNAL_ERROR}   
+  {$EXTERNALSYM ERR_R_INTERNAL_ERROR}
   ERR_R_INTERNAL_ERROR = (4 or ERR_R_FATAL);
-  {$EXTERNALSYM ERR_R_DISABLED}   
+  {$EXTERNALSYM ERR_R_DISABLED}
   ERR_R_DISABLED = (5 or ERR_R_FATAL);
-  {$EXTERNALSYM ERR_LIB_USER}    
+  {$EXTERNALSYM ERR_LIB_USER}
   ERR_LIB_USER  = 128;
   // OS functions
-  {$EXTERNALSYM SYS_F_FOPEN}    
+  {$EXTERNALSYM SYS_F_FOPEN}
   SYS_F_FOPEN = 1;
-  {$EXTERNALSYM SYS_F_CONNECT}   
+  {$EXTERNALSYM SYS_F_CONNECT}
   SYS_F_CONNECT = 2;
   {$EXTERNALSYM SYS_F_GETSERVBYNAME}
   SYS_F_GETSERVBYNAME = 3;
-  {$EXTERNALSYM SYS_F_SOCKET}  
+  {$EXTERNALSYM SYS_F_SOCKET}
   SYS_F_SOCKET = 4;
-  {$EXTERNALSYM SYS_F_IOCTLSOCKET}  
+  {$EXTERNALSYM SYS_F_IOCTLSOCKET}
   SYS_F_IOCTLSOCKET = 5;
-  {$EXTERNALSYM SYS_F_BIND}  
+  {$EXTERNALSYM SYS_F_BIND}
   SYS_F_BIND = 6;
-  {$EXTERNALSYM SYS_F_LISTEN}  
+  {$EXTERNALSYM SYS_F_LISTEN}
   SYS_F_LISTEN = 7;
-  {$EXTERNALSYM SYS_F_ACCEPT}  
+  {$EXTERNALSYM SYS_F_ACCEPT}
   SYS_F_ACCEPT = 8;
-  {$EXTERNALSYM SYS_F_WSASTARTUP}  
+  {$EXTERNALSYM SYS_F_WSASTARTUP}
   SYS_F_WSASTARTUP = 9; { Winsock stuff }
-  {$EXTERNALSYM SYS_F_OPENDIR}  
+  {$EXTERNALSYM SYS_F_OPENDIR}
   SYS_F_OPENDIR = 10;
-  {$EXTERNALSYM SYS_F_FREAD}  
+  {$EXTERNALSYM SYS_F_FREAD}
   SYS_F_FREAD	= 11;
 //* These are the possible flags.  They can be or'ed together. */
 //* Use to have echoing of input */
@@ -9818,53 +9855,53 @@ const
 //* Function codes. */
   {$EXTERNALSYM UI_F_GENERAL_ALLOCATE_BOOLEAN}
   UI_F_GENERAL_ALLOCATE_BOOLEAN = 108;
-  {$EXTERNALSYM UI_F_GENERAL_ALLOCATE_PROMPT}  
+  {$EXTERNALSYM UI_F_GENERAL_ALLOCATE_PROMPT}
   UI_F_GENERAL_ALLOCATE_PROMPT = 109;
-  {$EXTERNALSYM UI_F_GENERAL_ALLOCATE_STRING}  
+  {$EXTERNALSYM UI_F_GENERAL_ALLOCATE_STRING}
   UI_F_GENERAL_ALLOCATE_STRING = 100;
-  {$EXTERNALSYM UI_F_UI_CTRL}  
+  {$EXTERNALSYM UI_F_UI_CTRL}
   UI_F_UI_CTRL = 111;
-  {$EXTERNALSYM UI_F_UI_DUP_ERROR_STRING}  
+  {$EXTERNALSYM UI_F_UI_DUP_ERROR_STRING}
   UI_F_UI_DUP_ERROR_STRING = 101;
-  {$EXTERNALSYM UI_F_UI_DUP_INFO_STRING}  
+  {$EXTERNALSYM UI_F_UI_DUP_INFO_STRING}
   UI_F_UI_DUP_INFO_STRING = 102;
-  {$EXTERNALSYM UI_F_UI_DUP_INPUT_BOOLEAN}  
+  {$EXTERNALSYM UI_F_UI_DUP_INPUT_BOOLEAN}
   UI_F_UI_DUP_INPUT_BOOLEAN = 110;
   {$EXTERNALSYM UI_F_UI_DUP_INPUT_STRING}
   UI_F_UI_DUP_INPUT_STRING = 103;
-  {$EXTERNALSYM UI_F_UI_DUP_VERIFY_STRING}  
+  {$EXTERNALSYM UI_F_UI_DUP_VERIFY_STRING}
   UI_F_UI_DUP_VERIFY_STRING = 106;
-  {$EXTERNALSYM UI_F_UI_GET0_RESULT}  
+  {$EXTERNALSYM UI_F_UI_GET0_RESULT}
   UI_F_UI_GET0_RESULT	= 107;
-  {$EXTERNALSYM UI_F_UI_NEW_METHOD}  
+  {$EXTERNALSYM UI_F_UI_NEW_METHOD}
   UI_F_UI_NEW_METHOD = 104;
-  {$EXTERNALSYM UI_F_UI_SET_RESULT}  
+  {$EXTERNALSYM UI_F_UI_SET_RESULT}
   UI_F_UI_SET_RESULT = 105;
 //* Reason codes. */
   {$EXTERNALSYM UI_R_COMMON_OK_AND_CANCEL_CHARACTERS}
   UI_R_COMMON_OK_AND_CANCEL_CHARACTERS = 104;
-  {$EXTERNALSYM UI_R_INDEX_TOO_LARGE}  
+  {$EXTERNALSYM UI_R_INDEX_TOO_LARGE}
   UI_R_INDEX_TOO_LARGE = 102;
-  {$EXTERNALSYM UI_R_INDEX_TOO_SMALL}  
+  {$EXTERNALSYM UI_R_INDEX_TOO_SMALL}
   UI_R_INDEX_TOO_SMALL = 103;
-  {$EXTERNALSYM UI_R_NO_RESULT_BUFFER}  
+  {$EXTERNALSYM UI_R_NO_RESULT_BUFFER}
   UI_R_NO_RESULT_BUFFER	= 105;
   {$EXTERNALSYM UI_R_RESULT_TOO_LARGE}
   UI_R_RESULT_TOO_LARGE	= 100;
-  {$EXTERNALSYM UI_R_RESULT_TOO_SMALL}  
+  {$EXTERNALSYM UI_R_RESULT_TOO_SMALL}
   UI_R_RESULT_TOO_SMALL	= 101;
-  {$EXTERNALSYM UI_R_UNKNOWN_CONTROL_COMMAND}  
+  {$EXTERNALSYM UI_R_UNKNOWN_CONTROL_COMMAND}
   UI_R_UNKNOWN_CONTROL_COMMAND = 106;
 
 const
   // reasons
-  {$EXTERNALSYM ERR_R_SYS_LIB}    
+  {$EXTERNALSYM ERR_R_SYS_LIB}
   ERR_R_SYS_LIB = ERR_LIB_SYS;
-  {$EXTERNALSYM ERR_R_BN_LIB}     
+  {$EXTERNALSYM ERR_R_BN_LIB}
   ERR_R_BN_LIB  = ERR_LIB_BN;
-  {$EXTERNALSYM ERR_R_RSA_LIB}    
+  {$EXTERNALSYM ERR_R_RSA_LIB}
   ERR_R_RSA_LIB = ERR_LIB_RSA;
-  {$EXTERNALSYM ERR_R_DH_LIB}    
+  {$EXTERNALSYM ERR_R_DH_LIB}
   ERR_R_DH_LIB = ERR_LIB_DH;
  {$EXTERNALSYM ERR_R_EVP_LIB}
   ERR_R_EVP_LIB = ERR_LIB_EVP;
@@ -9876,82 +9913,82 @@ const
   ERR_R_PEM_LIB = ERR_LIB_PEM;
   {$EXTERNALSYM ERR_R_DSA_LIB}
   ERR_R_DSA_LIB = ERR_LIB_DSA;
-  {$EXTERNALSYM ERR_R_X509_LIB}  
+  {$EXTERNALSYM ERR_R_X509_LIB}
   ERR_R_X509_LIB = ERR_LIB_X509;
-  {$EXTERNALSYM ERR_R_ASN1_LIB}    
+  {$EXTERNALSYM ERR_R_ASN1_LIB}
   ERR_R_ASN1_LIB = ERR_LIB_ASN1;
-  {$EXTERNALSYM ERR_R_CONF_LIB}     
+  {$EXTERNALSYM ERR_R_CONF_LIB}
   ERR_R_CONF_LIB = ERR_LIB_CONF;
-  {$EXTERNALSYM ERR_R_CRYPTO_LIB}     
+  {$EXTERNALSYM ERR_R_CRYPTO_LIB}
   ERR_R_CRYPTO_LIB = ERR_LIB_CRYPTO;
-  {$EXTERNALSYM ERR_R_EC_LIB}   
+  {$EXTERNALSYM ERR_R_EC_LIB}
   ERR_R_EC_LIB = ERR_LIB_EC;
-  {$EXTERNALSYM ERR_R_SSL_LIB}     
+  {$EXTERNALSYM ERR_R_SSL_LIB}
   ERR_R_SSL_LIB = ERR_LIB_SSL;
-  {$EXTERNALSYM ERR_R_BIO_LIB}    
+  {$EXTERNALSYM ERR_R_BIO_LIB}
   ERR_R_BIO_LIB = ERR_LIB_BIO;
-  {$EXTERNALSYM ERR_R_BIO_LIB}      
+  {$EXTERNALSYM ERR_R_PKCS7_LIB}
   ERR_R_PKCS7_LIB = ERR_LIB_PKCS7;
-  {$EXTERNALSYM ERR_R_X509V3_LIB}    
+  {$EXTERNALSYM ERR_R_X509V3_LIB}
   ERR_R_X509V3_LIB = ERR_LIB_X509V3;
-  {$EXTERNALSYM ERR_R_PKCS12_LIB}     
+  {$EXTERNALSYM ERR_R_PKCS12_LIB}
   ERR_R_PKCS12_LIB = ERR_LIB_PKCS12;
-  {$EXTERNALSYM ERR_R_RAND_LIB}   
+  {$EXTERNALSYM ERR_R_RAND_LIB}
   ERR_R_RAND_LIB = ERR_LIB_RAND;
-  {$EXTERNALSYM ERR_R_DSO_LIB} 
+  {$EXTERNALSYM ERR_R_DSO_LIB}
   ERR_R_DSO_LIB	= ERR_LIB_DSO;
-  {$EXTERNALSYM ERR_R_ENGINE_LIB}   
+  {$EXTERNALSYM ERR_R_ENGINE_LIB}
   ERR_R_ENGINE_LIB = ERR_LIB_ENGINE;
-  {$EXTERNALSYM ERR_R_OCSP_LIB}   
+  {$EXTERNALSYM ERR_R_OCSP_LIB}
   ERR_R_OCSP_LIB = ERR_LIB_OCSP;
-  {$EXTERNALSYM ERR_R_UI_LIB} 
+  {$EXTERNALSYM ERR_R_UI_LIB}
   ERR_R_UI_LIB = ERR_LIB_UI;
-  {$EXTERNALSYM ERR_R_COMP_LIB}   
+  {$EXTERNALSYM ERR_R_COMP_LIB}
   ERR_R_COMP_LIB = ERR_LIB_COMP;
-  {$EXTERNALSYM ERR_R_ECDSA_LIB}    
+  {$EXTERNALSYM ERR_R_ECDSA_LIB}
   ERR_R_ECDSA_LIB = ERR_LIB_ECDSA;
-  {$EXTERNALSYM ERR_R_ECDH_LIB}   
+  {$EXTERNALSYM ERR_R_ECDH_LIB}
   ERR_R_ECDH_LIB = ERR_LIB_ECDH;
-  {$EXTERNALSYM ERR_R_STORE_LIB}   
+  {$EXTERNALSYM ERR_R_STORE_LIB}
   ERR_R_STORE_LIB = ERR_LIB_STORE;
-  {$EXTERNALSYM ERR_R_TS_LIB}    
+  {$EXTERNALSYM ERR_R_TS_LIB}
   ERR_R_TS_LIB = ERR_LIB_TS;       //* 45 */
-  {$EXTERNALSYM ERR_R_NESTED_ASN1_ERROR} 
+  {$EXTERNALSYM ERR_R_NESTED_ASN1_ERROR}
   ERR_R_NESTED_ASN1_ERROR = 58;
-  {$EXTERNALSYM ERR_R_BAD_ASN1_OBJECT_HEADER}   
+  {$EXTERNALSYM ERR_R_BAD_ASN1_OBJECT_HEADER}
   ERR_R_BAD_ASN1_OBJECT_HEADER = 59;
-  {$EXTERNALSYM ERR_R_BAD_GET_ASN1_OBJECT_CALL}   
+  {$EXTERNALSYM ERR_R_BAD_GET_ASN1_OBJECT_CALL}
   ERR_R_BAD_GET_ASN1_OBJECT_CALL = 60;
-  {$EXTERNALSYM ERR_R_EXPECTING_AN_ASN1_SEQUENCE}    
+  {$EXTERNALSYM ERR_R_EXPECTING_AN_ASN1_SEQUENCE}
   ERR_R_EXPECTING_AN_ASN1_SEQUENCE = 61;
-  {$EXTERNALSYM ERR_R_ASN1_LENGTH_MISMATCH}     
+  {$EXTERNALSYM ERR_R_ASN1_LENGTH_MISMATCH}
   ERR_R_ASN1_LENGTH_MISMATCH = 62;
-  {$EXTERNALSYM ERR_R_MISSING_ASN1_EOS}  
+  {$EXTERNALSYM ERR_R_MISSING_ASN1_EOS}
   ERR_R_MISSING_ASN1_EOS = 63;
-  {$EXTERNALSYM DTLS1_VERSION}  
+  {$EXTERNALSYM DTLS1_VERSION}
   DTLS1_VERSION = $FEFF;
-  {$EXTERNALSYM DTLS1_BAD_VER}   
+  {$EXTERNALSYM DTLS1_BAD_VER}
   DTLS1_BAD_VER = $0100;
 {$IFNDEF USE_THIS}
 //* this alert description is not specified anywhere... */
-  {$EXTERNALSYM DTLS1_AD_MISSING_HANDSHAKE_MESSAGE} 
+  {$EXTERNALSYM DTLS1_AD_MISSING_HANDSHAKE_MESSAGE}
  DTLS1_AD_MISSING_HANDSHAKE_MESSAGE = 110;
 {$endif}
   //was 32
-  {$EXTERNALSYM DTLS1_COOKIE_LENGTH}   
+  {$EXTERNALSYM DTLS1_COOKIE_LENGTH}
   DTLS1_COOKIE_LENGTH = 256;
-  {$EXTERNALSYM DTLS1_RT_HEADER_LENGTH}   
+  {$EXTERNALSYM DTLS1_RT_HEADER_LENGTH}
   DTLS1_RT_HEADER_LENGTH = 13;
-  {$EXTERNALSYM DTLS1_HM_HEADER_LENGTH}    
+  {$EXTERNALSYM DTLS1_HM_HEADER_LENGTH}
   DTLS1_HM_HEADER_LENGTH = 12;
-  {$EXTERNALSYM DTLS1_HM_BAD_FRAGMENT}    
+  {$EXTERNALSYM DTLS1_HM_BAD_FRAGMENT}
   DTLS1_HM_BAD_FRAGMENT = -2;
-  {$EXTERNALSYM DTLS1_HM_FRAGMENT_RETRY}  
+  {$EXTERNALSYM DTLS1_HM_FRAGMENT_RETRY}
   DTLS1_HM_FRAGMENT_RETRY = -3;
-  {$EXTERNALSYM DTLS1_CCS_HEADER_LENGTH}   
-  //OpenSSL 0.9.8e defines this as OPENSSL_DTLS1_CCS_HEADER_LENGTH = 3; 
+  {$EXTERNALSYM DTLS1_CCS_HEADER_LENGTH}
+  //OpenSSL 0.9.8e defines this as OPENSSL_DTLS1_CCS_HEADER_LENGTH = 3;
   DTLS1_CCS_HEADER_LENGTH = 1;
-  {$EXTERNALSYM DTLS1_AL_HEADER_LENGTH}     
+  {$EXTERNALSYM DTLS1_AL_HEADER_LENGTH}
 {$ifdef DTLS1_AD_MISSING_HANDSHAKE_MESSAGE}
   DTLS1_AL_HEADER_LENGTH = 7;
 {$else}
@@ -9959,38 +9996,32 @@ const
 {$endif}
 
 type
-  {$IFNDEF FPC}
-     {$IFNDEF VCL_2007_OR_ABOVE}
-  {$EXTERNALSYM PPAnsiChar}       
-  PPAnsiChar    =^PAnsiChar;
-     {$ENDIF}
+  {$IFNDEF HAS_PPAnsiChar}
+  {$EXTERNALSYM PPAnsiChar}
+  PPAnsiChar = ^PAnsiChar;
   {$ENDIF}
-  {$EXTERNALSYM PPByte}   
-  PPByte    =^PByte;
-  {$IFNDEF VCL_6_OR_ABOVE}
-  {$EXTERNALSYM PPointer}    
+  {$EXTERNALSYM PPByte}
+  PPByte = ^PByte;
+  {$IFNDEF HAS_PPointer}
+  {$EXTERNALSYM PPointer}
   PPointer = ^Pointer;
   {$ENDIF}
 
 //This is just a synthasis since Pascal probably has what we need.
 //In C, the OpenSSL developers were using the PQ_64BIT moniker
 //to ensure that they had a value that is always 64bit.
-//In Pascal, this is not a problem since Delphi and FreePascla have this in some form.
-  {$EXTERNALSYM PQ_64BIT}  
-  {$EXTERNALSYM size_t}    
+//In Pascal, this is not a problem since Delphi and FreePascal have this in some form.
+  {$EXTERNALSYM PQ_64BIT}
   {$IFDEF FPC}
   PQ_64BIT = QWord;
-  size_t = PtrUInt;
   {$ELSE}
-  PQ_64BIT = Int64;
-  size_t = LongWord;
+  PQ_64BIT = {$IFDEF HAS_UInt64}UInt64{$ELSE}Int64{$ENDIF};
   {$ENDIF}
-  {$NODEFINE size_t}
 // RLebeau - the following value was conflicting with iphlpapi.h under C++Builder
 // (and possibly other headers) so using the HPPEMIT further above as a workaround
   {$EXTERNALSYM time_t}
-  time_t	  = TIdC_LONG;
-  {$EXTERNALSYM STACK}   
+  time_t = TIdC_LONG;
+  {$EXTERNALSYM STACK}
   STACK = record
     num : TIdC_INT; //int num;
     data : PAnsiChar;  //char **data;
@@ -9999,15 +10030,15 @@ type
     comp : function (_para1: PPAnsiChar; _para2: PPAnsiChar):  TIdC_INT; cdecl;
     //int (*comp)(const char * const *, const char * const *);
   end;
-  {$EXTERNALSYM PSTACK}   
+  {$EXTERNALSYM PSTACK}
   PSTACK          = ^STACK;
-  {$EXTERNALSYM PPSTACK}   
+  {$EXTERNALSYM PPSTACK}
   PPSTACK         =^PSTACK;
-  {$EXTERNALSYM PSSL}   
+  {$NODEFINE PSSL}
   PSSL            = ^SSL;
   //opensslconf.h
   {$IFNDEF OPENSSL_NO_MD2}
-  {$EXTERNALSYM MD2_INT}   
+  {$EXTERNALSYM MD2_INT}
     {$IFDEF MD2_CHAR}
   MD2_INT = Char;
     {$ELSE}
@@ -10020,7 +10051,7 @@ type
   {$ENDIF}
 
   {$IFNDEF OPENSSL_NO_RC1}
-  {$EXTERNALSYM RC2_INT} 
+  {$EXTERNALSYM RC2_INT}
     {$IFDEF RC2_SHORT}
   RC2_INT = TIdC_USHORT;
     {$ELSE}
@@ -10032,7 +10063,7 @@ type
     {$ENDIF}
   {$ENDIF}
   {$IFNDEF OPENSSL_NO_RC4}
-    {$EXTERNALSYM RC4_INT}   
+    {$EXTERNALSYM RC4_INT}
     {$IFDEF RC4_CHAR}
   RC4_INT = TIdC_USHORT;
     {$ELSE}
@@ -10043,11 +10074,11 @@ type
       {$ENDIF}
     {$ENDIF}
     {$IFDEF RC4_CHUNK}
-      {$EXTERNALSYM RC4_CHUNK}     
+      {$EXTERNALSYM RC4_CHUNK}
   RC4_CHUNK = TIdC_ULONG;
-      {$ELSE}      
+      {$ELSE}
         {$IFDEF RC4_CHUNK_LL}
-        {$EXTERNALSYM RC4_CHUNK}         
+        {$EXTERNALSYM RC4_CHUNK}
   RC4_CHUNK = TIdC_ULONGLONG;
       {$ELSE}
         {$UNDEF RC4_CHUNK}
@@ -10055,7 +10086,7 @@ type
     {$ENDIF}
   {$ENDIF}
   {$IFNDEF OPENSSL_NO_IDEA}
-    {$EXTERNALSYM IDEA_INT}   
+    {$EXTERNALSYM IDEA_INT}
     {$IFDEF IDEA_SHORT}
   IDEA_INT = TIdC_USHORT;
     {$ELSE}
@@ -10066,13 +10097,14 @@ type
       {$ENDIF}
     {$ENDIF}
   {$ENDIF}
-    {$EXTERNALSYM ERR_string_data}   
+    {$EXTERNALSYM ERR_string_data}
   ERR_string_data = record
     error : TIdC_ULONG;
-   	_string : PAnsiChar;
+    _string : PAnsiChar;
   end;
-    {$EXTERNALSYM PERR_string_data}     
+    {$EXTERNALSYM PERR_string_data}
   PERR_string_data = ^ERR_string_data;
+    {$EXTERNALSYM ERR_STATE}
   ERR_STATE = record
     PID: TIdC_UINT;
     err_flags : array [0..ERR_NUM_ERRORS - 1] of TIdC_INT;
@@ -10084,16 +10116,16 @@ type
     top: TIdC_INT;
     bottom: TIdC_INT;
   end; // record
-  {$EXTERNALSYM TERR_STATE}   
+  {$EXTERNALSYM TERR_STATE}
   TERR_STATE = ERR_STATE;
-  {$EXTERNALSYM PERR_FNS}   
+  {$EXTERNALSYM PERR_FNS}
   PERR_FNS = Pointer;
   //rand.h
   {$IFDEF OPENSSL_FIPS}
   {$EXTERNALSYM FIPS_RAND_SIZE_T}
   FIPS_RAND_SIZE_T = TIdC_int;
   {$ENDIF}
-  {$EXTERNALSYM RAND_METHOD}  
+  {$EXTERNALSYM RAND_METHOD}
   RAND_METHOD = record
     seed : procedure (const buf : Pointer; num : TIdC_INT) cdecl;
     bytes : function(const buf : PAnsiChar; num : TIdC_INT) : TIdC_INT cdecl;
@@ -10103,32 +10135,39 @@ type
     status : function : TIdC_INT cdecl;
   end;
   //bn.h
-  {$EXTERNALSYM BN_ULLONG}  
-  {$EXTERNALSYM BN_ULONG}  
-  {$EXTERNALSYM BN_LONG}          
   {$IFDEF SIXTY_FOUR_BIT_LONG}
-  BN_ULLONG = TIdC_LONGLONG;
-  BN_ULONG = TIdC_ULONG;
-  BN_LONG = TIdC_LONG;
+    {$EXTERNALSYM BN_ULLONG}
+    BN_ULLONG = TIdC_LONGLONG;
+    {$EXTERNALSYM BN_ULONG}
+    BN_ULONG = TIdC_ULONG;
+    {$EXTERNALSYM BN_LONG}
+    BN_LONG = TIdC_LONG;
   {$ENDIF}
   {$IFDEF SIXTY_FOUR_BIT}
-  BN_LONG = TIdC_LONGLONG;
-  BN_ULONG = TIdC_ULONGLONG;
+    {$EXTERNALSYM BN_ULLONG}
+    BN_ULLONG = TIdC_ULONGLONG;
+    {$EXTERNALSYM BN_LONG}
+    BN_LONG = TIdC_LONGLONG;
+    {$EXTERNALSYM BN_ULONG}
+    BN_ULONG = TIdC_ULONGLONG;
   {$ENDIF}
   {$IFDEF THIRTY_TWO_BIT}
+    {$EXTERNALSYM BN_ULLONG}
     {$IFDEF BN_LLONG}
     BN_ULLONG = TIdC_INT64;
     {$ELSE}
     BN_ULLONG = TIdC_ULONGLONG;
     {$ENDIF}
+    {$EXTERNALSYM BN_LONG}
     BN_LONG = TIdC_LONG;
+    {$EXTERNALSYM BN_ULONG}
     BN_ULONG = TIdC_ULONG;
   {$ENDIF}
-  {$EXTERNALSYM PBN_LONG}   
+  {$EXTERNALSYM PBN_LONG}
   PBN_LONG = ^BN_LONG;
-  {$EXTERNALSYM PBN_ULONG}   
+  {$EXTERNALSYM PBN_ULONG}
   PBN_ULONG = ^BN_ULONG;
-  {$EXTERNALSYM BIGNUM}   
+  {$EXTERNALSYM BIGNUM}
   BIGNUM = record
     d : PBN_ULONG;	// Pointer to an array of 'BN_BITS2' bit chunks.
     top : TIdC_INT;	// Index of last used d +1.
@@ -10137,16 +10176,17 @@ type
     neg : TIdC_INT;	// one if the number is negative
     flags : TIdC_INT;
   end;
+  {$EXTERNALSYM PBIGNUM}
   PBIGNUM = ^BIGNUM;
  // BN_CTX = record
     //This is defined internally.  I don't want to do anything with an internal structure.
  // end;
-  {$EXTERNALSYM PBN_CTX}   
+  {$EXTERNALSYM PBN_CTX}
   PBN_CTX = Pointer;//^BN_CTX;
-  {$EXTERNALSYM PPBN_CTX}  
-  PPBN_CTX = ^PBN_CTX; 
+  {$EXTERNALSYM PPBN_CTX}
+  PPBN_CTX = ^PBN_CTX;
   // Used for montgomery multiplication
-  {$EXTERNALSYM BN_MONT_CTX}   
+  {$EXTERNALSYM BN_MONT_CTX}
   BN_MONT_CTX = record
     ri : TIdC_INT;   // number of bits in R
     RR : BIGNUM;     // used to convert to montgomery form
@@ -10167,14 +10207,14 @@ type
     {$ENDIF}
     flags : TIdC_INT;
   end;
-  {$EXTERNALSYM PBN_MONT_CTX}    
+  {$EXTERNALSYM PBN_MONT_CTX}
   PBN_MONT_CTX = ^BN_MONT_CTX;
 //  BN_BLINDING = record
     //I can't locate any information about the record fields in this.
 //  end;
-  {$EXTERNALSYM PBN_BLINDING} 
+  {$EXTERNALSYM PBN_BLINDING}
   PBN_BLINDING = pointer;//^BN_BLINDING;
-  {$EXTERNALSYM BN_RECP_CTX}  
+  {$EXTERNALSYM BN_RECP_CTX}
   BN_RECP_CTX = record
     N : BIGNUM;  // the divisor
     Nr : BIGNUM; // the reciprocal
@@ -10182,17 +10222,17 @@ type
     shift : TIdC_INT;
     flags : TIdC_INT;
   end;
-  {$EXTERNALSYM PBN_RECP_CTX}  
+  {$EXTERNALSYM PBN_RECP_CTX}
   PBN_RECP_CTX = ^BN_RECP_CTX;
-  {$EXTERNALSYM PBN_GENCB}    
+  {$EXTERNALSYM PBN_GENCB}
   PBN_GENCB = ^BN_GENCB;
-  {$EXTERNALSYM PPBN_GENCB}   
+  {$EXTERNALSYM PPBN_GENCB}
   PPBN_GENCB = ^PBN_GENCB;
-  {$EXTERNALSYM BN_cb_1}  
+  {$EXTERNALSYM BN_cb_1}
   BN_cb_1 = procedure (p1, p2 : TIdC_INT; p3 : Pointer); cdecl;
-  {$EXTERNALSYM BN_cb_2}   
+  {$EXTERNALSYM BN_cb_2}
   BN_cb_2 = function (p1, p2 : TIdC_INT; p3 : PBN_GENCB): TIdC_INT; cdecl;
-  {$EXTERNALSYM BN_GENCB_union}   
+  {$EXTERNALSYM BN_GENCB_union}
   BN_GENCB_union = record
     case Integer of
     		// if(ver==1) - handles old style callbacks
@@ -10200,7 +10240,7 @@ type
 		// if(ver==2) - new callback style
         1 : (cb_2 : BN_cb_2);
   end;
-  {$EXTERNALSYM BN_GENCB}    
+  {$EXTERNALSYM BN_GENCB}
   BN_GENCB = record
     ver : TIdC_UINT;  // To handle binary (in)compatibility
     arg : Pointer;    // callback-specific data
@@ -10212,76 +10252,76 @@ type
 
   //chamellia.h
   {$IFNDEF OPENSSL_NO_CAMELLIA}
-  {$EXTERNALSYM KEY_TABLE_TYPE}   
+  {$EXTERNALSYM KEY_TABLE_TYPE}
   KEY_TABLE_TYPE = array [0..(CAMELLIA_TABLE_WORD_LEN - 1)] of TIdC_UINT; //* to match with WORD */
-  {$EXTERNALSYM CAMELLIA_KEY_union}     
+  {$EXTERNALSYM CAMELLIA_KEY_union}
   CAMELLIA_KEY_union = record
   case byte of
     0 : (d : TIdC_DOUBLE); //* ensures 64-bit align */
     1 : (rd_key : KEY_TABLE_TYPE);
   end;
-  {$EXTERNALSYM CAMELLIA_KEY}   
+  {$EXTERNALSYM CAMELLIA_KEY}
   CAMELLIA_KEY = record
     u : CAMELLIA_KEY_union;
     grand_rounds : TIdC_INT;
   end;
-  {$EXTERNALSYM PCAMELLIA_KEY}  
+  {$EXTERNALSYM PCAMELLIA_KEY}
   PCAMELLIA_KEY = ^CAMELLIA_KEY;
   {$ENDIF}
   //whrlpool.h
-  {$EXTERNALSYM WHIRLPOOL_CTX_union}   
+  {$EXTERNALSYM WHIRLPOOL_CTX_union}
   WHIRLPOOL_CTX_union = record
   case byte of
     0 : (c : array [0..WHIRLPOOL_DIGEST_LENGTH - 1] of byte );
     1 : (q : array [0..(WHIRLPOOL_DIGEST_LENGTH div SizeOf(TIdC_DOUBLE))-1 ] of TIdC_DOUBLE);
   end;
-  {$EXTERNALSYM WHIRLPOOL_CTX}   
+  {$EXTERNALSYM WHIRLPOOL_CTX}
   WHIRLPOOL_CTX = record
     H : WHIRLPOOL_CTX_union;
     data : array [0..(WHIRLPOOL_BBLOCK div 8)-1] of byte;
     bitoff : TIdC_INT;
     bitlen : array[0..(WHIRLPOOL_COUNTER div sizeof(size_t))-1] of size_t;
   end;
-  {$EXTERNALSYM PWHIRLPOOL_CTX}    
+  {$EXTERNALSYM PWHIRLPOOL_CTX}
   PWHIRLPOOL_CTX = ^WHIRLPOOL_CTX;
 
   //md2.h
   {$IFNDEF OPENSSL_NO_MD2}
-  {$EXTERNALSYM MD2_CTX}   
+  {$EXTERNALSYM MD2_CTX}
   MD2_CTX = record
     num : TIdC_UINT;
     data : array [0..MD2_BLOCK - 1] of AnsiChar;
     cksm : array [0..MD2_BLOCK - 1] of MD2_INT;
     state : array[0..MD2_BLOCK -1] of MD2_INT;
   end;
-  {$EXTERNALSYM PMD2_CTX}   
+  {$EXTERNALSYM PMD2_CTX}
   PMD2_CTX = ^MD2_CTX;
   {$ENDIF}
   //md4.h
   {$IFNDEF OPENSSL_NO_MD4}
-  {$EXTERNALSYM MD4_LONG}   
+  {$EXTERNALSYM MD4_LONG}
   MD4_LONG = TIdC_ULONG;
-  {$EXTERNALSYM MD4_CTX}  
+  {$EXTERNALSYM MD4_CTX}
   MD4_CTX = record
     A,B,C,D : MD4_LONG;
     Nl,Nh : MD4_LONG;
     data : array [0..(MD4_LBLOCK-1)] of MD4_LONG;
     num : TIdC_UINT;
   end;
-  {$EXTERNALSYM PMD4_CTX}  
+  {$EXTERNALSYM PMD4_CTX}
   PMD4_CTX = ^MD4_CTX;
   {$ENDIF}
   //md5.h
-  {$EXTERNALSYM MD5_LONG}  
+  {$EXTERNALSYM MD5_LONG}
   MD5_LONG = TIdC_UINT;
-  {$EXTERNALSYM MD5_CTX}   
+  {$EXTERNALSYM MD5_CTX}
   MD5_CTX = record
     A,B,C,D : MD5_LONG;
     Nl,Nh : MD5_LONG;
     data : array [0..(MD5_LBLOCK - 1)] of MD5_LONG;
     num : TIdC_UINT;
   end;
-  {$EXTERNALSYM MD5_CTX}    
+  {$EXTERNALSYM PMD5_CTX}
   PMD5_CTX = ^MD5_CTX;
   //sha.h
 //#if defined(OPENSSL_NO_SHA) || (defined(OPENSSL_NO_SHA0) && defined(OPENSSL_NO_SHA1))
@@ -10301,17 +10341,17 @@ type
       FIPS_SHA_SIZE_T  = size_t;
     {$ENDIF}
   {$ENDIF}
-  {$EXTERNALSYM SHA_LONG}  
+  {$EXTERNALSYM SHA_LONG}
   SHA_LONG  = TIdC_UINT;
-  {$EXTERNALSYM SHA_CTX}   
+  {$EXTERNALSYM SHA_CTX}
   SHA_CTX = record
     h0,h1,h2,h3,h4 : SHA_LONG;
     Nl,Nh : SHA_LONG;
     data : array [0..SHA_LBLOCK] of SHA_LONG;
     num : TIdC_INT;
-  end;  
+  end;
   {$IFNDEF OPENSSL_NO_SHA256}
-  {$EXTERNALSYM SHA256_CTX}   
+  {$EXTERNALSYM SHA256_CTX}
   SHA256_CTX = record
     h : array [0..(8 - 1)] of SHA_LONG;
     Nl,Nh : SHA_LONG;
@@ -10320,34 +10360,34 @@ type
   end;
   {$ENDIF}
   {$IFNDEF OPENSSL_NO_SHA512}
-  {$EXTERNALSYM SHA_LONG64}    
+  {$EXTERNALSYM SHA_LONG64}
   //not defined like this in sha.h but a comment
   //says that it must be 64 bit.
   SHA_LONG64 = TIdC_UINT64;
-  {$EXTERNALSYM TSHA512_CTX_Union}    
+  {$EXTERNALSYM TSHA512_CTX_Union}
   TSHA512_CTX_Union = record
     case integer of
      0 : (d : array [0..(SHA_LBLOCK -1)] of SHA_LONG64);
      1 : (p : array [0..(SHA512_CBLOCK -1)] of byte);
   end;
-  {$EXTERNALSYM SHA512_CTX}   
+  {$EXTERNALSYM SHA512_CTX}
   SHA512_CTX = record
     h : array[0..(8-1)]of SHA_LONG64;
     Nl,Nh : SHA_LONG64;
     u :  TSHA512_CTX_Union;
     num,md_len : TIdC_UINT;
   end;
-  {$EXTERNALSYM PSHA512_CTX} 
-  PSHA512_CTX = ^SHA512_CTX;  
+  {$EXTERNALSYM PSHA512_CTX}
+  PSHA512_CTX = ^SHA512_CTX;
   {$ENDIF}
    //ui.h
-  {$EXTERNALSYM PUI_METHOD}    
+  {$EXTERNALSYM PUI_METHOD}
    PUI_METHOD = Pointer;  //^UI_METHOD
-  {$EXTERNALSYM PUI_STRING}    
+  {$EXTERNALSYM PUI_STRING}
    PUI_STRING = Pointer;  //^UI_STRING;
-  {$EXTERNALSYM PSTACK_OF_UI_STRING}     
+  {$EXTERNALSYM PSTACK_OF_UI_STRING}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_UI_STRING}  
+  {$EXTERNALSYM STACK_OF_UI_STRING}
   STACK_OF_UI_STRING = record
     stack: stack;
   end;
@@ -10356,13 +10396,13 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_UI_STRING = PSTACK;
   {$ENDIF}
-    {$EXTERNALSYM UI_string_types}  
-    {$EXTERNALSYM UIT_NONE} 
-    {$EXTERNALSYM UIT_PROMPT} 
-    {$EXTERNALSYM UIT_VERIFY}      
-    {$EXTERNALSYM UIT_BOOLEAN}    
-    {$EXTERNALSYM UIT_INFO}   
-    {$EXTERNALSYM UIT_ERROR}               
+    {$EXTERNALSYM UI_string_types}
+    {$EXTERNALSYM UIT_NONE}
+    {$EXTERNALSYM UIT_PROMPT}
+    {$EXTERNALSYM UIT_VERIFY}
+    {$EXTERNALSYM UIT_BOOLEAN}
+    {$EXTERNALSYM UIT_INFO}
+    {$EXTERNALSYM UIT_ERROR}
   UI_string_types = (
   	UIT_NONE,    //=0,
   	UIT_PROMPT,	 //* Prompt for a string */
@@ -10373,27 +10413,27 @@ type
   //crypto.h
   //  OpenSSL 1.0.0 structure
   ///* Don't use this structure directly. */
-  {$EXTERNALSYM CRYPTO_THREADID}    
+  {$EXTERNALSYM CRYPTO_THREADID}
   CRYPTO_THREADID = record
     ptr : Pointer;
     val : TIdC_ULONG;
   end;
-  {$EXTERNALSYM PCRYPTO_THREADID}   
+  {$EXTERNALSYM PCRYPTO_THREADID}
   PCRYPTO_THREADID = ^CRYPTO_THREADID;
   //  end OpenSSL 1.0.0 structures
-  {$EXTERNALSYM OPENSSL_ITEM}   
+  {$EXTERNALSYM OPENSSL_ITEM}
   OPENSSL_ITEM = record
     code : TIdC_INT;
     value : Pointer;		//* Not used for flag attributes */
     value_size : size_t;	//* Max size of value for output, length for input */
     value_length : ^size_t;	//* Returned length of value for output */
   end;
-  {$EXTERNALSYM CRYPTO_EX_DATA}   
+  {$EXTERNALSYM CRYPTO_EX_DATA}
   CRYPTO_EX_DATA = record
     sk : PSTACK;
     dummy : TIdC_INT; // gcc is screwing up this data structure :-(
   end;
-  {$EXTERNALSYM PCRYPTO_EX_DATA}    
+  {$EXTERNALSYM PCRYPTO_EX_DATA}
   PCRYPTO_EX_DATA = ^CRYPTO_EX_DATA;
 {
 /* Some applications as well as some parts of OpenSSL need to allocate
@@ -10401,32 +10441,32 @@ type
    makes this possible in a type-safe manner.  */
 /* struct CRYPTO_dynlock_value has to be defined by the application. */
 }
-  {$EXTERNALSYM PCRYPTO_dynlock_value}    
+  {$EXTERNALSYM PCRYPTO_dynlock_value}
   PCRYPTO_dynlock_value = Pointer;
-  {$EXTERNALSYM CRYPTO_dynlock}   
+  {$EXTERNALSYM CRYPTO_dynlock}
   CRYPTO_dynlock = record
 	  references : TIdC_INT;
 	  data : PCRYPTO_dynlock_value;
   end;
-  {$EXTERNALSYM PCRYPTO_dynlock}   
+  {$EXTERNALSYM PCRYPTO_dynlock}
   PCRYPTO_dynlock = ^CRYPTO_dynlock;
 //* Callback types for crypto.h */
 //typedef int CRYPTO_EX_new(void *parent, void *ptr, CRYPTO_EX_DATA *ad,
 //					int idx, long argl, void *argp);
- {$EXTERNALSYM CRYPTO_EX_new}  
+ {$EXTERNALSYM CRYPTO_EX_new}
   CRYPTO_EX_new = function(parent : Pointer; ptr : Pointer; ad : CRYPTO_EX_DATA;
     idx : TIdC_INT; arg1 : TIdC_LONG; argp : Pointer) : TIdC_INT; cdecl;
 //typedef void CRYPTO_EX_free(void *parent, void *ptr, CRYPTO_EX_DATA *ad,
 //					int idx, long argl, void *argp);
- {$EXTERNALSYM CRYPTO_EX_free} 
+ {$EXTERNALSYM CRYPTO_EX_free}
   CRYPTO_EX_free = procedure (parent : Pointer; ptr : Pointer; ad : CRYPTO_EX_DATA;
     idx : TIdC_INT; arg1 : TIdC_LONG; argp : Pointer); cdecl;
 //typedef int CRYPTO_EX_dup(CRYPTO_EX_DATA *to, CRYPTO_EX_DATA *from, void *from_d,
 //					int idx, long argl, void *argp);
- {$EXTERNALSYM CRYPTO_EX_dup} 
+ {$EXTERNALSYM CRYPTO_EX_dup}
   CRYPTO_EX_dup = function (_to : PCRYPTO_EX_DATA; from : PCRYPTO_EX_DATA;
     from_d : Pointer; idx : TIdC_INT; arg1 : TIdC_LONG; argp : Pointer) : TIdC_INT; cdecl;
-   {$EXTERNALSYM CRYPTO_EX_DATA_FUNCS}  
+   {$EXTERNALSYM CRYPTO_EX_DATA_FUNCS}
   CRYPTO_EX_DATA_FUNCS = record
     argl : TIdC_LONG;	//* Arbitary long */
     argp : Pointer;	//* Arbitary void * */
@@ -10434,9 +10474,9 @@ type
     free_func : CRYPTO_EX_free;
     dup_func : CRYPTO_EX_dup;
   end;
-  {$EXTERNALSYM PSTACK_OF_CRYPTO_EX_DATA_FUNCS}    
+  {$EXTERNALSYM PSTACK_OF_CRYPTO_EX_DATA_FUNCS}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_CRYPTO_EX_DATA_FUNCS}    
+  {$EXTERNALSYM STACK_OF_CRYPTO_EX_DATA_FUNCS}
   STACK_OF_CRYPTO_EX_DATA_FUNCS = record
     stack: stack;
   end;
@@ -10446,7 +10486,7 @@ type
   PSTACK_OF_CRYPTO_EX_DATA_FUNCS = PSTACK;
   {$ENDIF}
   ///* An opaque type representing an implementation of "ex_data" support */
-  {$EXTERNALSYM PCRYPTO_EX_DATA_IMPL}    
+  {$EXTERNALSYM PCRYPTO_EX_DATA_IMPL}
   PCRYPTO_EX_DATA_IMPL = Pointer;
   //bio.h
   //http://www.openssl.org/docs/crypto/bio.html
@@ -10454,10 +10494,10 @@ type
   PBIO = ^BIO;
   {$EXTERNALSYM PBIO_METHOD}
   PBIO_METHOD = ^BIO_METHOD;
-  {$EXTERNALSYM Pbio_info_cb}  
+  {$EXTERNALSYM Pbio_info_cb}
   Pbio_info_cb = procedure (_para1 : PBIO; _para2 : TIdC_INT; _para3 : PAnsiChar;
      _para4 : TIdC_INT; _para5, _para6 : TIdC_LONG); cdecl;
-  {$EXTERNALSYM BIO_METHOD}       
+  {$EXTERNALSYM BIO_METHOD}
   BIO_METHOD = record
     _type : TIdC_INT;
     name : PAnsiChar;
@@ -10470,7 +10510,7 @@ type
     destroy : function (_para1 : PBIO) : TIdC_INT; cdecl;
     callback_ctrl : function (_para1 : PBIO; _para2 : TIdC_INT; _para3 : pbio_info_cb): TIdC_LONG; cdecl;
   end;
-  {$EXTERNALSYM BIO}    
+  {$EXTERNALSYM BIO}
   BIO = record
     method : PBIO_METHOD;
     // bio, mode, argp, argi, argl, ret
@@ -10494,25 +10534,25 @@ type
 //  ENGINE = record
     //I don't have any info about record fields.
 //  end;
-  {$EXTERNALSYM PENGINE}  
+  {$EXTERNALSYM PENGINE}
   PENGINE = Pointer;//^ENGINE;
   //asn1.h
-  {$EXTERNALSYM I2D_OF_void} 
+  {$EXTERNALSYM I2D_OF_void}
   //#define I2D_OF(type) int (*)(type *,unsigned char **)
   I2D_OF_void = function(_para1 : Pointer; _para2 : PPByte) : TIdC_INT cdecl;
   //D2I_OF(type) type *(*)(type **,const unsigned char **,long)
-  {$EXTERNALSYM D2I_OF_void} 
+  {$EXTERNALSYM D2I_OF_void}
   D2I_OF_void = function (_para1 : PPointer;  _para2 : PPByte; _para3 : TIdC_LONG) : Pointer cdecl;
   // This is just an opaque pointer
  // ASN1_VALUE = record
  // end;
-  {$EXTERNALSYM PASN1_VALUE} 
+  {$EXTERNALSYM PASN1_VALUE}
   PASN1_VALUE = Pointer;//^ASN1_VALUE;
-  {$EXTERNALSYM PPASN1_VALUE}   
+  {$EXTERNALSYM PPASN1_VALUE}
   PPASN1_VALUE = ^PASN1_VALUE;
-  {$EXTERNALSYM PSTACK_OF_ASN1_VALUE}  
+  {$EXTERNALSYM PSTACK_OF_ASN1_VALUE}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_ASN1_VALUE}  
+  {$EXTERNALSYM STACK_OF_ASN1_VALUE}
   STACK_OF_ASN1_VALUE = record
     stack: stack;
   end;
@@ -10521,7 +10561,7 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_ASN1_VALUE = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM ASN1_OBJECT}  
+  {$EXTERNALSYM ASN1_OBJECT}
   ASN1_OBJECT = record
     sn, ln : PAnsiChar;
     nid    : TIdC_INT;
@@ -10529,13 +10569,13 @@ type
     data   : PAnsiChar;
     flags  : TIdC_INT; // Should we free this one
   end;
-  {$EXTERNALSYM PASN1_OBJECT}  
+  {$EXTERNALSYM PASN1_OBJECT}
   PASN1_OBJECT = ^ASN1_OBJECT;
-  {$EXTERNALSYM PPASN1_OBJECT}  
+  {$EXTERNALSYM PPASN1_OBJECT}
   PPASN1_OBJECT = ^PASN1_OBJECT;
-  {$EXTERNALSYM PSTACK_OF_ASN1_OBJECT}   
+  {$EXTERNALSYM PSTACK_OF_ASN1_OBJECT}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_ASN1_OBJECT}  
+  {$EXTERNALSYM STACK_OF_ASN1_OBJECT}
   STACK_OF_ASN1_OBJECT = record
     stack: stack;
   end;
@@ -10544,9 +10584,9 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_ASN1_OBJECT = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM PPSTACK_OF_ASN1_OBJECT}     
+  {$EXTERNALSYM PPSTACK_OF_ASN1_OBJECT}
   PPSTACK_OF_ASN1_OBJECT = ^PSTACK_OF_ASN1_OBJECT;
-  {$EXTERNALSYM asn1_string_st}     
+  {$EXTERNALSYM asn1_string_st}
   asn1_string_st = record
     length : TIdC_INT;
     _type : TIdC_INT;
@@ -10558,9 +10598,9 @@ type
     flags : TIdC_LONG;
   end;
    //moved from asn1.h section here for a type definition
-    
+
   {$IFNDEF OPENSSL_EXPORT_VAR_AS_FUNCTION}
-  {$EXTERNALSYM PASN1_ITEM}      
+  {$EXTERNALSYM PASN1_ITEM}
   // ASN1_ITEM pointer exported type
   // typedef const ASN1_ITEM ASN1_ITEM_EXP;
   PASN1_ITEM = ^ASN1_ITEM;
@@ -10569,29 +10609,29 @@ type
   // as functions returning ASN1_ITEM pointers.
   // ASN1_ITEM pointer exported type
   //typedef const ASN1_ITEM * ASN1_ITEM_EXP(void);
-   {$EXTERNALSYM PASN1_ITEM_EXP}    
+   {$EXTERNALSYM PASN1_ITEM_EXP}
   PASN1_ITEM_EXP = ^ASN1_ITEM_EXP;
   {$ENDIF}
 //  typedef int asn1_output_data_fn(BIO *out, BIO *data, ASN1_VALUE *val, int flags,
 //					const ASN1_ITEM *it);
-  {$EXTERNALSYM asn1_output_data_fn}  
+  {$EXTERNALSYM asn1_output_data_fn}
   asn1_output_data_fn = function(AOut : PBIO; data : PBIO; val : PASN1_VALUE;
     flags : TIdC_INT; it : PASN1_ITEM): TIdC_INT; stdcall;
-  {$EXTERNALSYM ASN1_STRING}      
+  {$EXTERNALSYM ASN1_STRING}
   ASN1_STRING = asn1_string_st;
-  {$EXTERNALSYM PASN1_STRING}     
+  {$EXTERNALSYM PASN1_STRING}
   PASN1_STRING = ^ASN1_STRING;
-  {$EXTERNALSYM PPASN1_STRING}     
+  {$EXTERNALSYM PPASN1_STRING}
   PPASN1_STRING = ^PASN1_STRING;
-  {$EXTERNALSYM ASN1_INTEGER}     
+  {$EXTERNALSYM ASN1_INTEGER}
   ASN1_INTEGER = ASN1_STRING;
-  {$EXTERNALSYM PASN1_INTEGER}    
+  {$EXTERNALSYM PASN1_INTEGER}
   PASN1_INTEGER = ^ASN1_INTEGER;
-  {$EXTERNALSYM PPASN1_INTEGER}    
+  {$EXTERNALSYM PPASN1_INTEGER}
   PPASN1_INTEGER = ^PASN1_INTEGER;
-  {$EXTERNALSYM PSTACK_OF_ASN1_INTEGER}    
+  {$EXTERNALSYM PSTACK_OF_ASN1_INTEGER}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_ASN1_INTEGER}    
+  {$EXTERNALSYM STACK_OF_ASN1_INTEGER}
   STACK_OF_ASN1_INTEGER = record
     stack: stack;
   end;
@@ -10600,69 +10640,69 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_ASN1_INTEGER = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM ASN1_ENUMERATED}  
+  {$EXTERNALSYM ASN1_ENUMERATED}
   ASN1_ENUMERATED = ASN1_STRING;
-  {$EXTERNALSYM PASN1_ENUMERATED}   
+  {$EXTERNALSYM PASN1_ENUMERATED}
   PASN1_ENUMERATED = ^ASN1_ENUMERATED;
-  {$EXTERNALSYM PPASN1_ENUMERATED}   
+  {$EXTERNALSYM PPASN1_ENUMERATED}
   PPASN1_ENUMERATED = ^PASN1_ENUMERATED;
-  {$EXTERNALSYM ASN1_BIT_STRING}   
+  {$EXTERNALSYM ASN1_BIT_STRING}
   ASN1_BIT_STRING = ASN1_STRING;
-  {$EXTERNALSYM PASN1_BIT_STRING}   
+  {$EXTERNALSYM PASN1_BIT_STRING}
   PASN1_BIT_STRING = ^ASN1_BIT_STRING;
-  {$EXTERNALSYM PPASN1_BIT_STRING}   
+  {$EXTERNALSYM PPASN1_BIT_STRING}
   PPASN1_BIT_STRING = ^PASN1_BIT_STRING;
-  {$EXTERNALSYM ASN1_OCTET_STRING}   
+  {$EXTERNALSYM ASN1_OCTET_STRING}
   ASN1_OCTET_STRING = ASN1_STRING;
-  {$EXTERNALSYM PASN1_OCTET_STRING}   
+  {$EXTERNALSYM PASN1_OCTET_STRING}
   PASN1_OCTET_STRING = ^ASN1_OCTET_STRING;
-  {$EXTERNALSYM PPASN1_OCTET_STRING}   
+  {$EXTERNALSYM PPASN1_OCTET_STRING}
   PPASN1_OCTET_STRING = ^PASN1_OCTET_STRING;
-  {$EXTERNALSYM ASN1_PRINTABLESTRING}   
+  {$EXTERNALSYM ASN1_PRINTABLESTRING}
   ASN1_PRINTABLESTRING = ASN1_STRING;
-  {$EXTERNALSYM PASN1_PRINTABLESTRING}   
+  {$EXTERNALSYM PASN1_PRINTABLESTRING}
   PASN1_PRINTABLESTRING = ^ASN1_PRINTABLESTRING;
-  {$EXTERNALSYM PPASN1_PRINTABLESTRING}  
+  {$EXTERNALSYM PPASN1_PRINTABLESTRING}
   PPASN1_PRINTABLESTRING = ^PASN1_PRINTABLESTRING;
-  {$EXTERNALSYM ASN1_T61STRING}   
+  {$EXTERNALSYM ASN1_T61STRING}
   ASN1_T61STRING = ASN1_STRING;
-  {$EXTERNALSYM PASN1_T61STRING}   
+  {$EXTERNALSYM PASN1_T61STRING}
   PASN1_T61STRING = ^ASN1_T61STRING;
-  {$EXTERNALSYM PPASN1_T61STRING}   
+  {$EXTERNALSYM PPASN1_T61STRING}
   PPASN1_T61STRING = ^PASN1_T61STRING;
-  {$EXTERNALSYM ASN1_IA5STRING}   
+  {$EXTERNALSYM ASN1_IA5STRING}
   ASN1_IA5STRING = ASN1_STRING;
-  {$EXTERNALSYM PASN1_IA5STRING}   
+  {$EXTERNALSYM PASN1_IA5STRING}
   PASN1_IA5STRING = ^ASN1_IA5STRING;
-  {$EXTERNALSYM PPASN1_IA5STRING}   
+  {$EXTERNALSYM PPASN1_IA5STRING}
   PPASN1_IA5STRING = ^PASN1_IA5STRING;
-  {$EXTERNALSYM ASN1_UTCTIME} 
+  {$EXTERNALSYM ASN1_UTCTIME}
   ASN1_UTCTIME = ASN1_STRING;
   {$EXTERNALSYM PASN1_UTCTIME}
   PASN1_UTCTIME = ^ASN1_UTCTIME;
-  {$EXTERNALSYM PPASN1_UTCTIME}  
+  {$EXTERNALSYM PPASN1_UTCTIME}
   PPASN1_UTCTIME = ^PASN1_UTCTIME;
   {$EXTERNALSYM ASN1_GENERALIZEDTIME}
   ASN1_GENERALIZEDTIME = ASN1_STRING;
-  {$EXTERNALSYM PASN1_GENERALIZEDTIME} 
+  {$EXTERNALSYM PASN1_GENERALIZEDTIME}
   PASN1_GENERALIZEDTIME = ^ASN1_GENERALIZEDTIME;
   {$EXTERNALSYM PPASN1_GENERALIZEDTIME}
   PPASN1_GENERALIZEDTIME = ^PASN1_GENERALIZEDTIME;
-  {$EXTERNALSYM ASN1_TIME} 
+  {$EXTERNALSYM ASN1_TIME}
   ASN1_TIME = ASN1_STRING;
-  {$EXTERNALSYM PASN1_TIME} 
+  {$EXTERNALSYM PASN1_TIME}
   PASN1_TIME = ^ASN1_TIME;
-  {$EXTERNALSYM PPASN1_TIME} 
+  {$EXTERNALSYM PPASN1_TIME}
   PPASN1_TIME = ^PASN1_TIME;
   {$EXTERNALSYM ASN1_GENERALSTRING}
   ASN1_GENERALSTRING = ASN1_STRING;
   {$EXTERNALSYM PASN1_GENERALSTRING}
   PASN1_GENERALSTRING = ^ASN1_GENERALSTRING;
-  {$EXTERNALSYM PPASN1_GENERALSTRING}   
+  {$EXTERNALSYM PPASN1_GENERALSTRING}
   PPASN1_GENERALSTRING = ^PASN1_GENERALSTRING;
-  {$EXTERNALSYM PSTACK_OF_ASN1_GENERALSTRING}  
+  {$EXTERNALSYM PSTACK_OF_ASN1_GENERALSTRING}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_ASN1_GENERALSTRING}   
+  {$EXTERNALSYM STACK_OF_ASN1_GENERALSTRING}
   STACK_OF_ASN1_GENERALSTRING = record
     _stack: STACK;
   end;
@@ -10671,43 +10711,43 @@ type
   //I think the DECLARE_STACK_OF macro is empty
    PSTACK_OF_ASN1_GENERALSTRING = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM ASN1_UNIVERSALSTRING}  
+  {$EXTERNALSYM ASN1_UNIVERSALSTRING}
   ASN1_UNIVERSALSTRING = ASN1_STRING;
-  {$EXTERNALSYM PASN1_UNIVERSALSTRING} 
+  {$EXTERNALSYM PASN1_UNIVERSALSTRING}
   PASN1_UNIVERSALSTRING = ^ASN1_UNIVERSALSTRING;
   {$EXTERNALSYM PPASN1_UNIVERSALSTRING}
   PPASN1_UNIVERSALSTRING = ^PASN1_UNIVERSALSTRING;
-  {$EXTERNALSYM ASN1_BMPSTRING}  
+  {$EXTERNALSYM ASN1_BMPSTRING}
   ASN1_BMPSTRING = ASN1_STRING;
   {$EXTERNALSYM PASN1_BMPSTRING}
   PASN1_BMPSTRING = ^ASN1_BMPSTRING;
   {$EXTERNALSYM PPASN1_BMPSTRING}
   PPASN1_BMPSTRING = ^PASN1_BMPSTRING;
-  {$EXTERNALSYM ASN1_VISIBLESTRING} 
+  {$EXTERNALSYM ASN1_VISIBLESTRING}
   ASN1_VISIBLESTRING = ASN1_STRING;
-  {$EXTERNALSYM PASN1_VISIBLESTRING} 
+  {$EXTERNALSYM PASN1_VISIBLESTRING}
   PASN1_VISIBLESTRING = ^ASN1_VISIBLESTRING;
-  {$EXTERNALSYM PPASN1_VISIBLESTRING} 
+  {$EXTERNALSYM PPASN1_VISIBLESTRING}
   PPASN1_VISIBLESTRING = ^PASN1_VISIBLESTRING;
-  {$EXTERNALSYM ASN1_UTF8STRING} 
+  {$EXTERNALSYM ASN1_UTF8STRING}
   ASN1_UTF8STRING = ASN1_STRING;
-  {$EXTERNALSYM PASN1_UTF8STRING} 
+  {$EXTERNALSYM PASN1_UTF8STRING}
   PASN1_UTF8STRING = ^ASN1_UTF8STRING;
-  {$EXTERNALSYM PPASN1_UTF8STRING}  
+  {$EXTERNALSYM PPASN1_UTF8STRING}
   PPASN1_UTF8STRING = ^PASN1_UTF8STRING;
-  {$EXTERNALSYM ASN1_BOOLEAN} 
+  {$EXTERNALSYM ASN1_BOOLEAN}
   ASN1_BOOLEAN = TIdC_INT;
-  {$EXTERNALSYM PASN1_BOOLEAN}  
+  {$EXTERNALSYM PASN1_BOOLEAN}
   PASN1_BOOLEAN = ^ASN1_BOOLEAN;
-  {$EXTERNALSYM PPASN1_BOOLEAN}  
+  {$EXTERNALSYM PPASN1_BOOLEAN}
   PPASN1_BOOLEAN = ^PASN1_BOOLEAN;
-  {$EXTERNALSYM ASN1_NULL}  
+  {$EXTERNALSYM ASN1_NULL}
   ASN1_NULL = TIdC_INT;
-  {$EXTERNALSYM PASN1_NULL}  
+  {$EXTERNALSYM PASN1_NULL}
   PASN1_NULL = ^ASN1_NULL;
-  {$EXTERNALSYM PPASN1_NULL}  
+  {$EXTERNALSYM PPASN1_NULL}
   PPASN1_NULL = ^PASN1_NULL;
-  {$EXTERNALSYM ASN1_TYPE}  
+  {$EXTERNALSYM ASN1_TYPE}
   ASN1_TYPE = record
     case Integer of
       0:  (ptr: PAnsiChar);
@@ -10733,13 +10773,13 @@ type
       18: (_set: PASN1_STRING);
       19: (sequence: PASN1_STRING);
   end;
-  {$EXTERNALSYM PASN1_TYPE}  
+  {$EXTERNALSYM PASN1_TYPE}
   PASN1_TYPE = ^ASN1_TYPE;
-  {$EXTERNALSYM PPASN1_TYPE}  
+  {$EXTERNALSYM PPASN1_TYPE}
   PPASN1_TYPE = ^PASN1_TYPE;
-  {$EXTERNALSYM PSTACK_OF_ASN1_TYPE}   
+  {$EXTERNALSYM PSTACK_OF_ASN1_TYPE}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_ASN1_TYPE}   
+  {$EXTERNALSYM STACK_OF_ASN1_TYPE}
   STACK_OF_ASN1_TYPE = record
     _stack: stack;
   end;
@@ -10748,7 +10788,7 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_ASN1_TYPE = ^PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM ASN1_CTX}  
+  {$EXTERNALSYM ASN1_CTX}
   ASN1_CTX = record
     p : PAnsiChar;         // work char pointer
     eos : TIdC_INT;    // end of sequence read for indefinite encoding
@@ -10762,20 +10802,20 @@ type
     pp : PPAnsiChar;       // variable
     line : TIdC_INT;   // used in error processing
   end;
-  {$EXTERNALSYM PASN1_CTX}  
+  {$EXTERNALSYM PASN1_CTX}
   PASN1_CTX = ^ASN1_CTX;
-  {$EXTERNALSYM PPASN1_CTX}  
+  {$EXTERNALSYM PPASN1_CTX}
   PPASN1_CTX = ^PASN1_CTX;
-  {$EXTERNALSYM ASN1_METHOD}  
+  {$EXTERNALSYM ASN1_METHOD}
   ASN1_METHOD = record
     i2d : i2d_of_void;
     d2i : i2d_of_void;
     create : function: Pointer; cdecl;
     destroy : procedure(ptr: Pointer); cdecl;
   end;
-  {$EXTERNALSYM PASN1_METHOD}  
+  {$EXTERNALSYM PASN1_METHOD}
   PASN1_METHOD = ^ASN1_METHOD;
-  {$EXTERNALSYM PPASN1_METHOD}  
+  {$EXTERNALSYM PPASN1_METHOD}
   PPASN1_METHOD = ^PASN1_METHOD;
   // This is used when parsing some Netscape objects
   {$EXTERNALSYM ASN1_HEADER}
@@ -10784,21 +10824,21 @@ type
     data : Pointer;
     meth : PASN1_METHOD;
   end;
-  {$EXTERNALSYM PASN1_HEADER}  
+  {$EXTERNALSYM PASN1_HEADER}
   PASN1_HEADER = ^ASN1_HEADER;
-  {$EXTERNALSYM PPASN1_HEADER}   
+  {$EXTERNALSYM PPASN1_HEADER}
   PPASN1_HEADER = ^PASN1_HEADER;
-  {$EXTERNALSYM ASN1_ENCODING}   
+  {$EXTERNALSYM ASN1_ENCODING}
   ASN1_ENCODING = record
     enc: PAnsiChar;
     len: TIdC_LONG;
     modified: TIdC_INT;
   end;
-  {$EXTERNALSYM PASN1_ENCODING}     
+  {$EXTERNALSYM PASN1_ENCODING}
   PASN1_ENCODING = ^ASN1_ENCODING;
-  {$EXTERNALSYM PPASN1_ENCODING}     
+  {$EXTERNALSYM PPASN1_ENCODING}
   PPASN1_ENCODING = ^PASN1_ENCODING;
-  {$EXTERNALSYM ASN1_STRING_TABLE}     
+  {$EXTERNALSYM ASN1_STRING_TABLE}
   ASN1_STRING_TABLE = record
     nid : TIdC_INT;
     minsize : TIdC_LONG;
@@ -10806,13 +10846,13 @@ type
     mask : TIdC_ULONG;
     flags : TIdC_ULONG;
   end;
-  {$EXTERNALSYM PASN1_STRING_TABLE}    
+  {$EXTERNALSYM PASN1_STRING_TABLE}
   PASN1_STRING_TABLE = ^ASN1_STRING_TABLE;
-  {$EXTERNALSYM PPASN1_STRING_TABLE}    
+  {$EXTERNALSYM PPASN1_STRING_TABLE}
   PPASN1_STRING_TABLE = ^ASN1_STRING_TABLE;
-  {$EXTERNALSYM PSTACK_OF_ASN1_STRING_TABLE}    
+  {$EXTERNALSYM PSTACK_OF_ASN1_STRING_TABLE}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_ASN1_STRING_TABLE}   
+  {$EXTERNALSYM STACK_OF_ASN1_STRING_TABLE}
   STACK_OF_ASN1_STRING_TABLE = record
     _stack: stack;
   end;
@@ -10827,7 +10867,7 @@ type
   // ASN1_ITEM_EXP = ASN1_ITEM;
   // PASN1_ITEM_EXP = ^ASN1_ITEM_EXP;
    // PASN1_ITEM = ^ASN1_ITEM;
-  {$EXTERNALSYM PASN1_ITEM_EXP}    
+  {$EXTERNALSYM PASN1_ITEM_EXP}
     PASN1_ITEM_EXP = PASN1_ITEM;
   {$ELSE}
   // Platforms that can't easily handle shared global variables are declared
@@ -10835,21 +10875,21 @@ type
 
   // ASN1_ITEM pointer exported type
   //typedef const ASN1_ITEM * ASN1_ITEM_EXP(void);
-  {$EXTERNALSYM ASN1_ITEM_EXP}     
+  {$EXTERNALSYM ASN1_ITEM_EXP}
   ASN1_ITEM_EXP = function : PASN1_ITEM cdecl;
 //  PASN1_ITEM_EXP = ^ASN1_ITEM_EXP;
   {$ENDIF}
   //rsa.h - struct rsa_st
   {$IFNDEF OPENSSL_NO_RSA}
     {$IFDEF OPENSSL_FIPS}
-  {$EXTERNALSYM FIPS_RSA_SIZE_T}     
-  FIPS_RSA_SIZE_T	= TIdC_int;
+  {$EXTERNALSYM FIPS_RSA_SIZE_T}
+  FIPS_RSA_SIZE_T = TIdC_int;
     {$ENDIF}
-  {$EXTERNALSYM PENGINE}     
+  {$EXTERNALSYM PRSA}
   PRSA = ^RSA;
-  {$EXTERNALSYM PENGINE}   
+  {$EXTERNALSYM PPRSA}
   PPRSA =^PRSA;
-  {$EXTERNALSYM RSA_METHOD}    
+  {$EXTERNALSYM RSA_METHOD}
   RSA_METHOD = record
     name : PAnsiChar;
     rsa_pub_enc : function (flen : TIdC_INT; const from : PAnsiChar;
@@ -10886,9 +10926,9 @@ type
     // software" implementations.
     rsa_keygen : function (rsa : PRSA; bits : TIdC_INT; e : PBIGNUM; cb : PBN_GENCB) : TIdC_INT; cdecl;
   end;
-  {$EXTERNALSYM PRSA_METHOD}   
+  {$EXTERNALSYM PRSA_METHOD}
   PRSA_METHOD = ^RSA_METHOD;
-  {$EXTERNALSYM RSA}   
+  {$EXTERNALSYM RSA}
   RSA = record
     // The first parameter is used to pickup errors where
     // this is passed instead of aEVP_PKEY, it is set to 0
@@ -10922,9 +10962,9 @@ type
 
   //dh.h
   {$IFNDEF OPENSSL_NO_DH}
-  {$EXTERNALSYM PDH}     
+  {$EXTERNALSYM PDH}
   PDH = ^DH;
-  {$EXTERNALSYM DH_METHOD}     
+  {$EXTERNALSYM DH_METHOD}
   DH_METHOD = record
     name : PAnsiChar;
     // Methods here
@@ -10940,7 +10980,7 @@ type
     // If this is non-NULL, it will be used to generate parameters
     generate_params : function(dh : PDH; prime_len, generator : TIdC_INT; cb : PBN_GENCB) : TIdC_INT; cdecl;
   end;
-  {$EXTERNALSYM DH}  
+  {$EXTERNALSYM DH}
   DH = record
     // The first parameter is used to pickup errors where
     // this is passed instead of aEVP_PKEY, it is set to 0
@@ -10970,25 +11010,25 @@ type
     blinding : PBN_BLINDING;
     mt_blinding : PBN_BLINDING;
   end;
-  {$EXTERNALSYM PPDH}  
+  {$EXTERNALSYM PPDH}
   PPDH =^PDH;
   {$ENDIF}
   // dsa.h
   {$IFNDEF OPENSSL_NO_DSA}
     {$IFDEF OPENSSL_FIPS}
-  {$EXTERNALSYM FIPS_DSA_SIZE_T}      
+  {$EXTERNALSYM FIPS_DSA_SIZE_T}
   FIPS_DSA_SIZE_T = TIdC_int;
     {$ENDIF}
-  {$EXTERNALSYM DSA_SIG}    
+  {$EXTERNALSYM DSA_SIG}
   DSA_SIG = record
     r : PBIGNUM;
     s : PBIGNUM;
   end;
-  {$EXTERNALSYM PDSA_SIG}   
+  {$EXTERNALSYM PDSA_SIG}
   PDSA_SIG = ^DSA_SIG;
-    {$EXTERNALSYM PDSA}  
+    {$EXTERNALSYM PDSA}
   PDSA = ^DSA;
-    {$EXTERNALSYM DSA_METHOD}   
+    {$EXTERNALSYM DSA_METHOD}
   DSA_METHOD = record
     name : PAnsiChar;
     dsa_do_sign : function (const dgst : PAnsiChar; dlen : TIdC_INT; dsa : PDSA) : PDSA_SIG; cdecl;
@@ -11011,9 +11051,9 @@ type
     // If this is non-NULL, it is used to generate DSA keys
     dsa_keygen : function(dsa : PDSA) : TIdC_INT; cdecl;
   end;
-    {$EXTERNALSYM PDSA_METHOD}  
+    {$EXTERNALSYM PDSA_METHOD}
   PDSA_METHOD = ^DSA_METHOD;
-    {$EXTERNALSYM DSA}  
+    {$EXTERNALSYM DSA}
   DSA = record
     // This first variable is used to pick up errors where
     // a DSA is passed instead of of a EVP_PKEY
@@ -11036,7 +11076,7 @@ type
     // functional reference if 'meth' is ENGINE-provided
     engine : PENGINE;
   end;
-  {$EXTERNALSYM PPDSA} 
+  {$EXTERNALSYM PPDSA}
   PPDSA = ^PDSA;
   {$ENDIF}
   // ec.h
@@ -11044,58 +11084,59 @@ type
  // EC_METHOD = record
     //The fields are internal to OpenSSL, they are not listed in the header.
  // end;
-  {$EXTERNALSYM PEC_METHOD}  
+  {$EXTERNALSYM PEC_METHOD}
   PEC_METHOD = Pointer;//^EC_METHOD;
-    {$EXTERNALSYM PPEC_METHOD} 
+    {$EXTERNALSYM PPEC_METHOD}
   PPEC_METHOD = ^PEC_METHOD;
  // EC_GROUP = record
     //The fields are internal to OpenSSL, they are not listed in the header.
 //  end;
-    {$EXTERNALSYM PEC_GROUP} 
+    {$EXTERNALSYM PEC_GROUP}
   PEC_GROUP = Pointer;//^EC_GROUP;
-    {$EXTERNALSYM PPEC_GROUP}  
+    {$EXTERNALSYM PPEC_GROUP}
   PPEC_GROUP = ^PEC_GROUP;
 //  EC_POINT = record
     //The fields are internal to OpenSSL, they are not listed in the header.
 //  end;
     {$EXTERNALSYM PEC_POINT}
-  PEC_POINT = Pointer;//^EC_POINT;    
-  {$EXTERNALSYM PPEC_POINT}  
+  PEC_POINT = Pointer;//^EC_POINT;
+  {$EXTERNALSYM PPEC_POINT}
   PPEC_POINT = ^PEC_POINT;
-  {$EXTERNALSYM EC_builtin_curve} 
+  {$EXTERNALSYM EC_builtin_curve}
   EC_builtin_curve = record
     nid : TIdC_INT;
     comment : PAnsiChar;
   end;
-  {$EXTERNALSYM PEC_KEY} 
+  {$EXTERNALSYM PEC_KEY}
   PEC_KEY = Pointer;//^EC_KEY;
 //  EC_KEY = record
     //The fields are internal to OpenSSL, they are not listed in the header.
 //  end;
-  {$EXTERNALSYM PPEC_KEY} 
+  {$EXTERNALSYM PPEC_KEY}
   PPEC_KEY = ^PEC_KEY;
   {$ENDIF}
   //evp.h
 //  EVP_PBE_KEYGEN = record
 //  end;
-  {$EXTERNALSYM PEVP_PKEY_METHOD} 
+  {$EXTERNALSYM PEVP_PKEY_METHOD}
   PEVP_PKEY_METHOD = pointer;  //This is not defined publically in OpenSSL 1.0.0
-  {$EXTERNALSYM PEVP_PKEY_CTX}   
+  {$EXTERNALSYM PEVP_PKEY_CTX}
   PEVP_PKEY_CTX = pointer; //This is not defined publically in OpenSSL 1.0.0
-  {$EXTERNALSYM PEVP_PKEY_ASN1_METHOD}  
+  {$EXTERNALSYM PEVP_PKEY_ASN1_METHOD}
   PEVP_PKEY_ASN1_METHOD = pointer;
-  {$EXTERNALSYM PEVP_PBE_KEYGEN}   
+  {$EXTERNALSYM PEVP_PBE_KEYGEN}
   PEVP_PBE_KEYGEN = Pointer;//^EVP_PBE_KEYGEN;
   //evp.h
   //struct evp_pkey_st
-  {$EXTERNALSYM PPEVP_PKEY}   
+  {$EXTERNALSYM PPEVP_PKEY}
   PPEVP_PKEY = ^PEVP_PKEY;
-  {$EXTERNALSYM PEVP_PKEY}   
+  {$EXTERNALSYM PEVP_PKEY}
   PEVP_PKEY = ^EVP_PKEY;
-  {$EXTERNALSYM EVP_PKEY_union}   
+  {$EXTERNALSYM EVP_PKEY_union}
   EVP_PKEY_union = record
     case byte of
       0: (ptr : PAnsiChar);
+
       {$IFNDEF OPENSSL_NO_RSA}
       1: (rsa : PRSA);    // RSA
       {$ENDIF}
@@ -11109,12 +11150,12 @@ type
       4: (ec : PEC_KEY);  // ECC
       {$ENDIF}
   end;
-  {$EXTERNALSYM Pevp_pkey_st}   
+  {$EXTERNALSYM Pevp_pkey_st}
   Pevp_pkey_st    = PEVP_PKEY;
   //this was moved from x509 section so that something here can compile.
-  {$EXTERNALSYM PSTACK_OF_X509_ATTRIBUTE} 
+  {$EXTERNALSYM PSTACK_OF_X509_ATTRIBUTE}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_X509_ATTRIBUTE}   
+  {$EXTERNALSYM STACK_OF_X509_ATTRIBUTE}
   STACK_OF_X509_ATTRIBUTE = record
     _stack: STACK;
   end;
@@ -11123,9 +11164,9 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_X509_ATTRIBUTE = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM PPSTACK_OF_X509_ATTRIBUTE} 
+  {$EXTERNALSYM PPSTACK_OF_X509_ATTRIBUTE}
   PPSTACK_OF_X509_ATTRIBUTE = ^PSTACK_OF_X509_ATTRIBUTE;
-  {$EXTERNALSYM EVP_PKEY}   
+  {$EXTERNALSYM EVP_PKEY}
   EVP_PKEY = record
     _type : TIdC_INT;
     save_type : TIdC_INT;
@@ -11134,11 +11175,11 @@ type
     pkey : EVP_PKEY_union;
     attributes : PSTACK_OF_X509_ATTRIBUTE;  // [ 0 ]
   end;
-  {$EXTERNALSYM PEVP_PKEY}     
+  {$EXTERNALSYM PEVP_MD}
   PEVP_MD = ^EVP_MD;
-  {$EXTERNALSYM PEVP_MD_CTX}   
+  {$EXTERNALSYM PEVP_MD_CTX}
   PEVP_MD_CTX = ^EVP_MD_CTX;
-  {$EXTERNALSYM EVP_MD_CTX}    
+  {$EXTERNALSYM EVP_MD_CTX}
   EVP_MD_CTX = record
     digest : PEVP_MD;
     engine : PENGINE; // functional reference if 'digest' is ENGINE-provided
@@ -11150,14 +11191,14 @@ type
 //	int (*update)(EVP_MD_CTX *ctx,const void *data,size_t count);
      update : function (ctx : PEVP_MD_CTX; const data : Pointer; count : size_t) : TIdC_INT cdecl;
   end;
-  {$EXTERNALSYM EVP_MD_SVCTX}  
+  {$EXTERNALSYM EVP_MD_SVCTX}
   EVP_MD_SVCTX = record
 	  mctx : PEVP_MD_CTX;
 	  key : Pointer;
   end;
-  {$EXTERNALSYM PEVP_MD_SVCTX}   
+  {$EXTERNALSYM PEVP_MD_SVCTX}
   PEVP_MD_SVCTX = ^EVP_MD_SVCTX;
-  {$EXTERNALSYM EVP_MD}  
+  {$EXTERNALSYM EVP_MD}
   EVP_MD = record
     _type : TIdC_INT;
     pkey_type : TIdC_INT;
@@ -11177,13 +11218,13 @@ type
     block_size : TIdC_INT;
     ctx_size : TIdC_INT; // how big does the ctx->md_data need to be
   end;
-  {$EXTERNALSYM PPEVP_CIPHER_CTX}    
+  {$EXTERNALSYM PPEVP_CIPHER_CTX}
   PPEVP_CIPHER_CTX = ^PEVP_CIPHER_CTX;
-  {$EXTERNALSYM PEVP_CIPHER_CTX}    
+  {$EXTERNALSYM PEVP_CIPHER_CTX}
   PEVP_CIPHER_CTX = ^EVP_CIPHER_CTX;
-  {$EXTERNALSYM PEVP_CIPHER} 
+  {$EXTERNALSYM PEVP_CIPHER}
   PEVP_CIPHER = ^EVP_CIPHER;
-  {$EXTERNALSYM EVP_CIPHER}   
+  {$EXTERNALSYM EVP_CIPHER}
   EVP_CIPHER = record
     nid : TIdC_INT;
     block_size : TIdC_INT;
@@ -11202,7 +11243,7 @@ type
       ptr : Pointer): TIdC_INT; cdecl; // Miscellaneous operations
     app_data : Pointer;  // Application data
   end;
-  {$EXTERNALSYM EVP_CIPHER_CTX}   
+  {$EXTERNALSYM EVP_CIPHER_CTX}
   EVP_CIPHER_CTX = record
     cipher : PEVP_CIPHER;
     engine : PENGINE;   // functional reference if 'cipher' is ENGINE-provided
@@ -11220,14 +11261,14 @@ type
     block_mask : TIdC_INT;
     _final : array [0..EVP_MAX_BLOCK_LENGTH-1] of AnsiChar; // possible final block
   end;
-  {$EXTERNALSYM EVP_CIPHER_INFO}    
+  {$EXTERNALSYM EVP_CIPHER_INFO}
   EVP_CIPHER_INFO = record
     cipher : PEVP_CIPHER;
     iv : array [0..EVP_MAX_IV_LENGTH -1] of AnsiChar;
   end;
-  {$EXTERNALSYM PEVP_CIPHER_INFO}    
+  {$EXTERNALSYM PEVP_CIPHER_INFO}
   PEVP_CIPHER_INFO = ^EVP_CIPHER_INFO;
-  {$EXTERNALSYM EVP_ENCODE_CTX}    
+  {$EXTERNALSYM EVP_ENCODE_CTX}
   EVP_ENCODE_CTX = record
     num : TIdC_INT;    // number saved in a partial encode/decode
     length: TIdC_INT;  // The length is either the output line length
@@ -11239,32 +11280,32 @@ type
     line_num: TIdC_INT;	// number read on current line
     expect_nl: TIdC_INT;
   end;
-  {$EXTERNALSYM PEVP_ENCODE_CTX}     
+  {$EXTERNALSYM PEVP_ENCODE_CTX}
   PEVP_ENCODE_CTX = ^EVP_ENCODE_CTX;
   //forward declarations from x509.h to make sure this compiles.
-  {$EXTERNALSYM PX509}    
+  {$NODEFINE PX509}
   PX509 = ^X509;
-  {$EXTERNALSYM PPX509}   
+  {$EXTERNALSYM PPX509}
   PPX509 = ^PX509;
-  {$EXTERNALSYM PX509_CRL}   
+  {$EXTERNALSYM PX509_CRL}
   PX509_CRL = ^X509_CRL;
-  {$EXTERNALSYM PX509_NAME}    
+  {$NODEFINE PX509_NAME}
   PX509_NAME = ^X509_NAME;
-  {$EXTERNALSYM PX509_NAME_ENTRY}    
+  {$EXTERNALSYM PX509_NAME_ENTRY}
   PX509_NAME_ENTRY = ^X509_NAME_ENTRY;
-  {$EXTERNALSYM PX509_REQ}   
+  {$EXTERNALSYM PX509_REQ}
   PX509_REQ = ^X509_REQ;
-  {$EXTERNALSYM PX509_REQ_INFO}    
+  {$EXTERNALSYM PX509_REQ_INFO}
   PX509_REQ_INFO = ^X509_REQ_INFO;
-  {$EXTERNALSYM PPX509_REQ_INFO} 
+  {$EXTERNALSYM PPX509_REQ_INFO}
   PPX509_REQ_INFO = ^PX509_REQ_INFO;
-  {$EXTERNALSYM PSTACK_OF_X509_NAME_ENTRY} 
-  {$EXTERNALSYM PSTACK_OF_X509_REVOKED} 
-  {$EXTERNALSYM PSTACK_OF_X509_NAME}       
+  {$EXTERNALSYM PSTACK_OF_X509_NAME_ENTRY}
+  {$EXTERNALSYM PSTACK_OF_X509_REVOKED}
+  {$EXTERNALSYM PSTACK_OF_X509_NAME}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_X509_NAME_ENTRY} 
-  {$EXTERNALSYM STACK_OF_X509_REVOKED} 
-  {$EXTERNALSYM STACK_OF_X509_NAME}    
+  {$EXTERNALSYM STACK_OF_X509_NAME_ENTRY}
+  {$EXTERNALSYM STACK_OF_X509_REVOKED}
+  {$EXTERNALSYM STACK_OF_X509_NAME}
   STACK_OF_X509_NAME_ENTRY = record
     _stack: stack;
   end;
@@ -11276,30 +11317,30 @@ type
   STACK_OF_X509_NAME = record
     _stack: STACK;
   end;
-  PSTACK_OF_X509_NAME = ^STACK_OF_X509_NAME;  
+  PSTACK_OF_X509_NAME = ^STACK_OF_X509_NAME;
   {$ELSE}
   PSTACK_OF_X509_NAME_ENTRY = PSTACK;
   PSTACK_OF_X509_REVOKED = PSTACK;
-  PSTACK_OF_X509_NAME = PSTACK;  
+  PSTACK_OF_X509_NAME = PSTACK;
   {$ENDIF}
-    {$EXTERNALSYM PPSTACK_OF_X509_REVOKED} 
+    {$EXTERNALSYM PPSTACK_OF_X509_REVOKED}
   PPSTACK_OF_X509_REVOKED = ^PSTACK_OF_X509_REVOKED;
-  {$EXTERNALSYM PPX509_NAME}   
+  {$EXTERNALSYM PPX509_NAME}
   PPX509_NAME =^PX509_NAME;
-  {$EXTERNALSYM PPSTACK_OF_X509_NAME}   
+  {$EXTERNALSYM PPSTACK_OF_X509_NAME}
   PPSTACK_OF_X509_NAME = ^PSTACK_OF_X509_NAME;
   //pcy_int.h
   //Note that anything other than PSTACK should be undefined since the record
   //members aren't exposed in the headers.
-  {$EXTERNALSYM PSTACK_OF_X509_POLICY_DATA} 
-  {$EXTERNALSYM PSTACK_OF_X509_POLICY_REF} 
-  {$EXTERNALSYM PSTACK_OF_X509_POLICY_NODE}   
-  {$EXTERNALSYM PSTACK_OF_POLICYQUALINFO}     
+  {$EXTERNALSYM PSTACK_OF_X509_POLICY_DATA}
+  {$EXTERNALSYM PSTACK_OF_X509_POLICY_REF}
+  {$EXTERNALSYM PSTACK_OF_X509_POLICY_NODE}
+  {$EXTERNALSYM PSTACK_OF_POLICYQUALINFO}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_X509_POLICY_DATA} 
-  {$EXTERNALSYM STACK_OF_X509_POLICY_REF} 
-  {$EXTERNALSYM STACK_OF_X509_POLICY_NODE}   
-  {$EXTERNALSYM STACK_OF_POLICYQUALINFO}    
+  {$EXTERNALSYM STACK_OF_X509_POLICY_DATA}
+  {$EXTERNALSYM STACK_OF_X509_POLICY_REF}
+  {$EXTERNALSYM STACK_OF_X509_POLICY_NODE}
+  {$EXTERNALSYM STACK_OF_POLICYQUALINFO}
   STACK_OF_X509_POLICY_DATA = record
     _stack: stack;
   end;
@@ -11323,9 +11364,9 @@ type
   PSTACK_OF_X509_POLICY_NODE = PSTACK;
   PSTACK_OF_POLICYQUALINFO = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM PSTACK_OF_X509V3_EXT_METHOD}    
+  {$EXTERNALSYM PSTACK_OF_X509V3_EXT_METHOD}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_X509V3_EXT_METHOD}    
+  {$EXTERNALSYM STACK_OF_X509V3_EXT_METHOD}
   STACK_OF_X509V3_EXT_METHOD = record
     _stack: stack;
   end;
@@ -11334,11 +11375,11 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_X509V3_EXT_METHOD = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM PPSTACK_OF_X509V3_EXT_METHOD}  
+  {$EXTERNALSYM PPSTACK_OF_X509V3_EXT_METHOD}
   PPSTACK_OF_X509V3_EXT_METHOD = ^PSTACK_OF_X509V3_EXT_METHOD;
-  {$EXTERNALSYM PSTACK_OF_X509}   
+  {$EXTERNALSYM PSTACK_OF_X509}
   {$IFDEF DEBUF_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_X509}   
+  {$EXTERNALSYM STACK_OF_X509}
   STACK_OF_X509 = record
     _stack: STACK;
   end;
@@ -11352,40 +11393,40 @@ type
   {$IFNDEF OPENSSL_NO_ENGINE}
   //* Generic function pointer */
 //typedef int (*ENGINE_GEN_FUNC_PTR)(void);
-  {$EXTERNALSYM ENGINE_GEN_FUNC_PTR} 
+  {$EXTERNALSYM ENGINE_GEN_FUNC_PTR}
   ENGINE_GEN_FUNC_PTR = function : TIdC_INT; cdecl;
 //  typedef int (*ENGINE_GEN_INT_FUNC_PTR)(ENGINE *);
-  {$EXTERNALSYM ENGINE_GEN_INT_FUNC_PTR} 
+  {$EXTERNALSYM ENGINE_GEN_INT_FUNC_PTR}
   ENGINE_GEN_INT_FUNC_PTR = function(Para1 : PENGINE) : TIdC_INT; cdecl;
 //typedef int (*ENGINE_CTRL_FUNC_PTR)(ENGINE *, int, long, void *, void (*f)(void));
-  {$EXTERNALSYM ENGINE_CTRL_FUNC_PTR_F} 
+  {$EXTERNALSYM ENGINE_CTRL_FUNC_PTR_F}
   ENGINE_CTRL_FUNC_PTR_F = procedure; cdecl;
-  {$EXTERNALSYM ENGINE_CTRL_FUNC_PTR}   
+  {$EXTERNALSYM ENGINE_CTRL_FUNC_PTR}
   ENGINE_CTRL_FUNC_PTR = function(Para1 : PENGINE; Para2 : TIdC_INT;
     Para3 : TIdC_LONG; Para4 : Pointer; f : ENGINE_CTRL_FUNC_PTR_F) : TIdC_Int; cdecl;
 //typedef EVP_PKEY * (*ENGINE_LOAD_KEY_PTR)(ENGINE *, const char *,
 //	UI_METHOD *ui_method, void *callback_data);
-  {$EXTERNALSYM ENGINE_LOAD_KEY_PTR}  
+  {$EXTERNALSYM ENGINE_LOAD_KEY_PTR}
   ENGINE_LOAD_KEY_PTR = function(Para1 : PENGINE; Para2 : PAnsiChar;
     ui_method : PUI_METHOD; callback_data : Pointer) : PEVP_PKEY; cdecl;
 //typedef int (*ENGINE_SSL_CLIENT_CERT_PTR)(ENGINE *, SSL *ssl,
 //	STACK_OF(X509_NAME) *ca_dn, X509 **pcert, EVP_PKEY **pkey,
 //	STACK_OF(X509) **pother, UI_METHOD *ui_method, void *callback_data);
-  {$EXTERNALSYM ENGINE_SSL_CLIENT_CERT_PTR} 
+  {$EXTERNALSYM ENGINE_SSL_CLIENT_CERT_PTR}
   ENGINE_SSL_CLIENT_CERT_PTR = function(Para1 : PENGINE; ssl : PSSL;
     ca_dn : PSTACK_OF_X509_NAME; var pcert : PX509; var pkey : PEVP_PKEY;
     var pother : PSTACK_OF_X509; ui_method : PUI_METHOD; callback_data : Pointer) : TIdC_Int; cdecl;
 //typedef int (*ENGINE_CIPHERS_PTR)(ENGINE *, const EVP_CIPHER **, const int **, int);
-  {$EXTERNALSYM ENGINE_CIPHERS_PTR} 
+  {$EXTERNALSYM ENGINE_CIPHERS_PTR}
   ENGINE_CIPHERS_PTR = function(para1 : PENGINE; var para2 : PEVP_CIPHER; var para3 : PIdC_Int; para4 : TIdC_Int) : TIdC_Int; cdecl;
 //typedef int (*ENGINE_DIGESTS_PTR)(ENGINE *, const EVP_MD **, const int **, int);
-  {$EXTERNALSYM ENGINE_DIGESTS_PTR} 
+  {$EXTERNALSYM ENGINE_DIGESTS_PTR}
   ENGINE_DIGESTS_PTR = function(para1 : PENGINE; var Para2 : PEVP_MD; var Para3 : PIdC_INT; para4 : TIdC_INT) : TIdC_INT cdecl;
 //typedef int (*ENGINE_PKEY_METHS_PTR)(ENGINE *, EVP_PKEY_METHOD **, const int **, int);
-  {$EXTERNALSYM ENGINE_PKEY_METHS_PTR} 
+  {$EXTERNALSYM ENGINE_PKEY_METHS_PTR}
   ENGINE_PKEY_METHS_PTR = function(para1 : PENGINE; var Para2 : PEVP_PKEY_METHOD; var Para3 : PIdC_INT; para4 : TIdC_INT) : TIdC_INT cdecl;
 //typedef int (*ENGINE_PKEY_ASN1_METHS_PTR)(ENGINE *, EVP_PKEY_ASN1_METHOD **, const int **, int);
-  {$EXTERNALSYM ENGINE_PKEY_ASN1_METHS_PTR} 
+  {$EXTERNALSYM ENGINE_PKEY_ASN1_METHS_PTR}
   ENGINE_PKEY_ASN1_METHS_PTR = function(para1 : PENGINE; var Para2 : PEVP_PKEY_ASN1_METHOD; var Para3 : PIdC_INT; para4 : TIdC_INT) : TIdC_INT cdecl;
 {
 /* When compiling an ENGINE entirely as an external shared library, loadable by
@@ -11399,15 +11440,15 @@ type
  * set or not. */
 }
 //typedef void *(*dyn_MEM_malloc_cb)(size_t);
-  {$EXTERNALSYM dyn_MEM_malloc_cb} 
+  {$EXTERNALSYM dyn_MEM_malloc_cb}
   dyn_MEM_malloc_cb = function(para1 : size_t) : Pointer; cdecl;
 //typedef void *(*dyn_MEM_realloc_cb)(void *, size_t);
-  {$EXTERNALSYM dyn_MEM_realloc_cb} 
+  {$EXTERNALSYM dyn_MEM_realloc_cb}
   dyn_MEM_realloc_cb = function (para1 : Pointer; para2 : size_t): Pointer; cdecl;
 //typedef void (*dyn_MEM_free_cb)(void *);
-  {$EXTERNALSYM dyn_MEM_free_cb} 
+  {$EXTERNALSYM dyn_MEM_free_cb}
   dyn_MEM_free_cb = procedure (para1 : Pointer); cdecl;
-  {$EXTERNALSYM dynamic_MEM_fns} 
+  {$EXTERNALSYM dynamic_MEM_fns}
   dynamic_MEM_fns = record
     malloc_cb : dyn_MEM_malloc_cb;
     realloc_cb : dyn_MEM_realloc_cb;
@@ -11416,22 +11457,22 @@ type
 ///* FIXME: Perhaps the memory and locking code (crypto.h) should declare and use
 // * these types so we (and any other dependant code) can simplify a bit?? */
 //typedef void (*dyn_lock_locking_cb)(int,int,const char *,int);
-  {$EXTERNALSYM dyn_lock_locking_cb} 
+  {$EXTERNALSYM dyn_lock_locking_cb}
   dyn_lock_locking_cb = procedure (para1, para2 : TIdC_INT; para3 : PAnsiChar; para4 : TIdC_INT); cdecl;
 //typedef int (*dyn_lock_add_lock_cb)(int*,int,int,const char *,int);
-  {$EXTERNALSYM dyn_lock_add_lock_cb} 
+  {$EXTERNALSYM dyn_lock_add_lock_cb}
   dyn_lock_add_lock_cb = function (var para1 : TIdC_INT; para2, para3 : TIdC_INT; para4 : PAnsiChar; para5 : TIdC_INT) : TIdC_INT; cdecl;
 //typedef struct CRYPTO_dynlock_value *(*dyn_dynlock_create_cb)(
 //						const char *,int);
-  {$EXTERNALSYM dyn_dynlock_create_cb} 
+  {$EXTERNALSYM dyn_dynlock_create_cb}
   dyn_dynlock_create_cb = function (para1 : PAnsiChar; para2 : TIdC_INT) : PCRYPTO_dynlock_value; cdecl;
 //typedef void (*dyn_dynlock_lock_cb)(int,struct CRYPTO_dynlock_value *,
 //						const char *,int);
-  {$EXTERNALSYM dyn_dynlock_lock_cb} 
+  {$EXTERNALSYM dyn_dynlock_lock_cb}
   dyn_dynlock_lock_cb = procedure (para1 : TIdC_INT; para2 : PCRYPTO_dynlock_value); cdecl;
 //typedef void (*dyn_dynlock_destroy_cb)(struct CRYPTO_dynlock_value *,
 //						const char *,int);
-  {$EXTERNALSYM dyn_dynlock_destroy_cb} 
+  {$EXTERNALSYM dyn_dynlock_destroy_cb}
   dyn_dynlock_destroy_cb = procedure(para1 : PCRYPTO_dynlock_value; para2 : PAnsiChar; para3 : TIdC_INT); cdecl;
 //typedef struct st_dynamic_LOCK_fns {
 //	dyn_lock_locking_cb			lock_locking_cb;
@@ -11440,7 +11481,7 @@ type
 //	dyn_dynlock_lock_cb			dynlock_lock_cb;
 //	dyn_dynlock_destroy_cb			dynlock_destroy_cb;
 //	} dynamic_LOCK_fns;
-  {$EXTERNALSYM dynamic_LOCK_fns} 
+  {$EXTERNALSYM dynamic_LOCK_fns}
    dynamic_LOCK_fns = record
      lock_locking_cb : dyn_lock_locking_cb;
      lock_add_lock_cb : dyn_lock_add_lock_cb;
@@ -11449,7 +11490,7 @@ type
      dynlock_destroy_cb : dyn_dynlock_destroy_cb;
    end;
 //* The top-level structure */
-  {$EXTERNALSYM dynamic_fns} 
+  {$EXTERNALSYM dynamic_fns}
    dynamic_fns = record
      static_state : Pointer;
      err_fns : PERR_FNS;
@@ -11458,54 +11499,54 @@ type
      lock_fns : dynamic_LOCK_fns;
    end;
 // typedef unsigned long (*dynamic_v_check_fn)(unsigned long ossl_version);
-  {$EXTERNALSYM dynamic_v_check_fn} 
+  {$EXTERNALSYM dynamic_v_check_fn}
   dynamic_v_check_fn = function(ossl_version : TIdC_ULONG) : TIdC_ULONG; cdecl;
 //typedef int (*dynamic_bind_engine)(ENGINE *e, const char *id,
 //    const dynamic_fns *fns);
-  {$EXTERNALSYM dynamic_bind_engine} 
+  {$EXTERNALSYM dynamic_bind_engine}
   dynamic_bind_engine = function(e : PENGINE; id : PAnsiChar; fns : dynamic_fns) : TIdC_INT; cdecl;
   {$ENDIF}
   //ecdsa.h
   {$IFNDEF OPENSSL_NO_ECDSA}
-  {$EXTERNALSYM ECDSA_SIG}   
+  {$EXTERNALSYM ECDSA_SIG}
   ECDSA_SIG = record
     r : PBIGNUM;
     s : PBIGNUM;
   end;
-  {$EXTERNALSYM PECDSA_SIG}   
+  {$EXTERNALSYM PECDSA_SIG}
   PECDSA_SIG = ^ECDSA_SIG;
-  {$EXTERNALSYM PPECDSA_SIG}   
+  {$EXTERNALSYM PPECDSA_SIG}
   PPECDSA_SIG = ^PECDSA_SIG;
 //  ECDH_METHOD = record
     //defined interally, not through the header so use function to access members
  // end;
-  {$EXTERNALSYM PECDH_METHOD}   
+  {$EXTERNALSYM PECDH_METHOD}
   PECDH_METHOD = Pointer;//^ECDH_METHOD;
-  {$EXTERNALSYM PPECDH_METHOD}   
+  {$EXTERNALSYM PPECDH_METHOD}
   PPECDH_METHOD = ^PECDH_METHOD;
   {$ENDIF}
   //ecdh.h
   //aes.h
  {$IFNDEF OPENSSL_NO_AES}
    {$IFDEF OPENSSL_FIPS}
-  {$EXTERNALSYM FIPS_AES_SIZE_T}     
+  {$EXTERNALSYM FIPS_AES_SIZE_T}
   FIPS_AES_SIZE_T	= TIdC_INT;
   {$ENDIF}
   //OpenSSL Developer's note
   // This should be a hidden type, but EVP requires that the size be known
-  {$EXTERNALSYM AES_KEY}    
+  {$EXTERNALSYM AES_KEY}
   AES_KEY = record
     rd_key: array[0..(4 *(AES_MAXNR + 1)-1)] of TIdC_UINT;
     rounds : TIdC_INT;
   end;
-  {$EXTERNALSYM PAES_KEY}   
+  {$EXTERNALSYM PAES_KEY}
   PAES_KEY = ^AES_KEY;
-  {$EXTERNALSYM PPAES_KEY}   
+  {$EXTERNALSYM PPAES_KEY}
   PPAES_KEY = ^PAES_KEY;
   {$ENDIF}
   //seed.h
   {$IFNDEF OPENSSL_NO_SEED}
-  {$EXTERNALSYM SEED_KEY_SCHEDULE}   
+  {$EXTERNALSYM SEED_KEY_SCHEDULE}
   SEED_KEY_SCHEDULE = record
     {$IFDEF SEED_LONG}
     data : array [0..(32 -1)] of TIdC_ULONG ;
@@ -11513,15 +11554,15 @@ type
     data : array[0..(32-1)] of TIdC_UINT;
     {$ENDIF}
    end;
-  {$EXTERNALSYM PSEED_KEY_SCHEDULE}     
+  {$EXTERNALSYM PSEED_KEY_SCHEDULE}
   PSEED_KEY_SCHEDULE = ^SEED_KEY_SCHEDULE;
   {$ENDIF}
   //lhash.h
-  {$EXTERNALSYM PLHASH_NODE}   
+  {$EXTERNALSYM PLHASH_NODE}
   PLHASH_NODE = ^LHASH_NODE;
-  {$EXTERNALSYM PPLHASH_NODE}    
+  {$EXTERNALSYM PPLHASH_NODE}
   PPLHASH_NODE = ^PLHASH_NODE;
-  {$EXTERNALSYM LHASH_NODE}    
+  {$EXTERNALSYM LHASH_NODE}
   LHASH_NODE = record
     data : Pointer;
     next : PLHASH_NODE;
@@ -11529,17 +11570,17 @@ type
     hash : TIdC_ULONG;
     {$ENDIF}
   end;
-  {$EXTERNALSYM LHASH_COMP_FN_TYPE}   
+  {$EXTERNALSYM LHASH_COMP_FN_TYPE}
   LHASH_COMP_FN_TYPE = function (const p1,p2 : Pointer) : TIdC_INT; cdecl;
-  {$EXTERNALSYM PLHASH_COMP_FN_TYPE}   
+  {$EXTERNALSYM PLHASH_COMP_FN_TYPE}
   PLHASH_COMP_FN_TYPE = ^LHASH_COMP_FN_TYPE;
-  {$EXTERNALSYM LHASH_HASH_FN_TYPE}    
+  {$EXTERNALSYM LHASH_HASH_FN_TYPE}
   LHASH_HASH_FN_TYPE = function(const p1 : Pointer) : TIdC_ULONG; cdecl;
-  {$EXTERNALSYM LHASH_DOALL_FN_TYPE}      
+  {$EXTERNALSYM LHASH_DOALL_FN_TYPE}
   LHASH_DOALL_FN_TYPE = procedure(p1 : Pointer); cdecl;
-  {$EXTERNALSYM LHASH_DOALL_ARG_FN_TYPE}    
+  {$EXTERNALSYM LHASH_DOALL_ARG_FN_TYPE}
   LHASH_DOALL_ARG_FN_TYPE = procedure(p1, p2 : Pointer); cdecl;
-  {$EXTERNALSYM LHASH}     
+  {$EXTERNALSYM LHASH}
   LHASH = record
     b : PPLHASH_NODE;
     comp : LHASH_COMP_FN_TYPE;
@@ -11566,20 +11607,20 @@ type
     num_hash_comps : TIdC_ULONG;
     error : TIdC_INT;
   end;
-  {$EXTERNALSYM PLHASH}    
+  {$EXTERNALSYM PLHASH}
   PLHASH = ^LHASH;
   //conf.h
-  {$EXTERNALSYM CONF_VALUE}      
+  {$EXTERNALSYM CONF_VALUE}
   CONF_VALUE = record
     section : PAnsiChar;
     name : PAnsiChar;
     value : PAnsiChar;
   end;
-  {$EXTERNALSYM PCONF_VALUE}   
+  {$EXTERNALSYM PCONF_VALUE}
   PCONF_VALUE = ^CONF_VALUE;
-  {$EXTERNALSYM PSTACK_OF_CONF_VALUE}   
+  {$EXTERNALSYM PSTACK_OF_CONF_VALUE}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_CONF_VALUE}    
+  {$EXTERNALSYM STACK_OF_CONF_VALUE}
   STACK_OF_CONF_VALUE = record
     stack: stack;
   end;
@@ -11588,33 +11629,33 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_CONF_VALUE = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM BIT_STRING_BITNAME}    
+  {$EXTERNALSYM BIT_STRING_BITNAME}
   //* This is used to contain a list of bit names */
   BIT_STRING_BITNAME = record
     bitnum : TIdC_INT;
     lname : PAnsiChar;
     sname : PAnsiChar;
   end;
-  {$EXTERNALSYM PBIT_STRING_BITNAME}    
+  {$EXTERNALSYM PBIT_STRING_BITNAME}
   PBIT_STRING_BITNAME = ^BIT_STRING_BITNAME;
-  {$EXTERNALSYM PPBIT_STRING_BITNAME}   
+  {$EXTERNALSYM PPBIT_STRING_BITNAME}
   PPBIT_STRING_BITNAME = ^PBIT_STRING_BITNAME;
-  {$EXTERNALSYM buf_mem_st}    
+  {$EXTERNALSYM buf_mem_st}
   buf_mem_st = record
     length : TIdC_INT; // current number of bytes
     data : PAnsiChar;
     max: TIdC_INT; // size of buffer
   end;
-  {$EXTERNALSYM BUF_MEM}   
+  {$EXTERNALSYM BUF_MEM}
   BUF_MEM = buf_mem_st;
-  {$EXTERNALSYM PBUF_MEM}   
+  {$EXTERNALSYM PBUF_MEM}
   PBUF_MEM = ^BUF_MEM;
-  {$EXTERNALSYM PPBUF_MEM}    
+  {$EXTERNALSYM PPBUF_MEM}
   PPBUF_MEM = ^PBUF_MEM;
-  {$EXTERNALSYM PFILE}    
+  {$EXTERNALSYM PFILE}
   PFILE = Pointer;
   //asn1t.h
-  {$EXTERNALSYM ASN1_TEMPLATE}    
+  {$EXTERNALSYM ASN1_TEMPLATE}
   ASN1_TEMPLATE = record
     flags : TIdC_ULONG;   // Various flags
     tag : TIdC_LONG;      // tag, not used if no tagging
@@ -11624,9 +11665,9 @@ type
     {$ENDIF}
     item : PASN1_ITEM_EXP; // Relevant ASN1_ITEM or ASN1_ADB
   end;
-  {$EXTERNALSYM PASN1_TEMPLATE}    
+  {$EXTERNALSYM PASN1_TEMPLATE}
   PASN1_TEMPLATE = ^ASN1_TEMPLATE;
-  {$EXTERNALSYM ASN1_ITEM}    
+  {$EXTERNALSYM ASN1_ITEM}
   ASN1_ITEM = record
     itype : Char;                 // The item type, primitive, SEQUENCE, CHOICE or extern
     utype : TIdC_LONG;            // underlying type
@@ -11638,9 +11679,9 @@ type
     sname : PAnsiChar;		  // Structure name
     {$ENDIF}
   end;
-  {$EXTERNALSYM PSTACK_OF_ASN1_ADB_TABLE}   
+  {$EXTERNALSYM PSTACK_OF_ASN1_ADB_TABLE}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_ASN1_ADB_TABLE}     
+  {$EXTERNALSYM STACK_OF_ASN1_ADB_TABLE}
   STACK_OF_ASN1_ADB_TABLE = record
     stack: stack;
   end;
@@ -11649,13 +11690,13 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_ASN1_ADB_TABLE = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM PPSTACK_OF_ASN1_ADB_TABLE}      
+  {$EXTERNALSYM PPSTACK_OF_ASN1_ADB_TABLE}
   PPSTACK_OF_ASN1_ADB_TABLE = ^PSTACK_OF_ASN1_ADB_TABLE;
-  {$EXTERNALSYM PASN1_ADB_TABLE}    
+  {$EXTERNALSYM PASN1_ADB_TABLE}
   PASN1_ADB_TABLE = ^ASN1_ADB_TABLE;
-  {$EXTERNALSYM PASN1_ADB}  
+  {$EXTERNALSYM PASN1_ADB}
   PASN1_ADB = ^ASN1_ADB;
-  {$EXTERNALSYM ASN1_ADB}   
+  {$EXTERNALSYM ASN1_ADB}
   ASN1_ADB = record
     flags : TIdC_ULONG;          // Various flags
     offset : TIdC_ULONG;         // Offset of selector field
@@ -11665,7 +11706,7 @@ type
     default_tt : PASN1_TEMPLATE; // Type to use if no match
     null_tt : PASN1_TEMPLATE;    // Type to use if selector is NULL
   end;
-  {$EXTERNALSYM ASN1_ADB_TABLE}    
+  {$EXTERNALSYM ASN1_ADB_TABLE}
   ASN1_ADB_TABLE = record
     flags : TIdC_LONG;            // Various flags
     offset : TIdC_LONG;	          // Offset of selector field
@@ -11675,9 +11716,9 @@ type
     default_tt : PASN1_TEMPLATE;  // Type to use if no match
     null_tt : PASN1_TEMPLATE;     // Type to use if selector is NULL
   end;
-  {$EXTERNALSYM PASN1_TLC}    
+  {$EXTERNALSYM PASN1_TLC}
   PASN1_TLC = ^ASN1_TLC;
-  {$EXTERNALSYM ASN1_TLC}    
+  {$EXTERNALSYM ASN1_TLC}
   ASN1_TLC = record
 	  valid : Byte;	//* Values below are valid */
 	  ret : TIdC_INT;	//* return value */
@@ -11687,48 +11728,48 @@ type
 	  hdrlen : TIdC_INT;	//* header length */
   end;
   ///* Typedefs for ASN1 function pointers */
-  {$EXTERNALSYM ASN1_new_func}   
+  {$EXTERNALSYM ASN1_new_func}
   ASN1_new_func = function : PASN1_VALUE; cdecl;
-  {$EXTERNALSYM ASN1_free_func}     
+  {$EXTERNALSYM ASN1_free_func}
   ASN1_free_func = procedure (a : PASN1_VALUE); cdecl;
 //  typedef ASN1_VALUE * ASN1_d2i_func(ASN1_VALUE **a, const unsigned char ** in, long length);
-  {$EXTERNALSYM ASN1_d2i_func}  
+  {$EXTERNALSYM ASN1_d2i_func}
   ASN1_d2i_func = function (a : PASN1_VALUE; _in : PPByte; length : TIdC_LONG ) : PASN1_VALUE; cdecl;
  // typedef int ASN1_i2d_func(ASN1_VALUE * a, unsigned char **in);
-  {$EXTERNALSYM ASN1_i2d_func} 
+  {$EXTERNALSYM ASN1_i2d_func}
   ASN1_i2d_func = function (a : PASN1_VALUE; _in : PPByte)  : TIdC_INT; cdecl;
 //  typedef int ASN1_ex_d2i(ASN1_VALUE **pval, const unsigned char **in, long len, const ASN1_ITEM *it,
 //					int tag, int aclass, char opt, ASN1_TLC *ctx);
-  {$EXTERNALSYM ASN1_ex_d2i} 
+  {$EXTERNALSYM ASN1_ex_d2i}
   ASN1_ex_d2i = function(pval : PPASN1_VALUE; _in : PPByte; len : TIdC_LONG;
     it : PASN1_ITEM; tag, aclass : TIdC_INT; opt : Byte;
     ctx : PASN1_TLC) : TIdC_INT; cdecl;
 //typedef int ASN1_ex_i2d(ASN1_VALUE **pval, unsigned char **out, const ASN1_ITEM *it, int tag, int aclass);
-  {$EXTERNALSYM ASN1_ex_i2d} 
+  {$EXTERNALSYM ASN1_ex_i2d}
   ASN1_ex_i2d = function(pval : PPASN1_VALUE; _out : PPByte;  it : PASN1_ITEM; tag, aclass : TIdC_INT) : TIdC_INT; cdecl;
 //typedef int ASN1_ex_new_func(ASN1_VALUE **pval, const ASN1_ITEM *it);
-  {$EXTERNALSYM ASN1_ex_new_func} 
+  {$EXTERNALSYM ASN1_ex_new_func}
   ASN1_ex_new_func = function(pval : PPASN1_VALUE; it : PASN1_ITEM) : TIdC_INT; cdecl;
 //typedef void ASN1_ex_free_func(ASN1_VALUE **pval, const ASN1_ITEM *it);
-  {$EXTERNALSYM ASN1_ex_free_func} 
+  {$EXTERNALSYM ASN1_ex_free_func}
   ASN1_ex_free_func = procedure( pval : PPASN1_VALUE; it : PASN1_ITEM); cdecl;
 //typedef int ASN1_primitive_i2c(ASN1_VALUE **pval, unsigned char *cont, int *putype, const ASN1_ITEM *it);
-  {$EXTERNALSYM ASN1_primitive_i2c} 
+  {$EXTERNALSYM ASN1_primitive_i2c}
   ASN1_primitive_i2c = function (pval : PPASN1_VALUE; cont : PByte; putype : PIdC_INT; it : PASN1_ITEM ) : TIdC_INT; cdecl;
 //typedef int ASN1_primitive_c2i(ASN1_VALUE **pval, const unsigned char *cont, int len, int utype, char *free_cont, const ASN1_ITEM *it);
-  {$EXTERNALSYM ASN1_primitive_c2i} 
+  {$EXTERNALSYM ASN1_primitive_c2i}
   ASN1_primitive_c2i = function (pval : PPASN1_VALUE; cont : PByte; len, utype : TIdC_INT; free_cont : PByte; it: PASN1_ITEM) : TIdC_INT; cdecl;
   ///* end typedefs
-  {$EXTERNALSYM ASN1_COMPAT_FUNCS}   
+  {$EXTERNALSYM ASN1_COMPAT_FUNCS}
   ASN1_COMPAT_FUNCS = record
 	  asn1_new : ASN1_new_func;
 	  asn1_free : ASN1_free_func;
 	  asn1_d2i : ASN1_d2i_func;
 	 asn1_i2d : ASN1_i2d_func;
   end;
-  {$EXTERNALSYM PASN1_COMPAT_FUNCS}    
+  {$EXTERNALSYM PASN1_COMPAT_FUNCS}
   PASN1_COMPAT_FUNCS = ^ASN1_COMPAT_FUNCS;
-  {$EXTERNALSYM ASN1_EXTERN_FUNCS}   
+  {$EXTERNALSYM ASN1_EXTERN_FUNCS}
   ASN1_EXTERN_FUNCS = record
 	  app_data : Pointer;
     asn1_ex_new : ASN1_ex_new_func; //	ASN1_ex_new_func *asn1_ex_new;
@@ -11737,9 +11778,9 @@ type
     asn1_ex_d2i : ASN1_ex_d2i;//	ASN1_ex_d2i *asn1_ex_d2i;
     asn1_ex_i2d : ASN1_ex_i2d; //	ASN1_ex_i2d *asn1_ex_i2d;
   end;
-  {$EXTERNALSYM PASN1_EXTERN_FUNCS}    
+  {$EXTERNALSYM PASN1_EXTERN_FUNCS}
   PASN1_EXTERN_FUNCS = ^ASN1_EXTERN_FUNCS;
-  {$EXTERNALSYM ASN1_PRIMITIVE_FUNCS}     
+  {$EXTERNALSYM ASN1_PRIMITIVE_FUNCS}
   ASN1_PRIMITIVE_FUNCS = record
     app_data : Pointer;
     flags : TIdC_ULONG;
@@ -11754,12 +11795,12 @@ type
 //	ASN1_primitive_i2c *prim_i2c;
     prim_i2c : ASN1_primitive_i2c;
   end;
-  {$EXTERNALSYM PASN1_PRIMITIVE_FUNCS}    
+  {$EXTERNALSYM PASN1_PRIMITIVE_FUNCS}
   PASN1_PRIMITIVE_FUNCS = ^ASN1_PRIMITIVE_FUNCS;
 //typedef int ASN1_aux_cb(int operation, ASN1_VALUE **in, const ASN1_ITEM *it);
-  {$EXTERNALSYM ASN1_aux_cb} 
+  {$EXTERNALSYM ASN1_aux_cb}
   ASN1_aux_cb = function (operation : TIdC_INT; _in : PPASN1_VALUE; it : PASN1_ITEM) : TIdC_INT; cdecl;
-  {$EXTERNALSYM ASN1_AUX}  
+  {$EXTERNALSYM ASN1_AUX}
   ASN1_AUX = record
     app_data : Pointer;
     flags : TIdC_INT;
@@ -11768,12 +11809,12 @@ type
     asn1_cb : ASN1_aux_cb; //ASN1_aux_cb *asn1_cb;
     enc_offset : TIdC_INT;		//* Offset of ASN1_ENCODING structure */
   end;
-  {$EXTERNALSYM PASN1_AUX}    
+  {$EXTERNALSYM PASN1_AUX}
   PASN1_AUX = ^ASN1_AUX;
   //hmac.h
   //This has to come after the EVP definitions
   {$IFNDEF OPENSSL_NO_HMAC}
-  {$EXTERNALSYM HMAC_CTX}   
+  {$EXTERNALSYM HMAC_CTX}
   HMAC_CTX = record
     md : PEVP_MD;
     md_ctx : EVP_MD_CTX;
@@ -11782,53 +11823,53 @@ type
     key_length : TIdC_UINT;
     key : array[0..(HMAC_MAX_MD_CBLOCK - 1)] of byte;
   end;
-  {$EXTERNALSYM PHMAC_CTX}    
+  {$EXTERNALSYM PHMAC_CTX}
   PHMAC_CTX = ^HMAC_CTX;
-  {$EXTERNALSYM PPHMAC_CTX}    
+  {$EXTERNALSYM PPHMAC_CTX}
   PPHMAC_CTX = ^PHMAC_CTX;
   {$ENDIF}
  // X509_POLICY_DATA = record
  // end;
-  {$EXTERNALSYM PX509_POLICY_DATA} 
+  {$EXTERNALSYM PX509_POLICY_DATA}
   PX509_POLICY_DATA = Pointer;//^X509_POLICY_DATA;
  // X509_POLICY_REF = record
  // end;
-   {$EXTERNALSYM PX509_POLICY_REF} 
+   {$EXTERNALSYM PX509_POLICY_REF}
   PX509_POLICY_REF = Pointer;//^X509_POLICY_REF;
  // X509_POLICY_CACHE = record
  // end;
-   {$EXTERNALSYM PX509_POLICY_CACHE}  
+   {$EXTERNALSYM PX509_POLICY_CACHE}
   PX509_POLICY_CACHE = Pointer; //^X509_POLICY_CACHE;
   //x509v3.h
-   {$EXTERNALSYM PPX509_NAME_ENTRY}    
+   {$EXTERNALSYM PPX509_NAME_ENTRY}
   PPX509_NAME_ENTRY = ^PX509_NAME_ENTRY;
   //forward declarations
-   {$EXTERNALSYM PV3_EXT_METHOD}   
+   {$EXTERNALSYM PV3_EXT_METHOD}
   PV3_EXT_METHOD = ^V3_EXT_METHOD;
-   {$EXTERNALSYM PV3_EXT_CTX}     
+   {$EXTERNALSYM PV3_EXT_CTX}
   PV3_EXT_CTX = ^V3_EXT_CTX;
   //
-  {$EXTERNALSYM X509V3_EXT_NEW} 
+  {$EXTERNALSYM X509V3_EXT_NEW}
   X509V3_EXT_NEW = function: Pointer; cdecl;
-  {$EXTERNALSYM X509V3_EXT_FREE}   
+  {$EXTERNALSYM X509V3_EXT_FREE}
   X509V3_EXT_FREE = procedure(_para1 : Pointer); cdecl;
-  {$EXTERNALSYM X509V3_EXT_D2I} 
+  {$EXTERNALSYM X509V3_EXT_D2I}
   X509V3_EXT_D2I = function(_para1 : Pointer; const _para2 : PPAnsiChar; para3 : TIdC_LONG): Pointer; cdecl;
-  {$EXTERNALSYM X509V3_EXT_I2D} 
+  {$EXTERNALSYM X509V3_EXT_I2D}
   X509V3_EXT_I2D = function (_para1 : Pointer; _para2 : PPAnsiChar) : TIdC_INT; cdecl;
-  {$EXTERNALSYM X509V3_EXT_I2V} 
+  {$EXTERNALSYM X509V3_EXT_I2V}
   X509V3_EXT_I2V = function (method : PV3_EXT_METHOD; ext : Pointer; extlist : PSTACK_OF_CONF_VALUE) : PSTACK_OF_CONF_VALUE; cdecl;
-  {$EXTERNALSYM  X509V3_EXT_V2I} 
+  {$EXTERNALSYM  X509V3_EXT_V2I}
   X509V3_EXT_V2I = function (method : Pv3_ext_method; ctx : PV3_EXT_CTX; values : PSTACK_OF_CONF_VALUE): Pointer; cdecl;
-  {$EXTERNALSYM X509V3_EXT_I2S} 
+  {$EXTERNALSYM X509V3_EXT_I2S}
   X509V3_EXT_I2S = function (method : Pv3_ext_method; ext : Pointer) : PAnsiChar; cdecl;
-  {$EXTERNALSYM X509V3_EXT_S2I} 
+  {$EXTERNALSYM X509V3_EXT_S2I}
   X509V3_EXT_S2I = function (method : Pv3_ext_method; ctx : Pv3_ext_ctx; const str : PAnsiChar): Pointer; cdecl;
-  {$EXTERNALSYM X509V3_EXT_I2R} 
+  {$EXTERNALSYM X509V3_EXT_I2R}
   X509V3_EXT_I2R = function (method : Pv3_ext_method; ext : Pointer; _out : PBIO; indent : TIdC_INT) : TIdC_INT; cdecl;
-  {$EXTERNALSYM X509V3_EXT_R2I} 
+  {$EXTERNALSYM X509V3_EXT_R2I}
   X509V3_EXT_R2I = function (method : Pv3_ext_method; ctx : Pv3_ext_ctx; const str : PAnsiChar): Pointer; cdecl;
-  {$EXTERNALSYM V3_EXT_METHOD} 
+  {$EXTERNALSYM V3_EXT_METHOD}
   V3_EXT_METHOD = record
     ext_nid : TIdC_INT;
     ext_flags : TIdC_INT;
@@ -11851,16 +11892,16 @@ type
     r2i : X509V3_EXT_R2I;
     usr_data : Pointer;  // Any extension specific data
   end;
-  {$EXTERNALSYM X509V3_EXT_METHOD}   
+  {$EXTERNALSYM X509V3_EXT_METHOD}
   X509V3_EXT_METHOD = V3_EXT_METHOD;
-  {$EXTERNALSYM X509V3_CONF_METHOD}     
+  {$EXTERNALSYM X509V3_CONF_METHOD}
   X509V3_CONF_METHOD = record
     get_string : function(db : Pointer; section, value : PAnsiChar) : PAnsiChar; cdecl;
     get_section : function(db : Pointer; section : PAnsiChar) : PSTACK_OF_CONF_VALUE; cdecl;
     free_string : procedure(db : Pointer; _string : PAnsiChar); cdecl;
     free_section : procedure (db : Pointer; section : PSTACK_OF_CONF_VALUE);
   end;
-  {$EXTERNALSYM V3_EXT_CTX}     
+  {$EXTERNALSYM V3_EXT_CTX}
   V3_EXT_CTX = record
     flags : TIdC_INT;
     issuer_cert : PX509;
@@ -11872,37 +11913,37 @@ type
     // OpenSSL developer's message from header
     // Maybe more here
   end;
-  {$EXTERNALSYM ENUMERATED_NAMES}    
+  {$EXTERNALSYM ENUMERATED_NAMES}
   ENUMERATED_NAMES = BIT_STRING_BITNAME;
-  {$EXTERNALSYM BASIC_CONSTRAINTS}  
+  {$EXTERNALSYM BASIC_CONSTRAINTS}
   BASIC_CONSTRAINTS = record
    ca : TIdC_INT;
    pathlen: PASN1_INTEGER;
   end;
-  {$EXTERNALSYM PBASIC_CONSTRAINTS}    
+  {$EXTERNALSYM PBASIC_CONSTRAINTS}
   PBASIC_CONSTRAINTS = ^BASIC_CONSTRAINTS;
-  {$EXTERNALSYM PKEY_USAGE_PERIOD}  
+  {$EXTERNALSYM PKEY_USAGE_PERIOD}
   PKEY_USAGE_PERIOD = record
     notBefore : ASN1_GENERALIZEDTIME;
     notAfter : PASN1_GENERALIZEDTIME;
   end;
-  {$EXTERNALSYM PPKEY_USAGE_PERIOD}    
+  {$EXTERNALSYM PPKEY_USAGE_PERIOD}
   PPKEY_USAGE_PERIOD = ^PKEY_USAGE_PERIOD;
-  {$EXTERNALSYM OTHERNAME}     
+  {$EXTERNALSYM OTHERNAME}
   OTHERNAME = record
     type_id : PASN1_OBJECT;
     value : PASN1_TYPE;
   end;
-  {$EXTERNALSYM POTHERNAME}    
+  {$EXTERNALSYM POTHERNAME}
   POTHERNAME = ^OTHERNAME;
-  {$EXTERNALSYM EDIPARTYNAME}  
+  {$EXTERNALSYM EDIPARTYNAME}
   EDIPARTYNAME = record
     nameAssigner : PASN1_STRING;
     partyName : PASN1_STRING;
   end;
-  {$EXTERNALSYM PEDIPARTYNAME}  
+  {$EXTERNALSYM PEDIPARTYNAME}
   PEDIPARTYNAME = ^EDIPARTYNAME;
-  {$EXTERNALSYM GENERAL_NAME_union}  
+  {$EXTERNALSYM GENERAL_NAME_union}
   GENERAL_NAME_union = record
     case byte of
       0 : (ptr : PAnsiChar);
@@ -11922,16 +11963,16 @@ type
      13 : (rid : ASN1_OBJECT);       // registeredID
      14 : (other : PASN1_TYPE);      // x400Address
   end;
-  {$EXTERNALSYM GENERAL_NAME}    
+  {$EXTERNALSYM GENERAL_NAME}
   GENERAL_NAME = record
     _type : TIdC_INT;
     d : GENERAL_NAME_union;
   end;
-  {$EXTERNALSYM PGENERAL_NAME}     
+  {$EXTERNALSYM PGENERAL_NAME}
   PGENERAL_NAME = ^GENERAL_NAME;
-  {$EXTERNALSYM PSTACK_OF_GENERAL_NAME}    
+  {$EXTERNALSYM PSTACK_OF_GENERAL_NAME}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_GENERAL_NAME}    
+  {$EXTERNALSYM STACK_OF_GENERAL_NAME}
   STACK_OF_GENERAL_NAME = record
     _stack: stack;
   end;
@@ -11940,18 +11981,18 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_GENERAL_NAME = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM PGENERAL_NAMES}    
+  {$EXTERNALSYM PGENERAL_NAMES}
   PGENERAL_NAMES = PSTACK_OF_GENERAL_NAME;
-  {$EXTERNALSYM ACCESS_DESCRIPTION}  
+  {$EXTERNALSYM ACCESS_DESCRIPTION}
   ACCESS_DESCRIPTION = record
     method : PASN1_OBJECT;
     location : PGENERAL_NAME;
   end;
-  {$EXTERNALSYM PACCESS_DESCRIPTION}  
+  {$EXTERNALSYM PACCESS_DESCRIPTION}
   PACCESS_DESCRIPTION = ^ACCESS_DESCRIPTION;
-  {$EXTERNALSYM PSTACK_OF_ACCESS_DESCRIPTION}      
+  {$EXTERNALSYM PSTACK_OF_ACCESS_DESCRIPTION}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_ACCESS_DESCRIPTION}    
+  {$EXTERNALSYM STACK_OF_ACCESS_DESCRIPTION}
   STACK_OF_ACCESS_DESCRIPTION = record
     _stack: stack;
   end;
@@ -11960,32 +12001,32 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_ACCESS_DESCRIPTION = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM PAUTHORITY_INFO_ACCESS}   
+  {$EXTERNALSYM PAUTHORITY_INFO_ACCESS}
   PAUTHORITY_INFO_ACCESS = PSTACK_OF_ACCESS_DESCRIPTION;
-  {$EXTERNALSYM PEXTENDED_KEY_USAGE}  
+  {$EXTERNALSYM PEXTENDED_KEY_USAGE}
   PEXTENDED_KEY_USAGE = PSTACK_OF_ASN1_OBJECT;
-  {$EXTERNALSYM DIST_POINT_NAME_union}   
+  {$EXTERNALSYM DIST_POINT_NAME_union}
   DIST_POINT_NAME_union = record
     case byte of
     0 : (fullname : PGENERAL_NAMES);
     1 : (relativename : PSTACK_OF_X509_NAME_ENTRY);
   end;
-  {$EXTERNALSYM DIST_POINT_NAME}     
+  {$EXTERNALSYM DIST_POINT_NAME}
   DIST_POINT_NAME = record
     _type : TIdC_INT;
     name : DIST_POINT_NAME_union;
   end;
-  {$EXTERNALSYM PDIST_POINT_NAME}   
+  {$EXTERNALSYM PDIST_POINT_NAME}
   PDIST_POINT_NAME = ^DIST_POINT_NAME;
-  {$EXTERNALSYM DIST_POINT}     
+  {$EXTERNALSYM DIST_POINT}
   DIST_POINT = record
     distpoint : PDIST_POINT_NAME;
     reasons : PASN1_BIT_STRING;
     CRLissuer : PGENERAL_NAMES;
   end;
-  {$EXTERNALSYM PSTACK_OF_DIST_POINT}    
+  {$EXTERNALSYM PSTACK_OF_DIST_POINT}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_DIST_POINT}    
+  {$EXTERNALSYM STACK_OF_DIST_POINT}
   STACK_OF_DIST_POINT = record
     _stack: stack;
   end;
@@ -11994,25 +12035,25 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_DIST_POINT = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM AUTHORITY_KEYID}     
+  {$EXTERNALSYM AUTHORITY_KEYID}
   AUTHORITY_KEYID = record
     keyid : PASN1_OCTET_STRING;
     issuer : PGENERAL_NAMES;
     serial : PASN1_INTEGER;
   end;
-  {$EXTERNALSYM PAUTHORITY_KEYID}      
+  {$EXTERNALSYM PAUTHORITY_KEYID}
   PAUTHORITY_KEYID = ^AUTHORITY_KEYID;
   // Strong extranet structures
-  {$EXTERNALSYM SXNETID}   
+  {$EXTERNALSYM SXNETID}
   SXNETID = record
     zone : PASN1_INTEGER;
     user : PASN1_OCTET_STRING;
   end;
-  {$EXTERNALSYM PSXNETID}    
+  {$EXTERNALSYM PSXNETID}
   PSXNETID = ^SXNETID;
-  {$EXTERNALSYM PSTACK_OF_SXNETID}   
+  {$EXTERNALSYM PSTACK_OF_SXNETID}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_SXNETID}   
+  {$EXTERNALSYM STACK_OF_SXNETID}
   STACK_OF_SXNETID = record
     _stack: stack;
   end;
@@ -12021,44 +12062,44 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_SXNETID = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM SXNET}   
+  {$EXTERNALSYM SXNET}
   SXNET = record
     version : PASN1_INTEGER;
     ids : PSTACK_OF_SXNETID;
   end;
-  {$EXTERNALSYM PSXNET}    
+  {$EXTERNALSYM PSXNET}
   PSXNET = ^SXNET;
-  {$EXTERNALSYM NOTICEREF}      
+  {$EXTERNALSYM NOTICEREF}
   NOTICEREF = record
     organization : PASN1_STRING;
     noticenos : PSTACK_OF_ASN1_INTEGER;
   end;
-  {$EXTERNALSYM PNOTICEREF}    
+  {$EXTERNALSYM PNOTICEREF}
   PNOTICEREF = ^NOTICEREF;
-  {$EXTERNALSYM USERNOTICE}    
+  {$EXTERNALSYM USERNOTICE}
   USERNOTICE = record
     noticeref : PNOTICEREF;
     exptext : PASN1_STRING;
   end;
-  {$EXTERNALSYM PUSERNOTICE}   
+  {$EXTERNALSYM PUSERNOTICE}
   PUSERNOTICE = ^USERNOTICE;
-  {$EXTERNALSYM POLICYQUALINFO_union}     
+  {$EXTERNALSYM POLICYQUALINFO_union}
   POLICYQUALINFO_union = record
     case byte of
       0 : (cpsuri : PASN1_IA5STRING);
       1 : (usernotice : PUSERNOTICE);
       2 : (other : PASN1_TYPE);
   end;
-  {$EXTERNALSYM POLICYQUALINFO}    
+  {$EXTERNALSYM POLICYQUALINFO}
   POLICYQUALINFO = record
     pqualid : PASN1_OBJECT;
     d : POLICYQUALINFO_union;
   end;
-  {$EXTERNALSYM PPOLICYQUALINFO}     
+  {$EXTERNALSYM PPOLICYQUALINFO}
   PPOLICYQUALINFO = ^POLICYQUALINFO;
-  {$EXTERNALSYM PSTACK_OF_POLICYINFO}  
+  {$EXTERNALSYM PSTACK_OF_POLICYINFO}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_POLICYINFO}    
+  {$EXTERNALSYM STACK_OF_POLICYINFO}
   STACK_OF_POLICYINFO = record
     _stack: stack;
   end;
@@ -12066,24 +12107,24 @@ type
   {$ELSE}
   PSTACK_OF_POLICYINFO = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM POLICYINFO}    
+  {$EXTERNALSYM POLICYINFO}
   POLICYINFO = record
     policyid : PASN1_OBJECT;
     qualifiers : PSTACK_OF_POLICYQUALINFO;
   end;
-  {$EXTERNALSYM CERTIFICATEPOLICIES}  
+  {$EXTERNALSYM CERTIFICATEPOLICIES}
   CERTIFICATEPOLICIES = PSTACK_OF_POLICYINFO;
   //typedef STACK_OF(POLICYINFO) CERTIFICATEPOLICIES;
- {$EXTERNALSYM POLICY_MAPPING}    
+ {$EXTERNALSYM POLICY_MAPPING}
   POLICY_MAPPING = record
     issuerDomainPolicy : PASN1_OBJECT;
     subjectDomainPolicy : PASN1_OBJECT;
   end;
- {$EXTERNALSYM PPOLICY_MAPPING}   
+ {$EXTERNALSYM PPOLICY_MAPPING}
   PPOLICY_MAPPING = ^POLICY_MAPPING;
- {$EXTERNALSYM PSTACK_OF_POLICY_MAPPING}   
+ {$EXTERNALSYM PSTACK_OF_POLICY_MAPPING}
   {$IFDEF DEBUG_SAFESTACK}
- {$EXTERNALSYM STACK_OF_POLICY_MAPPING}   
+ {$EXTERNALSYM STACK_OF_POLICY_MAPPING}
   STACK_OF_POLICY_MAPPING = record
     _stack: stack;
   end;
@@ -12092,19 +12133,19 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_POLICY_MAPPING = PSTACK;
   {$ENDIF}
- {$EXTERNALSYM PPSTACK_OF_POLICY_MAPPING}    
+ {$EXTERNALSYM PPSTACK_OF_POLICY_MAPPING}
   PPSTACK_OF_POLICY_MAPPING = ^PSTACK_OF_POLICY_MAPPING;
- {$EXTERNALSYM GENERAL_SUBTREE}      
+ {$EXTERNALSYM GENERAL_SUBTREE}
   GENERAL_SUBTREE = record
     base : PGENERAL_NAME;
     minimum : PASN1_INTEGER;
     maximum : PASN1_INTEGER;
   end;
- {$EXTERNALSYM PGENERAL_SUBTREE}    
+ {$EXTERNALSYM PGENERAL_SUBTREE}
   PGENERAL_SUBTREE = ^GENERAL_SUBTREE;
- {$EXTERNALSYM PSTACK_OF_GENERAL_SUBTREE}   
+ {$EXTERNALSYM PSTACK_OF_GENERAL_SUBTREE}
   {$IFDEF DEBUG_SAFESTACK}
- {$EXTERNALSYM STACK_OF_GENERAL_SUBTREE}    
+ {$EXTERNALSYM STACK_OF_GENERAL_SUBTREE}
   STACK_OF_GENERAL_SUBTREE = record
     _stack: stack;
   end;
@@ -12113,41 +12154,41 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_GENERAL_SUBTREE = PSTACK;
   {$ENDIF}
- {$EXTERNALSYM NAME_CONSTRAINTS}    
+ {$EXTERNALSYM NAME_CONSTRAINTS}
   NAME_CONSTRAINTS = record
     permittedSubtrees : PSTACK_OF_GENERAL_SUBTREE;
     excludedSubtrees : PSTACK_OF_GENERAL_SUBTREE;
   end;
- {$EXTERNALSYM PNAME_CONSTRAINTS}   
+ {$EXTERNALSYM PNAME_CONSTRAINTS}
   PNAME_CONSTRAINTS = ^NAME_CONSTRAINTS;
-  {$EXTERNALSYM POLICY_CONSTRAINTS}  
+  {$EXTERNALSYM POLICY_CONSTRAINTS}
   POLICY_CONSTRAINTS = record
     requireExplicitPolicy : PASN1_INTEGER;
     inhibitPolicyMapping : ASN1_INTEGER;
   end;
-  {$EXTERNALSYM PPOLICY_CONSTRAINTS}    
+  {$EXTERNALSYM PPOLICY_CONSTRAINTS}
   PPOLICY_CONSTRAINTS = ^POLICY_CONSTRAINTS;
   // Proxy certificate structures, see RFC 3820
-  {$EXTERNALSYM PROXY_POLICY}    
+  {$EXTERNALSYM PROXY_POLICY}
   PROXY_POLICY = record
     policyLanguage : PASN1_OBJECT;
     policy : ASN1_OCTET_STRING;
   end;
-  {$EXTERNALSYM PPROXY_POLICY}   
+  {$EXTERNALSYM PPROXY_POLICY}
   PPROXY_POLICY = ^PROXY_POLICY;
-  {$EXTERNALSYM PROXY_CERT_INFO_EXTENSION}   
+  {$EXTERNALSYM PROXY_CERT_INFO_EXTENSION}
   PROXY_CERT_INFO_EXTENSION = record
     pcPathLengthConstraint : PASN1_INTEGER;
     proxyPolicy : PPROXY_POLICY;
   end;
-  {$EXTERNALSYM PPROXY_CERT_INFO_EXTENSION}    
+  {$EXTERNALSYM PPROXY_CERT_INFO_EXTENSION}
   PPROXY_CERT_INFO_EXTENSION = ^PROXY_CERT_INFO_EXTENSION;
-  {$EXTERNALSYM PX509_PURPOSE}   
+  {$EXTERNALSYM PX509_PURPOSE}
   PX509_PURPOSE = ^X509_PURPOSE;
-  {$EXTERNALSYM X509_PURPOSE_check_purpose}    
+  {$EXTERNALSYM X509_PURPOSE_check_purpose}
   X509_PURPOSE_check_purpose = function(const _para1 : Px509_purpose; const _para2 : PX509;
       para3 : TIdC_INT) : TIdC_INT; cdecl;
-  {$EXTERNALSYM X509_PURPOSE}       
+  {$EXTERNALSYM X509_PURPOSE}
   X509_PURPOSE = record
     purpose : TIdC_INT;
     trust : TIdC_INT;    // Default trust ID
@@ -12157,9 +12198,9 @@ type
     sname : PAnsiChar;
     usr_data : Pointer;
   end;
-  {$EXTERNALSYM PSTACK_OF_X509_PURPOSE}  
+  {$EXTERNALSYM PSTACK_OF_X509_PURPOSE}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_X509_PURPOSE}  
+  {$EXTERNALSYM STACK_OF_X509_PURPOSE}
   STACK_OF_X509_PURPOSE = record
     _stack: stack;
   end;
@@ -12169,28 +12210,28 @@ type
   PSTACK_OF_X509_PURPOSE = PSTACK;
   {$ENDIF}
   {$IFNDEF OPENSSL_NO_RFC3779}
-  {$EXTERNALSYM ASRange}    
+  {$EXTERNALSYM ASRange}
   ASRange = record
     min, max : PASN1_INTEGER;
   end;
-  {$EXTERNALSYM PASRange}  
+  {$EXTERNALSYM PASRange}
   PASRange = ^ASRange;
-  {$EXTERNALSYM ASIdOrRange_union}    
+  {$EXTERNALSYM ASIdOrRange_union}
   ASIdOrRange_union = record
     case byte of
      ASIdOrRange_id : (id : PASN1_INTEGER);
      ASIdOrRange_range : (range : PASRange);
   end;
-  {$EXTERNALSYM ASIdOrRange}     
+  {$EXTERNALSYM ASIdOrRange}
   ASIdOrRange = record
     _type : TIdC_INT;
     u : ASIdOrRange_union;
   end;
-  {$EXTERNALSYM PASIdOrRange}     
+  {$EXTERNALSYM PASIdOrRange}
   PASIdOrRange = ^ASIdOrRange;
-  {$EXTERNALSYM PSTACK_OF_ASIdOrRange}   
+  {$EXTERNALSYM PSTACK_OF_ASIdOrRange}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_ASIdOrRange}  
+  {$EXTERNALSYM STACK_OF_ASIdOrRange}
   STACK_OF_ASIdOrRange = record
     _stack: stack;
   end;
@@ -12199,50 +12240,50 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_ASIdOrRange = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM PASIdOrRanges}    
+  {$EXTERNALSYM PASIdOrRanges}
   PASIdOrRanges = PSTACK_OF_ASIdOrRange;
-  {$EXTERNALSYM ASIdentifierChoice_union}  
+  {$EXTERNALSYM ASIdentifierChoice_union}
   ASIdentifierChoice_union = record
   case byte of
    ASIdentifierChoice_inherit : (inherit : PASN1_NULL);
    ASIdentifierChoice_asIdsOrRanges : (asIdsOrRanges : PASIdOrRanges);
   end;
-  {$EXTERNALSYM ASIdentifierChoice}   
+  {$EXTERNALSYM ASIdentifierChoice}
   ASIdentifierChoice = record
     _type : TIdC_INT;
     u : ASIdentifierChoice_union;
   end;
-  {$EXTERNALSYM PASIdentifierChoice}    
+  {$EXTERNALSYM PASIdentifierChoice}
   PASIdentifierChoice = ^ASIdentifierChoice;
-  {$EXTERNALSYM ASIdentifiers}    
+  {$EXTERNALSYM ASIdentifiers}
   ASIdentifiers = record
     asnum : PASIdentifierChoice;
     rdi : PASIdentifierChoice;
   end;
-  {$EXTERNALSYM PASIdentifiers}    
+  {$EXTERNALSYM PASIdentifiers}
   PASIdentifiers = ^ASIdentifiers;
-  {$EXTERNALSYM IPAddressRange}    
+  {$EXTERNALSYM IPAddressRange}
   IPAddressRange = record
     min, max : PASN1_BIT_STRING;
   end;
-  {$EXTERNALSYM PIPAddressRange}   
+  {$EXTERNALSYM PIPAddressRange}
   PIPAddressRange = ^IPAddressRange;
-  {$EXTERNALSYM IPAddressOrRange_union}   
+  {$EXTERNALSYM IPAddressOrRange_union}
   IPAddressOrRange_union = record
   case byte of
     IPAddressOrRange_addressPrefix : (addressPrefix : PASN1_BIT_STRING);
     IPAddressOrRange_addressRange : (addressRange : PIPAddressRange);
   end;
-  {$EXTERNALSYM IPAddressOrRange}    
+  {$EXTERNALSYM IPAddressOrRange}
   IPAddressOrRange = record
     _type : TIdC_INT;
     u : IPAddressOrRange_union;
   end;
-  {$EXTERNALSYM PIPAddressOrRange}     
+  {$EXTERNALSYM PIPAddressOrRange}
   PIPAddressOrRange = ^IPAddressOrRange;
-  {$EXTERNALSYM PSTACK_OF_IPAddressOrRange}    
+  {$EXTERNALSYM PSTACK_OF_IPAddressOrRange}
     {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_IPAddressOrRange}    
+  {$EXTERNALSYM STACK_OF_IPAddressOrRange}
   STACK_OF_IPAddressOrRange = record
     _stack: stack;
   end;
@@ -12251,31 +12292,31 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_IPAddressOrRange = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM PIPAddressOrRanges}    
+  {$EXTERNALSYM PIPAddressOrRanges}
   PIPAddressOrRanges = PSTACK_OF_IPAddressOrRange;
-  {$EXTERNALSYM IPAddressChoice_union}      
+  {$EXTERNALSYM IPAddressChoice_union}
   IPAddressChoice_union = record
   case byte of
     IPAddressChoice_inherit : (inherit : PASN1_NULL);
     IPAddressChoice_addressesOrRanges : (addressesOrRanges : PIPAddressOrRanges);
   end;
-  {$EXTERNALSYM IPAddressChoice}   
+  {$EXTERNALSYM IPAddressChoice}
   IPAddressChoice = record
     _type : TIdC_INT;
     u : IPAddressChoice_union;
   end;
-  {$EXTERNALSYM PIPAddressChoice}    
+  {$EXTERNALSYM PIPAddressChoice}
   PIPAddressChoice = ^IPAddressChoice;
-  {$EXTERNALSYM IPAddressFamily}     
+  {$EXTERNALSYM IPAddressFamily}
   IPAddressFamily = record
   	addressFamily : PASN1_OCTET_STRING;
   	ipAddressChoice : PIPAddressChoice;
   end;
-  {$EXTERNALSYM PIPAddressFamily}    
+  {$EXTERNALSYM PIPAddressFamily}
   PIPAddressFamily = ^IPAddressFamily;
-  {$EXTERNALSYM PSTACK_OF_IPAddressFamily} 
+  {$EXTERNALSYM PSTACK_OF_IPAddressFamily}
    {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_IPAddressFamily}    
+  {$EXTERNALSYM STACK_OF_IPAddressFamily}
   STACK_OF_IPAddressFamily = record
     _stack: stack;
   end;
@@ -12284,20 +12325,20 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_IPAddressFamily = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM PIPAddrBlocks}   
+  {$EXTERNALSYM PIPAddrBlocks}
   PIPAddrBlocks = PSTACK_OF_IPAddressFamily;
   {$ENDIF}
   //x509.h
-  {$EXTERNALSYM X509_HASH_DIR_CTX}    
+  {$EXTERNALSYM X509_HASH_DIR_CTX}
   X509_HASH_DIR_CTX = record
     num_dirs : TIDC_INT;
     dirs : PPAnsiChar;
     dirs_type : PIdC_INT;
     num_dirs_alloced : TIdC_INT;
   end;
-  {$EXTERNALSYM PX509_HASH_DIR_CTX}    
+  {$EXTERNALSYM PX509_HASH_DIR_CTX}
   PX509_HASH_DIR_CTX = ^X509_HASH_DIR_CTX;
-  {$EXTERNALSYM X509_CERT_FILE_CTX}    
+  {$EXTERNALSYM X509_CERT_FILE_CTX}
   X509_CERT_FILE_CTX = record
     num_paths : TIdC_INT;  // number of paths to files or directories
     num_alloced : TIdC_INT;
@@ -12306,7 +12347,7 @@ type
   end;
   {$EXTERNALSYM PX509_CERT_FILE_CTX}
   PX509_CERT_FILE_CTX = ^X509_CERT_FILE_CTX;
-  {$EXTERNALSYM x509_object_union}   
+  {$EXTERNALSYM x509_object_union}
   x509_object_union = record
     case byte of
       0: (ptr : PAnsiChar);
@@ -12314,18 +12355,18 @@ type
       2: (crl : PX509_CRL);
       3: (pkey : PEVP_PKEY);
   end;
-  {$EXTERNALSYM X509_OBJECT}    
+  {$EXTERNALSYM X509_OBJECT}
   X509_OBJECT = record
     _type : TIdC_INT;
     data : x509_object_union;
   end;
-  {$EXTERNALSYM PX509_OBJECT}    
+  {$EXTERNALSYM PX509_OBJECT}
   PX509_OBJECT  = ^X509_OBJECT;
-  {$EXTERNALSYM PPX509_OBJECT}    
+  {$EXTERNALSYM PPX509_OBJECT}
   PPX509_OBJECT  = ^PX509_OBJECT;
-  {$EXTERNALSYM PSTACK_OF_X509_OBJECT}   
+  {$EXTERNALSYM PSTACK_OF_X509_OBJECT}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_X509_OBJECT}    
+  {$EXTERNALSYM STACK_OF_X509_OBJECT}
   STACK_OF_X509_OBJECT = record
     _stack: STACK;
   end;
@@ -12334,18 +12375,18 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_X509_OBJECT = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM X509_ALGOR}   
+  {$EXTERNALSYM X509_ALGOR}
   X509_ALGOR = record
     algorithm : PASN1_OBJECT;
     parameter : PASN1_TYPE;
   end;
-  {$EXTERNALSYM PX509_ALGOR}   
+  {$EXTERNALSYM PX509_ALGOR}
   PX509_ALGOR  = ^X509_ALGOR;
-  {$EXTERNALSYM PPX509_ALGOR}   
+  {$EXTERNALSYM PPX509_ALGOR}
   PPX509_ALGOR =^PX509_ALGOR;
-  {$EXTERNALSYM PSTACK_OF_X509_ALGOR}   
+  {$EXTERNALSYM PSTACK_OF_X509_ALGOR}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_X509_ALGOR}     
+  {$EXTERNALSYM STACK_OF_X509_ALGOR}
   STACK_OF_X509_ALGOR = record
     _stack: stack;
   end;
@@ -12354,44 +12395,44 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_X509_ALGOR = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM PPSTACK_OF_X509_ALGOR}     
+  {$EXTERNALSYM PPSTACK_OF_X509_ALGOR}
   PPSTACK_OF_X509_ALGOR = ^PSTACK_OF_X509_ALGOR;
-  {$EXTERNALSYM X509_VAL}   
+  {$EXTERNALSYM X509_VAL}
   X509_VAL = record
     notBefore : PASN1_TIME;
     notAfter : PASN1_TIME;
   end;
-  {$EXTERNALSYM PX509_VAL}   
+  {$EXTERNALSYM PX509_VAL}
   PX509_VAL = ^X509_VAL;
-  {$EXTERNALSYM PPX509_VAL}   
+  {$EXTERNALSYM PPX509_VAL}
   PPX509_VAL =^PX509_VAL;
-  {$EXTERNALSYM X509_PUBKEY}   
+  {$EXTERNALSYM X509_PUBKEY}
   X509_PUBKEY = record
     algor : PX509_ALGOR;
     public_key : PASN1_BIT_STRING;
     pkey : PEVP_PKEY;
   end;
-  {$EXTERNALSYM PX509_PUBKEY}    
+  {$EXTERNALSYM PX509_PUBKEY}
   PX509_PUBKEY = ^X509_PUBKEY;
-  {$EXTERNALSYM PPX509_PUBKEY}    
+  {$EXTERNALSYM PPX509_PUBKEY}
   PPX509_PUBKEY =^PX509_PUBKEY;
-  {$EXTERNALSYM X509_SIG}    
+  {$EXTERNALSYM X509_SIG}
   X509_SIG = record
     algor : PX509_ALGOR;
     digest : PASN1_OCTET_STRING;
   end;
-  {$EXTERNALSYM PX509_SIG}   
+  {$EXTERNALSYM PX509_SIG}
   PX509_SIG = X509_SIG;
-  {$EXTERNALSYM PPX509_SIG}   
+  {$EXTERNALSYM PPX509_SIG}
   PPX509_SIG =^PX509_SIG;
-  {$EXTERNALSYM X509_NAME_ENTRY}   
+  {$EXTERNALSYM X509_NAME_ENTRY}
   X509_NAME_ENTRY = record
     _object : PASN1_OBJECT;
     value : PASN1_STRING;
     _set : TIdC_INT;
     size : TIdC_INT; // temp variable
   end;
-  {$EXTERNALSYM X509_NAME}   
+  {$NODEFINE X509_NAME}
   X509_NAME = record
     entries : PSTACK_OF_X509_NAME_ENTRY;
     modified : TIdC_INT;  // true if 'bytes' needs to be built
@@ -12402,50 +12443,53 @@ type
     {$ENDIF}
     hash : TIdC_ULONG; // Keep the hash around for lookups
   end;
-  {$EXTERNALSYM X509_EXTENSION}    
+  {$EXTERNALSYM X509_EXTENSION}
   X509_EXTENSION = record
     _object : PASN1_OBJECT;
     critical : ASN1_BOOLEAN;
     value : PASN1_OCTET_STRING;
   end;
-  {$EXTERNALSYM PX509_EXTENSION}    
+  {$EXTERNALSYM PX509_EXTENSION}
   PX509_EXTENSION = ^X509_EXTENSION;
-  {$EXTERNALSYM PPX509_EXTENSION}    
+  {$EXTERNALSYM PPX509_EXTENSION}
   PPX509_EXTENSION =^PX509_EXTENSION;
-  {$EXTERNALSYM PSTACK_OF_X509_EXTENSION}   
+  {$EXTERNALSYM PSTACK_OF_X509_EXTENSION}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_X509_EXTENSION}   
+  {$EXTERNALSYM STACK_OF_X509_EXTENSION}
   STACK_OF_X509_EXTENSION = record
     _stack: stack;
   end;
+  {$EXTERNALSYM X509_EXTENSIONS}
   X509_EXTENSIONS = STACK_OF_X509_EXTENSION;
+  {$EXTERNALSYM PSTACK_OF_X509_EXTENSION}
   PSTACK_OF_X509_EXTENSION = ^STACK_OF_X509_EXTENSION;
   {$ELSE}
   //I think the DECLARE_STACK_OF macro is empty
+  {$EXTERNALSYM PSTACK_OF_X509_EXTENSION}
   PSTACK_OF_X509_EXTENSION = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM PPSTACK_OF_X509_EXTENSION}   
+  {$EXTERNALSYM PPSTACK_OF_X509_EXTENSION}
   PPSTACK_OF_X509_EXTENSION = ^PSTACK_OF_X509_EXTENSION;
-  {$EXTERNALSYM PX509_EXTENSIONS}   
+  {$EXTERNALSYM PX509_EXTENSIONS}
   PX509_EXTENSIONS = PPSTACK_OF_X509_EXTENSION;
-  {$EXTERNALSYM x509_attributes_union}   
+  {$EXTERNALSYM x509_attributes_union}
   x509_attributes_union = record
     case Byte of
       $FF :(Ptr : PAnsiChar);
       0 : (_set: PSTACK_OF_ASN1_TYPE); // 0
       1  : (_single: PASN1_TYPE);
   end;
-  {$EXTERNALSYM X509_ATTRIBUTE}    
+  {$EXTERNALSYM X509_ATTRIBUTE}
   X509_ATTRIBUTE = record
     _object : PASN1_OBJECT;
     single : TIdC_INT; // 0 for a set, 1 for a single item (which is wrong)
     value : x509_attributes_union;
   end;
-  {$EXTERNALSYM PX509_ATTRIBUTE}    
+  {$EXTERNALSYM PX509_ATTRIBUTE}
   PX509_ATTRIBUTE = ^X509_ATTRIBUTE;
-  {$EXTERNALSYM PPX509_ATTRIBUTE}    
+  {$EXTERNALSYM PPX509_ATTRIBUTE}
   PPX509_ATTRIBUTE =^PX509_ATTRIBUTE;
-  {$EXTERNALSYM X509_REQ_INFO}      
+  {$EXTERNALSYM X509_REQ_INFO}
   X509_REQ_INFO = record
     enc: ASN1_ENCODING;
     version: PASN1_INTEGER;
@@ -12453,18 +12497,18 @@ type
     pubkey: PX509_PUBKEY;
     attributes: PSTACK_OF_X509_ATTRIBUTE; // [ 0 ]
   end;
-  {$EXTERNALSYM X509_REQ}    
+  {$EXTERNALSYM X509_REQ}
   X509_REQ = record
     req_info: PX509_REQ_INFO;
     sig_alg: PX509_ALGOR;
     signature: PASN1_BIT_STRING;
     references: TIdC_INT;
   end;
-  {$EXTERNALSYM PPX509_REQ}   
+  {$EXTERNALSYM PPX509_REQ}
   PPX509_REQ = ^PX509_REQ;
-  {$EXTERNALSYM PX509_CINF}   
+  {$EXTERNALSYM PX509_CINF}
   PX509_CINF = ^X509_CINF;
-  {$EXTERNALSYM X509_CINF}    
+  {$EXTERNALSYM X509_CINF}
   X509_CINF = record
     version: PASN1_INTEGER;
     serialNumber: PASN1_INTEGER;
@@ -12476,8 +12520,9 @@ type
     issuerUID: PASN1_BIT_STRING; // [ 1 ] optional in v2
     subjectUID: PASN1_BIT_STRING; // [ 2 ] optional in v2
     extensions: PSTACK_OF_X509_EXTENSION;
+    enc : ASN1_ENCODING;
   end;
-  {$EXTERNALSYM X509_CERT_AUX}    
+  {$EXTERNALSYM X509_CERT_AUX}
   X509_CERT_AUX = record
     trust : PSTACK_OF_ASN1_OBJECT;  // trusted uses
     reject : PSTACK_OF_ASN1_OBJECT; // rejected uses
@@ -12485,9 +12530,9 @@ type
     keyid : PASN1_OCTET_STRING;	    // key id of private key
     other : PSTACK_OF_X509_ALGOR;   // other unspecified info
   end;
-  {$EXTERNALSYM PX509_CERT_AUX}   
+  {$EXTERNALSYM PX509_CERT_AUX}
   PX509_CERT_AUX = ^X509_CERT_AUX;
-  {$EXTERNALSYM X509} 
+  {$NODEFINE X509}
   X509 = record
     cert_info: PX509_CINF;
     sig_alg : PX509_ALGOR;
@@ -12515,7 +12560,7 @@ type
     {$ENDIF}
     aux : PX509_CERT_AUX;
   end;
-  {$EXTERNALSYM X509_CRL_INFO}   
+  {$EXTERNALSYM X509_CRL_INFO}
   X509_CRL_INFO = record
     version : PASN1_INTEGER;
     sig_alg : PX509_ALGOR;
@@ -12526,13 +12571,13 @@ type
     extensions : PSTACK_OF_X509_EXTENSION; // [0]
     enc : ASN1_ENCODING;
   end;
-  {$EXTERNALSYM PX509_CRL_INFO}    
+  {$EXTERNALSYM PX509_CRL_INFO}
   PX509_CRL_INFO     = ^X509_CRL_INFO;
-  {$EXTERNALSYM PPX509_CRL_INFO}    
+  {$EXTERNALSYM PPX509_CRL_INFO}
   PPX509_CRL_INFO    =^PX509_CRL_INFO;
   {$EXTERNALSYM PSTACK_OF_X509_CRL_INFO}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_X509_CRL_INFO}      
+  {$EXTERNALSYM STACK_OF_X509_CRL_INFO}
   STACK_OF_X509_CRL_INFO = record
     _stack: stack;
   end;
@@ -12541,12 +12586,12 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_X509_CRL_INFO = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM PX509_LOOKUP}      
+  {$EXTERNALSYM PX509_LOOKUP}
   PX509_LOOKUP = ^X509_LOOKUP;
   //This has to be declared ehre for a reference in the next type.
-  {$EXTERNALSYM PSTACK_OF_X509_LOOKUP}      
+  {$EXTERNALSYM PSTACK_OF_X509_LOOKUP}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_X509_LOOKUP}    
+  {$EXTERNALSYM STACK_OF_X509_LOOKUP}
   STACK_OF_X509_LOOKUP = record
     _stack: STACK;
   end;
@@ -12555,13 +12600,13 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_X509_LOOKUP = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM PX509_VERIFY_PARAM}   
+  {$EXTERNALSYM PX509_VERIFY_PARAM}
   PX509_VERIFY_PARAM = ^X509_VERIFY_PARAM;
-  {$EXTERNALSYM PX509_STORE_CTX}     
+  {$EXTERNALSYM PX509_STORE_CTX}
   PX509_STORE_CTX = ^X509_STORE_CTX;
-  {$EXTERNALSYM PPX509_CRL}   
+  {$EXTERNALSYM PPX509_CRL}
   PPX509_CRL = ^PX509_CRL;
-  {$EXTERNALSYM X509_STORE}    
+  {$EXTERNALSYM X509_STORE}
   X509_STORE = record
     // The following is a cache of trusted certs
     cache : TIdC_INT;               // if true, stash any hits
@@ -12582,18 +12627,18 @@ type
     ex_data : CRYPTO_EX_DATA;
     references : TIdC_INT;
   end;
-  {$EXTERNALSYM X509_STORE} 
+  {$EXTERNALSYM PX509_STORE}
   PX509_STORE = ^X509_STORE;
-  {$EXTERNALSYM X509_CRL}   
+  {$EXTERNALSYM X509_CRL}
   X509_CRL = record
     crl : PX509_CRL_INFO;
     sig_alg : PX509_ALGOR;
     signature : PASN1_BIT_STRING;
     references : TIdC_INT;
   end;
-  {$EXTERNALSYM PSTACK_OF_X509_CRL}   
+  {$EXTERNALSYM PSTACK_OF_X509_CRL}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_X509_CRL}     
+  {$EXTERNALSYM STACK_OF_X509_CRL}
   STACK_OF_X509_CRL = record
     _stack: STACK;
   end;
@@ -12602,7 +12647,7 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_X509_CRL = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM X509_LOOKUP_METHOD}    
+  {$EXTERNALSYM X509_LOOKUP_METHOD}
   X509_LOOKUP_METHOD = record
     name : PAnsiChar;
     new_item : function (ctx : PX509_LOOKUP): TIdC_INT; cdecl;
@@ -12615,11 +12660,11 @@ type
     get_by_fingerprint : function (ctx : PX509_LOOKUP; _type : TIdC_INT; bytes : PAnsiChar; len : TIdC_INT; ret : PX509_OBJECT): TIdC_INT; cdecl;
     get_by_alias : function(ctx : PX509_LOOKUP; _type : TIdC_INT; str : PAnsiChar; ret : PX509_OBJECT) : TIdC_INT; cdecl;
   end;
-  {$EXTERNALSYM PX509_LOOKUP_METHOD}      
+  {$EXTERNALSYM PX509_LOOKUP_METHOD}
   PX509_LOOKUP_METHOD      = ^X509_LOOKUP_METHOD;
-  {$EXTERNALSYM PPX509_LOOKUP_METHOD}      
+  {$EXTERNALSYM PPX509_LOOKUP_METHOD}
   PPX509_LOOKUP_METHOD     = ^PX509_LOOKUP_METHOD;
-  {$EXTERNALSYM X509_VERIFY_PARAM}      
+  {$EXTERNALSYM X509_VERIFY_PARAM}
   X509_VERIFY_PARAM = record
     name : PAnsiChar;
     check_time : time_t;          // Time to use
@@ -12630,9 +12675,9 @@ type
     depth : TIdC_INT;             // Verify depth
     policies : PSTACK_OF_ASN1_OBJECT; // Permissible policies
   end;
-  {$EXTERNALSYM PSTACK_OF_X509_VERIFY_PARAM}   
+  {$EXTERNALSYM PSTACK_OF_X509_VERIFY_PARAM}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_X509_VERIFY_PARAM}    
+  {$EXTERNALSYM STACK_OF_X509_VERIFY_PARAM}
   STACK_OF_X509_VERIFY_PARAM = record
     _stack: STACK;
   end;
@@ -12641,7 +12686,7 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_X509_VERIFY_PARAM = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM X509_LOOKUP}   
+  {$EXTERNALSYM X509_LOOKUP}
   X509_LOOKUP = record
     init : TIdC_INT;              // have we been started
     skip : TIdC_INT;              // don't use us.
@@ -12649,12 +12694,12 @@ type
     method_data : PAnsiChar;          // method data
     store_ctx : PX509_STORE;      // who owns us
   end;
-  {$EXTERNALSYM PPSTACK_OF_X509_LOOKUP}  
+  {$EXTERNALSYM PPSTACK_OF_X509_LOOKUP}
   PPSTACK_OF_X509_LOOKUP = ^PSTACK_OF_X509_LOOKUP;
   // This is  used when verifying cert chains.  Since the
   // gathering of the cert chain can take some time (and have to be
   // 'retried', this needs to be kept and passed around.
-  {$EXTERNALSYM X509_STORE_CTX}    
+  {$EXTERNALSYM X509_STORE_CTX}
   X509_STORE_CTX = record   // X509_STORE_CTX
     ctx : PX509_STORE;
     current_method : TIdC_INT;  // used when looking up certs
@@ -12676,13 +12721,13 @@ type
     check_policy : function (ctx : PX509_STORE_CTX) : TIdC_INT;  cdecl;
     cleanup : function (ctx : PX509_STORE_CTX) : TIdC_INT;  cdecl;
   end;
-  {$EXTERNALSYM PX509_EXTENSION_METHOD}    
+  {$EXTERNALSYM PX509_EXTENSION_METHOD}
   PX509_EXTENSION_METHOD   = Pointer;
-  {$EXTERNALSYM PX509_TRUST}     
+  {$EXTERNALSYM PX509_TRUST}
   PX509_TRUST = ^X509_TRUST;
-  {$EXTERNALSYM X509_TRUST_check_trust}    
+  {$EXTERNALSYM X509_TRUST_check_trust}
   X509_TRUST_check_trust = function(_para1 : PX509_TRUST; para2 : PX509; _para3 : TIdC_INT) : TIdC_INT; cdecl;
-  {$EXTERNALSYM PX509_TRUST}  
+  {$EXTERNALSYM X509_TRUST}
   X509_TRUST = record
     trust : TIdC_INT;
     flags : TIdC_INT;
@@ -12691,35 +12736,37 @@ type
     arg1 : TIdC_INT;
     arg2 : Pointer;
   end;
-  {$EXTERNALSYM PPX509_TRUST}    
+  {$EXTERNALSYM PPX509_TRUST}
   PPX509_TRUST = ^PX509_TRUST;
-  {$EXTERNALSYM PSTACK_OF_509_TRUST}     
+  {$EXTERNALSYM PSTACK_OF_509_TRUST}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_509_TRUST}   
+  {$EXTERNALSYM STACK_OF_509_TRUST}
   STACK_OF_509_TRUST = record
     _stack: stack;
   end;
+  {$EXTERNALSYM PSTACK_OF_509_TRUST}
   PSTACK_OF_509_TRUST = ^STACK_OF_509_TRUST;
   {$ELSE}
   //I think the DECLARE_STACK_OF macro is empty
+  {$EXTERNALSYM PSTACK_OF_509_TRUST}
   PSTACK_OF_509_TRUST = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM X509_REVOKED}   
+  {$EXTERNALSYM X509_REVOKED}
   X509_REVOKED = record
     serialNumber: PASN1_INTEGER;
     revocationDate: PASN1_TIME;
     extensions: PSTACK_OF_X509_EXTENSION; // optional
     sequence: TIdC_INT;
   end;
-  {$EXTERNALSYM PX509_REVOKED}    
+  {$EXTERNALSYM PX509_REVOKED}
   PX509_REVOKED      = ^X509_REVOKED;
-  {$EXTERNALSYM PPX509_REVOKED}    
+  {$EXTERNALSYM PPX509_REVOKED}
   PPX509_REVOKED     =^PX509_REVOKED;
-  {$EXTERNALSYM PX509_PKEY} 
+  {$EXTERNALSYM PX509_PKEY}
   PX509_PKEY       = Pointer;
   {$EXTERNALSYM PPX509_PKEY}
   PPX509_PKEY      =^PX509_PKEY;
-  {$EXTERNALSYM X509_INFO}  
+  {$EXTERNALSYM X509_INFO}
   X509_INFO = record
     x509 : PX509;
     crl : PX509_CRL;
@@ -12729,13 +12776,13 @@ type
     enc_data: PAnsiChar;
     references: TIdC_INT;
   end;
-  {$EXTERNALSYM PX509_INFO}    
+  {$EXTERNALSYM PX509_INFO}
   PX509_INFO       = ^X509_INFO;
-  {$EXTERNALSYM PPX509_INFO}    
+  {$EXTERNALSYM PPX509_INFO}
   PPX509_INFO      =^PX509_INFO;
-  {$EXTERNALSYM PSTACK_OF_X509_INFO}    
- {$IFDEF DEBUG_SAFESTACK}  
- {$EXTERNALSYM STACK_OF_X509_INFO} 
+  {$EXTERNALSYM PSTACK_OF_X509_INFO}
+ {$IFDEF DEBUG_SAFESTACK}
+ {$EXTERNALSYM STACK_OF_X509_INFO}
   STACK_OF_X509_INFO = record
     _stack: stack;
   end;
@@ -12748,64 +12795,64 @@ type
 // The next 2 structures and their 8 routines were sent to me by
 // Pat Richard <patr@x509.com> and are used to manipulate
 // Netscapes spki structures - useful if you are writing a CA web page
- {$EXTERNALSYM NETSCAPE_SPKAC} 
+ {$EXTERNALSYM NETSCAPE_SPKAC}
   NETSCAPE_SPKAC = record
     pubkey : PX509_PUBKEY;
     challenge : PASN1_IA5STRING;  // challenge sent in atlas >= PR2
   end;
- {$EXTERNALSYM PNETSCAPE_SPKAC}   
+ {$EXTERNALSYM PNETSCAPE_SPKAC}
   PNETSCAPE_SPKAC = ^NETSCAPE_SPKAC;
- {$EXTERNALSYM PPNETSCAPE_SPKAC}   
+ {$EXTERNALSYM PPNETSCAPE_SPKAC}
   PPNETSCAPE_SPKAC = ^PNETSCAPE_SPKAC;
- {$EXTERNALSYM NETSCAPE_SPKI}   
+ {$EXTERNALSYM NETSCAPE_SPKI}
   NETSCAPE_SPKI = record
     spkac : PNETSCAPE_SPKAC;  // signed public key and challenge
     sig_algor : PX509_ALGOR;
     signature : PASN1_BIT_STRING;
   end;
- {$EXTERNALSYM PNETSCAPE_SPKI}    
+ {$EXTERNALSYM PNETSCAPE_SPKI}
   PNETSCAPE_SPKI = ^NETSCAPE_SPKI;
- {$EXTERNALSYM PPNETSCAPE_SPKI}    
+ {$EXTERNALSYM PPNETSCAPE_SPKI}
   PPNETSCAPE_SPKI = ^PNETSCAPE_SPKI;
- {$EXTERNALSYM NETSCAPE_CERT_SEQUENCE}   
+ {$EXTERNALSYM NETSCAPE_CERT_SEQUENCE}
   NETSCAPE_CERT_SEQUENCE = record
     _type : PASN1_OBJECT;
     certs : PSTACK_OF_X509;
   end;
- {$EXTERNALSYM PNETSCAPE_CERT_SEQUENCE}    
+ {$EXTERNALSYM PNETSCAPE_CERT_SEQUENCE}
   PNETSCAPE_CERT_SEQUENCE = ^NETSCAPE_CERT_SEQUENCE;
- {$EXTERNALSYM PPNETSCAPE_CERT_SEQUENCE}    
+ {$EXTERNALSYM PPNETSCAPE_CERT_SEQUENCE}
   PPNETSCAPE_CERT_SEQUENCE = ^PNETSCAPE_CERT_SEQUENCE;
   // Password based encryption structure
- {$EXTERNALSYM PBEPARAM}    
+ {$EXTERNALSYM PBEPARAM}
   PBEPARAM = record
     salt : PASN1_OCTET_STRING;
     iter : PASN1_INTEGER;
   end;
- {$EXTERNALSYM PPBEPARAM}    
+ {$EXTERNALSYM PPBEPARAM}
   PPBEPARAM = ^PBEPARAM;
- {$EXTERNALSYM PPPBEPARAM}    
+ {$EXTERNALSYM PPPBEPARAM}
   PPPBEPARAM = ^PPBEPARAM;
   // Password based encryption V2 structures
- {$EXTERNALSYM PBE2PARAM}   
+ {$EXTERNALSYM PBE2PARAM}
   PBE2PARAM = record
     keyfunc : PX509_ALGOR;
     encryption : PX509_ALGOR;
   end;
- {$EXTERNALSYM PPBE2PARAM}  
+ {$EXTERNALSYM PPBE2PARAM}
   PPBE2PARAM = ^PBE2PARAM;
- {$EXTERNALSYM PBKDF2PARAM}    
+ {$EXTERNALSYM PBKDF2PARAM}
   PBKDF2PARAM = record
     salt : PASN1_TYPE;  // Usually OCTET STRING but could be anything
     iter : PASN1_INTEGER;
     keylength : PASN1_INTEGER;
     prf : PX509_ALGOR;
   end;
- {$EXTERNALSYM PPBKDF2PARAM}   
+ {$EXTERNALSYM PPBKDF2PARAM}
   PPBKDF2PARAM = ^PBKDF2PARAM;
- {$EXTERNALSYM PPPBKDF2PARAM} 
+ {$EXTERNALSYM PPPBKDF2PARAM}
   PPPBKDF2PARAM = ^PPBKDF2PARAM;
- {$EXTERNALSYM PKCS8_PRIV_KEY_INFO} 
+ {$EXTERNALSYM PKCS8_PRIV_KEY_INFO}
   PKCS8_PRIV_KEY_INFO = record
     broken : TIdC_INT;     // Flag for various broken formats
 //#define PKCS8_OK              0
@@ -12817,39 +12864,39 @@ type
     pkey : PASN1_TYPE; // Should be OCTET STRING but some are broken
     attributes : PSTACK_OF_X509_ATTRIBUTE;
   end;
- {$EXTERNALSYM PPKCS8_PRIV_KEY_INFO}  
+ {$EXTERNALSYM PPKCS8_PRIV_KEY_INFO}
   PPKCS8_PRIV_KEY_INFO = ^PKCS8_PRIV_KEY_INFO;
- {$EXTERNALSYM PPPKCS8_PRIV_KEY_INFO}   
+ {$EXTERNALSYM PPPKCS8_PRIV_KEY_INFO}
   PPPKCS8_PRIV_KEY_INFO = ^PPKCS8_PRIV_KEY_INFO;
- {$EXTERNALSYM PPKCS7_RECIP_INFO} 
+ {$EXTERNALSYM PPKCS7_RECIP_INFO}
   PPKCS7_RECIP_INFO = ^PKCS7_RECIP_INFO;
  {$EXTERNALSYM PSHA_CTX}
   PSHA_CTX = ^SHA_CTX;
   //cms.h
   {$IFDEF OPENSSL_NO_CMS}
- {$EXTERNALSYM PCMS_ContentInfo} 
+ {$EXTERNALSYM PCMS_ContentInfo}
   PCMS_ContentInfo = Pointer;
- {$EXTERNALSYM PCMS_SignerInfo} 
+ {$EXTERNALSYM PCMS_SignerInfo}
   PCMS_SignerInfo = Pointer;
- {$EXTERNALSYM PCMS_CertificateChoices}  
+ {$EXTERNALSYM PCMS_CertificateChoices}
   PCMS_CertificateChoices = Pointer;
- {$EXTERNALSYM PCMS_RevocationInfoChoice} 
+ {$EXTERNALSYM PCMS_RevocationInfoChoice}
   PCMS_RevocationInfoChoice = Pointer;
- {$EXTERNALSYM PCMS_RecipientInfo}  
+ {$EXTERNALSYM PCMS_RecipientInfo}
   PCMS_RecipientInfo = Pointer;
- {$EXTERNALSYM PCMS_ReceiptRequest} 
+ {$EXTERNALSYM PCMS_ReceiptRequest}
   PCMS_ReceiptRequest = Pointer;
- {$EXTERNALSYM PCMS_Receipt}  
+ {$EXTERNALSYM PCMS_Receipt}
   PCMS_Receipt = Pointer;
- {$EXTERNALSYM PSTACK_OF_CMS_SignerInfo} 
- {$EXTERNALSYM PSTACK_OF_GENERAL_NAMES}    
+ {$EXTERNALSYM PSTACK_OF_CMS_SignerInfo}
+ {$EXTERNALSYM PSTACK_OF_GENERAL_NAMES}
    {$IFDEF DEBUG_SAFESTACK}
- {$EXTERNALSYM STACK_OF_CMS_SignerInfo} 
+ {$EXTERNALSYM STACK_OF_CMS_SignerInfo}
   //These are cut and paste but the duplication is for type checking.
   STACK_OF_CMS_SignerInfo = record
     _stack: stack;
   end;
- {$EXTERNALSYM STACK_OF_GENERAL_NAMES} 
+ {$EXTERNALSYM STACK_OF_GENERAL_NAMES}
   STACK_OF_GENERAL_NAMES = record
     _stack: stack;
   end;
@@ -12863,77 +12910,77 @@ type
   {$ENDIF}
   //ripemd.h
   {$IFNDEF OPENSSL_NO_RIPEMD}
- {$EXTERNALSYM RIPEMD160_LONG}   
+ {$EXTERNALSYM RIPEMD160_LONG}
   RIPEMD160_LONG = TIdC_UINT;
- {$EXTERNALSYM RIPEMD160_CTX}     
+ {$EXTERNALSYM RIPEMD160_CTX}
   RIPEMD160_CTX = record
     A,B,C,D,E : RIPEMD160_LONG;
     Nl,Nh : RIPEMD160_LONG;
     data : array [0..RIPEMD160_LBLOCK -1 ] of RIPEMD160_LONG;
     num : TIdC_UINT;
   end;
- {$EXTERNALSYM PRIPEMD160_CTX}    
+ {$EXTERNALSYM PRIPEMD160_CTX}
   PRIPEMD160_CTX = ^RIPEMD160_CTX;
   {$ENDIF}
   {$IFNDEF OPENSSL_NO_RC4}
- {$EXTERNALSYM RC4_KEY}      
+ {$EXTERNALSYM RC4_KEY}
   RC4_KEY = record
     x,y : RC4_INT;
     data : array [0..(256 - 1)] of RC4_INT;
   end;
- {$EXTERNALSYM PRC4_KEY}   
+ {$EXTERNALSYM PRC4_KEY}
   PRC4_KEY = ^RC4_KEY;
   {$ENDIF}
   //rc2.h
   {$IFNDEF OPENSSL_NO_RC2}
- {$EXTERNALSYM RC2_KEY} 
+ {$EXTERNALSYM RC2_KEY}
   RC2_KEY = record
     data : array [0..(64 - 1)] of RC2_INT;
   end;
- {$EXTERNALSYM PRC2_KEY}   
+ {$EXTERNALSYM PRC2_KEY}
   PRC2_KEY = ^RC2_KEY;
   {$ENDIF}
   {$IFNDEF OPENSSL_NO_RC5}
- {$EXTERNALSYM RC5_32_INT}  
+ {$EXTERNALSYM RC5_32_INT}
   RC5_32_INT = TIdC_UINT;
- {$EXTERNALSYM RC5_32_KEY}  
+ {$EXTERNALSYM RC5_32_KEY}
   RC5_32_KEY = record
     // Number of rounds
     rounds : TIdC_INT;
     data : array [0..(2*(RC5_16_ROUNDS+1)-1)] of RC5_32_INT;
   end;
- {$EXTERNALSYM PRC5_32_KEY}  
+ {$EXTERNALSYM PRC5_32_KEY}
   PRC5_32_KEY = ^RC5_32_KEY;
   {$ENDIF}
   //blowfish.h
   {$IFNDEF OPENSSL_NO_BF}
- {$EXTERNALSYM BF_LONG}  
+ {$EXTERNALSYM BF_LONG}
   BF_LONG = TIdC_UINT;
- {$EXTERNALSYM BF_KEY}   
+ {$EXTERNALSYM BF_KEY}
   BF_KEY = record
     P : array [0..(BF_ROUNDS+2)-1] of BF_LONG;
     S : array [0..(4*256)-1] of BF_LONG;
   end;
- {$EXTERNALSYM PBF_KEY}     
+ {$EXTERNALSYM PBF_KEY}
   PBF_KEY = ^BF_KEY;
   {$ENDIF}
   {$IFNDEF OPENSSL_NO_CAST}
- {$EXTERNALSYM CAST_LONG} 
+ {$EXTERNALSYM CAST_LONG}
   CAST_LONG = TIdC_ULONG;
- {$EXTERNALSYM CAST_KEY}  
+ {$EXTERNALSYM CAST_KEY}
   CAST_KEY = record
     data : array[0..(32 -1)] of CAST_LONG;
     short_key : TIdC_INT; // Use reduced rounds for short key
   end;
- {$EXTERNALSYM PCAST_KEY}   
+ {$EXTERNALSYM PCAST_KEY}
   PCAST_KEY = ^CAST_KEY;
   {$ENDIF}
   {$IFNDEF OPENSSL_NO_IDEA}
- {$EXTERNALSYM IDEA_KEY_SCHEDULE}  
+ {$EXTERNALSYM IDEA_KEY_SCHEDULE}
   IDEA_KEY_SCHEDULE = record
     data : array [0..(9-1),0..(6-1)] of IDEA_INT;
   end;
- {$EXTERNALSYM PIDEA_KEY_SCHEDULE}    
+ {$EXTERNALSYM PIDEA_KEY_SCHEDULE}
   PIDEA_KEY_SCHEDULE = ^IDEA_KEY_SCHEDULE;
   {$ENDIF}
   //ocsp.h
@@ -12951,13 +12998,13 @@ type
     issuerKeyHash : PASN1_OCTET_STRING;
     serialNumber : PASN1_INTEGER;
   end;
- {$EXTERNALSYM POCSP_CERTID}  
+ {$EXTERNALSYM POCSP_CERTID}
   POCSP_CERTID = ^OCSP_CERTID;
- {$EXTERNALSYM PPOCSP_CERTID}  
+ {$EXTERNALSYM PPOCSP_CERTID}
   PPOCSP_CERTID = ^POCSP_CERTID;
- {$EXTERNALSYM PSTACK_OF_OCSP_CERTID} 
+ {$EXTERNALSYM PSTACK_OF_OCSP_CERTID}
  {$IFDEF DEBUG_SAFESTACK}
- {$EXTERNALSYM STACK_OF_OCSP_CERTID}  
+ {$EXTERNALSYM STACK_OF_OCSP_CERTID}
   STACK_OF_OCSP_CERTID = record
     _stack: stack;
   end;
@@ -12975,13 +13022,13 @@ type
     reqCert : POCSP_CERTID;
     singleRequestExtensions : PSTACK_OF_X509_EXTENSION;
   end;
- {$EXTERNALSYM POCSP_ONEREQ}  
+ {$EXTERNALSYM POCSP_ONEREQ}
   POCSP_ONEREQ = ^OCSP_ONEREQ;
- {$EXTERNALSYM PPOCSP_ONEREQ}  
+ {$EXTERNALSYM PPOCSP_ONEREQ}
   PPOCSP_ONEREQ = ^POCSP_ONEREQ;
- {$EXTERNALSYM PSTACK_OF_OCSP_ONEREQ}    
+ {$EXTERNALSYM PSTACK_OF_OCSP_ONEREQ}
  {$IFDEF DEBUG_SAFESTACK}
- {$EXTERNALSYM STACK_OF_OCSP_ONEREQ} 
+ {$EXTERNALSYM STACK_OF_OCSP_ONEREQ}
   STACK_OF_OCSP_ONEREQ = record
     _stack: stack;
   end;
@@ -13003,37 +13050,37 @@ type
 	  requestList : PSTACK_OF_OCSP_ONEREQ;
 	  requestExtensions : PSTACK_OF_X509_EXTENSION;
   end;
- {$EXTERNALSYM POCSP_REQINFO}  
+ {$EXTERNALSYM POCSP_REQINFO}
   POCSP_REQINFO = ^OCSP_REQINFO;
- {$EXTERNALSYM PPOCSP_REQINFO}  
+ {$EXTERNALSYM PPOCSP_REQINFO}
   PPOCSP_REQINFO = ^POCSP_REQINFO;
 ///*   Signature       ::=     SEQUENCE {
 // *       signatureAlgorithm   AlgorithmIdentifier,
 // *       signature            BIT STRING,
 // *       certs                [0] EXPLICIT SEQUENCE OF Certificate OPTIONAL }
 // */
- {$EXTERNALSYM OCSP_SIGNATURE}  
+ {$EXTERNALSYM OCSP_SIGNATURE}
   OCSP_SIGNATURE = record
 	 signatureAlgorithm : PX509_ALGOR;
 	 signature : PASN1_BIT_STRING;
   	certs : PSTACK_OF_X509;
   end;
- {$EXTERNALSYM POCSP_SIGNATURE}   
+ {$EXTERNALSYM POCSP_SIGNATURE}
   POCSP_SIGNATURE = ^OCSP_SIGNATURE;
- {$EXTERNALSYM PPOCSP_SIGNATURE}   
+ {$EXTERNALSYM PPOCSP_SIGNATURE}
   PPOCSP_SIGNATURE = ^POCSP_SIGNATURE;
 ///*   OCSPRequest     ::=     SEQUENCE {
 // *       tbsRequest                  TBSRequest,
 // *       optionalSignature   [0]     EXPLICIT Signature OPTIONAL }
 // */
- {$EXTERNALSYM OCSP_REQUEST} 
+ {$EXTERNALSYM OCSP_REQUEST}
   OCSP_REQUEST = record
 	  tbsRequest : POCSP_REQINFO;
 	  optionalSignature : POCSP_SIGNATURE; //* OPTIONAL */
 	end;
- {$EXTERNALSYM POCSP_REQUEST} 	
+ {$EXTERNALSYM POCSP_REQUEST}
   POCSP_REQUEST = ^OCSP_REQUEST;
- {$EXTERNALSYM PPOCSP_REQUEST}   
+ {$EXTERNALSYM PPOCSP_REQUEST}
   PPOCSP_REQUEST = ^POCSP_REQUEST;
 ///*   OCSPResponseStatus ::= ENUMERATED {
 // *       successful            (0),      --Response has valid confirmations
@@ -13054,9 +13101,9 @@ type
 	  responseType : PASN1_OBJECT;
 	  response : PASN1_OCTET_STRING;
   end;
- {$EXTERNALSYM POCSP_RESPBYTES}  
+ {$EXTERNALSYM POCSP_RESPBYTES}
   POCSP_RESPBYTES = ^OCSP_RESPBYTES;
- {$EXTERNALSYM PPOCSP_RESPBYTES}  
+ {$EXTERNALSYM PPOCSP_RESPBYTES}
   PPOCSP_RESPBYTES = ^POCSP_RESPBYTES;
 ///*   OCSPResponse ::= SEQUENCE {
 // *      responseStatus         OCSPResponseStatus,
@@ -13067,9 +13114,9 @@ type
 	 responseStatus : PASN1_ENUMERATED;
 	 responseBytes : POCSP_RESPBYTES;
   end;
- {$EXTERNALSYM POCSP_RESPONSE}  
+ {$EXTERNALSYM POCSP_RESPONSE}
   POCSP_RESPONSE = ^OCSP_RESPONSE;
- {$EXTERNALSYM PPOCSP_RESPONSE}  
+ {$EXTERNALSYM PPOCSP_RESPONSE}
   PPOCSP_RESPONSE = ^POCSP_RESPONSE;
 // /*   ResponderID ::= CHOICE {
 // *      byName   [1] Name,
@@ -13081,21 +13128,21 @@ type
       0 : (byName : PX509_NAME);
       1 : (byKey : PASN1_OCTET_STRING);
   end;
- {$EXTERNALSYM OCSP_RESPID}  
+ {$EXTERNALSYM OCSP_RESPID}
   OCSP_RESPID = record
     _type : TIdC_INT;
     value : OCSP_RESPID_union;
   end;
- {$EXTERNALSYM POCSP_RESPID}  
+ {$EXTERNALSYM POCSP_RESPID}
   POCSP_RESPID = ^OCSP_RESPID;
- {$EXTERNALSYM PPOCSP_RESPID}  
+ {$EXTERNALSYM PPOCSP_RESPID}
   PPOCSP_RESPID = ^POCSP_RESPID;
   //*   KeyHash ::= OCTET STRING --SHA-1 hash of responder's public key
   // *                            --(excluding the tag and length fields)
   // */
- {$EXTERNALSYM PSTACK_OF_OCSP_RESPID}     
+ {$EXTERNALSYM PSTACK_OF_OCSP_RESPID}
  {$IFDEF DEBUG_SAFESTACK}
- {$EXTERNALSYM STACK_OF_OCSP_RESPID}   
+ {$EXTERNALSYM STACK_OF_OCSP_RESPID}
   STACK_OF_OCSP_RESPID = record
     _stack: stack;
   end;
@@ -13108,35 +13155,35 @@ type
 // *       revocationTime              GeneralizedTime,
 // *       revocationReason    [0]     EXPLICIT CRLReason OPTIONAL }
 // */
- {$EXTERNALSYM OCSP_REVOKEDINFO}  
+ {$EXTERNALSYM OCSP_REVOKEDINFO}
   OCSP_REVOKEDINFO = record
 	  revocationTime : PASN1_GENERALIZEDTIME;
     revocationReason : PASN1_ENUMERATED;
   end;
- {$EXTERNALSYM POCSP_REVOKEDINFO}    
+ {$EXTERNALSYM POCSP_REVOKEDINFO}
   POCSP_REVOKEDINFO = ^OCSP_REVOKEDINFO;
- {$EXTERNALSYM PPOCSP_REVOKEDINFO}    
+ {$EXTERNALSYM PPOCSP_REVOKEDINFO}
   PPOCSP_REVOKEDINFO = ^POCSP_REVOKEDINFO;
 ///*   CertStatus ::= CHOICE {
 // *       good                [0]     IMPLICIT NULL,
 // *       revoked             [1]     IMPLICIT RevokedInfo,
 // *       unknown             [2]     IMPLICIT UnknownInfo }
 // */
- {$EXTERNALSYM OCSP_CERTSTATUS_union} 
+ {$EXTERNALSYM OCSP_CERTSTATUS_union}
   OCSP_CERTSTATUS_union = record
     case Integer of
      0 : (good : PASN1_NULL);
      1 : (revoked : POCSP_REVOKEDINFO);
      2 : (unknown : PASN1_NULL);
   end;
- {$EXTERNALSYM OCSP_CERTSTATUS}   
+ {$EXTERNALSYM OCSP_CERTSTATUS}
   OCSP_CERTSTATUS = record
     _type : TIdC_INT;
     value : OCSP_CERTSTATUS_union;
   end;
- {$EXTERNALSYM POCSP_CERTSTATUS}    
+ {$EXTERNALSYM POCSP_CERTSTATUS}
   POCSP_CERTSTATUS = ^OCSP_CERTSTATUS;
- {$EXTERNALSYM PPOCSP_CERTSTATUS}    
+ {$EXTERNALSYM PPOCSP_CERTSTATUS}
   PPOCSP_CERTSTATUS = ^POCSP_CERTSTATUS;
 ///*   SingleResponse ::= SEQUENCE {
 // *      certID                       CertID,
@@ -13145,7 +13192,7 @@ type
 // *      nextUpdate           [0]     EXPLICIT GeneralizedTime OPTIONAL,
 // *      singleExtensions     [1]     EXPLICIT Extensions OPTIONAL }
 // */
- {$EXTERNALSYM OCSP_SINGLERESP}    
+ {$EXTERNALSYM OCSP_SINGLERESP}
   OCSP_SINGLERESP = record
 	  certId : POCSP_CERTID;
 	  certStatus : POCSP_CERTSTATUS;
@@ -13153,13 +13200,13 @@ type
 	  nextUpdate : PASN1_GENERALIZEDTIME;
 	  singleExtensions : PSTACK_OF_X509_EXTENSION;
   end;
- {$EXTERNALSYM POCSP_SINGLERESP}    
+ {$EXTERNALSYM POCSP_SINGLERESP}
   POCSP_SINGLERESP = ^OCSP_SINGLERESP;
- {$EXTERNALSYM PPOCSP_SINGLERESP}    
+ {$EXTERNALSYM PPOCSP_SINGLERESP}
   PPOCSP_SINGLERESP = ^POCSP_SINGLERESP;
- {$EXTERNALSYM PSTACK_OF_OCSP_SINGLERESP}   
+ {$EXTERNALSYM PSTACK_OF_OCSP_SINGLERESP}
  {$IFDEF DEBUG_SAFESTACK}
- {$EXTERNALSYM STACK_OF_OCSP_SINGLERESP} 
+ {$EXTERNALSYM STACK_OF_OCSP_SINGLERESP}
   STACK_OF_OCSP_SINGLERESP = record
     _stack: stack;
   end;
@@ -13175,7 +13222,7 @@ type
 // *      responses                SEQUENCE OF SingleResponse,
 // *      responseExtensions   [1] EXPLICIT Extensions OPTIONAL }
 // */
- {$EXTERNALSYM OCSP_RESPDATA}  
+ {$EXTERNALSYM OCSP_RESPDATA}
   OCSP_RESPDATA = record
 	  version : PASN1_INTEGER;
 	  responderId : POCSP_RESPID;
@@ -13183,9 +13230,9 @@ type
 	  responses : PSTACK_OF_OCSP_SINGLERESP;
 	  responseExtensions : PSTACK_OF_X509_EXTENSION;
 	end;
- {$EXTERNALSYM POCSP_RESPDATA}  	
+ {$EXTERNALSYM POCSP_RESPDATA}
   POCSP_RESPDATA = ^OCSP_RESPDATA;
- {$EXTERNALSYM PPOCSP_RESPDATA}    
+ {$EXTERNALSYM PPOCSP_RESPDATA}
   PPOCSP_RESPDATA = ^POCSP_RESPDATA;
 ///*   BasicOCSPResponse       ::= SEQUENCE {
 // *      tbsResponseData      ResponseData,
@@ -13209,73 +13256,73 @@ type
 //     that it doesn't do the double hashing that the RFC seems to say one
 //     should.  Therefore, all relevant functions take a flag saying which
 //     variant should be used.	-- Richard Levitte, OpenSSL team and CeloCom */
- {$EXTERNALSYM OCSP_BASICRESP} 
+ {$EXTERNALSYM OCSP_BASICRESP}
   OCSP_BASICRESP = record
 	  tbsResponseData : POCSP_RESPDATA;
 	  signatureAlgorithm : PX509_ALGOR;
 	  signature : PASN1_BIT_STRING;
 	  certs : PSTACK_OF_X509;
 	end;
- {$EXTERNALSYM POCSP_BASICRESP} 	
+ {$EXTERNALSYM POCSP_BASICRESP}
   POCSP_BASICRESP = ^OCSP_BASICRESP;
- {$EXTERNALSYM PPOCSP_BASICRESP}  
+ {$EXTERNALSYM PPOCSP_BASICRESP}
   PPOCSP_BASICRESP = ^POCSP_BASICRESP;
 ///* CrlID ::= SEQUENCE {
 // *     crlUrl               [0]     EXPLICIT IA5String OPTIONAL,
 // *     crlNum               [1]     EXPLICIT INTEGER OPTIONAL,
 // *     crlTime              [2]     EXPLICIT GeneralizedTime OPTIONAL }
 // */
- {$EXTERNALSYM OCSP_CRLID} 
+ {$EXTERNALSYM OCSP_CRLID}
   OCSP_CRLID = record
 	  crlUrl : PASN1_IA5STRING;
 	  crlNum : PASN1_INTEGER;
 	  crlTime : PASN1_GENERALIZEDTIME;
 	end;
- {$EXTERNALSYM POCSP_CRLID} 	
+ {$EXTERNALSYM POCSP_CRLID}
   POCSP_CRLID = ^OCSP_CRLID;
- {$EXTERNALSYM PPOCSP_CRLID}   
+ {$EXTERNALSYM PPOCSP_CRLID}
   PPOCSP_CRLID = ^POCSP_CRLID;
 ///* ServiceLocator ::= SEQUENCE {
 // *      issuer    Name,
 // *      locator   AuthorityInfoAccessSyntax OPTIONAL }
 // */
- {$EXTERNALSYM OCSP_SERVICELOC} 
+ {$EXTERNALSYM OCSP_SERVICELOC}
   OCSP_SERVICELOC = record
 	  issuer : PX509_NAME;
 	  locator : PSTACK_OF_ACCESS_DESCRIPTION;
   end;
-  {$EXTERNALSYM POCSP_SERVICELOC}   
+  {$EXTERNALSYM POCSP_SERVICELOC}
   POCSP_SERVICELOC = ^OCSP_SERVICELOC;
-  {$EXTERNALSYM PPOCSP_SERVICELOC} 
+  {$EXTERNALSYM PPOCSP_SERVICELOC}
   PPOCSP_SERVICELOC = ^POCSP_SERVICELOC;
   //mdc2.h
   //MDC2_CTX = record
     //this is not defined in headers so it's best use functions in the API to access the structure.
   //end;
-  {$EXTERNALSYM PMDC2_CTX} 
+  {$EXTERNALSYM PMDC2_CTX}
   PMDC2_CTX = Pointer;//^MDC2_CTX;
   //tmdiff.h
 //  MS_TM = record
     //this is not defined in headers so it's best use functions in the API to access the structure.
  // end;
-  {$EXTERNALSYM PMS_TM}  
+  {$EXTERNALSYM PMS_TM}
   PMS_TM = Pointer;//^MS_TM;
-  {$EXTERNALSYM PPMS_TM}    
+  {$EXTERNALSYM PPMS_TM}
   PPMS_TM = ^PMS_TM;
   //PEVP_PBE_KEYGEN          = Pointer;
-  {$EXTERNALSYM ppem_password_cb}   
+  {$EXTERNALSYM ppem_password_cb}
   ppem_password_cb = function (buf : PAnsiChar; size : TIdC_INT; rwflag : TIdC_INT; userdata : Pointer) : TIdC_INT; cdecl;
-  {$EXTERNALSYM PEM_ENCODE_SEAL_CTX}   
+  {$EXTERNALSYM PEM_ENCODE_SEAL_CTX}
   PEM_ENCODE_SEAL_CTX   = record
     encode : EVP_ENCODE_CTX;
     md : EVP_MD_CTX;
     cipher : EVP_CIPHER_CTX;
   end;
-  {$EXTERNALSYM PPEM_ENCODE_SEAL_CTX}     
+  {$EXTERNALSYM PPEM_ENCODE_SEAL_CTX}
   PPEM_ENCODE_SEAL_CTX     = ^PEM_ENCODE_SEAL_CTX;
-  {$EXTERNALSYM PSTACK_OF_SSL_COMP}   
+  {$EXTERNALSYM PSTACK_OF_SSL_COMP}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_SSL_COMP}    
+  {$EXTERNALSYM STACK_OF_SSL_COMP}
   STACK_OF_SSL_COMP = record
     _stack: stack;
   end;
@@ -13284,14 +13331,15 @@ type
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_SSL_COMP = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM PPSTACK_OF_SSL_COMP}   
+  {$EXTERNALSYM PPSTACK_OF_SSL_COMP}
   PPSTACK_OF_SSL_COMP = ^PSTACK_OF_SSL_COMP;
-  {$EXTERNALSYM PSSL_COMP}   
+  {$EXTERNALSYM PSSL_COMP}
   PSSL_COMP = ^SSL_COMP;
   // PASN1_UTCTIME     = Pointer;
 
 //GREGOR - spremenjana deklaracija ker se tolèe
 //  Phostent	  = Pointer;
+  {$NODEFINE Phostent2}
   Phostent2   = Pointer;
 //END GREGOR
 { This should cause problems, but I will solve them ONLY if they came ...      }
@@ -13299,47 +13347,48 @@ type
 //END REMY
    //des.h
   // des_cblock   = Integer;
-  {$EXTERNALSYM DES_cblock}     
+  {$EXTERNALSYM DES_cblock}
   DES_cblock = array[0..7] of Byte;
-  {$EXTERNALSYM PDES_cblock}   
+  {$EXTERNALSYM PDES_cblock}
   PDES_cblock = ^DES_cblock;
-  {$EXTERNALSYM const_DES_cblock}    
+  {$EXTERNALSYM const_DES_cblock}
   const_DES_cblock = DES_cblock;
-  {$EXTERNALSYM Pconst_DES_cblock}   
+  {$EXTERNALSYM Pconst_DES_cblock}
   Pconst_DES_cblock = ^const_DES_cblock;
   // des_key_schedule = Integer;
-  {$EXTERNALSYM DES_LONG}    
+  {$EXTERNALSYM DES_LONG}
   {$IFDEF DES_INT}
    DES_LONG = TIdC_UINT;
   {$ELSE}
   DES_LONG = TIdC_ULONG;
   {$ENDIF}
-  {$EXTERNALSYM des_cblock_union}  
+  {$EXTERNALSYM des_cblock_union}
   des_cblock_union = record
     case integer of
       0: (cblock: des_cblock);
       1: (deslong: array [0..1] of DES_LONG);
   end;
-  {$EXTERNALSYM des_ks_struct}  
+  {$EXTERNALSYM des_ks_struct}
   des_ks_struct = record
     ks : des_cblock_union;
     //IMPORTANT!!!
     //Since OpenSSL 0.9.7-dev, the OpenSSL  developers
     //dropped this member.  See:
     //http://marc.info/?l=openssl-dev&m=100342566217528&w=2
+
     weak_key: TIdC_INT;
   end;
-  {$EXTERNALSYM des_key_schedule}  
+  {$EXTERNALSYM des_key_schedule}
   des_key_schedule = array[0..15] of des_ks_struct;
-  {$EXTERNALSYM des_cblocks}   
+  {$EXTERNALSYM des_cblocks}
   des_cblocks     = array[0..7] of byte;
   //des_cblocks     = Integer;
   //des_old.h
-  {$EXTERNALSYM _ossl_old_des_cblock}     
+  {$EXTERNALSYM _ossl_old_des_cblock}
   _ossl_old_des_cblock = array [0..7] of byte;
-  {$EXTERNALSYM P_ossl_old_des_cblock}   
+  {$EXTERNALSYM P_ossl_old_des_cblock}
   P_ossl_old_des_cblock = ^_ossl_old_des_cblock;
-  {$EXTERNALSYM _ossl_old_des_ks_union}   
+  {$EXTERNALSYM _ossl_old_des_ks_union}
   _ossl_old_des_ks_union = record
     case Integer of
        0 : (_ : _ossl_old_des_cblock);
@@ -13347,13 +13396,13 @@ type
 		//* 8 byte longs */
        2 : (pad : array [0..1] of DES_LONG);
   end;
-  {$EXTERNALSYM _ossl_old_des_ks_struct}     
+  {$EXTERNALSYM _ossl_old_des_ks_struct}
   _ossl_old_des_ks_struct = record
     ks : _ossl_old_des_ks_union;
   end;
-  {$EXTERNALSYM _ossl_old_des_key_schedule}       
+  {$EXTERNALSYM _ossl_old_des_key_schedule}
   _ossl_old_des_key_schedule = array [0..15] of _ossl_old_des_ks_struct;
-  {$EXTERNALSYM P_ossl_old_des_key_schedule}     
+  {$EXTERNALSYM P_ossl_old_des_key_schedule}
   P_ossl_old_des_key_schedule = ^_ossl_old_des_key_schedule;
 {IMPORTANT!!!
 
@@ -13366,11 +13415,11 @@ we, should do something like this:
 
 _des_cblock = DES_cblock
 }
-  {$EXTERNALSYM _des_cblock}  
+  {$EXTERNALSYM _des_cblock}
   {$EXTERNALSYM _des_key_schedule}
-  {$IFNDEF OPENSSL_DES_LIBDES_COMPATIBILITY}    
+  {$IFNDEF OPENSSL_DES_LIBDES_COMPATIBILITY}
   _des_cblock = DES_cblock;
-  {$EXTERNALSYM _const_des_cblock}  
+  {$EXTERNALSYM _const_des_cblock}
   _const_des_cblock = const_DES_cblock;
   _des_key_schedule = DES_key_schedule;
   {$ELSE}
@@ -13380,36 +13429,36 @@ _des_cblock = DES_cblock
   _des_cblock = _ossl_old_des_cblock;
   _des_key_schedule = _ossl_old_des_key_schedule;
   {$ENDIF}
-  {$EXTERNALSYM TIdSslLockingCallback}    
+  {$EXTERNALSYM TIdSslLockingCallback}
   TIdSslLockingCallback = procedure (mode, n : TIdC_INT; Afile : PAnsiChar; line : TIdC_INT); cdecl;
-  {$EXTERNALSYM TIdSslIdCallback}    
+  {$EXTERNALSYM TIdSslIdCallback}
   TIdSslIdCallback = function: TIdC_ULONG; cdecl;
 ///ssl_locl.h structs.  These are probably internal records so don't expose
 //their members as ssl_lock.h is not included in the headers
 //JPM
-  {$EXTERNALSYM PSSL3_ENC_METHOD}  
+  {$EXTERNALSYM PSSL3_ENC_METHOD}
   PSSL3_ENC_METHOD = pointer;//^SSL3_ENC_METHOD;
 //  SSL3_ENC_METHOD = record
 //  end;
-  {$EXTERNALSYM PCERT}  
+  {$EXTERNALSYM PCERT}
   PCERT = pointer;
-  {$EXTERNALSYM PPCERT}    
+  {$EXTERNALSYM PPCERT}
   PPCERT = ^PCERT;
-  {$EXTERNALSYM PSESS_CERT}     
+  {$EXTERNALSYM PSESS_CERT}
   PSESS_CERT = pointer;
   //pkcs7.h
-  {$EXTERNALSYM PPKCS7}     
+  {$EXTERNALSYM PPKCS7}
   PPKCS7 = ^PKCS7;
-  {$EXTERNALSYM PPPKCS7}   
+  {$EXTERNALSYM PPPKCS7}
   PPPKCS7 = ^PPKCS7;
-  {$EXTERNALSYM PKCS7_ISSUER_AND_SERIAL}   
+  {$EXTERNALSYM PKCS7_ISSUER_AND_SERIAL}
   PKCS7_ISSUER_AND_SERIAL = record
     issuer : PX509_NAME;
     serial : PASN1_INTEGER;
   end;
-  {$EXTERNALSYM PPKCS7_ISSUER_AND_SERIAL}    
+  {$EXTERNALSYM PPKCS7_ISSUER_AND_SERIAL}
   PPKCS7_ISSUER_AND_SERIAL = ^PKCS7_ISSUER_AND_SERIAL;
-  {$EXTERNALSYM PKCS7_SIGNER_INFO}    
+  {$EXTERNALSYM PKCS7_SIGNER_INFO}
   PKCS7_SIGNER_INFO = record
     version : PASN1_INTEGER;  // version 1
     issuer_and_serial : PPKCS7_ISSUER_AND_SERIAL;
@@ -13421,11 +13470,11 @@ _des_cblock = DES_cblock
     // The private key to sign with
     pkey : PEVP_PKEY;
   end;
-  {$EXTERNALSYM PPKCS7_SIGNER_INFO}   
+  {$EXTERNALSYM PPKCS7_SIGNER_INFO}
   PPKCS7_SIGNER_INFO = ^PKCS7_SIGNER_INFO;
-  {$EXTERNALSYM PSTACK_OF_PKCS7_SIGNER_INFO}  
+  {$EXTERNALSYM PSTACK_OF_PKCS7_SIGNER_INFO}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_PKCS7_SIGNER_INFO}    
+  {$EXTERNALSYM STACK_OF_PKCS7_SIGNER_INFO}
   STACK_OF_PKCS7_SIGNER_INFO = record
     _stack: stack;
   end;
@@ -13434,7 +13483,7 @@ _des_cblock = DES_cblock
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_PKCS7_SIGNER_INFO = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM PKCS7_RECIP_INFO}   
+  {$EXTERNALSYM PKCS7_RECIP_INFO}
   PKCS7_RECIP_INFO = record
     version : PASN1_INTEGER;  // version 0
     issuer_and_serial : PPKCS7_ISSUER_AND_SERIAL;
@@ -13442,9 +13491,9 @@ _des_cblock = DES_cblock
     enc_key : PASN1_OCTET_STRING;
     cert : PX509; // get the pub-key from this
   end;
-  {$EXTERNALSYM PSTACK_OF_PKCS7_RECIP_INFO}     
+  {$EXTERNALSYM PSTACK_OF_PKCS7_RECIP_INFO}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_PKCS7_RECIP_INFO}   
+  {$EXTERNALSYM STACK_OF_PKCS7_RECIP_INFO}
   STACK_OF_PKCS7_RECIP_INFO = record
     _stack: stack;
   end;
@@ -13453,9 +13502,9 @@ _des_cblock = DES_cblock
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_PKCS7_RECIP_INFO = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM PPSTACK_OF_PKCS7_RECIP_INFO}     
+  {$EXTERNALSYM PPSTACK_OF_PKCS7_RECIP_INFO}
   PPSTACK_OF_PKCS7_RECIP_INFO = ^PSTACK_OF_PKCS7_RECIP_INFO;
-  {$EXTERNALSYM PKCS7_SIGNED}     
+  {$EXTERNALSYM PKCS7_SIGNED}
   PKCS7_SIGNED = record
     version : PASN1_INTEGER;  // version 1
     md_algs : PSTACK_OF_X509_ALGOR; // md used
@@ -13464,31 +13513,31 @@ _des_cblock = DES_cblock
     signer_info : PSTACK_OF_PKCS7_SIGNER_INFO;
     contents : PPKCS7;
   end;
-  {$EXTERNALSYM PPKCS7_SIGNED}  
+  {$EXTERNALSYM PPKCS7_SIGNED}
   PPKCS7_SIGNED = ^PKCS7_SIGNED;
-  {$EXTERNALSYM PPPKCS7_SIGNED}    
+  {$EXTERNALSYM PPPKCS7_SIGNED}
   PPPKCS7_SIGNED = ^PPKCS7_SIGNED;
-  {$EXTERNALSYM PKCS7_ENC_CONTENT}    
+  {$EXTERNALSYM PKCS7_ENC_CONTENT}
   PKCS7_ENC_CONTENT = record
     content_type : PASN1_OBJECT;
     algorithm : PX509_ALGOR;
     enc_data : PASN1_OCTET_STRING;  // [ 0 ]
     cipher : PEVP_CIPHER;
   end;
-  {$EXTERNALSYM PPKCS7_ENC_CONTENT}    
+  {$EXTERNALSYM PPKCS7_ENC_CONTENT}
   PPKCS7_ENC_CONTENT = ^PKCS7_ENC_CONTENT;
-  {$EXTERNALSYM PKCS7_ENVELOPE}     
+  {$EXTERNALSYM PKCS7_ENVELOPE}
   PKCS7_ENVELOPE = record
     version : PASN1_INTEGER;  // version 0
     recipientinfo : PSTACK_OF_PKCS7_RECIP_INFO;
     enc_data : PPKCS7_ENC_CONTENT;
   end;
-  {$EXTERNALSYM PPKCS7_ENVELOPE}     
+  {$EXTERNALSYM PPKCS7_ENVELOPE}
   PPKCS7_ENVELOPE = ^PKCS7_ENVELOPE;
   // OpenSSL developer notes
   // The above structure is very very similar to PKCS7_SIGN_ENVELOPE.
   // How about merging the two
-  {$EXTERNALSYM PKCS7_SIGN_ENVELOPE}      
+  {$EXTERNALSYM PKCS7_SIGN_ENVELOPE}
   PKCS7_SIGN_ENVELOPE = record
     version : PASN1_INTEGER;  // version 1
     md_algs : PSTACK_OF_X509_ALGOR; // md used
@@ -13498,25 +13547,25 @@ _des_cblock = DES_cblock
     enc_data : PPKCS7_ENC_CONTENT;
     recipientinfo : PSTACK_OF_PKCS7_RECIP_INFO;
   end;
-  {$EXTERNALSYM PPKCS7_SIGN_ENVELOPE}   
+  {$EXTERNALSYM PPKCS7_SIGN_ENVELOPE}
   PPKCS7_SIGN_ENVELOPE = ^PKCS7_SIGN_ENVELOPE;
-  {$EXTERNALSYM PKCS7_DIGEST}   
+  {$EXTERNALSYM PKCS7_DIGEST}
   PKCS7_DIGEST = record
     version : PASN1_INTEGER;  // version 0
     md : PX509_ALGOR;   // md used
     contents : PPKCS7;
     digest : PASN1_OCTET_STRING;
   end;
-  {$EXTERNALSYM PPKCS7_DIGEST}     
+  {$EXTERNALSYM PPKCS7_DIGEST}
   PPKCS7_DIGEST = ^PKCS7_DIGEST;
-  {$EXTERNALSYM PKCS7_ENCRYPT}    
+  {$EXTERNALSYM PKCS7_ENCRYPT}
   PKCS7_ENCRYPT = record
     version : PASN1_INTEGER;  // version 0
     enc_data : PPKCS7_ENC_CONTENT;
   end;
-  {$EXTERNALSYM PPKCS7_ENCRYPT}   
+  {$EXTERNALSYM PPKCS7_ENCRYPT}
   PPKCS7_ENCRYPT = ^PKCS7_ENCRYPT;
-  {$EXTERNALSYM PKCS7_union}     
+  {$EXTERNALSYM PKCS7_union}
   PKCS7_union = record
     // content as defined by the type
     // all encryption/message digests are applied to the 'contents',
@@ -13536,7 +13585,7 @@ _des_cblock = DES_cblock
       // NID_pkcs7_encrypted
       6 : (encrypted : PPKCS7_ENCRYPT);
   end;
-  {$EXTERNALSYM PKCS7}      
+  {$EXTERNALSYM PKCS7}
   PKCS7 = record
     // The following is non NULL if it contains ASN1 encoding of
     // this structure
@@ -13553,9 +13602,9 @@ _des_cblock = DES_cblock
     // leaving out the 'type' field.
     d : PKCS7_union;
   end;
-  {$EXTERNALSYM PSTACK_OF_PKCS7}      
+  {$EXTERNALSYM PSTACK_OF_PKCS7}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_PKCS7}   
+  {$EXTERNALSYM STACK_OF_PKCS7}
   STACK_OF_PKCS7 = record
     _stack: stack;
   end;
@@ -13565,33 +13614,33 @@ _des_cblock = DES_cblock
   PSTACK_OF_PKCS7 = PSTACK;
   {$ENDIF}
   //pkcs12.h
-  {$EXTERNALSYM PKCS12_MAC_DATA}    
+  {$EXTERNALSYM PKCS12_MAC_DATA}
   PKCS12_MAC_DATA = record
     dinfo : PX509_SIG;
     salt : PASN1_OCTET_STRING;
     iter : PASN1_INTEGER; // defaults to 1
   end;
-  {$EXTERNALSYM PPKCS12_MAC_DATA}     
+  {$EXTERNALSYM PPKCS12_MAC_DATA}
   PPKCS12_MAC_DATA = ^PKCS12_MAC_DATA;
  // PSESS_CERT = ^SESS_CERT;
-  {$EXTERNALSYM PPKCS12} 
+  {$EXTERNALSYM PPKCS12}
   PPKCS12 = ^PKCS12;
-  {$EXTERNALSYM PKCS12}   
+  {$EXTERNALSYM PKCS12}
   PKCS12 = record
     version : PASN1_INTEGER;
     mac : PPKCS12_MAC_DATA;
     authsafes : PPKCS7;
   end;
   //ts.h
-  {$EXTERNALSYM PSTACK_OF_EVP_MD}  
-  {$EXTERNALSYM PSTACK_OF_ASN1_UTF8STRING}       
+  {$EXTERNALSYM PSTACK_OF_EVP_MD}
+  {$EXTERNALSYM PSTACK_OF_ASN1_UTF8STRING}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_EVP_MD}   
+  {$EXTERNALSYM STACK_OF_EVP_MD}
   STACK_OF_EVP_MD = record
     _stack: stack;
   end;
   PSTACK_OF_EVP_MD = ^STACK_OF_EVP_MD;
-  {$EXTERNALSYM STACK_OF_ASN1_UTF8STRING}    
+  {$EXTERNALSYM STACK_OF_ASN1_UTF8STRING}
   STACK_OF_ASN1_UTF8STRING = record
     _stack: stack;
   end;
@@ -13606,9 +13655,9 @@ _des_cblock = DES_cblock
 	 hash_algo : PX509_ALGOR;
 	 hashed_msg : PASN1_OCTET_STRING;
   end;
-  {$EXTERNALSYM PTS_MSG_IMPRINT}    
+  {$EXTERNALSYM PTS_MSG_IMPRINT}
   PTS_MSG_IMPRINT = ^TS_MSG_IMPRINT;
-  {$EXTERNALSYM TS_REQ}    
+  {$EXTERNALSYM TS_REQ}
   TS_REQ = record
 	  version : PASN1_INTEGER;
 	  msg_imprint : PTS_MSG_IMPRINT;
@@ -13617,17 +13666,17 @@ _des_cblock = DES_cblock
     cert_req : ASN1_BOOLEAN;		//* DEFAULT FALSE */
 	  extensions : PSTACK_OF_X509_EXTENSION;	//* [0] OPTIONAL */
   end;
-  {$EXTERNALSYM PTS_REQ} 
+  {$EXTERNALSYM PTS_REQ}
   PTS_REQ = ^TS_REQ;
-  {$EXTERNALSYM TS_ACCURACY}   
+  {$EXTERNALSYM TS_ACCURACY}
   TS_ACCURACY = record
 	  seconds : PASN1_INTEGER;
 	  millis : PASN1_INTEGER;
 	  micros : PASN1_INTEGER;
   end;
-  {$EXTERNALSYM PTS_ACCURACY}    
+  {$EXTERNALSYM PTS_ACCURACY}
   PTS_ACCURACY = ^TS_ACCURACY;
-  {$EXTERNALSYM TS_TST_INFO}    
+  {$EXTERNALSYM TS_TST_INFO}
   TS_TST_INFO = record
 	  version : PASN1_INTEGER;
 	  policy_id : PASN1_OBJECT;
@@ -13640,41 +13689,41 @@ _des_cblock = DES_cblock
 	  tsa : PGENERAL_NAME;
     extensions : PSTACK_OF_X509_EXTENSION;
   end;
-  {$EXTERNALSYM PTS_TST_INFO}     
+  {$EXTERNALSYM PTS_TST_INFO}
   PTS_TST_INFO = ^TS_TST_INFO;
-  {$EXTERNALSYM TS_STATUS_INFO}   
+  {$EXTERNALSYM TS_STATUS_INFO}
   TS_STATUS_INFO = record
 	  status : PASN1_INTEGER;
 	  text : PSTACK_OF_ASN1_UTF8STRING;
 	  failure_info : PASN1_BIT_STRING;
   end;
-  {$EXTERNALSYM PTS_STATUS_INFO}   
+  {$EXTERNALSYM PTS_STATUS_INFO}
   PTS_STATUS_INFO = ^TS_STATUS_INFO;
-  {$EXTERNALSYM TS_RESP}   
+  {$EXTERNALSYM TS_RESP}
   TS_RESP = record
   	status_info : PTS_STATUS_INFO;
 	  token : PPKCS7;
 	  tst_info : PTS_TST_INFO;
   end;
-  {$EXTERNALSYM PTS_RESP}    
+  {$EXTERNALSYM PTS_RESP}
   PTS_RESP = ^TS_RESP;
   {$EXTERNALSYM ESS_ISSUER_SERIAL}
   ESS_ISSUER_SERIAL = record
   	issuer : PSTACK_OF_GENERAL_NAME;
     serial : PASN1_INTEGER;
   end;
-  {$EXTERNALSYM PESS_ISSUER_SERIAL}  
+  {$EXTERNALSYM PESS_ISSUER_SERIAL}
   PESS_ISSUER_SERIAL = ^ESS_ISSUER_SERIAL;
   {$EXTERNALSYM ESS_CERT_ID}
   ESS_CERT_ID = record
 	  hash : PASN1_OCTET_STRING;	//* Always SHA-1 digest. */
 	  issuer_serial : PESS_ISSUER_SERIAL;
   end;
-  {$EXTERNALSYM PESS_CERT_ID} 
+  {$EXTERNALSYM PESS_CERT_ID}
   PESS_CERT_ID = ^ESS_CERT_ID;
-  {$EXTERNALSYM PSTACK_OF_ESS_CERT_ID}   
+  {$EXTERNALSYM PSTACK_OF_ESS_CERT_ID}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_ESS_CERT_ID}    
+  {$EXTERNALSYM STACK_OF_ESS_CERT_ID}
   STACK_OF_ESS_CERT_ID = record
     _stack: stack;
   end;
@@ -13683,14 +13732,14 @@ _des_cblock = DES_cblock
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_ESS_CERT_ID = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM ESS_SIGNING_CERT}    
+  {$EXTERNALSYM ESS_SIGNING_CERT}
   ESS_SIGNING_CERT = record
 	 cert_ids : PSTACK_OF_ESS_CERT_ID;
 	 policy_info : PSTACK_OF_POLICYINFO;
   end;
-  {$EXTERNALSYM PESS_SIGNING_CERT}   
+  {$EXTERNALSYM PESS_SIGNING_CERT}
   PESS_SIGNING_CERT = ^ESS_SIGNING_CERT;
-  {$EXTERNALSYM PTS_resp_ctx} 
+  {$EXTERNALSYM PTS_resp_ctx}
   PTS_resp_ctx = ^TS_resp_ctx;
 //* This must return a unique number less than 160 bits long. */
 //typedef ASN1_INTEGER *(*TS_serial_cb)(struct TS_resp_ctx *, void *);
@@ -13710,7 +13759,7 @@ _des_cblock = DES_cblock
 //typedef	int (*TS_extension_cb)(struct TS_resp_ctx *, X509_EXTENSION *, void *);
   {$EXTERNALSYM TS_extension_cb}
   TS_extension_cb = function (p1 : PTS_resp_ctx; p2 : PX509_EXTENSION; p3 : Pointer) : TIdC_INT cdecl;
-  {$EXTERNALSYM TS_RESP_CTX}  
+  {$EXTERNALSYM TS_RESP_CTX}
   TS_RESP_CTX = record
 		signer_cert : PX509;
 		signer_key : PEVP_PKEY;
@@ -13740,7 +13789,7 @@ _des_cblock = DES_cblock
 		response : PTS_RESP;
 		tst_info : PTS_TST_INFO;
   end;
-  {$EXTERNALSYM TS_VERIFY_CTX}    
+  {$EXTERNALSYM TS_VERIFY_CTX}
   TS_VERIFY_CTX = record
   	//* Set this to the union of TS_VFY_... flags you want to carry out. */
 		flags : TIdC_UNSIGNED;
@@ -13767,12 +13816,12 @@ _des_cblock = DES_cblock
 	//* Must be set only with TS_VFY_TSA_NAME. */
     tsa_name : PGENERAL_NAME;
   end;
-  {$EXTERNALSYM PTS_VERIFY_CTX}    
+  {$EXTERNALSYM PTS_VERIFY_CTX}
   PTS_VERIFY_CTX = ^TS_VERIFY_CTX;
   //comp.h
-  {$EXTERNALSYM PCOMP_CTX}   
+  {$EXTERNALSYM PCOMP_CTX}
   PCOMP_CTX = ^COMP_CTX;
-  {$EXTERNALSYM COMP_METHOD}    
+  {$EXTERNALSYM COMP_METHOD}
   COMP_METHOD = record
     _type : TIdC_INT; // NID for compression library
     name : PAnsiChar; // A text string to identify the library
@@ -13788,9 +13837,9 @@ _des_cblock = DES_cblock
     ctrl : function : TIdC_INT; cdecl;
     callback_ctrl : function : TIdC_INT; cdecl;
   end;
-  {$EXTERNALSYM PCOMP_METHOD}  
+  {$EXTERNALSYM PCOMP_METHOD}
   PCOMP_METHOD = ^COMP_METHOD;
-  {$EXTERNALSYM COMP_CTX}   
+  {$EXTERNALSYM COMP_CTX}
   COMP_CTX = record
     meth : PCOMP_METHOD;
     compress_in : TIdC_ULONG;
@@ -13806,12 +13855,12 @@ _des_cblock = DES_cblock
   in.
   }
   {$IFNDEF OPENSSL_NO_KRB5}
-  {$EXTERNALSYM KSSL_ERR}    
+  {$EXTERNALSYM KSSL_ERR}
   KSSL_ERR = record
     reason : TIdC_INT;
       text : array [0..KSSL_ERR_MAX] of Char;
   end;
-  {$EXTERNALSYM PKSSL_CTX}     
+  {$EXTERNALSYM PKSSL_CTX}
     {I am not going to do anything to define this because it uses things in the
     Kerberos API.  Since there's no support for Kerberos, I'm leaving it empty.
     We only need the pointer anyway}
@@ -13819,9 +13868,9 @@ _des_cblock = DES_cblock
   PKSSL_CTX = Pointer; //^KSSL_CTX;
   {$ENDIF}
   //ssl.h
-  {$EXTERNALSYM PSSL_CIPHER}    
+  {$EXTERNALSYM PSSL_CIPHER}
   PSSL_CIPHER = ^SSL_CIPHER;
-  {$EXTERNALSYM SSL_CIPHER}   
+  {$EXTERNALSYM SSL_CIPHER}
   SSL_CIPHER = record
     valid : TIdC_INT;
     name: PAnsiChar;  // text name
@@ -13834,9 +13883,9 @@ _des_cblock = DES_cblock
     mask: TIdC_ULONG;   // used for matching
     mask_strength: TIdC_ULONG;  // also used for matching
   end;
-  {$EXTERNALSYM PSTACK_OF_SSL_CIPHER}   
+  {$EXTERNALSYM PSTACK_OF_SSL_CIPHER}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_SSL_CIPHER}    
+  {$EXTERNALSYM STACK_OF_SSL_CIPHER}
   STACK_OF_SSL_CIPHER = record
     _stack: STACK;
   end;
@@ -13845,7 +13894,7 @@ _des_cblock = DES_cblock
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_SSL_CIPHER = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM SSL_SESSION}   
+  {$EXTERNALSYM SSL_SESSION}
   SSL_SESSION = record
     ssl_version : TIdC_INT; // what ssl version session info is being kept in here?
     // only really used in SSLv2
@@ -13872,20 +13921,20 @@ _des_cblock = DES_cblock
     tlsext_hostname : PAnsiChar;
  //* RFC4507 info */
     tlsext_tick : PAnsiChar;//* Session ticket */
-    tlsext_ticklen : size_t;//* Session ticket length */ 
+    tlsext_ticklen : size_t;//* Session ticket length */
     tlsext_tick_lifetime_hint : TIdC_LONG;//* Session lifetime hint in seconds */
     {$ENDIF}
   end;
-  {$EXTERNALSYM PSSL_SESSION}     
+  {$EXTERNALSYM PSSL_SESSION}
   PSSL_SESSION = ^SSL_SESSION;
   // typedef struct ssl_method_st
-  {$EXTERNALSYM PSSL_CTX}     
+  {$NODEFINE PSSL_CTX}
   PSSL_CTX = ^SSL_CTX;
-  {$EXTERNALSYM SSL_METHOD_PROC}    
+  {$EXTERNALSYM SSL_METHOD_PROC}
   SSL_METHOD_PROC = procedure; cdecl;
-  {$EXTERNALSYM PSSL_METHOD}   
+  {$NODEFINE PSSL_METHOD}
   PSSL_METHOD = ^SSL_METHOD;
-  {$EXTERNALSYM SSL_METHOD}   
+  {$NODEFINE SSL_METHOD}
   SSL_METHOD = record
      version: TIdC_INT;
      ssl_new: function(s: PSSL): TIdC_INT; cdecl;
@@ -13917,7 +13966,7 @@ _des_cblock = DES_cblock
      ssl_callback_ctrl: function(s: PSSL; cb_id: TIdC_INT; fp: SSL_METHOD_PROC): TIdC_LONG; cdecl;
      ssl_ctx_callback_ctrl: function(s: PSSL_CTX; cb_id:TIdC_INT; fp: SSL_METHOD_PROC): TIdC_LONG; cdecl;
   end;
-  {$EXTERNALSYM PPSSL_METHOD}    
+  {$EXTERNALSYM PPSSL_METHOD}
   PPSSL_METHOD  =^PSSL_METHOD;
 // This callback type is used inside SSL_CTX, SSL, and in the functions that set
 // them. It is used to override the generation of SSL/TLS session IDs in a
@@ -13932,9 +13981,9 @@ _des_cblock = DES_cblock
 // supposed to be fixed at 16 bytes so the id will be padded after the callback
 // returns in this case. It is also an error for the callback to set the size to
 // zero.
-  {$EXTERNALSYM PGEN_SESSION_CB}  
+  {$EXTERNALSYM PGEN_SESSION_CB}
   PGEN_SESSION_CB = function (const SSL : PSSL; id : PByte; id_len : TIdC_UINT) : TIdC_INT; cdecl;
-  {$EXTERNALSYM SSL_COMP}   
+  {$EXTERNALSYM SSL_COMP}
   SSL_COMP = record
     id : TIdC_INT;
     name : PAnsiChar;
@@ -13944,9 +13993,9 @@ _des_cblock = DES_cblock
     method : PAnsiChar;
     {$ENDIF}
   end;
-  {$EXTERNALSYM PSTACK_OF_COMP}    
+  {$EXTERNALSYM PSTACK_OF_COMP}
   {$IFDEF DEBUG_SAFESTACK}
-  {$EXTERNALSYM STACK_OF_COMP}   
+  {$EXTERNALSYM STACK_OF_COMP}
   STACK_OF_COMP = record
     _stack: stack;
   end;
@@ -13955,22 +14004,22 @@ _des_cblock = DES_cblock
   //I think the DECLARE_STACK_OF macro is empty
   PSTACK_OF_COMP = PSTACK;
   {$ENDIF}
-  {$EXTERNALSYM PSSL_CTEX_tlsext_servername_callback}    
+  {$EXTERNALSYM PSSL_CTEX_tlsext_servername_callback}
   PSSL_CTEX_tlsext_servername_callback = function(ssl : PSSL; Para1 : TIdC_INT; Para2 : Pointer) : TIdC_INT; cdecl;
-  {$EXTERNALSYM PSSL_CTX_info_callback}   
+  {$EXTERNALSYM PSSL_CTX_info_callback}
   PSSL_CTX_info_callback = procedure (const ssl : PSSL; _type, val : TIdC_INT); cdecl; // used if SSL's info_callback is NULL
 //int (*tlsext_ticket_key_cb)(SSL *ssl,
 //					unsigned char *name, unsigned char *iv,
 //					EVP_CIPHER_CTX *ectx,
 //					HMAC_CTX *hctx, int enc);
-  {$EXTERNALSYM Ptlsext_ticket_key_cb}  
+  {$EXTERNALSYM Ptlsext_ticket_key_cb}
   Ptlsext_ticket_key_cb = function (ssl : PSSL; name, iv : PAnsiChar;
     ectx : PEVP_CIPHER_CTX;
     hctx : PHMAC_CTX; enc : TIdC_INT) : TIdC_INT; cdecl;
 //	int (*tlsext_status_cb)(SSL *ssl, void *arg);
-  {$EXTERNALSYM Ptlsext_status_cb} 
+  {$EXTERNALSYM Ptlsext_status_cb}
   Ptlsext_status_cb = function (ssl : PSSL; arg : Pointer) : TIdC_INT; cdecl;
-  {$EXTERNALSYM SSL_CTX_stats}   
+  {$EXTERNALSYM SSL_CTX_stats}
   SSL_CTX_stats = record
     sess_connect: TIdC_INT;  // SSL new conn - started
     sess_connect_renegotiate: TIdC_INT;  // SSL reneg - requested
@@ -13989,7 +14038,7 @@ _des_cblock = DES_cblock
                           // supplying session-id's from other
                           // processes - spooky :-)
   end;
-  {$EXTERNALSYM SSL_CTX}    
+  {$NODEFINE SSL_CTX}
   SSL_CTX = record
     method: PSSL_METHOD;
     cipher_list: PSTACK_OF_SSL_CIPHER;
@@ -14099,13 +14148,13 @@ _des_cblock = DES_cblock
   PSSL2_STATE = ^SSL2_STATE;
   {$EXTERNALSYM PSSL3_STATE}    
   PSSL3_STATE = ^SSL3_STATE;
-  {$EXTERNALSYM SSL_CTX}    
+  {$EXTERNALSYM PDTLS1_STATE}
   PDTLS1_STATE = ^DTLS1_STATE;
 //* TLS extension debug callback */
   {$EXTERNALSYM PSSL_tlsext_debug_cb} 
   PSSL_tlsext_debug_cb = procedure (s : PSSL; client_server : TIdC_INT; 
     _type : TIdC_INT; data : PAnsiChar; len : TIdC_INT; arg : Pointer); cdecl;
-  {$EXTERNALSYM SSL}     
+  {$NODEFINE SSL}     
   SSL = record
     // protocol version
     // (one of SSL2_VERSION, SSL3_VERSION, TLS1_VERSION, DTLS1_VERSION)
@@ -14602,7 +14651,7 @@ type
   Tsk_pop_free_func = procedure (p : Pointer); cdecl;
   {$EXTERNALSYM SSL_callback_ctrl_fp}
   SSL_callback_ctrl_fp = procedure (para1 : PBIO; para2 : TIdC_INT;
-    para3 : PAnsiChar; para4 : TIdC_INT; para5, para6 : TIdC_INT); cdecl;
+    para3 : PAnsiChar; para4 : TIdC_INT; para5, para6 : TIdC_LONG); cdecl;
   {$EXTERNALSYM TCRYPTO_THREADID_set_callback_threadid_func}
   TCRYPTO_THREADID_set_callback_threadid_func = procedure (id : PCRYPTO_THREADID) cdecl;
 
@@ -14711,7 +14760,7 @@ var
     {$EXTERNALSYM BIO_int_ctrl}
   BIO_int_ctrl : function(bp : PBIO; cmd : TIdC_INT; larg : TIdC_LONG; iArg : TIdC_INT) : TIdC_LONG cdecl = nil;
     {$EXTERNALSYM BIO_callback_ctrl}
-  BIO_callback_ctrl : function(b : PBIO; cmd : TIdC_INT; fp : SSL_callback_ctrl_fp ) : TIdC_INT cdecl = nil;
+  BIO_callback_ctrl : function(b : PBIO; cmd : TIdC_INT; fp : SSL_callback_ctrl_fp ) : TIdC_LONG cdecl = nil;
     {$EXTERNALSYM BIO_new_file}
   BIO_new_file : function(const filename: PAnsiChar; const mode: PAnsiChar): PBIO cdecl = nil;
     {$EXTERNALSYM BIO_puts}
@@ -14724,6 +14773,8 @@ var
   BN_hex2bn: function(var n:PBIGNUM; const Str: PAnsiChar): TIdC_INT cdecl = nil;
   {$EXTERNALSYM BN_bn2hex}
   BN_bn2hex: function(const n:PBIGNUM): PAnsiChar cdecl = nil;
+  {$EXTERNALSYM DH_free}
+  DH_free : procedure(dh: PDH) cdecl = nil;
 
 
   {$IFNDEF SSLEAY_MACROS}
@@ -14808,7 +14859,7 @@ var
   EVP_DigestInit_ex : function (ctx : PEVP_MD_CTX; const AType : PEVP_MD; impl : PENGINE) : TIdC_Int cdecl = nil;
 //int	EVP_DigestUpdate(EVP_MD_CTX *ctx,const void *d,
 //			 size_t cnt);
- {$EXTERNALSYM EVP_DigestInit_ex}
+ {$EXTERNALSYM EVP_DigestUpdate}
   EVP_DigestUpdate : function (ctx : PEVP_MD_CTX; d : Pointer; cnt : size_t) : TIdC_Int cdecl = nil;
  {$EXTERNALSYM EVP_DigestFinal_ex}
   //int	EVP_DigestFinal_ex(EVP_MD_CTX *ctx,unsigned char *md,unsigned int *s);
@@ -15016,7 +15067,7 @@ var
   {$EXTERNALSYM SSL_write}
   SSL_write : function(ssl: PSSL; const buf: Pointer; num: TIdC_INT): TIdC_INT cdecl = nil;
   {$EXTERNALSYM SSL_pending}
-  SSL_pending : function(ssl : PSSL) : TIdC_INT; cdecl;
+  SSL_pending : function(ssl : PSSL) : TIdC_INT cdecl = nil;
   {$EXTERNALSYM SSL_CTX_ctrl}
   //long  SSL_CTX_ctrl(SSL_CTX *ctx,int cmd, long larg, void *parg);
   SSL_CTX_ctrl : function(ssl: PSSL_CTX; cmd: TIdC_INT; larg: TIdC_LONG; parg: Pointer): TIdC_LONG cdecl = nil;
@@ -15078,9 +15129,13 @@ var
   // SSL_set_app_data : function(s: PSSL; arg: Pointer): Integer cdecl = nil;
   // SSL_get_app_data : function(s: PSSL): Pointer cdecl = nil;
   {$EXTERNALSYM SSL_SESSION_get_id}
-  SSL_SESSION_get_id : function(const s: PSSL_SESSION; id: PPAnsiChar; length: PIdC_INT): PAnsiChar cdecl = nil;
+  SSL_SESSION_get_id : function(const s: PSSL_SESSION; length: PIdC_UINT): PAnsiChar cdecl = nil;
+  {$EXTERNALSYM SSL_copy_session_id}
+  SSL_copy_session_id : procedure(sslTo: PSSL; const sslFrom: PSSL) cdecl = nil;
   {$EXTERNALSYM X509_NAME_oneline}
   X509_NAME_oneline : function(a: PX509_NAME; buf: PAnsiChar; size: TIdC_INT): PAnsiChar cdecl = nil;
+  {$EXTERNALSYM X509_NAME_cmp}
+  X509_NAME_cmp : function(const a, b: PX509_NAME): TIdC_INT cdecl = nil;
   {$EXTERNALSYM X509_NAME_hash}
   X509_NAME_hash : function(x: PX509_NAME): TIdC_ULONG cdecl = nil;
   {$EXTERNALSYM X509_set_issuer_name}
@@ -15336,7 +15391,7 @@ type
 
 var
  {$EXTERNALSYM sk_X509_NAME_new}
-  sk_X509_NAME_new : Tsk_X509_NAME_new absolute sk_new;
+  sk_X509_NAME_new: Tsk_X509_NAME_new absolute sk_new;
   {$EXTERNALSYM sk_X509_NAME_new_null}
   sk_X509_NAME_new_null : Tsk_X509_NAME_new_null absolute sk_new_null;
  {$EXTERNALSYM sk_X509_NAME_free}
@@ -15424,7 +15479,7 @@ function SSL_CTX_set_options(ctx: PSSL_CTX; op: TIdC_LONG):TIdC_LONG;
 function SSL_CTX_clear_options(ctx : PSSL_CTX; op : TIdC_LONG):TIdC_LONG;
  {$EXTERNALSYM SSL_CTX_get_options}
 function SSL_CTX_get_options(ctx: PSSL_CTX) : TIdC_LONG;
- {$EXTERNALSYM SSL_CTX_clear_options}
+ {$EXTERNALSYM SSL_set_options}
 function SSL_set_options(ssl: PSSL; op : TIdC_LONG): TIdC_LONG;
  {$EXTERNALSYM SSL_clear_mode}
 function SSL_clear_mode(ssl : PSSL; op : TIdC_LONG) : TIdC_LONG;
@@ -15842,7 +15897,7 @@ procedure COMPerr(const f,r : TIdC_INT);
 procedure ECDSAerr(const f,r : TIdC_INT);
  {$EXTERNALSYM ECDHerr}
 procedure ECDHerr(const f,r : TIdC_INT);
- {$EXTERNALSYM ECDHerr}
+ {$EXTERNALSYM STOREerr}
 procedure STOREerr(const f,r : TIdC_INT);
  {$EXTERNALSYM FIPSerr}
 procedure FIPSerr(const f,r : TIdC_INT);
@@ -15869,8 +15924,8 @@ type
     FErrorCode : TIdC_INT;
     FRetCode : TIdC_INT;
   public
-    class procedure RaiseException(s: PSSL;
-      const ARetCode : TIdC_INT; const AMsg : String = '');
+    class procedure RaiseException(ASSL: Pointer; const ARetCode : TIdC_INT; const AMsg : String = '');
+    class procedure RaiseExceptionCode(const AErrCode, ARetCode : TIdC_INT; const AMsg : String = '');
     property ErrorCode : TIdC_INT read FErrorCode;
     property RetCode : TIdC_INT read FRetCode;
   end;
@@ -15893,6 +15948,16 @@ type
 
 function IsOpenSSL_1x : Boolean;
 
+function RAND_bytes(buf : PAnsiChar; num : integer) : integer;
+function RAND_pseudo_bytes(buf : PAnsiChar; num : integer) : integer;
+procedure RAND_seed(buf : PAnsiChar; num : integer);
+procedure RAND_add(buf : PAnsiChar; num : integer; entropy : integer);
+function RAND_status() : integer;
+{$IFDEF SYS_WIN}
+function RAND_event(iMsg : UINT; wp : wparam; lp : lparam) : integer;
+procedure RAND_screen();
+{$ENDIF}
+
 implementation
 
 uses
@@ -15903,9 +15968,6 @@ uses
   IdStack
   {$IFDEF FPC}
     , DynLibs  // better add DynLibs only for fpc
-  {$ENDIF}
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
-  , Windows
   {$ENDIF};
 
 {$IFNDEF OPENSSL_NO_HMAC}
@@ -15947,13 +16009,11 @@ begin
 end;
 {$ENDIF}
 
-//I would've liked to put this in IdSSLOpenSSLUtils but we need it here
-//to detect some API changes between OpenSSL 0.9x and 1.x.
 function IsOpenSSL_1x : Boolean;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   if Assigned( SSLeay ) then begin
-    Result := SSLeay and $F0000000 = $10000000;
+    Result := (SSLeay and $F0000000) = $10000000;
   end else begin
     Result := False;
   end;
@@ -16389,10 +16449,15 @@ end;
 
 { EIdOpenSSLAPISSLError }
 
-class procedure EIdOpenSSLAPISSLError.RaiseException(s: PSSL;
-  const ARetCode: TIdC_INT; const AMsg: String);
+class procedure EIdOpenSSLAPISSLError.RaiseException(ASSL: Pointer; const ARetCode: TIdC_INT;
+  const AMsg: String);
+begin
+  RaiseExceptionCode(SSL_get_error(PSSL(ASSL), ARetCode), ARetCode, AMsg);
+end;
+
+class procedure EIdOpenSSLAPISSLError.RaiseExceptionCode(const AErrCode, ARetCode: TIdC_INT;
+  const AMsg: String);
 var
-  LErr : TIdC_INT;
   LErrQueue : TIdC_ULONG;
   LException : EIdOpenSSLAPISSLError;
   LErrStr : String;
@@ -16402,8 +16467,7 @@ begin
   end else begin
     LErrStr := '';
   end;
-  LErr := SSL_get_error(s, ARetCode);
-  case LErr of
+  case AErrCode of
     SSL_ERROR_SYSCALL :
     begin
       LErrQueue := ERR_get_error;
@@ -16412,7 +16476,7 @@ begin
       end;
       if ARetCode = 0 then begin
         LException := Create(LErrStr + RSSSLEOFViolation);
-        LException.FErrorCode := LErr;
+        LException.FErrorCode := AErrCode;
         LException.FRetCode := ARetCode;
         raise LException;
       end;
@@ -16427,11 +16491,21 @@ begin
     end
   end;
   // everything else...
-  LException := Create(LErrStr + String(GetErrorMessage(LErr)));
-  LException.FErrorCode := LErr;
+  LException := Create(LErrStr + String(GetErrorMessage(AErrCode)));
+  LException.FErrorCode := AErrCode;
   LException.FRetCode := ARetCode;
   raise LException;
 end;
+
+type
+  TRAND_bytes = function(buf : PAnsiChar; num : integer) : integer; cdecl;
+  TRAND_pseudo_bytes = function(buf : PAnsiChar; num : integer) : integer; cdecl;
+  TRAND_seed = procedure(buf : PAnsiChar; num : integer); cdecl;
+  TRAND_add = procedure(buf : PAnsiChar; num : integer; entropy : integer); cdecl;
+  TRAND_status = function() : integer; cdecl;
+  {$IFDEF SYS_WIN}
+  TRAND_event = function(iMsg : UINT; wp : wparam; lp : lparam) : integer; cdecl;
+  {$ENDIF}
 
 const
   {$IFDEF UNIX}
@@ -16441,7 +16515,7 @@ const
   SSLCLIB_DLL_name     = 'libcrypto'; {Do not localize}
   SSLDLLVers : array [0..4] of string = ('','0.9.9','.0.9.8','.0.9.7','0.9.6');
   {$ENDIF}
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
+  {$IFDEF WINDOWS}
   SSL_DLL_name       = 'ssleay32.dll';  {Do not localize}
   //The following is a workaround for an alternative name for
   //one of the OpenSSL .DLL's.  If you compile the .DLL's using
@@ -16451,14 +16525,20 @@ const
   SSLCLIB_DLL_name   = 'libeay32.dll';  {Do not localize}
   {$ENDIF}
 var
-  hIdSSL    : Integer = 0;
-  hIdCrypto : Integer = 0;
+  hIdSSL    : HMODULE = 0;
+  hIdCrypto : HMODULE = 0;
 
   FFailedFunctionLoadList : TStringList;
 
+  _RAND_bytes : TRAND_bytes = nil;
+  _RAND_pseudo_bytes : TRAND_pseudo_bytes = nil;
+  _RAND_seed : TRAND_seed = nil;
+  _RAND_add : TRAND_add = nil;
+  _RAND_status : TRAND_status = nil;
   {$IFDEF SYS_WIN}
   // LIBEAY functions - open SSL 0.9.6a
-  RAND_screen : procedure cdecl = nil;
+  _RAND_screen : procedure cdecl = nil;
+  _RAND_event : TRAND_event = nil;
   {$ENDIF}
 
 function GetCryptLibHandle : Integer;
@@ -17061,7 +17141,7 @@ them in case we use them later.}
   {CH fn_DH_new_method = 'DH_new_method'; } {Do not localize}
   {CH fn_DH_new = 'DH_new'; }  {Do not localize}
   {CH fn_DH_up_ref = 'DH_up_ref'; } {Do not localize}
-  {CH fn_DH_free = 'DH_free'; }  {Do not localize}
+  fn_DH_free = 'DH_free';   {Do not localize}
   {CH fn_DH_size = 'DH_size'; }  {Do not localize}
     {$IFNDEF OPENSSL_NO_DEPRECATED}
   {CH fn_DH_generate_parameters = 'DH_generate_parameters'; }  {Do not localize}
@@ -17385,6 +17465,7 @@ them in case we use them later.}
   {CH fn_BN_RECP_CTX_set = 'BN_RECP_CTX_set'; }  {Do not localize}
   {CH fn_BN_mod_mul_reciprocal = 'BN_mod_mul_reciprocal'; }  {Do not localize}
   {CH fn_BN_mod_exp_recp = 'BN_mod_exp_recp'; }  {Do not localize}
+
   {CH fn_BN_div_recp = 'BN_div_recp'; }  {Do not localize}
   {CH fn_BN_GF2m_add = 'BN_GF2m_add'; } {Do not localize}
   {CH fn_BN_GF2m_mod = 'BN_GF2m_mod'; } {Do not localize}
@@ -18551,7 +18632,7 @@ them in case we use them later.}
   {CH fn_X509_issuer_name_hash = 'X509_issuer_name_hash'; }  {Do not localize}
   {CH fn_X509_subject_name_cmp = 'X509_subject_name_cmp'; }  {Do not localize}
   {CH fn_X509_subject_name_hash = 'X509_subject_name_hash'; }  {Do not localize}
-  {CH fn_X509_NAME_cmp = 'X509_NAME_cmp'; }  {Do not localize}
+  fn_X509_NAME_cmp = 'X509_NAME_cmp';  {Do not localize}
   fn_X509_NAME_hash = 'X509_NAME_hash';  {Do not localize}
   {CH fn_X509_CRL_cmp = 'X509_CRL_cmp'; }  {Do not localize}
   {$IFNDEF OPENSSL_NO_FP_API}
@@ -18840,7 +18921,7 @@ them in case we use them later.}
   {CH fn_SSL_SESSION_set_time = 'SSL_SESSION_set_time'; }  {Do not localize}
   {CH fn_SSL_SESSION_get_timeout = 'SSL_SESSION_get_timeout'; }  {Do not localize}
   {CH fn_SSL_SESSION_set_timeout = 'SSL_SESSION_set_timeout'; }  {Do not localize}
-  {CH fn_SSL_copy_session_id = 'SSL_copy_session_id'; }  {Do not localize}
+  fn_SSL_copy_session_id = 'SSL_copy_session_id'; {Do not localize}
   {CH fn_SSL_SESSION_new = 'SSL_SESSION_new'; }  {Do not localize}
   {CH fn_SSL_SESSION_hash = 'SSL_SESSION_hash'; }  {Do not localize}
   {CH fn_SSL_SESSION_cmp = 'SSL_SESSION_cmp'; }  {Do not localize}
@@ -18996,14 +19077,14 @@ them in case we use them later.}
   {$ENDIF}
   {CH fn_RAND_SSLeay = 'RAND_SSLeay'; } {Do not localize}
   {CH fn_RAND_cleanup = 'RAND_cleanup'; } {Do not localize}
-  {CH fn_RAND_bytes = 'RAND_bytes'; } {Do not localize}
-  {CH fn_RAND_pseudo_bytes = 'RAND_pseudo_bytes'; } {Do not localize}
-  {CH fn_RAND_seed = 'RAND_seed'; } {Do not localize}
-  {CH fn_RAND_add = 'RAND_add'; } {Do not localize}
+  fn_RAND_bytes = 'RAND_bytes'; {Do not localize}
+  fn_RAND_pseudo_bytes = 'RAND_pseudo_bytes'; {Do not localize}
+  fn_RAND_seed = 'RAND_seed'; {Do not localize}
+  fn_RAND_add = 'RAND_add'; {Do not localize}
   {CH fn_RAND_load_file = 'RAND_load_file'; } {Do not localize}
   {CH fn_RAND_write_file = 'RAND_write_file'; } {Do not localize}
   {CH fn_RAND_file_name = 'RAND_file_name'; } {Do not localize}
-  {CH fn_RAND_status = 'RAND_status'; } {Do not localize}
+  fn_RAND_status = 'RAND_status'; {Do not localize}
   {CH fn_RAND_query_egd_bytes = 'RAND_query_egd_bytes'; } {Do not localize}
   {CH fn_RAND_egd = 'RAND_egd'; } {Do not localize}
   {CH fn_RAND_egd_bytes = 'RAND_egd_bytes'; } {Do not localize}
@@ -19011,7 +19092,7 @@ them in case we use them later.}
   {$IFDEF SYS_WIN}
   //GREGOR
   fn_RAND_screen = 'RAND_screen';  {Do not localize}
-  {CH fn_RAND_event = 'RAND_event'; } {Do not localize}
+  fn_RAND_event = 'RAND_event'; {Do not localize}
   {$ENDIF}
   {CH fn_ERR_load_RAND_strings = 'ERR_load_RAND_strings'; } {Do not localize}
   //experimental
@@ -19281,9 +19362,9 @@ a version of GetProcAddress in the FreePascal dynlibs unit but that does a
 conversion from ASCII to Unicode which might not be necessary since most calls
 pass a constant anyway.
 }
-function LoadFunction(const FceName: {$IFDEF UNDER_CE}TIdUnicodeString{$ELSE}string{$ENDIF}; const ACritical : Boolean = True): Pointer;
+function LoadFunction(const FceName: {$IFDEF WINCE}TIdUnicodeString{$ELSE}string{$ENDIF}; const ACritical : Boolean = True): Pointer;
 begin
-  Result := {$IFDEF WIN32_OR_WIN64_OR_WINCE}Windows.{$ENDIF}GetProcAddress(hIdSSL, {$IFDEF UNDER_CE}PWideChar{$ELSE}PChar{$ENDIF}(FceName));
+  Result := {$IFDEF WINDOWS}Windows.{$ENDIF}GetProcAddress(hIdSSL, {$IFDEF WINCE}PWideChar{$ELSE}PChar{$ENDIF}(FceName));
   if ACritical then
   begin
     if Result = nil then begin
@@ -19292,9 +19373,9 @@ begin
   end;
 end;
 
-function LoadFunctionCLib(const FceName: {$IFDEF UNDER_CE}TIdUnicodeString{$ELSE}string{$ENDIF}; const ACritical : Boolean = True): Pointer;
+function LoadFunctionCLib(const FceName: {$IFDEF WINCE}TIdUnicodeString{$ELSE}string{$ENDIF}; const ACritical : Boolean = True): Pointer;
 begin
-  Result := {$IFDEF WIN32_OR_WIN64_OR_WINCE}Windows.{$ENDIF}GetProcAddress(hIdCrypto, {$IFDEF UNDER_CE}PWideChar{$ELSE}PChar{$ENDIF}(FceName));
+  Result := {$IFDEF WINDOWS}Windows.{$ENDIF}GetProcAddress(hIdCrypto, {$IFDEF WINCE}PWideChar{$ELSE}PChar{$ENDIF}(FceName));
   if ACritical then
   begin
     if Result = nil then begin
@@ -19312,11 +19393,11 @@ The OpenSSL developers changed that interface to a new "des_*" API.  They have s
  "_ossl_old_des_*" for backwards compatability with the old functions
  which are defined in des_old.h. 
 }
-function LoadOldCLib(const AOldName, ANewName : {$IFDEF UNDER_CE}TIdUnicodeString{$ELSE}String{$ENDIF}; const ACritical : Boolean = True): Pointer;
+function LoadOldCLib(const AOldName, ANewName : {$IFDEF WINCE}TIdUnicodeString{$ELSE}String{$ENDIF}; const ACritical : Boolean = True): Pointer;
 begin
-  Result := {$IFDEF WIN32_OR_WIN64_OR_WINCE}Windows.{$ENDIF}GetProcAddress(hIdCrypto, {$IFDEF UNDER_CE}PWideChar{$ELSE}PChar{$ENDIF}(AOldName));
+  Result := {$IFDEF WINDOWS}Windows.{$ENDIF}GetProcAddress(hIdCrypto, {$IFDEF WINCE}PWideChar{$ELSE}PChar{$ENDIF}(AOldName));
   if Result = nil then begin
-     Result := {$IFDEF WIN32_OR_WIN64_OR_WINCE}Windows.{$ENDIF}GetProcAddress(hIdCrypto, {$IFDEF UNDER_CE}PWideChar{$ELSE}PChar{$ENDIF}(ANewName));
+     Result := {$IFDEF WINDOWS}Windows.{$ENDIF}GetProcAddress(hIdCrypto, {$IFDEF WINCE}PWideChar{$ELSE}PChar{$ENDIF}(ANewName));
      if ACritical then begin
         if Result = nil then begin
             FFailedFunctionLoadList.Add(AOldName);
@@ -19335,71 +19416,73 @@ Begin
   Result := PAnsiChar(LString);
 end;
 
-function Load: Boolean;
+{$UNDEF USE_BASEUNIX_OR_VCL_POSIX}
+{$IFDEF USE_BASEUNIX}
+  {$DEFINE USE_BASEUNIX_OR_VCL_POSIX}
+{$ENDIF}
+{$IFDEF USE_VCL_POSIX}
+  {$DEFINE USE_BASEUNIX_OR_VCL_POSIX}
+{$ENDIF}
+
+function LoadSSLCryptoLibrary: HMODULE;
 begin
-  Assert(FFailedFunctionLoadList<>nil);
-  FFailedFunctionLoadList.Clear;
   {$IFDEF KYLIXCOMPAT}
   // Workaround that is required under Linux (changed RTLD_GLOBAL with RTLD_LAZY Note: also work with LoadLibrary())
-  if hIdCrypto = 0 then begin
-    hIdCrypto := HackLoad(SSLCLIB_DLL_name, SSLDLLVers);
-  end;
-  if hIdSSL = 0 then begin
-    hIdSSL := HackLoad(SSL_DLL_name, SSLDLLVers);
-  end;
-  {$ENDIF}
-    Result := True;
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
-    {$IFDEF FPC}
+  Result := HackLoad(SSLCLIB_DLL_name, SSLDLLVers);
+  {$ELSE}
+    {$IFDEF WINDOWS}
   //On Windows, you should use SafeLoadLibrary because
   //the LoadLibrary API call messes with the FPU control word.
-  if hIdCrypto = 0 then begin
-    hIdCrypto := SafeLoadLibrary(SSLCLIB_DLL_name);
-  end;
-  if hIdSSL = 0 then begin
-    hIdSSL := SafeLoadLibrary(SSL_DLL_name);
-    //This is a workaround for mingw32-compiled SSL .DLL which
-    //might be named 'libssl32.dll'.
-    if hIdSSL = 0 then begin
-      hIdSSL := SafeLoadLibrary(SSL_DLL_name_alt);
-    end;
-  end else begin
-    Exit;
-  end;
+  Result := SafeLoadLibrary(SSLCLIB_DLL_name);
     {$ELSE}
-  if hIdCrypto = 0 then begin
-    hIdCrypto := SafeLoadLibrary(SSLCLIB_DLL_name);
-  end;
-  if hIdSSL = 0 then begin
-    hIdSSL := SafeLoadLibrary(SSL_DLL_name);
-    //This is a workaround for mingw32-compiled SSL .DLL which
-    //might be named 'libssl32.dll'.
-    if hIdSSL = 0 then begin
-      hIdSSL := SafeLoadLibrary(SSL_DLL_name_alt);
-    end;    
-  end else begin
-    Exit;
-  end;	
+      {$IFDEF USE_BASEUNIX_OR_VCL_POSIX}
+  Result := HMODULE(HackLoad(SSLCLIB_DLL_name, SSLDLLVers));
+      {$ELSE}
+  Result := 0;
+      {$ENDIF}
     {$ENDIF}
   {$ENDIF}
-  {$IFDEF USE_BASEUNIX}
-  if hIdCrypto = 0 then begin
-   hIdCrypto := HMODULE(HackLoad(SSLCLIB_DLL_name, SSLDLLVers));
+end;
+
+function LoadSSLLibrary: HMODULE;
+begin
+  {$IFDEF KYLIXCOMPAT}
+  // Workaround that is required under Linux (changed RTLD_GLOBAL with RTLD_LAZY Note: also work with LoadLibrary())
+  Result := HackLoad(SSL_DLL_name, SSLDLLVers);
+  {$ELSE}
+    {$IFDEF WINDOWS}
+  //On Windows, you should use SafeLoadLibrary because
+  //the LoadLibrary API call messes with the FPU control word.
+  Result := SafeLoadLibrary(SSL_DLL_name);
+  //This is a workaround for mingw32-compiled SSL .DLL which
+  //might be named 'libssl32.dll'.
+  if Result = 0 then begin
+    Result := SafeLoadLibrary(SSL_DLL_name_alt);
   end;
-  if hIdSSL = 0 then begin
-    hIdSSL := HMODULE(HackLoad(SSL_DLL_name, SSLDLLVers));
-  end;
+    {$ELSE}
+      {$IFDEF USE_BASEUNIX_OR_VCL_POSIX}
+  Result := HMODULE(HackLoad(SSL_DLL_name, SSLDLLVers));
+      {$ELSE}
+  Result := 0;
+      {$ENDIF}
+    {$ENDIF}
   {$ENDIF}
-  {$IFDEF USE_VCL_POSIX}
+end;
+
+function Load: Boolean;
+begin
+  Result := True;
+  Assert(FFailedFunctionLoadList<>nil);
+  FFailedFunctionLoadList.Clear;
   if hIdCrypto = 0 then begin
-	hIdCrypto := HMODULE(HackLoad(SSLCLIB_DLL_name, SSLDLLVers));
+    hIdCrypto := LoadSSLCryptoLibrary;
   end;
   if hIdSSL = 0 then begin
-    hIdSSL := HMODULE(HackLoad(SSL_DLL_name, SSLDLLVers));
+    hIdSSL := LoadSSLLibrary;
   end else begin
     Exit;
   end;
-  {$ENDIF}
+
   @SSL_CTX_set_cipher_list := LoadFunction(fn_SSL_CTX_set_cipher_list);
   @SSL_CTX_new := LoadFunction(fn_SSL_CTX_new);
   @SSL_CTX_free := LoadFunction(fn_SSL_CTX_free);
@@ -19455,13 +19538,15 @@ begin
   @SSL_CTX_load_verify_locations := LoadFunction(fn_SSL_CTX_load_verify_locations);
   @SSL_get_session := LoadFunction(fn_SSL_get_session);
   @SSLeay_add_ssl_algorithms := LoadFunction(fn_SSLeay_add_ssl_algorithms);
-  @SSL_SESSION_get_id := LoadFunction(fn_SSL_SESSION_get_id,False);
-  // CRYPTO LIB
+  @SSL_SESSION_get_id := LoadFunction(fn_SSL_SESSION_get_id);
+  @SSL_copy_session_id := LoadFunction(fn_SSL_copy_session_id);
+   // CRYPTO LIB
   @_SSLeay_version := LoadFunctionCLib(fn_SSLeay_version);
   @SSLeay := LoadFunctionCLib(fn_SSLeay);
   @d2i_X509_NAME := LoadFunctionCLib(fn_d2i_X509_NAME);
   @i2d_X509_NAME := LoadFunctionCLib(fn_i2d_X509_NAME);
   @X509_NAME_oneline := LoadFunctionCLib(fn_X509_NAME_oneline);
+  @X509_NAME_cmp := LoadFunctionCLib(fn_X509_NAME_cmp);
   @X509_NAME_hash := LoadFunctionCLib(fn_X509_NAME_hash);
   @X509_set_issuer_name := LoadFunctionCLib(fn_X509_set_issuer_name);
   @X509_get_issuer_name := LoadFunctionCLib(fn_X509_get_issuer_name);
@@ -19490,12 +19575,18 @@ begin
   @X509V3_set_ctx := LoadFunctionCLib(fn_X509V3_set_ctx);
   @X509_EXTENSION_free := LoadFunctionCLib(fn_X509_EXTENSION_free);
   @X509_add_ext := LoadFunctionCLib(fn_X509_add_ext);
-    {$IFNDEF OPENSSL_NO_BIO}
+  {$IFNDEF OPENSSL_NO_BIO}
   //X509_print
   @X509_print := LoadFunctionCLib(fn_X509_print, False );
   {$ENDIF}
+  @_RAND_bytes := LoadFunctionCLib(fn_RAND_bytes);
+  @_RAND_pseudo_bytes := LoadFunctionCLib(fn_RAND_pseudo_bytes);
+  @_RAND_seed := LoadFunctionCLib(fn_RAND_seed);
+  @_RAND_add := LoadFunctionCLib(fn_RAND_add);
+  @_RAND_status := LoadFunctionCLib(fn_RAND_status);
   {$IFDEF SYS_WIN}
-  @RAND_screen := LoadFunctionCLib(fn_RAND_screen);
+  @_RAND_screen := LoadFunctionCLib(fn_RAND_screen);
+  @_RAND_event := LoadFunctionCLib(fn_RAND_event);
   {$ENDIF}
   {$IFNDEF OPENSSL_NO_DES}
   // 3DES
@@ -19564,6 +19655,8 @@ we have to handle both cases.
   @RSA_size := LoadFunctionCLib(fn_RSA_size);
   @RSA_private_decrypt := LoadFunctionCLib(fn_RSA_private_decrypt);
   @RSA_public_encrypt := LoadFunctionCLib(fn_RSA_public_encrypt);
+  //DH
+  @DH_free := LoadFunctionCLib(fn_DH_free);
   //BN
   @BN_hex2bn := LoadFunctionCLib(fn_BN_hex2bn);
   @BN_bn2hex := LoadFunctionCLib(fn_BN_bn2hex);
@@ -19691,7 +19784,7 @@ we have to handle both cases.
   @EVP_PKEY_assign := LoadFunctionCLib(fn_EVP_PKEY_assign);
   @EVP_get_digestbyname := LoadFunctionCLib(fn_EVP_get_digestbyname);
   //HMAC
-{$IFNDEF OPENSSL_NO_HMAC}
+  {$IFNDEF OPENSSL_NO_HMAC}
   @HMAC_CTX_init := LoadFunctionCLib(fn_HMAC_CTX_init);
   if IsOpenSSL_1x then begin
     @_1_0_HMAC_Init_ex :=  LoadFunctionCLib(fn_HMAC_Init_ex);
@@ -19703,7 +19796,7 @@ we have to handle both cases.
     @_HMAC_Final := LoadFunctionCLib(fn_HMAC_Final);
   end;
   @HMAC_CTX_cleanup := LoadFunctionCLib(fn_HMAC_CTX_cleanup);
-{$ENDIF}
+  {$ENDIF}
   //OBJ
   @OBJ_obj2nid := LoadFunctionCLib(fn_OBJ_obj2nid);
   @OBJ_nid2obj := LoadFunctionCLib(fn_OBJ_nid2obj);
@@ -19809,6 +19902,7 @@ begin
   @SSL_get_session := nil;
   @SSLeay_add_ssl_algorithms := nil;
   @SSL_SESSION_get_id := nil;
+  @SSL_copy_session_id := nil;
   // CRYPTO LIB
   @_SSLeay_version := nil;
   @SSLeay := nil;
@@ -19841,8 +19935,14 @@ begin
   //X509_print
   @X509_print := nil;
   {$ENDIF}
+  @_RAND_bytes := nil;
+  @_RAND_pseudo_bytes := nil;
+  @_RAND_seed := nil;
+  @_RAND_add := nil;
+  @_RAND_status := nil;
   {$IFDEF SYS_WIN}
-  @RAND_screen := nil;
+  @_RAND_screen := nil;
+  @_RAND_event := nil;
   {$ENDIF}
   {$IFNDEF OPENSSL_NO_DES}
   // 3DES
@@ -19901,6 +20001,8 @@ begin
   @RSA_check_key := nil;
   @RSA_private_decrypt := nil;
   @RSA_public_encrypt := nil;
+  //DH
+  @DH_free := nil;
   //BIO
   @BIO_new := nil;
   @BIO_free := nil;
@@ -20088,26 +20190,26 @@ procedure Unload;
 var
   LStack: Pointer;
 begin
-  //this is a workaround for a known leak in the openssl library
-  //present in 0.9.8a
-  if SSLeay = $0090801f then begin //0x0090801fL
-    LStack := SSL_COMP_get_compression_methods;
-    sk_pop_free(LStack, @CRYPTO_free);
-  end;
-  CRYPTO_cleanup_all_ex_data;
-  ERR_free_strings;
-  if Assigned(ERR_remove_thread_state) then begin
-    ERR_remove_thread_state(nil);
-  end else begin
-    ERR_remove_state(0);
-  end;
-  EVP_cleanup;
-  if hIdSSL > 0 then begin
-    {$IFDEF WIN32_OR_WIN64_OR_WINCE}Windows.{$ENDIF}FreeLibrary(hIdSSL);
+  if hIdSSL <> 0 then begin
+    //this is a workaround for a known leak in the openssl library
+    //present in 0.9.8a
+    if SSLeay = $0090801f then begin //0x0090801fL
+      LStack := SSL_COMP_get_compression_methods;
+      sk_pop_free(LStack, @CRYPTO_free);
+    end;
+    CRYPTO_cleanup_all_ex_data;
+    ERR_free_strings;
+    if Assigned(ERR_remove_thread_state) then begin
+      ERR_remove_thread_state(nil);
+    end else begin
+      ERR_remove_state(0);
+    end;
+    EVP_cleanup;
+    {$IFDEF WINDOWS}Windows.{$ENDIF}FreeLibrary(hIdSSL);
     hIdSSL := 0;
   end;
-  if hIdCrypto > 0 then begin
-    {$IFDEF WIN32_OR_WIN64_OR_WINCE}Windows.{$ENDIF}FreeLibrary(hIdCrypto);
+  if hIdCrypto <> 0 then begin
+    {$IFDEF WINDOWS}Windows.{$ENDIF}FreeLibrary(hIdCrypto);
     hIdCrypto := 0;
   end;
   {$IFDEF USE_INVALIDATE_MOD_CACHE}
@@ -20197,8 +20299,8 @@ end;
 procedure InitializeRandom;
 begin
   {$IFDEF SYS_WIN}
-  if @RAND_screen <> nil then begin
-    RAND_screen;
+  if @_RAND_screen <> nil then begin
+    _RAND_screen;
   end;
   {$ENDIF}
 end;
@@ -21868,6 +21970,65 @@ function X509_LOOKUP_add_dir(x : PX509_LOOKUP; name : PAnsiChar; _type : TIdC_LO
 begin
   Result := X509_LOOKUP_ctrl(x, X509_L_ADD_DIR, name, _type, nil);
 end;
+
+function RAND_bytes(buf : PAnsiChar; num : integer) : integer;
+begin
+  if @_RAND_bytes <> nil then begin
+    Result := _RAND_bytes(buf, num);
+  end else begin
+    Result := 0;
+  end;
+end;
+
+function RAND_pseudo_bytes(buf : PAnsiChar; num : integer) : integer;
+begin
+  if @_RAND_pseudo_bytes <> nil then begin
+    Result := _RAND_pseudo_bytes(buf, num);
+  end else begin
+    Result := 0;
+  end;
+end;
+
+procedure RAND_seed(buf : PAnsiChar; num : integer);
+begin
+  if @_RAND_seed <> nil then begin
+    _RAND_seed(buf, num);
+  end;
+end;
+
+procedure RAND_add(buf : PAnsiChar; num : integer; entropy : integer);
+begin
+  if @_RAND_add <> nil then begin
+    _RAND_add(buf, num, entropy);
+  end;
+end;
+
+function RAND_status() : integer;
+begin
+  if @_RAND_status <> nil then begin
+    Result := _RAND_status();
+  end else begin
+    Result := 0;
+  end;
+end;
+
+{$IFDEF SYS_WIN}
+function RAND_event(iMsg : UINT; wp : wparam; lp : lparam) : integer;
+begin
+  if @_RAND_event <> nil then begin
+    Result := _RAND_event(iMsg, wp, lp);
+  end else begin
+    Result := 0;
+  end;
+end;
+
+procedure RAND_screen();
+begin
+  if @_RAND_screen <> nil then begin
+    _RAND_screen();
+  end;
+end;
+{$ENDIF}
 
 initialization
   FFailedFunctionLoadList := TStringList.Create;

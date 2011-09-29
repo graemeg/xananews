@@ -134,7 +134,7 @@ type
   TOnSPFCheck = procedure(ASender: TIdSMTPServerContext; const AIP, ADomain, AIdentity: String;
     var VAction: TIdSPFReply) of object;
   TOnDataStreamEvent = procedure(ASender: TIdSMTPServerContext; var VStream: TStream) of object;
-  
+
   TIdSMTPServer = class(TIdExplicitTLSServer)
   protected
     //events
@@ -219,6 +219,10 @@ type
     procedure MsgReceived(ASender: TIdCommand; AMsgData: TStream);
     procedure SetMaxMsgSize(AValue: Integer);
     function SPFAuthOk(AContext: TIdSMTPServerContext; AReply: TIdReply; const ACmd, ADomain, AIdentity: String): Boolean;
+  {$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
+  public
+    constructor Create(AOwner: TComponent); reintroduce; overload;
+  {$ENDIF}
   published
     //events
     property OnBeforeMsg : TOnDataStreamEvent read FOnBeforeMsg write FOnBeforeMsg;
@@ -257,6 +261,8 @@ type
     FBDataStream: TStream;
     FBodyType: TIdSMTPBodyType;
     function GetUsingTLS: Boolean;
+    function GetCanUseExplicitTLS: Boolean;
+    function GetTLSIsRequired: Boolean;
     procedure SetPipeLining(const AValue : Boolean);
   public
     constructor Create(AConnection: TIdTCPConnection; AYarn: TIdYarn; AList: TThreadList = nil); override;
@@ -277,6 +283,8 @@ type
     property MsgSize: Integer read FMsgSize write FMsgSize;
     property FinalStage: Boolean read FFinalStage write FFinalStage;
     property UsingTLS: Boolean read GetUsingTLS;
+    property CanUseExplicitTLS: Boolean read GetCanUseExplicitTLS;
+    property TLSIsRequired: Boolean read GetTLSIsRequired;
     property PipeLining: Boolean read FPipeLining write SetPipeLining;
     //
   end;
@@ -293,6 +301,13 @@ uses
   IdSSL, SysUtils;
 
 { TIdSMTPServer }
+
+{$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
+constructor TIdSMTPServer.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+end;
+{$ENDIF}
 
 procedure TIdSMTPServer.CmdSyntaxError(AContext: TIdContext; ALine: string;
   const AReply: TIdReply);
@@ -364,10 +379,7 @@ begin
       ASender.Reply.Text.Add('PIPELINING'); {do not localize}
     end;
     ASender.Reply.Text.Add(IndyFormat('SIZE %d', [FMaxMsgSize])); {do not localize}
-    if (LContext.Connection.IOHandler is TIdSSLIOHandlerSocketBase) and
-      (FUseTLS in ExplicitTLSVals) and
-      (not LContext.UsingTLS) then
-    begin
+    if LContext.CanUseExplicitTLS and (not LContext.UsingTLS) then begin
       ASender.Reply.Text.Add('STARTTLS');    {Do not Localize}
     end;
     ASender.Reply.Text.Add('CHUNKING'); {do not localize}
@@ -505,7 +517,7 @@ begin
     BadSequenceError(ASender);
     Exit;
   end;
-  if (FUseTLS = utUseRequireTLS) and (not LContext.UsingTLS) then begin
+  if LContext.TLSIsRequired then begin
     MustUseTLS(ASender);
     Exit;
   end;
@@ -961,19 +973,18 @@ begin
     BadSequenceError(ASender);
     Exit;
   end;
-  if (LContext.Connection.IOHandler is TIdSSLIOHandlerSocketBase) and (FUseTLS in ExplicitTLSVals) then begin
-    if LContext.UsingTLS then begin // we are already using TLS
-      BadSequenceError(ASender);
-      Exit;
-    end;
-    SetEnhReply(ASender.Reply, 220, Id_EHR_GENERIC_OK, RSSMTPSvrReadyForTLS, LContext.EHLO);
-    ASender.SendReply;
-    TIdSSLIOHandlerSocketBase(LContext.Connection.IOHandler).PassThrough := False;
-    DoReset(LContext, True);
-  end else begin
+  if not LContext.CanUseExplicitTLS then begin
     CmdSyntaxError(ASender);
     LContext.PipeLining := False;
   end;
+  if LContext.UsingTLS then begin // we are already using TLS
+    BadSequenceError(ASender);
+    Exit;
+  end;
+  SetEnhReply(ASender.Reply, 220, Id_EHR_GENERIC_OK, RSSMTPSvrReadyForTLS, LContext.EHLO);
+  ASender.SendReply;
+  TIdSSLIOHandlerSocketBase(LContext.Connection.IOHandler).PassThrough := False;
+  DoReset(LContext, True);
 end;
 
 procedure TIdSMTPServer.CommandNOOP(ASender: TIdCommand);
@@ -983,9 +994,13 @@ begin
 end;
 
 procedure TIdSMTPServer.CommandQUIT(ASender: TIdCommand);
+var
+  LContext: TIdSMTPServerContext;
 begin
 //clear pipelining before exit
-  TIdSMTPServerContext(ASender.Context).PipeLining := False;
+  LContext := TIdSMTPServerContext(ASender.Context);
+  LContext.PipeLining := False;
+  DoReset(LContext);
   ASender.SendReply;
 end;
 
@@ -1028,14 +1043,14 @@ begin
       // event is not assigned, or at least create a stream that discards
       // any data received...
       if LContext.FBodyType = idSMTP7Bit then begin
-        LEncoding := TIdTextEncoding.ASCII;
+        LEncoding := IndyASCIIEncoding;
       end else begin
         LEncoding := Indy8BitEncoding;
       end;
       SetEnhReply(ASender.Reply, 354, '', RSSMTPSvrStartData, LContext.EHLO);
       ASender.SendReply;
       LContext.PipeLining := False;
-      LContext.Connection.IOHandler.Capture(LStream, '.', True, LEncoding);    {Do not Localize}
+      LContext.Connection.IOHandler.Capture(LStream, '.', True, LEncoding{$IFDEF STRING_IS_ANSI}, LEncoding{$ENDIF});    {Do not Localize}
       MsgReceived(ASender, LStream);
     finally
       FreeAndNil(LStream);
@@ -1286,21 +1301,41 @@ begin
   end;
 end;
 
+function TIdSMTPServerContext.GetCanUseExplicitTLS: Boolean;
+begin
+  Result := Connection.IOHandler is TIdSSLIOHandlerSocketBase;
+  if Result then begin
+    Result := TIdSMTPServer(Server).UseTLS in ExplicitTLSVals;
+  end;
+end;
+
+function TIdSMTPServerContext.GetTLSIsRequired: Boolean;
+begin
+  Result := TIdSMTPServer(Server).UseTLS = utUseRequireTLS;
+  if Result then begin
+    Result := not UsingTLS;
+  end;
+end;
+
 procedure TIdSMTPServerContext.Reset(AIsTLSReset: Boolean = False);
 begin
+  // RLebeau: do not reset the user authentication except for STARTTLS!  A
+  // normal reset (RSET, HELO/EHLO after a session is started, and QUIT)
+  // should only abort the current mail transaction and clear its buffers
+  // and state tables, nothing more
   if (not AIsTLSReset) and (FEHLO or FHELO) then begin
     FSMTPState := idSMTPHelo;
   end else begin
     FSMTPState := idSMTPNone;
     FEHLO := False;
     FHELO := False;
+    FHeloString := '';
+    FUsername := '';
+    FPassword := '';
+    FLoggedIn := False;
   end;
   FFrom := '';
-  FHeloString := '';
   FRCPTList.Clear;
-  FUsername := '';
-  FPassword := '';
-  FLoggedIn := False;
   FMsgSize := 0;
   FBodyType := idSMTP8BitMime;
   FFinalStage := False;

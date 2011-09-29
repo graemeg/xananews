@@ -207,6 +207,9 @@ var
   nChars, C : TIdC_UINT;
   StreamEnd: Boolean;
 begin
+  // let the next Intercept in the chain decode its data first
+  inherited Receive(VBuffer);
+
   SetLength(LBuffer, 2048);
   if FCompressionLevel in [1..9] then
   begin
@@ -303,6 +306,9 @@ begin
       CopyTIdBytes(LBuffer, 0, VBuffer, LLen, TIdC_UINT(Length(LBuffer)) - FCompressRec.avail_out);
     end;
   end;
+
+  // let the next Intercept in the chain encode its data next
+  inherited Send(VBuffer);
 end;
 
 procedure TIdCompressionIntercept.SetCompressionLevel(Value: TIdCompressionLevel);

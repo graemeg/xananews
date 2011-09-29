@@ -95,11 +95,17 @@ type
     procedure ReadHeader; virtual;
     //CC: ATerminator param added because Content-Transfer-Encoding of binary needs
     //an ATerminator of EOL...
-    function ReadLn(const ATerminator: string = LF; AEncoding: TIdTextEncoding = nil): string;
+    function ReadLn(const ATerminator: string = LF; AByteEncoding: TIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
+      ): string;
     //RLebeau: added for RFC 822 retrieves
-    function ReadLnRFC(var VMsgEnd: Boolean; AEncoding: TIdTextEncoding = nil): String; overload;
+    function ReadLnRFC(var VMsgEnd: Boolean; AByteEncoding: TIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
+      ): String; overload;
     function ReadLnRFC(var VMsgEnd: Boolean; const ALineTerminator: String;
-      const ADelim: String = '.'; AEncoding: TIdTextEncoding = nil): String; overload; {do not localize}
+      const ADelim: String = '.'; AByteEncoding: TIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
+      ): String; overload; {do not localize}
     destructor Destroy; override;
     //
     property Filename: string read FFilename;
@@ -170,7 +176,7 @@ implementation
 
 uses
   IdException, IdResourceStringsProtocols,
-  IdTCPStream, SysUtils;
+  IdTCPStream, IdBuffer, SysUtils;
 
 var
   GMessageDecoderList: TIdMessageDecoderList = nil;
@@ -179,9 +185,15 @@ var
 { TIdMessageDecoderList }
 
 class function TIdMessageDecoderList.ByName(const AName: string): TIdMessageDecoderInfo;
+var
+  I: Integer;
 begin
-  with GMessageDecoderList.FMessageCoders do begin
-    Result := TIdMessageDecoderInfo(Objects[IndexOf(AName)]);
+  Result := nil;
+  if GMessageDecoderList <> nil then begin
+    I := GMessageDecoderList.FMessageCoders.IndexOf(AName);
+    if I <> -1 then begin
+      Result := TIdMessageDecoderInfo(GMessageDecoderList.FMessageCoders.Objects[I]);
+    end;
   end;
   if Result = nil then begin
     raise EIdException.Create(RSMessageDecoderNotFound + ': ' + AName);    {Do not Localize}
@@ -193,11 +205,12 @@ var
   i: integer;
 begin
   Result := nil;
-  for i := 0 to GMessageDecoderList.FMessageCoders.Count - 1 do begin
-    Result := TIdMessageDecoderInfo(GMessageDecoderList.FMessageCoders.Objects[i]).CheckForStart(ASender
-     , ALine);
-    if Result <> nil then begin
-      Break;
+  if GMessageDecoderList <> nil then begin
+    for i := 0 to GMessageDecoderList.FMessageCoders.Count - 1 do begin
+      Result := TIdMessageDecoderInfo(GMessageDecoderList.FMessageCoders.Objects[i]).CheckForStart(ASender, ALine);
+      if Result <> nil then begin
+        Break;
+      end;
     end;
   end;
 end;
@@ -259,38 +272,140 @@ procedure TIdMessageDecoder.ReadHeader;
 begin
 end;
 
-function TIdMessageDecoder.ReadLn(const ATerminator: string = LF;
-  AEncoding: TIdTextEncoding = nil): string;
+// this is copied from TIdIOHandler.ReadLn() and then adjusted to read from
+// a TStream, with the same sematics as Idglobal.ReadLnFromStream() but with
+// support for searching for a caller-specified terminator.
+function DoReadLnFromStream(AStream: TStream; ATerminator: string;
+  AMaxLineLength: Integer = -1; AByteEncoding: TIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
+  ): string;
+const
+  LBUFMAXSIZE = 2048;
 var
-  LWasSplit: Boolean;  //Needed for lines > 16K, e.g. if Content-Transfer-Encoding is 'binary'
+  LBuffer: TIdBuffer;
+  LSize: Integer;
+  LStartPos: Integer;
+  LTermPos: Integer;
+  LTerm, LTemp: TIdBytes;
+  LStrmStartPos, LStrmPos, LStrmSize: TIdStreamSize;
 begin
-  Result := '';
-  if SourceStream is TIdTCPStream then begin
+  Assert(AStream<>nil);
+
+  { we store the stream size for the whole routine to prevent
+  so do not incur a performance penalty with TStream.Size.  It has
+  to use something such as Seek each time the size is obtained}
+  {4 seek vs 3 seek}
+  LStrmStartPos := AStream.Position;
+  LStrmPos := LStrmStartPos;
+  LStrmSize := AStream.Size;
+
+  if LStrmPos >= LStrmSize then begin
+    Result := '';
+    Exit;
+  end;
+
+  SetLength(LTemp, LBUFMAXSIZE);
+  LBuffer := TIdBuffer.Create;
+  try
+    EnsureEncoding(AByteEncoding);
+    {$IFDEF STRING_IS_ANSI}
+    EnsureEncoding(ADestEncoding, encOSDefault);
+    {$ENDIF}
+    if AMaxLineLength < 0 then begin
+      AMaxLineLength := MaxInt;
+    end;
+    // User may pass '' if they need to pass arguments beyond the first.
+    if ATerminator = '' then begin
+      ATerminator := LF;
+    end;
+    LTerm := ToBytes(ATerminator, AByteEncoding
+      {$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF}
+      );
+    LTermPos := -1;
+    LStartPos := 0;
     repeat
-      Result := Result + TIdTCPStream(SourceStream).Connection.IOHandler.ReadLnSplit(LWasSplit, ATerminator, IdTimeoutDefault, -1, AEncoding);
-    until not LWasSplit;
+      LSize := IndyMin(LStrmSize - LStrmPos, LBUFMAXSIZE);
+      LSize := ReadTIdBytesFromStream(AStream, LTemp, LSize);
+      if LSize < 1 then begin
+        LStrmPos := LStrmStartPos + LBuffer.Size;
+        Break;
+      end;
+      Inc(LStrmPos, LSize);
+      LBuffer.Write(LTemp, LSize, 0);
+
+      LTermPos := LBuffer.IndexOf(LTerm, LStartPos);
+      if LTermPos > -1 then begin
+        if (AMaxLineLength > 0) and (LTermPos > AMaxLineLength) then begin
+          LStrmPos := LStrmStartPos + AMaxLineLength;
+          LTermPos := AMaxLineLength;
+        end else begin
+          LStrmPos := LStrmStartPos + LTermPos + Length(LTerm);
+        end;
+        Break;
+      end;
+
+      LStartPos := IndyMax(LBuffer.Size-(Length(LTerm)-1), 0);
+      if (AMaxLineLength > 0) and (LStartPos >= AMaxLineLength) then begin
+        LStrmPos := LStrmStartPos + AMaxLineLength;
+        LTermPos := AMaxLineLength;
+        Break;
+      end;
+    until LStrmPos >= LStrmSize;
+
+    // Extract actual data
+    if (ATerminator = LF) and (LTermPos > 0) and (LTermPos < LBuffer.Size) then begin
+      if (LBuffer.PeekByte(LTermPos) = Ord(LF)) and
+         (LBuffer.PeekByte(LTermPos-1) = Ord(CR)) then begin
+        Dec(LTermPos);
+      end;
+    end;
+
+    AStream.Position := LStrmPos;
+    Result := LBuffer.ExtractToString(LTermPos, AByteEncoding
+      {$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF}
+      );
+  finally
+    LBuffer.Free;
+  end;
+end;
+
+function TIdMessageDecoder.ReadLn(const ATerminator: string = LF;
+  AByteEncoding: TIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
+  ): string;
+begin
+  if SourceStream is TIdTCPStream then begin
+    Result := TIdTCPStream(SourceStream).Connection.IOHandler.ReadLn(
+      ATerminator, IdTimeoutDefault, -1, AByteEncoding{$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF}
+      );
   end else begin
-    Result := ReadLnFromStream(SourceStream, -1, False, AEncoding);
+    Result := DoReadLnFromStream(SourceStream, ATerminator, -1, AByteEncoding
+      {$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF}
+      );
   end;
 end;
 
 function TIdMessageDecoder.ReadLnRFC(var VMsgEnd: Boolean;
-  AEncoding: TIdTextEncoding = nil): String;
+  AByteEncoding: TIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
+  ): String;
 begin
-  Result := ReadLnRFC(VMsgEnd, LF, '.', AEncoding); {do not localize}
+  Result := ReadLnRFC(VMsgEnd, LF, '.', AByteEncoding{$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF}); {do not localize}
 end;
 
 function TIdMessageDecoder.ReadLnRFC(var VMsgEnd: Boolean; const ALineTerminator: String;
-  const ADelim: String = '.'; AEncoding: TIdTextEncoding = nil): String;
+  const ADelim: String = '.'; AByteEncoding: TIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
+  ): String;
 begin
-  Result := ReadLn(ALineTerminator, AEncoding);
+  Result := ReadLn(ALineTerminator, AByteEncoding{$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF});
   // Do not use ATerminator since always ends with . (standard)
   if Result = ADelim then {do not localize}
   begin
     VMsgEnd := True;
     Exit;
   end;
-  if TextStartsWith(Result, '.') then begin {do not localize}
+  if TextStartsWith(Result, '..') then begin {do not localize}
     IdDelete(Result, 1, 1);
   end;
   VMsgEnd := False;
@@ -312,9 +427,15 @@ end;
 { TIdMessageEncoderList }
 
 class function TIdMessageEncoderList.ByName(const AName: string): TIdMessageEncoderInfo;
+var
+  I: Integer;
 begin
-  with GMessageEncoderList.FMessageCoders do begin
-    Result := TIdMessageEncoderInfo(Objects[IndexOf(AName)]);
+  Result := nil;
+  if GMessageEncoderList <> nil then begin
+    I := GMessageEncoderList.FMessageCoders.IndexOf(AName);
+    if I <> -1 then begin
+      Result := TIdMessageEncoderInfo(GMessageEncoderList.FMessageCoders.Objects[I]);
+    end;
   end;
   if Result = nil then begin
     raise EIdException.Create(RSMessageEncoderNotFound + ': ' + AName);    {Do not Localize}

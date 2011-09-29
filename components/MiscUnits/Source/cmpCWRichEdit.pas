@@ -1625,7 +1625,7 @@ end;
   | The function returns 0 if it the callback should continue steaming   |
   | in text - or <> 0 = an error code.                                   |
   *---------------------------------------------------------------------- *)
-function EditStreamICallback(dwCookie: LongInt; pbBuff: pointer; cb: DWORD; var ret: DWORD): DWORD; stdcall;
+function EditStreamICallback(dwCookie: DWORD_PTR; pbBuff: pointer; cb: DWORD; var ret: DWORD): DWORD; stdcall;
 var
   stream: TRichEditStream;
 begin
@@ -1650,7 +1650,7 @@ end;
   | Parameters:                                                          |
   |   dwCookie : LongInt; pbBuff : pointer; cb : DWORD; var ret : DWORD  |
   *---------------------------------------------------------------------- *)
-function EditStreamIRTFCallback(dwCookie: LongInt; pbBuff: pointer; cb: DWORD; var ret: DWORD): DWORD; stdcall;
+function EditStreamIRTFCallback(dwCookie: DWORD_PTR; pbBuff: pointer; cb: DWORD; var ret: DWORD): DWORD; stdcall;
 var
   stream: TRichEditStream;
   i: Integer;
@@ -1695,7 +1695,7 @@ end;
   |                                                                      |
   | The function returns <> 0 if the function failed                     |
   *---------------------------------------------------------------------- *)
-function EditStreamOCallback(dwCookie: LongInt; pbBuff: pointer; cb: DWORD; var ret: DWORD): DWORD; stdcall;
+function EditStreamOCallback(dwCookie: DWORD_PTR; pbBuff: pointer; cb: DWORD; var ret: DWORD): DWORD; stdcall;
 var
   stream: TRichEditStream;
 begin
@@ -1718,7 +1718,7 @@ begin
   Result := 0;
 end;
 
-function EditStreamOchCallback(dwCookie: LongInt; pbBuff: pointer; cb: DWORD; var ret: DWORD): DWORD; stdcall;
+function EditStreamOchCallback(dwCookie: DWORD_PTR; pbBuff: pointer; cb: DWORD; var ret: DWORD): DWORD; stdcall;
 var
   stream: TRichEditStream;
 begin
@@ -1840,7 +1840,7 @@ begin
     Flags := Flags or SF_TEXT or SF_UNICODE;
   stream := TRichEditStream.Create(Owner);
   try
-    editStream.dwCookie := LongInt(stream);
+    editStream.dwCookie := DWORD_PTR(stream);
     editStream.dwError := 0;
     if (Flags and SF_UNICODE) <> 0 then
       editStream.pfnCallback := @EditStreamOCallback
@@ -1881,7 +1881,7 @@ begin
   try
     stream.fBuffer := PWideChar(st);
     stream.fLen := Length(st);
-    editStream.dwCookie := LongInt(stream);
+    editStream.dwCookie := DWORD_PTR(stream);
     editStream.dwError := 0;
     editStream.pfnCallback := @EditStreamICallback;
 

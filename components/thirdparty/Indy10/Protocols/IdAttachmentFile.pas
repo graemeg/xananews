@@ -69,19 +69,17 @@ implementation
 
 uses
   {$IFDEF USE_VCL_POSIX}
-  PosixUnistd,
+  Posix.Unistd,
   {$ENDIF}
   {$IFDEF KYLIXCOMPAT}
   Libc,
   {$ENDIF}
   //facilitate inlining only.
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
-    {$IFDEF VCL_2009_OR_ABOVE}
+  {$IFDEF USE_INLINE}
+    {$IFDEF WINDOWS}
   Windows,
     {$ENDIF}
-  {$ENDIF}
-  {$IFDEF DOTNET}
-    {$IFDEF USE_INLINE}
+    {$IFDEF DOTNET}
   System.IO,
     {$ENDIF}
   {$ENDIF}

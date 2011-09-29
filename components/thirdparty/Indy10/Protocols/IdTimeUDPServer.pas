@@ -40,6 +40,9 @@ interface
 {$i IdCompilerDefines.inc}
 
 uses
+  {$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
+  Classes,
+  {$ENDIF}
   IdAssignedNumbers, IdGlobal, IdSocketHandle, IdUDPBase, IdUDPServer;
 
 type
@@ -48,6 +51,10 @@ type
     FBaseDate : TDateTime;
     procedure DoUDPRead(AThread: TIdUDPListenerThread; const AData: TIdBytes; ABinding: TIdSocketHandle); override;
     procedure InitComponent; override;
+  {$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
+  public
+    constructor Create(AOwner: TComponent); reintroduce; overload;
+  {$ENDIF}
   end;
 
   TIdTimeUDPServer = class(TIdCustomTimeUDPServer)
@@ -64,9 +71,16 @@ implementation
 
 uses
   {$IFDEF USE_VCL_POSIX}
-  PosixSysTime,
+  Posix.SysTime,
   {$ENDIF}
   IdGlobalProtocols, IdStack, SysUtils;
+
+{$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
+constructor TIdCustomTimeUDPServer.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+end;
+{$ENDIF}
 
 procedure TIdCustomTimeUDPServer.InitComponent;
 begin

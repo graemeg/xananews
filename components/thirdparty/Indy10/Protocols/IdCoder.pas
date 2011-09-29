@@ -127,7 +127,13 @@ type
       {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
       ); overload;
 
-    class function EncodeBytes(const ABytes: TIdBytes): string;
+    class function EncodeBytes(const ABytes: TIdBytes): string; overload;
+    class procedure EncodeBytes(const ABytes: TIdBytes; ADestStrings: TStrings); overload;
+    class procedure EncodeBytes(const ABytes: TIdBytes; ADestStream: TStream); overload;
+
+    class function EncodeStream(ASrcStream: TStream; const ABytes: Integer = -1): string; overload;
+    class procedure EncodeStream(ASrcStream: TStream; ADestStrings: TStrings; const ABytes: Integer = -1); overload;
+    class procedure EncodeStream(ASrcStream: TStream; ADestStream: TStream; const ABytes: Integer = -1); overload;
   end;
 
   TIdEncoderClass = class of TIdEncoder;
@@ -146,6 +152,7 @@ type
       {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
       ): string;
     class function DecodeBytes(const AIn: string): TIdBytes;
+    class procedure DecodeStream(const AIn: string; ADestStream: TStream);
   end;
 
   TIdDecoderClass = class of TIdDecoder;
@@ -178,11 +185,11 @@ var
 begin
   LStream := TMemoryStream.Create;
   try
-    WriteStringToStream(LStream, AIn, Indy8BitEncoding);
+    WriteStringToStream(LStream, AIn, Indy8BitEncoding{$IFDEF STRING_IS_ANSI}, Indy8BitEncoding{$ENDIF});
     LStream.Position := 0;
     Decode(LStream);
   finally
-    FreeAndNil(LStream);
+    LStream.Free;
   end;
 end;
 
@@ -190,55 +197,48 @@ class function TIdDecoder.DecodeString(const AIn: string; AByteEncoding: TIdText
   {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
   ): string;
 var
-  LDecoder: TIdDecoder;
   LStream: TMemoryStream;
 begin
   LStream := TMemoryStream.Create;
   try
-    LDecoder := Create(nil);
-    try
-      LDecoder.DecodeBegin(LStream);
-      try
-        LDecoder.Decode(AIn);
-      finally
-        LDecoder.DecodeEnd;
-      end;
-      LStream.Position := 0;
-      if AByteEncoding = nil then begin
-        AByteEncoding := Indy8BitEncoding;
-      end;
-      Result := ReadStringFromStream(LStream, -1, AByteEncoding{$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF});
-    finally
-      FreeAndNil(LDecoder);
+    DecodeStream(AIn, LStream);
+    LStream.Position := 0;
+    if AByteEncoding = nil then begin
+      AByteEncoding := Indy8BitEncoding;
     end;
+    Result := ReadStringFromStream(LStream, -1, AByteEncoding{$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF});
   finally
-    FreeAndNil(LStream);
+    LStream.Free;
   end;
 end;
 
 class function TIdDecoder.DecodeBytes(const AIn: string): TIdBytes;
 var
-  LDecoder: TIdDecoder;
   LStream: TMemoryStream;
 begin
   Result := nil;
   LStream := TMemoryStream.Create;
   try
-    LDecoder := Create(nil);
-    try
-      LDecoder.DecodeBegin(LStream);
-      try
-        LDecoder.Decode(AIn);
-      finally
-        LDecoder.DecodeEnd;
-      end;
-      LStream.Position := 0;
-      ReadTIdBytesFromStream(LStream, Result, -1);
-    finally
-      FreeAndNil(LDecoder);
-    end;
+    DecodeStream(AIn, LStream);
+    LStream.Position := 0;
+    ReadTIdBytesFromStream(LStream, Result, -1);
   finally
     FreeAndNil(LStream);
+  end;
+end;
+
+class procedure TIdDecoder.DecodeStream(const AIn: string; ADestStream: TStream);
+begin
+  with Create(nil) do
+  try
+    DecodeBegin(ADestStream);
+    try
+      Decode(AIn);
+    finally
+      DecodeEnd;
+    end;
+  finally
+    Free;
   end;
 end;
 
@@ -383,17 +383,82 @@ begin
     try
       WriteTIdBytesToStream(LStream, ABytes);
       LStream.Position := 0;
-      with Create(nil) do
-      try
-        Result := Encode(LStream);
-      finally
-        Free;
-      end;
+      Result := EncodeStream(LStream);
     finally
       FreeAndNil(LStream);
     end;
   end else begin
     Result := '';
+  end;
+end;
+
+class procedure TIdEncoder.EncodeBytes(const ABytes: TIdBytes; ADestStrings: TStrings);
+var
+  LStream: TMemoryStream;
+begin
+  if ABytes <> nil then begin
+    LStream := TMemoryStream.Create;
+    try
+      WriteTIdBytesToStream(LStream, ABytes);
+      LStream.Position := 0;
+      EncodeStream(LStream, ADestStrings);
+    finally
+      FreeAndNil(LStream);
+    end;
+  end;
+end;
+
+class procedure TIdEncoder.EncodeBytes(const ABytes: TIdBytes; ADestStream: TStream);
+var
+  LStream: TMemoryStream;
+begin
+  if ABytes <> nil then begin
+    LStream := TMemoryStream.Create;
+    try
+      WriteTIdBytesToStream(LStream, ABytes);
+      LStream.Position := 0;
+      EncodeStream(LStream, ADestStream);
+    finally
+      FreeAndNil(LStream);
+    end;
+  end;
+end;
+
+class function TIdEncoder.EncodeStream(ASrcStream: TStream; const ABytes: Integer = -1): string;
+begin
+  if ASrcStream <> nil then begin
+    with Create(nil) do
+    try
+      Result := Encode(ASrcStream, ABytes);
+    finally
+      Free;
+    end;
+  end else begin
+    Result := '';
+  end;
+end;
+
+class procedure TIdEncoder.EncodeStream(ASrcStream: TStream; ADestStrings: TStrings; const ABytes: Integer = -1);
+begin
+  if ASrcStream <> nil then begin
+    with Create(nil) do
+    try
+      Encode(ASrcStream, ADestStrings, ABytes);
+    finally
+      Free;
+    end;
+  end;
+end;
+
+class procedure TIdEncoder.EncodeStream(ASrcStream: TStream; ADestStream: TStream; const ABytes: Integer = -1);
+begin
+  if ASrcStream <> nil then begin
+    with Create(nil) do
+    try
+      Encode(ASrcStream, ADestStream, ABytes);
+    finally
+      Free;
+    end;
   end;
 end;
 

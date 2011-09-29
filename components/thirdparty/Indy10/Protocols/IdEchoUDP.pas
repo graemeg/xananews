@@ -54,7 +54,7 @@ implementation
 uses
   {$IFDEF USE_VCL_POSIX}
 	  {$IFDEF DARWIN}
-    CoreServices,
+  Macapi.CoreServices,
 	  {$ENDIF}
   {$ENDIF}
   IdGlobal;
@@ -72,8 +72,8 @@ var
   StartTime: Cardinal;
 begin
   StartTime := Ticks;
-  Send(AText);
-  Result := ReceiveString;
+  Send(AText, Indy8BitEncoding{$IFDEF STRING_IS_ANSI}, Indy8BitEncoding{$ENDIF});
+  Result := ReceiveString(IdTimeoutDefault, Indy8BitEncoding{$IFDEF STRING_IS_ANSI}, Indy8BitEncoding{$ENDIF});
   {This is just in case the TickCount rolled back to zero}
   FEchoTime :=  GetTickDiff(StartTime,Ticks);
 end;

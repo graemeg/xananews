@@ -68,10 +68,10 @@ uses
 {$IFDEF WIDGET_VCL_LIKE}
   ActnList, StdCtrls, Buttons, ExtCtrls, Graphics, Controls, ComCtrls, Forms, Dialogs,
 {$ENDIF}
-{$IFDEF VCL6_OR_ABOVE}
+{$IFDEF HAS_UNIT_Types}
   Types,
 {$ENDIF}
-{$IFDEF WIN32_OR_WIN64_OR_WINCE}
+{$IFDEF WINDOWS}
   Windows,
 {$ENDIF}
 {$IFDEF LCL}
@@ -415,7 +415,6 @@ begin
     Top := 24;
     Width := 221;
     Height := 21;
-    Style := csDropDownList;
     Enabled := False;
     ItemHeight := 13;
     TabOrder := 3;
@@ -524,7 +523,7 @@ begin
   try
     edtPort.Items.Add(PortDescription(0));
     for i := 0 to IdPorts.Count - 1 do begin
-      edtPort.Items.Add(PortDescription(Integer(IdPorts[i])));
+      edtPort.Items.Add(PortDescription(PtrInt(IdPorts[i])));
     end;
   finally
     edtPort.Items.EndUpdate;
@@ -554,19 +553,22 @@ begin
 end;
 
 function TIdDsnPropEdBindingVCL.PortDescription(const PortNumber: integer): string;
+var
+  LList: TStringList;
 begin
-  with GBSDStack.WSGetServByPort(PortNumber) do try
-    if PortNumber = 0 then begin
-      Result := IndyFormat('%d: %s', [PortNumber, RSBindingAny]);
-    end else
-    begin
-      Result := '';    {Do not Localize}
-      if Count > 0 then begin
-        Result := Format('%d: %s', [PortNumber, CommaText]);    {Do not Localize}
+  if PortNumber = 0 then begin
+    Result := IndyFormat('%d: %s', [PortNumber, RSBindingAny]);
+  end else begin
+    Result := '';    {Do not Localize}
+    LList := TStringList.Create;
+    try
+      GBSDStack.AddServByPortToList(PortNumber, LList);
+      if LList.Count > 0 then begin
+        Result := Format('%d: %s', [PortNumber, LList.CommaText]);    {Do not Localize}
       end;
+    finally
+      LList.Free;
     end;
-  finally
-    Free;
   end;
 end;
 
@@ -611,7 +613,11 @@ begin
         edtIPAddress.Items.Assign(FIPv6Addresses);
       end;
     end;
-    edtIPAddress.ItemIndex := edtIPAddress.Items.IndexOf(FCurrentHandle.IP);
+    if edtIPAddress.Style = csDropDown then begin
+      edtIPAddress.Text := FCurrentHandle.IP;
+    end else begin
+      edtIPAddress.ItemIndex := edtIPAddress.Items.IndexOf(FCurrentHandle.IP);
+    end;
   end
   else
   begin

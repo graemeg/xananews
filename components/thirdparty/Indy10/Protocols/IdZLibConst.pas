@@ -11,12 +11,14 @@ unit IdZLibConst;
 
 interface
 
-{$i IdCompilerDefines.inc}
+{$I IdCompilerDefines.inc}
 
 {$UNDEF STATICLOAD_ZLIB}
 {$IFNDEF FPC}
-  {$IFDEF WIN32_OR_WIN64_OR_WINCE}
-    {$DEFINE STATICLOAD_ZLIB}
+  {$IFDEF WINDOWS}
+    {$IFNDEF BCB5_DUMMY_BUILD}
+      {$DEFINE STATICLOAD_ZLIB}
+    {$ENDIF}
   {$ENDIF}
 {$ENDIF}
 

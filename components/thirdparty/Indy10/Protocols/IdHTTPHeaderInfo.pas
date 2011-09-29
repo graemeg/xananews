@@ -1,3 +1,4 @@
+
 {
   $Project$
   $Workfile$
@@ -77,6 +78,7 @@ uses
 type
   TIdEntityHeaderInfo = class(TPersistent)
   protected
+    FOwner: TPersistent;
     FCacheControl: String;
     FRawHeaders: TIdHeaderList;
     FCharSet: String;
@@ -104,6 +106,7 @@ type
     procedure ProcessHeaders; virtual;
     procedure SetHeaders; virtual;
     function GetOwner: TPersistent; override;
+    function GetOwnerComponent: TComponent;
 
     procedure SetContentLength(const AValue: Int64);
     procedure SetContentType(const AValue: String);
@@ -113,9 +116,10 @@ type
   public
     procedure AfterConstruction; override;
     procedure Clear; virtual;
-    constructor Create; virtual;
+    constructor Create(AOwner: TPersistent); virtual;
     destructor Destroy; override;
     //
+    property OwnerComponent: TComponent read GetOwnerComponent;
     property HasContentLength: Boolean read FHasContentLength;
     property HasContentRange: Boolean read GetHasContentRange;
     property HasContentRangeInstance: Boolean read GetHasContentRangeInstance;
@@ -232,7 +236,7 @@ type
     procedure SetRanges(AValue: TIdEntityRanges);
   public
     //
-    constructor Create; override;
+    constructor Create(AOwner: TPersistent); override;
     destructor Destroy; override;
     procedure Clear; override;
     property Authentication: TIdAuthentication read FAuthentication write FAuthentication;
@@ -272,7 +276,7 @@ type
   public
 
     procedure Clear; override;
-    constructor Create; override;
+    constructor Create(AOwner: TPersistent); override;
     destructor Destroy; override;
   published
     property AcceptRanges: string read FAcceptRanges write SetAcceptRanges;
@@ -282,6 +286,7 @@ type
     property Server: string read FServer write FServer;
     property WWWAuthenticate: TIdHeaderList read FWWWAuthenticate write SetWWWAuthenticate;
   end;
+
   TIdMetaHTTPEquiv = class(TIdEntityHeaderInfo)
   public
     procedure ProcessMetaHTTPEquiv(AStream: TStream);
@@ -297,9 +302,10 @@ const
 
 { TIdEntityHeaderInfo }
 
-constructor TIdEntityHeaderInfo.Create;
+constructor TIdEntityHeaderInfo.Create(AOwner: TPersistent);
 begin
   inherited Create;
+  FOwner := AOwner;
   FRawHeaders := TIdHeaderList.Create(QuoteHTTP);
   FRawHeaders.FoldLength := 1024;
   FCustomHeaders := TIdHeaderList.Create(QuoteHTTP);
@@ -562,10 +568,19 @@ end;
 
 procedure TIdEntityHeaderInfo.SetContentType(const AValue: String);
 var
-  LCharSet: string;
+  S, LCharSet: string;
+  LComp: TComponent;
 begin
   if AValue <> '' then begin
     FContentType := RemoveHeaderEntry(AValue, 'charset', LCharSet, QuoteHTTP); {do not localize}
+
+    {RLebeau: the ContentType property is streamed after the CharSet property,
+    so do not overwrite it during streaming}
+    LComp := OwnerComponent;
+    if Assigned(LComp) and (csReading in LComp.ComponentState) then begin
+      Exit;
+    end;
+
     // RLebeau: per RFC 2616 Section 3.7.1:
     //
     // The "charset" parameter is used with some media types to define the
@@ -575,9 +590,51 @@ begin
     // received via HTTP. Data in character sets other than "ISO-8859-1" or
     // its subsets MUST be labeled with an appropriate charset value. See
     // section 3.4.1 for compatibility problems.
+
+    // RLebeau: per RFC 3023 Sections 3.1, 3.3, 3.6, and 8.5:
+    //
+    // Conformant with [RFC2046], if a text/xml entity is received with
+    // the charset parameter omitted, MIME processors and XML processors
+    // MUST use the default charset value of "us-ascii"[ASCII].  In cases
+    // where the XML MIME entity is transmitted via HTTP, the default
+    // charset value is still "us-ascii".  (Note: There is an
+    // inconsistency between this specification and HTTP/1.1, which uses
+    // ISO-8859-1[ISO8859] as the default for a historical reason.  Since
+    // XML is a new format, a new default should be chosen for better
+    // I18N.  US-ASCII was chosen, since it is the intersection of UTF-8
+    // and ISO-8859-1 and since it is already used by MIME.)
+    //
+    // ...
+    //
+    // The charset parameter of text/xml-external-parsed-entity is
+    // handled the same as that of text/xml as described in Section 3.1
+    //
+    // ...
+    //
+    // The following list applies to text/xml, text/xml-external-parsed-
+    // entity, and XML-based media types under the top-level type "text"
+    // that define the charset parameter according to this specification:
+    //
+    // - If the charset parameter is not specified, the default is "us-
+    //   ascii".  The default of "iso-8859-1" in HTTP is explicitly
+    //   overridden.
+    //
+    // ...
+    //
+    // Omitting the charset parameter is NOT RECOMMENDED for text/xml.  For
+    // example, even if the contents of the XML MIME entity are UTF-16 or
+    // UTF-8, or the XML MIME entity has an explicit encoding declaration,
+    // XML and MIME processors MUST assume the charset is "us-ascii".
+
     if (LCharSet = '') and IsHeaderMediaType(FContentType, 'text') then begin {do not localize}
-      LCharSet := 'ISO-8859-1'; {do not localize}
+      S := ExtractHeaderMediaSubType(FContentType);
+      if (PosInStrArray(S, ['xml', 'xml-external-parsed-entity'], False) >= 0) or TextEndsWith(S, '+xml') then begin {do not localize}
+        LCharSet := 'us-ascii'; {do not localize}
+      end else begin
+        LCharSet := 'ISO-8859-1'; {do not localize}
+      end;
     end;
+
     {RLebeau: override the current CharSet only if the header specifies a new value}
     if LCharSet <> '' then begin
       FCharSet := LCharSet;
@@ -600,7 +657,26 @@ end;
 
 function TIdEntityHeaderInfo.GetOwner: TPersistent;
 begin
-  Result := inherited GetOwner;
+  Result := FOwner;
+end;
+
+type
+  TPersistentAccess = class(TPersistent)
+  end;
+
+function TIdEntityHeaderInfo.GetOwnerComponent: TComponent;
+var
+  LOwner: TPersistent;
+begin
+  Result := nil;
+  LOwner := GetOwner;
+  while LOwner <> nil do begin
+    if LOwner is TComponent then begin
+      Result := TComponent(LOwner);
+      Exit;
+    end;
+    LOwner := TPersistentAccess(LOwner).GetOwner;
+  end;
 end;
 
 { TIdProxyConnectionInfo }
@@ -741,13 +817,13 @@ begin
   begin
     S := Fetch(LValue, '-'); {do not localize}
     if S <> '' then begin
-      FStartPos := StrToIntDef(S, -1);
-      FEndPos := StrToIntDef(Fetch(LValue), -1);
+      FStartPos := StrToInt64Def(S, -1);
+      FEndPos := StrToInt64Def(Fetch(LValue), -1);
       FSuffixLength := -1;
     end else begin
       FStartPos := -1;
       FEndPos := -1;
-      FSuffixLength := StrToIntDef(Fetch(LValue), -1);
+      FSuffixLength := StrToInt64Def(Fetch(LValue), -1);
     end;
   end else begin
     FStartPos := -1;
@@ -801,20 +877,33 @@ end;
 
 procedure TIdEntityRanges.SetText(const AValue: String);
 var
-  LTmp: String;
+  LUnits, LTmp: String;
   LRanges: TStringList;
   I: Integer;
+  LRange: TIdEntityRange;
 begin
   LTmp := Trim(AValue);
   BeginUpdate;
   try
     Clear;
-    Units := Fetch(LTmp, '='); {do not localize}
+    if Pos('=', LTmp) > 0 then begin {do not localize}
+      LUnits := Fetch(LTmp, '='); {do not localize}
+    end;
+    SetUnits(LUnits);
     LRanges := TStringList.Create;
     try
       SplitColumns(LTmp, LRanges, ','); {do not localize}
       for I := 0 to LRanges.Count-1 do begin
-        Add.Text := LRanges[I];
+        LTmp := Trim(LRanges[I]);
+        if LTmp <> '' then begin
+          LRange := Add;
+          try
+            LRange.Text := LTmp;
+          except
+            LRange.Free;
+            raise;
+          end;
+        end;
       end;
     finally
       LRanges.Free;
@@ -838,9 +927,9 @@ end;
 
 { TIdRequestHeaderInfo }
 
-constructor TIdRequestHeaderInfo.Create;
+constructor TIdRequestHeaderInfo.Create(AOwner: TPersistent);
 begin
-  inherited Create;
+  inherited Create(AOwner);
   FRanges := TIdEntityRanges.Create(Self);
 end;
 
@@ -1031,9 +1120,9 @@ end;
 
 { TIdResponseHeaderInfo }
 
-constructor TIdResponseHeaderInfo.Create;
+constructor TIdResponseHeaderInfo.Create(AOwner: TPersistent);
 begin
-  inherited Create;
+  inherited Create(AOwner);
   FContentType := 'text/html';  {do not localize}
   FCharSet := 'ISO-8859-1';  {do not localize}
   FWWWAuthenticate := TIdHeaderList.Create(QuoteHTTP);
@@ -1105,6 +1194,10 @@ begin
   if Length(FAcceptRanges) > 0 then
   begin
     RawHeaders.Values['Accept-Ranges'] := FAcceptRanges;
+  end;
+  if FLastModified > 0 then
+  begin
+    RawHeaders.Values['Last-Modified'] := DateTimeGMTToHttpStr(FLastModified); {do not localize}
   end;
 end;
 

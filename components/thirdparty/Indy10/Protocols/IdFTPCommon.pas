@@ -530,7 +530,8 @@ function TIdVSEPQDispositionDispositionCode(const ADisp : TIdVSEPQDisposition) :
 {EPLF and MLST/MLSD support}
 function ParseFacts(AData : String; AResults : TStrings;
   const AFactDelim : String = ';'; const ANameDelim : String=' '): String;
-
+function ParseFactsMLS(AData : String; AResults : TStrings;
+  const AFactDelim : String = ';'; const ANameDelim : String = ' '): String;
 {Sterling Commerce support routines}
 
 function IsValidSterCommFlags(const AString : String) : Boolean;
@@ -641,7 +642,7 @@ will not exploit any known flaw in the server.
 
 I did verify that this works with "X2 WS_FTP Server 6.1.1".
 }
-function IsWSFTPServer(var VKey : Cardinal; const AGreeting : String) : Boolean;
+function ExtractWSFTPServerKey(const AGreeting : String; var VKey : Cardinal) : Boolean;
 procedure xaut_encrypt(var VDest : TIdBytes; const ASrc : TIdBytes; const AKey : Cardinal);
 procedure xaut_unpack(var VDest : String; const ASrc : TIdBytes);
 procedure xaut_pack(var VDst : TIdBytes; const ASrc : String);
@@ -654,38 +655,40 @@ const
 //end XAUT Stuff
 
 implementation
+
 uses 
   {$IFDEF USE_VCL_POSIX}
-  PosixSysTime,
-  PosixTime,
+  Posix.SysTime,
+  Posix.Time,
   {$ENDIF}
   IdException;
 
 {WS_FTP Pro XAUT Support}
 
-function IsWSFTPServer(var VKey : Cardinal; const AGreeting : String) : Boolean;
+function ExtractWSFTPServerKey(const AGreeting : String; var VKey : Cardinal) : Boolean;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
-var LBuf : String;
+var
+  LBuf : String;
 begin
-  Result := IndyPos('WS_FTP Server',AGreeting) > 0;  {Do not localize}
-  if Result then begin
+  Result := False;
+  if IndyPos('WS_FTP Server', AGreeting) > 0 then begin  {Do not localize}
     LBuf := AGreeting;
-    Fetch(LBuf,'(');
-    LBuf := Fetch(LBuf,')');
-    Result := IsNumeric(LBuf);
-    if Result then begin
-      VKey := StrToIntDef(LBuf,0);
+    Fetch(LBuf, '('); {do not localize}
+    LBuf := Fetch(LBuf, ')'); {do not localize}
+    if IsNumeric(LBuf) then begin
+      VKey := Cardinal(IndyStrToInt64(LBuf, 0));
+      Result := True;
     end;
   end;
 end;
 
 procedure xaut_encrypt(var VDest : TIdBytes; const ASrc : TIdBytes; const AKey : Cardinal);
   {$IFDEF USE_INLINE} inline; {$ENDIF}
-var LBuf : TIdBytes;
+var
+  LBuf : TIdBytes;
   i, l : Integer;
 begin
-
-   SetLength(LBuf,4);
+  SetLength(LBuf,4);
   LBuf[0] := AKey and $FF;
   LBuf[1] := (AKey shr 8) and $FF;
   LBuf[2] := (AKey shr 16) and $FF;
@@ -725,27 +728,26 @@ begin
   l := Length(LSrc) div 2;
   SetLength(VDst,l);
   for i := 0 to l - 1 do  begin
-    VDst[i] := (((LSrc[ (i * 2)] - $35) shl 4)  +
-       (LSrc[ (i * 2)+1] - $31));
+    VDst[i] := (((LSrc[ (i * 2)] - $35) shl 4) + (LSrc[ (i * 2)+1] - $31));
   end;
-
 end;
 
 function MakeXAUTCmd(const AGreeting, AUsername, APassword : String; const Ad : Cardinal = 2) : String;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
-var LKey : Cardinal;
+var
+  LKey : Cardinal;
   LDst : TIdBytes;
 begin
   Result := '';
-  if IsWSFTPServer(LKey,AGreeting) then begin
+  if ExtractWSFTPServerKey(AGreeting, LKey) then begin
     LDst := ToBytes(AUsername+':'+APassword);
     if Ad = 2 then begin
-      xaut_encrypt(LDst,LDst,XAUT_2_KEY);
+      xaut_encrypt(LDst, LDst, XAUT_2_KEY);
     end;
-    xaut_encrypt(LDst,LDst,LKey);
-   // LCmd := 'XAUT 2 '+
-    xaut_unpack(Result,LDst);
-    Result := 'XAUT '+IntToStr(AD)+' '+ Result;
+    xaut_encrypt(LDst, LDst, LKey);
+    // LCmd := 'XAUT 2 '+
+    xaut_unpack(Result, LDst);
+    Result := 'XAUT ' + IntToStr(Ad) + ' ' + Result;
   end;
 end;
 
@@ -756,12 +758,11 @@ var
   LNum : Cardinal;  //first param
 begin
   Result := AXAutStr;
-
-  LNum := StrToIntDef(Fetch(Result),0);
-  xaut_pack(LBuf,Result);
-  xaut_encrypt(LBuf,LBuf, AKey );
+  LNum := Cardinal(IndyStrToInt64(Fetch(Result), 0));
+  xaut_pack(LBuf, Result);
+  xaut_encrypt(LBuf, LBuf, AKey);
   if LNum = 2 then begin
-    xaut_encrypt(LBuf,LBuf,XAUT_2_KEY);
+    xaut_encrypt(LBuf, LBuf, XAUT_2_KEY);
   end;
   Result := BytesToString(LBuf);
 end;
@@ -771,13 +772,13 @@ function MakeXAUTKey : Cardinal;
 begin
   Randomize;
   repeat
-    Result := (Random($FF) shl 8) + (Random($FF) shl 16) + (Random($FF) shl 24) +
-      Random($FF);
-    //we probably should avoid numbers that use the 32nd bit to prevent them from
-    //being expressed negatively and because I'm not sure what integer type
-    //other programs us.  Note that I specifically use the value of MaxInt instead of
-    //MaxInt itself because MaxInt could possibly grow if the Pascal Integer type changes.
-    Result := Result and $7FFFFFFF;
+    //we probably should avoid numbers that use the high bit to prevent them
+    //from being expressed negatively and because I'm not sure what integer
+    //type other programs us.
+    Result := (Cardinal(Random($7F)) shl 24) or
+              (Cardinal(Random($FF)) shl 16) or
+              (Cardinal(Random($FF)) shl 8) or
+              Cardinal(Random($FF));
   until (Result <> XAUT_2_KEY ) and (Result <> 0)
 end;
 
@@ -1471,7 +1472,7 @@ by some FTP servers are interpretted just like Borland's year
 handling routines.
 }
 {$IFDEF HAS_TFormatSettings_Object}
-{For Delphi 2011, we have a format settings object that includes a member
+{For Delphi XE, we have a format settings object that includes a member
 for two digit year processing.  Use that instead because that is thread-safe.
 
 Also note, that in this version, TFormatSettings is not an object at all, it's a
@@ -2275,7 +2276,8 @@ begin
   end;
 end;
 
-//===== MLST/MLSD and EPLF formats
+
+//===== EPLF formats
 function ParseFacts(AData : String; AResults : TStrings;
   const AFactDelim : String = ';'; const ANameDelim : String = ' '): String;
   {$IFDEF USE_INLINE} inline; {$ENDIF}
@@ -2289,6 +2291,33 @@ begin
     AResults.Add(Fetch(LBuf, AFactDelim));
   until LBuf = '';
 end;
+
+//===== MLSD Parse facts, this has to be different because of different charsets
+function ParseFactsMLS(AData : String; AResults : TStrings;
+  const AFactDelim : String = ';'; const ANameDelim : String = ' '): String;
+  {$IFDEF USE_INLINE} inline; {$ENDIF}
+var
+  LBuf : TIdBytes;
+  LCharSet : String;
+  LEncoding : TIdTextEncoding;
+begin
+  LBuf := ToBytes(ParseFacts(AData, AResults, AFactDelim, ANameDelim), Indy8bitEncoding{$IFDEF STRING_IS_ANSI}, Indy8bitEncoding{$ENDIF});
+  LCharSet := AResults.Values['charset'];
+  if LCharSet = '' then begin
+    LCharSet := 'UTF-8';
+  end;
+  LEncoding := CharsetToEncoding(LCharSet);
+  try
+    try
+      Result := BytesToString(LBuf, LEncoding);
+    except
+      Result := BytesToString(LBuf, Indy8bitEncoding);
+    end;
+  finally
+    FreeAndNil(LEncoding);
+  end;
+end;
+
 
 {Sterling Commerce support routines}
 

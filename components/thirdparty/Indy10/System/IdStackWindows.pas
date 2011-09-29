@@ -256,7 +256,7 @@ type
       const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION): string; override;
 
     function WSGetServByName(const AServiceName: string): TIdPort; override;
-    function WSGetServByPort(const APortNumber: TIdPort): TStrings; override;
+    procedure AddServByPortToList(const APortNumber: TIdPort; AAddresses: TStrings); override;
 
     function RecvFrom(const ASocket: TIdStackSocketHandle; var VBuffer;
      const ALength, AFlags: Integer; var VIP: string; var VPort: TIdPort;
@@ -305,6 +305,8 @@ type
       const APort : TIdPort;
       const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION); override;
     procedure AddLocalAddressesToList(AAddresses: TStrings); override;
+    procedure SetKeepAliveValues(ASocket: TIdStackSocketHandle;
+      const AEnabled: Boolean; const ATimeMS, AInterval: Integer); override;
   end;
 
 var
@@ -699,7 +701,7 @@ begin
   end;
 end;
 
-function TIdStackWindows.WSGetServByPort(const APortNumber: TIdPort): TStrings;
+procedure TIdStackWindows.AddServByPortToList(const APortNumber: TIdPort; AAddresses: TStrings);
 type
   // Note that there is no Unicode version of getservbyport.
   PPAnsiCharArray = ^TPAnsiCharArray;
@@ -709,26 +711,25 @@ var
   i: integer;
   p: PPAnsiCharArray;
 begin
-  Result := TStringList.Create;
+  ps := getservbyport(htons(APortNumber), nil);
+  if ps = nil then begin
+    RaiseLastSocketError;
+  end;
+  AAddresses.BeginUpdate;
   try
-    ps := getservbyport(htons(APortNumber), nil);
-    if ps <> nil then
+    //we have to specifically type cast a PAnsiChar to a string for D2009+.
+    //otherwise, we will get a warning about implicit typecast from AnsiString
+    //to string
+    AAddresses.Add(String(PAnsiChar(ps^.s_name)));
+    i := 0;
+    p := Pointer(ps^.s_aliases);
+    while p[i] <> nil do
     begin
-      //we have to specifically type cast a PAnsiChar to a string for D2009+.
-      //otherwise, we will get a warning about implicit typecast from AnsiString
-      //to string
-      Result.Add(String(PAnsiChar(ps^.s_name)));
-      i := 0;
-      p := Pointer(ps^.s_aliases);
-      while p[i] <> nil do
-      begin
-        Result.Add(String(PAnsiChar(p[i])));
-        Inc(i);
-      end;
+      AAddresses.Add(String(PAnsiChar(p[i])));
+      Inc(i);
     end;
-  except
-    FreeAndNil(Result);
-    raise;
+  finally
+    AAddresses.EndUpdate;
   end;
 end;
 
@@ -824,6 +825,9 @@ begin
       AAddresses.BeginUpdate;
       try
         repeat
+          // TODO: gethostbynaame() might return other things besides IPv4
+          // addresses, so we should be validating the address type before
+          // attempting the conversion...
           AAddresses.Add(TranslateTInAddrToString(PAdrPtr^[I]^, Id_IPv4)); //BGO FIX
           Inc(I);
         until PAdrPtr^[i] = nil;
@@ -1191,6 +1195,9 @@ begin
           if LHost = nil then begin
             RaiseLastSocketError;
           end;
+          // TODO: gethostbyname() might return other things besides IPv4
+          // addresses, so we should be validating the address type before
+          // attempting the conversion...
           LPa := LHost^.h_address_list^;
           LSa.S_un_b.s_b1 := Ord(LPa[0]);
           LSa.S_un_b.s_b2 := Ord(LPa[1]);
@@ -1653,6 +1660,24 @@ begin
   end;
 end;
 {$ENDIF}
+
+procedure TIdStackWindows.SetKeepAliveValues(ASocket: TIdStackSocketHandle;
+  const AEnabled: Boolean; const ATimeMS, AInterval: Integer);
+var
+  ka: tcp_keepalive;
+  Bytes: DWORD;
+begin
+  // SIO_KEEPALIVE_VALS is supported on Win2K+ only
+  if AEnabled and (Win32MajorVersion >= 5) then
+  begin
+    ka.onoff := 1;
+    ka.keepalivetime := ATimeMS;
+    ka.keepaliveinterval := AInterval;
+    WSAIoctl(ASocket, SIO_KEEPALIVE_VALS, @ka, SizeOf(ka), nil, 0, @Bytes, nil, nil);
+  end else begin
+    SetSocketOption(ASocket, Id_SOL_SOCKET, Id_SO_KEEPALIVE, iif(AEnabled, 1, 0));
+  end;
+end;
 
 initialization
   GStarted := False;
