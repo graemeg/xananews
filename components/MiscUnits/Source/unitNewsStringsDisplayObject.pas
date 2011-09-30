@@ -26,7 +26,7 @@ unit unitNewsStringsDisplayObject;
 interface
 
 uses
-  Windows, Messages, Classes, SysUtils, Controls, Graphics, Forms,
+  Windows, Messages, Classes, SysUtils, Controls, Graphics, Forms, Types,
   cmpMessageDisplay, cmpNewsRichEdit, Dialogs, SyncObjs, ComCtrls, StrUtils, XnClasses;
 
 type

@@ -4,7 +4,11 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, PropertyPageForm, StdCtrls, Menus, VirtualTrees, ExtCtrls, ConTnrs, ActnList;
+  Dialogs, PropertyPageForm, StdCtrls, Menus, VirtualTrees, ExtCtrls, ConTnrs, ActnList
+  {$if CompilerVersion >= 23}
+    , System.UITypes
+  {$ifend}
+  ;
 
 type
   TActionCategories = class;

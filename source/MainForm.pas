@@ -29,7 +29,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
-  Dialogs, ToolWin, ActnList,
+  Dialogs, ToolWin, ActnList, Types,
   cmpPersistentPosition, cmpStandardSystemMenu, ImgList, StdActns,
   cmpNTAboutBox, ComCtrls, ExtCtrls, VirtualTrees, ConTnrs, unitNNTPServices,
   Menus, AppEvnts, ExtDlgs, cmpMessageScrollBox, cmpExSplitter,
@@ -658,7 +658,7 @@ type
     procedure ApplicationEvents1Activate(Sender: TObject);
     procedure ApplicationEvents1Deactivate(Sender: TObject);
     procedure ApplicationEvents1Exception(Sender: TObject; E: Exception);
-    function  ApplicationEvents1Help(Command: Word; Data: Integer; var CallHelp: Boolean): Boolean;
+    function ApplicationEvents1Help(Command: Word; Data: NativeInt; var CallHelp: Boolean): Boolean;
     procedure ApplicationEvents1Hint(Sender: TObject);
     procedure FindDialog1Close(Sender: TObject);
     procedure FindDialog1Find(Sender: TObject);
@@ -3008,7 +3008,7 @@ begin
     Application.ShowException(E);
 end;
 
-function TfmMain.ApplicationEvents1Help(Command: Word; Data: Integer;
+function TfmMain.ApplicationEvents1Help(Command: Word; Data: NativeInt;
   var CallHelp: Boolean): Boolean;
 begin
   // Work round bug in help system                                        |

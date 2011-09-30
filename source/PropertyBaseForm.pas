@@ -26,7 +26,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, ExtCtrls, VirtualTrees, PropertyPageForm, ConTnrs, StdCtrls,
+  Dialogs, ExtCtrls, VirtualTrees, PropertyPageForm, Contnrs, StdCtrls, Types,
   cmpPersistentPosition, Menus, unitExSettings;
 
 const

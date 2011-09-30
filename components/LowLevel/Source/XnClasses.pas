@@ -15,8 +15,6 @@ type
 {$endif}
   end;
 
-//  MessageString = type RawByteString;
-
   TAnsiStrings = class(TPersistent)
   private
     FDefined: TStringsDefined;
@@ -126,12 +124,12 @@ type
   end;
 
   PAnsiStringItemList = ^TAnsiStringItemList;
-  TAnsiStringItemList = array[0..MaxListSize] of TAnsiStringItem;
+  TAnsiStringItemList = array of TAnsiStringItem;
   TAnsiStringListSortCompare = function(List: TAnsiStringList; Index1, Index2: Integer): Integer;
 
   TAnsiStringList = class(TAnsiStrings)
   private
-    FList: PAnsiStringItemList;
+    FList: TAnsiStringItemList;
     FCount: Integer;
     FCapacity: Integer;
     FSorted: Boolean;
@@ -930,7 +928,6 @@ begin
   end;
 
   inherited Destroy;
-  if FCount <> 0 then Finalize(FList^[0], FCount);
   FCount := 0;
   SetCapacity(0);
 end;
@@ -984,7 +981,6 @@ begin
       end;
     end;
 
-    Finalize(FList^[0], FCount);
     FCount := 0;
     SetCapacity(0);
     Changed;
@@ -992,17 +988,31 @@ begin
 end;
 
 procedure TAnsiStringList.Delete(Index: Integer);
+var
+  Obj: TObject;
 begin
   if (Index < 0) or (Index >= FCount) then Error(@SListIndexError, Index);
   Changing;
   // If this list owns its objects then free the associated TObject with this index
   if OwnsObjects then
-    GetObject(Index).Free;
-  Finalize(FList^[Index]);
+    Obj := FList[Index].FObject
+  else
+    Obj := nil;
+
+  // Direct memory writing to managed array follows
+  //  see http://dn.embarcadero.com/article/33423
+  // Explicitly finalize the element we about to stomp on with move
+  Finalize(FList[Index]);
   Dec(FCount);
   if Index < FCount then
-    System.Move(FList^[Index + 1], FList^[Index],
+  begin
+    System.Move(FList[Index + 1], FList[Index],
       (FCount - Index) * SizeOf(TAnsiStringItem));
+    // Make sure there is no danglng pointer in the last (now unused) element
+    PPointer(@FList[FCount])^ := nil;
+  end;
+  if Obj <> nil then
+    Obj.Free;
   Changed;
 end;
 
@@ -1017,17 +1027,17 @@ end;
 
 procedure TAnsiStringList.ExchangeItems(Index1, Index2: Integer);
 var
-  Temp: Integer;
+  Temp: Pointer;
   Item1, Item2: PAnsiStringItem;
 begin
-  Item1 := @FList^[Index1];
-  Item2 := @FList^[Index2];
-  Temp := Integer(Item1^.FAnsiString);
-  Integer(Item1^.FAnsiString) := Integer(Item2^.FAnsiString);
-  Integer(Item2^.FAnsiString) := Temp;
-  Temp := Integer(Item1^.FObject);
-  Integer(Item1^.FObject) := Integer(Item2^.FObject);
-  Integer(Item2^.FObject) := Temp;
+  Item1 := @FList[Index1];
+  Item2 := @FList[Index2];
+  Temp := Pointer(Item1^.FAnsiString);
+  Pointer(Item1^.FAnsiString) := Pointer(Item2^.FAnsiString);
+  Pointer(Item2^.FAnsiString) := Temp;
+  Temp := Item1^.FObject;
+  Item1^.FObject := Item2^.FObject;
+  Item2^.FObject := Temp;
 end;
 
 function TAnsiStringList.Find(const S: AnsiString; var Index: Integer): Boolean;
@@ -1040,7 +1050,7 @@ begin
   while L <= H do
   begin
     I := (L + H) shr 1;
-    C := CompareAnsiStrings(FList^[I].FAnsiString, S);
+    C := CompareAnsiStrings(FList[I].FAnsiString, S);
     if C < 0 then L := I + 1 else
     begin
       H := I - 1;
@@ -1056,8 +1066,9 @@ end;
 
 function TAnsiStringList.Get(Index: Integer): AnsiString;
 begin
-  if (Index < 0) or (Index >= FCount) then Error(@SListIndexError, Index);
-  Result := FList^[Index].FAnsiString;
+  if Cardinal(Index) >= Cardinal(FCount) then
+    Error(@SListIndexError, Index);
+  Result := FList[Index].FAnsiString;
 end;
 
 function TAnsiStringList.GetCapacity: Integer;
@@ -1072,8 +1083,9 @@ end;
 
 function TAnsiStringList.GetObject(Index: Integer): TObject;
 begin
-  if (Index < 0) or (Index >= FCount) then Error(@SListIndexError, Index);
-  Result := FList^[Index].FObject;
+  if Cardinal(Index) >= Cardinal(FCount) then
+    Error(@SListIndexError, Index);
+  Result := FList[Index].FObject;
 end;
 
 procedure TAnsiStringList.Grow;
@@ -1110,9 +1122,9 @@ begin
   Changing;
   if FCount = FCapacity then Grow;
   if Index < FCount then
-    System.Move(FList^[Index], FList^[Index + 1],
+    System.Move(FList[Index], FList[Index + 1],
       (FCount - Index) * SizeOf(TAnsiStringItem));
-  with FList^[Index] do
+  with FList[Index] do
   begin
     Pointer(FAnsiString) := nil;
     FObject := AObject;
@@ -1125,17 +1137,19 @@ end;
 procedure TAnsiStringList.Put(Index: Integer; const S: AnsiString);
 begin
   if Sorted then Error(@SSortedListError, 0);
-  if (Index < 0) or (Index >= FCount) then Error(@SListIndexError, Index);
+  if Cardinal(Index) >= Cardinal(FCount) then
+    Error(@SListIndexError, Index);
   Changing;
-  FList^[Index].FAnsiString := S;
+  FList[Index].FAnsiString := S;
   Changed;
 end;
 
 procedure TAnsiStringList.PutObject(Index: Integer; AObject: TObject);
 begin
-  if (Index < 0) or (Index >= FCount) then Error(@SListIndexError, Index);
+  if Cardinal(Index) >= Cardinal(FCount) then
+    Error(@SListIndexError, Index);
   Changing;
-  FList^[Index].FObject := AObject;
+  FList[Index].FObject := AObject;
   Changed;
 end;
 
@@ -1169,11 +1183,11 @@ end;
 
 procedure TAnsiStringList.SetCapacity(NewCapacity: Integer);
 begin
-  if (NewCapacity < FCount) or (NewCapacity > MaxListSize) then
+  if NewCapacity < FCount then
     Error(@SListCapacityError, NewCapacity);
   if NewCapacity <> FCapacity then
   begin
-    ReallocMem(FList, NewCapacity * SizeOf(TAnsiStringItem));
+    SetLength(FList, NewCapacity);
     FCapacity := NewCapacity;
   end;
 end;
@@ -1194,8 +1208,8 @@ end;
 
 function AnsiStringListCompareAnsiStrings(List: TAnsiStringList; Index1, Index2: Integer): Integer;
 begin
-  Result := List.CompareAnsiStrings(List.FList^[Index1].FAnsiString,
-                                List.FList^[Index2].FAnsiString);
+  Result := List.CompareAnsiStrings(List.FList[Index1].FAnsiString,
+                                    List.FList[Index2].FAnsiString);
 end;
 
 procedure TAnsiStringList.Sort;
@@ -1223,7 +1237,7 @@ end;
 
 constructor TAnsiStringList.Create;
 begin
-  inherited;
+  inherited Create;
 end;
 
 constructor TAnsiStringList.Create(OwnsObjects: Boolean);

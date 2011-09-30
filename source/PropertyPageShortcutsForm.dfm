@@ -8,8 +8,10 @@ inherited fmPropertyPageShortcuts: TfmPropertyPageShortcuts
   TextHeight = 13
   inherited Panel1: TPanel
     Width = 414
+    ExplicitWidth = 414
     inherited Bevel1: TBevel
       Width = 414
+      ExplicitWidth = 414
     end
     inherited stSectionDetails: TLabel
       Width = 402
@@ -17,6 +19,7 @@ inherited fmPropertyPageShortcuts: TfmPropertyPageShortcuts
         'Use this section to configure the keyboard shortcuts that XanaNe' +
         'ws uses.  Note that items in red have been modified from the ori' +
         'ginal default settings.'
+      ExplicitWidth = 402
     end
   end
   object vstActions: TVirtualStringTree
