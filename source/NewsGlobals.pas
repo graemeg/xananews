@@ -331,6 +331,11 @@ begin
     end;
 
     hdrs[i] := RawTrim(s1);
+
+    {$IFDEF CPUX64}
+    // TODO: remove workaround for x64 leaking RawByteStrings
+    s1 := '';
+    {$ENDIF}
   end;
 end;
 

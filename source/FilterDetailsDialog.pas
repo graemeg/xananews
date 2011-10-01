@@ -23,7 +23,7 @@ type
   protected
     procedure UpdateActions; override;
   public
-    Filter : TNNTPFilter;
+    Filter: TNNTPFilter;
     { Public declarations }
   end;
 
@@ -36,23 +36,23 @@ implementation
 
 procedure TdlgFilterDetails.FormShow(Sender: TObject);
 begin
-  rgColumn.ItemIndex := Integer (filter.Column);
-  rgOperator.ItemIndex := Integer (filter.Operator);
-  edFilterText.Text := filter.StrVal;
-  edFilter.Text := filter.Name;
-  edFilter.Enabled := filter.Name = ''
+  rgColumn.ItemIndex := Integer(Filter.Column);
+  rgOperator.ItemIndex := Integer(Filter.Operator);
+  edFilterTExt.Text := Filter.StrVal;
+  edFilter.Text := Filter.Name;
+  edFilter.Enabled := Filter.Name = ''
 end;
 
 procedure TdlgFilterDetails.UpdateActions;
 var
-  enable : boolean;
-  filter : TNNTPFilter;
+  enable: boolean;
+  Filter: TNNTPFilter;
 begin
-  enable := (edFilter.Text <> '') and (edFilterText.Text <> '');
+  enable := (edFilter.Text <> '') and (edFilterTExt.Text <> '');
   if enable then
   begin
-    filter := AllFilters.FindFilter (edFilter.Text);
-    if (filter <> nil) and (filter <> self.Filter) then
+    Filter := AllFilters.FindFilter(edFilter.Text);
+    if (Filter <> nil) and (Filter <> self.Filter) then
       enable := False
   end;
   btnOK.Enabled := enable;
@@ -60,10 +60,10 @@ end;
 
 procedure TdlgFilterDetails.btnOKClick(Sender: TObject);
 begin
-  filter.Name := edFilter.Text;
-  filter.Column := TNNTPFilterColumn (rgColumn.ItemIndex);
-  filter.Operator := TNNTPFilterOperator (rgOperator.ItemIndex);
-  filter.StrVal := edFilterText.Text;
+  Filter.Name := edFilter.Text;
+  Filter.Column := TNNTPFilterColumn(rgColumn.ItemIndex);
+  Filter.Operator := TNNTPFilterOperator(rgOperator.ItemIndex);
+  Filter.StrVal := edFilterTExt.Text;
 end;
 
 end.

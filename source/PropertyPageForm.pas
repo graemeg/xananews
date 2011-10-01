@@ -12,17 +12,17 @@ type
     fCaption: string;
     fHelpText: string;
     fHelpKeyword: string;
-    fParam: Integer;
+    fParam: LPARAM;
     fMinX: Integer;
     fMinY: Integer;
     fInitialized: Boolean;
   protected
-    property Param: Integer read fParam;
+    property Param: LPARAM read fParam;
     procedure Initialize; virtual; abstract;
     function GetCaption: string; virtual;
     function GetHelpText: string; virtual;
   public
-    constructor Create(const ACaption, AHelpText, AHelpKeyword: string; AMinCX, AMinCY: Integer; AParam: Integer = 0);
+    constructor Create(const ACaption, AHelpText, AHelpKeyword: string; AMinCX, AMinCY: Integer; AParam: LPARAM = 0);
     function Apply: Boolean; virtual;
     procedure Cancel; virtual;
     procedure Error; virtual;
@@ -88,7 +88,7 @@ begin
 end;
 
 constructor TPropertyPageData.Create(const ACaption, AHelpText, AHelpKeyword: string;
-  AMinCX, AMinCY: Integer; AParam: Integer);
+  AMinCX, AMinCY: Integer; AParam: LPARAM);
 begin
   fCaption := ACaption;
   fHelpText := AHelpText;

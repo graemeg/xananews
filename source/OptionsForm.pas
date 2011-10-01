@@ -77,33 +77,33 @@ begin
 
   page := AddPropertyPageDetails(TfmPropertyPageDummy, nil, rstColorsFonts, rstColorsFontsHelp);
 
-  page1 := AddPropertyPageDetails(TfmPropertyPageFont, page, rstMessageTree, rstColorFontMessageTreeHelp, '', Integer(apMessageHeaders));
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apMessageHeaders));
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apMessagesToMe));
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apMessagesFromMe));
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apXanaNewsMessages));
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apDormantMessages));
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apReplies));
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apIgnoredMessages));
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apChildlessMessages));
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apInterestingMessages));
+  page1 := AddPropertyPageDetails(TfmPropertyPageFont, page, rstMessageTree, rstColorFontMessageTreeHelp, '', LPARAM(apMessageHeaders));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', LPARAM(apMessageHeaders));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', LPARAM(apMessagesToMe));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', LPARAM(apMessagesFromMe));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', LPARAM(apXanaNewsMessages));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', LPARAM(apDormantMessages));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', LPARAM(apReplies));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', LPARAM(apIgnoredMessages));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', LPARAM(apChildlessMessages));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', LPARAM(apInterestingMessages));
 
-  page1 := AddPropertyPageDetails(TfmPropertyPageFont, page, rstMessagePane, rstColorFontMessagePaneHelp, '', Integer(apMessagePane));
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apMessagePane));
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apHeadersInMessagePane));
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apSignaturesInMessagePane));
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apLevel1Quotes));
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apLevel2Quotes));
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apLevel3Quotes));
+  page1 := AddPropertyPageDetails(TfmPropertyPageFont, page, rstMessagePane, rstColorFontMessagePaneHelp, '', LPARAM(apMessagePane));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', LPARAM(apMessagePane));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', LPARAM(apHeadersInMessagePane));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', LPARAM(apSignaturesInMessagePane));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', LPARAM(apLevel1Quotes));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', LPARAM(apLevel2Quotes));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', LPARAM(apLevel3Quotes));
 
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page, '', '', '', Integer(apMessageEditor));
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page, '', '', '', Integer(apSubscribedGroups));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page, '', '', '', LPARAM(apMessageEditor));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page, '', '', '', LPARAM(apSubscribedGroups));
 
-  page1 := AddPropertyPageDetails(TfmPropertyPageFont, page, rstMainForm, rstColorFontMainFormHelp, '', Integer(apMainForm));
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apMainForm));
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apMenu));
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apToolBar));
-  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', Integer(apMessageDetailsPanel));
+  page1 := AddPropertyPageDetails(TfmPropertyPageFont, page, rstMainForm, rstColorFontMainFormHelp, '', LPARAM(apMainForm));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', LPARAM(apMainForm));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', LPARAM(apMenu));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', LPARAM(apToolBar));
+  AddPropertyPageDetails(TfmPropertyPageColorFont, page1, '', '', '', LPARAM(apMessageDetailsPanel));
 
   AddPropertyPageDetails(TfmPropertyPageGroupsTree, nil);
 
@@ -124,14 +124,14 @@ begin
 
   page := AddPropertyPageDetails(TfmPropertyPageDummy, nil, rstDefaultSettings, rstDefaultSettingsHelp, 'Options');
 
-  pg1 := AddPropertyPageDetails(TfmPropertyPagePreferences, page, '', rstDefaultSettingsHelp, '', Integer(NNTPAccounts.DisplaySettings));
+  pg1 := AddPropertyPageDetails(TfmPropertyPagePreferences, page, '', rstDefaultSettingsHelp, '', LPARAM(NNTPAccounts.DisplaySettings));
   TPropertyPagePreferencesData(pg1.Data).InitObject(NNTPAccounts);
 
-  AddPropertyPageDetails(TfmPropertyPageSorting, page, '', rstDefaultSettingsHelp, '', Integer(NNTPAccounts.DisplaySettings));
-  AddPropertyPageDetails(TfmPropertyPagePosting, page, '', rstDefaultSettingsHelp, '', Integer(NNTPAccounts.PostingSettings));
-  AddPropertyPageDetails(TfmPropertyPageExtraPosting, page, '', rstDefaultSettingsHelp, '', Integer(NNTPAccounts.NNTPSettings));
-  AddPropertyPageDetails(TfmPropertyPageQuoting, page, '', rstDefaultSettingsHelp, '', Integer(NNTPAccounts.PostingSettings));
-  AddPropertyPageDetails(TfmPropertyPageFilters, page, '', '', '', Integer(NNTPAccounts));
+  AddPropertyPageDetails(TfmPropertyPageSorting, page, '', rstDefaultSettingsHelp, '', LPARAM(NNTPAccounts.DisplaySettings));
+  AddPropertyPageDetails(TfmPropertyPagePosting, page, '', rstDefaultSettingsHelp, '', LPARAM(NNTPAccounts.PostingSettings));
+  AddPropertyPageDetails(TfmPropertyPageExtraPosting, page, '', rstDefaultSettingsHelp, '', LPARAM(NNTPAccounts.NNTPSettings));
+  AddPropertyPageDetails(TfmPropertyPageQuoting, page, '', rstDefaultSettingsHelp, '', LPARAM(NNTPAccounts.PostingSettings));
+  AddPropertyPageDetails(TfmPropertyPageFilters, page, '', '', '', LPARAM(NNTPAccounts));
 
   btnDefaultNewsreader.ElevationRequired := IsVistaOrLater;
 end;

@@ -10,11 +10,11 @@ uses
 type
   TfmNewsgroup = class(TfmPropertyBase)
   private
-    fGrp : TSubscribedGroup;
+    fGrp: TSubscribedGroup;
   protected
-    function SaveSettings : boolean; override;
+    function SaveSettings: Boolean; override;
   public
-    constructor CreateInit (AOwner : TComponent; grp : TSubscribedGroup);
+    constructor CreateInit(AOwner: TComponent; grp: TSubscribedGroup);
   end;
 
 var
@@ -36,31 +36,30 @@ uses
 
 { TfmNewsgroup }
 
-constructor TfmNewsgroup.CreateInit(AOwner: TComponent;
-  grp: TSubscribedGroup);
+constructor TfmNewsgroup.CreateInit(AOwner: TComponent; grp: TSubscribedGroup);
 var
-  page, pg1 : TPropertyPageDetails;
+  page, pg1: TPropertyPageDetails;
 begin
-  inherited Create (AOwner);
+  inherited Create(AOwner);
   fGrp := grp;
 
-  AddPropertyPageDetails (TfmPropertyPageNewsgroupGeneral, Nil, '', '', '', Integer (grp));
+  AddPropertyPageDetails(TfmPropertyPageNewsgroupGeneral, nil, '', '', '', LPARAM(grp));
 
-  page := AddPropertyPageDetails (TfmPropertyPageDummy, Nil, rstDerivedSettings, rstDerivedNewsgroupSettingsHelp);
+  page := AddPropertyPageDetails(TfmPropertyPageDummy, nil, rstDerivedSettings, rstDerivedNewsgroupSettingsHelp);
 
-  pg1 := AddPropertyPageDetails (TfmPropertyPagePreferences, page, '', rstDerivedNewsgroupSettingsHelp, '', Integer (grp.DisplaySettings));
-  TPropertyPagePreferencesData (pg1.Data).InitObject(grp);
+  pg1 := AddPropertyPageDetails(TfmPropertyPagePreferences, page, '', rstDerivedNewsgroupSettingsHelp, '', LPARAM(grp.DisplaySettings));
+  TPropertyPagePreferencesData(pg1.Data).InitObject(grp);
 
-  AddPropertyPageDetails (TfmPropertyPageSorting, page, '', rstDerivedNewsgroupSettingsHelp, '', Integer (grp.DisplaySettings));
-  AddPropertyPageDetails (TfmPropertyPagePosting, page, '', rstDerivedNewsgroupSettingsHelp, '', Integer (grp.PostingSettings));
-  AddPropertyPageDetails (TfmPropertyPageExtraPosting, page, '', rstDerivedNewsgroupSettingsHelp, '', Integer (grp.NNTPSettings));
-  AddPropertyPageDetails (TfmPropertyPageQuoting, page, '', rstDerivedNewsgroupSettingsHelp, '', Integer (grp.PostingSettings));
-  AddPropertyPageDetails (TfmPropertyPageFilters, page, '', '', '', Integer (grp));
+  AddPropertyPageDetails(TfmPropertyPageSorting, page, '', rstDerivedNewsgroupSettingsHelp, '', LPARAM(grp.DisplaySettings));
+  AddPropertyPageDetails(TfmPropertyPagePosting, page, '', rstDerivedNewsgroupSettingsHelp, '', LPARAM(grp.PostingSettings));
+  AddPropertyPageDetails(TfmPropertyPageExtraPosting, page, '', rstDerivedNewsgroupSettingsHelp, '', LPARAM(grp.NNTPSettings));
+  AddPropertyPageDetails(TfmPropertyPageQuoting, page, '', rstDerivedNewsgroupSettingsHelp, '', LPARAM(grp.PostingSettings));
+  AddPropertyPageDetails(TfmPropertyPageFilters, page, '', '', '', LPARAM(grp));
 end;
 
-function TfmNewsgroup.SaveSettings : boolean;
+function TfmNewsgroup.SaveSettings: Boolean;
 begin
-  result := inherited SaveSettings;
+  Result := inherited SaveSettings;
 
   fGrp.fSorting := True;
   try
@@ -68,8 +67,8 @@ begin
     fGrp.ThreadSortOrder := fGrp.DisplaySettings.ThreadSortOrder;
     fGrp.ThreadSortDirection := fGrp.DisplaySettings.ThreadSortDirection;
   finally
-    fGrp.fSorting := False
-  end
+    fGrp.fSorting := False;
+  end;
 end;
 
 end.

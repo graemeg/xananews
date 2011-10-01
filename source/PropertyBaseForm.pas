@@ -53,7 +53,7 @@ type
     function GetChild(idx: Integer): TPropertyPageDetails;
     function GetChildCount: Integer;
   public
-    constructor Create(AOwner: TfmPropertyBase; APropertyPageClass: TPropertyPageClass; AParent: TPropertyPageDetails; const ACaption, AHelpText, AHelpKeyword: string; AParam: Integer = 0);
+    constructor Create(AOwner: TfmPropertyBase; APropertyPageClass: TPropertyPageClass; AParent: TPropertyPageDetails; const ACaption, AHelpText, AHelpKeyword: string; AParam: LPARAM = 0);
     destructor Destroy; override;
     property PropertyPageClass: TPropertyPageClass read fPropertyPageClass;
 
@@ -132,7 +132,7 @@ type
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
 
-    function AddPropertyPageDetails(APropertyPageClass: TPropertyPageClass; AParent: TPropertyPageDetails; const ACaption: string = ''; const AHelpText: string = ''; const AHelpKeyword: string = ''; AParam: Integer = 0): TPropertyPageDetails;
+    function AddPropertyPageDetails(APropertyPageClass: TPropertyPageClass; AParent: TPropertyPageDetails; const ACaption: string = ''; const AHelpText: string = ''; const AHelpKeyword: string = ''; AParam: LPARAM = 0): TPropertyPageDetails;
     function ForEachPropertyPageDetails(proc: TPropertyPageDetailsProc; param: pointer): TPropertyPageDetails;
   end;
 
@@ -214,7 +214,7 @@ end;
  *----------------------------------------------------------------------*}
 function TfmPropertyBase.AddPropertyPageDetails(
   APropertyPageClass: TPropertyPageClass; AParent: TPropertyPageDetails;
-  const ACaption: string; const AHelpText, AHelpKeyword: string; AParam: Integer): TPropertyPageDetails;
+  const ACaption: string; const AHelpText, AHelpKeyword: string; AParam: LPARAM): TPropertyPageDetails;
 var
   details: TPropertyPageDetails;
   p: ^TPropertyPageDetails;
@@ -705,7 +705,7 @@ end;
  | - but fill in its MinX, MaxX, Caption and HelpText properties        |
  *----------------------------------------------------------------------*}
 constructor TPropertyPageDetails.Create(AOwner: TfmPropertyBase; APropertyPageClass: TPropertyPageClass;
-  AParent: TPropertyPageDetails; const ACaption, AHelpText, AHelpKeyword: string; AParam: Integer);
+  AParent: TPropertyPageDetails; const ACaption, AHelpText, AHelpKeyword: string; AParam: LPARAM);
 var
   dataClass: TPropertyPageDataClass;
   tempPropertyPage: TfmPropertyPage;

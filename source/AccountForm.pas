@@ -11,9 +11,9 @@ type
   TfmAccount = class(TfmPropertyBase)
     procedure FormShow(Sender: TObject);
   private
-    fNewAccount : boolean;
+    fNewAccount: Boolean;
   public
-    constructor CreateInit (AOwner : TComponent; Acct : TNNTPAccount);
+    constructor CreateInit(AOwner: TComponent; acct: TNNTPAccount);
   end;
 
 var
@@ -39,27 +39,27 @@ uses
 
 { TfmAccount }
 
-constructor TfmAccount.CreateInit(AOwner: TComponent; acct : TNNTPAccount);
+constructor TfmAccount.CreateInit(AOwner: TComponent; acct: TNNTPAccount);
 var
-  page, pg1 : TPropertyPageDetails;
+  page, pg1: TPropertyPageDetails;
 begin
-  inherited Create (AOwner);
+  inherited Create(AOwner);
   fNewAccount := acct.AccountName = '';
 
-  AddPropertyPageDetails (TfmPropertyPageAccountGeneral, nil, '', '', '', Integer (acct));
-  AddPropertyPageDetails (TfmPropertyPageAccountServer,  nil, '', '', '', Integer (acct));
-  AddPropertyPageDetails (TfmPropertyPageAccountAdvancedServer,  nil, '', '', '', Integer (acct));
-  AddPropertyPageDetails (TfmPropertyPagePostingServers,  nil, '', '', '', Integer (acct));
-  page := AddPropertyPageDetails (TfmPropertyPageDummy, Nil, rstDerivedSettings, rstDerivedAccountSettingsHelp);
+  AddPropertyPageDetails(TfmPropertyPageAccountGeneral, nil, '', '', '', LPARAM(acct));
+  AddPropertyPageDetails(TfmPropertyPageAccountServer,  nil, '', '', '', LPARAM(acct));
+  AddPropertyPageDetails(TfmPropertyPageAccountAdvancedServer,  nil, '', '', '', LPARAM(acct));
+  AddPropertyPageDetails(TfmPropertyPagePostingServers,  nil, '', '', '', LPARAM(acct));
+  page := AddPropertyPageDetails(TfmPropertyPageDummy, nil, rstDerivedSettings, rstDerivedAccountSettingsHelp);
 
-  pg1 := AddPropertyPageDetails (TfmPropertyPagePreferences, page, '', rstDerivedAccountSettingsHelp, '', Integer (acct.DisplaySettings));
-  TPropertyPagePreferencesData (pg1.Data).InitObject(acct);
+  pg1 := AddPropertyPageDetails(TfmPropertyPagePreferences, page, '', rstDerivedAccountSettingsHelp, '', LPARAM(acct.DisplaySettings));
+  TPropertyPagePreferencesData(pg1.Data).InitObject(acct);
 
-  AddPropertyPageDetails (TfmPropertyPageSorting, page, '', rstDerivedAccountSettingsHelp, '', Integer (acct.DisplaySettings));
-  AddPropertyPageDetails (TfmPropertyPagePosting, page, '', rstDerivedAccountSettingsHelp, '', Integer (acct.PostingSettings));
-  AddPropertyPageDetails (TfmPropertyPageExtraPosting, page, '', rstDerivedAccountSettingsHelp, '', Integer (acct.NNTPSettings));
-  AddPropertyPageDetails (TfmPropertyPageQuoting, page, '', rstDerivedAccountSettingsHelp, '', Integer (acct.PostingSettings));
-  AddPropertyPageDetails (TfmPropertyPageFilters, page, '', '', '', Integer (acct));
+  AddPropertyPageDetails(TfmPropertyPageSorting, page, '', rstDerivedAccountSettingsHelp, '', LPARAM(acct.DisplaySettings));
+  AddPropertyPageDetails(TfmPropertyPagePosting, page, '', rstDerivedAccountSettingsHelp, '', LPARAM(acct.PostingSettings));
+  AddPropertyPageDetails(TfmPropertyPageExtraPosting, page, '', rstDerivedAccountSettingsHelp, '', LPARAM(acct.NNTPSettings));
+  AddPropertyPageDetails(TfmPropertyPageQuoting, page, '', rstDerivedAccountSettingsHelp, '', LPARAM(acct.PostingSettings));
+  AddPropertyPageDetails(TfmPropertyPageFilters, page, '', '', '', LPARAM(acct));
 end;
 
 procedure TfmAccount.FormShow(Sender: TObject);
@@ -67,8 +67,8 @@ begin
   inherited;
 
   if fNewAccount then
-    if (pnlOptions.ControlCount > 1) and (pnlOptions.Controls [1] is TWinControl) then
-      ActiveControl := TWinControl (pnlOptions.Controls [1])
+    if (pnlOptions.ControlCount > 1) and (pnlOptions.Controls[1] is TWinControl) then
+      ActiveControl := TWinControl (pnlOptions.Controls[1]);
 end;
 
 end.

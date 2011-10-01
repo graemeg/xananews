@@ -122,7 +122,7 @@ begin
     fParamsMessage := RegisterWindowMessage ('WoozleRunOnce');
 
     fObjectInstance := Classes.MakeObjectInstance (OwnerWindowProc);
-    fOldOwnerWindowProc := TfnWndProc (SetWindowLong (TForm (Owner).Handle, GWL_WNDPROC, Integer (fObjectInstance)));
+    fOldOwnerWindowProc := TfnWndProc (SetWindowLong (TForm (Owner).Handle, GWL_WNDPROC, LPARAM(fObjectInstance)));
 
     if fMutex = 0 then
     begin

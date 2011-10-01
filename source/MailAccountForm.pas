@@ -11,9 +11,9 @@ type
   TfmMailAccount = class(TfmPropertyBase)
     procedure FormShow(Sender: TObject);
   private
-   fNewAccount : boolean;
+   fNewAccount: Boolean;
   public
-    constructor CreateInit (Owner : TComponent; account : TMailAccount);
+    constructor CreateInit(Owner: TComponent; account: TMailAccount);
     { Public declarations }
   end;
 
@@ -35,23 +35,22 @@ uses
 
 { TfmMailAccount }
 
-constructor TfmMailAccount.CreateInit(Owner: TComponent;
-  account: TMailAccount);
+constructor TfmMailAccount.CreateInit(Owner: TComponent; account: TMailAccount);
 var
-  page : TPropertyPageDetails;
+  page: TPropertyPageDetails;
 begin
-  inherited Create (Owner);
+  inherited Create(Owner);
 
   fNewAccount := account.Name = '';
 
-  AddPropertyPageDetails (TfmPropertyPageMailAccountGeneral, Nil, '', '', '', Integer (account));
-  AddPropertyPageDetails (TfmPropertyPageMailAccountPreferences, Nil, '', '', '', Integer (account));
-  AddPropertyPageDetails (TfmPropertyPageMailAccountServer, Nil, '', '', '', Integer (account));
-  AddPropertyPageDetails (TfmPropertyPageMailAccountConnection, Nil, '', '', '', Integer (account));
+  AddPropertyPageDetails(TfmPropertyPageMailAccountGeneral, nil, '', '', '', LPARAM(account));
+  AddPropertyPageDetails(TfmPropertyPageMailAccountPreferences, nil, '', '', '', LPARAM(account));
+  AddPropertyPageDetails(TfmPropertyPageMailAccountServer, nil, '', '', '', LPARAM(account));
+  AddPropertyPageDetails(TfmPropertyPageMailAccountConnection, nil, '', '', '', LPARAM(account));
 
-  page := AddPropertyPageDetails (TfmPropertyPageDummy, Nil, rstDerivedSettings, rstDerivedMailSettingsHelp);
-  AddPropertyPageDetails (TfmPropertyPagePosting, page, '', rstDerivedMailSettingsHelp, '', Integer (account.PostingSettings));
-  AddPropertyPageDetails (TfmPropertyPageQuoting, page, '', rstDerivedMailSettingsHelp, '', Integer (account.PostingSettings));
+  page := AddPropertyPageDetails(TfmPropertyPageDummy, nil, rstDerivedSettings, rstDerivedMailSettingsHelp);
+  AddPropertyPageDetails(TfmPropertyPagePosting, page, '', rstDerivedMailSettingsHelp, '', LPARAM(account.PostingSettings));
+  AddPropertyPageDetails(TfmPropertyPageQuoting, page, '', rstDerivedMailSettingsHelp, '', LPARAM(account.PostingSettings));
 end;
 
 procedure TfmMailAccount.FormShow(Sender: TObject);
@@ -59,8 +58,8 @@ begin
   inherited;
 
   if fNewAccount then
-    if (pnlOptions.ControlCount > 1) and (pnlOptions.Controls [1] is TWinControl) then
-      ActiveControl := TWinControl (pnlOptions.Controls [1])
+    if (pnlOptions.ControlCount > 1) and (pnlOptions.Controls[1] is TWinControl) then
+      ActiveControl := TWinControl(pnlOptions.Controls[1]);
 end;
 
 end.

@@ -199,10 +199,10 @@ begin
     CloneSystemMenu;
 
     fObjectInstance := Classes.MakeObjectInstance (OwnerWindowProc);
-    fOldOwnerWindowProc := TfnWndProc (SetWindowLong (TForm (Owner).Handle, GWL_WNDPROC, Integer (fObjectInstance)));
+    fOldOwnerWindowProc := TfnWndProc (SetWindowLong (TForm (Owner).Handle, GWL_WNDPROC, LPARAM(fObjectInstance)));
 
     fSysObjectInstance := Classes.MakeObjectInstance (SysOwnerWindowProc);
-    fOldSysWindowProc := TfnWndProc (SetWindowLong (Application.Handle, GWL_WNDPROC, Integer (fSysObjectInstance)));
+    fOldSysWindowProc := TfnWndProc (SetWindowLong (Application.Handle, GWL_WNDPROC, LPARAM(fSysObjectInstance)));
 
     Application.HookMainWindow(HookProc);
   end
@@ -280,8 +280,8 @@ begin
     else
       if msg = WM_DESTROY then  // Window destroyed - unsubclass
       begin
-        SetWindowLong (TForm (Owner).Handle, GWL_WNDPROC, Integer (fOldOwnerWindowProc));
-        SetWindowLong (Application.Handle, GWL_WNDPROC, Integer (fOldSysWindowProc));
+        SetWindowLong(TForm(Owner).Handle, GWL_WNDPROC, NativeInt(fOldOwnerWindowProc));
+        SetWindowLong(Application.Handle, GWL_WNDPROC, NativeInt(fOldSysWindowProc));
         Application.UnHookMainWindow(HookProc);
       end;
     result := CallWindowProc (fOldOwnerWindowProc, TForm (Owner).Handle, msg, wParam, lParam)
