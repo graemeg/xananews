@@ -52,11 +52,11 @@
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
 			<DCC_UnitSearchPath>..\components\ImageTypes\Source;..\components\LowLevel\Source;..\components\MiscUnits\Source;..\components\thirdparty\VirtualTreeView\Source;..\components\thirdparty\Indy10\Core;..\components\thirdparty\Indy10\Protocols;..\components\thirdparty\Indy10\System;..\modified_vcl;$(BDSLIB)\$(Platform)\release;$(BDSUSERDIR)\Imports;$(BDS)\Imports;$(BDSCOMMONDIR)\Dcp;$(BDS)\include;C:\Program Files (x86)\Raize\CS4\Lib\RS-XE;$(BDS)\RaveReports\Lib;E:\Projects\Thirdparty\Comport_v411\Source;E:\Projects\Thirdparty\BigBrainUltra;E:\Projects\Thirdparty\FastMM;E:\Projects\Thirdparty\ScaleMM;E:\Projects\Thirdparty\SynScaleMM;E:\Projects\Thirdparty\madCollection\madBasic\BDS8;E:\Projects\Thirdparty\madCollection\madDisAsm\BDS8;E:\Projects\Thirdparty\madCollection\madExcept\BDS8;E:\Projects\Thirdparty\madCollection\madKernel\BDS8;E:\Projects\Thirdparty\madCollection\madSecurity\BDS8;E:\Projects\Thirdparty\madCollection\madShell\BDS8;E:\Projects\Vcl_le32;E:\Projects\VCL_PZ;C:\Program Files (x86)\madCollection\madBasic\BDS8;C:\Program Files (x86)\madCollection\madDisAsm\BDS8;C:\Program Files (x86)\madCollection\madExcept\BDS8;C:\Program Files (x86)\madCollection\madExcept\..\Plugins;C:\Program Files (x86)\madCollection\madKernel\BDS8;C:\Program Files (x86)\madCollection\madSecurity\BDS8;C:\Program Files (x86)\madCollection\madShell\BDS8;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<DCC_ImageBase>00400000</DCC_ImageBase>
-			<VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.19.1.336;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2011;LegalTrademarks=All Rights Reserved;OriginalFilename=XanaNews.exe;ProductName=XanaNews;ProductVersion=1.19.1.336;Comments=</VerInfo_Keys>
+			<VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.19.1.337;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2011;LegalTrademarks=All Rights Reserved;OriginalFilename=XanaNews.exe;ProductName=XanaNews;ProductVersion=1.19.1.337;Comments=</VerInfo_Keys>
 			<Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
 			<DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
 			<VerInfo_MinorVer>19</VerInfo_MinorVer>
-			<VerInfo_Build>336</VerInfo_Build>
+			<VerInfo_Build>337</VerInfo_Build>
 			<VerInfo_Locale>1033</VerInfo_Locale>
 			<DCC_N>false</DCC_N>
 			<DCC_S>false</DCC_S>

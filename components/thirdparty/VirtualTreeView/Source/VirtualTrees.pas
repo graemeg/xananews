@@ -4283,7 +4283,7 @@ type
   end;
 
 var
-  ClipboardDescriptions: array [1..CF_MAX - {$if CompilerVersion >= 23}2{$else}1{$ifend}] of TClipboardFormatEntry = (
+  ClipboardDescriptions: array [1..CF_MAX - 1] of TClipboardFormatEntry = (
     (ID: CF_TEXT; Description: 'Plain text'), // Do not localize
     (ID: CF_BITMAP; Description: 'Windows bitmap'), // Do not localize
     (ID: CF_METAFILEPICT; Description: 'Windows metafile'), // Do not localize
