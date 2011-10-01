@@ -6422,6 +6422,12 @@ begin
           SetLength(st, hLen);
           Owner.fMessageFile.Read(st[1], hLen);
           fMsg.Header.Add(st);
+
+          {$IFDEF CPUX64}
+          // TODO: remove workaround for x64 leaking RawByteStrings
+          st := '';
+          {$ENDIF}
+
           Owner.fMessageFile.Read(hLen, SizeOf(hLen));
         end;
 
