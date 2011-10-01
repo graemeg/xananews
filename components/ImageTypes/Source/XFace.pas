@@ -56,6 +56,7 @@ var
 
   buffer: array[0..2047] of byte;
 
+{$IFNDEF CPUX64}
 function decode_face(src: PAnsiChar; dest: Pointer; pad: Integer): Integer; stdcall; external;
 function encode_face(src: Pointer; dest: PAnsiChar; pad: Integer): Integer; stdcall; external;
 
@@ -84,6 +85,7 @@ procedure _ReadFace; external;
 procedure _UnCompAll; external;
 procedure _UnGenFace; external;
 procedure _WriteFace; external;
+{$ENDIF}
 
 function _strlen(const s: PAnsiChar): Integer; cdecl;
 begin
@@ -104,7 +106,11 @@ begin
 
   buffer[l] := 0;
 
+{$IFNDEF CPUX64}
   Result := decode_face(@buffer[0], Pixels, 2);
+{$ELSE}
+  Result := 0;
+{$ENDIF}
 
   Bitmap.HandleType := bmDIB;
 
@@ -144,7 +150,9 @@ begin
   DeleteDC(src);
   DeleteDC(dst);
 
+{$IFNDEF CPUX64}
   encode_face(Pixels, @buffer[0], 2);
+{$ENDIF}
 
   l := StrLen(PAnsiChar(@buffer[0]));
 

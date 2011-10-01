@@ -3,14 +3,19 @@
 			<ProjectGuid>{BBA882D7-C955-47C2-9605-2593A74F9161}</ProjectGuid>
 			<MainSource>XanaNews.dpr</MainSource>
 			<Base>True</Base>
-			<Config Condition="'$(Config)'==''">Release</Config>
-			<TargetedPlatforms>1</TargetedPlatforms>
+			<Config Condition="'$(Config)'==''">Debug</Config>
+			<TargetedPlatforms>3</TargetedPlatforms>
 			<AppType>Application</AppType>
 			<FrameworkType>VCL</FrameworkType>
 			<ProjectVersion>13.4</ProjectVersion>
-			<Platform Condition="'$(Platform)'==''">Win32</Platform>
+			<Platform Condition="'$(Platform)'==''">Win64</Platform>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
+			<Base_Win64>true</Base_Win64>
+			<CfgParent>Base</CfgParent>
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
@@ -40,17 +45,18 @@
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base)'!=''">
+			<DCC_SYMBOL_DEPRECATED>false</DCC_SYMBOL_DEPRECATED>
+			<DCC_SYMBOL_PLATFORM>false</DCC_SYMBOL_PLATFORM>
+			<DCC_WIDECHAR_REDUCED>false</DCC_WIDECHAR_REDUCED>
 			<Icon_MainIcon>XanaNews_Icon.ico</Icon_MainIcon>
-			<DCC_ExeOutput>..\bin</DCC_ExeOutput>
-			<DCC_DcuOutput>..\dcus</DCC_DcuOutput>
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-			<DCC_UnitSearchPath>..\dcus;..\components\ImageTypes\Source;..\components\LowLevel\Source;..\components\MiscUnits\Source;..\components\thirdparty\VirtualTreeView\Source;..\components\thirdparty\Indy10\Core;..\components\thirdparty\Indy10\Protocols;..\components\thirdparty\Indy10\System;..\modified_vcl;$(BDSLIB)\$(Platform)\release;$(BDSUSERDIR)\Imports;$(BDS)\Imports;$(BDSCOMMONDIR)\Dcp;$(BDS)\include;C:\Program Files (x86)\Raize\CS4\Lib\RS-XE;$(BDS)\RaveReports\Lib;E:\Projects\Thirdparty\Comport_v411\Source;E:\Projects\Thirdparty\BigBrainUltra;E:\Projects\Thirdparty\FastMM;E:\Projects\Thirdparty\ScaleMM;E:\Projects\Thirdparty\SynScaleMM;E:\Projects\Thirdparty\madCollection\madBasic\BDS8;E:\Projects\Thirdparty\madCollection\madDisAsm\BDS8;E:\Projects\Thirdparty\madCollection\madExcept\BDS8;E:\Projects\Thirdparty\madCollection\madKernel\BDS8;E:\Projects\Thirdparty\madCollection\madSecurity\BDS8;E:\Projects\Thirdparty\madCollection\madShell\BDS8;E:\Projects\Vcl_le32;E:\Projects\VCL_PZ;C:\Program Files (x86)\madCollection\madBasic\BDS8;C:\Program Files (x86)\madCollection\madDisAsm\BDS8;C:\Program Files (x86)\madCollection\madExcept\BDS8;C:\Program Files (x86)\madCollection\madExcept\..\Plugins;C:\Program Files (x86)\madCollection\madKernel\BDS8;C:\Program Files (x86)\madCollection\madSecurity\BDS8;C:\Program Files (x86)\madCollection\madShell\BDS8;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+			<DCC_UnitSearchPath>..\components\ImageTypes\Source;..\components\LowLevel\Source;..\components\MiscUnits\Source;..\components\thirdparty\VirtualTreeView\Source;..\components\thirdparty\Indy10\Core;..\components\thirdparty\Indy10\Protocols;..\components\thirdparty\Indy10\System;..\modified_vcl;$(BDSLIB)\$(Platform)\release;$(BDSUSERDIR)\Imports;$(BDS)\Imports;$(BDSCOMMONDIR)\Dcp;$(BDS)\include;C:\Program Files (x86)\Raize\CS4\Lib\RS-XE;$(BDS)\RaveReports\Lib;E:\Projects\Thirdparty\Comport_v411\Source;E:\Projects\Thirdparty\BigBrainUltra;E:\Projects\Thirdparty\FastMM;E:\Projects\Thirdparty\ScaleMM;E:\Projects\Thirdparty\SynScaleMM;E:\Projects\Thirdparty\madCollection\madBasic\BDS8;E:\Projects\Thirdparty\madCollection\madDisAsm\BDS8;E:\Projects\Thirdparty\madCollection\madExcept\BDS8;E:\Projects\Thirdparty\madCollection\madKernel\BDS8;E:\Projects\Thirdparty\madCollection\madSecurity\BDS8;E:\Projects\Thirdparty\madCollection\madShell\BDS8;E:\Projects\Vcl_le32;E:\Projects\VCL_PZ;C:\Program Files (x86)\madCollection\madBasic\BDS8;C:\Program Files (x86)\madCollection\madDisAsm\BDS8;C:\Program Files (x86)\madCollection\madExcept\BDS8;C:\Program Files (x86)\madCollection\madExcept\..\Plugins;C:\Program Files (x86)\madCollection\madKernel\BDS8;C:\Program Files (x86)\madCollection\madSecurity\BDS8;C:\Program Files (x86)\madCollection\madShell\BDS8;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<DCC_ImageBase>00400000</DCC_ImageBase>
-			<VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.19.1.329;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2011;LegalTrademarks=All Rights Reserved;OriginalFilename=XanaNews.exe;ProductName=XanaNews;ProductVersion=1.19.1.329;Comments=</VerInfo_Keys>
+			<VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.19.1.330;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2011;LegalTrademarks=All Rights Reserved;OriginalFilename=XanaNews.exe;ProductName=XanaNews;ProductVersion=1.19.1.330;Comments=</VerInfo_Keys>
 			<Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
 			<DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
 			<VerInfo_MinorVer>19</VerInfo_MinorVer>
-			<VerInfo_Build>329</VerInfo_Build>
+			<VerInfo_Build>330</VerInfo_Build>
 			<VerInfo_Locale>1033</VerInfo_Locale>
 			<DCC_N>false</DCC_N>
 			<DCC_S>false</DCC_S>
@@ -59,7 +65,17 @@
 			<DCC_F>false</DCC_F>
 			<DCC_K>false</DCC_K>
 		</PropertyGroup>
+		<PropertyGroup Condition="'$(Base_Win64)'!=''">
+			<DCC_SYMBOL_DEPRECATED>false</DCC_SYMBOL_DEPRECATED>
+			<DCC_UnitSearchPath>..\dcu64;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+			<DCC_ExeOutput>..\bin64</DCC_ExeOutput>
+			<DCC_DcuOutput>..\dcu64</DCC_DcuOutput>
+			<DCC_Namespace>Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
+		</PropertyGroup>
 		<PropertyGroup Condition="'$(Base_Win32)'!=''">
+			<DCC_DcuOutput>..\dcu32</DCC_DcuOutput>
+			<DCC_ExeOutput>..\bin32</DCC_ExeOutput>
+			<DCC_UnitSearchPath>..\dcu32;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<DCC_SYMBOL_PLATFORM>false</DCC_SYMBOL_PLATFORM>
 			<DCC_UNIT_PLATFORM>false</DCC_UNIT_PLATFORM>
 			<DCC_SYMBOL_DEPRECATED>false</DCC_SYMBOL_DEPRECATED>
@@ -81,6 +97,11 @@
 			<DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_3)'!=''">
+			<DCC_IntegerOverflowCheck>true</DCC_IntegerOverflowCheck>
+			<DCC_RangeChecking>true</DCC_RangeChecking>
+			<DCC_DebugDCUs>true</DCC_DebugDCUs>
+			<DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
+			<DCC_Define>DEBUG;FullDebugMode;$(DCC_Define)</DCC_Define>
 			<DCC_WIDECHAR_REDUCED>false</DCC_WIDECHAR_REDUCED>
 		</PropertyGroup>
 		<ItemGroup>
@@ -339,7 +360,6 @@
 			<DCCReference Include="unitMessageNNTPBinary.pas"/>
 			<DCCReference Include="unitMessageYEncodedBinary.pas"/>
 			<DCCReference Include="unitNewUserWizard.pas"/>
-			<DCCReference Include="XnCaptionedDockTree.pas"/>
 			<DCCReference Include="XnCoderQuotedPrintable.pas"/>
 			<DCCReference Include="XnCoderUUE.pas"/>
 			<DCCReference Include="unitDefaultNewsreader.pas"/>
@@ -368,12 +388,12 @@
 						<Source Name="MainSource">XanaNews.dpr</Source>
 					</Source>
 					<VersionInfo>
-						<VersionInfo Name="IncludeVerInfo">False</VersionInfo>
+						<VersionInfo Name="IncludeVerInfo">True</VersionInfo>
 						<VersionInfo Name="AutoIncBuild">False</VersionInfo>
 						<VersionInfo Name="MajorVer">1</VersionInfo>
-						<VersionInfo Name="MinorVer">0</VersionInfo>
-						<VersionInfo Name="Release">0</VersionInfo>
-						<VersionInfo Name="Build">0</VersionInfo>
+						<VersionInfo Name="MinorVer">19</VersionInfo>
+						<VersionInfo Name="Release">1</VersionInfo>
+						<VersionInfo Name="Build">330</VersionInfo>
 						<VersionInfo Name="Debug">False</VersionInfo>
 						<VersionInfo Name="PreRelease">False</VersionInfo>
 						<VersionInfo Name="Special">False</VersionInfo>
@@ -383,15 +403,15 @@
 						<VersionInfo Name="CodePage">1252</VersionInfo>
 					</VersionInfo>
 					<VersionInfoKeys>
-						<VersionInfoKeys Name="CompanyName"/>
-						<VersionInfoKeys Name="FileDescription"/>
-						<VersionInfoKeys Name="FileVersion">1.0.0.0</VersionInfoKeys>
-						<VersionInfoKeys Name="InternalName"/>
-						<VersionInfoKeys Name="LegalCopyright"/>
-						<VersionInfoKeys Name="LegalTrademarks"/>
-						<VersionInfoKeys Name="OriginalFilename"/>
-						<VersionInfoKeys Name="ProductName"/>
-						<VersionInfoKeys Name="ProductVersion">1.0.0.0</VersionInfoKeys>
+						<VersionInfoKeys Name="CompanyName">Colin Wilson</VersionInfoKeys>
+						<VersionInfoKeys Name="FileDescription">XanaNews NewsReader</VersionInfoKeys>
+						<VersionInfoKeys Name="FileVersion">11.19.1.330</VersionInfoKeys>
+						<VersionInfoKeys Name="InternalName">XanaNews</VersionInfoKeys>
+						<VersionInfoKeys Name="LegalCopyright">Copyright (c) XanaNews 2011</VersionInfoKeys>
+						<VersionInfoKeys Name="LegalTrademarks">All Rights Reserved</VersionInfoKeys>
+						<VersionInfoKeys Name="OriginalFilename">XanaNews.exe</VersionInfoKeys>
+						<VersionInfoKeys Name="ProductName">XanaNews</VersionInfoKeys>
+						<VersionInfoKeys Name="ProductVersion">1.19.1.320</VersionInfoKeys>
 						<VersionInfoKeys Name="Comments"/>
 					</VersionInfoKeys>
 					<Excluded_Packages>
@@ -402,7 +422,7 @@
 					</Excluded_Packages>
 				</Delphi.Personality>
 				<Platforms>
-					<Platform value="Win64">False</Platform>
+					<Platform value="Win64">True</Platform>
 					<Platform value="Win32">True</Platform>
 				</Platforms>
 			</BorlandProject>

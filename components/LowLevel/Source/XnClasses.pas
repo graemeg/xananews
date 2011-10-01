@@ -297,13 +297,36 @@ begin
   Result := True;
 end;
 
-procedure TAnsiStrings.Error(const Msg: string; Data: Integer);
+{$IFDEF CPUX64}
+  {$IFOPT O+}
+    // Turn off optimizations to force creating a EBP stack frame and
+    // place params on the stack.
+    {$DEFINE OPTIMIZATIONSON}
+    {$O-}
+  {$ENDIF}
+  procedure TAnsiStrings.Error(const Msg: string; Data: Integer);
+  begin
+    raise EStringListError.CreateFmt(Msg, [Data]) at
+      PPointer(PByte(@Msg) + SizeOf(Msg) + SizeOf(Self) + SizeOf(Pointer))^;
+  end;
 
+  procedure TAnsiStrings.Error(Msg: PResStringRec; Data: Integer);
+  begin
+    raise EStringListError.CreateFmt(LoadResString(Msg), [Data]) at
+      PPointer(PByte(@Msg) + SizeOf(Msg) + SizeOf(Self) + SizeOf(Pointer))^;
+  end;
+  {$IFDEF OPTIMIZATIONSON}
+    {$UNDEF OPTIMIZATIONSON}
+    {$O+}
+  {$ENDIF}
+
+{$ELSE}
+
+procedure TAnsiStrings.Error(const Msg: string; Data: Integer);
   function ReturnAddr: Pointer;
   asm
           MOV     EAX,[EBP+4]
   end;
-
 begin
   raise EStringListError.CreateFmt(Msg, [Data]) at ReturnAddr;
 end;
@@ -312,6 +335,7 @@ procedure TAnsiStrings.Error(Msg: PResStringRec; Data: Integer);
 begin
   Error(LoadResString(Msg), Data);
 end;
+{$ENDIF}
 
 procedure TAnsiStrings.Exchange(Index1, Index2: Integer);
 var

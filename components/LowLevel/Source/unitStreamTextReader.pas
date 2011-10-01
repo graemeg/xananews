@@ -148,6 +148,23 @@ uses
  |                                                                      |
  | The function returns PAnsiChar                                       |
  *----------------------------------------------------------------------*)
+{$IFDEF CPUX64}
+function StrLScan(S: PAnsiChar; C: AnsiChar; SLen: Integer): PAnsiChar;
+var
+  i: Integer;
+begin
+  for i := 1 to SLen do
+  begin
+    if S^ = C then
+    begin
+      Result := S;
+      Exit;
+    end;
+    Inc(S);
+  end;
+  Result := nil;
+end;
+{$ELSE}
 function StrLScan(const Str: PAnsiChar; ch: Char; len: DWORD): PAnsiChar;
 asm
         // EAX = Str
@@ -167,6 +184,7 @@ asm
 @1:     XOR     EAX, EAX
         POP     EDI
 end;
+{$ENDIF}
 
 { TStreamTextReader }
 

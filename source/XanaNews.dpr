@@ -131,7 +131,7 @@ uses
   unitMessageNNTPBinary in 'unitMessageNNTPBinary.pas',
   unitMessageYEncodedBinary in 'unitMessageYEncodedBinary.pas',
   unitNewUserWizard in 'unitNewUserWizard.pas',
-  XnCaptionedDockTree in 'XnCaptionedDockTree.pas',
+//  XnCaptionedDockTree in 'XnCaptionedDockTree.pas',
   XnCoderQuotedPrintable in 'XnCoderQuotedPrintable.pas',
   XnCoderUUE in 'XnCoderUUE.pas',
   unitDefaultNewsreader in 'unitDefaultNewsreader.pas';

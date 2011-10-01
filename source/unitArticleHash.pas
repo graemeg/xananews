@@ -42,6 +42,11 @@ uses
 const
   HASHSIZE = 49157;                     // Prime numbers work best - makes a
                                         // Huge difference to the distribution
+
+// TODO: check if this is really needed.
+const
+  MaxListSize = MaxInt div (SizeOf(Pointer) * 4);  //divisor: x86=16, x64=32
+
 type
   PHashItem = TArticleBase;
 

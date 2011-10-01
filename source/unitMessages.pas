@@ -547,6 +547,10 @@ function TmvMessage.GetLine(var st: RawByteString): Boolean;
 var
   pch, pch1: PAnsiChar;
   p, l: Integer;
+{$IFDEF CPUX64}
+  pch2: PAnsiChar;
+  i: Integer;
+{$ENDIF}
 begin
   // Get a line of the message text.  This is threadsafe so we can add
   // data to the message while decoding what we've got so far.
@@ -559,6 +563,20 @@ begin
     Dec(l, p);
     Inc(pch, p);
 
+{$IFDEF CPUX64}
+    pch1 := nil;
+    pch2 := pch;
+    // Kind of like StrScan with a Length parameter!
+    for i := 1 to l do
+    begin
+      if pch2^ = #10 then
+      begin
+        pch1 := pch2;
+        Break;
+      end;
+      Inc(pch2);
+    end;
+{$ELSE}
     if l > 0 then    // Kind of like StrScan with a Length parameter!
     asm
           push    edi
@@ -574,6 +592,7 @@ begin
     end
     else
       pch1 := nil;
+{$ENDIF}
 
     if pch1 <> nil then
     begin

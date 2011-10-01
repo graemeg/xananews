@@ -39,6 +39,13 @@ begin
 end;
 
 
+{$IFDEF CPUX64}
+// TODO: see if this can/need be improved in the future
+function RawCompareStr(const S1, S2: RawByteString): Integer;
+begin
+  Result := CompareStr(S1, S2);
+end;
+{$ELSE}
 // CompareStr() from Pierre le Riche as found at the FastCode project.
 function RawCompareStr(const S1, S2: RawByteString): Integer;
 asm
@@ -115,8 +122,16 @@ asm
   {Return 0 - length(S2): first string is nil}
   sub eax, [edx - 4]
 end;
+{$ENDIF}
 
 
+{$IFDEF CPUX64}
+// TODO: see if this can/need be improved in the future
+function RawCompareText(const S1, S2: RawByteString): Integer;
+begin
+  Result := CompareText(S1, S2);
+end;
+{$ELSE}
 // CompareText_JOH_IA32_5 from John O'Harrow as found at the FastCode project.
 function RawCompareText(const S1, S2: RawByteString): Integer;
 asm
@@ -202,6 +217,7 @@ asm
   pop     ebp
   pop     ebx
 end;
+{$ENDIF}
 
 
 function RawFetch(var AInput: RawByteString; const ADelim: RawByteString = ' ';
@@ -226,6 +242,13 @@ begin
 end;
 
 
+{$IFDEF CPUX64}
+// TODO: see if this can/need be improved in the future
+function RawIntToStr(Value: Integer): RawByteString;
+begin
+  Result := IntToStr(Value);
+end;
+{$ELSE}
 const
   TwoDigitLookup : packed array[0..99] of array[1..2] of AnsiChar =
     ('00','01','02','03','04','05','06','07','08','09',
@@ -341,6 +364,7 @@ asm
   or     al , '0'                {Ascii Adjustment}
   mov    [ecx], al               {Save Final Digit}
 end;
+{$ENDIF}
 
 
 function RawLowerCase(S: RawByteString): RawByteString; inline;
@@ -393,6 +417,13 @@ begin
 end;
 
 
+{$IFDEF CPUX64}
+// TODO: see if this can/need be improved in the future
+function RawStrToInt(const S: RawByteString): Integer;
+begin
+  Result := StrToInt(S);
+end;
+{$ELSE}
 // StrToInt32_JOH_IA32_7 from John O'Harrow as found at the FastCode project.
 function RawStrToInt(const S: RawByteString): Integer;
 asm
@@ -697,6 +728,7 @@ asm
   inc   edx
   jmp   @@HexLoop
 end;
+{$ENDIF}
 
 
 // TODO: see if this can/need be improved in the future
