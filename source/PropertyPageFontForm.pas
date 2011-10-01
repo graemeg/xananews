@@ -265,7 +265,7 @@ end;
 procedure TfmPropertyPageFont.ApplyDataToChildForms;
 begin
   if Owner is TForm then
-    SendMessage(TForm(Owner).Handle, WM_APPLYGLOBALFONTCHANGES, Integer(fData), 0);
+    SendMessage(TForm(Owner).Handle, WM_APPLYGLOBALFONTCHANGES, LPARAM(fData), 0);
 end;
 
 { TPropertyPageFontData }

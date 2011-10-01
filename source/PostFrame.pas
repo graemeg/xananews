@@ -300,7 +300,7 @@ begin
     end;
   end;
 
-  SendMessage(Parent.Handle, WM_POSTANDCLOSE, Integer(PChar(st)), fCodePage);
+  SendMessage(Parent.Handle, WM_POSTANDCLOSE, WPARAM(PChar(st)), fCodePage);
 end;
 
 procedure TfmePost.UpdateActions(okOK: Boolean);
@@ -548,7 +548,7 @@ begin
       Exit;
     end;
   st := cbIdentity.Text;
-  SendMessage(Parent.Handle, WM_SETIDENTITY, Integer(PChar(st)), 0);
+  SendMessage(Parent.Handle, WM_SETIDENTITY, WPARAM(PChar(st)), 0);
   if not fIsExistingMessage then
     ApplySignature(NNTPAccounts.Identities.Find(st), fSignatureOverride);
   fCloseOK := True;

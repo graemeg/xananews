@@ -5,8 +5,9 @@ inherited fmPropertyPageFilters: TfmPropertyPageFilters
   ClientHeight = 327
   Constraints.MinHeight = 244
   Constraints.MinWidth = 422
-  ExplicitWidth = 455
-  ExplicitHeight = 327
+  OnCreate = FormCreate
+  ExplicitWidth = 471
+  ExplicitHeight = 363
   PixelsPerInch = 96
   TextHeight = 13
   inherited Bevel2: TBevel

@@ -63,11 +63,11 @@ object fmePost: TfmePost
       BevelOuter = bvNone
       BevelWidth = 0
       BorderStyle = bsNone
-      Font.Charset = ANSI_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -13
-      Font.Name = 'Lucida Console'
-      Font.Style = []
+      font.Charset = ANSI_CHARSET
+      font.Color = clWindowText
+      font.Height = -13
+      font.Name = 'Lucida Console'
+      font.Style = []
       HideSelection = False
       HideScrollBars = False
       ParentFont = False
@@ -148,7 +148,6 @@ object fmePost: TfmePost
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = 'Check Now'
-    DoubleBuffered = True
     Glyph.Data = {
       36030000424D3603000000000000360000002800000010000000100000000100
       18000000000000030000120B0000120B00000000000000000000FF00FFFF00FF
@@ -176,7 +175,6 @@ object fmePost: TfmePost
       811E00FF00FFFF00FF811E00811E00811E00FF00FFFF00FFFF00FF811E00811E
       00FF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF
       00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FFFF00FF}
-    ParentDoubleBuffered = False
     TabOrder = 4
     OnClick = btnSpellClick
   end

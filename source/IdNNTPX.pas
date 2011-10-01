@@ -24,14 +24,14 @@ type
     fArticleNo: Cardinal;
     fStr: string;
     fCommand: TGetMessageCommand;
-    fParam: Integer;
+    fParam: LPARAM;
     function GetIsGet: Boolean;
   public
-    constructor Create(AArticleNo: Cardinal; const AMsgID: string; ACommand: TGetMessageCommand; AParam: Integer);
-    constructor CreateGroupCommand(const AGroupName: string; AParam: Integer);
+    constructor Create(AArticleNo: Cardinal; const AMsgID: string; ACommand: TGetMessageCommand; AParam: LPARAM);
+    constructor CreateGroupCommand(const AGroupName: string; AParam: LPARAM);
     property ArticleNo: Cardinal read fArticleNo;
     property Command: TGetMessageCommand read fCommand;
-    property Param: Integer read fParam;
+    property Param: LPARAM read fParam;
     property MsgID: string read fStr;
     property IsGet: Boolean read GetIsGet;
   end;
@@ -77,8 +77,8 @@ type
     procedure SetModeResult(const Value: TModeSetResult);
     procedure SetModeType(const Value: TModeType);
     function SetArticle(const ACmd: string; const AMsgNo: Cardinal; const AMsgID: string): Boolean;
-    procedure AddPipelineGetCommand(AArticleNo: Cardinal; const AMsgID: string; ACommand: TGetMessageCommand; AParam: Integer);
-    procedure AddPipelineGroupCommand(const AGroupName: string; AParam: Integer);
+    procedure AddPipelineGetCommand(AArticleNo: Cardinal; const AMsgID: string; ACommand: TGetMessageCommand; AParam: LPARAM);
+    procedure AddPipelineGroupCommand(const AGroupName: string; AParam: LPARAM);
     procedure ProcessPipeline;
   protected
     procedure DoOnConnected; override;
@@ -95,10 +95,10 @@ type
     function GetArticle(const AMsgNo: Cardinal; const AMsgID: string; AHdr: TAnsiStrings; ABody: TStream): Boolean;
 
     procedure BeginPipeline;
-    procedure PipelineGetArticle(AMsgNo: Cardinal; const AMsgId: string; AParam: Integer);
-    procedure PipelineGetBody(AMsgNo: Cardinal; const AMsgID: string; AParam: Integer);
-    procedure PipelineGetHeader(AMsgNo: Cardinal; const AMsgID: string; AParam: Integer);
-    procedure PipelineGroup(const groupName: string; AParam: Integer);
+    procedure PipelineGetArticle(AMsgNo: Cardinal; const AMsgId: string; AParam: LPARAM);
+    procedure PipelineGetBody(AMsgNo: Cardinal; const AMsgID: string; AParam: LPARAM);
+    procedure PipelineGetHeader(AMsgNo: Cardinal; const AMsgID: string; AParam: LPARAM);
+    procedure PipelineGroup(const groupName: string; AParam: LPARAM);
     procedure EndPipeline;
     procedure CancelPipeline;
 
@@ -808,22 +808,22 @@ begin
   end;
 end;
 
-procedure TidNNTPX.PipelineGetArticle(AMsgNo: Cardinal; const AMsgID: string; AParam: Integer);
+procedure TidNNTPX.PipelineGetArticle(AMsgNo: Cardinal; const AMsgID: string; AParam: LPARAM);
 begin
   AddPipelineGetCommand(AMsgNo, AMsgID, gmArticle, AParam);
 end;
 
-procedure TidNNTPX.PipelineGetBody(AMsgNo: Cardinal; const AMsgID: string; AParam: Integer);
+procedure TidNNTPX.PipelineGetBody(AMsgNo: Cardinal; const AMsgID: string; AParam: LPARAM);
 begin
   AddPipelineGetCommand(AmsgNo, AMsgID, gmBody, AParam);
 end;
 
-procedure TidNNTPX.PipelineGetHeader(AMsgNo: Cardinal; const AMsgID: string; AParam: Integer);
+procedure TidNNTPX.PipelineGetHeader(AMsgNo: Cardinal; const AMsgID: string; AParam: LPARAM);
 begin
   AddPipelineGetCommand(AmsgNo, AMsgID, gmheader, AParam);
 end;
 
-procedure TidNNTPX.PipelineGroup(const groupName: string; AParam: Integer);
+procedure TidNNTPX.PipelineGroup(const groupName: string; AParam: LPARAM);
 begin
   AddPipelineGroupCommand(groupName, AParam);
 end;
@@ -852,7 +852,7 @@ begin
 end;
 
 procedure TidNNTPX.AddPipelineGetCommand(AArticleNo: Cardinal;
-  const AMsgID: string; ACommand: TGetMessageCommand; AParam: Integer);
+  const AMsgID: string; ACommand: TGetMessageCommand; AParam: LPARAM);
 var
   st, str: string;
 begin
@@ -880,7 +880,7 @@ begin
   end;
 end;
 
-procedure TidNNTPX.AddPipelineGroupCommand(const AGroupName: string; AParam: Integer);
+procedure TidNNTPX.AddPipelineGroupCommand(const AGroupName: string; AParam: LPARAM);
 var
   st: string;
 begin
@@ -1084,7 +1084,7 @@ end;
 { TPipeLineCommand }
 
 constructor TPipeLineCommand.Create(AArticleNo: Cardinal; const AMsgID: string;
-  ACommand: TGetMessageCommand; AParam: Integer);
+  ACommand: TGetMessageCommand; AParam: LPARAM);
 begin
   fArticleNo := AArticleNo;
   fStr := AMsgID;
@@ -1092,7 +1092,7 @@ begin
   fParam := AParam;
 end;
 
-constructor TPipeLineCommand.CreateGroupCommand(const AGroupName: string; AParam: Integer);
+constructor TPipeLineCommand.CreateGroupCommand(const AGroupName: string; AParam: LPARAM);
 begin
   fStr := AGroupName;
   fCommand := gmGroup;

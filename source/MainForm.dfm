@@ -464,11 +464,6 @@ object fmMain: TfmMain
       BevelInner = bvNone
       ChangeDelay = 100
       DragMode = dmAutomatic
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'Tahoma'
-      Font.Style = []
       Header.AutoSizeIndex = 0
       Header.MainColumn = -1
       Header.Options = [hoColumnResize, hoDrag]
@@ -476,7 +471,6 @@ object fmMain: TfmMain
       HintMode = hmHint
       Images = ImageList1
       NodeDataSize = 4
-      ParentFont = False
       ParentShowHint = False
       PopupMenu = pomGroups
       ShowHint = True

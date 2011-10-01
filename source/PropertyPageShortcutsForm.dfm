@@ -4,6 +4,9 @@ inherited fmPropertyPageShortcuts: TfmPropertyPageShortcuts
   ClientWidth = 414
   Constraints.MinHeight = 238
   Constraints.MinWidth = 422
+  OnCreate = FormCreate
+  ExplicitWidth = 430
+  ExplicitHeight = 247
   PixelsPerInch = 96
   TextHeight = 13
   inherited Panel1: TPanel

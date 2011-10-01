@@ -931,7 +931,7 @@ function TCustomExRichEdit.GetSelLength: Integer;
 var
   range: TCharRange;
 begin
-  SendMessage(Handle, EM_EXGETSEL, 0, LongInt(@range));
+  SendMessage(Handle, EM_EXGETSEL, 0, LPARAM(@range));
   Result := range.cpMax - range.cpMin;
 end;
 
@@ -944,7 +944,7 @@ function TCustomExRichEdit.GetSelStart: Integer;
 var
   range: TCharRange;
 begin
-  SendMessage(Handle, EM_EXGETSEL, 0, LongInt(@range));
+  SendMessage(Handle, EM_EXGETSEL, 0, LPARAM(@range));
   Result := range.cpMin;
 end;
 
@@ -1100,7 +1100,7 @@ begin
     fAutoURLDetect := value;
     if HandleAllocated then
     begin
-      if SendMessage(Handle, EM_AUTOURLDETECT, Integer(value), 0) = 0 then
+      if SendMessage(Handle, EM_AUTOURLDETECT, LPARAM(value), 0) = 0 then
       begin
         if fAutoURLDetect then
           eventMask := SendMessage(Handle, EM_GETEVENTMASK, 0, 0) or ENM_LINK
@@ -1774,14 +1774,14 @@ var
 begin
   ltx.Flags := GTL_NUMCHARS or GTL_PRECISE or GTL_USECRLF;
   ltx.CodePage := 1200; // Unicode
-  Result := SendMessage(Owner.Handle, EM_GETTEXTLENGTHEX, LongInt(@ltx), 0);
+  Result := SendMessage(Owner.Handle, EM_GETTEXTLENGTHEX, LPARAM(@ltx), 0);
 end;
 
 function TRichEdit2_3Provider.GetIRichEditOLE: IRichEditOLE;
 begin
   if not fGotIRichEditOLE then
   begin
-    SendMessage(Owner.Handle, EM_GETOLEINTERFACE, 0, Integer(@fIRichEditOLE));
+    SendMessage(Owner.Handle, EM_GETOLEINTERFACE, 0, LPARAM(@fIRichEditOLE));
     fGotIRichEditOLE := True;
   end;
   Result := fIRichEditOLE;
@@ -1813,7 +1813,7 @@ var
 begin
   ltx.Flags := GTL_NUMCHARS or GTL_PRECISE;
   ltx.CodePage := 1200; // Unicode
-  Result := SendMessage(Owner.Handle, EM_GETTEXTLENGTHEX, LongInt(@ltx), 0);
+  Result := SendMessage(Owner.Handle, EM_GETTEXTLENGTHEX, LPARAM(@ltx), 0);
 end;
 
 (* ----------------------------------------------------------------------*
@@ -1846,7 +1846,7 @@ begin
       editStream.pfnCallback := @EditStreamOCallback
     else
       editStream.pfnCallback := @EditStreamOchCallback;
-    SendMessage(Owner.Handle, EM_STREAMOUT, Flags, LongInt(@editStream));
+    SendMessage(Owner.Handle, EM_STREAMOUT, Flags, LPARAM(@editStream));
     if (Flags and SF_UNICODE) <> 0 then
       stream.GetWideString(Result)
     else

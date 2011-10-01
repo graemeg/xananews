@@ -112,7 +112,7 @@ begin
   LastTimeChecked := 0;
   Sleep(2000);
   if Assigned(Application.MainForm) and Application.MainForm.HandleAllocated then
-    SendMessage(Application.MainForm.Handle, WM_NAMETHREAD, ThreadID, Integer(PChar('Get Version Thread')));
+    SendMessage(Application.MainForm.Handle, WM_NAMETHREAD, ThreadID, LPARAM(PChar('Get Version Thread')));
   Synchronize(GetPermission);
   if not fPermissionGranted then
     SetLatestVersion('')

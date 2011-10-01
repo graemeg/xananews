@@ -531,7 +531,7 @@ begin
   sp := FindScrollingParent;
   if not Assigned(sp) then Exit;
 
-  SendMessage(handle, EM_POSFROMCHAR, Integer(@pt), Self.SelStart + Self.SelLength);
+  SendMessage(handle, EM_POSFROMCHAR, WPARAM(@pt), Self.SelStart + Self.SelLength);
 
   lineHeight := Abs(font.Height);
   if Top + pt.y + lineHeight >= sp.VertScrollBar.Position + sp.ClientHeight then

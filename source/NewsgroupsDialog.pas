@@ -288,7 +288,7 @@ begin
         itm := lvNewsgroups.GetNextItem(itm, sdAll, [isSelected]);
       end;
 
-      SendMessage(Application.MainForm.Handle, WM_UNSUBSCRIBE, Integer(list), 0);
+      SendMessage(Application.MainForm.Handle, WM_UNSUBSCRIBE, LPARAM(list), 0);
       if cbShowSubscribedGroupsOnly.Checked then
         ShowGroupList;
     finally

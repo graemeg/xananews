@@ -114,7 +114,7 @@ begin
 end;
 
 function EnumFontSizesProc(const lpelfe: TEnumLogFontEx;
-  const lpntme: TNewTextMetricExW; FontType: DWORD; param: lParam): Integer; stdcall;
+  const lpntme: TNewTextMetricExW; FontType: DWORD; param: LPARAM): Integer; stdcall;
 var
   details: TFontDetails;
   pix, pts: Integer;
@@ -133,7 +133,7 @@ begin
 end;
 
 function EnumFontFamiliesProc(const lpelfe: TEnumLogFontEx;
-  const lpntme: TNewTextMetricExW; FontType: DWORD; param: lParam): Integer; stdcall;
+  const lpntme: TNewTextMetricExW; FontType: DWORD; param: LPARAM): Integer; stdcall;
 var
   details: TFontDetails;
   lf: TLogFont;
@@ -166,7 +166,7 @@ begin
       FillChar(lf, SizeOf(lf), 0);
       lf.lfCharSet := DEFAULT_CHARSET;
       lstrcpyn(lf.lfFaceName, PChar(details.fName), SizeOf(lf.lfFaceName) div SizeOf(Char));
-      EnumFontFamiliesEx(HDC(param), lf, @EnumFontSizesProc, LongInt(details), 0);
+      EnumFontFamiliesEx(HDC(param), lf, @EnumFontSizesProc, LPARAM(details), 0);
       details.fSizes.Sort(CompareSizes);
     end;
   end;
@@ -197,7 +197,7 @@ begin
     FillChar(lf, SizeOf(lf), 0);
     lf.lfCharSet := DEFAULT_CHARSET;
 
-    EnumFontFamiliesEx(dc, lf, @EnumFontFamiliesProc, LongInt(dc), 0);
+    EnumFontFamiliesEx(dc, lf, @EnumFontFamiliesProc, LPARAM(dc), 0);
   finally
     ReleaseDC(0, dc);
   end;

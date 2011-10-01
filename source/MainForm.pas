@@ -51,10 +51,10 @@ type
 //=======================================================================
 // Iterators used for 'ForEachSelectedArticle' 'ForEachSelectedGroup'
 // 'ForEachArticleInSelectedThread'
-  TArticleIteratorProc = procedure(article: TArticleBase; param: Integer; multiSelect: Boolean) of object;
-  TFolderArticleIteratorProc = procedure(article: TFolderArticle; param: Integer) of object;
-  TGroupIteratorProc = function(group: TSubscribedGroup; param: Integer): Boolean of object;
-  TArticleFolderIteratorProc = function(folder: TArticleFolder; param: Integer): Boolean of object;
+  TArticleIteratorProc = procedure(article: TArticleBase; param: LPARAM; multiSelect: Boolean) of object;
+  TFolderArticleIteratorProc = procedure(article: TFolderArticle; param: LPARAM) of object;
+  TGroupIteratorProc = function(group: TSubscribedGroup; param: LPARAM): Boolean of object;
+  TArticleFolderIteratorProc = function(folder: TArticleFolder; param: LPARAM): Boolean of object;
 
 //=======================================================================
 // Control flags for colun auto-resizing
@@ -1032,44 +1032,44 @@ type
     procedure ResizeArticleHeader;
     procedure ResizeBookmarkHeader;
 
-    function ForEachSelectedArticle(proc: TArticleIteratorProc; param: Integer = 0; expandedToo: Boolean = True): Integer;
-    function ForEachSelectedBranch(proc: TArticleIteratorProc; param: Integer = 0; startAtRoot: Boolean = False): Integer;
-    function ForEachArticleInThread(thread: TArticleBase; proc: TArticleIteratorProc; param: Integer = 0): Integer;
-    function ForEachArticleInBranch(var branch: TArticleBase; proc: TArticleIteratorProc; param: Integer = 0): Integer;
-    function ForEachSelectedGroup(proc: TGroupIteratorProc; purge: Boolean; param: Integer = 0): Integer;
-    function ForEachGroupInSelectedAccount(proc: TGroupIteratorProc; purge: Boolean; param: Integer = 0): Integer;
-    function ForEachSubscribedGroup(proc: TGroupIteratorProc; purge: Boolean; param: Integer = 0): Integer;
-    function ForEachSelectedFolderArticle(proc: TFolderArticleIteratorProc; param: Integer = 0): Integer;
-    function ForEachSelectedArticleFolder(proc: TArticleFolderIteratorProc; param: Integer = 0): Integer;
+    function ForEachSelectedArticle(proc: TArticleIteratorProc; param: LPARAM = 0; expandedToo: Boolean = True): Integer;
+    function ForEachSelectedBranch(proc: TArticleIteratorProc; param: LPARAM = 0; startAtRoot: Boolean = False): Integer;
+    function ForEachArticleInThread(thread: TArticleBase; proc: TArticleIteratorProc; param: LPARAM = 0): Integer;
+    function ForEachArticleInBranch(var branch: TArticleBase; proc: TArticleIteratorProc; param: LPARAM = 0): Integer;
+    function ForEachSelectedGroup(proc: TGroupIteratorProc; purge: Boolean; param: LPARAM = 0): Integer;
+    function ForEachGroupInSelectedAccount(proc: TGroupIteratorProc; purge: Boolean; param: LPARAM = 0): Integer;
+    function ForEachSubscribedGroup(proc: TGroupIteratorProc; purge: Boolean; param: LPARAM = 0): Integer;
+    function ForEachSelectedFolderArticle(proc: TFolderArticleIteratorProc; param: LPARAM = 0): Integer;
+    function ForEachSelectedArticleFolder(proc: TArticleFolderIteratorProc; param: LPARAM = 0): Integer;
 
-    procedure DoDeleteArticle(article: TArticleBase; param: Integer; multiSelect: Boolean);
-    procedure DoMarkAsCancelledArticle(article: TArticleBase; param: Integer; multiSelect: Boolean);
-    procedure DoCheckFromMe(article: TArticleBase; param: Integer; multiSelect: Boolean);
-    function DoDeleteArticles(group: TSubscribedGroup; param: Integer): Boolean;
-    procedure DoMarkAsReadArticle(article: TArticleBase; param: Integer; multiSelect: Boolean);
-    procedure DoFlagArticle(article: TArticleBase; param: Integer; multiSelect: Boolean);
-    procedure DoIgnoreArticle(article: TArticleBase; param: Integer; multiSelect: Boolean);
-    procedure DoCancelArticle(article: TArticleBase; param: Integer; multiSelect: Boolean);
-    function DoCancelGroup(group: TSubscribedGroup; param: Integer): Boolean;
-    function DoMarkArticlesAsRead(group: TSubscribedGroup; param: Integer): Boolean;
-    procedure DoGetArticleBody(article: TArticleBase; param: Integer; multiSelect: Boolean);
-    procedure DoGetArticleThread(article: TArticleBase; param: Integer; multiSelect: Boolean);
-    function DoDeleteThreads(group: TSubscribedGroup; param: Integer): Boolean;
-    function DoMarkThreadsAsRead(group: TSubscribedGroup; param: Integer): Boolean;
-    procedure DoCheckArticle(article: TArticleBase; param: Integer; multiSelect: Boolean);
-    procedure DoCheckArticleRead(article: TArticleBase; param: Integer; multiSelect: Boolean);
-    procedure DoCheckArticleFlagged(article: TArticleBase; param: Integer; multiSelect: Boolean);
-    procedure DoCheckArticleIgnored(article: TArticleBase; param: Integer; multiSelect: Boolean);
-    procedure DoMoveToSelectedFolder(article: TArticleBase; param: Integer; multiSelect: Boolean);
-    procedure DoMoveToBookmark(article: TArticleBase; param: Integer; multiSelect: Boolean);
-    procedure DoReloadFolderArticle(article: TFolderArticle; param: Integer);
-    function DoGetMessages(group: TSubscribedGroup; params: Integer): Boolean;
-    procedure DoSaveArticle(article: TArticleBase; param: Integer; multiSelect: Boolean);
-    procedure DoSaveAttachments(article: TArticleBase; param: Integer; multiSelect: Boolean);
+    procedure DoDeleteArticle(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
+    procedure DoMarkAsCancelledArticle(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
+    procedure DoCheckFromMe(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
+    function DoDeleteArticles(group: TSubscribedGroup; param: LPARAM): Boolean;
+    procedure DoMarkAsReadArticle(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
+    procedure DoFlagArticle(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
+    procedure DoIgnoreArticle(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
+    procedure DoCancelArticle(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
+    function DoCancelGroup(group: TSubscribedGroup; param: LPARAM): Boolean;
+    function DoMarkArticlesAsRead(group: TSubscribedGroup; param: LPARAM): Boolean;
+    procedure DoGetArticleBody(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
+    procedure DoGetArticleThread(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
+    function DoDeleteThreads(group: TSubscribedGroup; param: LPARAM): Boolean;
+    function DoMarkThreadsAsRead(group: TSubscribedGroup; param: LPARAM): Boolean;
+    procedure DoCheckArticle(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
+    procedure DoCheckArticleRead(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
+    procedure DoCheckArticleFlagged(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
+    procedure DoCheckArticleIgnored(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
+    procedure DoMoveToSelectedFolder(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
+    procedure DoMoveToBookmark(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
+    procedure DoReloadFolderArticle(article: TFolderArticle; param: LPARAM);
+    function DoGetMessages(group: TSubscribedGroup; params: LPARAM): Boolean;
+    procedure DoSaveArticle(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
+    procedure DoSaveAttachments(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
     procedure DoOnExporterProgress(Sender: TObject; Pos, max: Integer; const group: string);
-    procedure DoAddArticleToList(article: TArticleBase; param: Integer; multiSelect: Boolean);
-    function DoAddGroupToList(group: TSubscribedGroup; param: Integer): Boolean;
-    function DoAddFolderToList(folder: TArticleFolder; param: Integer): Boolean;
+    procedure DoAddArticleToList(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
+    function DoAddGroupToList(group: TSubscribedGroup; param: LPARAM): Boolean;
+    function DoAddFolderToList(folder: TArticleFolder; param: LPARAM): Boolean;
 
     function NextArticle(options: TNextArticleOptions; firstArticle: TArticleBase; skipThisThread: Boolean = False): Boolean;
     function GetNodeAccount(node: PVirtualNode): TNNTPAccount;
@@ -1095,8 +1095,8 @@ type
     procedure ApplyControlOptions;
     function GetFirstvstSubscribedSelectedNode: PVirtualNode;
     procedure SelectArticleNode(Node: PVirtualNode);
-    function Unsubscribe(group: TSubscribedGroup; param: Integer): Boolean;
-    function MakeDormant(group: TSubscribedGroup; param: Integer): Boolean;
+    function Unsubscribe(group: TSubscribedGroup; param: LPARAM): Boolean;
+    function MakeDormant(group: TSubscribedGroup; param: LPARAM): Boolean;
 
     procedure WmSetup(var Msg: TMessage); message WM_SETUP;
     procedure WmUnsubscribe(var Msg: TMessage); message WM_UNSUBSCRIBE;
@@ -1203,7 +1203,7 @@ uses
   XnCoderUUE;
 
 type
-  TfnIterator = function(proc: TGroupIteratorProc; purge: Boolean; param: Integer = 0): Integer of object;
+  TfnIterator = function(proc: TGroupIteratorProc; purge: Boolean; param: LPARAM = 0): Integer of object;
 
   TDeferredCombineSet = class
   private
@@ -1220,13 +1220,13 @@ const
 var
   gMutex: THandle = 0; // Used by 'run once' detection
 
-function EnumWindowsProc(hwnd: HWND; lParam: LPARAM): BOOL; stdcall;
+function EnumWindowsProc(hwnd: HWND; param: LPARAM): BOOL; stdcall;
 var
   msgResult: DWORD;
   cds: TCopyDataStruct;
   str: string;
 begin
-  if (SendMessageTimeout(hwnd, lParam, 0, 0, SMTO_BLOCK or SMTO_ABORTIFHUNG, 1000, @msgResult) <> 0) and (msgResult = $F00B00) then
+  if (SendMessageTimeout(hwnd, param, 0, 0, SMTO_BLOCK or SMTO_ABORTIFHUNG, 1000, @msgResult) <> 0) and (msgResult = $F00B00) then
   begin
     if ParamCount >= 1 then
     begin
@@ -1234,7 +1234,7 @@ begin
       cds.dwData := 1;
       cds.cbData := Succ(Length(str)) * SizeOf(Char);
       cds.lpData := PChar(str);
-      SendMessage(hwnd, WM_COPYDATA, HWND_DESKTOP, Integer(@cds))
+      SendMessage(hwnd, WM_COPYDATA, HWND_DESKTOP, LPARAM(@cds))
     end;
     Result := False;
   end
@@ -1386,7 +1386,7 @@ begin
       dlg.NotFromMe := fIteratorFailed;
       dlg.MultiSelect := vstArticles.SelectedCount > 1;
       if dlg.ShowModal = MRYES then
-        ForEachSelectedArticle(DoMarkAsCancelledArticle, Integer(PChar(dlg.mmoReason.Text)), False)
+        ForEachSelectedArticle(DoMarkAsCancelledArticle, LPARAM(PChar(dlg.mmoReason.Text)), False)
     finally
       dlg.Free;
     end;
@@ -1457,7 +1457,7 @@ begin
   article := GetNodeArticle(vstArticles.GetFirstSelected);
   delete := not article.IsDeleted;
 
-  if ForEachArticleInThread(article, DoDeleteArticle, Integer(delete)) = 1 then
+  if ForEachArticleInThread(article, DoDeleteArticle, LPARAM(delete)) = 1 then
     NextArticle([naUnreadOnly], GetFocusedArticle);
                         // If a single message was deleted then
                         // go to the next message.
@@ -1508,7 +1508,7 @@ var
 begin
   article := GetFocusedArticle;
   if Assigned(article) then
-    ForEachArticleInBranch(article, DoFlagArticle, Integer(not article.IsInteresting));
+    ForEachArticleInBranch(article, DoFlagArticle, LPARAM(not article.IsInteresting));
   vstArticles.Invalidate;
 end;
 
@@ -1551,7 +1551,7 @@ begin
   article := GetFocusedArticle;
   if Assigned(article) then
   begin
-    ForEachSelectedArticle(DoMarkAsReadArticle, Integer(not article.IsRead));
+    ForEachSelectedArticle(DoMarkAsReadArticle, LPARAM(not article.IsRead));
     vstArticles.Invalidate;
     Refresh_vstSubscribed;
 
@@ -1572,7 +1572,7 @@ begin
   ForEachArticleInThread(article, DoCheckArticleRead, 0);
   mark := fIteratorFailed;
 
-  ForEachArticleInThread(article, DoMarkAsReadArticle, Integer(mark));
+  ForEachArticleInThread(article, DoMarkAsReadArticle, LPARAM(mark));
   vstArticles.Invalidate;
   Refresh_vstSubscribed;
 end;
@@ -1604,7 +1604,7 @@ begin
         begin
           Groups := TList.Create;
           try
-            ForEachSelectedGroup(DoAddGroupToList, False, Integer(Groups));
+            ForEachSelectedGroup(DoAddGroupToList, False, LPARAM(Groups));
 
             gn := '';
             for i := 0 to Groups.Count - 1 do
@@ -1821,7 +1821,7 @@ begin
       FillChar(params, SizeOf(params), 0);
       grp := act.SubscribedGroups[j];
       BatchToParams(grp.NNTPSettings.DefaultAction, params);
-      DoGetMessages(grp, Integer(@params));
+      DoGetMessages(grp, LPARAM(@params));
     end;
   end;
 end;
@@ -1866,7 +1866,7 @@ begin
     ForEachSelectedArticle(DoFlagArticle, 0);  // They're actively deleting it
                                                // Therefore it's no longer interesting.
 
-    if ForEachSelectedArticle(DoDeleteArticle, Integer(delete)) = 1 then
+    if ForEachSelectedArticle(DoDeleteArticle, LPARAM(delete)) = 1 then
       NextArticle([], GetFocusedArticle);
                             // If a single message was deleted then
                             // go to the next message.
@@ -1957,9 +1957,9 @@ begin
       begin
         if Assigned(dlg.Filter) then   // from all selected groups.
           if Assigned(newsgroup) then
-            ForEachSelectedGroup(DoDeleteArticles, True, Integer(dlg.Filter))
+            ForEachSelectedGroup(DoDeleteArticles, True, LPARAM(dlg.Filter))
           else
-            ForEachGroupInSelectedAccount(DoDeleteArticles, True, Integer(dlg.Filter));
+            ForEachGroupInSelectedAccount(DoDeleteArticles, True, LPARAM(dlg.Filter));
         vstSubscribed.Invalidate;
         Refresh_vstArticles;
       end;
@@ -1982,10 +1982,10 @@ begin
   params.useDefaultGroupSettings := True;
 
   if Assigned(grp) then
-    ForEachSelectedGroup(DoGetMessages, False, Integer(@Params))
+    ForEachSelectedGroup(DoGetMessages, False, LPARAM(@Params))
   else
     if Assigned(act) then
-      ForEachGroupInSelectedAccount(DoGetMessages, False, Integer(@params));
+      ForEachGroupInSelectedAccount(DoGetMessages, False, LPARAM(@params));
 end;
 
 procedure TfmMain.actNewsgroupGetMessagesExecute(Sender: TObject);
@@ -2035,9 +2035,9 @@ begin
         if params.fMessageCount >= 0 then
         begin
           if Assigned(group) then
-            ForEachSelectedGroup(DoGetMessages, False, Integer(@params))
+            ForEachSelectedGroup(DoGetMessages, False, LPARAM(@params))
           else
-            ForEachGroupInSelectedAccount(DoGetMessages, False, Integer(@params));
+            ForEachGroupInSelectedAccount(DoGetMessages, False, LPARAM(@params));
         end;
         Refresh_vstSubscribed;
       end;
@@ -2137,7 +2137,7 @@ begin
     begin
       groups := TList.Create;
       try
-        ForEachSelectedGroup(DoAddGroupToList, False, Integer(groups));
+        ForEachSelectedGroup(DoAddGroupToList, False, LPARAM(groups));
         for i := 0 to groups.Count - 1 do
         begin
           if TSubscribedGroup(Groups[i]) = FLastFocusedArticleContainer then
@@ -2350,13 +2350,13 @@ begin
   fSearchMessageForm := TdlgSearch(CreateModelessWindow(TdlgSearch));
   fSearchMessageForm.OnDestroy := SearchMessageFormDestroy;
 
-  ForEachSelectedGroup(DoAddGroupToList, False, Integer(fSearchMessageForm.Groups));
+  ForEachSelectedGroup(DoAddGroupToList, False, LPARAM(fSearchMessageForm.Groups));
 
   if fSearchMessageForm.Groups.Count = 0 then
-    ForEachGroupInSelectedAccount(DoAddGroupToList, False, Integer(fSearchMessageForm.Groups));
+    ForEachGroupInSelectedAccount(DoAddGroupToList, False, LPARAM(fSearchMessageForm.Groups));
 
   if fSearchmessageForm.Groups.Count = 0 then
-    ForEachSelectedArticleFolder(DoAddFolderToList, Integer(fSearchMessageForm.Groups));
+    ForEachSelectedArticleFolder(DoAddFolderToList, LPARAM(fSearchMessageForm.Groups));
 
   if fSearchMessageForm.Groups.Count > 0 then
   begin
@@ -2708,7 +2708,7 @@ begin
               fn := ForEachSelectedGroup;
 
         if Assigned(fn) and Assigned(pc) then
-          fn(pc, dlg.rgManagementAction.ItemIndex in [1, 3], Integer(filter));
+          fn(pc, dlg.rgManagementAction.ItemIndex in [1, 3], LPARAM(filter));
 
         settings.MessagebaseManagementAction := dlg.rgManagementAction.ItemIndex;
         if not dlg.rbOlderThan.Checked then
@@ -3411,20 +3411,20 @@ begin
   XNOptions.ShowBookmark := visible;
 end;
 
-procedure TfmMain.DoCancelArticle(article: TArticleBase; param: Integer; multiSelect: Boolean);
+procedure TfmMain.DoCancelArticle(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
 begin
   // 'For each' handler.  Cancel activities for the selected article.
   ThreadManager.Cancel(article.Owner.ServerSettings, TSubscribedGroup(article.Owner), article);
 end;
 
-function TfmMain.DoCancelGroup(group: TSubscribedGroup; param: Integer): Boolean;
+function TfmMain.DoCancelGroup(group: TSubscribedGroup; param: LPARAM): Boolean;
 begin
   // 'For each' handler.  Cancel activities for the selected group.
   ThreadManager.Cancel(group.Owner.NNTPServerSettings, group, nil);
   Result := False;
 end;
 
-procedure TfmMain.DoCheckArticle(article: TArticleBase; param: Integer; multiSelect: Boolean);
+procedure TfmMain.DoCheckArticle(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
 var
   filter: TNNTPFilter;
 begin
@@ -3434,7 +3434,7 @@ begin
     fIteratorFailed := True;
 end;
 
-procedure TfmMain.DoDeleteArticle(article: TArticleBase; param: Integer; multiSelect: Boolean);
+procedure TfmMain.DoDeleteArticle(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
 var
   delete: Boolean;
 begin
@@ -3445,7 +3445,7 @@ begin
     article.IsRead := True;
 end;
 
-function TfmMain.DoDeleteArticles(group: TSubscribedGroup; param: Integer): Boolean;
+function TfmMain.DoDeleteArticles(group: TSubscribedGroup; param: LPARAM): Boolean;
 var
   i: Integer;
   article: TArticle;
@@ -3472,7 +3472,7 @@ begin
   Result := False;
 end;
 
-function TfmMain.DoDeleteThreads(group: TSubscribedGroup; param: Integer): Boolean;
+function TfmMain.DoDeleteThreads(group: TSubscribedGroup; param: LPARAM): Boolean;
 var
   rootArticle: TArticle;
   i: Integer;
@@ -3489,12 +3489,12 @@ begin
   Result := False;
 end;
 
-procedure TfmMain.DoFlagArticle(article: TArticleBase; param: Integer; multiSelect: Boolean);
+procedure TfmMain.DoFlagArticle(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
 begin
   article.IsInteresting := Boolean(param);
 end;
 
-procedure TfmMain.DoGetArticleBody(article: TArticleBase; param: Integer; multiSelect: Boolean);
+procedure TfmMain.DoGetArticleBody(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
 var
   art: TArticle;
 begin
@@ -3506,7 +3506,7 @@ begin
     end;
 end;
 
-procedure TfmMain.DoGetArticleThread(article: TArticleBase; param: Integer; multiSelect: Boolean);
+procedure TfmMain.DoGetArticleThread(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
 var
   art: TArticle;
 begin
@@ -3518,7 +3518,7 @@ begin
   end;
 end;
 
-function TfmMain.DoGetMessages(group: TSubscribedGroup; params: Integer): Boolean;
+function TfmMain.DoGetMessages(group: TSubscribedGroup; params: LPARAM): Boolean;
 var
   p: TGetMessagesParams;
   doIt: Boolean;
@@ -3562,7 +3562,7 @@ begin
           PurgeCtnr(group, True, (p.fromArticle = 0) and (p.fActionType <> batAllNew), False)
         else
         begin
-          DoDeleteArticles(group, Integer(filter));
+          DoDeleteArticles(group, LPARAM(filter));
           PurgeCtnr(group, False, False, True);
         end;
         if p.fActionType = batAll then
@@ -3572,7 +3572,7 @@ begin
         end;
       end
       else
-        DoMarkArticlesAsRead(group, Integer(filter));
+        DoMarkArticlesAsRead(group, LPARAM(filter));
 
       // When something goes wrong during retreiving messages and this batch is
       // restarted don't delete or mark as read the messages again.
@@ -3615,7 +3615,7 @@ begin
   end;
 end;
 
-function TfmMain.DoMarkArticlesAsRead(group: TSubscribedGroup; param: Integer): Boolean;
+function TfmMain.DoMarkArticlesAsRead(group: TSubscribedGroup; param: LPARAM): Boolean;
 var
   article: TArticle;
   i: Integer;
@@ -3658,7 +3658,7 @@ begin
   Result := False;
 end;
 
-procedure TfmMain.DoMarkAsReadArticle(article: TArticleBase; param: Integer; multiSelect: Boolean);
+procedure TfmMain.DoMarkAsReadArticle(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
 var
   mark: Boolean;
 begin
@@ -3668,7 +3668,7 @@ begin
   if not mark then fSuppressSound := True;
 end;
 
-function TfmMain.DoMarkThreadsAsRead(group: TSubscribedGroup; param: Integer): Boolean;
+function TfmMain.DoMarkThreadsAsRead(group: TSubscribedGroup; param: LPARAM): Boolean;
 var
   rootArticle: TArticleBase;
   i: Integer;
@@ -3686,7 +3686,7 @@ begin
 end;
 
 procedure TfmMain.DoMoveToSelectedFolder(article: TArticleBase;
-  param: Integer; multiSelect: Boolean);
+  param: LPARAM; multiSelect: Boolean);
 var
   fldr: TArticleFolder;
 begin
@@ -3762,7 +3762,7 @@ begin
   vstSubscribed.Invalidate;     // Change red earth icon back to blue
 
   if (account = GetFocusedAccount) and (account.SubscribedGroupCount = 0) then
-    PostMessage(Handle, WM_SHOWNEWSGROUPLIST, 0, Integer(account));
+    PostMessage(Handle, WM_SHOWNEWSGROUPLIST, 0, LPARAM(account));
 end;
 
 procedure TfmMain.DoOnNotifyError(Sender: TObject; const error: string);
@@ -3838,7 +3838,7 @@ begin
 end;
 
 function TfmMain.ForEachArticleInBranch(var branch: TArticleBase;
-  proc: TArticleIteratorProc; param: Integer): Integer;
+  proc: TArticleIteratorProc; param: LPARAM): Integer;
 var
   p, p1: TArticleBase;
 begin
@@ -3885,7 +3885,7 @@ begin
 end;
 
 function TfmMain.ForEachArticleInThread(thread: TArticleBase; proc: TArticleIteratorProc;
-  param: Integer): Integer;
+  param: LPARAM): Integer;
 var
   article: TArticleBase;
 begin
@@ -3909,7 +3909,7 @@ begin
 end;
 
 function TfmMain.ForEachGroupInSelectedAccount(proc: TGroupIteratorProc; purge: Boolean;
-  param: Integer): Integer;
+  param: LPARAM): Integer;
 var
   account: TNNTPAccount;
   group: TSubscribedGroup;
@@ -3943,7 +3943,7 @@ begin
   end;
 end;
 
-function TfmMain.ForEachSelectedArticle(proc: TArticleIteratorProc; param: Integer = 0;
+function TfmMain.ForEachSelectedArticle(proc: TArticleIteratorProc; param: LPARAM = 0;
   expandedToo: Boolean = True): Integer;
 var
   node, n1: PVirtualNode;
@@ -4021,7 +4021,7 @@ begin
 end;
 
 function TfmMain.ForEachSelectedGroup(proc: TGroupIteratorProc; purge: Boolean;
-  param: Integer): Integer;
+  param: LPARAM): Integer;
 var
   node: PVirtualNode;
   group: TSubscribedGroup;
@@ -4082,7 +4082,7 @@ begin
 end;
 
 function TfmMain.ForEachSubscribedGroup(proc: TGroupIteratorProc; purge: Boolean;
-  param: Integer): Integer;
+  param: LPARAM): Integer;
 var
   account: TNNTPAccount;
   group: TSubscribedGroup;
@@ -4183,6 +4183,11 @@ var
 begin
   if CoInitialize(nil) = S_OK then
     fCoUninitialize := True;
+
+  vstSubscribed.NodeDataSize := SizeOf(Pointer);
+  vstQueuedRequests.NodeDataSize := SizeOf(Pointer);
+  vstArticles.NodeDataSize := SizeOf(Pointer);
+  vstBookmark.NodeDataSize := SizeOf(Pointer);
 
   InitializeCIDMIMEHandler;
   Randomize;                    // Random signatures in unitIdentitied
@@ -4800,7 +4805,7 @@ end;
 
 function CompareIdx(List: TStringList; Index1, Index2: Integer): Integer;
 begin
-  Result := Integer(List.Objects[Index1]) - Integer(List.Objects[Index2]);
+  Result := LPARAM(List.Objects[Index1]) - LPARAM(List.Objects[Index2]);
 end;
 
 procedure TfmMain.LoadToolbarLayout;
@@ -5360,7 +5365,7 @@ begin
           if deleteSrc then
             if branches then
             begin
-              ForEachArticleInBranch(article, DoDeleteArticle, Integer(True));
+              ForEachArticleInBranch(article, DoDeleteArticle, LPARAM(True));
               node := GetArticleNode(article);
             end
             else
@@ -5372,11 +5377,11 @@ begin
           else
             if branches then
             begin
-              ForEachArticleInBranch(article, DoMoveToSelectedFolder, Integer(fldr));
+              ForEachArticleInBranch(article, DoMoveToSelectedFolder, LPARAM(fldr));
               node := GetArticleNode(article);
             end
             else
-              DoMoveToSelectedFolder(article, Integer(fldr), True);
+              DoMoveToSelectedFolder(article, LPARAM(fldr), True);
         end;
 
         if Assigned(node) then
@@ -5641,7 +5646,7 @@ begin
           FillChar(params, SizeOf(params), 0);
           BatchToParams(action, params);
           params.batchRef := fBatchRef;
-          DoGetMessages(group, Integer(@params));
+          DoGetMessages(group, LPARAM(@params));
         end;
       end;
     end;
@@ -6303,7 +6308,7 @@ begin
   actTrayOpen.Execute;
 end;
 
-function TfmMain.Unsubscribe(group: TSubscribedGroup; param: Integer): Boolean;
+function TfmMain.Unsubscribe(group: TSubscribedGroup; param: LPARAM): Boolean;
 begin
   BeginPurge(group);
   SendMessage(handle, WM_GROUPSCHANGING, 0, 0);
@@ -8040,7 +8045,7 @@ begin
 end;
 
 function TfmMain.ForEachSelectedFolderArticle(
-  proc: TFolderArticleIteratorProc; param: Integer): Integer;
+  proc: TFolderArticleIteratorProc; param: LPARAM): Integer;
 var
   node: PVirtualNode;
   article: TArticleBase;
@@ -8070,7 +8075,7 @@ begin
 end;
 
 procedure TfmMain.DoReloadFolderArticle(article: TFolderArticle;
-  param: Integer);
+  param: LPARAM);
 var
   ctnr: TArticleContainer;
   grp: TSubscribedGroup;
@@ -8687,7 +8692,7 @@ begin
       try
         folder.BeginAdd;
         try
-          ForEachSelectedArticle(DoSaveArticle, Integer(folder))
+          ForEachSelectedArticle(DoSaveArticle, LPARAM(folder))
         finally
           folder.EndAdd;
         end
@@ -8698,7 +8703,7 @@ begin
   end;
 end;
 
-procedure TfmMain.DoSaveArticle(article: TArticleBase; param: Integer; multiSelect: Boolean);
+procedure TfmMain.DoSaveArticle(article: TArticleBase; param: LPARAM; multiSelect: Boolean);
 var
   folder: TArticleFolder;
 begin
@@ -9029,7 +9034,7 @@ begin
   if SelectDirectory('Save Files', root, dir) then
   begin
     dir := dir + '\';
-    ForEachSelectedArticle(DoSaveAttachments, Integer(PChar(dir)));
+    ForEachSelectedArticle(DoSaveAttachments, LPARAM(PChar(dir)));
     SetTempStatusMessage('', 0, 0);
     SetAttachmentsDirectory(dir + '*.*');
   end;
@@ -9088,7 +9093,7 @@ begin
   end;
 end;
 
-procedure TfmMain.DoSaveAttachments(article: TArticleBase; param: Integer;
+procedure TfmMain.DoSaveAttachments(article: TArticleBase; param: LPARAM;
   multiSelect: Boolean);
 var
   mp: TmvMessagePart;
@@ -9373,7 +9378,7 @@ begin
     article := GetNodeArticle(node);
 
     if Assigned(article) then
-      ForEachSelectedArticle(DoMoveToBookmark, Integer(bookmark));
+      ForEachSelectedArticle(DoMoveToBookmark, LPARAM(bookmark));
 
     vstBookmark.RootNodeCount := bookmark.MarkedArticleCount;
     vstBookmark.Invalidate;
@@ -9421,7 +9426,7 @@ begin
     end;
 end;
 
-procedure TfmMain.DoMoveToBookmark(article: TArticleBase; param: Integer;
+procedure TfmMain.DoMoveToBookmark(article: TArticleBase; param: LPARAM;
   multiSelect: Boolean);
 var
   bookmark: TBookmark;
@@ -9530,7 +9535,7 @@ begin
         vstBookmark.BeginUpdate;
         try
           for idx := l.Count - 1 downto 0 do
-            fCurrentBookmark.DeleteArticle(Integer(l[idx]));
+            fCurrentBookmark.DeleteArticle(LPARAM(l[idx]));
 
           vstBookmark.RootNodeCount := fCurrentBookmark.MarkedArticleCount;
           vstBookmark.ReinitNode(nil, True);
@@ -9676,7 +9681,7 @@ begin
 end;
 
 procedure TfmMain.DoMarkAsCancelledArticle(article: TArticleBase;
-  param: Integer; multiSelect: Boolean);
+  param: LPARAM; multiSelect: Boolean);
 var
   subj: string;
   msg: TStrings;
@@ -9740,7 +9745,7 @@ begin
   end;
 end;
 
-procedure TfmMain.DoCheckFromMe(article: TArticleBase; param: Integer;
+procedure TfmMain.DoCheckFromMe(article: TArticleBase; param: LPARAM;
   multiSelect: Boolean);
 var
   identity: TIdentity;
@@ -9896,9 +9901,9 @@ procedure TfmMain.actToolsSearchbarGoExecute(Sender: TObject);
     ctnrs := TObjectList.Create;
     try
       ctnrs.OwnsObjects := False;
-      ForEachSelectedGroup(DoAddGroupToList, False, Integer(ctnrs));
+      ForEachSelectedGroup(DoAddGroupToList, False, LPARAM(ctnrs));
       if ctnrs.Count = 0 then
-        ForEachGroupInSelectedAccount(DoAddGroupToList, False, Integer(ctnrs));
+        ForEachGroupInSelectedAccount(DoAddGroupToList, False, LPARAM(ctnrs));
 
       filters := TNNTPFilters.Create(True);
       filters.AddObject('', CreateSearchBarFilter(False));
@@ -10212,7 +10217,7 @@ begin
   end;
 end;
 
-procedure TfmMain.DoIgnoreArticle(article: TArticleBase; param: Integer;
+procedure TfmMain.DoIgnoreArticle(article: TArticleBase; param: LPARAM;
   multiSelect: Boolean);
 begin
   article.IsIgnore := Boolean(param);
@@ -10375,7 +10380,7 @@ var
 begin
   dlg := TdlgCombineDecode.Create(nil);
   try
-    ForEachSelectedArticle(DoAddArticleToList, Integer(dlg.Articles));
+    ForEachSelectedArticle(DoAddArticleToList, LPARAM(dlg.Articles));
     if dlg.ShowModal = mrOK then
     begin
       SetAttachmentsDirectory(dlg.edFileName.Text);
@@ -10395,7 +10400,7 @@ begin
   end;
 end;
 
-procedure TfmMain.DoAddArticleToList(article: TArticleBase; param: Integer;
+procedure TfmMain.DoAddArticleToList(article: TArticleBase; param: LPARAM;
   multiSelect: Boolean);
 begin
   TList(param).Add(article);
@@ -10482,7 +10487,7 @@ begin
 end;
 
 function TfmMain.ForEachSelectedArticleFolder(
-  proc: TArticleFolderIteratorProc; param: Integer): Integer;
+  proc: TArticleFolderIteratorProc; param: LPARAM): Integer;
 var
   node: PVirtualNode;
   folder: TArticleFolder;
@@ -10527,7 +10532,7 @@ begin
   end;
 end;
 
-function TfmMain.DoAddFolderToList(folder: TArticleFolder; param: Integer): Boolean;
+function TfmMain.DoAddFolderToList(folder: TArticleFolder; param: LPARAM): Boolean;
 var
   list: TList;
 begin
@@ -10536,7 +10541,7 @@ begin
   Result := True;
 end;
 
-procedure TfmMain.DoCheckArticleRead(article: TArticleBase; param: Integer;
+procedure TfmMain.DoCheckArticleRead(article: TArticleBase; param: LPARAM;
   multiSelect: Boolean);
 begin
   if not article.IsRead then
@@ -10581,7 +10586,7 @@ begin
 end;
 
 function TfmMain.ForEachSelectedBranch(proc: TArticleIteratorProc;
-  param: Integer; startAtRoot: Boolean): Integer;
+  param: LPARAM; startAtRoot: Boolean): Integer;
 var
   node, next: PVirtualNode;
   article: TArticleBase;
@@ -10634,24 +10639,24 @@ begin
   params.fManagementType := bmtMarkAsRead;
   params.fManagementOption := bmoNone;
   params.fManagementCount := 0;
-  DoGetMessages(grp, Integer(@params));
+  DoGetMessages(grp, LPARAM(@params));
 end;
 
-procedure TfmMain.DoCheckArticleFlagged(article: TArticleBase; param: Integer;
+procedure TfmMain.DoCheckArticleFlagged(article: TArticleBase; param: LPARAM;
   multiSelect: Boolean);
 begin
   if not article.IsInteresting then
     fIteratorFailed := True;
 end;
 
-procedure TfmMain.DoCheckArticleIgnored(article: TArticleBase; param: Integer;
+procedure TfmMain.DoCheckArticleIgnored(article: TArticleBase; param: LPARAM;
   multiSelect: Boolean);
 begin
   if not article.IsIgnore then
     fIteratorFailed := True;
 end;
 
-function TfmMain.MakeDormant(group: TSubscribedGroup; param: Integer): Boolean;
+function TfmMain.MakeDormant(group: TSubscribedGroup; param: LPARAM): Boolean;
 var
   i: Integer;
   batch: TNNTPBatch;
@@ -10890,7 +10895,7 @@ begin
 end;
 
 function TfmMain.DoAddGroupToList(group: TSubscribedGroup;
-  param: Integer): Boolean;
+  param: LPARAM): Boolean;
 var
   list: TList;
 begin
@@ -11308,7 +11313,7 @@ end;
 
 procedure TfmMain.actArticleIgnoreExecute(Sender: TObject);
 var
-  param: Integer;
+  param: LPARAM;
   art: TArticleBase;
 begin
   art := GetFocusedArticle;
@@ -11328,7 +11333,7 @@ var
 begin
   article := GetFocusedArticle;
   if Assigned(article) then
-    ForEachArticleInBranch(article, DoIgnoreArticle, Integer(not article.IsIgnore));
+    ForEachArticleInBranch(article, DoIgnoreArticle, LPARAM(not article.IsIgnore));
   vstArticles.Invalidate;
 end;
 
@@ -11342,7 +11347,7 @@ begin
   ForEachArticleInThread(article, DoCheckArticleIgnored, 0);
   mark := fIteratorFailed;
 
-  ForEachArticleInThread(article, DoIgnoreArticle, Integer(mark));
+  ForEachArticleInThread(article, DoIgnoreArticle, LPARAM(mark));
   vstArticles.Invalidate;
 end;
 
@@ -11433,7 +11438,7 @@ begin
   ForEachArticleInBranch(article, DoCheckArticleRead, 0);
   mark := fIteratorFailed;
 
-  ForEachArticleInBranch(art, DoMarkAsReadArticle, Integer(mark));
+  ForEachArticleInBranch(art, DoMarkAsReadArticle, LPARAM(mark));
   vstArticles.Invalidate;
   Refresh_vstSubscribed;
 end;
@@ -11447,7 +11452,7 @@ begin
   if Assigned(article) then
   begin
     flagIt := not article.IsInteresting;
-    ForEachSelectedArticle(DoFlagArticle, Integer(flagIt));
+    ForEachSelectedArticle(DoFlagArticle, LPARAM(flagIt));
   end;
   vstArticles.Invalidate;
 end;
@@ -11549,7 +11554,7 @@ begin
   ForEachArticleInThread(article, DoCheckArticleFlagged, 0);
   mark := fIteratorFailed;
 
-  ForEachArticleInThread(article, DoFlagArticle, Integer(mark));
+  ForEachArticleInThread(article, DoFlagArticle, LPARAM(mark));
   vstArticles.Invalidate;
   Refresh_vstSubscribed;
 end;

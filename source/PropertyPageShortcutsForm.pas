@@ -72,6 +72,7 @@ type
       Node: PVirtualNode; Column: TColumnIndex; out EditLink: IVTEditLink);
     procedure btnEditClick(Sender: TObject);
     procedure btnRestoreDefaultsClick(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
   private
     fData : TPropertyPageShortcutsData;
     function GetNodeAction (node : PVirtualNode) : TCustomAction;
@@ -765,6 +766,12 @@ begin
   fData.fActionCategories.ScanForDuplicates;
   vstActions.Invalidate;
   fData.fModified := False;
+end;
+
+procedure TfmPropertyPageShortcuts.FormCreate(Sender: TObject);
+begin
+  inherited;
+  vstActions.NodeDataSize := SizeOf(Pointer);
 end;
 
 end.

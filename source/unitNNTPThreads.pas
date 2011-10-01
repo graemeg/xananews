@@ -274,7 +274,7 @@ begin
     st := 'NNTP Getter Thread for ???';
   end;
 
-  SendMessage(Application.MainForm.Handle, WM_NAMETHREAD, ThreadID, Integer(PChar(st)));
+  SendMessage(Application.MainForm.Handle, WM_NAMETHREAD, ThreadID, LPARAM(PChar(st)));
 
   while not Terminated do
   begin
@@ -722,9 +722,9 @@ var
       try
         for msgNo := fromArticle to dest do
           if gtr.CurrentFull then
-            NNTP.PipelineGetArticle(msgNo, '', Integer(gtr))
+            NNTP.PipelineGetArticle(msgNo, '', LPARAM(gtr))
           else
-            NNTP.PipelineGetHeader(msgNo, '', Integer(gtr));
+            NNTP.PipelineGetHeader(msgNo, '', LPARAM(gtr));
       finally
         NNTP.EndPipeline;
       end
@@ -1175,11 +1175,11 @@ begin
 
                 if gtr.PipelineGroup <> group then
                 begin
-                  NNTP.PipelineGroup(group.Name, Integer(group));
+                  NNTP.PipelineGroup(group.Name, LPARAM(group));
                   gtr.PipelineGroup := group;
                 end;
 
-                NNTP.PipelineGetArticle(article.ArticleNo, article.MessageId, Integer(Article));
+                NNTP.PipelineGetArticle(article.ArticleNo, article.MessageId, LPARAM(Article));
               finally
                 requests := gtr.LockList;
               end;
@@ -1566,7 +1566,7 @@ begin
     timeout := 0;
   end;
 
-  SendMessage(Application.MainForm.Handle, WM_NAMETHREAD, ThreadID, Integer(PChar(st)));
+  SendMessage(Application.MainForm.Handle, WM_NAMETHREAD, ThreadID, LPARAM(PChar(st)));
   while not Terminated do
   begin
     if (State = tsDormant) and SMTP.Connected then

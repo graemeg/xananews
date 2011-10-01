@@ -261,6 +261,8 @@ end;
 constructor TfmPropertyBase.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
+  vstSections.NodeDataSize := SizeOf(Pointer);
+
   fPropertyPageDetails := TObjectList.Create;
   fPropertyPageDetails.OwnsObjects := True;
 end;

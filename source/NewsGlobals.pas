@@ -436,7 +436,7 @@ begin
 
       if nest then
       begin
-        ml := maxLen - 2 * (Integer(m.Objects[i]) + 1);
+        ml := maxLen - 2 * (NativeInt(m.Objects[i]) + 1);
         if ml <= 0 then
         begin
           Inc(i);
@@ -547,7 +547,7 @@ begin
       end;
       if p = 1 then
       begin
-        s.Objects[i] := TObject(Integer(s.Objects[i]) + 1);
+        s.Objects[i] := TObject(NativeInt(s.Objects[i]) + 1);
         s[i] := Copy(s[i], Length(st) + 1, maxInt);
       end;
     until p <> 1;
@@ -559,7 +559,7 @@ begin
   if quoteLineMarker <> '' then
   begin
     for i := 0 to s.Count - 1 do
-      for p := 0 to Integer(s.Objects[i]) do
+      for p := 0 to NativeInt(s.Objects[i]) do
         s[i] := quoteLineMarker + s[i];
 
     s.Insert(0, '');
@@ -1343,7 +1343,7 @@ end;
 procedure SetTempStatusMessage(const msg: string; pos, max: word);
 begin
   if (csDestroying in Application.MainForm.ComponentState) then Exit;
-  SendMessage(Application.MainForm.Handle, WM_STATUS, Integer(PChar(msg)), MakeLParam(pos, max));
+  SendMessage(Application.MainForm.Handle, WM_STATUS, WPARAM(PChar(msg)), MakeLParam(pos, max));
 end;
 
 function SafeDateTimeToInternetStr(const Value: TDateTime; const AIsGMT: Boolean = False): string;

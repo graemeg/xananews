@@ -36,6 +36,7 @@ type
     procedure vstFiltersClick(Sender: TObject);
     procedure btnDeleteClick(Sender: TObject);
     procedure btnUpdateClick(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
   private
     fData : TPropertyPageFiltersData;
     procedure Reinit_vstFilters;
@@ -360,6 +361,12 @@ end;
 function TfmPropertyPageFilters.CanRestoreParentSettings: boolean;
 begin
   result := Assigned (fData.fCtnr.Parent);
+end;
+
+procedure TfmPropertyPageFilters.FormCreate(Sender: TObject);
+begin
+  inherited;
+  vstFilters.NodeDataSize := SizeOf(Pointer);
 end;
 
 procedure TfmPropertyPageFilters.RestoreParentSettings;
