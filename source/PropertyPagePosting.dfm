@@ -7,26 +7,28 @@ inherited fmPropertyPagePosting: TfmPropertyPagePosting
   ClientHeight = 327
   Constraints.MinHeight = 354
   Constraints.MinWidth = 408
+  ExplicitLeft = 502
+  ExplicitTop = 131
   PixelsPerInch = 96
   TextHeight = 13
   object Label39: TLabel [0]
     Left = 13
     Top = 88
-    Width = 95
+    Width = 96
     Height = 13
     Caption = 'Maximum line length'
   end
   object Label37: TLabel [1]
     Left = 181
     Top = 88
-    Width = 124
+    Width = 131
     Height = 13
     Caption = 'characters.  (0 = unlimited)'
   end
   object lblSplitPosts: TLabel [2]
     Left = 13
     Top = 116
-    Width = 120
+    Width = 124
     Height = 13
     Caption = 'Split posts with more than'
   end
@@ -40,7 +42,7 @@ inherited fmPropertyPagePosting: TfmPropertyPagePosting
   object Label41: TLabel [4]
     Left = 13
     Top = 144
-    Width = 102
+    Width = 105
     Height = 13
     Caption = 'Default Character Set'
   end
@@ -54,19 +56,20 @@ inherited fmPropertyPagePosting: TfmPropertyPagePosting
   object Label40: TLabel [6]
     Left = 13
     Top = 200
-    Width = 53
+    Width = 57
     Height = 13
     Caption = 'Text format'
   end
   object Label1: TLabel [7]
     Left = 13
     Top = 242
-    Width = 53
+    Width = 54
     Height = 13
     Caption = 'Reply Style'
   end
   inherited Bevel2: TBevel
     Top = 287
+    ExplicitTop = 287
   end
   object cbUseOutbasket: TCheckBox [10]
     Left = 12
@@ -103,7 +106,6 @@ inherited fmPropertyPagePosting: TfmPropertyPagePosting
     Height = 21
     Style = csDropDownList
     Anchors = [akLeft, akTop, akRight]
-    ItemHeight = 0
     TabOrder = 4
     OnChange = cbDefaultCharsetChange
   end
@@ -114,7 +116,6 @@ inherited fmPropertyPagePosting: TfmPropertyPagePosting
     Height = 21
     Style = csDropDownList
     Anchors = [akLeft, akTop, akRight]
-    ItemHeight = 0
     TabOrder = 5
     OnChange = cbDefaultCharsetChange
   end
@@ -198,5 +199,6 @@ inherited fmPropertyPagePosting: TfmPropertyPagePosting
   inherited btnReset: TButton
     Top = 297
     TabOrder = 12
+    ExplicitTop = 297
   end
 end

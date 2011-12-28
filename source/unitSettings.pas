@@ -509,7 +509,7 @@ begin
     fTextPartStyle := TTextPartStyle(reg.GetIntegerValue('Text Part Style', Integer(tpNNTP)));
     fPostingStyle := TPostingStyle(reg.GetIntegerValue('Posting Style', Integer(psBottom)));
     fDefaultCodePage := reg.GetIntegerValue('Default Codepage', unitCharsetMap.DefaultCodePage);
-    fDefaultSpellLanguage := reg.GetIntegerValue('Default Spell Language', gDefaultISpellLanguage);
+    fDefaultSpellLanguage := reg.GetIntegerValue('Default Spell Language', DefaultISpellLanguage);
     fDelayPosting := reg.GetIntegerValue('Delay Posting', 0);
     fArchivePostedMessages := reg.GetIntegerValue('Archive Posted Messages', 0);
   end
@@ -608,7 +608,7 @@ begin
     reg.SetIntegerValue('Text Part Style', ShortInt(fTextPartStyle), Integer(tpNNTP));
     reg.SetIntegerValue('Posting Style', ShortInt(fPostingStyle), Integer(psBottom));
     reg.SetIntegerValue('Default Codepage', fDefaultCodePage, unitCharsetMap.DefaultCodePage);
-    reg.SetIntegerValue('Default Spell Language', fDefaultSpellLanguage, gDefaultISpellLanguage);
+    reg.SetIntegerValue('Default Spell Language', fDefaultSpellLanguage, DefaultISpellLanguage);
     reg.SetIntegerValue('Delay Posting', fDelayPosting, 0);
     reg.SetIntegerValue('Archive Posted Messages', fArchivePostedMessages, 0);
   end

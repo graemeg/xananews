@@ -25,7 +25,7 @@ unit cmpSpellChecker;
 interface
 
 uses
-  Windows, SysUtils, Classes, ConTnrs, StrUtils;
+  Windows, SysUtils, Classes, Contnrs, StrUtils;
 
 type
   // ==============================================================
@@ -101,8 +101,7 @@ type
   EISpell = class(Exception)
   end;
 
-var
-  gDefaultISpellLanguage: Integer = -1;
+function DefaultISpellLanguage(): Integer;
 
 implementation
 
@@ -110,6 +109,8 @@ uses
   ActiveX, iniFiles, unitCharsetMap, unitSearchString, Registry;
 
 var
+  gDefaultISpellLanguage: Integer = -1;
+  gISpellInitialized: Boolean = False;
   gISpellLanguages: TObjectList = nil;
   gCoInitialize: Boolean = False;
 
@@ -510,11 +511,6 @@ begin
   SpellCommand('!');
 end;
 
-(* ----------------------------------------------------------------------*
-  | destructor TSpeller.Destroy                                          |
-  |                                                                      |
-  | Destructor for ISpell.exe controller class                           |
-  *---------------------------------------------------------------------- *)
 destructor TSpeller.Destroy;
 begin
   if pi.hProcess <> 0 then
@@ -591,11 +587,6 @@ begin { GetCheckResponse }
   Result := Trim(Result);
 end;
 
-(*----------------------------------------------------------------------*
- | function TSpeller.GetResponse                                        |
- |                                                                      |
- | Blocking call to get response from ISpell                            |
- *----------------------------------------------------------------------*)
 function TSpeller.GetResponse: string;
 var
   ansi: AnsiString;
@@ -613,11 +604,6 @@ begin
     RaiseLastOSError;
 end;
 
-(*----------------------------------------------------------------------*
- | procedure TSpeller.SpellCommand                                      |
- |                                                                      |
- | Send a command to ISpell                                             |
- *----------------------------------------------------------------------*)
 procedure TSpeller.SpellCommand(const cmd: AnsiString);
 var
   n: DWORD;
@@ -630,6 +616,7 @@ var
   reg: TRegistry;
   ISpellPath, Path, s, name, cmd: string;
   f: TSearchRec;
+  flags: LongWord;
   sections: TStrings;
   i: Integer;
   sectionLanguage: Integer;
@@ -652,7 +639,12 @@ begin
   if CoInitialize(nil) = S_OK then
     gCoInitialize := True;
   sections := nil;
-  reg := TRegistry.Create(KEY_READ);
+
+  flags := KEY_READ;
+{$ifdef CPUX64}
+  flags := flags or KEY_WOW64_32KEY;
+{$endif}
+  reg := TRegistry.Create(flags);
   try
     reg.RootKey := HKEY_LOCAL_MACHINE;
     if reg.OpenKey('\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\ispell.exe', False) then
@@ -726,10 +718,17 @@ begin
     sections.Free;
     reg.Free;
   end;
+  gISpellInitialized := True;
+end;
+
+function DefaultISpellLanguage(): Integer;
+begin
+  if not gISpellInitialized then
+    InitISpell;
+  Result := gDefaultISpellLanguage;
 end;
 
 initialization
-  InitISpell;
 
 finalization
   gISpellLanguages.Free;

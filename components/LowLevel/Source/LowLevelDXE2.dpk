@@ -49,6 +49,7 @@ contains
   unitExXMLSettings in 'unitExXMLSettings.pas',
   unitQpcTimer in 'unitQpcTimer.pas',
   XnClasses in 'XnClasses.pas',
-  XnRawByteStrings in 'XnRawByteStrings.pas';
+  XnRawByteStrings in 'XnRawByteStrings.pas',
+  unitWow64 in 'unitWow64.pas';
 
 end.

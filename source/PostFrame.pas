@@ -249,7 +249,7 @@ begin
 
   mmoMessage.RightMargin := PostingSettings.MaxPostLineLength;
 
-  fSpellInstalled := gDefaultISpellLanguage <> -1;
+  fSpellInstalled := DefaultISpellLanguage <> -1;
   fCheckSpelling := fSpellInstalled and XNOptions.CheckSpelling;
 
   if fSpellInstalled then

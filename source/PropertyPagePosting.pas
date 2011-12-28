@@ -145,7 +145,7 @@ var
   settings: TPostingSettings;
 begin
   inherited;
-  fISpellInstalled := gDefaultISpellLanguage <> -1;
+  fISpellInstalled := DefaultISpellLanguage <> -1;
   fData := AData as TPropertyPagePostingData;
 
   settings := fData.fSettings;
@@ -175,7 +175,7 @@ begin
        (settings.DefaultSpellLanguage < TSpellChecker.LanguageCount) then
       idx := settings.DefaultSpellLanguage
     else if TSpellChecker.LanguageCount > 0 then
-      idx := gDefaultISpellLanguage
+      idx := DefaultISpellLanguage
     else
       idx := -1;
 
