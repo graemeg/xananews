@@ -137,6 +137,7 @@ type
     fDefaultBozoAction: TBozoAction;
     fAutofitImages: Boolean;
     fUseVistaExplorerTheme: Boolean;
+    fISpellDirectory: string;
 
     function OpenRegistry(const subKey: string; readOnly: Boolean): Boolean;
     procedure CloseRegistry;
@@ -218,6 +219,7 @@ type
     property CheckSpelling: Boolean read fCheckSpelling write fCheckSpelling;
     property SearchInternetURLStub: string read fSearchInternetURLStub write fSearchInternetURLStub;
     property TextInternetURLStub: string read fTextInternetURLStub write fTextInternetURLStub;
+    property ISpellDirectory: string read fISpellDirectory write fISpellDirectory;
 
     property EnterGoToNextGroup: Boolean read fEnterGoToNextGroup write fEnterGoToNextGroup;
     property EnterGetMessages: Boolean read fEnterGetMessages write fEnterGetMessages;
@@ -258,6 +260,8 @@ uses
   unitSearchString, unitNNTPServices;
 
 const
+  cISPELL_DIRECTORY = 'ISpell Directory';
+
   AppearanceKeyNames: array[TAppearanceEnum] of string = (
     'Articles Tree',
     'Messages To Me',
@@ -434,6 +438,11 @@ begin
   fBookmarkColumnPositions[5] := 5;
 
   try
+    if OpenRegistry('Directories', True) then
+    begin
+      fISpellDirectory := fReg.GetStringValue(cISPELL_DIRECTORY, fISpellDirectory);
+    end;
+
     if OpenRegistry('General', True) then
     begin
       fShowInSystemTray   := fReg.GetBooleanValue('Show In System Tray', fShowInSystemTray);
@@ -747,6 +756,9 @@ begin
     fReg.SetBooleanValue('No XFaces', fNoXfaces, False);
     fReg.SetBooleanValue('No HTML', fNoHTML, False);
     fReg.SetStringValue('Show Custom Headers', fShowCustomHeaders.CommaText, ShowCustomHeadersDefault);
+
+    OpenRegistry('Directories', False);
+    fReg.SetStringValue(cISPELL_DIRECTORY, fISpellDirectory, '');
 
     OpenRegistry('General', False);
     fReg.SetBooleanValue('Show In System Tray', fShowInSystemTray, False);

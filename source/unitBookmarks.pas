@@ -312,6 +312,7 @@ end;
 constructor TBookmarkSet.Create;
 begin
   fNames := TStringList.Create;
+  fNames.Sorted := True;
 end;
 
 function TBookmarkSet.CreateBookmark(const name: string): TBookmark;

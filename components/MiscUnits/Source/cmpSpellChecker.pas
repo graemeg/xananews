@@ -101,6 +101,8 @@ type
   EISpell = class(Exception)
   end;
 
+procedure InitISpell(const APath: string);
+
 function DefaultISpellLanguage(): Integer;
 
 implementation
@@ -611,15 +613,33 @@ begin
   WriteFile(fHInputWrite, (cmd + #13#10)[1], Length(cmd) + 2, n, nil);
 end;
 
-procedure InitISpell;
+procedure InitISpell(const APath: string);
 var
   reg: TRegistry;
-  ISpellPath, Path, s, name, cmd: string;
+  ISpellPath, ISpellRoot, s, name, cmd: string;
   f: TSearchRec;
   flags: LongWord;
   sections: TStrings;
   i: Integer;
   sectionLanguage: Integer;
+
+  function GetISpellPathFromRegistry: string;
+  begin
+    flags := KEY_READ;
+    {$ifdef CPUX64}
+      flags := flags or KEY_WOW64_32KEY;
+    {$endif}
+    reg := TRegistry.Create(flags);
+    try
+      reg.RootKey := HKEY_LOCAL_MACHINE;
+      if reg.OpenKey('\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\ispell.exe', False) then
+        Result := reg.ReadString('Path')
+      else
+        Result := '';
+    finally
+      reg.Free;
+    end;
+  end;
 
   function SpellerForLocale(locale: Integer): Integer;
   var
@@ -636,26 +656,30 @@ var
   end;
 
 begin
-  if CoInitialize(nil) = S_OK then
-    gCoInitialize := True;
-  sections := nil;
+  if not gCoInitialize then
+    if CoInitialize(nil) = S_OK then
+      gCoInitialize := True;
 
-  flags := KEY_READ;
-{$ifdef CPUX64}
-  flags := flags or KEY_WOW64_32KEY;
-{$endif}
-  reg := TRegistry.Create(flags);
-  try
-    reg.RootKey := HKEY_LOCAL_MACHINE;
-    if reg.OpenKey('\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\ispell.exe', False) then
-    begin // Get the ISpell.exe path from the registry
-      ISpellPath := IncludeTrailingPathDelimiter(reg.ReadString('Path'));
-      Path := ExtractFilePath(ExcludeTrailingPathDelimiter(ISpellPath));
+  ISpellPath := ExpandFileName(APath);
+  if not ((Length(Trim(ISpellPath)) <> 0) and (DirectoryExists(ISpellPath))) then
+    ISpellPath := GetISpellPathFromRegistry;
 
-      if FindFirst(ISpellPath + '*.*', faDirectory, f) = 0 then
+  ISpellRoot := ExtractFilePath(ISpellPath);
+  ISpellPath := IncludeTrailingPathDelimiter(ISpellPath);
+
+  if DirectoryExists(ISpellPath) then
+  begin
+
+    if FindFirst(ISpellPath + '*.*', faDirectory, f) = 0 then
+    begin
+      if not Assigned(gISpellLanguages) then
+        gISpellLanguages := TObjectList.Create
+      else
+        gISpellLanguages.Clear;
+
+      try
+        sections := TStringList.Create;
         try
-          sections := TStringList.Create;
-
           // Enumerate the subdirectories of the ISpell
           // directory.  Each one will containe a language
           repeat
@@ -675,10 +699,7 @@ begin
                       name := s;
 
                     cmd := ReadString(s, 'Cmd', '');
-                    cmd := StringReplace(cmd, '%UniRed%', Path, [rfReplaceAll, rfIgnoreCase]);
-
-                    if not Assigned(gISpellLanguages) then
-                      gISpellLanguages := TObjectList.Create;
+                    cmd := StringReplace(cmd, '%UniRed%', ISpellRoot, [rfReplaceAll, rfIgnoreCase]);
 
                     sectionLanguage := ReadInteger(s, 'LangNo', sectionLanguage);
 
@@ -694,29 +715,30 @@ begin
                 end;
           until FindNext(f) <> 0;
         finally
-          FindClose(f);
+          sections.Free;
         end;
-
-      if Assigned(gISpellLanguages) then
-      begin
-        gDefaultISpellLanguage := SpellerForLocale(GetThreadLocale);
-
-        if gDefaultISpellLanguage = -1 then
-          gDefaultISpellLanguage := SpellerForLocale(GetUserDefaultLCID);
-
-        if gDefaultISpellLanguage = -1 then
-          gDefaultISpellLanguage := SpellerForLocale(GetSystemDefaultLCID);
-
-        if gDefaultISpellLanguage = -1 then
-          gDefaultISpellLanguage := SpellerForLocale(1033); // US English
-
-        if (gDefaultISpellLanguage = -1) and (gISpellLanguages.Count > 0) then
-          gDefaultISpellLanguage := 0;
+      finally
+        FindClose(f);
       end;
     end;
-  finally
-    sections.Free;
-    reg.Free;
+  end;
+
+  if Assigned(gISpellLanguages) then
+  begin
+    if gDefaultISpellLanguage = -1 then
+      gDefaultISpellLanguage := SpellerForLocale(GetThreadLocale);
+
+    if gDefaultISpellLanguage = -1 then
+      gDefaultISpellLanguage := SpellerForLocale(GetUserDefaultLCID);
+
+    if gDefaultISpellLanguage = -1 then
+      gDefaultISpellLanguage := SpellerForLocale(GetSystemDefaultLCID);
+
+    if gDefaultISpellLanguage = -1 then
+      gDefaultISpellLanguage := SpellerForLocale(1033); // US English
+
+    if (gDefaultISpellLanguage = -1) and (gISpellLanguages.Count > 0) then
+      gDefaultISpellLanguage := 0;
   end;
   gISpellInitialized := True;
 end;
@@ -724,7 +746,7 @@ end;
 function DefaultISpellLanguage(): Integer;
 begin
   if not gISpellInitialized then
-    InitISpell;
+    InitISpell('');
   Result := gDefaultISpellLanguage;
 end;
 

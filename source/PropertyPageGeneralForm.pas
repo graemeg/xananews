@@ -2,6 +2,8 @@ unit PropertyPageGeneralForm;
 
 interface
 
+{$WARN UNIT_PLATFORM OFF}
+
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, PropertyPageForm, ExtCtrls, StdCtrls;
@@ -19,6 +21,7 @@ type
     fPlainTextPasswords: Boolean;
     fTextInternetURLStub: string;
     fUseVistaExplorerTheme: Boolean;
+    fISpellDirectory: string;
   protected
     procedure Initialize; override;
   public
@@ -43,9 +46,14 @@ type
     Label5: TLabel;
     edTextInternetURLStub: TEdit;
     cbUseVistaExplorerTheme: TCheckBox;
-    procedure edTextInternetURLStubChange(Sender: TObject);
-    procedure edSearchInternetURLStubChange(Sender: TObject);
+    Label6: TLabel;
+    edISpellDirectory: TEdit;
+    btnISpellDirectory: TButton;
     procedure ControlClick(Sender: TObject);
+    procedure edSearchInternetURLStubChange(Sender: TObject);
+    procedure edTextInternetURLStubChange(Sender: TObject);
+    procedure btnISpellDirectoryClick(Sender: TObject);
+    procedure edISpellDirectoryChange(Sender: TObject);
   private
     fData: TPropertyPageGeneralData;
   public
@@ -58,7 +66,8 @@ var
 
 implementation
 
-uses unitNNTPServices, unitNewsReaderOptions;
+uses
+  FileCtrl, unitNNTPServices, unitNewsReaderOptions;
 
 {$R *.dfm}
 
@@ -84,6 +93,7 @@ begin
   edTextInternetURLStub.Text := fData.fTextInternetURLStub;
   cbPlainTextPasswords.Checked := fData.fPlainTextPasswords;
   cbUseVistaExplorerTheme.Checked := fData.fUseVistaExplorerTheme;
+  edISpellDirectory.Text := fData.fISpellDirectory;
 
   case fData.fCheckVersionOnInternet of
     1: rbVersionDont.Checked := True;
@@ -108,6 +118,7 @@ begin
   XNOptions.TextInternetURLStub := fTextInternetURLStub;
   XNOptions.PlainTextPasswords := fPlainTextPasswords;
   XNOptions.UseVistaExplorerTheme := fUseVistaExplorerTheme;
+  XNOptions.ISpellDirectory := fISpellDirectory;
 end;
 
 procedure TPropertyPageGeneralData.Initialize;
@@ -122,6 +133,26 @@ begin
   fTextInternetURLStub := XNOptions.TextInternetURLStub;
   fPlainTextPasswords := XNOptions.PlainTextPasswords;
   fUseVistaExplorerTheme := XNOptions.UseVistaExplorerTheme;
+  fISpellDirectory := XNOptions.ISpellDirectory;
+end;
+
+procedure TfmPropertyPageGeneral.btnISpellDirectoryClick(Sender: TObject);
+const
+  options: TSelectDirExtOpts = [sdShowShares, sdNewUI, sdValidateDir];
+var
+  dir: string;
+  app: string;
+begin
+  app := ExtractFilePath(Application.ExeName);
+  if edISpellDirectory.Text = '' then
+    dir := app
+  else
+    dir := ExpandFileName(edISpellDirectory.Text);
+
+  if SelectDirectory('Select folder where ISpell.exe is installed', '', dir, options, Self) then
+  begin
+    edISpellDirectory.Text := ExtractRelativePath(app, dir);
+  end;
 end;
 
 procedure TfmPropertyPageGeneral.ControlClick(Sender: TObject);
@@ -143,6 +174,12 @@ begin
   fData.fAutoCrossPostDetect := cbAutoCrosspostDetect.Checked;
   fData.fQuoteFullText := cbQuoteFullText.Checked;
   fData.fUseVistaExplorerTheme := cbUseVistaExplorerTheme.Checked;
+end;
+
+procedure TfmPropertyPageGeneral.edISpellDirectoryChange(Sender: TObject);
+begin
+  if Populating then Exit;
+  fData.fISpellDirectory := edISpellDirectory.Text;
 end;
 
 procedure TfmPropertyPageGeneral.edSearchInternetURLStubChange(Sender: TObject);

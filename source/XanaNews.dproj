@@ -3,7 +3,7 @@
 			<ProjectGuid>{BBA882D7-C955-47C2-9605-2593A74F9161}</ProjectGuid>
 			<MainSource>XanaNews.dpr</MainSource>
 			<Base>True</Base>
-			<Config Condition="'$(Config)'==''">Debug</Config>
+			<Config Condition="'$(Config)'==''">Release</Config>
 			<TargetedPlatforms>3</TargetedPlatforms>
 			<AppType>Application</AppType>
 			<FrameworkType>VCL</FrameworkType>
@@ -39,12 +39,6 @@
 			<CfgParent>Base</CfgParent>
 			<Base>true</Base>
 		</PropertyGroup>
-		<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win64)'!=''">
-			<Cfg_2_Win64>true</Cfg_2_Win64>
-			<CfgParent>Cfg_2</CfgParent>
-			<Cfg_2>true</Cfg_2>
-			<Base>true</Base>
-		</PropertyGroup>
 		<PropertyGroup Condition="'$(Config)'=='FullDebugMode' or '$(Cfg_3)'!=''">
 			<Cfg_3>true</Cfg_3>
 			<CfgParent>Base</CfgParent>
@@ -58,11 +52,11 @@
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
 			<DCC_UnitSearchPath>..\components\ImageTypes\Source;..\components\LowLevel\Source;..\components\MiscUnits\Source;..\components\thirdparty\VirtualTreeView\Source;..\components\thirdparty\Indy10\Core;..\components\thirdparty\Indy10\Protocols;..\components\thirdparty\Indy10\System;..\modified_vcl;$(BDSLIB)\$(Platform)\release;$(BDSUSERDIR)\Imports;$(BDS)\Imports;$(BDSCOMMONDIR)\Dcp;$(BDS)\include;C:\Program Files (x86)\Raize\CS4\Lib\RS-XE;$(BDS)\RaveReports\Lib;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<DCC_ImageBase>00400000</DCC_ImageBase>
-			<VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.19.1.337;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2011;LegalTrademarks=All Rights Reserved;OriginalFilename=XanaNews.exe;ProductName=XanaNews;ProductVersion=1.19.1.337;Comments=</VerInfo_Keys>
+			<VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.19.1.340;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2011;LegalTrademarks=All Rights Reserved;OriginalFilename=XanaNews.exe;ProductName=XanaNews;ProductVersion=1.19.1.340;Comments=</VerInfo_Keys>
 			<Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
 			<DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
 			<VerInfo_MinorVer>19</VerInfo_MinorVer>
-			<VerInfo_Build>337</VerInfo_Build>
+			<VerInfo_Build>340</VerInfo_Build>
 			<VerInfo_Locale>1033</VerInfo_Locale>
 			<DCC_N>false</DCC_N>
 			<DCC_S>false</DCC_S>
@@ -108,10 +102,6 @@
 			<DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
 			<DCC_Optimize>false</DCC_Optimize>
 			<DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
-		</PropertyGroup>
-		<PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
-			<VerInfo_Build>339</VerInfo_Build>
-			<VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.19.1.339;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2011;LegalTrademarks=All Rights Reserved;OriginalFilename=XanaNews.exe;ProductName=XanaNews;ProductVersion=1.19.1.337;Comments=</VerInfo_Keys>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_3)'!=''">
 			<DCC_RemoteDebug>true</DCC_RemoteDebug>

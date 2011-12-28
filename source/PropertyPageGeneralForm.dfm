@@ -4,49 +4,58 @@ inherited fmPropertyPageGeneral: TfmPropertyPageGeneral
   HelpKeyword = 'ProgramSettings'
   ActiveControl = cbShowInSystemTray
   Caption = 'Program Settings'
-  ClientHeight = 405
+  ClientHeight = 450
   ClientWidth = 397
-  Constraints.MinHeight = 370
+  Constraints.MinHeight = 450
   Constraints.MinWidth = 397
   ExplicitLeft = 547
   ExplicitWidth = 413
-  ExplicitHeight = 441
+  ExplicitHeight = 486
   PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel [0]
     Left = 12
     Top = 176
-    Width = 173
+    Width = 179
     Height = 13
     Caption = 'Check for Latest Version on Internet:'
   end
   object Label2: TLabel [1]
-    Left = 16
+    Left = 12
     Top = 288
-    Width = 132
+    Width = 136
     Height = 13
     Caption = 'Find Message Id on Internet'
   end
   object Label3: TLabel [2]
     Left = 32
-    Top = 312
-    Width = 50
+    Top = 309
+    Width = 48
     Height = 13
     Caption = 'URL Stub:'
   end
   object Label4: TLabel [3]
-    Left = 16
-    Top = 344
-    Width = 98
+    Left = 12
+    Top = 342
+    Width = 103
     Height = 13
     Caption = 'Find Text on Internet'
   end
   object Label5: TLabel [4]
     Left = 32
-    Top = 368
-    Width = 50
+    Top = 363
+    Width = 48
     Height = 13
     Caption = 'URL Stub:'
+  end
+  object Label6: TLabel [5]
+    Left = 12
+    Top = 396
+    Width = 339
+    Height = 13
+    Caption = 
+      'ISpell directory (only needed when using XanaNews as a portable ' +
+      'app)'
   end
   inherited Panel1: TPanel
     Width = 397
@@ -137,7 +146,7 @@ inherited fmPropertyPageGeneral: TfmPropertyPageGeneral
   end
   object edSearchInternetURLStub: TEdit
     Left = 88
-    Top = 308
+    Top = 306
     Width = 294
     Height = 21
     Anchors = [akLeft, akTop, akRight]
@@ -155,7 +164,7 @@ inherited fmPropertyPageGeneral: TfmPropertyPageGeneral
   end
   object edTextInternetURLStub: TEdit
     Left = 88
-    Top = 364
+    Top = 360
     Width = 294
     Height = 21
     Anchors = [akLeft, akTop, akRight]
@@ -170,5 +179,24 @@ inherited fmPropertyPageGeneral: TfmPropertyPageGeneral
     Caption = 'Use Vista Explorer Theme'
     TabOrder = 7
     OnClick = ControlClick
+  end
+  object edISpellDirectory: TEdit
+    Left = 12
+    Top = 414
+    Width = 340
+    Height = 21
+    Anchors = [akLeft, akTop, akRight]
+    TabOrder = 13
+    OnChange = edISpellDirectoryChange
+  end
+  object btnISpellDirectory: TButton
+    Left = 357
+    Top = 412
+    Width = 25
+    Height = 25
+    Anchors = [akTop, akRight]
+    Caption = '...'
+    TabOrder = 14
+    OnClick = btnISpellDirectoryClick
   end
 end

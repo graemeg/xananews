@@ -3,8 +3,8 @@ object fmPropertyBase: TfmPropertyBase
   Top = 189
   ActiveControl = vstSections
   BorderWidth = 4
-  ClientHeight = 358
-  ClientWidth = 563
+  ClientHeight = 436
+  ClientWidth = 616
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -23,32 +23,37 @@ object fmPropertyBase: TfmPropertyBase
     Left = 169
     Top = 0
     Width = 4
-    Height = 323
+    Height = 401
     Beveled = True
+    ExplicitHeight = 323
   end
   object pnlOptions: TPanel
     Left = 173
     Top = 0
-    Width = 390
-    Height = 323
+    Width = 443
+    Height = 401
     Align = alClient
     BevelOuter = bvNone
     FullRepaint = False
     TabOrder = 1
+    ExplicitWidth = 390
+    ExplicitHeight = 323
     object Bevel1: TBevel
       Left = 0
-      Top = 320
-      Width = 390
+      Top = 398
+      Width = 443
       Height = 3
       Align = alBottom
       Shape = bsBottomLine
+      ExplicitTop = 320
+      ExplicitWidth = 390
     end
   end
   object vstSections: TVirtualStringTree
     Left = 0
     Top = 0
     Width = 169
-    Height = 323
+    Height = 401
     Align = alLeft
     Header.AutoSizeIndex = 0
     Header.Font.Charset = DEFAULT_CHARSET
@@ -65,21 +70,24 @@ object fmPropertyBase: TfmPropertyBase
     OnGetText = vstSectionsGetText
     OnInitChildren = vstSectionsInitChildren
     OnInitNode = vstSectionsInitNode
+    ExplicitHeight = 323
     Columns = <>
   end
   object pnlButtons: TPanel
     Left = 0
-    Top = 323
-    Width = 563
+    Top = 401
+    Width = 616
     Height = 35
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 2
+    ExplicitTop = 323
+    ExplicitWidth = 563
     DesignSize = (
-      563
+      616
       35)
     object btnOK: TButton
-      Left = 241
+      Left = 294
       Top = 8
       Width = 75
       Height = 25
@@ -88,9 +96,10 @@ object fmPropertyBase: TfmPropertyBase
       Default = True
       TabOrder = 0
       OnClick = btnOKClick
+      ExplicitLeft = 241
     end
     object btnCancel: TButton
-      Left = 318
+      Left = 371
       Top = 8
       Width = 75
       Height = 25
@@ -99,9 +108,10 @@ object fmPropertyBase: TfmPropertyBase
       Caption = 'Cancel'
       ModalResult = 2
       TabOrder = 1
+      ExplicitLeft = 318
     end
     object btnApply: TButton
-      Left = 395
+      Left = 448
       Top = 8
       Width = 75
       Height = 25
@@ -109,9 +119,10 @@ object fmPropertyBase: TfmPropertyBase
       Caption = 'Apply'
       TabOrder = 2
       OnClick = btnApplyClick
+      ExplicitLeft = 395
     end
     object btnHelp: TButton
-      Left = 480
+      Left = 533
       Top = 8
       Width = 75
       Height = 25
@@ -119,6 +130,7 @@ object fmPropertyBase: TfmPropertyBase
       Caption = 'Help'
       TabOrder = 3
       OnClick = btnHelpClick
+      ExplicitLeft = 480
     end
   end
   object PersistentPosition1: TPersistentPosition

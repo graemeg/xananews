@@ -3126,6 +3126,8 @@ begin
   if XNOptions.AutoExpandGroupTree then
     vstSubscribed.FullExpand;
   MessageScrollBox1.AutoFit := XNOptions.AutofitImages;
+
+  InitISpell(XNOptions.ISpellDirectory);
 end;
 
 procedure TfmMain.BatchToParams(batch: TBatchAction; var params: TGetMessagesParams);
@@ -4180,6 +4182,7 @@ end;
 procedure TfmMain.FormCreate(Sender: TObject);
 var
   pmForm: TfmPostMessage;
+  s: string;
 begin
   if CoInitialize(nil) = S_OK then
     fCoUninitialize := True;
@@ -4235,7 +4238,13 @@ begin
   NNTPAccounts := TNNTPAccounts.Create;
   MailAccounts := TMailAccounts.Create;
   gArticleFolders := TArticleFolders.Create;
-  ThreadManager := TNNTPThreadManager.Create(Application.Title + '/' + ProductVersion);
+
+  {$ifdef CPUX64}
+    s := Application.Title + ' (x64; Portable ISpell)';
+  {$else}
+    s := Application.Title + ' (x86; Portable ISpell)';
+  {$endif}
+  ThreadManager := TNNTPThreadManager.Create(s + '/' + ProductVersion);
   AllFilters.Load;
   PersistentPosition.Enabled := False;
   NNTPAccounts.LoadFromRegistry;
@@ -6342,6 +6351,7 @@ var
   QIdx: Integer;
   prMin, prMax, prPos: Integer;
   sbText: string;
+  s: string;
 begin
   // Enable/Disable actions depending on state.
   if gAppTerminating then Exit;
@@ -6525,10 +6535,11 @@ begin
   actHelpAbout.Enabled := True;
   actToolsBatches.Enabled := True;
 
+  s := Application.Title {$ifdef CPUX64} + ' (x64)' {$endif};
   if Assigned(SelectedGroup) then
-    Caption := Format('%s %s - %s', [Application.Title, ProductVersion, SelectedGroup.Name])
+    Caption := Format('%s %s - %s', [s, ProductVersion, SelectedGroup.Name])
   else
-    Caption := Application.Title + ' ' + ProductVersion;
+    Caption := s + ' ' + ProductVersion;
 
   actToolsMessagebaseManagement.Enabled := True;
   actToolsAdminCreateGroup.Enabled := hasSelAccount;

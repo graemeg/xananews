@@ -6,11 +6,15 @@ inherited fmPropertyPagePreferences: TfmPropertyPagePreferences
   ClientWidth = 400
   Constraints.MinHeight = 390
   Constraints.MinWidth = 400
+  ExplicitWidth = 416
+  ExplicitHeight = 426
   PixelsPerInch = 96
   TextHeight = 13
   inherited Bevel2: TBevel
     Top = 350
     Width = 400
+    ExplicitTop = 350
+    ExplicitWidth = 400
   end
   object Label6: TLabel [1]
     Left = 12
@@ -23,16 +27,15 @@ inherited fmPropertyPagePreferences: TfmPropertyPagePreferences
   object Label5: TLabel [2]
     Left = 12
     Top = 240
-    Width = 309
-    Height = 17
-    AutoSize = False
+    Width = 305
+    Height = 13
     Caption = 'Play sound when new replies arrive (When in System Tray only)'
     WordWrap = True
   end
   object Label1: TLabel [3]
     Left = 12
     Top = 124
-    Width = 72
+    Width = 74
     Height = 13
     Caption = 'Purge to Folder'
   end
@@ -65,31 +68,36 @@ inherited fmPropertyPagePreferences: TfmPropertyPagePreferences
   object Label3: TLabel [7]
     Left = 12
     Top = 88
-    Width = 100
+    Width = 99
     Height = 26
     Caption = 'Perform action when selecting group'
     WordWrap = True
   end
   object Label7: TLabel [8]
     Left = 12
-    Top = 288
-    Width = 264
+    Top = 286
+    Width = 276
     Height = 13
     Caption = 'Signature to use in preference to the one in your Identity'
   end
   inherited Panel1: TPanel
     Width = 400
+    ExplicitWidth = 400
     inherited Bevel1: TBevel
       Width = 400
+      ExplicitWidth = 400
     end
     inherited stSectionDetails: TLabel
       Width = 388
+      ExplicitWidth = 388
     end
   end
   inherited btnReset: TButton
     Left = 289
     Top = 359
     TabOrder = 11
+    ExplicitLeft = 289
+    ExplicitTop = 359
   end
   object cbDefMessageCharset: TComboBox
     Left = 144
@@ -98,7 +106,6 @@ inherited fmPropertyPagePreferences: TfmPropertyPagePreferences
     Height = 21
     Style = csDropDownList
     Anchors = [akLeft, akTop, akRight]
-    ItemHeight = 0
     TabOrder = 6
     OnChange = cbDefMessageCharsetChange
   end
@@ -128,7 +135,6 @@ inherited fmPropertyPagePreferences: TfmPropertyPagePreferences
     Height = 21
     Style = csDropDownList
     Anchors = [akLeft, akTop, akRight]
-    ItemHeight = 0
     TabOrder = 5
     OnChange = cbDefMessageCharsetChange
   end

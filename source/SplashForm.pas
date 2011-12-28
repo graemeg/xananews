@@ -47,49 +47,51 @@ implementation
 
 procedure TfmSplash.FormShow(Sender: TObject);
 var
-  strm : TResourceStream;
-  jpeg : TJPegImage;
-  bmpCanvas : TCanvas;
-  h, x, y : Integer;
-  st : string;
-  bmp : TBitmap;
+  strm: TResourceStream;
+  Jpeg: TJPegImage;
+  bmpCanvas: TCanvas;
+  h, x, y: Integer;
+  st: string;
+  bmp: TBitmap;
 begin
-  jpeg := Nil;
+  if DebugHook <> 0 then
+    FormStyle := fsNormal;
+
+  Jpeg := nil;
   strm := TResourceStream.Create(hInstance, 'SPLASH', 'JPEG');
   try
-    jpeg := TJPegImage.Create;
-    jpeg.LoadFromStream(strm);
+    Jpeg := TJPegImage.Create;
+    Jpeg.LoadFromStream(strm);
     bmp := TBitmap.Create;
     try
       Image1.Picture.Graphic := bmp
     finally
       bmp.Free;
     end;
-    Image1.Picture.Bitmap.Width := jpeg.Width;
-    h := JPeg.Height;
+    Image1.Picture.Bitmap.Width := Jpeg.Width;
+    h := Jpeg.Height;
     Image1.Picture.Bitmap.Height := h;
     Image1.Picture.Bitmap.PixelFormat := pf24Bit;
     bmpCanvas := Image1.Picture.Bitmap.Canvas;
-    bmpCanvas.Draw(0, 0, jpeg);
-
+    bmpCanvas.Draw(0, 0, Jpeg);
 
     bmpCanvas.Font.Height := 18;
     bmpCanvas.Font.Name := 'Arial';
     bmpCanvas.Font.Style := [fsBold];
-    SetBkMode (bmpCanvas.Handle, TRANSPARENT);
+    SetBkMode(bmpCanvas.Handle, TRANSPARENT);
     st := 'Version ' + ProductVersion;
-    x := jpeg.Width - bmpCanvas.TextWidth (st) - 10;
+    x := Jpeg.Width - bmpCanvas.TextWidth(st) - 10;
     y := h - 18;
 
-//    bmpCanvas.Font.Color := clMaroon;
-//    bmpCanvas.TextOut(x + 1, y + 1, st);
+    // bmpCanvas.Font.Color := clMaroon;
+    // bmpCanvas.TextOut(x + 1, y + 1, st);
     bmpCanvas.Font.Color := clWhite;
-    bmpCanvas.TextOut(x-1, y-1, st);
-//    bmpCanvas.Font.Color := clRed;
-//    bmpCanvas.TextOut(x, y, st);
+    bmpCanvas.TextOut(x - 1, y - 1, st);
+    // bmpCanvas.Font.Color := clRed;
+    // bmpCanvas.TextOut(x, y, st);
   finally
     strm.Free;
-    jpeg.Free;
+    Jpeg.Free;
   end
 end;
 

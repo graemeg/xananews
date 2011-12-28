@@ -186,6 +186,41 @@ asm
 end;
 {$ENDIF}
 
+
+
+{$ifdef CPUX64}
+// TODO: remove when the version in SysUtils is fixed.
+function StrPos(const Str1, Str2: PAnsiChar): PAnsiChar;
+var
+  MatchStart, LStr1, LStr2: PAnsiChar;
+begin
+  Result := nil;
+  if (Str1^ = #0) or (Str2^ = #0) then
+    Exit;
+
+  MatchStart := Str1;
+  while MatchStart^<> #0 do
+  begin
+    if MatchStart^ = Str2^ then
+    begin
+      LStr1 := MatchStart+1;
+      LStr2 := Str2+1;
+      while True do
+      begin
+        if LStr2^ = #0 then
+          Exit(MatchStart);
+        if (LStr1^ <> LStr2^) or (LStr1^ = #0) then
+          Break;
+        Inc(LStr1);
+        Inc(LStr2);
+      end;
+    end;
+    Inc(MatchStart);
+  end;
+end;
+{$endif}
+
+
 { TStreamTextReader }
 
 constructor TStreamTextReader.Create(AStream: TStream; blockSize: Integer = 1024);
