@@ -1,14 +1,14 @@
 object dlgReadLnDelay: TdlgReadLnDelay
   Left = 0
   Top = 0
-  Width = 245
-  Height = 114
   Caption = 'Slow Internet Connection'
+  ClientHeight = 78
+  ClientWidth = 229
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
-  Font.Name = 'MS Shell Dlg 2'
+  Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
   Position = poMainFormCenter

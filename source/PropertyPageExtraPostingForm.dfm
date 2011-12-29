@@ -4,41 +4,43 @@ inherited fmPropertyPageExtraPosting: TfmPropertyPageExtraPosting
   HelpType = htKeyword
   HelpKeyword = 'PostedMessageHeaders'
   Caption = 'Posted Message Headers'
-  ClientHeight = 397
-  ClientWidth = 315
-  Constraints.MinHeight = 397
-  Constraints.MinWidth = 315
+  ClientWidth = 384
+  ExplicitLeft = 338
+  ExplicitTop = 214
+  ExplicitWidth = 400
+  ExplicitHeight = 450
   PixelsPerInch = 96
   TextHeight = 13
   inherited Bevel2: TBevel
-    Top = 357
-    Width = 315
+    Width = 384
+    ExplicitTop = 357
+    ExplicitWidth = 315
   end
   object Label1: TLabel [1]
     Left = 28
     Top = 184
-    Width = 82
+    Width = 81
     Height = 13
     Caption = 'Message ID Stub'
   end
   object Label2: TLabel [2]
     Left = 28
     Top = 208
-    Width = 36
+    Width = 35
     Height = 13
     Caption = 'Domain'
   end
   object Label5: TLabel [3]
     Left = 12
     Top = 232
-    Width = 4
+    Width = 6
     Height = 13
     Caption = '*'
   end
   object Label3: TLabel [4]
     Left = 28
     Top = 232
-    Width = 278
+    Width = 347
     Height = 43
     Anchors = [akLeft, akTop, akRight]
     AutoSize = False
@@ -46,35 +48,39 @@ inherited fmPropertyPageExtraPosting: TfmPropertyPageExtraPosting
       'nb.  XanaNews will always generate message IDs if '#39'Archive Poste' +
       'd Messages'#39' is selected on the Posting Settings tab'
     WordWrap = True
+    ExplicitWidth = 278
   end
   object Label38: TLabel [5]
     Left = 12
     Top = 280
-    Width = 67
+    Width = 69
     Height = 13
     Caption = 'Extra Headers'
   end
   object Label4: TLabel [6]
-    Left = 14
+    Left = 12
     Top = 60
-    Width = 34
+    Width = 38
     Height = 13
     Caption = 'Identity'
   end
   object Label6: TLabel [7]
     Left = 176
     Top = 136
-    Width = 127
+    Width = 125
     Height = 13
     Caption = 'when cancelling messages'
   end
   inherited Panel1: TPanel
-    Width = 315
+    Width = 384
+    ExplicitWidth = 315
     inherited Bevel1: TBevel
-      Width = 315
+      Width = 384
+      ExplicitWidth = 315
     end
     inherited stSectionDetails: TLabel
-      Width = 303
+      Width = 372
+      ExplicitWidth = 303
     end
   end
   object cbNoArchive: TCheckBox [9]
@@ -126,14 +132,14 @@ inherited fmPropertyPageExtraPosting: TfmPropertyPageExtraPosting
   object lbXHeaders: TListBox [14]
     Left = 12
     Top = 296
-    Width = 214
-    Height = 54
+    Width = 283
+    Height = 71
     Anchors = [akLeft, akTop, akRight, akBottom]
     ItemHeight = 13
     TabOrder = 6
   end
   object btnModifyXHeaders: TButton [15]
-    Left = 232
+    Left = 301
     Top = 296
     Width = 75
     Height = 25
@@ -143,23 +149,24 @@ inherited fmPropertyPageExtraPosting: TfmPropertyPageExtraPosting
     OnClick = btnModifyXHeadersClick
   end
   inherited btnReset: TButton
-    Left = 204
-    Top = 367
+    Left = 273
+    Top = 384
     TabOrder = 8
+    ExplicitLeft = 204
+    ExplicitTop = 367
   end
   object cbIdentities: TComboBox
     Left = 60
     Top = 56
-    Width = 157
+    Width = 226
     Height = 21
     Style = csDropDownList
     Anchors = [akLeft, akTop, akRight]
-    ItemHeight = 0
     TabOrder = 9
     OnChange = cbIdentitiesChange
   end
   object btnNewIdentity: TButton
-    Left = 228
+    Left = 297
     Top = 54
     Width = 75
     Height = 25

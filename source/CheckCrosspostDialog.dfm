@@ -9,7 +9,7 @@ object dlgCheckCrosspost: TdlgCheckCrosspost
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
-  Font.Name = 'MS Shell Dlg 2'
+  Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
   Position = poOwnerFormCenter

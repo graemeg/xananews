@@ -2,19 +2,15 @@ inherited fmPropertyPageAccountServer: TfmPropertyPageAccountServer
   HelpType = htKeyword
   HelpKeyword = 'AccountServerSettings'
   Caption = 'Server Settings'
-  ClientHeight = 358
-  ClientWidth = 340
-  Constraints.MinHeight = 358
-  Constraints.MinWidth = 340
   DesignSize = (
-    340
-    358)
+    384
+    414)
   PixelsPerInch = 96
   TextHeight = 13
   object Label9: TLabel [0]
     Left = 12
     Top = 60
-    Width = 188
+    Width = 192
     Height = 13
     Caption = 'Server Name (Host name or IP Address)'
     Transparent = True
@@ -22,14 +18,14 @@ inherited fmPropertyPageAccountServer: TfmPropertyPageAccountServer
   object Label2: TLabel [1]
     Left = 12
     Top = 268
-    Width = 163
+    Width = 170
     Height = 13
     Caption = 'Last greeting received from server:'
   end
   object stServerAccountName: TLabel [2]
     Left = 28
     Top = 147
-    Width = 53
+    Width = 52
     Height = 13
     Caption = 'User Name'
     Transparent = True
@@ -45,7 +41,7 @@ inherited fmPropertyPageAccountServer: TfmPropertyPageAccountServer
   object stRetypePassword: TLabel [4]
     Left = 28
     Top = 195
-    Width = 83
+    Width = 84
     Height = 13
     Caption = 'Retype Password'
     Transparent = True
@@ -53,29 +49,26 @@ inherited fmPropertyPageAccountServer: TfmPropertyPageAccountServer
   object stPasswordError: TLabel [5]
     Left = 120
     Top = 216
-    Width = 108
+    Width = 109
     Height = 13
     Caption = 'Passwords must match'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clRed
     Font.Height = -11
-    Font.Name = 'MS Sans Serif'
+    Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
     Visible = False
   end
   inherited Panel1: TPanel
-    Width = 340
     ExplicitWidth = 340
     DesignSize = (
-      340
+      384
       41)
     inherited Bevel1: TBevel
-      Width = 340
       ExplicitWidth = 340
     end
     inherited stSectionDetails: TLabel
-      Width = 328
       Caption = 
         'This section contains the server name and server account setting' +
         's'
@@ -85,11 +78,12 @@ inherited fmPropertyPageAccountServer: TfmPropertyPageAccountServer
   object edServerName: TEdit
     Left = 12
     Top = 76
-    Width = 313
+    Width = 357
     Height = 21
     Anchors = [akLeft, akTop, akRight]
     TabOrder = 1
     OnChange = edServerNameChange
+    ExplicitWidth = 313
   end
   object cbLogonRequired: TCheckBox
     Left = 12
@@ -128,8 +122,8 @@ inherited fmPropertyPageAccountServer: TfmPropertyPageAccountServer
   object stGreeting: TMemo
     Left = 12
     Top = 284
-    Width = 305
-    Height = 63
+    Width = 349
+    Height = 119
     TabStop = False
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelInner = bvNone
@@ -138,6 +132,8 @@ inherited fmPropertyPageAccountServer: TfmPropertyPageAccountServer
     ParentColor = True
     ReadOnly = True
     TabOrder = 7
+    ExplicitWidth = 305
+    ExplicitHeight = 63
   end
   object edRetypePassword: TEdit
     Left = 120

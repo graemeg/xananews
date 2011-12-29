@@ -2,26 +2,23 @@ inherited fmPropertyPageMailAccountConnection: TfmPropertyPageMailAccountConnect
   Left = 637
   Top = 255
   Caption = 'Diallup & Connection'
-  ClientHeight = 306
-  ClientWidth = 270
   ExplicitLeft = 637
   ExplicitTop = 255
-  ExplicitWidth = 278
-  ExplicitHeight = 340
   PixelsPerInch = 96
   TextHeight = 13
   object Bevel3: TBevel [0]
     Left = -4
     Top = 136
-    Width = 276
+    Width = 390
     Height = 3
     Anchors = [akLeft, akTop, akRight]
     Shape = bsTopLine
+    ExplicitWidth = 276
   end
   object Label13: TLabel [1]
     Left = 12
     Top = 198
-    Width = 58
+    Width = 59
     Height = 13
     Caption = 'Idle Timeout'
     Transparent = True
@@ -29,7 +26,7 @@ inherited fmPropertyPageMailAccountConnection: TfmPropertyPageMailAccountConnect
   object Label12: TLabel [2]
     Left = 12
     Top = 222
-    Width = 52
+    Width = 49
     Height = 13
     Caption = 'SMTP Port'
     Transparent = True
@@ -45,7 +42,7 @@ inherited fmPropertyPageMailAccountConnection: TfmPropertyPageMailAccountConnect
   object Label15: TLabel [4]
     Left = 26
     Top = 283
-    Width = 42
+    Width = 40
     Height = 13
     Caption = 'SSL Port'
     Transparent = True
@@ -53,14 +50,14 @@ inherited fmPropertyPageMailAccountConnection: TfmPropertyPageMailAccountConnect
   object Label1: TLabel [5]
     Left = 172
     Top = 283
-    Width = 90
+    Width = 92
     Height = 13
     Caption = '(Use 587 for Gmail)'
   end
   object lbReadTimeout: TLabel [6]
     Left = 12
     Top = 174
-    Width = 67
+    Width = 66
     Height = 13
     Caption = 'Read Timeout'
     Transparent = True
@@ -76,33 +73,30 @@ inherited fmPropertyPageMailAccountConnection: TfmPropertyPageMailAccountConnect
   object Label28: TLabel [8]
     Left = 172
     Top = 150
-    Width = 40
+    Width = 39
     Height = 13
     Caption = 'seconds'
   end
   object Label2: TLabel [9]
     Left = 172
     Top = 174
-    Width = 40
+    Width = 39
     Height = 13
     Caption = 'seconds'
   end
   object Label3: TLabel [10]
     Left = 172
     Top = 198
-    Width = 40
+    Width = 39
     Height = 13
     Caption = 'seconds'
   end
   inherited Panel1: TPanel
-    Width = 270
     ExplicitWidth = 270
     inherited Bevel1: TBevel
-      Width = 270
       ExplicitWidth = 270
     end
     inherited stSectionDetails: TLabel
-      Width = 258
       Caption = 
         'Controls how XanaNews connects to the Internet and interacts wit' +
         'h the mail server'
@@ -143,7 +137,6 @@ inherited fmPropertyPageMailAccountConnection: TfmPropertyPageMailAccountConnect
     Height = 21
     Style = csDropDownList
     Anchors = [akLeft, akTop, akRight]
-    ItemHeight = 13
     TabOrder = 4
     OnChange = cbRasEntriesChange
   end
@@ -166,9 +159,9 @@ inherited fmPropertyPageMailAccountConnection: TfmPropertyPageMailAccountConnect
     OnChange = cbRasEntriesChange
   end
   object cbSSL: TCheckBox
-    Left = 10
+    Left = 12
     Top = 256
-    Width = 138
+    Width = 136
     Height = 17
     Alignment = taLeftJustify
     Caption = 'SSL Required'

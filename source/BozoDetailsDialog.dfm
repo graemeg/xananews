@@ -9,7 +9,7 @@ object dlgBozoDetails: TdlgBozoDetails
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
   Position = poOwnerFormCenter
@@ -21,7 +21,7 @@ object dlgBozoDetails: TdlgBozoDetails
   object Label1: TLabel
     Left = 16
     Top = 16
-    Width = 28
+    Width = 27
     Height = 13
     Caption = '&Name'
   end
@@ -35,7 +35,7 @@ object dlgBozoDetails: TdlgBozoDetails
   object Label3: TLabel
     Left = 16
     Top = 254
-    Width = 77
+    Width = 78
     Height = 13
     Anchors = [akLeft, akBottom]
     Caption = 'Date Registered'

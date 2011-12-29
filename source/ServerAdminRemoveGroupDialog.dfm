@@ -6,7 +6,11 @@ object dlgServerAdminRemoveGroup: TdlgServerAdminRemoveGroup
   ClientHeight = 227
   ClientWidth = 384
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
   OldCreateOrder = True
   Position = poMainFormCenter
   PixelsPerInch = 96
@@ -14,21 +18,21 @@ object dlgServerAdminRemoveGroup: TdlgServerAdminRemoveGroup
   object Label1: TLabel
     Left = 16
     Top = 16
-    Width = 60
+    Width = 59
     Height = 13
     Caption = '&Group Name'
   end
   object Label2: TLabel
     Left = 16
     Top = 48
-    Width = 46
+    Width = 47
     Height = 13
     Caption = '&Approved'
   end
   object Label3: TLabel
     Left = 16
     Top = 80
-    Width = 37
+    Width = 36
     Height = 13
     Caption = '&Reason'
   end

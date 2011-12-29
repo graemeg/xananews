@@ -6,7 +6,11 @@ object dlgTestPerformance: TdlgTestPerformance
   ClientHeight = 103
   ClientWidth = 384
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
   OldCreateOrder = True
   Position = poMainFormCenter
   PixelsPerInch = 96
@@ -14,14 +18,14 @@ object dlgTestPerformance: TdlgTestPerformance
   object Label1: TLabel
     Left = 16
     Top = 24
-    Width = 87
+    Width = 84
     Height = 13
     Caption = 'Decode Message '
   end
   object Label2: TLabel
     Left = 160
     Top = 24
-    Width = 28
+    Width = 27
     Height = 13
     Caption = 'Times'
   end
@@ -35,7 +39,7 @@ object dlgTestPerformance: TdlgTestPerformance
   object Label3: TLabel
     Left = 16
     Top = 72
-    Width = 69
+    Width = 70
     Height = 13
     Caption = 'Average Time:'
   end
@@ -50,7 +54,7 @@ object dlgTestPerformance: TdlgTestPerformance
   object Label4: TLabel
     Left = 152
     Top = 72
-    Width = 40
+    Width = 39
     Height = 13
     Caption = 'seconds'
   end

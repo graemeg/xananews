@@ -1,18 +1,16 @@
 inherited fmPropertyPageMailAccountPreferences: TfmPropertyPageMailAccountPreferences
   Caption = 'User Preferences'
-  ClientHeight = 96
-  Constraints.MinHeight = 123
-  Constraints.MinWidth = 381
   PixelsPerInch = 96
   TextHeight = 13
   object Label3: TLabel [0]
     Left = 12
     Top = 66
-    Width = 34
+    Width = 38
     Height = 13
     Caption = 'Identity'
   end
   inherited Panel1: TPanel
+    ExplicitWidth = 384
     inherited stSectionDetails: TLabel
       Caption = 'Use this identity when sending mail messages'
     end
@@ -23,7 +21,6 @@ inherited fmPropertyPageMailAccountPreferences: TfmPropertyPageMailAccountPrefer
     Width = 217
     Height = 21
     Anchors = [akLeft, akTop, akRight]
-    ItemHeight = 0
     TabOrder = 1
     Text = 'cbIdentities'
     OnChange = cbIdentitiesChange

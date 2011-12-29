@@ -4,10 +4,8 @@ inherited fmPropertyPagePostingServers: TfmPropertyPagePostingServers
   HelpType = htKeyword
   HelpKeyword = 'AccountPostingServer'
   Caption = 'Posting Server Details'
-  ClientHeight = 181
-  ClientWidth = 323
-  Constraints.MinHeight = 208
-  Constraints.MinWidth = 331
+  ExplicitLeft = 445
+  ExplicitTop = 245
   PixelsPerInch = 96
   TextHeight = 13
   object Label4: TLabel [0]
@@ -26,36 +24,36 @@ inherited fmPropertyPagePostingServers: TfmPropertyPagePostingServers
     FocusControl = cbPostAccount
   end
   inherited Panel1: TPanel
-    Width = 323
+    ExplicitWidth = 323
     inherited Bevel1: TBevel
-      Width = 323
+      ExplicitWidth = 323
     end
     inherited stSectionDetails: TLabel
-      Width = 311
       Caption = 'Specify the servers used for posting News & Mail messages'
+      ExplicitWidth = 311
     end
   end
   object cbMailAccount: TComboBox
     Left = 12
     Top = 136
-    Width = 305
+    Width = 366
     Height = 21
     AutoDropDown = True
     Style = csDropDownList
     Anchors = [akLeft, akTop, akRight]
-    ItemHeight = 0
     TabOrder = 2
     OnChange = ControlChange
+    ExplicitWidth = 305
   end
   object cbPostAccount: TComboBox
     Left = 12
     Top = 76
-    Width = 305
+    Width = 366
     Height = 21
     Style = csDropDownList
     Anchors = [akLeft, akTop, akRight]
-    ItemHeight = 0
     TabOrder = 1
     OnChange = ControlChange
+    ExplicitWidth = 305
   end
 end

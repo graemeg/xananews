@@ -2,16 +2,12 @@ inherited fmPropertyPageFilters: TfmPropertyPageFilters
   HelpType = htKeyword
   HelpKeyword = 'Filters'
   Caption = 'Filters'
-  ClientHeight = 327
-  Constraints.MinHeight = 244
-  Constraints.MinWidth = 422
   OnCreate = FormCreate
   ExplicitWidth = 471
-  ExplicitHeight = 363
+  ExplicitHeight = 450
   PixelsPerInch = 96
   TextHeight = 13
   inherited Bevel2: TBevel
-    Top = 287
     ExplicitTop = 287
   end
   inherited Panel1: TPanel
@@ -22,12 +18,11 @@ inherited fmPropertyPageFilters: TfmPropertyPageFilters
     end
   end
   inherited btnReset: TButton
-    Top = 296
     ExplicitTop = 296
   end
   object btnUpdate: TButton
     Left = 168
-    Top = 256
+    Top = 343
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
@@ -37,7 +32,7 @@ inherited fmPropertyPageFilters: TfmPropertyPageFilters
   end
   object btnDelete: TButton
     Left = 88
-    Top = 256
+    Top = 343
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
@@ -47,7 +42,7 @@ inherited fmPropertyPageFilters: TfmPropertyPageFilters
   end
   object btnAdd: TButton
     Left = 12
-    Top = 256
+    Top = 343
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
@@ -59,15 +54,11 @@ inherited fmPropertyPageFilters: TfmPropertyPageFilters
     Left = 12
     Top = 60
     Width = 433
-    Height = 190
+    Height = 277
     Anchors = [akLeft, akTop, akRight, akBottom]
     Header.AutoSizeIndex = 0
-    Header.Font.Charset = DEFAULT_CHARSET
-    Header.Font.Color = clWindowText
-    Header.Font.Height = -11
-    Header.Font.Name = 'MS Shell Dlg 2'
-    Header.Font.Style = []
     Header.Options = [hoAutoResize, hoColumnResize, hoDrag, hoVisible]
+    Header.ParentFont = True
     Header.Style = hsFlatButtons
     NodeDataSize = 4
     TabOrder = 5

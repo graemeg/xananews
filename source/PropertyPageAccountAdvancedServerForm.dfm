@@ -4,20 +4,14 @@ inherited fmPropertyPageAccountAdvancedServer: TfmPropertyPageAccountAdvancedSer
   HelpType = htKeyword
   HelpKeyword = 'AccountDiallupConnection'
   Caption = 'Diallup & Connection'
-  ClientHeight = 406
-  ClientWidth = 350
-  Constraints.MinHeight = 440
-  Constraints.MinWidth = 350
   ExplicitLeft = 628
   ExplicitTop = 212
-  ExplicitWidth = 358
-  ExplicitHeight = 440
   PixelsPerInch = 96
   TextHeight = 13
   object Label13: TLabel [0]
     Left = 12
     Top = 196
-    Width = 58
+    Width = 59
     Height = 13
     Caption = 'Idle Timeout'
     Transparent = True
@@ -25,14 +19,14 @@ inherited fmPropertyPageAccountAdvancedServer: TfmPropertyPageAccountAdvancedSer
   object Label28: TLabel [1]
     Left = 172
     Top = 196
-    Width = 40
+    Width = 39
     Height = 13
     Caption = 'seconds'
   end
   object Label12: TLabel [2]
     Left = 12
     Top = 220
-    Width = 52
+    Width = 49
     Height = 13
     Caption = 'NNTP Port'
     Transparent = True
@@ -40,7 +34,7 @@ inherited fmPropertyPageAccountAdvancedServer: TfmPropertyPageAccountAdvancedSer
   object Label15: TLabel [3]
     Left = 28
     Top = 322
-    Width = 42
+    Width = 40
     Height = 13
     Caption = 'SSL Port'
     Transparent = True
@@ -48,40 +42,43 @@ inherited fmPropertyPageAccountAdvancedServer: TfmPropertyPageAccountAdvancedSer
   object Label3: TLabel [4]
     Left = 28
     Top = 378
-    Width = 94
+    Width = 91
     Height = 13
     Caption = 'Pipeline Chunk Size'
   end
   object Label1: TLabel [5]
     Left = 176
     Top = 378
-    Width = 25
+    Width = 27
     Height = 13
     Caption = 'bytes'
   end
   object Bevel6: TBevel [6]
     Left = -5
     Top = 288
-    Width = 354
+    Width = 388
     Height = 3
     Anchors = [akLeft, akTop, akRight]
     Shape = bsTopLine
+    ExplicitWidth = 354
   end
   object Bevel2: TBevel [7]
     Left = -5
     Top = 344
-    Width = 354
+    Width = 388
     Height = 3
     Anchors = [akLeft, akTop, akRight]
     Shape = bsTopLine
+    ExplicitWidth = 354
   end
   object Bevel3: TBevel [8]
     Left = -4
     Top = 136
-    Width = 354
+    Width = 388
     Height = 3
     Anchors = [akLeft, akTop, akRight]
     Shape = bsTopLine
+    ExplicitWidth = 354
   end
   object Label2: TLabel [9]
     Left = 12
@@ -93,7 +90,7 @@ inherited fmPropertyPageAccountAdvancedServer: TfmPropertyPageAccountAdvancedSer
   object Label4: TLabel [10]
     Left = 192
     Top = 266
-    Width = 59
+    Width = 62
     Height = 13
     Caption = '0 = unlimited'
   end
@@ -108,14 +105,14 @@ inherited fmPropertyPageAccountAdvancedServer: TfmPropertyPageAccountAdvancedSer
   object Label6: TLabel [12]
     Left = 172
     Top = 148
-    Width = 40
+    Width = 39
     Height = 13
     Caption = 'seconds'
   end
   object lbReadTimeout: TLabel [13]
     Left = 12
     Top = 172
-    Width = 67
+    Width = 66
     Height = 13
     Caption = 'Read Timeout'
     Transparent = True
@@ -123,19 +120,16 @@ inherited fmPropertyPageAccountAdvancedServer: TfmPropertyPageAccountAdvancedSer
   object Label8: TLabel [14]
     Left = 172
     Top = 172
-    Width = 40
+    Width = 39
     Height = 13
     Caption = 'seconds'
   end
   inherited Panel1: TPanel
-    Width = 350
     ExplicitWidth = 350
     inherited Bevel1: TBevel
-      Width = 350
       ExplicitWidth = 350
     end
     inherited stSectionDetails: TLabel
-      Width = 338
       Caption = 
         'Controls how XanaNews connects to the Internet and interacts wit' +
         'h the server'
@@ -242,13 +236,13 @@ inherited fmPropertyPageAccountAdvancedServer: TfmPropertyPageAccountAdvancedSer
   object cbRasEntries: TComboBox
     Left = 96
     Top = 104
-    Width = 246
+    Width = 280
     Height = 21
     Style = csDropDownList
     Anchors = [akLeft, akTop, akRight]
-    ItemHeight = 13
     TabOrder = 13
     OnChange = cbRasEntriesChange
+    ExplicitWidth = 246
   end
   object edMaxConnections: TEdit
     Left = 136

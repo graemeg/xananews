@@ -4,15 +4,14 @@ inherited fmPropertyPagePosting: TfmPropertyPagePosting
   HelpType = htKeyword
   HelpKeyword = 'PostingSettings'
   Caption = 'Posting Settings'
-  ClientHeight = 327
-  Constraints.MinHeight = 354
-  Constraints.MinWidth = 408
   ExplicitLeft = 502
   ExplicitTop = 131
+  ExplicitWidth = 471
+  ExplicitHeight = 450
   PixelsPerInch = 96
   TextHeight = 13
   object Label39: TLabel [0]
-    Left = 13
+    Left = 12
     Top = 88
     Width = 96
     Height = 13
@@ -26,7 +25,7 @@ inherited fmPropertyPagePosting: TfmPropertyPagePosting
     Caption = 'characters.  (0 = unlimited)'
   end
   object lblSplitPosts: TLabel [2]
-    Left = 13
+    Left = 12
     Top = 116
     Width = 124
     Height = 13
@@ -40,35 +39,34 @@ inherited fmPropertyPagePosting: TfmPropertyPagePosting
     Caption = 'lines'
   end
   object Label41: TLabel [4]
-    Left = 13
+    Left = 12
     Top = 144
     Width = 105
     Height = 13
     Caption = 'Default Character Set'
   end
   object lblDefaultISpellLanguage: TLabel [5]
-    Left = 13
+    Left = 12
     Top = 172
     Width = 114
     Height = 13
     Caption = 'Default ISpell Language'
   end
   object Label40: TLabel [6]
-    Left = 13
+    Left = 12
     Top = 200
     Width = 57
     Height = 13
     Caption = 'Text format'
   end
   object Label1: TLabel [7]
-    Left = 13
+    Left = 12
     Top = 242
     Width = 54
     Height = 13
     Caption = 'Reply Style'
   end
   inherited Bevel2: TBevel
-    Top = 287
     ExplicitTop = 287
   end
   object cbUseOutbasket: TCheckBox [10]
@@ -197,7 +195,7 @@ inherited fmPropertyPagePosting: TfmPropertyPagePosting
     end
   end
   inherited btnReset: TButton
-    Top = 297
+    Top = 384
     TabOrder = 12
     ExplicitTop = 297
   end

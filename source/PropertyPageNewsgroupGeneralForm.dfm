@@ -2,10 +2,8 @@ inherited fmPropertyPageNewsgroupGeneral: TfmPropertyPageNewsgroupGeneral
   HelpType = htKeyword
   HelpKeyword = 'BasicNewsgroupSettings'
   Caption = 'Basic Newsgroup Settings'
-  ClientHeight = 204
   ClientWidth = 447
-  Constraints.MinHeight = 204
-  Constraints.MinWidth = 322
+  ExplicitWidth = 463
   PixelsPerInch = 96
   TextHeight = 13
   object Label2: TLabel [0]
@@ -22,12 +20,15 @@ inherited fmPropertyPageNewsgroupGeneral: TfmPropertyPageNewsgroupGeneral
   end
   inherited Panel1: TPanel
     Width = 447
+    ExplicitWidth = 447
     inherited Bevel1: TBevel
       Width = 447
+      ExplicitWidth = 447
     end
     inherited stSectionDetails: TLabel
       Width = 435
       Caption = 'Basic Newsgroup Settings'
+      ExplicitWidth = 435
     end
   end
   object edNewsgroup: TEdit
@@ -46,7 +47,6 @@ inherited fmPropertyPageNewsgroupGeneral: TfmPropertyPageNewsgroupGeneral
     Width = 425
     Height = 21
     Anchors = [akLeft, akTop, akRight]
-    ItemHeight = 0
     TabOrder = 2
     OnChange = cbNicknameChange
   end

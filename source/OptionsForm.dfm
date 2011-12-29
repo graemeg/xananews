@@ -7,7 +7,7 @@ inherited fmOptions: TfmOptions
   inherited pnlButtons: TPanel
     object btnDefaultNewsreader: TButton [0]
       Left = 0
-      Top = 10
+      Top = 8
       Width = 185
       Height = 25
       Caption = ' Set as Default Newsreader'

@@ -4,10 +4,6 @@ inherited fmPropertyPageMessagePane: TfmPropertyPageMessagePane
   HelpType = htKeyword
   HelpKeyword = 'MessagePaneOptions'
   Caption = 'Message Pane'
-  ClientHeight = 221
-  ClientWidth = 310
-  Constraints.MinHeight = 221
-  Constraints.MinWidth = 289
   ExplicitLeft = 516
   ExplicitTop = 323
   PixelsPerInch = 96
@@ -15,26 +11,23 @@ inherited fmPropertyPageMessagePane: TfmPropertyPageMessagePane
   object Label22: TLabel [0]
     Left = 12
     Top = 193
-    Width = 62
+    Width = 63
     Height = 13
     Caption = 'Wrap lines at'
   end
   object Label21: TLabel [1]
     Left = 120
     Top = 193
-    Width = 152
+    Width = 161
     Height = 13
     Caption = 'characters.  (0 = wrap at margin)'
   end
   inherited Panel1: TPanel
-    Width = 310
     ExplicitWidth = 310
     inherited Bevel1: TBevel
-      Width = 310
       ExplicitWidth = 310
     end
     inherited stSectionDetails: TLabel
-      Width = 298
       Caption = 'Options to control how the message pane displays messages'
       ExplicitWidth = 298
     end

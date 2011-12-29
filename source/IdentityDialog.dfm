@@ -10,7 +10,7 @@ object dlgIdentity: TdlgIdentity
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
   Position = poScreenCenter
@@ -23,21 +23,21 @@ object dlgIdentity: TdlgIdentity
   object Label1: TLabel
     Left = 16
     Top = 18
-    Width = 65
+    Width = 68
     Height = 13
     Caption = '&Identity Name'
   end
   object Label2: TLabel
     Left = 16
     Top = 42
-    Width = 53
+    Width = 52
     Height = 13
     Caption = '&Your Name'
   end
   object Label3: TLabel
     Left = 16
     Top = 66
-    Width = 59
+    Width = 61
     Height = 13
     Caption = '&Organization'
   end
@@ -58,7 +58,7 @@ object dlgIdentity: TdlgIdentity
   object Label14: TLabel
     Left = 16
     Top = 139
-    Width = 45
+    Width = 46
     Height = 13
     Caption = 'Signature'
     Transparent = True
@@ -66,7 +66,7 @@ object dlgIdentity: TdlgIdentity
   object Label37: TLabel
     Left = 16
     Top = 380
-    Width = 34
+    Width = 33
     Height = 13
     Anchors = [akLeft, akBottom]
     Caption = 'X-Face'
@@ -86,36 +86,33 @@ object dlgIdentity: TdlgIdentity
   object Label7: TLabel
     Left = 16
     Top = 254
-    Width = 242
+    Width = 247
     Height = 13
     Anchors = [akLeft, akBottom]
     Caption = 'You can use the following macros in your signature:'
-    ExplicitTop = 271
   end
   object Label8: TLabel
     Left = 24
     Top = 270
-    Width = 424
+    Width = 453
     Height = 13
     Anchors = [akLeft, akBottom]
     Caption = 
       '%author% is replaced with the Author, %datetime% is replaced wit' +
       'h the current date && time,'
-    ExplicitTop = 287
   end
   object Label9: TLabel
     Left = 24
     Top = 286
-    Width = 217
+    Width = 225
     Height = 13
     Anchors = [akLeft, akBottom]
     Caption = '%ver% is replaced with the XanaNews version'
-    ExplicitTop = 303
   end
   object Label10: TLabel
     Left = 16
     Top = 332
-    Width = 64
+    Width = 65
     Height = 13
     Anchors = [akLeft, akBottom]
     Caption = 'Signature File'
@@ -123,7 +120,7 @@ object dlgIdentity: TdlgIdentity
   object Label11: TLabel
     Left = 24
     Top = 302
-    Width = 386
+    Width = 405
     Height = 13
     Anchors = [akLeft, akBottom]
     Caption = 

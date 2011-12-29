@@ -10,7 +10,7 @@ object dlgAdvancedHeaders: TdlgAdvancedHeaders
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
   Position = poOwnerFormCenter
@@ -22,7 +22,7 @@ object dlgAdvancedHeaders: TdlgAdvancedHeaders
   object Label1: TLabel
     Left = 16
     Top = 16
-    Width = 225
+    Width = 230
     Height = 13
     Caption = 'Enter a list of extra headers like '#39'X-Name: Value'#39
   end

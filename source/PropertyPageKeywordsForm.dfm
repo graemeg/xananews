@@ -2,12 +2,10 @@ inherited fmPropertyPageKeywords: TfmPropertyPageKeywords
   Left = 319
   Top = 248
   Caption = 'Keywords'
-  ClientHeight = 311
   ClientWidth = 499
-  Constraints.MinHeight = 338
-  Constraints.MinWidth = 410
   ExplicitLeft = 319
   ExplicitTop = 248
+  ExplicitWidth = 515
   PixelsPerInch = 96
   TextHeight = 13
   object Label18: TLabel [0]
@@ -188,7 +186,7 @@ inherited fmPropertyPageKeywords: TfmPropertyPageKeywords
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clMaroon
     Font.Height = -11
-    Font.Name = 'MS Sans Serif'
+    Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
     TabOrder = 9
@@ -208,7 +206,7 @@ inherited fmPropertyPageKeywords: TfmPropertyPageKeywords
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clOlive
     Font.Height = -11
-    Font.Name = 'MS Sans Serif'
+    Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
     TabOrder = 10
@@ -228,7 +226,7 @@ inherited fmPropertyPageKeywords: TfmPropertyPageKeywords
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clFuchsia
     Font.Height = -11
-    Font.Name = 'MS Sans Serif'
+    Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
     TabOrder = 11
@@ -248,7 +246,7 @@ inherited fmPropertyPageKeywords: TfmPropertyPageKeywords
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clBlue
     Font.Height = -11
-    Font.Name = 'MS Sans Serif'
+    Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
     TabOrder = 12
@@ -268,7 +266,7 @@ inherited fmPropertyPageKeywords: TfmPropertyPageKeywords
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clYellow
     Font.Height = -11
-    Font.Name = 'MS Sans Serif'
+    Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
     TabOrder = 13
@@ -288,7 +286,7 @@ inherited fmPropertyPageKeywords: TfmPropertyPageKeywords
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clLime
     Font.Height = -11
-    Font.Name = 'MS Sans Serif'
+    Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
     TabOrder = 14
@@ -308,7 +306,7 @@ inherited fmPropertyPageKeywords: TfmPropertyPageKeywords
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clRed
     Font.Height = -11
-    Font.Name = 'MS Sans Serif'
+    Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
     TabOrder = 15
@@ -328,7 +326,7 @@ inherited fmPropertyPageKeywords: TfmPropertyPageKeywords
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clAqua
     Font.Height = -11
-    Font.Name = 'MS Sans Serif'
+    Font.Name = 'Tahoma'
     Font.Style = []
     ParentFont = False
     TabOrder = 16

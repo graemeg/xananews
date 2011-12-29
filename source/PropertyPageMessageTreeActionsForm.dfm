@@ -4,37 +4,30 @@ inherited fmPropertyPageMessageTreeActions: TfmPropertyPageMessageTreeActions
   HelpType = htKeyword
   HelpKeyword = 'MessageTreeActions'
   Caption = 'Actions in Message Tree'
-  ClientHeight = 256
-  ClientWidth = 332
-  Constraints.MinHeight = 235
-  Constraints.MinWidth = 234
   ExplicitLeft = 212
   ExplicitTop = 180
   PixelsPerInch = 96
   TextHeight = 13
   object Label14: TLabel [0]
-    Left = 24
-    Top = 184
-    Width = 21
+    Left = 22
+    Top = 178
+    Width = 24
     Height = 13
     Caption = 'after'
   end
   object Label30: TLabel [1]
-    Left = 97
-    Top = 184
-    Width = 60
+    Left = 99
+    Top = 178
+    Width = 61
     Height = 13
     Caption = 'half-seconds'
   end
   inherited Panel1: TPanel
-    Width = 332
     ExplicitWidth = 332
     inherited Bevel1: TBevel
-      Width = 332
       ExplicitWidth = 332
     end
     inherited stSectionDetails: TLabel
-      Width = 320
       Caption = 
         'These options affect how the message tree behaves when messages ' +
         'are clicked'
@@ -83,7 +76,7 @@ inherited fmPropertyPageMessageTreeActions: TfmPropertyPageMessageTreeActions
   end
   object cbAutoMarkAsRead: TCheckBox
     Left = 12
-    Top = 160
+    Top = 156
     Width = 201
     Height = 17
     Alignment = taLeftJustify
@@ -93,7 +86,7 @@ inherited fmPropertyPageMessageTreeActions: TfmPropertyPageMessageTreeActions
   end
   object edAutoMarkSeconds: TEdit
     Left = 52
-    Top = 180
+    Top = 175
     Width = 41
     Height = 21
     TabOrder = 6

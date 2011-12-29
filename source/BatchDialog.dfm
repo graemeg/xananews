@@ -10,7 +10,7 @@ object dlgBatch: TdlgBatch
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
   Position = poOwnerFormCenter
@@ -23,7 +23,7 @@ object dlgBatch: TdlgBatch
   object Label1: TLabel
     Left = 16
     Top = 16
-    Width = 59
+    Width = 57
     Height = 13
     Caption = '&Batch Name'
     FocusControl = btnCancel
@@ -38,7 +38,7 @@ object dlgBatch: TdlgBatch
   object Label3: TLabel
     Left = 136
     Top = 40
-    Width = 36
+    Width = 37
     Height = 13
     Caption = 'minutes'
   end

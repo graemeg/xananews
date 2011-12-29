@@ -5,13 +5,13 @@ object dlgFindMessageOnInternet: TdlgFindMessageOnInternet
   ClientHeight = 98
   ClientWidth = 308
   Color = clBtnFace
-  Constraints.MaxHeight = 125
+  Constraints.MaxHeight = 134
   Constraints.MinHeight = 125
   Constraints.MinWidth = 238
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
-  Font.Name = 'MS Shell Dlg 2'
+  Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
   Position = poOwnerFormCenter

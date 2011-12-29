@@ -2,16 +2,11 @@ inherited fmPropertyPagePreferences: TfmPropertyPagePreferences
   HelpType = htKeyword
   HelpKeyword = 'UserPreferences'
   Caption = 'User Preferences'
-  ClientHeight = 390
   ClientWidth = 400
-  Constraints.MinHeight = 390
-  Constraints.MinWidth = 400
   ExplicitWidth = 416
-  ExplicitHeight = 426
   PixelsPerInch = 96
   TextHeight = 13
   inherited Bevel2: TBevel
-    Top = 350
     Width = 400
     ExplicitTop = 350
     ExplicitWidth = 400
@@ -94,7 +89,6 @@ inherited fmPropertyPagePreferences: TfmPropertyPagePreferences
   end
   inherited btnReset: TButton
     Left = 289
-    Top = 359
     TabOrder = 11
     ExplicitLeft = 289
     ExplicitTop = 359
@@ -190,11 +184,12 @@ inherited fmPropertyPagePreferences: TfmPropertyPagePreferences
     Left = 12
     Top = 304
     Width = 377
-    Height = 37
+    Height = 61
     Anchors = [akLeft, akTop, akRight, akBottom]
     ScrollBars = ssVertical
     TabOrder = 10
     OnChange = mmoSignatureChange
+    ExplicitHeight = 37
   end
   object OpenDialog1: TOpenDialog
     DefaultExt = 'wav'

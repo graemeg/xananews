@@ -5,25 +5,21 @@ inherited fmPropertyPageMessageTreeDisplay: TfmPropertyPageMessageTreeDisplay
   HelpKeyword = 'MessageTreeOptions'
   ActiveControl = cbUnreadMessagesBold
   Caption = 'Message Tree'
-  ClientHeight = 308
-  ClientWidth = 371
-  Constraints.MinHeight = 303
-  Constraints.MinWidth = 371
   ExplicitLeft = 307
   ExplicitTop = 232
   PixelsPerInch = 96
   TextHeight = 13
   object Label3: TLabel [0]
-    Left = 15
+    Left = 12
     Top = 60
-    Width = 119
+    Width = 118
     Height = 13
     Caption = '&Show Unread Messages:'
     FocusControl = cbUnreadMessagesBold
   end
   object Label2: TLabel [1]
-    Left = 15
-    Top = 216
+    Left = 12
+    Top = 206
     Width = 125
     Height = 13
     AutoSize = False
@@ -31,28 +27,25 @@ inherited fmPropertyPageMessageTreeDisplay: TfmPropertyPageMessageTreeDisplay
     FocusControl = cbTreeColumn
   end
   object Label1: TLabel [2]
-    Left = 15
-    Top = 248
-    Width = 65
+    Left = 12
+    Top = 230
+    Width = 64
     Height = 13
     Caption = 'Hide Columns'
   end
   inherited Panel1: TPanel
-    Width = 371
     ExplicitWidth = 371
     inherited Bevel1: TBevel
-      Width = 371
       ExplicitWidth = 371
     end
     inherited stSectionDetails: TLabel
-      Width = 359
       Caption = 'These options affect how the message tree is displayed'
       ExplicitWidth = 359
     end
   end
   object cbUnreadMessagesBold: TCheckBox
     Left = 148
-    Top = 58
+    Top = 59
     Width = 55
     Height = 17
     Caption = 'Bold'
@@ -61,7 +54,7 @@ inherited fmPropertyPageMessageTreeDisplay: TfmPropertyPageMessageTreeDisplay
   end
   object cbUnreadMessagesItalic: TCheckBox
     Left = 220
-    Top = 58
+    Top = 59
     Width = 55
     Height = 17
     Caption = 'Italic'
@@ -70,7 +63,7 @@ inherited fmPropertyPageMessageTreeDisplay: TfmPropertyPageMessageTreeDisplay
   end
   object cbUnreadMessagesUnderline: TCheckBox
     Left = 295
-    Top = 58
+    Top = 59
     Width = 69
     Height = 17
     Caption = 'Underline'
@@ -109,7 +102,7 @@ inherited fmPropertyPageMessageTreeDisplay: TfmPropertyPageMessageTreeDisplay
   end
   object cbDontHighlightXanaNewsUsers: TCheckBox
     Left = 12
-    Top = 160
+    Top = 156
     Width = 297
     Height = 17
     Alignment = taLeftJustify
@@ -118,11 +111,10 @@ inherited fmPropertyPageMessageTreeDisplay: TfmPropertyPageMessageTreeDisplay
     OnClick = ControlClick
   end
   object cbTreeColumn: TComboBox
-    Left = 147
-    Top = 214
+    Left = 148
+    Top = 204
     Width = 164
     Height = 21
-    ItemHeight = 13
     TabOrder = 10
     Text = 'Number'
     OnChange = cbTreeColumnChange
@@ -136,7 +128,7 @@ inherited fmPropertyPageMessageTreeDisplay: TfmPropertyPageMessageTreeDisplay
   end
   object cbHideAuthor: TCheckBox
     Left = 220
-    Top = 248
+    Top = 230
     Width = 61
     Height = 17
     Caption = 'Author'
@@ -145,7 +137,7 @@ inherited fmPropertyPageMessageTreeDisplay: TfmPropertyPageMessageTreeDisplay
   end
   object cbHideFlags: TCheckBox
     Left = 148
-    Top = 248
+    Top = 230
     Width = 49
     Height = 17
     Caption = 'Flags'
@@ -154,7 +146,7 @@ inherited fmPropertyPageMessageTreeDisplay: TfmPropertyPageMessageTreeDisplay
   end
   object cbHideNumber: TCheckBox
     Left = 295
-    Top = 248
+    Top = 230
     Width = 66
     Height = 17
     Caption = 'Number'
@@ -163,7 +155,7 @@ inherited fmPropertyPageMessageTreeDisplay: TfmPropertyPageMessageTreeDisplay
   end
   object cbHideDate: TCheckBox
     Left = 220
-    Top = 272
+    Top = 254
     Width = 57
     Height = 17
     Caption = 'Date'
@@ -172,7 +164,7 @@ inherited fmPropertyPageMessageTreeDisplay: TfmPropertyPageMessageTreeDisplay
   end
   object cbHideLines: TCheckBox
     Left = 295
-    Top = 272
+    Top = 254
     Width = 58
     Height = 17
     Caption = 'Lines'
@@ -181,7 +173,7 @@ inherited fmPropertyPageMessageTreeDisplay: TfmPropertyPageMessageTreeDisplay
   end
   object cbHideSubject: TCheckBox
     Left = 148
-    Top = 272
+    Top = 254
     Width = 57
     Height = 17
     Caption = 'Subject'
@@ -190,7 +182,7 @@ inherited fmPropertyPageMessageTreeDisplay: TfmPropertyPageMessageTreeDisplay
   end
   object cbHighlightText: TCheckBox
     Left = 12
-    Top = 186
+    Top = 180
     Width = 297
     Height = 17
     Alignment = taLeftJustify

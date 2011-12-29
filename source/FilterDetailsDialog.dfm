@@ -9,7 +9,7 @@ object dlgFilterDetails: TdlgFilterDetails
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
   Position = poOwnerFormCenter
@@ -19,14 +19,14 @@ object dlgFilterDetails: TdlgFilterDetails
   object dlgFilterDetails: TLabel
     Left = 16
     Top = 16
-    Width = 53
+    Width = 54
     Height = 13
     Caption = 'Filter Name'
   end
   object Label1: TLabel
     Left = 16
     Top = 272
-    Width = 46
+    Width = 49
     Height = 13
     Caption = 'Filter Text'
   end

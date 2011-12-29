@@ -10,8 +10,8 @@ object dlgGetMessages: TdlgGetMessages
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -10
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -11
+  Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
   Position = poMainFormCenter
@@ -22,9 +22,9 @@ object dlgGetMessages: TdlgGetMessages
   PixelsPerInch = 96
   TextHeight = 13
   object btnOK: TButton
-    Left = 162
+    Left = 163
     Top = 311
-    Width = 76
+    Width = 75
     Height = 24
     Anchors = [akRight, akBottom]
     Caption = 'OK'
@@ -35,7 +35,7 @@ object dlgGetMessages: TdlgGetMessages
   object btnCancel: TButton
     Left = 242
     Top = 311
-    Width = 76
+    Width = 77
     Height = 24
     Anchors = [akRight, akBottom]
     Cancel = True
@@ -95,7 +95,7 @@ object dlgGetMessages: TdlgGetMessages
       end
       object stOld: TLabel
         Left = 264
-        Top = 32
+        Top = 33
         Width = 16
         Height = 13
         Caption = 'Old'
@@ -110,9 +110,9 @@ object dlgGetMessages: TdlgGetMessages
       end
       object rbMessagesMoreThan: TRadioButton
         Left = 16
-        Top = 32
+        Top = 33
         Width = 121
-        Height = 17
+        Height = 16
         Caption = 'Me&ssages more than'
         TabOrder = 1
       end
@@ -128,7 +128,7 @@ object dlgGetMessages: TdlgGetMessages
         Left = 177
         Top = 28
         Width = 15
-        Height = 21
+        Height = 23
         Associate = edMoreThan
         Min = 1
         Position = 1
@@ -140,7 +140,6 @@ object dlgGetMessages: TdlgGetMessages
         Width = 57
         Height = 22
         Style = csOwnerDrawFixed
-        ItemHeight = 16
         ItemIndex = 0
         TabOrder = 4
         Text = 'Days'
@@ -153,7 +152,7 @@ object dlgGetMessages: TdlgGetMessages
   end
   object Panel4: TPanel
     Left = 16
-    Top = 136
+    Top = 137
     Width = 301
     Height = 169
     Anchors = [akLeft, akTop, akRight]
@@ -163,7 +162,7 @@ object dlgGetMessages: TdlgGetMessages
     object stNextMessages: TLabel
       Left = 130
       Top = 78
-      Width = 73
+      Width = 71
       Height = 13
       Caption = 'New Messages'
     end

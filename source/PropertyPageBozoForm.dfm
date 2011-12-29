@@ -2,18 +2,16 @@ inherited fmPropertyPageBozos: TfmPropertyPageBozos
   Left = 323
   Top = 135
   Caption = 'Bozo Bin'
-  ClientHeight = 360
   ClientWidth = 436
-  Constraints.MinHeight = 278
-  Constraints.MinWidth = 271
   ExplicitLeft = 323
   ExplicitTop = 135
+  ExplicitWidth = 452
   PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel [0]
     Left = 12
     Top = 128
-    Width = 107
+    Width = 104
     Height = 13
     Caption = 'Bozo Bin Maintenance'
   end
@@ -26,9 +24,9 @@ inherited fmPropertyPageBozos: TfmPropertyPageBozos
     Shape = bsTopLine
   end
   object Label32: TLabel [2]
-    Left = 14
+    Left = 12
     Top = 84
-    Width = 107
+    Width = 111
     Height = 13
     Caption = 'Remove from bin after '
     FocusControl = edRemoveFromBin
@@ -36,12 +34,12 @@ inherited fmPropertyPageBozos: TfmPropertyPageBozos
   object Label34: TLabel [3]
     Left = 228
     Top = 84
-    Width = 22
+    Width = 23
     Height = 13
     Caption = 'days'
   end
   object Label2: TLabel [4]
-    Left = 16
+    Left = 12
     Top = 54
     Width = 102
     Height = 13
@@ -66,7 +64,7 @@ inherited fmPropertyPageBozos: TfmPropertyPageBozos
     Left = 12
     Top = 144
     Width = 415
-    Height = 172
+    Height = 226
     Anchors = [akLeft, akTop, akRight, akBottom]
     Columns = <
       item
@@ -96,7 +94,7 @@ inherited fmPropertyPageBozos: TfmPropertyPageBozos
   end
   object btnAdd: TButton
     Left = 16
-    Top = 322
+    Top = 376
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
@@ -106,7 +104,7 @@ inherited fmPropertyPageBozos: TfmPropertyPageBozos
   end
   object btnProperties: TButton
     Left = 96
-    Top = 322
+    Top = 376
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
@@ -116,7 +114,7 @@ inherited fmPropertyPageBozos: TfmPropertyPageBozos
   end
   object btnDelete: TButton
     Left = 176
-    Top = 322
+    Top = 376
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
@@ -138,7 +136,6 @@ inherited fmPropertyPageBozos: TfmPropertyPageBozos
     Width = 225
     Height = 21
     Style = csDropDownList
-    ItemHeight = 13
     TabOrder = 1
     OnChange = cbDefaultBozoActionChange
     Items.Strings = (

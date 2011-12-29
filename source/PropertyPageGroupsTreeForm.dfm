@@ -2,16 +2,12 @@ inherited fmPropertyPageGroupsTree: TfmPropertyPageGroupsTree
   HelpType = htKeyword
   HelpKeyword = 'GroupsTreeOptions'
   Caption = 'Groups Tree'
-  ClientHeight = 349
-  ClientWidth = 327
-  Constraints.MinHeight = 349
-  Constraints.MinWidth = 327
   PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel [0]
     Left = 12
     Top = 124
-    Width = 173
+    Width = 176
     Height = 13
     Caption = 'Show groups with unread messages:'
   end
@@ -25,19 +21,16 @@ inherited fmPropertyPageGroupsTree: TfmPropertyPageGroupsTree
   object Label3: TLabel [2]
     Left = 12
     Top = 240
-    Width = 186
+    Width = 190
     Height = 13
     Caption = 'Show Markers for Interesting Messages'
   end
   inherited Panel1: TPanel
-    Width = 327
     ExplicitWidth = 327
     inherited Bevel1: TBevel
-      Width = 327
       ExplicitWidth = 327
     end
     inherited stSectionDetails: TLabel
-      Width = 315
       Caption = 
         'This section controls the Subscribed Groups tree is displayed.  ' +
         'Additional font & colour options are in the Colours & Fonts sect' +

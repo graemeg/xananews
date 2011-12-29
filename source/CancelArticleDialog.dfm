@@ -9,7 +9,7 @@ object dlgCancelArticles: TdlgCancelArticles
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
   Position = poMainFormCenter
@@ -43,14 +43,14 @@ object dlgCancelArticles: TdlgCancelArticles
   object stReason: TLabel
     Left = 72
     Top = 144
-    Width = 156
+    Width = 158
     Height = 13
     Caption = 'Reason for cancelling this article:'
   end
   object Label3: TLabel
     Left = 184
     Top = 260
-    Width = 65
+    Width = 67
     Height = 13
     Caption = 'Are you sure?'
   end

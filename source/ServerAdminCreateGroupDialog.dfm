@@ -7,7 +7,11 @@ object dlgServerAdminCreateGroup: TdlgServerAdminCreateGroup
   ClientHeight = 365
   ClientWidth = 384
   Color = clBtnFace
-  ParentFont = True
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
   OldCreateOrder = True
   Position = poMainFormCenter
   OnShow = cbModeratedClick
@@ -16,14 +20,14 @@ object dlgServerAdminCreateGroup: TdlgServerAdminCreateGroup
   object Label1: TLabel
     Left = 16
     Top = 16
-    Width = 60
+    Width = 59
     Height = 13
     Caption = '&Group Name'
   end
   object Label2: TLabel
     Left = 16
     Top = 80
-    Width = 46
+    Width = 47
     Height = 13
     Caption = '&Approved'
   end
@@ -37,21 +41,21 @@ object dlgServerAdminCreateGroup: TdlgServerAdminCreateGroup
   object lbModeratorSubmissionAddress: TLabel
     Left = 32
     Top = 256
-    Width = 145
+    Width = 147
     Height = 13
     Caption = 'Moderator &Submission Address'
   end
   object lbModeratorContactAddress: TLabel
     Left = 32
     Top = 280
-    Width = 129
+    Width = 133
     Height = 13
     Caption = 'Moderator Contact Add&ress'
   end
   object Label6: TLabel
     Left = 16
     Top = 112
-    Width = 34
+    Width = 37
     Height = 13
     Caption = '&Charter'
   end

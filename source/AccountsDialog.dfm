@@ -1,29 +1,36 @@
 object dlgAccounts: TdlgAccounts
   Left = 387
   Top = 345
-  AutoScroll = False
   Caption = 'News Accounts'
-  ClientHeight = 422
-  ClientWidth = 597
+  ClientHeight = 343
+  ClientWidth = 485
   Color = clBtnFace
-  Constraints.MinHeight = 233
-  Constraints.MinWidth = 433
-  ParentFont = True
+  Constraints.MinHeight = 189
+  Constraints.MinWidth = 352
+  Font.Charset = DEFAULT_CHARSET
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'Tahoma'
+  Font.Style = []
   OldCreateOrder = True
   Position = poMainFormCenter
   OnShow = FormShow
   DesignSize = (
-    597
-    422)
-  PixelsPerInch = 120
-  TextHeight = 16
+    485
+    343)
+  PixelsPerInch = 96
+  TextHeight = 13
   object CancelBtn: TButton
-    Left = 487
-    Top = 373
-    Width = 93
-    Height = 31
+    Left = 396
+    Top = 303
+    Width = 75
+    Height = 25
     HelpType = htKeyword
     HelpKeyword = 'News Accounts'
+    Margins.Left = 2
+    Margins.Top = 2
+    Margins.Right = 2
+    Margins.Bottom = 2
     Anchors = [akRight, akBottom]
     Cancel = True
     Caption = 'Close'
@@ -31,15 +38,19 @@ object dlgAccounts: TdlgAccounts
     TabOrder = 0
   end
   object lvAccounts: TListView
-    Left = 20
-    Top = 20
-    Width = 560
-    Height = 339
+    Left = 16
+    Top = 16
+    Width = 455
+    Height = 276
+    Margins.Left = 2
+    Margins.Top = 2
+    Margins.Right = 2
+    Margins.Bottom = 2
     Anchors = [akLeft, akTop, akRight, akBottom]
     Columns = <
       item
         Caption = 'Account'
-        Width = 185
+        Width = 150
       end
       item
         AutoSize = True
@@ -55,40 +66,56 @@ object dlgAccounts: TdlgAccounts
     OnDblClick = lvAccountsDblClick
   end
   object btnAdd: TButton
-    Left = 18
-    Top = 373
-    Width = 93
-    Height = 31
+    Left = 15
+    Top = 303
+    Width = 75
+    Height = 25
+    Margins.Left = 2
+    Margins.Top = 2
+    Margins.Right = 2
+    Margins.Bottom = 2
     Anchors = [akLeft, akBottom]
     Caption = '&Add...'
     TabOrder = 2
     OnClick = btnAddClick
   end
   object btnRemove: TButton
-    Left = 117
-    Top = 373
-    Width = 92
-    Height = 31
+    Left = 95
+    Top = 303
+    Width = 75
+    Height = 25
+    Margins.Left = 2
+    Margins.Top = 2
+    Margins.Right = 2
+    Margins.Bottom = 2
     Anchors = [akLeft, akBottom]
     Caption = '&Remove'
     TabOrder = 3
     OnClick = btnRemoveClick
   end
   object btnProperties: TButton
-    Left = 215
-    Top = 373
-    Width = 93
-    Height = 31
+    Left = 175
+    Top = 303
+    Width = 75
+    Height = 25
+    Margins.Left = 2
+    Margins.Top = 2
+    Margins.Right = 2
+    Margins.Bottom = 2
     Anchors = [akLeft, akBottom]
     Caption = '&Properties...'
     TabOrder = 4
     OnClick = btnPropertiesClick
   end
   object btnClone: TButton
-    Left = 364
-    Top = 373
-    Width = 93
-    Height = 31
+    Left = 296
+    Top = 303
+    Width = 75
+    Height = 25
+    Margins.Left = 2
+    Margins.Top = 2
+    Margins.Right = 2
+    Margins.Bottom = 2
     Anchors = [akBottom]
     Caption = '&Clone...'
     TabOrder = 5

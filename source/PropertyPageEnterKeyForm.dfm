@@ -2,38 +2,31 @@ inherited fmPropertyPageEnterKey: TfmPropertyPageEnterKey
   HelpType = htKeyword
   HelpKeyword = 'EnterKeyOptions'
   Caption = 'Enter Key Options'
-  ClientHeight = 217
-  ClientWidth = 267
-  Constraints.MinHeight = 244
-  Constraints.MinWidth = 275
   PixelsPerInch = 96
   TextHeight = 13
   object Label8: TLabel [0]
     Left = 12
     Top = 60
-    Width = 130
+    Width = 131
     Height = 13
     Caption = 'In Subscribed Groups Tree:'
   end
   object Label9: TLabel [1]
     Left = 12
     Top = 144
-    Width = 83
+    Width = 84
     Height = 13
     Caption = 'In Message Tree:'
   end
   inherited Panel1: TPanel
-    Width = 267
     ExplicitWidth = 267
     DesignSize = (
-      267
+      384
       41)
     inherited Bevel1: TBevel
-      Width = 267
       ExplicitWidth = 267
     end
     inherited stSectionDetails: TLabel
-      Width = 255
       Caption = 
         'This section controls how XanaNews responds when you press the '#39 +
         'Enter'#39' key.'

@@ -4,19 +4,13 @@ inherited fmPropertyPageSorting: TfmPropertyPageSorting
   HelpType = htKeyword
   HelpKeyword = 'SortingThreading'
   Caption = 'Sorting & Threading'
-  ClientHeight = 281
-  ClientWidth = 307
-  Constraints.MinHeight = 281
-  Constraints.MinWidth = 307
+  ClientWidth = 384
   ExplicitLeft = 527
   ExplicitTop = 154
-  ExplicitWidth = 323
-  ExplicitHeight = 317
   PixelsPerInch = 96
   TextHeight = 13
   inherited Bevel2: TBevel
-    Top = 241
-    Width = 307
+    Width = 384
     ExplicitTop = 241
     ExplicitWidth = 307
   end
@@ -43,20 +37,19 @@ inherited fmPropertyPageSorting: TfmPropertyPageSorting
     FocusControl = cbSortOrder
   end
   inherited Panel1: TPanel
-    Width = 307
+    Width = 384
     ExplicitWidth = 307
     inherited Bevel1: TBevel
-      Width = 307
+      Width = 384
       ExplicitWidth = 307
     end
     inherited stSectionDetails: TLabel
-      Width = 295
+      Width = 372
       ExplicitWidth = 295
     end
   end
   inherited btnReset: TButton
-    Left = 196
-    Top = 250
+    Left = 273
     TabOrder = 6
     ExplicitLeft = 196
     ExplicitTop = 250

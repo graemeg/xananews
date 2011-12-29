@@ -6,8 +6,6 @@ inherited fmPropertyPageGeneral: TfmPropertyPageGeneral
   Caption = 'Program Settings'
   ClientHeight = 450
   ClientWidth = 397
-  Constraints.MinHeight = 450
-  Constraints.MinWidth = 397
   ExplicitLeft = 547
   ExplicitWidth = 413
   ExplicitHeight = 486

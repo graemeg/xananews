@@ -3,11 +3,11 @@ object fmPropertyPage: TfmPropertyPage
   Top = 221
   BorderStyle = bsNone
   Caption = 'fmPropertyPage'
-  ClientHeight = 316
-  ClientWidth = 373
+  ClientHeight = 414
+  ClientWidth = 384
   Color = clBtnFace
-  Constraints.MinHeight = 64
-  Constraints.MinWidth = 64
+  Constraints.MinHeight = 450
+  Constraints.MinWidth = 400
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
@@ -19,31 +19,34 @@ object fmPropertyPage: TfmPropertyPage
   object Panel1: TPanel
     Left = 0
     Top = 0
-    Width = 373
+    Width = 384
     Height = 41
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 0
+    ExplicitWidth = 373
     DesignSize = (
-      373
+      384
       41)
     object Bevel1: TBevel
       Left = 0
       Top = 38
-      Width = 373
+      Width = 384
       Height = 3
       Align = alBottom
       Shape = bsBottomLine
+      ExplicitWidth = 373
     end
     object stSectionDetails: TLabel
       Left = 8
       Top = 6
-      Width = 361
+      Width = 372
       Height = 29
       Anchors = [akLeft, akTop, akRight, akBottom]
       AutoSize = False
       ShowAccelChar = False
       WordWrap = True
+      ExplicitWidth = 361
     end
   end
 end

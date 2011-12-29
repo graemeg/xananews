@@ -2,10 +2,6 @@ inherited fmPropertyPageCustomHeaders: TfmPropertyPageCustomHeaders
   HelpType = htKeyword
   HelpKeyword = 'OptionsCustomHeaders'
   Caption = 'Custom Headers Display'
-  ClientHeight = 256
-  ClientWidth = 262
-  Constraints.MinHeight = 256
-  Constraints.MinWidth = 262
   PixelsPerInch = 96
   TextHeight = 13
   object Label23: TLabel [0]
@@ -16,14 +12,11 @@ inherited fmPropertyPageCustomHeaders: TfmPropertyPageCustomHeaders
     Caption = 'Show Custom Headers'
   end
   inherited Panel1: TPanel
-    Width = 262
     ExplicitWidth = 262
     inherited Bevel1: TBevel
-      Width = 262
       ExplicitWidth = 262
     end
     inherited stSectionDetails: TLabel
-      Width = 250
       Caption = 
         'Select which headers are displayed when you select View, Headers' +
         ', Custom (F12)'
@@ -33,8 +26,8 @@ inherited fmPropertyPageCustomHeaders: TfmPropertyPageCustomHeaders
   object lvShowCustomHeaders: TListView
     Left = 12
     Top = 76
-    Width = 234
-    Height = 133
+    Width = 356
+    Height = 291
     Anchors = [akLeft, akTop, akRight, akBottom]
     Checkboxes = True
     Columns = <
@@ -49,25 +42,29 @@ inherited fmPropertyPageCustomHeaders: TfmPropertyPageCustomHeaders
     TabOrder = 1
     ViewStyle = vsReport
     OnChange = lvShowCustomHeadersChange
+    ExplicitWidth = 234
+    ExplicitHeight = 133
   end
   object btnAddShowCustomHeader: TButton
     Left = 12
-    Top = 216
+    Top = 374
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = 'Add...'
     TabOrder = 2
     OnClick = btnAddShowCustomHeaderClick
+    ExplicitTop = 216
   end
   object btnRemoveShowCustomHeader: TButton
     Left = 94
-    Top = 216
+    Top = 374
     Width = 75
     Height = 25
     Anchors = [akLeft, akBottom]
     Caption = 'Remove'
     TabOrder = 3
     OnClick = btnRemoveShowCustomHeaderClick
+    ExplicitTop = 216
   end
 end
