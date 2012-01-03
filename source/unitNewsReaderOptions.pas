@@ -354,7 +354,14 @@ begin
   fTextWindowSizeK := gDefaultWindowSizeK;
   fCheckCrossposts := 3;
   fAutoRemoveFromBin := 30;
-  fSearchInternetURLStub := 'http://groups-beta.google.com/groups?threadm=%qid%';
+// TODO: Change the default or not?
+//   The following would be the new-link:
+//     fSearchInternetURLStub := 'http://groups.google.com/groups?threadm=%qid%';
+//   ... although the old way also still works:
+//     fSearchInternetURLStub := 'http://groups-beta.google.com/groups?threadm=%qid%';
+//   ... or maybe just use the actual search function instead (?):
+//     fSearchInternetURLStub := 'http://groups.google.com/groups/search?as_umsgid=%qid%';
+  fSearchInternetURLStub := 'http://groups.google.com/groups?threadm=%qid%';
   fTextInternetURLStub := 'http://www.google.com/search?hl=en&q="%qtext%"';
 
   for i := Low(TAppearanceEnum) to High(TAppearanceEnum) do

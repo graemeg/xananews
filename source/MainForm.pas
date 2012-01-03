@@ -7001,11 +7001,19 @@ begin
     end
     else
     begin
-      article := fLastFocusedArticleContainer.Threads[node^.Index];
-      if Assigned(article.Child) then
-        InitialStates := [ivsHasChildren]
+      if Assigned(fLastFocusedArticleContainer) then
+      begin
+        article := fLastFocusedArticleContainer.Threads[node^.Index];
+        if Assigned(article.Child) then
+          InitialStates := [ivsHasChildren]
+        else
+          InitialStates := [];
+      end
       else
+      begin
         InitialStates := [];
+        article := nil;
+      end;
     end;
   end
   else
@@ -7015,8 +7023,7 @@ begin
     article := parentArticle.Child;
     i := node^.index;
 
-                          // Get the i'th sibling of the parent articles child
-    while i > 0 do
+    while i > 0 do        // Get the i'th sibling of the parent articles child
     begin
       article := article.Sibling;
       if article = nil then
