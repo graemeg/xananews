@@ -6971,6 +6971,12 @@ begin
   ChildCount := 0;
   data := PObject(vstArticles.GetNodeData(node));
   if Assigned(data^) then
+    // TODO: bug reports on the following line that indicates that data^ changed
+    //       to zero in the meantime (or in one case no longer points to valid data)
+    //       when TObject.InheritsFrom is called.
+    //       Looks like this is a rare multi-threaded issue. Could it be that it
+    //       concerned a VirtualTrees issue that has been fixed in the meantime?
+    //       Not very likely, it sounds a little bit like false "hope" ;-)
     if data^ is TArticleBase then
     begin
       article := TArticleBase(data^);
@@ -7001,6 +7007,13 @@ begin
     end
     else
     begin
+      // NOTE: Following check on fLastFocusedArticleContainer is a work-around.
+      // TODO: In the past there were more reports that seem to pin-point to a
+      //       problem regarding the state of fLastFocusedArticleContainer. This
+      //       variable does require some cleanup/redesign.
+      //       Based on the rare bug reports it is most-likely a multithreaded issue.
+      // TODO: Remove "work-around" when the problem with fLastFocusedArticleContainer
+      //       is solved.
       if Assigned(fLastFocusedArticleContainer) then
       begin
         article := fLastFocusedArticleContainer.Threads[node^.Index];
@@ -7801,6 +7814,7 @@ end;
 procedure TfmMain.WmAutoExpand(var Msg: TMessage);
 var
   node: PVirtualNode;
+  fnode: TArticleBase;
 begin
   if fInCollapse then Exit;
   node := vstArticles.FocusedNode;
@@ -7810,7 +7824,24 @@ begin
     try
       while node^.Parent <> vstArticles.RootNode do
         node := node^.Parent;
-      FullExpandThreads(GetNodeArticle(vstArticles.FocusedNode).Owner, node);
+
+      // NOTE: I have received some bug reports (in earlier versions: r194, r269 mostly)
+      //       on the following line:
+      //         FullExpandThreads(GetNodeArticle(vstArticles.FocusedNode), node);
+      //       that did indicate that the result of GetNodeArticle is nil.
+      //       Looking at the code of GetNodeArticle the problem can't be about
+      //       vstArticles.FocusedNode, it is more likely that fLastFocusedArticleContainer
+      //       is in an invalid state and that the silent try...except is hiding
+      //       the real problem.
+      // TODO: In the past there were more reports that seem to pin-point to a
+      //       problem regarding the state of fLastFocusedArticleContainer. This
+      //       variable does require some cleanup/redesign.
+      //       Based on the rare bug reports it is most-likely a multithreaded issue.
+      // TODO: Remove "work-around" when the problem with fLastFocusedArticleContainer
+      //       is solved.
+      fnode := GetNodeArticle(vstArticles.FocusedNode);
+      if Assigned(fnode) and Assigned(fnode.Owner) then
+        FullExpandThreads(fnode.Owner, node);
     finally
       vstArticles.EndUpdate;
     end;
