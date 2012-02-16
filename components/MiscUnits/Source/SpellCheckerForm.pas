@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ComCtrls, cmpCWSpellChecker, cmpCWRichEdit,
-  cmpPersistentPosition;
+  cmpPersistentPosition, unitExSettings;
 
 type
   TfmSpellChecker = class(TForm)
@@ -30,6 +30,8 @@ type
     procedure lvSuggestionsDblClick(Sender: TObject);
     procedure btnAddClick(Sender: TObject);
     procedure btnSkipAllClick(Sender: TObject);
+    procedure PersistentPosition1GetSettingsClass(Owner: TObject; var SettingsClass: TExSettingsClass);
+    procedure PersistentPosition1GetSettingsFile(Owner: TObject; var fileName: string);
   private
     fChecker: TCWSpellChecker;
     fText: WideString;
@@ -38,6 +40,8 @@ type
     fIgnoreWords: TStringList;
     fSS, fSE: Integer;
     fQuoteChars: string;
+    FSettingsFilename: string;
+    FSettingsClass: TExSettingsClass;
     procedure ErrorFoundAt(ss, se: Integer; suggestions: TStrings);
     procedure NextWord;
     function GetChangedWord: WideString;
@@ -47,6 +51,8 @@ type
     destructor Destroy; override;
     procedure Initialize(checker: TCWSpellChecker; ss, se: Integer; suggestions: TStrings);
     property QuoteChars: string read fQuoteChars write fQuoteChars;
+    property SettingsClass: TExSettingsClass read FSettingsClass write FSettingsClass;
+    property SettingsFilename: string read FSettingsFilename write FSettingsFilename;
   end;
 
 var
@@ -176,6 +182,18 @@ begin
       suggestions.Free;
     end;
   until False;
+end;
+
+procedure TfmSpellChecker.PersistentPosition1GetSettingsClass(Owner: TObject;
+  var SettingsClass: TExSettingsClass);
+begin
+  SettingsClass := FSettingsClass;
+end;
+
+procedure TfmSpellChecker.PersistentPosition1GetSettingsFile(Owner: TObject;
+  var fileName: string);
+begin
+  fileName := FSettingsFilename;
 end;
 
 procedure TfmSpellChecker.btnChangeClick(Sender: TObject);

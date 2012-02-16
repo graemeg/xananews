@@ -4,9 +4,9 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, Menus, StdCtrls, cmpCWRichEdit, cmpRuler, unitIdentities,
-  unitSettings, unitNNTPServices, ConTnrs, unitNewsThread,
-  cmpCWSpellChecker, Buttons, NewsGlobals, cmpSpellChecker;
+  Dialogs, Menus, StdCtrls, Buttons, Contnrs, cmpCWRichEdit, cmpCWSpellChecker,
+  cmpSpellChecker, cmpRuler, unitIdentities, unitSettings, unitNNTPServices,
+  unitNewsThread, NewsGlobals;
 
 type
   TfmePost = class(TFrame)
@@ -81,6 +81,7 @@ type
     procedure PasteQuote(const quote: string);
     procedure ApplySignature(Identity: TIdentity; const signatureOverride: string);
   public
+    procedure AfterConstruction; override;
     function CanClose(ShowDlg: Boolean = True): Boolean;
     procedure Initialize(const InitialText: string; PostingSettings: TPostingSettings; identity: TIdentity; ReplyTOArticle: TArticleBase; Request: TObject; attachments: TObjectList; codePageOverride: Integer; const signatureOverride: string);
     procedure UpdateActions(okOK: Boolean);
@@ -554,6 +555,13 @@ begin
   fCloseOK := True;
   fInitialIdentity := st;
   mmoMessage.SetFocus;
+end;
+
+procedure TfmePost.AfterConstruction;
+begin
+  inherited AfterConstruction;
+  CWSpellChecker1.SettingsClass := gExSettingsClass;
+  CWSpellChecker1.SettingsFilename := gExSettingsFile;
 end;
 
 procedure TfmePost.ApplySignature(Identity: TIdentity; const signatureOverride: string);

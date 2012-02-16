@@ -3,17 +3,21 @@ unit cmpCWSpellChecker;
 interface
 
 uses
-  SysUtils, Classes, Controls, Forms, cmpSpellChecker, cmpCWRichEdit;
+  SysUtils, Classes, Controls, Forms, cmpSpellChecker, cmpCWRichEdit, unitExSettings;
 
 type
   TCWSpellChecker = class(TSpellChecker)
   private
     fEXRichEdit: TCustomExRichEdit;
+    FSettingsFilename: string;
+    FSettingsClass: TExSettingsClass;
   public
     destructor Destroy; override;
     function CheckAndShowModal(PopupParent: TCustomForm; SkipFirstLine: Boolean): Integer;
   published
     property ExRichEdit: TCustomExRichEdit read fEXRichEdit write fEXRichEdit;
+    property SettingsClass: TExSettingsClass read FSettingsClass write FSettingsClass;
+    property SettingsFilename: string read FSettingsFilename write FSettingsFilename;
   end;
 
 implementation
@@ -44,6 +48,8 @@ begin
       fmSpellChecker.Initialize(self, ss, se, suggestions);
       fmSpellChecker.PopupParent := PopupParent;
       fmSpellChecker.PopupMode := pmExplicit;
+      fmSpellChecker.SettingsClass := SettingsClass;
+      fmSpellChecker.SettingsFilename := SettingsFilename;
       Result := fmSpellChecker.ShowModal;
     end;
   finally

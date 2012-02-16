@@ -24,7 +24,8 @@ unit FilterDialog;
 
 interface
 
-uses Windows, SysUtils, Classes, Graphics, Forms, Controls, StdCtrls,
+uses
+  Windows, SysUtils, Classes, Graphics, Forms, Controls, StdCtrls,
   Buttons, ExtCtrls, unitNNTPFilters;
 
 type
@@ -41,15 +42,14 @@ type
     procedure rgOperationClick(Sender: TObject);
     procedure edFilterChange(Sender: TObject);
   private
-    fFilter : TNNTPFilter;
-    fChanges : boolean;
+    fFilter: TNNTPFilter;
+    fChanges: Boolean;
     function GetFilter: TNNTPFilter;
   protected
     procedure UpdateActions; override;
   public
     destructor Destroy; override;
-    property Filter : TNNTPFilter read GetFilter;
-    { Public declarations }
+    property Filter: TNNTPFilter read GetFilter;
   end;
 
 var
@@ -59,7 +59,8 @@ implementation
 
 {$R *.dfm}
 
-uses MainForm, AddFilterDialog;
+uses
+  MainForm, AddFilterDialog;
 
 { TdlgDeleteMessages }
 
@@ -73,7 +74,7 @@ end;
 
 procedure TdlgDeleteMessages.Button1Click(Sender: TObject);
 var
-  dlg : TdlgAddFilter;
+  dlg: TdlgAddFilter;
 begin
   Application.CreateForm(TdlgAddFilter, dlg);
   try
@@ -84,28 +85,27 @@ begin
       Filter.Name := dlg.edFilterName.Text;
       Filter.Save;
       AllFilters.AddFilter(TNNTPFilter.Clone(Filter));
-    end
+    end;
   finally
-    dlg.Free
-  end
+    dlg.Free;
+  end;
 end;
 
 function TdlgDeleteMessages.GetFilter: TNNTPFilter;
 var
-  column : TNNTPFilterColumn;
-  operator : TNNTPFilterOperator;
-  unread, interesting, caseSensitive: boolean;
-  i : Integer;
-  dt : TDateTime;
+  column: TNNTPFilterColumn;
+  operator: TNNTPFilterOperator;
+  unread, interesting, caseSensitive: Boolean;
+  i: Integer;
+  dt: TDateTime;
 begin
-  if fChanges then
-    FreeAndNil (fFilter);
-
-  fChanges := False;
-  if not Assigned (fFilter) then
+  if fChanges or not Assigned(fFilter) then
   begin
-    column := TNNTPFilterColumn (rgColumn.ItemIndex);
-    operator := TNNTPFilterOperator (rgOperation.ItemIndex);
+    fFilter.Free;
+    fChanges := False;
+
+    column := TNNTPFilterColumn(rgColumn.ItemIndex);
+    operator := TNNTPFilterOperator(rgOperation.ItemIndex);
 
     unread := False;
     interesting := False;
@@ -116,41 +116,42 @@ begin
       ftAuthor,
       ftMessageBody,
       ftMessageID,
-      ftHeaderLines: fFilter := TNNTPFilter.Create('', column, operator, edFilter.Text, unread, interesting, caseSensitive);
+      ftHeaderLines:
+        fFilter := TNNTPFilter.Create('', column, operator, edFilter.Text, unread, interesting, caseSensitive);
 
-      ftDate :
-        if TryStrToDateTime (edFilter.Text, dt) then
-          fFilter := TNNTPFilter.Create ('', column, operator, dt, unread, interesting, caseSensitive);
+      ftDate:
+        if TryStrToDateTime(edFilter.Text, dt) then
+          fFilter := TNNTPFilter.Create('', column, operator, dt, unread, interesting, caseSensitive);
+
       ftLines,
-      ftNumber :
-        if TryStrToInt (edFilter.Text, i) then
-          fFilter := TNNTPFilter.Create ('', column, operator, i, unread, interesting, caseSensitive);
-    end
+      ftNumber:
+        if TryStrToInt(edFilter.Text, i) then
+          fFilter := TNNTPFilter.Create('', column, operator, i, unread, interesting, caseSensitive);
+    end;
   end;
 
-  result := fFilter
+  Result := fFilter;
 end;
 
 destructor TdlgDeleteMessages.Destroy;
 begin
   fFilter.Free;
-
-  inherited;
+  inherited Destroy;
 end;
 
 procedure TdlgDeleteMessages.rgColumnClick(Sender: TObject);
 begin
-  fChanges := True
+  fChanges := True;
 end;
 
 procedure TdlgDeleteMessages.rgOperationClick(Sender: TObject);
 begin
-  fChanges := True
+  fChanges := True;
 end;
 
 procedure TdlgDeleteMessages.edFilterChange(Sender: TObject);
 begin
-  fChanges := True
+  fChanges := True;
 end;
 
 end.
