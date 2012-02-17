@@ -13,8 +13,10 @@ type
   protected
     function GetProp(var st: string; const name: string): string; overload;
     function GetProp(var i: Integer; const name: string; deflt: Integer = 0): Integer; overload;
+    function GetProp(var i: Int64; const name: string; deflt: Int64 = 0): Int64; overload;
     procedure SetProp(var st: string; const name, Value: string); overload;
     procedure SetProp(var i: Integer; const name: string; Value: Integer); overload;
+    procedure SetProp(var i: Int64; const name: string; Value: Int64); overload;
     procedure WritePropToRegistry(reg: TExSettings; const valueName, st, name: string); overload;
     procedure WritePropToRegistry(reg: TExSettings; const valueName: string; i: Integer; const name: string; deft: Integer = 0); overload;
   public
@@ -330,6 +332,20 @@ begin
   Result := i;
 end;
 
+function TSettings.GetProp(var i: Int64; const name: string; deflt: Int64 = 0): Int64;
+begin
+  if i = -1 then
+    if Assigned(Parent) then
+    begin
+      Result := GetOrdProp(Parent, name);
+      Exit
+    end
+    else
+      i := deflt;
+
+  Result := i;
+end;
+
 procedure TSettings.SetProp(var st: string; const name, Value: string);
 begin
   if Assigned(Parent) and (GetStrProp(Parent, name) = Value) then
@@ -339,6 +355,14 @@ begin
 end;
 
 procedure TSettings.SetProp(var i: Integer; const name: string; Value: Integer);
+begin
+  if Assigned(Parent) and (GetOrdProp(Parent, name) = Value) then
+    i := -1
+  else
+    i := Value;
+end;
+
+procedure TSettings.SetProp(var i: Int64; const name: string; Value: Int64);
 begin
   if Assigned(Parent) and (GetOrdProp(Parent, name) = Value) then
     i := -1

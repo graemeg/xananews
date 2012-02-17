@@ -1480,7 +1480,7 @@ var
 
   procedure ParseDayOfMonth;
   begin
-    Dt :=  IndyStrToInt(Fetch(Value, sDelim), 1);
+    Dt := IndyStrToInt(Fetch(Value, sDelim), 1);
     Value := TrimLeft(Value);
   end;
 

@@ -12,7 +12,7 @@ type
   TConnectionResult = (crCanPost, crNoPost, crAuthRequired, crTempUnavailable);
   TModeSetResult = (mrCanStream, mrNoStream, mrCanIHAVE, mrNoIHAVE, mrCanPost, mrNoPost);
   TEventNewNewsList = procedure(const AMsgID: string; var ACanContinue: Boolean) of object;
-  TEventNewsgroupList = procedure(const ANewsgroup: string; const ALow, AHigh: Cardinal;
+  TEventNewsgroupList = procedure(const ANewsgroup: string; const ALow, AHigh: Int64;
     const AType: string; var ACanContinue: Boolean) of object;
   TNewsTransportEvent = procedure(AMsg: TStringList) of object;
 
@@ -21,15 +21,15 @@ type
 
   TPipeLineCommand = class
   private
-    fArticleNo: Cardinal;
+    fArticleNo: Int64;
     fStr: string;
     fCommand: TGetMessageCommand;
     fParam: LPARAM;
     function GetIsGet: Boolean;
   public
-    constructor Create(AArticleNo: Cardinal; const AMsgID: string; ACommand: TGetMessageCommand; AParam: LPARAM);
+    constructor Create(AArticleNo: Int64; const AMsgID: string; ACommand: TGetMessageCommand; AParam: LPARAM);
     constructor CreateGroupCommand(const AGroupName: string; AParam: LPARAM);
-    property ArticleNo: Cardinal read fArticleNo;
+    property ArticleNo: Int64 read fArticleNo;
     property Command: TGetMessageCommand read fCommand;
     property Param: LPARAM read fParam;
     property MsgID: string read fStr;
@@ -46,10 +46,10 @@ type
     FPipeLine: TObjectList;
     FPipeLineCmd: string;
     FPipelineState: TPipelineState;
-    FlMsgNo: Cardinal;
-    FlMsgCount: Cardinal;
-    FlMsgLow: Cardinal;
-    FlMsgHigh: Cardinal;
+    FlMsgNo: Int64;
+    FlMsgCount: Int64;
+    FlMsgLow: Int64;
+    FlMsgHigh: Int64;
     fsMsgID: string;
     fGroupOK: Boolean;
     fConectionResult: TConnectionResult;
@@ -69,15 +69,15 @@ type
     FIsConnected: Boolean;
     function Capture(const AList: TStrings): Integer;
     function ConvertDateTimeDist(ADate: TDateTime; AGMT: Boolean; const ADistributions: string): string;
-    function Get(const ACmd: string; const AMsgNo: Cardinal; const AMsgID: string; AHdr: TAnsiStrings; ABody: TStream): Boolean;
+    function Get(const ACmd: string; const AMsgNo: Int64; const AMsgID: string; AHdr: TAnsiStrings; ABody: TStream): Boolean;
     procedure ReceiveBody(const AStream: TStream; const ADelim: string = '');
     function  ReceiveHeader(AMsg: TAnsiStrings; const ADelim: RawByteString = ''): Boolean;
     procedure ReceiveHeaders(AMsg: TAnsiStrings);
     procedure setConnectionResult(const Value: TConnectionResult);
     procedure SetModeResult(const Value: TModeSetResult);
     procedure SetModeType(const Value: TModeType);
-    function SetArticle(const ACmd: string; const AMsgNo: Cardinal; const AMsgID: string): Boolean;
-    procedure AddPipelineGetCommand(AArticleNo: Cardinal; const AMsgID: string; ACommand: TGetMessageCommand; AParam: LPARAM);
+    function SetArticle(const ACmd: string; const AMsgNo: Int64; const AMsgID: string): Boolean;
+    procedure AddPipelineGetCommand(AArticleNo: Int64; const AMsgID: string; ACommand: TGetMessageCommand; AParam: LPARAM);
     procedure AddPipelineGroupCommand(const AGroupName: string; AParam: LPARAM);
     procedure ProcessPipeline;
   protected
@@ -90,14 +90,14 @@ type
     procedure DisconnectNotifyPeer; override;
     function Connected: Boolean; override;
     procedure Disconnect(ANotifyPeer: Boolean); override;
-    function GetBody(const AMsgNo: Cardinal; const AMsgID: string; AMsg: TStream): Boolean;
-    function GetHeader(const AMsgNo: Cardinal; const AMsgID: string; AHdr: TAnsiStrings): Boolean;
-    function GetArticle(const AMsgNo: Cardinal; const AMsgID: string; AHdr: TAnsiStrings; ABody: TStream): Boolean;
+    function GetBody(const AMsgNo: Int64; const AMsgID: string; AMsg: TStream): Boolean;
+    function GetHeader(const AMsgNo: Int64; const AMsgID: string; AHdr: TAnsiStrings): Boolean;
+    function GetArticle(const AMsgNo: Int64; const AMsgID: string; AHdr: TAnsiStrings; ABody: TStream): Boolean;
 
     procedure BeginPipeline;
-    procedure PipelineGetArticle(AMsgNo: Cardinal; const AMsgId: string; AParam: LPARAM);
-    procedure PipelineGetBody(AMsgNo: Cardinal; const AMsgID: string; AParam: LPARAM);
-    procedure PipelineGetHeader(AMsgNo: Cardinal; const AMsgID: string; AParam: LPARAM);
+    procedure PipelineGetArticle(AMsgNo: Int64; const AMsgId: string; AParam: LPARAM);
+    procedure PipelineGetBody(AMsgNo: Int64; const AMsgID: string; AParam: LPARAM);
+    procedure PipelineGetHeader(AMsgNo: Int64; const AMsgID: string; AParam: LPARAM);
     procedure PipelineGroup(const groupName: string; AParam: LPARAM);
     procedure EndPipeline;
     procedure CancelPipeline;
@@ -107,7 +107,7 @@ type
     procedure GetCapabilities(const AList: TstringList);
     procedure GetOverviewFMT(const AList: TStringList);
     function GetServerDateTime: TDateTime;
-    function SelectArticle(const AMsgNo: Cardinal): Boolean;
+    function SelectArticle(const AMsgNo: Int64): Boolean;
     procedure SelectGroup(const AGroup: string);
     function SendCmd(AOut: string; const AResponse: array of SmallInt;
       AEncoding: TIdTextEncoding = nil): SmallInt; override;
@@ -118,12 +118,12 @@ type
     function IsServerException(E: Exception): Boolean;
 
     property MsgID: string read fsMsgID;
-    property MsgNo: Cardinal read FlMsgNo;
-    property MsgHigh: Cardinal read FlMsgHigh;
-    property MsgLow: Cardinal read FlMsgLow;
+    property MsgNo: Int64 read FlMsgNo;
+    property MsgHigh: Int64 read FlMsgHigh;
+    property MsgLow: Int64 read FlMsgLow;
     property GreetingResult: TConnectionResult read fConectionResult write setConnectionResult;
     property ModeResult: TModeSetResult read fModeResult write SetModeResult;
-    property MsgCount: Cardinal read flMsgCount write flMsgCount;
+    property MsgCount: Int64 read flMsgCount write flMsgCount;
     property PipelineSize: Integer read fPipelineSize write fPipelineSize;
     property IsConnected: Boolean read FIsConnected;
   published
@@ -147,7 +147,7 @@ type
   EIdNNTPConnectionRefused = class(EIdReplyRFCError);
   EIdNNTPAuthenticationRequired = class(EIdException);
 
-procedure ParseXOVER(const Aline: RawByteString; var AArticleIndex: Cardinal;
+procedure ParseXOVER(const Aline: RawByteString; var AArticleIndex: Int64;
   var ASubject,
       AFrom: RawByteString;
   var ADate: TDateTime;
@@ -158,7 +158,7 @@ procedure ParseXOVER(const Aline: RawByteString; var AArticleIndex: Cardinal;
   var AExtraData: string);
 
 procedure ParseNewsGroup(ALine: string; var ANewsGroup: string;
-  var AHi, ALo: Cardinal; var AStatus: string; var isNew: Boolean);
+  var AHi, ALo: Int64; var AStatus: string; var isNew: Boolean);
 
 implementation
 
@@ -169,7 +169,7 @@ uses
 var
   lastGoodDate: TDateTime = 0;
 
-procedure ParseXOVER(const Aline: RawByteString; var AArticleIndex: Cardinal;
+procedure ParseXOVER(const Aline: RawByteString; var AArticleIndex: Int64;
   var ASubject,
       AFrom: RawByteString;
   var ADate: TDateTime;
@@ -215,7 +215,7 @@ begin
   P := PAnsiChar(Aline);
 
   {Article Index}
-  AArticleIndex := RawStrToInt(NextItemStr(P));
+  AArticleIndex := RawStrToInt64(NextItemStr(P));
   {Subject}
   P := NextItem(P, ASubject);
   {From}
@@ -241,7 +241,7 @@ begin
     AExtraData := StringReplace(AExtraData, #9#8#9, #9, [rfReplaceAll]);
 end;
 
-procedure ParseNewsGroup(ALine: string; var ANewsGroup: string; var AHi, ALo: Cardinal;
+procedure ParseNewsGroup(ALine: string; var ANewsGroup: string; var AHi, ALo: Int64;
   var AStatus: string; var isNew: Boolean);
 begin
   isNew := False;
@@ -255,8 +255,8 @@ begin
     end
     else
       ANewsgroup := Fetch(ALine, ' ');
-    AHi := IndyStrToInt(Fetch(Aline, ' '), 0);
-    ALo := IndyStrToInt(Fetch(ALine, ' '), 0);
+    AHi := IndyStrToInt64(Fetch(Aline, ' '), 0);
+    ALo := IndyStrToInt64(Fetch(ALine, ' '), 0);
     AStatus := Fetch(ALine, ' ');
 
     if LowerCase(Trim(ALine)) = '*' then
@@ -416,7 +416,7 @@ begin
   inherited;
 end;
 
-function TidNNTPX.Get(const ACmd: string; const AMsgNo: Cardinal;
+function TidNNTPX.Get(const ACmd: string; const AMsgNo: Int64;
   const AMsgID: string; AHdr: TAnsiStrings; ABody: TStream): Boolean;
 var
   LContinue: Boolean;
@@ -444,19 +444,19 @@ begin
   end;
 end;
 
-function TidNNTPX.GetArticle(const AMsgNo: Cardinal; const AMsgID: string;
+function TidNNTPX.GetArticle(const AMsgNo: Int64; const AMsgID: string;
   AHdr: TAnsiStrings; ABody: TStream): Boolean;
 begin
   Result := Get('Article', AMsgNo, AMsgID, AHdr, ABody);
 end;
 
-function TidNNTPX.GetBody(const AMsgNo: Cardinal; const AMsgID: string;
+function TidNNTPX.GetBody(const AMsgNo: Int64; const AMsgID: string;
   AMsg: TStream): Boolean;
 begin
   Result := Get('Body', AMsgNo, AMsgID, nil, AMsg);
 end;
 
-function TidNNTPX.GetHeader(const AMsgNo: Cardinal; const AMsgID: string;
+function TidNNTPX.GetHeader(const AMsgNo: Int64; const AMsgID: string;
   AHdr: TAnsiStrings): Boolean;
 begin
   Result := Get('Head', AMsgNo, AMsgID, AHdr, nil);
@@ -580,7 +580,7 @@ begin
   end;
 end;
 
-function TidNNTPX.SelectArticle(const AMsgNo: Cardinal): Boolean;
+function TidNNTPX.SelectArticle(const AMsgNo: Int64): Boolean;
 begin
   Result := SetArticle('STAT', AMsgNo, '');
 end;
@@ -592,9 +592,9 @@ var
 begin
   SendCmd('GROUP ' + AGroup, [211]);
   s := LastCmdResult.Text[0];
-  FlMsgCount := IndyStrToInt(Fetch(s));
-  FlMsgLow := IndyStrToInt(Fetch(s));
-  FlMsgHigh := IndyStrToInt(Fetch(s));
+  FlMsgCount := IndyStrToInt64(Fetch(s));
+  FlMsgLow := IndyStrToInt64(Fetch(s));
+  FlMsgHigh := IndyStrToInt64(Fetch(s));
   group := Fetch(s);
 
   if (group <> '') and not SameText(AGroup, group) then
@@ -690,7 +690,7 @@ begin
   ReceiveHeaders(AResponse);
 end;
 
-function TidNNTPX.SetArticle(const ACmd: string; const AMsgNo: Cardinal;
+function TidNNTPX.SetArticle(const ACmd: string; const AMsgNo: Int64;
   const AMsgID: string): Boolean;
 var
   s: string;
@@ -707,14 +707,14 @@ begin
     if AMsgID = '' then
     begin
       s := Trim(LastCmdResult.Text[0]);
-      flMsgNo := IndyStrToInt(Fetch(s, ' '));
+      flMsgNo := IndyStrToInt64(Fetch(s, ' '));
       fsMsgID := s;
     end
     else
       if AMsgNo < 1 then
       begin
         s := Trim(LastCmdResult.Text[0]);
-        flMsgNo := IndyStrToInt(Fetch(s, ' '));
+        flMsgNo := IndyStrToInt64(Fetch(s, ' '));
       end;
 
     Result := True;
@@ -808,17 +808,17 @@ begin
   end;
 end;
 
-procedure TidNNTPX.PipelineGetArticle(AMsgNo: Cardinal; const AMsgID: string; AParam: LPARAM);
+procedure TidNNTPX.PipelineGetArticle(AMsgNo: Int64; const AMsgID: string; AParam: LPARAM);
 begin
   AddPipelineGetCommand(AMsgNo, AMsgID, gmArticle, AParam);
 end;
 
-procedure TidNNTPX.PipelineGetBody(AMsgNo: Cardinal; const AMsgID: string; AParam: LPARAM);
+procedure TidNNTPX.PipelineGetBody(AMsgNo: Int64; const AMsgID: string; AParam: LPARAM);
 begin
   AddPipelineGetCommand(AmsgNo, AMsgID, gmBody, AParam);
 end;
 
-procedure TidNNTPX.PipelineGetHeader(AMsgNo: Cardinal; const AMsgID: string; AParam: LPARAM);
+procedure TidNNTPX.PipelineGetHeader(AMsgNo: Int64; const AMsgID: string; AParam: LPARAM);
 begin
   AddPipelineGetCommand(AmsgNo, AMsgID, gmheader, AParam);
 end;
@@ -851,7 +851,7 @@ begin
   Result := AList.Count;
 end;
 
-procedure TidNNTPX.AddPipelineGetCommand(AArticleNo: Cardinal;
+procedure TidNNTPX.AddPipelineGetCommand(AArticleNo: Int64;
   const AMsgID: string; ACommand: TGetMessageCommand; AParam: LPARAM);
 var
   st, str: string;
@@ -908,7 +908,7 @@ procedure TidNNTPX.ProcessPipeline;
     header: TAnsiStrings;
     body: TStream;
     seCalled, eeCalled: Boolean;
-    artNo: Integer;
+    artNo: Int64;
     msgID: string;
 
     function ValidResponse(const str: string): Boolean;
@@ -977,7 +977,7 @@ procedure TidNNTPX.ProcessPipeline;
           if pipelineCommand.IsGet then
           begin                                 // Check 22x reply matches what we
                                                 // expected.
-            artNo := StrToIntDef(SplitString(' ', str), -1);
+            artNo := StrToInt64Def(SplitString(' ', str), -1);
             msgID := SplitString(' ', str);
 
             if msgID <> '' then                 // Fix for buggy AToZed server.
@@ -1008,7 +1008,7 @@ procedure TidNNTPX.ProcessPipeline;
             seCalled := True;                         // Set a flag so we can clear up
 
             if pipelineCommand.IsGet then
-              if (Integer(pipelineCommand.fArticleNo) <> artNo) or
+              if (pipelineCommand.fArticleNo <> artNo) or
                  (pipelineCommand.fStr <> msgID) then
                  raise EidException.Create(Format('Pipeline out of sequence %d %d %s %s',
                    [pipelineCommand.fArticleNo, artNo, pipelineCommand.fStr, msgID]));
@@ -1083,7 +1083,7 @@ end;
 
 { TPipeLineCommand }
 
-constructor TPipeLineCommand.Create(AArticleNo: Cardinal; const AMsgID: string;
+constructor TPipeLineCommand.Create(AArticleNo: Int64; const AMsgID: string;
   ACommand: TGetMessageCommand; AParam: LPARAM);
 begin
   fArticleNo := AArticleNo;

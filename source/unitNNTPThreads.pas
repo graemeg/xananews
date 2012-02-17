@@ -76,7 +76,7 @@ type
   private
     fExpectedArticles: Integer;
     fIsXOver: Boolean;
-    fCurrentArticleNo: Integer;     // For status bar - 0..fExpectedArticles
+    fCurrentArticleNo: Int64;     // For status bar - 0..fExpectedArticles
     fCurrentGetter: TArticlesGetter;
     procedure DoPipeLineCommandStartEvent(cmd: TPipelineCommand; var headrs: TAnsiStrings; var body: TStream);
     procedure DoPipeLineCommandEndEvent(cmd: TPipelineCommand);
@@ -193,8 +193,8 @@ begin
             if Length(st) > 0 then
             begin
               group := SplitString(' ', st);
-              if (StrToIntDef(SplitString(' ', st), -1) <> -1) and
-                 (StrToIntDef(SplitString(' ', st), -1) <> -1) then
+              if (StrToInt64Def(SplitString(' ', st), -1) <> -1) and
+                 (StrToInt64Def(SplitString(' ', st), -1) <> -1) then
               begin
                 // Received a valid new group, add it to the list if it didn't exist yet.
                 if groups.IndexOf(group) = -1 then
@@ -572,7 +572,7 @@ end;
 procedure TNNTPArticlesThread.DoWork;
 var
   XOverFMT: TStringList;
-  fromArticle, articleCount, dest: Integer;
+  fromArticle, articleCount, dest: Int64;
   request: TArticlesGetterRequest;
   gtr: TArticlesGetter;
   requests: TObjectList;
@@ -613,9 +613,9 @@ var
     Result := NNTPAccount.XOverFMT;
   end;
 
-  function GetFirstArticleNoSince(date: TDateTime): Integer;
+  function GetFirstArticleNoSince(date: TDateTime): Int64;
   var
-    nearest: Integer;
+    nearest: Int64;
     head: TAnsiStrings;
     dtst: RawByteString;
     dt: TDateTime;
@@ -635,9 +635,9 @@ var
           Result := -1;
     end;
 
-    function NNTPSearch(s, e: Integer): Integer;
+    function NNTPSearch(s, e: Int64): Integer;
     var
-      n: Integer;
+      n: Int64;
     begin
       if e >= s then
       begin
@@ -694,7 +694,7 @@ var
     end;
   end;
 
-  procedure GetXOverHeaders(fromArticle, articleCount: Integer);
+  procedure GetXOverHeaders(fromArticle, articleCount: Int64);
   begin
     LogMessage(gtr.CurrentGroup.Name + ' XOVER');
     try
@@ -708,9 +708,9 @@ var
     end;
   end;
 
-  procedure GetPipelineArticles(fromArticle, dest: Integer);
+  procedure GetPipelineArticles(fromArticle, dest: Int64);
   var
-    msgNo: Integer;
+    msgNo: Int64;
   begin
     LogMessage(gtr.CurrentGroup.Name + ' Pipeline get ' + IntToStr(fromArticle) + '-' + IntToStr(dest));
     NNTP.PipelineCommandStartEvent := DoPipelineCommandStartEvent;
@@ -720,11 +720,15 @@ var
     try
       NNTP.BeginPipeline;
       try
-        for msgNo := fromArticle to dest do
+        msgNo := fromArticle;
+        while msgNo <= dest do
+        begin
           if gtr.CurrentFull then
             NNTP.PipelineGetArticle(msgNo, '', LPARAM(gtr))
           else
             NNTP.PipelineGetHeader(msgNo, '', LPARAM(gtr));
+          Inc(msgNo);
+        end;
       finally
         NNTP.EndPipeline;
       end
@@ -739,13 +743,14 @@ var
     end;
   end;
 
-  procedure GetArticles(fromArticle, dest: Integer);
+  procedure GetArticles(fromArticle, dest: Int64);
   var
-    msgNo: Integer;
+    msgNo: Int64;
   begin
     LogMessage(gtr.CurrentGroup.Name + ' Get ' + IntToStr(fromArticle) + '-' + IntToStr(dest));
     try
-      for msgNo := fromArticle to dest do
+      msgNo := fromArticle;
+      while msgNo <= dest do
       begin
         gtr.CurrentArticleNo := msgNo;
 
@@ -761,20 +766,23 @@ var
             ' failed. Server response: ' + NNTP.LastCmdResult.Code);
 
         Inc(fCurrentArticleNo);
+        Inc(msgNo);
       end;
     finally
       Synchronize(gtr.UpdateArticles);
     end;
   end;
 
-  procedure GetHeaders(fromArticle, dest: Integer);
+  procedure GetHeaders(fromArticle, dest: Int64);
   var
-    msgNo, i: Integer;
+    i: Integer;
+    msgNo: Int64;
     st: RawByteString;
   begin
     LogMessage(gtr.CurrentGroup.Name + ' Get ' + IntToStr(fromArticle) + '-' + IntToStr(dest));
     try
-      for msgNo := fromArticle to dest do
+      msgNo := fromArticle;
+      while msgNo <= dest do
       begin
         gtr.CurrentArticleNo := msgNo;
 
@@ -797,6 +805,7 @@ var
           TArticlesGetter(getter).Articles.Add(st);
         end;
         Inc(fCurrentArticleNo);
+        Inc(msgNo);
       end;
     finally
       gtr.XOverFMT := XOverFMT;
@@ -887,27 +896,27 @@ begin
           if fromArticle = 0 then
             if articleCount > 0 then
             begin
-              fromArticle := Integer(NNTP.MsgHigh) - articleCount + 1;
-              if fromArticle < Integer(NNTP.MsgLow) then
-                fromArticle := Integer(NNTP.MsgLow);
+              fromArticle := NNTP.MsgHigh - articleCount + 1;
+              if fromArticle < NNTP.MsgLow then
+                fromArticle := NNTP.MsgLow;
             end;
 
-          if fromArticle > Integer(NNTP.MsgHigh) + 1 then
+          if fromArticle > NNTP.MsgHigh + 1 then
             fromArticle := NNTP.MsgHigh + 1;
 
-          if fromArticle < Integer(NNTP.MsgLow) then
+          if fromArticle < NNTP.MsgLow then
             fromArticle := NNTP.MsgLow;
 
-          if articleCount > (Integer(NNTP.MsgHigh) - Integer(NNTP.MsgLow)) + 1 then
-            articleCount := (Integer(NNTP.MsgHigh) - Integer(NNTP.MsgLow)) + 1;
+          if articleCount > (NNTP.MsgHigh - NNTP.MsgLow) + 1 then
+            articleCount := (NNTP.MsgHigh - NNTP.MsgLow) + 1;
 
-          if (fromArticle = 0) or (fromArticle > Integer(NNTP.MsgHigh)) then
+          if (fromArticle = 0) or (fromArticle > NNTP.MsgHigh) then
             Continue;
 
           gtr.CurrentMax := NNTP.MsgHigh;
 
           if articleCount = 0 then
-            articleCount := Integer(NNTP.MsgHigh) - fromArticle + 1;
+            articleCount := NNTP.MsgHigh - fromArticle + 1;
 
           fExpectedArticles := articleCount - 1;
           fCurrentArticleNo := 0;
@@ -931,7 +940,7 @@ begin
               else
               begin
                 dest := fromArticle + articleCount - 1;
-                if dest > Integer(NNTP.MsgHigh) then
+                if dest > NNTP.MsgHigh then
                   dest := NNTP.MsgHigh;
               end;
 
@@ -1045,7 +1054,7 @@ end;
 procedure TNNTPArticleThread.DoPipeLineCommandEndEvent(cmd: TPipelineCommand);
 var
   gtr: TArticleGetter;
-  artNo: Integer;
+  artNo: Int64;
   requests: TObjectList;
 begin
   if cmd.isGet then

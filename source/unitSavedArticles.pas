@@ -325,7 +325,7 @@ begin
     Result := Result + DateToByteStr(art.Date);
 end;
 
-function GetNextSentArticleNo: Integer;
+function GetNextSentArticleNo: Int64;
 var
   reg: TExSettings;
 begin
@@ -418,7 +418,7 @@ end;
 procedure TArticleFolder.AddArticle(article: TArticleBase);
 var
   header: TAnsiStrings;
-  p, artNo: Integer;
+  p, artNo: Int64;
   xnref: RawByteString;
   origRef, ref: string;
   serverName, groupName: string;
@@ -903,7 +903,7 @@ begin
         begin
           Result.fOrigServer := SplitString(' ', st);
           Result.fOrigGroup := SplitString(':', st);
-          Result.fArticleNo := StrToIntDef('$' + st, 0);
+          Result.fArticleNo := StrToInt64Def('$' + st, 0);
         end;
       end
       else
@@ -938,7 +938,8 @@ end;
  *----------------------------------------------------------------------*)
 procedure TArticleFolder.ReCreateIndex(sortOrder: TThreadSortOrder);
 var
-  lpc, articleStart, pc, ae, xr: Integer;
+  lpc, articleStart, pc, ae: Integer;
+  xr: Int64;
   reader: TStreamTextReader;
   idx: TBTree;
   key: RawByteString;
@@ -1088,7 +1089,7 @@ begin  // ReCreateIndex
                   server := SplitString(' ', st);
                   isMailAccount := MailAccounts.FindMailAccountServer(server) <> nil;
                   group := SplitString(':', st);
-                  xr := StrToIntDef('$' + st, -1);
+                  xr := StrToInt64Def('$' + st, -1);
                   if isMailAccount or (xr <> -1) then
                   begin
                     if isMailAccount then
@@ -1560,7 +1561,7 @@ end;
 function TFolderArticle.PrimaryKey: string;
 var
   st: string;
-  artNo: Integer;
+  artNo: Int64;
 begin
   Result := Header['X-UIDL'];  // Is it a mail article?
   if Result = '' then
@@ -1572,7 +1573,7 @@ begin
     if st <> '' then
     begin
       SplitString(':', st);
-      artNo := StrToIntDef('$' + st, 0);
+      artNo := StrToInt64Def('$' + st, 0);
       Result := IntToHex(gArticleFolders.GetXNRef(OrigServer, OrigGroup), 4) + ':' + IntToHex(artNo, 8);
     end;
   end;
@@ -1669,7 +1670,7 @@ var
   m: TSentMessage;
   serverst, st: string;
   sl: TAnsiStrings;
-  artNo: Integer;
+  artNo: Int64;
 begin
   serverSt := Account.NNTPServerSettings.ServerName;
   if Account.NNTPServerSettings.ServerPort <> 119 then

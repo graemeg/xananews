@@ -62,14 +62,14 @@ type
   TColumnHeaderStatus = set of TColumnHeaderValue;
 
   TGetMessagesParams = record     // Used for getting messages for multiple groups
-    fromArticle: Integer;         // .. passed as a parameter to ForEachSelectedGroup
+    fromArticle: Int64;           // .. passed as a parameter to ForEachSelectedGroup
     batchRef: Integer;
     useDefaultGroupSettings: Boolean;
                                   // If this flags is set, get the settings below from
                                   // the groups default action
 
     fHeadersOnly: Boolean;
-    fMessageCount: Integer;
+    fMessageCount: Int64;
     fActionType: TBatchActionType;
     fManagementType: TBatchManagementType;
     fManagementOption: TBatchManagementOption;
@@ -1151,7 +1151,7 @@ type
     procedure SetAttachmentsDirectory(fileName: string);
     procedure GoToNextArticle(markread: Boolean);
     procedure DoSaveAttachment(const title: string; var fileName: string; var mp: TmvMessagePart);
-    procedure GetSingleArticle(grp: TSubscribedGroup; articleNo: Integer);
+    procedure GetSingleArticle(grp: TSubscribedGroup; articleNo: Int64);
 
     procedure LoadToolbarLayout;
     procedure SaveToolbarLayout;
@@ -1835,7 +1835,7 @@ end;
 procedure TfmMain.actViewHideMessagesNotToMeExecute(Sender: TObject);
 var
   art: TArticleBase;
-  artno: Integer;
+  artno: Int64;
 begin
   if Assigned(fLastFocusedArticleContainer) then
   begin
@@ -1995,7 +1995,7 @@ var
   account: TNNTPAccount;
   params: TGetMessagesParams;
   act: TBatchAction;
-  tart: Integer;
+  tart: Int64;
 begin
   // Get messages from the selected groups
   account := GetFocusedAccount;
@@ -2024,8 +2024,8 @@ begin
 
         if dlg.rbAddFrom.Checked then
         begin
-          params.fromArticle := StrToIntDef(dlg.edAddFrom.Text, 1);
-          tart := StrToIntDef(dlg.edAddTo.Text, 0);
+          params.fromArticle := StrToInt64Def(dlg.edAddFrom.Text, 1);
+          tart := StrToInt64Def(dlg.edAddTo.Text, 0);
           params.fMessageCount := tart - params.fromArticle + 1;
           if params.fMessageCount <= 0 then
             params.fMessageCount := -1;
@@ -2076,7 +2076,7 @@ var
   grp: TSubscribedGroup;
   dlg: TfmNewsgroup;
   art: TArticleBase;
-  artNo: Integer;
+  artNo: Int64;
 begin
   grp := GetFocusedGroup;
   if Assigned(grp) then
@@ -3524,7 +3524,7 @@ function TfmMain.DoGetMessages(group: TSubscribedGroup; params: LPARAM): Boolean
 var
   p: TGetMessagesParams;
   doIt: Boolean;
-  lart, fart, acount: Integer; // heh!
+  lart, fart, acount: Int64;
 
   filter: TNNTPFilter;
   dt: TDateTime;
@@ -8456,7 +8456,8 @@ procedure TfmMain.GoToURL(url: string);
 var
   scheme, server, group: string;
   port: string;
-  p, portNo, sslPort, articleNo: Integer;
+  p, portNo, sslPort: Integer;
+  articleNo: Int64;
   isMessageID: Boolean;
   article: TArticleBase;
   account: TNNTPAccount;
@@ -8568,7 +8569,7 @@ begin
   else                          // Find the article no in the specified group
     if Assigned(grp) then
     begin
-      articleNo := StrToIntDef(url, 0);
+      articleNo := StrToInt64Def(url, 0);
       article := grp.FindArticleNo(articleNo);
     end;
 
@@ -8997,7 +8998,7 @@ end;
 procedure TfmMain.actViewHideReadMessagesExecute(Sender: TObject);
 var
   art: TArticleBase;
-  artno: Integer;
+  artno: Int64;
 begin
   if Assigned(fLastFocusedArticleContainer) then
   begin
@@ -10674,7 +10675,7 @@ begin
   Result := count;
 end;
 
-procedure TfmMain.GetSingleArticle(grp: TSubscribedGroup; articleNo: Integer);
+procedure TfmMain.GetSingleArticle(grp: TSubscribedGroup; articleNo: Int64);
 var
   params: TGetMessagesParams;
 begin
@@ -10806,7 +10807,7 @@ var
     m: TmvMessage;
     c: Integer;
     mm: TmvMessagePart;
-    artNo: Integer;
+    artNo: Int64;
 
     function NextArticle: TArticleBase;
     begin
@@ -11403,7 +11404,7 @@ end;
 procedure TfmMain.actViewHideIgnoredMessagesExecute(Sender: TObject);
 var
   art: TArticleBase;
-  artno: Integer;
+  artno: Int64;
 begin
   if Assigned(fLastFocusedArticleContainer) then
   begin

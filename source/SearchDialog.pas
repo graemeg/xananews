@@ -173,7 +173,7 @@ begin
       ftLines,
       ftCrossposted,
       ftNumber:
-        fFilters.AddObject('', TNNTPFilter.Create('', col, operator, StrToIntDef(ed.Text, 0), unread, interesting, caseSensitive));
+        fFilters.AddObject('', TNNTPFilter.Create('', col, operator, StrToInt64Def(ed.Text, 0), unread, interesting, caseSensitive));
     else
       fFilters.AddObject('', TNNTPFilter.Create('', col, operator, ed.Text, unread, interesting, caseSensitive))
     end;
@@ -399,7 +399,7 @@ begin
               ftLines,
               ftCrossposted,
               ftNumber:
-                fFilters.AddObject('', TNNTPFilter.Create('', col, op, StrToIntDef(s, 0), False, False, False));
+                fFilters.AddObject('', TNNTPFilter.Create('', col, op, StrToInt64Def(s, 0), False, False, False));
             else
               fFilters.AddObject('', TNNTPFilter.Create('', col, op, s, False, False, False));
             end;

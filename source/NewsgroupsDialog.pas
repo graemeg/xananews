@@ -352,7 +352,7 @@ end;
 procedure TdlgNewsgroups.lvNewsgroupsData(Sender: TObject; Item: TListItem);
 var
   st, stx: string;
-  hi, lo: DWORD;
+  hi, lo: Int64;
   isNew: Boolean;
 begin
   if fFiltered then             // Split newgroup line into it's constituents

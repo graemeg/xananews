@@ -48,10 +48,12 @@ type
 
     function GetBoolValue(const name: string): Boolean;
     function GetIntValue(const name: string): Integer;
+    function GetInt64Value(const name: string): Int64;
     function GetStrValue(const name: string): string;
 
     procedure SetStrValue(const name, value: string);
     procedure SetIntValue(const name: string; value: Integer);
+    procedure SetInt64Value(const name: string; const value: Int64);
     procedure SetBoolValue(const name: string; value: Boolean);
     function GetRegStub(const section: string): string;
 
@@ -84,6 +86,7 @@ type
     function GetBooleanValue(const valueName: string; deflt: Boolean = False): Boolean; virtual;
     function GetStringValue(const valueName: string; const deflt: string = ''): string; virtual; abstract;
     function GetIntegerValue(const valueName: string; deflt: Integer = 0): Integer; virtual;
+    function GetInteger64Value(const valueName: string; deflt: Int64 = 0): Integer; virtual;
     function HasSection(const ASection: string): Boolean; virtual; abstract;
     function HasValue(const AValueName: string): Boolean; virtual; abstract;
     function GetStrings(const valueName: string; sl: TStrings): Integer; virtual;
@@ -91,6 +94,7 @@ type
     procedure SetBooleanValue(const valueName: string; value: Boolean; deflt: Boolean = False); virtual;
     procedure SetStringValue(const valueName: string; const value: string; const deflt: string = ''); virtual;
     procedure SetIntegerValue(const valueName: string; value: Integer; deflt: Integer = 0); virtual;
+    procedure SetInteger64Value(const valueName: string; value: Int64; deflt: Int64 = 0); virtual;
     procedure SetStrings(const valueName: string; sl: TStrings); virtual;
 
     procedure RenameSection(const oldValue, newValue: string); virtual; abstract;
@@ -111,6 +115,7 @@ type
     property Parent: TExSettings read fParent;
 
     property IntegerValue[const name: string]: integer read GetIntValue write SetIntValue;
+    property Int64Value[const name: string]: Int64 read GetInt64Value write SetInt64Value;
     property StringValue[const name: string]: string read GetStrValue write SetStrValue;
     property BooleanValue[const name: string]: Boolean read GetBoolValue write SetBoolValue;
   end;
@@ -632,9 +637,20 @@ begin
   Result := '"' + valueName + '"="' + StringValue[valueName] + '"';
 end;
 
+function TExSettings.GetInteger64Value(const valueName: string; deflt: Int64): Integer;
+begin
+  deflt := GetIntegerValue(valueName, deflt);
+  Result := StrToIntDef(GetStringValue(valueName + '64', IntToStr(deflt)), deflt);
+end;
+
 function TExSettings.GetIntegerValue(const valueName: string; deflt: Integer): Integer;
 begin
   Result := StrToIntDef(GetStringValue(valueName, IntToStr(deflt)), deflt);
+end;
+
+function TExSettings.GetInt64Value(const name: string): Int64;
+begin
+  Result := GetInteger64Value(name);
 end;
 
 function TExSettings.GetIntValue(const name: string): Integer;
@@ -663,12 +679,28 @@ begin
   SetBooleanValue(name, value);
 end;
 
+procedure TExSettings.SetInteger64Value(const valueName: string; value, deflt: Int64);
+begin
+  if value = deflt then
+  begin
+    DeleteValue(valueName);
+    DeleteValue(valueName + '64');
+  end
+  else
+    InternalSetStringValue(valueName + '64', IntToStr(value));
+end;
+
 procedure TExSettings.SetIntegerValue(const valueName: string; value, deflt: Integer);
 begin
   if value = deflt then
     DeleteValue(valueName)
   else
     InternalSetIntegerValue(valueName, value);
+end;
+
+procedure TExSettings.SetInt64Value(const name: string; const value: Int64);
+begin
+  SetInteger64Value(name, value);
 end;
 
 procedure TExSettings.SetIntValue(const name: string; value: Integer);

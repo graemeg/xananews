@@ -232,7 +232,7 @@ begin
   reg.SetIntegerValue('New Action Type', Integer(ActionType), -1);
   reg.IntegerValue['Message Count'] := MessageCount;
   reg.IntegerValue['Management Count'] := ManagementCount;
-  reg.BooleanValue['Headers Only']:= HeadersOnly;
+  reg.BooleanValue['Headers Only'] := HeadersOnly;
   reg.IntegerValue['Management Type'] := Integer(ManagementType);
   reg.IntegerValue['Management Option'] := Integer(ManagementOption);
 end;

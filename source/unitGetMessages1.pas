@@ -69,9 +69,9 @@ end;
 
 procedure TdlgGetMessages1.FormShow(Sender: TObject);
 var
-  f, t : Integer;
+  f, t : Int64;
   act : TbatchAction;
-  mCount : Integer;
+  mCount : Int64;
   dt : TDateTime;
   art : TArticleBase;
 begin

@@ -56,7 +56,7 @@ type
     function CountActiveGettersForAccount(acc: TNNTPAccount): Integer;
     procedure ClearDormantConnections(acc: TNNTPAccount);
     procedure GetNewsgroups(account: TNNTPAccount);
-    procedure GetArticles(account: TNNTPAccount; group: TSubscribedGroup; fromArticle, articleCount: Integer; full: Boolean; ABatchRef: Integer; ASince: TDateTime);
+    procedure GetArticles(account: TNNTPAccount; group: TSubscribedGroup; fromArticle, articleCount: Int64; full: Boolean; ABatchRef: Integer; ASince: TDateTime);
     procedure GetParentArticles(article: TArticle);
     procedure GetArticleBody(account: TNNTPAccount; group: TSubscribedGroup; article: TArticle);
     procedure GetArticleThreadBodies(account: TNNTPAccount; group: TSubscribedGroup; article: TArticle);
@@ -444,7 +444,7 @@ begin
 end;
 
 procedure TNNTPThreadManager.GetArticles(account: TNNTPAccount;
-  group: TSubscribedGroup; fromArticle, articleCount: Integer;
+  group: TSubscribedGroup; fromArticle, articleCount: Int64;
   full: Boolean; ABatchRef: Integer; ASince: TDateTime);
 var
   getter: TArticlesGetter;

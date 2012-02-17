@@ -150,7 +150,7 @@ type
     fMessageOffset: Int64;        // Offset of message body in messages.dat
     fMultipartFlags: TMultipartFlags;
     fFlags: DWORD;                // See fgXXXX constants above
-    fArticleNo: Integer;          // 0 = Dummy article
+    fArticleNo: Int64;          // 0 = Dummy article
     fNewestMessage: TDateTime;
 
     function GetIsRead: Boolean; virtual;
@@ -177,7 +177,7 @@ type
     fCodePage: Integer;
     constructor Create(AOwner: TArticleContainer); virtual;
     procedure Assign(article: TArticleBase); virtual;
-    procedure Initialize(articleNo: Integer; header: TAnsiStrings);
+    procedure Initialize(articleNo: Int64; header: TAnsiStrings);
     function HasMsg: Boolean;
     function MsgDownloading: Boolean;
     procedure ReleaseMsg;
@@ -193,7 +193,7 @@ type
     property _To: string read fTo;
     property Bytes: Integer read fBytes;
     property Lines: Integer read fLines;
-    property ArticleNo: Integer read fArticleNo;
+    property ArticleNo: Int64 read fArticleNo;
 
     property Msg: TmvMessage read GetMsg write SetMsg;
     property InterestingMessageLine: string read GetInterestingMessageLine;
@@ -267,7 +267,7 @@ type
   public
     constructor Create(AOwner: TArticleContainer); override;
     destructor Destroy; override;
-    procedure ChangeArticleNo(newArticleNo: Integer);
+    procedure ChangeArticleNo(newArticleNo: Int64);
     procedure FixArticleNo;
 
     procedure RemoveMessage;
@@ -427,7 +427,7 @@ type
     function FindUniqueID(const msgID: RawByteString): TArticleBase; virtual;
     function FindMyXRef(const xref: string): TArticleBase;
 
-    function FindArticleNo(cno: Integer): TArticleBase; virtual;
+    function FindArticleNo(cno: Int64): TArticleBase; virtual;
     function LoadGetArticleCount: Integer;
     procedure LoadArticles; virtual; abstract;
     procedure CloseMessageFile; virtual;
@@ -490,7 +490,7 @@ type
   public
     constructor Create(const AName: string; AFiltersParent, ADisplayFiltersParent: TFiltersCtnr);
     destructor Destroy; override;
-    function FindArticleNo(cno: Integer): TArticleBase; override;
+    function FindArticleNo(cno: Int64): TArticleBase; override;
     function GetArticleBase(idx: Integer): TArticleBase; override;
     function GetArticleCount: Integer; override;
     function GetThreadCount: Integer; override;
@@ -512,7 +512,7 @@ type
   TSubscribedGroup = class(TArticleObjectContainer)
   private
     fOwner: TNNTPAccount;
-    fHighWaterMark: Integer;
+    fHighWaterMark: Int64;
     fNNTPSettings: TNNTPSettings;
     fPostingSettings: TPostingSettings;
     fDisplaySettings: TDisplaySettings;
@@ -521,10 +521,10 @@ type
     fActionPerformedThisSession: Boolean;
     fSortIdx: Integer;
 
-    function GetLastArticle: Integer;
-    function GetLowestArticleNo: Integer;
+    function GetLastArticle: Int64;
+    function GetLowestArticleNo: Int64;
     function GetArticle(idx: Integer): TArticle;
-    function GetHighestArticleNo: Integer;
+    function GetHighestArticleNo: Int64;
     procedure SetSortIdx(const Value: Integer);
     procedure QuickLoadHeaderStats;
   protected
@@ -542,7 +542,7 @@ type
     procedure UnloadArticles; override;
 
   public
-    fRawLastArticle: Integer;
+    fRawLastArticle: Int64;
 
     constructor Create(AOwner: TNNTPAccount; const AGroupName: string);
     destructor Destroy; override;
@@ -551,25 +551,25 @@ type
 
     procedure AddRawHeaders(headers: TAnsiStringList; XOVERFmt: TStringList); overload;
     procedure AddRawHeaders(headers: TTextFileReader); overload;
-    function AddArticle(articleNo: Integer; header: TAnsiStrings; body: TStream; isNew: Boolean): TArticle;
+    function AddArticle(articleNo: Int64; header: TAnsiStrings; body: TStream; isNew: Boolean): TArticle;
     procedure SaveArticles(recreateMessageFile: Boolean); override;
     procedure LeaveGroup(clearMessages: Boolean = True); override;          // Save articles, and release memory
     function MarkOnLeave: Boolean; override;
     function CreateGroupRegistry(access: DWORD): TExSettings;
     procedure CloseMessageFile; override;
     procedure OpenMessageFile; override;
-    function TSGetLastArticle: Integer;
+    function TSGetLastArticle: Int64;
 
     property Articles[idx: Integer]: TArticle read GetArticle;
     property SortIdx: Integer read fSortIdx write SetSortIdx;
     property Owner: TNNTPAccount read fOwner;
-    property LastArticle: Integer read GetLastArticle;
-    property LowestArticleNo: Integer read GetLowestArticleNo;
-    property HighestArticleNo: Integer read GetHighestArticleNo;
+    property LastArticle: Int64 read GetLastArticle;
+    property LowestArticleNo: Int64 read GetLowestArticleNo;
+    property HighestArticleNo: Int64 read GetHighestArticleNo;
     property NNTPSettings: TNNTPSettings read fNNTPSettings;
     property Nickname: string read fNickname write fNickname;
     property NeedsUpdate: Boolean read fNeedsUpdate write fNeedsUpdate;
-    property HighWaterMark: Integer read fHighWaterMark write fHighWaterMark;
+    property HighWaterMark: Int64 read fHighWaterMark write fHighWaterMark;
     property ActionPerformedThisSession: Boolean read fActionPerformedThisSession write fActionPerformedThisSession;
   end;
 
@@ -1352,7 +1352,7 @@ end;
 function TNNTPAccounts.FindXRef(const XRef: string): TArticleBase;
 var
   xr, accountName, serverName, groupName: string;
-  artNo: Integer;
+  artNo: Int64;
   ctnr: TArticleContainer;
 begin
   Result := nil;
@@ -2552,7 +2552,7 @@ begin
       begin
         group := TSubscribedGroup.Create(Self, keyNames[i]);
         reg1.Section := keyNames[i];
-        group.fHighWaterMark := reg1.GetIntegerValue('Last Article', 0);
+        group.fHighWaterMark := reg1.GetInteger64Value('Last Article', 0);
         group.fSortIdx := reg1.GetIntegerValue('Sort Index', -1);
         group.FiltersCtnr.LoadFilters(reg1, False);
         group.DisplayFiltersCtnr.LoadFilters(reg1, True);
@@ -2611,7 +2611,7 @@ begin
       group := TSubscribedGroup(fSubscribedGroups.Objects[i]);
       reg1.Section := group.Name;
 
-      reg1.SetIntegerValue('Last Article', group.fHighWaterMark, 0);
+      reg1.SetInteger64Value('Last Article', group.fHighWaterMark, 0);
       reg1.SetStringValue('Nickname', group.Nickname, '');
       reg1.SetBooleanValue('Secret', group.Secret, False);
       reg1.SetIntegerValue('Sort Index', group.fSortIdx, -1);
@@ -2785,7 +2785,7 @@ begin
     CreateDir(FixFileNameString(AccountName) + '\' + FixFileNameString(groupName));
     reg := grp.CreateGroupRegistry(KEY_READ or KEY_WRITE);
     try
-      reg.SetIntegerValue('Last Article', 0);
+      reg.SetInteger64Value('Last Article', 0);
     finally
       reg.Free;
     end;
@@ -2829,7 +2829,7 @@ end;
 
 { TSubscribedGroup }
 
-function TSubscribedGroup.AddArticle(articleNo: Integer; header: TAnsiStrings; body: TStream; isNew: Boolean): TArticle;
+function TSubscribedGroup.AddArticle(articleNo: Int64; header: TAnsiStrings; body: TStream; isNew: Boolean): TArticle;
 var
   article: TArticle;
   filterIt, bozo: Boolean;
@@ -2935,7 +2935,7 @@ end;
 procedure TSubscribedGroup.AddRawHeaders(headers: TAnsiStringList; XOVERFmt: TStringList);
 var
   i, n: Integer;
-  articleNo: Cardinal;
+  articleNo: Int64;
   subject: RawByteString;
   from: RawByteString;
   date: TDateTime;
@@ -3045,7 +3045,7 @@ begin
 
     article := TArticle.Create(Self);
     try
-      article.fArticleNo := RawStrToInt(NextItemStr);
+      article.fArticleNo := RawStrToInt64(NextItemStr);
       P := NextItem(article.fSubject);
       P := NextItem(article.fFrom);
       try
@@ -3140,7 +3140,7 @@ begin
   inherited Destroy;
 end;
 
-function TSubscribedGroup.GetLastArticle: Integer;
+function TSubscribedGroup.GetLastArticle: Int64;
 var
   i, ct: Integer;
 begin
@@ -3431,7 +3431,7 @@ begin
   fOwner.fSecretGroupCount := -1;
 end;
 
-function TSubscribedGroup.GetHighestArticleNo: Integer;
+function TSubscribedGroup.GetHighestArticleNo: Int64;
 var
   i: Integer;
 begin
@@ -3505,7 +3505,7 @@ begin
   GetUnreadArticleCount;
 end;
 
-function TSubscribedGroup.TSGetLastArticle: Integer;
+function TSubscribedGroup.TSGetLastArticle: Int64;
 begin
   LSSync.Enter;
   try
@@ -3538,7 +3538,7 @@ end;
 
 { TArticle }
 
-procedure TArticle.ChangeArticleNo(newArticleNo: Integer);
+procedure TArticle.ChangeArticleNo(newArticleNo: Int64);
 begin
   fArticleNo := newArticleNo;
 end;
@@ -3559,7 +3559,7 @@ begin
       p := Pos(' ', st);
       if p > 0 then
         st := Copy(st, 1, p - 1);
-      fArticleNo := StrToIntDef(st, 0);
+      fArticleNo := StrToInt64Def(st, 0);
     end
     else
       fArticleNo := 99999999;
@@ -4033,17 +4033,17 @@ begin { GroupArticles }
     CheckCompleteMultipart(root);
 end;
 
-function TSubscribedGroup.GetLowestArticleNo: Integer;
+function TSubscribedGroup.GetLowestArticleNo: Int64;
 var
   i: Integer;
 begin
-  Result := MaxInt;
+  Result := High(Int64);
 
   for i := 0 to LoadGetArticleCount - 1 do
     if (articles[i].fArticleNo > 0) and (articles[i].fArticleNo < Result) then
       Result := articles[i].fArticleNo;
 
-  if Result = MaxInt then
+  if Result = High(Int64) then
     Result := 0;
 end;
 
@@ -4095,7 +4095,8 @@ end;
 
 function TSubscribedGroup.GetUnreadArticleCount: Integer;
 var
-  i, l: Integer;
+  i: Integer;
+  l: Int64;
   art: TArticleBase;
 begin
   Result := 0;
@@ -4253,7 +4254,7 @@ end;
 procedure TArticle.SetCrossPostsFlag(flag: DWORD; value: Boolean);
 var
   xref, st, group: string;
-  artNo: Integer;
+  artNo: Int64;
   xCtnr: TArticleContainer;
   art: TArticleBase;
 begin
@@ -4267,7 +4268,7 @@ begin
   while st <> '' do
   begin
     group := SplitString(':', st);     // Split XRef into group & article no
-    artNo := StrToIntDef(st, 0);
+    artNo := StrToInt64Def(st, 0);
 
     if artNo = 0 then Break;
                                         // Check group isn't *this* group
@@ -4759,7 +4760,7 @@ begin
     fLockCount := 0;
 end;
 
-function TArticleContainer.FindArticleNo(cno: Integer): TArticleBase;
+function TArticleContainer.FindArticleNo(cno: Int64): TArticleBase;
 var
   i: Integer;
 begin
@@ -6580,10 +6581,10 @@ end;
  | only 'extra' header strings.                                         |
  |                                                                      |
  | Parameters:                                                          |
- |   articleNo: Integer;                                                |
+ |   articleNo: Int64;                                                  |
  |   header: TStrings        // nb in/out parameter                     |
  *----------------------------------------------------------------------*)
-procedure TArticleBase.Initialize(articleNo: Integer; header: TAnsiStrings);
+procedure TArticleBase.Initialize(articleNo: Int64; header: TAnsiStrings);
 var
   hdrs: TAnsiStringList;
   i: Integer;
@@ -6826,7 +6827,7 @@ begin
   inherited Destroy;
 end;
 
-function TArticleObjectContainer.FindArticleNo(cno: Integer): TArticleBase;
+function TArticleObjectContainer.FindArticleNo(cno: Int64): TArticleBase;
 begin
   if not fArticlesLoaded then
     LoadArticles;
@@ -6902,10 +6903,10 @@ end;
  *----------------------------------------------------------------------*)
 procedure TArticleObjectContainer.PurgeArticles(all, reset: Boolean; const folderName: string);
 var
-  i: Integer;
+  i: Int64;
   article: TarticleBase;
   recreateMessages: Boolean;
-  lastArt, lastCurrentArticle: Integer;
+  lastArt, lastCurrentArticle: Int64;
   reg: TExSettings;
   folder: TArticleFolder;
   newArticles, tmp, deletedArticles: TObjectList;
@@ -7048,7 +7049,7 @@ begin
       reg := CreateGroupRegistry(KEY_READ or KEY_WRITE);
       if Assigned(reg) then
       try
-        reg.SetIntegerValue('Last Article', fHighWatermark, 0);
+        reg.SetInteger64Value('Last Article', fHighWatermark, 0);
       finally
         reg.Free;
       end;

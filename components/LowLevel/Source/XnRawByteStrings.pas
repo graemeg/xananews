@@ -8,7 +8,8 @@ uses
 function RawCompareStr(const S1, S2: RawByteString): Integer;
 function RawCompareText(const S1, S2: RawByteString): Integer;
 function RawFetch(var AInput: RawByteString; const ADelim: RawByteString = ' '; const ADelete: Boolean = True): RawByteString;
-function RawIntToStr(Value: Integer): RawByteString;
+function RawIntToStr(Value: Integer): RawByteString; overload;
+function RawIntToStr(Value: Int64): RawByteString; overload;
 function RawLowerCase(S: RawByteString): RawByteString;
 function RawPos(const substr, str: RawByteString): Integer;
 function RawSameText(const S1, S2: RawByteString): Boolean;
@@ -365,6 +366,12 @@ asm
   mov    [ecx], al               {Save Final Digit}
 end;
 {$ENDIF}
+
+
+function RawIntToStr(Value: Int64): RawByteString;
+begin
+  Result := IntToStr(Value);
+end;
 
 
 function RawLowerCase(S: RawByteString): RawByteString; inline;

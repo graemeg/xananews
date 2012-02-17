@@ -315,7 +315,8 @@ function TNNTPFilter.Matches(obj: TObject): Boolean;
 var
   st, searchSt, fn: string;
   dt: TDateTime;
-  i, it: Integer;
+  i: Integer;
+  it: Int64;
   article: TArticleBase;
   m: TmvMessage;
 begin

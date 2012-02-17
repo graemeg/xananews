@@ -169,19 +169,19 @@ type
   TArticlesGetterRequest = class
   private
     fGroup: TSubscribedGroup;
-    fFromArticle: Integer;
-    fArticleCount: Integer;
+    fFromArticle: Int64;
+    fArticleCount: Int64;
     fFull: Boolean;
     fAbandon: Boolean;
     fBatchRef: Integer;
     fRetry: Boolean;
     fSince: TDateTime;
   public
-    constructor Create(AGroup: TSubscribedGroup; AFromArticle, AArticleCount: Integer; full: Boolean; ABatchRef: Integer; ASince: TDateTime);
+    constructor Create(AGroup: TSubscribedGroup; AFromArticle, AArticleCount: Int64; full: Boolean; ABatchRef: Integer; ASince: TDateTime);
     property Group: TSubscribedGroup read fGroup;
     property Full: Boolean read fFull;
-    property FromArticle: Integer read fFromArticle;
-    property ArticleCount: Integer read fArticleCount;
+    property FromArticle: Int64 read fFromArticle;
+    property ArticleCount: Int64 read fArticleCount;
     property Abandon: Boolean read fAbandon write fAbandon;
     property BatchRef: Integer read fBatchRef;
     property Retry: Boolean read fRetry write fRetry;
@@ -208,8 +208,8 @@ type
   public
     CurrentFull: Boolean;
     CurrentUpdateAll: Boolean;
-    CurrentArticleNo: Integer;
-    CurrentMax: Integer;
+    CurrentArticleNo: Int64;
+    CurrentMax: Int64;
     CurrentGroup: TSubscribedGroup;
     XOverFMT: TStringList;
 
@@ -217,7 +217,7 @@ type
     destructor Destroy; override;
     procedure Clear; override;
     procedure DeleteRequest(idx: Integer); override;
-    procedure AddGroupToList(group: TSubscribedGroup; fromArticle, articleCount: Integer; full: Boolean; ABatchRef: Integer; ASince: TDateTime);
+    procedure AddGroupToList(group: TSubscribedGroup; fromArticle, articleCount: Int64; full: Boolean; ABatchRef: Integer; ASince: TDateTime);
     procedure ClearWork; override;
 
     procedure SaveCurrentArticle;
@@ -945,7 +945,7 @@ end;
  | Articles getter.                                                     |
  *----------------------------------------------------------------------*)
 procedure TArticlesGetter.AddGroupToList(group: TSubscribedGroup;
-  fromArticle, articleCount: Integer; full: Boolean; ABatchRef: Integer; ASince: TDateTime);
+  fromArticle, articleCount: Int64; full: Boolean; ABatchRef: Integer; ASince: TDateTime);
 begin
   LockList;
   try
@@ -1525,7 +1525,7 @@ end;
 { TArticlesGetterRequest }
 
 constructor TArticlesGetterRequest.Create(AGroup: TSubscribedGroup;
-  AFromArticle, AArticleCount: Integer; full: Boolean; ABatchRef: Integer; ASince: TDateTime);
+  AFromArticle, AArticleCount: Int64; full: Boolean; ABatchRef: Integer; ASince: TDateTime);
 begin
   fGroup := AGroup;
   fFromArticle := AFromArticle;
