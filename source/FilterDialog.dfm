@@ -56,6 +56,7 @@ object dlgDeleteMessages: TdlgDeleteMessages
       'Message Body'
       'Message ID'
       'Header'
+      'Cross posted'
       'Number')
     TabOrder = 0
     OnClick = rgColumnClick

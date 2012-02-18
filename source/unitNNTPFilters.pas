@@ -28,7 +28,7 @@ uses
   Windows, Classes, SysUtils, StrUtils, ConTnrs, unitExSettings, unitSearchString;
 
 type
-
+  // Note: Be careful when changing the following definition(s), some units depend on the specific order.
   TNNTPFilterColumn = (ftSubject, ftAuthor, ftDate, ftLines, ftMessageBody, ftMessageID, ftHeaderLines, ftCrossposted, ftNumber);
   TNNTPFilterOperator = (opContains, opDoesntContain, opLess, opGreater, opEqual, opNotEqual);
   TNNTPValidOperators = set of TNNTPFilterOperator;
@@ -38,7 +38,7 @@ type
     fName: string;
     fColumn: TNNTPFilterColumn;
     fOperator: TNNTPFilterOperator;
-    fIntVal: Integer;
+    fIntVal: Int64;
     fDateVal: TDateTime;
     fStrVal: string;
     fUnread: Boolean;
@@ -53,7 +53,7 @@ type
     constructor CreateAndLoad(reg: TExSettings; const AName: string);
     function GetText: string;
   public
-    constructor Create(const ANAme: string; AColumn: TNNTPFilterColumn; AOperator: TNNTPFilterOperator; AValue: Integer; AUnread, AInteresting: Boolean; ACaseSensitive: Boolean); overload;
+    constructor Create(const ANAme: string; AColumn: TNNTPFilterColumn; AOperator: TNNTPFilterOperator; AValue: Int64; AUnread, AInteresting: Boolean; ACaseSensitive: Boolean); overload;
     constructor Create(const ANAme: string; AColumn: TNNTPFilterColumn; AOperator: TNNTPFilterOperator; const AValue: string; AUnread, AInteresting: Boolean; ACaseSensitive: Boolean); overload;
     constructor Create(const ANAme: string; AColumn: TNNTPFilterColumn; AOperator: TNNTPFilterOperator; const AValue: TDateTime; AUnread, AInteresting: Boolean; ACaseSensitive: Boolean); overload;
     constructor Clone(AFilter: TNNTPFilter);
@@ -214,7 +214,7 @@ begin
 end;
 
 constructor TNNTPFilter.Create(const AName: string; AColumn: TNNTPFilterColumn;
-  AOperator: TNNTPFilterOperator; AValue: Integer; AUnread, AInteresting: Boolean; ACaseSensitive: Boolean);
+  AOperator: TNNTPFilterOperator; AValue: Int64; AUnread, AInteresting: Boolean; ACaseSensitive: Boolean);
 begin
   Create(AName, AColumn, AOperator, AUnread, AInteresting, ACaseSensitive);
   fIntVal := AValue;

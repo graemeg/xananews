@@ -69,7 +69,7 @@ begin
   inherited;
 
   OKBtn.Enabled := edFilter.Text <> '';
-  Button1.Enabled := OKBtn.Enabled and (rgColumn.ItemIndex < 7)
+  Button1.Enabled := OKBtn.Enabled and (rgColumn.ItemIndex < Ord(ftNumber));
 end;
 
 procedure TdlgDeleteMessages.Button1Click(Sender: TObject);
@@ -96,7 +96,7 @@ var
   column: TNNTPFilterColumn;
   operator: TNNTPFilterOperator;
   unread, interesting, caseSensitive: Boolean;
-  i: Integer;
+  i: Int64;
   dt: TDateTime;
 begin
   if fChanges or not Assigned(fFilter) then
@@ -124,8 +124,9 @@ begin
           fFilter := TNNTPFilter.Create('', column, operator, dt, unread, interesting, caseSensitive);
 
       ftLines,
+      ftCrossPosted,
       ftNumber:
-        if TryStrToInt(edFilter.Text, i) then
+        if TryStrToInt64(edFilter.Text, i) then
           fFilter := TNNTPFilter.Create('', column, operator, i, unread, interesting, caseSensitive);
     end;
   end;
