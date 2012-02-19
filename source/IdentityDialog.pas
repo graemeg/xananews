@@ -74,7 +74,7 @@ implementation
 {$R *.dfm}
 
 uses
-  Registry, GIFImg, XFace, NewsGlobals, unitNNTPServices, ClipBrd;
+  Registry, GIFImg, XnXFace, NewsGlobals, unitNNTPServices, ClipBrd;
 
 procedure TdlgIdentity.btnLoadXFaceClick(Sender: TObject);
 var
@@ -103,7 +103,7 @@ begin
     bmp.Height := 48;
     bmp.PixelFormat := pf1Bit;
     if fXFace <> '' then
-      res := XFaceToBitmap(AnsiString(fXFace), bmp)
+      res := XFaceToBitmap(fXFace, bmp)
     else
       res := 0;
 
@@ -247,7 +247,7 @@ procedure TdlgIdentity.LoadXFace(pic: TPicture);
 var
   bmp, bmp1, tmp: TBitmap;
   bmp1Created: Boolean;
-  XFace: AnsiString;
+  XFace: string;
 begin
   bmp := nil;
   bmp1 := nil;
@@ -283,7 +283,7 @@ begin
 
     if BitmapToXFace(bmp, XFace) = 0 then
     begin
-      fXFace := Trim(string(XFace));
+      fXFace := Trim(XFace);
       fXFace := StringReplace(fXFace, #13#10' ', '', [rfReplaceAll]);
       DisplayXFace;
     end;

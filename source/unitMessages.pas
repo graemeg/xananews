@@ -265,7 +265,7 @@ implementation
 
 uses
   GIFImg, Jpeg, PngImage, unitMessageMime, NewsGlobals, idCoder, idCoderUUE,
-  idCoderMIME, unitCharsetMap, XFace, unitNNTPServices, unitSearchString, XnCoderUUE;
+  idCoderMIME, unitCharsetMap, XnXFace, unitNNTPServices, unitSearchString, XnCoderUUE;
 
 var
   registeredMessageParts: array of TmvMessagePartClass;
@@ -716,7 +716,7 @@ begin
             xFace.Width := 48;
             xFace.Height := 48;
             xFace.PixelFormat := pf1Bit;
-            if XFaceToBitmap(raw, fXFace) < 0 then
+            if XFaceToBitmap(string(raw), fXFace) < 0 then
               FreeAndNil(fXFace);
           except
             FreeAndNil(fXFace);

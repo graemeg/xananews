@@ -370,7 +370,7 @@ end;
 
 function RawIntToStr(Value: Int64): RawByteString;
 begin
-  Result := IntToStr(Value);
+  Result := RawByteString(IntToStr(Value));
 end;
 
 

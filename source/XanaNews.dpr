@@ -11,8 +11,6 @@ program XanaNews;
 
 uses
   FastMM4,
-//  ScaleMM2,
-//  SynScaleMM,
 {$ifdef madExcept}
   madExcept,
   madLinkDisAsm,
@@ -131,10 +129,10 @@ uses
   unitMessageNNTPBinary in 'unitMessageNNTPBinary.pas',
   unitMessageYEncodedBinary in 'unitMessageYEncodedBinary.pas',
   unitNewUserWizard in 'unitNewUserWizard.pas',
-//  XnCaptionedDockTree in 'XnCaptionedDockTree.pas',
   XnCoderQuotedPrintable in 'XnCoderQuotedPrintable.pas',
   XnCoderUUE in 'XnCoderUUE.pas',
-  unitDefaultNewsreader in 'unitDefaultNewsreader.pas';
+  unitDefaultNewsreader in 'unitDefaultNewsreader.pas',
+  XnXFace in 'XnXFace.pas';
 
 {$R *.res}
 {$R I.RES}

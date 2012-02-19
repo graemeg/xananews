@@ -1,216 +1,300 @@
 unit XFace;
 
-{$HINTS OFF}
+(*
+ *  Compface - 48x48x1 image compression and decompression
+ *
+ *  Copyright (c) James Ashton - Sydney University - June 1990.
+ *
+ *  Written 11th November 1989.
+ *
+ *  Delphi conversion Copyright (c) Nicholas Ring February 2012
+ *
+ *  Permission is given to distribute these sources, as long as the
+ *  copyright messages are not removed, and no monies are exchanged.
+ *
+ *  No responsibility is taken for any errors on inaccuracies inherent
+ *  either to the comments or the code of this program, but if reported
+ *  to me, then an attempt will be made to fix them.
+ *)
 
-{   XFace decoding and encoding Delphi interface
-    Copyright (C) 2002 Matthijs Laan
-    This file licensed as in license.txt
-    http://www.xs4all.nl/~walterln/winface/
-
-    Uses:
-    
-    Compface - 48x48x1 image compression and decompression
-    http://www.syseng.anu.edu.au/~jaa/
-    ftp://syseng.anu.edu.au/pub/jaa/compface.tar.gz
-    
-    The *.c files are from this library; see compface-license.txt
-    for the license of those files
-}
-
-{ New version using static linking of the compface library. The compface 
-  library is again compiled with Borland C++, but as the setjmp/longjmp
-  code is removed this still runs OK with 1000+ char X-Faces
-
-  Uses asm code from WinFace 1.5, use NASM (http://nasm.2y.net) to assemble
-  the x-face.asm file 
-}
+{$IFDEF FPC}{$mode delphi}{$ENDIF}
 
 interface
 
 uses
-  Windows, Graphics;
+  XFaceConstants,
+  XFaceBigInt,
+  XFaceBitMap,
+  XFaceProbabilityBuffer,
+  XFaceInterfaces;
 
-const
-  ERR_OK        =  0;   { successful completion }
-  ERR_EXCESS    =  1;   { completed OK but some input was ignored }
-  ERR_INSUFF    = -1;   { insufficient input.  Bad face format? }
-  ERR_INTERNAL  = -2;   { arithmetic overflow or buffer overflow }
+type
 
-  ERR_BADFACE   = -3;   { bad face source bitmap }
+  { IXFace }
 
-function XFaceToBitmap(XFace: AnsiString; var Bitmap: TBitmap): Integer;
-function BitmapToXFace(Bitmap: TBitmap; var XFace: AnsiString): Integer;
+  IXFace = interface(IInterface)
+    ['{03DC306E-ABCB-4A16-92D8-D1D82297EB23}']
+    procedure UncompressXFace(const AString : string; const AXFaceTransferOut : IXFaceTransferOut);
+    function CompressXFace(const AXFaceTransferIn : IXFaceTransferIn) : string;
+  end;
 
-{ Extra Boolean for inverting image. On a Windows 95 system some 24-bit images
-  get inverted somehow - use this boolean to work around it }
-function BitmapToXFaceI(Bitmap: TBitmap; var XFace: AnsiString; Invert: Boolean): Integer;
+
+type
+
+  { TXFace }
+
+  TXFace = class(TInterfacedObject, IXFace)
+  private
+    procedure Gen(const LF1 : IXFaceBitMap; const LF : IXFaceBitMap);
+
+    procedure UnGenFace(const AXFaceBitMap : IXFaceBitMap);
+    procedure UnCompAll(const AString: string; const AXFaceBitMap : IXFaceBitMap);
+    procedure ReadFace(const AXFaceTransferIn : IXFaceTransferIn; const AXFaceBitMap : IXFaceBitMap);
+
+    procedure GenFace(const AXFaceBitMap : IXFaceBitMap);
+    function CompAll(const AXFaceBitMap : IXFaceBitMap) : string;
+    procedure WriteFace2(const AXFaceBitMap : IXFaceBitMap; const AXFaceTransferOut : IXFaceTransferOut);
+  public
+    procedure UncompressXFace(const AString : string; const AXFaceTransferOut : IXFaceTransferOut);
+
+    function CompressXFace(const AXFaceTransferIn : IXFaceTransferIn) : string;
+  end;
+
 
 implementation
 
 uses
   SysUtils;
 
+{ TXFace }
+
+function TXFace.CompAll(const AXFaceBitMap : IXFaceBitMap): string;
 var
-  DIB: HBITMAP;         { 48x48x1 DIB }
-  Pixels: Pointer;      { Pointer to the pixels of the DIB }
-
-  buffer: array[0..2047] of byte;
-
-{$IFNDEF CPUX64}
-function decode_face(src: PAnsiChar; dest: Pointer; pad: Integer): Integer; stdcall; external;
-function encode_face(src: Pointer; dest: PAnsiChar; pad: Integer): Integer; stdcall; external;
-
-{$L 'OBJ\x-face.obj'}
-
-{$L 'OBJ\arith.obj'}
-{$L 'OBJ\file.obj'}
-{$L 'OBJ\compface.obj'}
-{$L 'OBJ\compress.obj'}
-{$L 'OBJ\gen.obj'}
-{$L 'OBJ\uncompface.obj'}
-
-{ Expose some symbols to make the linker happy - these are of course not the
-  complete function signatures }
-
-procedure _BigMul; external;
-procedure _BigAdd; external;
-procedure _BigDiv; external;
-procedure _BigClear; external;
-procedure _BigRead; external;
-procedure _BigPush; external;
-procedure _BigPop; external;
-procedure _BigWrite; external;
-procedure _RevPush; external;
-procedure _ReadFace; external;
-procedure _UnCompAll; external;
-procedure _UnGenFace; external;
-procedure _WriteFace; external;
-{$ENDIF}
-
-function _strlen(const s: PAnsiChar): Integer; cdecl;
+  LXFaceBigInt : IXFaceBigInt;
+  LXFaceProbabilityBuffer : IXFaceProbabilityBuffer;
 begin
-  Result := StrLen(s);
-end;
+  LXFaceProbabilityBuffer := TXFaceProbabilityBuffer.Create;
 
-function XFaceToBitmap(XFace: AnsiString; var Bitmap: TBitmap): Integer;
-var
-  src, dst: HDC;
-  l: Integer;
-begin
-  if Length(XFace) > 2047 then
-    l := 2047
-  else
-    l := Length(XFace);
+  AXFaceBitMap.Compress(0, 16, 16, 0, LXFaceProbabilityBuffer);
+  AXFaceBitMap.Compress(0 + 16, 16, 16, 0, LXFaceProbabilityBuffer);
+  AXFaceBitMap.Compress(0 + 32, 16, 16, 0, LXFaceProbabilityBuffer);
+  AXFaceBitMap.Compress(0 + XFaceConstants.cWIDTH * 16, 16, 16, 0, LXFaceProbabilityBuffer);
+  AXFaceBitMap.Compress(0 + XFaceConstants.cWIDTH * 16 + 16, 16, 16, 0, LXFaceProbabilityBuffer);
+  AXFaceBitMap.Compress(0 + XFaceConstants.cWIDTH * 16 + 32, 16, 16, 0, LXFaceProbabilityBuffer);
+  AXFaceBitMap.Compress(0 + XFaceConstants.cWIDTH * 32, 16, 16, 0, LXFaceProbabilityBuffer);
+  AXFaceBitMap.Compress(0 + XFaceConstants.cWIDTH * 32 + 16, 16, 16, 0, LXFaceProbabilityBuffer);
+  AXFaceBitMap.Compress(0 + XFaceConstants.cWIDTH * 32 + 32, 16, 16, 0, LXFaceProbabilityBuffer);
 
-  Move(XFace[1], buffer[0], l);
+  LXFaceBigInt := TXFaceBigInt.Create;
+  LXFaceBigInt.BigClear();
 
-  buffer[l] := 0;
-
-{$IFNDEF CPUX64}
-  Result := decode_face(@buffer[0], Pixels, 2);
-{$ELSE}
-  Result := 0;
-{$ENDIF}
-
-  Bitmap.HandleType := bmDIB;
-
-  src := CreateCompatibleDC(0);
-  SelectObject(src, DIB);
-  dst := CreateCompatibleDC(0);
-  SelectObject(dst, Bitmap.Handle);
-
-  BitBlt(dst, 0, 0, 48, 48, src, 0, 0, SRCCOPY);
-
-  DeleteDC(src);
-  DeleteDC(dst);
-end;
-
-function BitmapToXFace(Bitmap: TBitmap; var XFace: AnsiString): Integer;
-begin
-  Result := BitmapToXFaceI(Bitmap, XFace, False);
-end;
-
-function BitmapToXFaceI(Bitmap: TBitmap; var XFace: AnsiString; Invert: Boolean): Integer;
-var
-  src, dst: HDC;
-  l: Integer;
-begin
-  Bitmap.HandleType := bmDIB;
-
-  src := CreateCompatibleDC(0);
-  SelectObject(src, Bitmap.Handle);
-  dst := CreateCompatibleDC(0);
-  SelectObject(dst, DIB);
-
-  if Invert then
-    StretchBlt(dst, 0, 0, 48, 48, src, 0, 0, Bitmap.Width, Bitmap.Height, NOTSRCCOPY)
-  else
-    StretchBlt(dst, 0, 0, 48, 48, src, 0, 0, Bitmap.Width, Bitmap.Height, SRCCOPY);
-
-  DeleteDC(src);
-  DeleteDC(dst);
-
-{$IFNDEF CPUX64}
-  encode_face(Pixels, @buffer[0], 2);
-{$ENDIF}
-
-  l := StrLen(PAnsiChar(@buffer[0]));
-
-  SetLength(XFace, l);
-
-  Move(buffer, XFace[1], l);
-
-  Result := 0;
-end;
-
-{ Define a new sort-of BITMAPINFO type for use with CreateDIBSection() }
-
-type
-  myBITMAPINFO = packed record
-    bmiHeader: TBitmapInfoHeader;
-    bmiColors: array[0..1] of TRGBQuad;
+  while LXFaceProbabilityBuffer.HasNext() do
+  begin
+    LXFaceBigInt.BigPush(LXFaceProbabilityBuffer.Pop());
   end;
 
-var BI: myBITMAPINFO = (bmiHeader:
-                         (biSize: SizeOf(BITMAPINFOHEADER);
-                          biWidth: 48;
-                          biHeight: -48;	{ Top-down bitmap instead of bottom-up }
-                          biPlanes: 1;
-                          biBitCount: 1;
-                          biCompression: BI_RGB;
-                          biSizeImage: 0;
-                          biXPelsPerMeter: 0;
-                          biYPelsPerMeter: 0;
-                          biClrUsed: 2;
-                          biClrImportant: 2);
-                        bmiColors:
-                         ( (rgbBlue: 255;
-                            rgbGreen: 255;
-                            rgbRed: 255;
-                            rgbReserved: 0)
-                          ,
-                           (rgbBlue: 0;
-                            rgbGreen: 0;
-                            rgbRed: 0;
-                            rgbReserved: 0)
-                         )
-                       );
+  Result := LXFaceBigInt.BigWrite();
+end;
 
-{ Avoid Delphi type-checking }
-
+function TXFace.CompressXFace(const AXFaceTransferIn : IXFaceTransferIn) : string;
 var
-  xBI: BITMAPINFO absolute BI;
-  dc : HDC;
+  LXFaceBitMap : IXFaceBitMap;
+begin
+  LXFaceBitMap := TXFaceBitMap.Create;
+  ReadFace(AXFaceTransferIn, LXFaceBitMap);
+  GenFace(LXFaceBitMap);
+  Result := CompAll(LXFaceBitMap);
+end;
 
-initialization
-  dc := GetDC(0);
+procedure TXFace.Gen(const LF1 : IXFaceBitMap; const LF : IXFaceBitMap);
+var
+  h: Integer;
+  i: Integer;
+  j: Integer;
+  k: Integer;
+  l: Integer;
+  m: Integer;
+begin
+  for j := 0 to Pred(XFaceConstants.cHEIGHT) do
+  begin
+    for i := 0 to Pred(XFaceConstants.cWIDTH) do
+    begin
+      h := i + j * XFaceConstants.cHEIGHT;
+      k := 0;
+      for l := i - 2 to i + 2 do
+      begin
+        for m := j - 2 to j do
+        begin
+          if (l >= i) and (m = j) then
+            continue;
+          if (l > 0) and (l <= XFaceConstants.cWIDTH) and (m > 0) then
+            if LF1.F[l + m * XFaceConstants.cWIDTH] <> 0 then
+              k := k * 2 + 1
+            else
+              k := k * 2;
+        end;
+      end;
+
+      case i of
+        1 :
+          begin
+            case j of
+              1 : LF.F[h] := LF.F[h] xor g_22[k];
+              2 : LF.F[h] := LF.F[h] xor g_21[k];
+              else
+                LF.F[h] := LF.F[h] xor g_20[k];
+            end;
+          end;
+        2 :
+          begin
+            case j of
+              1 : LF.F[h] := LF.F[h] xor g_12[k];
+              2 : LF.F[h] := LF.F[h] xor g_11[k];
+              else
+                LF.F[h] := LF.F[h] xor g_10[k];
+            end;
+          end;
+        XFaceConstants.cWIDTH - 1 :
+          begin
+            case j of
+              1 : LF.F[h] := LF.F[h] xor g_42[k];
+              2 : LF.F[h] := LF.F[h] xor g_41[k];
+              else
+                LF.F[h] := LF.F[h] xor g_40[k];
+            end;
+          end;
+        XFaceConstants.cWIDTH :
+          begin
+            case j of
+              1 : LF.F[h] := LF.F[h] xor g_32[k];
+              2 : LF.F[h] := LF.F[h] xor g_31[k];
+              else
+                LF.F[h] := LF.F[h] xor g_30[k];
+            end;
+          end;
+        else
+          begin
+            case j of
+              1 : LF.F[h] := LF.F[h] xor g_02[k];
+              2 : LF.F[h] := LF.F[h] xor g_01[k];
+              else
+                LF.F[h] := LF.F[h] xor g_00[k];
+            end;
+          end;
+      end;
+    end;
+  end;
+end;
+
+procedure TXFace.GenFace(const AXFaceBitMap : IXFaceBitMap);
+var
+  LXFaceBitMap : IXFaceBitMap;
+begin
+  LXFaceBitMap := TXFaceBitMap.Create(AXFaceBitMap);
+  Gen(LXFaceBitMap, AXFaceBitMap);
+end;
+
+procedure TXFace.ReadFace(const AXFaceTransferIn : IXFaceTransferIn;
+  const AXFaceBitMap : IXFaceBitMap);
+var
+  LIdx : Cardinal;
+  LByte : Byte;
+  c2: Integer;
+  t2: Integer;
+begin
+  AXFaceTransferIn.StartTransfer();
   try
-    DIB := CreateDIBSection(dc, xBI, DIB_RGB_COLORS, Pixels, 0, 0);
+    t2 := 0;
+    for LIdx := 1 to (XFaceConstants.cPIXELS div XFaceConstants.cBITS_PER_WORD) do
+    begin
+      LByte := AXFaceTransferIn.TransferIn(LIdx);
+      c2 := 1 shl (XFaceConstants.cBITS_PER_WORD - 1);
+      while c2 <> 0 do
+      begin
+        if (LByte and c2 <> 0) then
+          AXFaceBitMap.F[t2] := 1
+        else
+          AXFaceBitMap.F[t2] := 0;
+        c2 := c2 shr 1;
+        Inc(t2, 1);
+      end;
+    end;
   finally
-    ReleaseDC(0, dc);
+    AXFaceTransferIn.EndTransfer();
   end;
+end;
 
-finalization
-  DeleteObject(DIB);
+procedure TXFace.UnCompAll(const AString: string; const AXFaceBitMap : IXFaceBitMap);
+var
+  LXFaceBigInt : IXFaceBigInt;
+begin
+  LXFaceBigInt := TXFaceBigInt.Create;
+  LXFaceBigInt.BigClear();
+  LXFaceBigInt.BigRead(AString);
+
+  AXFaceBitMap.Clear;
+
+  AXFaceBitMap.UnCompress(0, 16, 16, 0, LXFaceBigInt);
+  AXFaceBitMap.UnCompress(0 + 16, 16, 16, 0, LXFaceBigInt);
+  AXFaceBitMap.UnCompress(0 + 32, 16, 16, 0, LXFaceBigInt);
+  AXFaceBitMap.UnCompress(0 + XFaceConstants.cWIDTH * 16, 16, 16, 0, LXFaceBigInt);
+  AXFaceBitMap.UnCompress(0 + XFaceConstants.cWIDTH * 16 + 16, 16, 16, 0, LXFaceBigInt);
+  AXFaceBitMap.UnCompress(0 + XFaceConstants.cWIDTH * 16 + 32, 16, 16, 0, LXFaceBigInt);
+  AXFaceBitMap.UnCompress(0 + XFaceConstants.cWIDTH * 32, 16, 16, 0, LXFaceBigInt);
+  AXFaceBitMap.UnCompress(0 + XFaceConstants.cWIDTH * 32 + 16, 16, 16, 0, LXFaceBigInt);
+  AXFaceBitMap.UnCompress(0 + XFaceConstants.cWIDTH * 32 + 32, 16, 16, 0, LXFaceBigInt);
+end;
+
+procedure TXFace.UncompressXFace(const AString : string;
+  const AXFaceTransferOut : IXFaceTransferOut);
+var
+  LXFaceBitMap : IXFaceBitMap;
+begin
+  LXFaceBitMap := TXFaceBitMap.Create;
+  UnCompAll(AString, LXFaceBitMap);
+  UnGenFace(LXFaceBitMap);
+  WriteFace2(LXFaceBitMap, AXFaceTransferOut);
+end;
+
+procedure TXFace.UnGenFace(const AXFaceBitMap : IXFaceBitMap);
+begin
+  Gen(AXFaceBitMap, AXFaceBitMap);
+end;
+
+procedure TXFace.WriteFace2(const AXFaceBitMap : IXFaceBitMap; const AXFaceTransferOut : IXFaceTransferOut);
+var
+  bits: Integer;
+  LDigits: Integer;
+  LByte : Byte;
+  s: Integer;
+begin
+  AXFaceTransferOut.StartTransfer();
+  try
+    bits := 0;
+    LDigits := 0;
+    LByte := 0;
+    s := 0;
+    while s < XFaceConstants.cPIXELS do
+    begin
+      if AXFaceBitMap.F[s] <> 0 then
+        LByte := LByte * 2 + 1
+      else
+        LByte := LByte * 2;
+
+      Inc(s, 1);
+      inc(bits, 1);
+      if (bits = XFaceConstants.cBITS_PER_WORD) then
+      begin
+        inc(LDigits, 1);
+        AXFaceTransferOut.TransferOut(LByte, LDigits);
+        bits := 0;
+        LByte := 0;
+      end;
+    end;
+  finally
+    AXFaceTransferOut.EndTransfer();
+  end;
+end;
+
 end.
 
