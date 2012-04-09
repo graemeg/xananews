@@ -90,6 +90,7 @@
 			<VerInfo_Locale>1033</VerInfo_Locale>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_2)'!=''">
+			<DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
 			<DCC_MapFile>3</DCC_MapFile>
 			<Version>7.0</Version>
 			<DCC_ObjOutput>..\..\..\dcus</DCC_ObjOutput>

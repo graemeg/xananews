@@ -6,7 +6,7 @@ uses
   Graphics,
   XFace,
   XFaceInterfaces,
-  XFaceTransferInMonochromeBitmap,
+  XFaceTransferInGraphic,
   XFaceTransferOutAscii,
   XFaceTransferOutBitmap,
   XFaceTransferOutHexString;
@@ -40,7 +40,7 @@ var
 begin
   Result := 0;
   try
-    LXFaceTransferIn := TXFaceTransferInMonochromeBitmap.Create(Bitmap);
+    LXFaceTransferIn := TXFaceTransferInGraphic.Create(Bitmap);
     LXFace := TXFace.Create;
     XFace := LXFace.CompressXFace(LXFaceTransferIn);
   except

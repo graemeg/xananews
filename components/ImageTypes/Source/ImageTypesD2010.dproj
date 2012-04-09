@@ -50,10 +50,21 @@
 			<DelphiCompile Include="ImageTypesD2010.dpk">
 				<MainSource>MainSource</MainSource>
 			</DelphiCompile>
-			<DCCReference Include="rtl.dcp"/>
 			<DCCReference Include="vcl.dcp"/>
+			<DCCReference Include="rtl.dcp"/>
 			<DCCReference Include="vclimg.dcp"/>
 			<DCCReference Include="XFace.pas"/>
+			<DCCReference Include="XFaceBigInt.pas"/>
+			<DCCReference Include="XFaceBitMap.pas"/>
+			<DCCReference Include="XFaceConstants.pas"/>
+			<DCCReference Include="XFaceInterfaces.pas"/>
+			<DCCReference Include="XFaceProbabilityBuffer.pas"/>
+			<DCCReference Include="XFaceTransferInGraphic.pas"/>
+			<DCCReference Include="XFaceTransferInHexString.pas"/>
+			<DCCReference Include="XFaceTransferOutAscii.pas"/>
+			<DCCReference Include="XFaceTransferOutBitmap.pas"/>
+			<DCCReference Include="XFaceTransferOutHexString.pas"/>
+			<DCCReference Include="XFaceHelper.pas"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>

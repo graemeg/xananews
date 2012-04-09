@@ -66,9 +66,10 @@
 			<DCCReference Include="unitExRegSettings.pas"/>
 			<DCCReference Include="unitExSettings.pas"/>
 			<DCCReference Include="unitExXMLSettings.pas"/>
+			<DCCReference Include="unitQpcTimer.pas"/>
 			<DCCReference Include="XnClasses.pas"/>
 			<DCCReference Include="XnRawByteStrings.pas"/>
-			<DCCReference Include="unitQpcTimer.pas"/>
+			<DCCReference Include="unitWow64.pas"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>

@@ -31,6 +31,17 @@ requires
   rtl;
 
 contains
-  XFace in 'XFace.pas';
+  XFace in 'XFace.pas',
+  XFaceBigInt in 'XFaceBigInt.pas',
+  XFaceBitMap in 'XFaceBitMap.pas',
+  XFaceConstants in 'XFaceConstants.pas',
+  XFaceInterfaces in 'XFaceInterfaces.pas',
+  XFaceProbabilityBuffer in 'XFaceProbabilityBuffer.pas',
+  XFaceTransferInGraphic in 'XFaceTransferInGraphic.pas',
+  XFaceTransferInHexString in 'XFaceTransferInHexString.pas',
+  XFaceTransferOutAscii in 'XFaceTransferOutAscii.pas',
+  XFaceTransferOutBitmap in 'XFaceTransferOutBitmap.pas',
+  XFaceTransferOutHexString in 'XFaceTransferOutHexString.pas',
+  XFaceHelper in 'XFaceHelper.pas';
 
 end.

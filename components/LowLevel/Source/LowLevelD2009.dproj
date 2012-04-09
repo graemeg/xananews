@@ -69,6 +69,7 @@
 			<DCCReference Include="unitExXMLSettings.pas"/>
 			<DCCReference Include="XnClasses.pas"/>
 			<DCCReference Include="XnRawByteStrings.pas"/>
+			<DCCReference Include="unitWow64.pas"/>
 			<BuildConfiguration Include="Base">
 				<Key>Base</Key>
 			</BuildConfiguration>

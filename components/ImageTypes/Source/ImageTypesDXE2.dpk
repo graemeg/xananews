@@ -40,10 +40,11 @@ contains
   XFaceConstants in 'XFaceConstants.pas',
   XFaceInterfaces in 'XFaceInterfaces.pas',
   XFaceProbabilityBuffer in 'XFaceProbabilityBuffer.pas',
+  XFaceTransferInGraphic in 'XFaceTransferInGraphic.pas',
   XFaceTransferInHexString in 'XFaceTransferInHexString.pas',
-  XFaceTransferInMonochromeBitmap in 'XFaceTransferInMonochromeBitmap.pas',
   XFaceTransferOutAscii in 'XFaceTransferOutAscii.pas',
   XFaceTransferOutBitmap in 'XFaceTransferOutBitmap.pas',
-  XFaceTransferOutHexString in 'XFaceTransferOutHexString.pas';
+  XFaceTransferOutHexString in 'XFaceTransferOutHexString.pas',
+  XFaceHelper in 'XFaceHelper.pas';
 
 end.

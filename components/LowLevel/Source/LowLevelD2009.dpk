@@ -45,6 +45,7 @@ contains
   unitExSettings in 'unitExSettings.pas',
   unitExXMLSettings in 'unitExXMLSettings.pas',
   XnClasses in 'XnClasses.pas',
-  XnRawByteStrings in 'XnRawByteStrings.pas';
+  XnRawByteStrings in 'XnRawByteStrings.pas',
+  unitWow64 in 'unitWow64.pas';
 
 end.

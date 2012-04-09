@@ -129,28 +129,6 @@ object fmNTAboutBox: TfmNTAboutBox
         Transparent = True
         ExplicitTop = 184
       end
-      object hlbSupport: THyperlinkButton
-        Left = 142
-        Top = 67
-        Width = 299
-        Height = 16
-        Cursor = crHandPoint
-        Caption = 'http://www.wilsonc.demon.co.uk/delphi_2006.htm'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBlue
-        Font.Height = -11
-        Font.Name = 'MS Sans Serif'
-        Font.Style = []
-        ImageIndex = 0
-        ParentFont = False
-        SelectedFontColor = clBlue
-        SelectedFontStyles = [fsUnderline]
-        Transparent = True
-        Visible = False
-        Link = 'http://www.wilsonc.demon.co.uk/delphi_2006.htm'
-        AutoLink = True
-        InPlace = False
-      end
       object lblExtra: TLabel
         Left = 92
         Top = 86
@@ -158,28 +136,6 @@ object fmNTAboutBox: TfmNTAboutBox
         Height = 13
         Caption = 'Latest'
         Visible = False
-      end
-      object hlbExtra: THyperlinkButton
-        Left = 142
-        Top = 85
-        Width = 299
-        Height = 16
-        Cursor = crHandPoint
-        Caption = 'http://xananews.techtips.com.br/'
-        Font.Charset = DEFAULT_CHARSET
-        Font.Color = clBlue
-        Font.Height = -11
-        Font.Name = 'MS Sans Serif'
-        Font.Style = []
-        ImageIndex = 0
-        ParentFont = False
-        SelectedFontColor = clBlue
-        SelectedFontStyles = [fsUnderline]
-        Transparent = True
-        Visible = False
-        Link = 'http://xananews.techtips.com.br/'
-        AutoLink = True
-        InPlace = False
       end
       object OKBtn: TButton
         Left = 368
