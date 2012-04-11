@@ -4240,11 +4240,11 @@ begin
   gArticleFolders := TArticleFolders.Create;
 
   {$ifdef CPUX64}
-    s := Application.Title + ' (x64; Portable ISpell)';
+    s := ' (x64; Portable ISpell)';
   {$else}
-    s := Application.Title + ' (x86; Portable ISpell)';
+    s := ' (x86; Portable ISpell)';
   {$endif}
-  ThreadManager := TNNTPThreadManager.Create(s + '/' + ProductVersion);
+  ThreadManager := TNNTPThreadManager.Create(Application.Title + '/' + ProductVersion + s);
   AllFilters.Load;
   PersistentPosition.Enabled := False;
   NNTPAccounts.LoadFromRegistry;
@@ -6766,11 +6766,19 @@ begin
                 end
                 else
                   if article.MultipartFlags = mfPartialMultipart then
-                    Index := 13 // White munched message (
+                    Index := 13  // White munched message
                   else
                   begin
-                    Index := 11; // Blue message
+                    Index := 11; // Blue message (all parts might be available)
 
+                    // TODO: It is using Childs and Siblings here, that will only
+                    //       work correctly when GroupMultiPartMessages is True
+                    //       and when not in threaded mode where Childs and
+                    //       Siblings are used to display the threads.
+                    //       - At the moment in threaded mode MultipartFlags is
+                    //         always mfNotMultipart
+                    //       - For multipart articles to always to work this
+                    //         needs to be changed to a separate (linked) list.
                     p := TArticle(article.Child);
                     while p <> nil do
                     begin
@@ -6785,10 +6793,10 @@ begin
               end
               else
                 if article.MultipartFlags = mfPartialMultipart then
-                  Index := 15
+                  Index := 15    // Missing some parts (and no bodies are downloaded yet)
                 else
                   if article.MultipartFlags = mfCompleteMultipart then
-                    Index := 14
+                    Index := 14  // All articles headers are there, but no bodies downloaded yet
                   else
                     if article.IsNotOnServer then
                       Index := 32;
