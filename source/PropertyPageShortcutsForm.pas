@@ -13,36 +13,36 @@ uses
 type
   TActionCategories = class;
 
-  TActionCategory = class (TObjectList)
+  TActionCategory = class(TObjectList)
   private
     fCategoryName: string;
-    fOwner : TActionCategories;
+    fOwner: TActionCategories;
     function GetAction(idx: Integer): TCustomAction;
-    function GetCategoryHasDuplicates: boolean;
+    function GetCategoryHasDuplicates: Boolean;
   public
-    constructor Create (AOwner : TActionCategories; const ACategoryName : string);
-    property Action [idx : Integer] : TCustomAction read GetAction;
-    property CategoryName : string read fCategoryName;
-    property CategoryHasDuplicates : boolean read GetCategoryHasDuplicates;
+    constructor Create(AOwner: TActionCategories; const ACategoryName: string);
+    property Action[idx: Integer]: TCustomAction read GetAction;
+    property CategoryName: string read fCategoryName;
+    property CategoryHasDuplicates: Boolean read GetCategoryHasDuplicates;
   end;
 
-  TActionCategories = class (TObjectList)
+  TActionCategories = class(TObjectList)
   private
-    fHasDuplicates : boolean;
+    fHasDuplicates: Boolean;
     function GetCategory(idx: Integer): TActionCategory;
   public
-    procedure AddAction (action : TCustomAction);
-    function FindCategory (const name : string) : TActionCategory;
-    property Category [idx : Integer] : TActionCategory read GetCategory;
+    procedure AddAction(action: TCustomAction);
+    function FindCategory(const name: string): TActionCategory;
+    property Category[idx: Integer]: TActionCategory read GetCategory;
     procedure ScanForDuplicates;
-    property HasDuplicates : boolean read fHasDuplicates;
+    property HasDuplicates: Boolean read fHasDuplicates;
   end;
 
-  TPropertyPageShortcutsData = class (TPropertyPageData)
+  TPropertyPageShortcutsData = class(TPropertyPageData)
   private
-    fActionCategories : TActionCategories;
-    fDefaultActions : TObjectList;
-    fModified : boolean;
+    fActionCategories: TActionCategories;
+    fDefaultActions: TObjectList;
+    fModified: Boolean;
   protected
     procedure Initialize; override;
   public
@@ -54,34 +54,25 @@ type
     vstActions: TVirtualStringTree;
     btnEdit: TButton;
     btnRestoreDefaults: TButton;
-    procedure vstActionsAfterItemErase(Sender: TBaseVirtualTree;
-      TargetCanvas: TCanvas; Node: PVirtualNode; ItemRect: TRect);
-    procedure vstActionsGetText(Sender: TBaseVirtualTree;
-      Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
-      var CellText: string);
-    procedure vstActionsInitNode(Sender: TBaseVirtualTree; ParentNode,
-      Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
-    procedure vstActionsInitChildren(Sender: TBaseVirtualTree;
-      Node: PVirtualNode; var ChildCount: Cardinal);
-    procedure vstActionsPaintText(Sender: TBaseVirtualTree;
-      const TargetCanvas: TCanvas; Node: PVirtualNode;
-      Column: TColumnIndex; TextType: TVSTTextType);
-    procedure vstActionsNewText(Sender: TBaseVirtualTree;
-      Node: PVirtualNode; Column: TColumnIndex; NewText: string);
-    procedure vstActionsCreateEditor(Sender: TBaseVirtualTree;
-      Node: PVirtualNode; Column: TColumnIndex; out EditLink: IVTEditLink);
+    procedure vstActionsAfterItemErase(Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode; ItemRect: TRect);
+    procedure vstActionsGetText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
+    procedure vstActionsInitNode(Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode; var InitialStates: TVirtualNodeInitStates);
+    procedure vstActionsInitChildren(Sender: TBaseVirtualTree; Node: PVirtualNode; var ChildCount: Cardinal);
+    procedure vstActionsPaintText(Sender: TBaseVirtualTree; const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType);
+    procedure vstActionsNewText(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; NewText: string);
+    procedure vstActionsCreateEditor(Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex; out EditLink: IVTEditLink);
     procedure btnEditClick(Sender: TObject);
     procedure btnRestoreDefaultsClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
   private
-    fData : TPropertyPageShortcutsData;
-    function GetNodeAction (node : PVirtualNode) : TCustomAction;
-    function GetSelectedAction : TCustomAction;
+    fData: TPropertyPageShortcutsData;
+    function GetNodeAction(node: PVirtualNode): TCustomAction;
+    function GetSelectedAction: TCustomAction;
   protected
     procedure UpdateActions; override;
   public
-    class function GetDataClass : TPropertyPageDataClass; override;
-    procedure PopulateControls (AData : TPropertyPageData); override;
+    class function GetDataClass: TPropertyPageDataClass; override;
+    procedure PopulateControls(AData: TPropertyPageData); override;
   end;
 
 var
@@ -96,7 +87,7 @@ uses MainForm, NewsGlobals;
 type
   TComboEditLink = class;
 
-  TVTComboBox = class (TCustomComboBox)
+  TVTComboBox = class(TCustomComboBox)
   private
     FLink: TComboEditLink;
     procedure WMChar(var Message: TWMChar); message WM_CHAR;
@@ -111,15 +102,15 @@ type
 
   TComboEditLink = class(TInterfacedObject, IVTEditLink)
   private
-    FCombo : TVTComboBox;               // a normal custom combobox control
+    FCombo: TVTComboBox;               // a normal custom combobox control
     FTree: TVirtualStringTree; // a back reference to the tree calling
     FNode: PVirtualNode;             // the node to be edited
     FColumn: TColumnIndex;           // the column of the node
     FAlignment: TAlignment;
     FTextBounds: TRect;              // smallest rectangle around the text
     FStopping: Boolean;              // set to True when the edit link requests stopping the edit action
-    fEditObjectInstance : pointer;
-    fOldEditWindowProc : TFNWndProc;
+    fEditObjectInstance: pointer;
+    fOldEditWindowProc: TFNWndProc;
 
     procedure EditWindowProc(var msg: TMessage);
   public
@@ -139,28 +130,28 @@ type
 
 procedure TPropertyPageShortcutsData.Cancel;
 var
-  i : Integer;
-  def : TActionDefault;
+  i: Integer;
+  def: TActionDefault;
 begin
   for i := 0 to fDefaultActions.Count - 1 do
   begin
-    def := TActionDefault (fDefaultActions [i]);
-    def.Action.ShortCut := def.Shortcut
-  end
+    def := TActionDefault(fDefaultActions[i]);
+    def.Action.ShortCut := def.Shortcut;
+  end;
 end;
 
 destructor TPropertyPageShortcutsData.Destroy;
 begin
   fActionCategories.Free;
   fDefaultActions.Free;
-  inherited;
+  inherited Destroy;
 end;
 
 procedure TPropertyPageShortcutsData.Initialize;
 var
-  i : Integer;
-  actionList : TActionList;
-  def : TActionDefault;
+  i: Integer;
+  actionList: TActionList;
+  def: TActionDefault;
 begin
   fActionCategories := TActionCategories.Create;
   fDefaultActions := TObjectList.Create;
@@ -169,18 +160,18 @@ begin
 
   for i := 0 to actionList.ActionCount - 1 do
   begin
-    fActionCategories.AddAction(TCustomAction (actionList [i]));
-    fDefaultActions.Add(TActionDefault.Create(TCustomAction (actionList [i])));
+    fActionCategories.AddAction(TCustomAction(actionList[i]));
+    fDefaultActions.Add(TActionDefault.Create(TCustomAction(actionList[i])));
   end;
 
   for i := 0 to gDefaultActions.Count - 1 do
   begin
-    def := TActionDefault (gDefaultActions [i]);
+    def := TActionDefault(gDefaultActions[i]);
     if def.Shortcut <> def.Action.ShortCut then
     begin
       fModified := True;
-      break
-    end
+      Break;
+    end;
   end;
 
   fActionCategories.ScanForDuplicates;
@@ -198,96 +189,95 @@ end;
 
 function TActionCategory.GetAction(idx: Integer): TCustomAction;
 begin
-  result := TCustomAction (Items [idx])
+  Result := TCustomAction(Items[idx]);
 end;
 
-function TActionCategory.GetCategoryHasDuplicates: boolean;
+function TActionCategory.GetCategoryHasDuplicates: Boolean;
 var
-  i : Integer;
+  i: Integer;
 begin
-  result := false;
+  Result := false;
   for i := 0 to Count - 1 do
-    if Action [i].Tag = 1 then
+    if Action[i].Tag = 1 then
     begin
-      result := True;
-      break
-    end
+      Result := True;
+      Break;
+    end;
 end;
 
 { TActionCategories }
 
 procedure TActionCategories.AddAction(action: TCustomAction);
 var
-  category : TActionCategory;
+  category: TActionCategory;
 begin
-  category := FindCategory (action.Category);
+  category := FindCategory(action.Category);
   if category = nil then
   begin
-    category := TActionCategory.Create (self, action.Category);
-    Add (category)
+    category := TActionCategory.Create(self, action.Category);
+    Add(category);
   end;
 
-  category.Add(action)
+  category.Add(action);
 end;
 
-function TActionCategories.FindCategory(
-  const name: string): TActionCategory;
+function TActionCategories.FindCategory(const name: string): TActionCategory;
 var
-  i : Integer;
+  i: Integer;
 begin
-  result := Nil;
+  Result := nil;
   for i := 0 to count - 1 do
-    if Category [i].CategoryName = name then
+    if Category[i].CategoryName = name then
     begin
-      result := Category [i];
-      break
-    end
+      Result := Category[i];
+      Break;
+    end;
 end;
 
 function TActionCategories.GetCategory(idx: Integer): TActionCategory;
 begin
-  result := TActionCategory (Items [idx])
+  Result := TActionCategory(Items[idx]);
 end;
 
 procedure TActionCategories.ScanForDuplicates;
 var
-  s : TStringList;
-  st : string;
-  i, j : Integer;
-  cat : TActionCategory;
-  act : TCustomAction;
+  s: TStringList;
+  st: string;
+  i, j: Integer;
+  cat: TActionCategory;
+  act: TCustomAction;
 begin
   s := TStringList.Create;
   s.Duplicates := dupAccept;
   try
     for i := 0 to Count - 1 do
     begin
-      cat := Category [i];
+      cat := Category[i];
       for j := 0 to cat.Count - 1 do
       begin
-        act := cat.Action [j];
+        act := cat.Action[j];
         act.Tag := 0;
 
-        st := ShortcutToText (act.Shortcut);
+        st := ShortcutToText(act.Shortcut);
         if st <> '' then
-          s.AddObject (st, act)
-      end
+          s.AddObject(st, act);
+      end;
     end;
 
     s.Sort;
 
     fHasDuplicates := False;
     for i := 1 to s.Count - 1 do
-      if s [i] = s [i - 1] then
+      if s[i] = s[i - 1] then
       begin
         fHasDuplicates := True;
-        TCustomAction (s.Objects [i]).Tag := 1;
-        TCustomAction (s.Objects [i - 1]).Tag := 1
-      end
+        TCustomAction(s.Objects[i]).Tag := 1;
+        TCustomAction(s.Objects[i - 1]).Tag := 1;
+      end;
 
   finally
-    s.Free
-  end
+    s.Free;
+  end;
 end;
 
 
@@ -295,7 +285,7 @@ end;
 
 class function TfmPropertyPageShortcuts.GetDataClass: TPropertyPageDataClass;
 begin
-  result := TPropertyPageShortcutsData;
+  Result := TPropertyPageShortcutsData;
 end;
 
 procedure TfmPropertyPageShortcuts.PopulateControls(
@@ -310,111 +300,110 @@ procedure TfmPropertyPageShortcuts.vstActionsAfterItemErase(
   Sender: TBaseVirtualTree; TargetCanvas: TCanvas; Node: PVirtualNode;
   ItemRect: TRect);
 var
-  color : TColor;
-  rgb : DWORD;
+  color: TColor;
+  rgb: DWORD;
 begin
-  if GetNodeAction (Node) = nil then
+  if GetNodeAction(Node) = nil then
   begin
     color := TargetCanvas.Brush.Color;
-    rgb := ColorToRGB (color);
-    rgb := Windows.RGB(GetRValue (rgb) * 95 div 100, GetGValue (rgb) * 95 div 100, GetBValue (rgb * 95 div 100));
+    rgb := ColorToRGB(color);
+    rgb := Windows.RGB(GetRValue(rgb) * 95 div 100, GetGValue(rgb) * 95 div 100, GetBValue(rgb * 95 div 100));
 
     TargetCanvas.Brush.Color := rgb;
-    TargetCanvas.FillRect(ItemRect)
-  end
+    TargetCanvas.FillRect(ItemRect);
+  end;
 end;
 
 procedure TfmPropertyPageShortcuts.vstActionsGetText(
   Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex;
   TextType: TVSTTextType; var CellText: string);
 var
-  data : PObject;
-  action : TCustomAction;
+  data: PObject;
+  action: TCustomAction;
 begin
-  data := PObject (vstActions.GetNodeData(node));
-  if Assigned (data) and Assigned (data^) then
+  data := PObject(vstActions.GetNodeData(node));
+  if Assigned(data) and Assigned(data^) then
     if data^ is TActionCategory then
       case Column of
-        0 : CellText := TActionCategory (data^).CategoryName;
-        1 : CellText := '';
+        0: CellText := TActionCategory(data^).CategoryName;
+        1: CellText := '';
       end
     else
       if data^ is TCustomAction then
       begin
-        action := TCustomAction (data^);
+        action := TCustomAction(data^);
         case Column of
-          0 : CellText := StringReplace (StringReplace (action.Caption, '...', '', [rfReplaceAll]), '&', '', [rfReplaceAll]);
-          1 : CellText := ShortcutToText (action.Shortcut)
-        end
-      end
+          0: CellText := StringReplace(StringReplace(action.Caption, '...', '', [rfReplaceAll]), '&', '', [rfReplaceAll]);
+          1: CellText := ShortcutToText(action.Shortcut);
+        end;
+      end;
 end;
 
 procedure TfmPropertyPageShortcuts.vstActionsInitNode(
   Sender: TBaseVirtualTree; ParentNode, Node: PVirtualNode;
   var InitialStates: TVirtualNodeInitStates);
 var
-  data, parentData : PObject;
-  category : TActionCategory;
+  data, parentData: PObject;
+  category: TActionCategory;
 begin
-  data := PObject (vstActions.GetNodeData(node));
-  if parentNode = Nil then
+  data := PObject(vstActions.GetNodeData(node));
+  if parentNode = nil then
   begin
-    category := fData.fActionCategories.Category [node^.Index];
+    category := fData.fActionCategories.Category[node^.Index];
     data^ := category;
     if category.Count > 0 then
-      InitialStates := [ivsHasChildren]
+      InitialStates :=[ivsHasChildren];
   end
   else
   begin
-    parentData := PObject (vstActions.GetNodeData(ParentNode));
-    category := TActionCategory (parentData^);
-    data^ := category [node^.Index]
-  end
+    parentData := PObject(vstActions.GetNodeData(ParentNode));
+    category := TActionCategory(parentData^);
+    data^ := category[node^.Index];
+  end;
 end;
 
 procedure TfmPropertyPageShortcuts.vstActionsInitChildren(
   Sender: TBaseVirtualTree; Node: PVirtualNode; var ChildCount: Cardinal);
 var
-  data : PObject;
+  data: PObject;
 begin
-  data := PObject (vstActions.GetNodeData(node));
-  if Assigned (data) and Assigned (data^) then
+  data := PObject(vstActions.GetNodeData(node));
+  if Assigned(data) and Assigned(data^) then
     if data^ is TActionCategory then
-      ChildCount := TActionCategory (data^).Count
+      ChildCount := TActionCategory(data^).Count;
 end;
 
-function TfmPropertyPageShortcuts.GetNodeAction(
-  node: PVirtualNode): TCustomAction;
+function TfmPropertyPageShortcuts.GetNodeAction(node: PVirtualNode): TCustomAction;
 var
-  data : PObject;
+  data: PObject;
 begin
   data := vstActions.GetNodeData(node);
-  if Assigned (data) and Assigned (data^) and (data^ is TCustomAction) then
-    result := TCustomAction (data^)
+  if Assigned(data) and Assigned(data^) and (data^ is TCustomAction) then
+    Result := TCustomAction(data^)
   else
-    result := Nil
+    Result := nil;
 end;
 
 function TfmPropertyPageShortcuts.GetSelectedAction: TCustomAction;
 begin
-  result := getNodeAction (vstActions.GetFirstSelected)
+  Result := getNodeAction(vstActions.GetFirstSelected);
 end;
 
 procedure TfmPropertyPageShortcuts.vstActionsPaintText(
   Sender: TBaseVirtualTree; const TargetCanvas: TCanvas;
   Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType);
 var
-  data : PObject;
-  highlightDuplicates : boolean;
+  data: PObject;
+  highlightDuplicates: Boolean;
 begin
   data := vstActions.GetNodeData(node);
   highlightDuplicates := False;
-  if Assigned (data) and Assigned (data^) then
+  if Assigned(data) and Assigned(data^) then
     if data^ is TActionCategory then
-      highlightDuplicates := TActionCategory (data^).CategoryHasDuplicates
+      highlightDuplicates := TActionCategory(data^).CategoryHasDuplicates
     else
       if data^ is TCustomAction then
-        highlightDuplicates := TCustomAction (data^).Tag = 1;
+        highlightDuplicates := TCustomAction(data^).Tag = 1;
 
   if highlightDuplicates then
     TargetCanvas.Font.Color := clRed
@@ -424,23 +413,23 @@ procedure TfmPropertyPageShortcuts.vstActionsNewText(
   Sender: TBaseVirtualTree; Node: PVirtualNode; Column: TColumnIndex;
   NewText: string);
 var
-  act : TCustomAction;
-  sc : TShortcut;
+  act: TCustomAction;
+  sc: TShortcut;
 begin
-  act := GetNodeAction (node);
-  if Assigned (act) then
+  act := GetNodeAction(node);
+  if Assigned(act) then
     if (NewText = '(None)') or (NewText = '') then
       act.ShortCut := 0
     else
     begin
-      sc := TextToShortcut (NewText);
+      sc := TextToShortcut(NewText);
       if sc <> 0 then
         act.ShortCut := sc
     end;
 
   fData.fModified := True;
   fData.fActionCategories.ScanForDuplicates;
-  vstActions.Invalidate
+  vstActions.Invalidate;
 end;
 
 procedure TfmPropertyPageShortcuts.vstActionsCreateEditor(
@@ -452,7 +441,7 @@ end;
 
 procedure TfmPropertyPageShortcuts.UpdateActions;
 begin
-  btnEdit.Enabled := GetSelectedAction <> Nil;
+  btnEdit.Enabled := GetSelectedAction <> nil;
   btnRestoreDefaults.Enabled := fData.fModified;
 end;
 
@@ -498,8 +487,8 @@ begin
     with FLink, FTree do
     begin
       if (toAutoAcceptEditChange in TreeOptions.StringOptions) then
-        if Assigned (OnNewText) then
-          OnNewText (FTree, FNode, FColumn, self.Text)
+        if Assigned(OnNewText) then
+          OnNewText(FTree, FNode, FColumn, self.Text);
     end;
 
   inherited;
@@ -517,7 +506,7 @@ begin
   case Message.CharCode of
     // pretend these keycodes were send to the tree
     VK_ESCAPE:
-      FLink.FTree.Perform (Message.Msg, Message.CharCode, Message.KeyData);
+      FLink.FTree.Perform(Message.Msg, Message.CharCode, Message.KeyData);
     VK_RETURN:
       FLink.CancelEdit;
     VK_UP:
@@ -543,7 +532,11 @@ begin
   if Result then
   begin
     fEditObjectInstance := Classes.MakeObjectInstance(EditWindowProc);
-    fOldEditWindowProc := Pointer (SetWindowLong (FCombo.EditHandle, GWL_WNDPROC, DWORD (fEditObjectInstance)));
+    {$IFDEF CPUX64}
+      fOldEditWindowProc := Pointer(SetWindowLongPtr(FCombo.EditHandle, GWL_WNDPROC, LONG_PTR(fEditObjectInstance)));
+    {$ELSE}
+      fOldEditWindowProc := Pointer(SetWindowLong(FCombo.EditHandle, GWL_WNDPROC, LPARAM(fEditObjectInstance)));
+    {$ENDIF}
 
     FCombo.Show;
 //    F.SelectAll;
@@ -559,7 +552,7 @@ begin
     FStopping := True;
     FCombo.Hide;
     FTree.CancelEditNode;
-  end
+  end;
 end;
 
 constructor TComboEditLink.Create;
@@ -575,37 +568,41 @@ end;
 
 destructor TComboEditLink.Destroy;
 begin
-  SetWindowLong (FCombo.EditHandle, GWL_WNDPROC, DWORD (fOldEditWindowProc));
-  Classes.FreeObjectInstance (fEditObjectInstance);
+  {$IFDEF CPUX64}
+    SetWindowLongPtr(FCombo.EditHandle, GWL_WNDPROC, LONG_PTR(fOldEditWindowProc));
+  {$ELSE}
+    SetWindowLong(FCombo.EditHandle, GWL_WNDPROC, LPARAM(fOldEditWindowProc));
+  {$ENDIF}
+  Classes.FreeObjectInstance(fEditObjectInstance);
   FCombo.Free;
   inherited;
 end;
 
 procedure TComboEditLink.EditWindowProc(var msg: TMessage);
 var
-  doDefault : boolean;
+  doDefault: Boolean;
 begin
   doDefault := False;
 
   case msg.Msg of
-    WM_GETDLGCODE :
+    WM_GETDLGCODE:
       with Msg do
-        Result := CallWindowProc (fOldEditWindowProc, FCombo.EditHandle, msg, wParam, lParam) or DLGC_WANTTAB;
+        Result := CallWindowProc(fOldEditWindowProc, FCombo.EditHandle, msg, wParam, lParam) or DLGC_WANTTAB;
 
-    WM_KEYDOWN :
-      case TwmKeyDown (msg).CharCode of
+    WM_KEYDOWN:
+      case TwmKeyDown(msg).CharCode of
         VK_RETURN :
           CancelEdit;
       else
-        doDefault := True
+        doDefault := True;
       end
   else
-    doDefault := True
+    doDefault := True;
   end;
 
   if doDefault then
     with Msg do
-      result := CallWindowProc (fOldEditWindowProc, FCombo.EditHandle, msg, wParam, lParam);
+      Result := CallWindowProc(fOldEditWindowProc, FCombo.EditHandle, msg, wParam, lParam);
 end;
 
 function TComboEditLink.EndEdit: Boolean;
@@ -615,8 +612,8 @@ begin
   try
     FStopping := True;
     with FTree do
-      if Assigned (OnNewText) then
-        OnNewText (FTree, FNode, FColumn, FCombo.Text);
+      if Assigned(OnNewText) then
+        OnNewText(FTree, FNode, FColumn, FCombo.Text);
     FCombo.Hide;
   except
     FStopping := False;
@@ -633,11 +630,11 @@ function TComboEditLink.PrepareEdit(Tree: TBaseVirtualTree;
   Node: PVirtualNode; Column: TColumnIndex): Boolean;
 
 type
-  TCharSet = set of char;
+  TCharSet = set of Char;
 
-  procedure AddHotkeyRange (const s : string; minChar, maxChar : char);
+  procedure AddHotkeyRange(const s: string; minChar, maxChar: Char);
   var
-    ch : char;
+    ch: Char;
   begin
     for ch := minChar to maxChar do
       FCombo.Items.Add(s + ch)
@@ -647,7 +644,7 @@ type
 
 var
   Text: string;
-  idx : Integer;
+  idx: Integer;
 
 begin
   Result := Tree is TCustomVirtualStringTree;
@@ -657,7 +654,7 @@ begin
     FNode := Node;
     FColumn := Column;
     // initial size, font and text of the node
-    Text := FTree.Text [Node, Column];
+    Text := FTree.Text[Node, Column];
     fTextBounds := FTree.GetDisplayRect(Node, Column, True, True);
     FCombo.Parent := Tree;
     FCombo.Font := Tree.Font;
@@ -665,16 +662,16 @@ begin
     FCombo.Items.BeginUpdate;
     try
       FCombo.Items.Add('(None)');
-      AddHotkeyRange ('Ctrl+', 'A', 'Z');
-      AddHotkeyRange ('Ctrl+Alt+', 'A', 'Z');
-      AddHotkeyRange ('F', '1', '9');
-      AddHotkeyRange ('F1', '0', '2');
-      AddHotkeyRange ('Ctrl+F', '1', '9');
-      AddHotkeyRange ('Ctrl+F1', '0', '2');
-      AddHotkeyRange ('Shift+F', '1', '9');
-      AddHotkeyRange ('Shift+F1', '0', '2');
-      AddHotkeyRange ('Shift+Ctrl+F', '1', '9');
-      AddHotkeyRange ('Shift+Ctrl+F1', '0', '2');
+      AddHotkeyRange('Ctrl+', 'A', 'Z');
+      AddHotkeyRange('Ctrl+Alt+', 'A', 'Z');
+      AddHotkeyRange('F', '1', '9');
+      AddHotkeyRange('F1', '0', '2');
+      AddHotkeyRange('Ctrl+F', '1', '9');
+      AddHotkeyRange('Ctrl+F1', '0', '2');
+      AddHotkeyRange('Shift+F', '1', '9');
+      AddHotkeyRange('Shift+F1', '0', '2');
+      AddHotkeyRange('Shift+Ctrl+F', '1', '9');
+      AddHotkeyRange('Shift+Ctrl+F1', '0', '2');
       FCombo.Items.Add('Ins');
       FCombo.Items.Add('Shift+Ins');
       FCombo.Items.Add('Ctrl+Ins');
@@ -683,9 +680,9 @@ begin
       FCombo.Items.Add('Ctrl+Del');
       FCombo.Items.Add('Alt+BkSp');
       FCombo.Items.Add('Shif+Alt+BkSp');
-      AddHotkeyRange ('', 'A', 'Z');
+      AddHotkeyRange('', 'A', 'Z');
     finally
-      FCombo.Items.EndUpdate
+      FCombo.Items.EndUpdate;
     end;
 
     idx := FCombo.Items.IndexOf(Text);
@@ -735,25 +732,25 @@ begin
       if Right > FTree.ClientWidth then
         Right := FTree.ClientWidth;
       FCombo.BoundsRect := R;
-    end
+    end;
   end;
 end;
 
 procedure TfmPropertyPageShortcuts.btnEditClick(Sender: TObject);
 begin
-  if GetSelectedAction <> Nil then
+  if GetSelectedAction <> nil then
     vstActions.EditNode(vstActions.GetFirstSelected, 1)
 end;
 
 procedure TfmPropertyPageShortcuts.btnRestoreDefaultsClick(
   Sender: TObject);
 var
-  i : Integer;
-  def : TActionDefault;
+  i: Integer;
+  def: TActionDefault;
 begin
   for i := 0 to gDefaultActions.Count - 1 do
   begin
-    def := TActionDefault (gDefaultActions [i]);
+    def := TActionDefault(gDefaultActions[i]);
     def.Action.ShortCut := def.Shortcut;
     vstActions.BeginUpdate;
     try

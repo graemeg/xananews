@@ -44,16 +44,16 @@ type
 // TStandardSystemMenu class
   TStandardSystemMenu = class(TComponent)
   private
-    fMenuHandle : HMenu;
-    fWindowMenuHandle : HMenu;
-    fObjectInstance : pointer;
-    fOldOwnerWindowProc : TFNWndProc;
+    fMenuHandle: HMenu;
+    fWindowMenuHandle: HMenu;
+    fObjectInstance: Pointer;
+    fOldOwnerWindowProc: TFNWndProc;
 
-    fSysObjectInstance : pointer;
-    fOldSysWindowProc : TFNWndProc;
+    fSysObjectInstance: Pointer;
+    fOldSysWindowProc: TFNWndProc;
 
-    fIconic : boolean;
-    fMaximized : boolean;
+    fIconic: Boolean;
+    fMaximized: Boolean;
 
     procedure CloneSystemMenu;
     procedure OwnerWindowProc(var msg: TMessage);
@@ -61,19 +61,15 @@ type
 
     procedure OnMinimized;
     procedure OnMaximized;
-    procedure OnRestored (resetmax : boolean);
+    procedure OnRestored(resetmax: Boolean);
 
-    function HookProc (var Msg : TMessage) : boolean;
+    function HookProc(var Msg: TMessage): Boolean;
 
   protected
     procedure Loaded; override;
-    { Protected declarations }
   public
-    procedure SetItemState (itemID, state : Integer);
+    procedure SetItemState(itemID, state: Integer);
     destructor Destroy; override;
-    { Public declarations }
-  published
-    { Published declarations }
   end;
 
 implementation
@@ -88,29 +84,29 @@ implementation
  *----------------------------------------------------------------------*)
 procedure TStandardSystemMenu.CloneSystemMenu;
 var
-  count : Integer;
-  item : TMenuItemInfo;
-  buffer : array [0..256] of char;
-  i : Integer;
+  count: Integer;
+  item: TMenuItemInfo;
+  buffer: array[0..256] of Char;
+  i: Integer;
 begin
-  count := GetMenuItemCount (fMenuHandle);      // Delete all application's system
+  count := GetMenuItemCount(fMenuHandle);      // Delete all application's system
   while count > 0 do                            // menu items.
   begin
-    DeleteMenu (fMenuHandle, 0, MF_BYPOSITION);
-    Dec (count)
+    DeleteMenu(fMenuHandle, 0, MF_BYPOSITION);
+    Dec(count);
   end;
 
-  count := GetMenuItemCount (fWindowMenuHandle);
+  count := GetMenuItemCount(fWindowMenuHandle);
 
                                                 // Now copy entries from the main form's
                                                 // system menu to the application's system menu
   for i := 0 to count - 1 do
   begin
-    FillChar (item, sizeof (item), 0);
+    FillChar(item, SizeOf(item), 0);
 
     if (Win32MajorVersion > 4) or ((Win32MajorVersion = 4) and (Win32MinorVersion >= 10)) then               // Ie Win2K or '98
     begin
-      item.cbSize := sizeof (item);
+      item.cbSize := SizeOf(item);
       item.fMask := MIIM_STATE or MIIM_BITMAP or MIIM_ID or MIIM_STRING or MIIM_FTYPE;
     end
     else
@@ -118,24 +114,24 @@ begin
       item.cbSize := 44;                        // Sizeof old-style MENUITEMINFO
       item.fMask := MIIM_STATE or MIIM_ID or MIIM_TYPE;
     end;
-    item.cch := sizeof (buffer);
+    item.cch := SizeOf(buffer);
     item.dwTypeData := buffer;
                                                 // Get details from window system menu
-    if GetMenuItemInfo (fWindowMenuHandle, i, True, item) then
+    if GetMenuItemInfo(fWindowMenuHandle, i, True, item) then
     begin
       case item.wID of
-        SC_RESTORE  : item.wID := scxRestore;
-        SC_MINIMIZE : item.wID := scxMinimize;
-        SC_MAXIMIZE : item.wID := scxMaximize;
-        SC_MOVE     : item.wID := scxMove;
-        SC_SIZE     : item.wID := scxSize;
+        SC_RESTORE : item.wID := scxRestore;
+        SC_MINIMIZE: item.wID := scxMinimize;
+        SC_MAXIMIZE: item.wID := scxMaximize;
+        SC_MOVE    : item.wID := scxMove;
+        SC_SIZE    : item.wID := scxSize;
       end;
                                                 // Add item to application system menu.
-      InsertMenuItem (fMenuHandle, i, True, item)
+      InsertMenuItem(fMenuHandle, i, True, item);
     end
     else
-      RaiseLastOSError
-  end
+      RaiseLastOSError;
+  end;
 end;
 
 (*----------------------------------------------------------------------*
@@ -145,25 +141,25 @@ end;
  *----------------------------------------------------------------------*)
 destructor TStandardSystemMenu.Destroy;
 begin
-  if Assigned (fObjectInstance) then
-    Classes.FreeObjectInstance (fObjectInstance);
+  if Assigned(fObjectInstance) then
+    Classes.FreeObjectInstance(fObjectInstance);
 
-  if Assigned (fSysObjectInstance) then
-    Classes.FreeObjectInstance (fSysObjectInstance);
+  if Assigned(fSysObjectInstance) then
+    Classes.FreeObjectInstance(fSysObjectInstance);
 
-  inherited;
+  inherited Destroy;
 end;
 
 (*----------------------------------------------------------------------*
  | TStandardSystemMenu.HookProc                                         |
  |                                                                      |
- | Intercept WM_WINDOWPASCHANGING messages
+ | Intercept WM_WINDOWPASCHANGING messages                              |
  *----------------------------------------------------------------------*)
-function TStandardSystemMenu.HookProc(var Msg: TMessage): boolean;
+function TStandardSystemMenu.HookProc(var Msg: TMessage): Boolean;
 var
-  LocalFlags: word;
+  LocalFlags: Word;
 begin
-  Result := false;
+  Result := False;
   if Msg.Msg = WM_WindowPosChanging then
   begin
     with TWMWindowPosMsg(Msg).WindowPos^ do
@@ -172,16 +168,16 @@ begin
          not IsIconic(hWnd)          and
          (cx > 0) and (cy > 0)       then
       begin
-        LocalFlags := flags or SWP_NoZOrder;
-        if TForm (Owner).BorderStyle = bsSizeable then
-          LocalFlags := LocalFlags and not SWP_NoSize
+        LocalFlags := flags or SWP_NOZORDER;
+        if TForm(Owner).BorderStyle = bsSizeable then
+          LocalFlags := LocalFlags and not SWP_NOSIZE
         else
-          LocalFlags := LocalFlags or SWP_NoSize;
-        SetWindowPos(TForm (Owner).Handle, 0, x, y, cx, cy, LocalFlags);
-        TForm (Owner).Invalidate
-      end
-    end
-  end
+          LocalFlags := LocalFlags or SWP_NOSIZE;
+        SetWindowPos(TForm(Owner).Handle, 0, x, y, cx, cy, LocalFlags);
+        TForm(Owner).Invalidate;
+      end;
+    end;
+  end;
 end;
 
 (*----------------------------------------------------------------------*
@@ -191,18 +187,27 @@ end;
  *----------------------------------------------------------------------*)
 procedure TStandardSystemMenu.Loaded;
 begin
-  inherited;
+  inherited Loaded;
+
   if not (csDesigning in ComponentState) then
   begin
-    fMenuHandle := GetSystemMenu (Application.Handle, False);
-    fWindowMenuHandle := GetSystemMenu ((Owner as TForm).Handle, False);
+    fMenuHandle := GetSystemMenu(Application.Handle, False);
+    fWindowMenuHandle := GetSystemMenu((Owner as TForm).Handle, False);
     CloneSystemMenu;
 
-    fObjectInstance := Classes.MakeObjectInstance (OwnerWindowProc);
-    fOldOwnerWindowProc := TfnWndProc (SetWindowLong (TForm (Owner).Handle, GWL_WNDPROC, LPARAM(fObjectInstance)));
+    fObjectInstance := Classes.MakeObjectInstance(OwnerWindowProc);
+    {$IFDEF CPUX64}
+      fOldOwnerWindowProc := TfnWndProc(SetWindowLongPtr(TForm(Owner).Handle, GWL_WNDPROC, LONG_PTR(fObjectInstance)));
+    {$ELSE}
+      fOldOwnerWindowProc := TfnWndProc(SetWindowLong(TForm(Owner).Handle, GWL_WNDPROC, LPARAM(fObjectInstance)));
+    {$ENDIF}
 
-    fSysObjectInstance := Classes.MakeObjectInstance (SysOwnerWindowProc);
-    fOldSysWindowProc := TfnWndProc (SetWindowLong (Application.Handle, GWL_WNDPROC, LPARAM(fSysObjectInstance)));
+    fSysObjectInstance := Classes.MakeObjectInstance(SysOwnerWindowProc);
+    {$IFDEF CPUX64}
+      fOldSysWindowProc := TfnWndProc(SetWindowLongPtr(Application.Handle, GWL_WNDPROC, LONG_PTR(fSysObjectInstance)));
+    {$ELSE}
+      fOldSysWindowProc := TfnWndProc(SetWindowLong(Application.Handle, GWL_WNDPROC, LPARAM(fSysObjectInstance)));
+    {$ENDIF}
 
     Application.HookMainWindow(HookProc);
   end
@@ -217,11 +222,11 @@ procedure TStandardSystemMenu.OnMaximized;
 begin
   fIconic := False;
   fMaximized := True;
-  SetItemState (scxMinimize, MFS_ENABLED);
-  SetItemState (scxMaximize, MFS_DISABLED or MFS_GRAYED);
-  SetItemState (scxMove,     MFS_DISABLED or MFS_GRAYED);
-  SetItemState (scxSize,     MFS_DISABLED or MFS_GRAYED);
-  SetItemState (scxRestore,  MFS_ENABLED);
+  SetItemState(scxMinimize, MFS_ENABLED);
+  SetItemState(scxMaximize, MFS_DISABLED or MFS_GRAYED);
+  SetItemState(scxMove,     MFS_DISABLED or MFS_GRAYED);
+  SetItemState(scxSize,     MFS_DISABLED or MFS_GRAYED);
+  SetItemState(scxRestore,  MFS_ENABLED);
 end;
 
 (*----------------------------------------------------------------------*
@@ -232,11 +237,11 @@ end;
 procedure TStandardSystemMenu.OnMinimized;
 begin
   fIconic := True;
-  SetItemState (scxMinimize, MFS_DISABLED or MFS_GRAYED);
-  SetItemState (scxMaximize, MFS_ENABLED);
-  SetItemState (scxMove,     MFS_DISABLED or MFS_GRAYED);
-  SetItemState (scxSize,     MFS_DISABLED or MFS_GRAYED);
-  SetItemState (scxRestore,  MFS_ENABLED);
+  SetItemState(scxMinimize, MFS_DISABLED or MFS_GRAYED);
+  SetItemState(scxMaximize, MFS_ENABLED);
+  SetItemState(scxMove,     MFS_DISABLED or MFS_GRAYED);
+  SetItemState(scxSize,     MFS_DISABLED or MFS_GRAYED);
+  SetItemState(scxRestore,  MFS_ENABLED);
 end;
 
 (*----------------------------------------------------------------------*
@@ -244,7 +249,7 @@ end;
  |                                                                      |
  | Main window restored.  Set the menu item states to reflect this.     |
  *----------------------------------------------------------------------*)
-procedure TStandardSystemMenu.OnRestored (resetmax : boolean);
+procedure TStandardSystemMenu.OnRestored(resetmax: Boolean);
 begin
   fIconic := False;
   if resetmax then fMaximized := False;
@@ -252,11 +257,11 @@ begin
     OnMaximized
   else
   begin
-    SetItemState (scxMinimize, MFS_ENABLED);
-    SetItemState (scxMaximize, MFS_ENABLED);
-    SetItemState (scxMove,     MFS_ENABLED);
-    SetItemState (scxSize,     MFS_ENABLED);
-    SetItemState (scxRestore,  MFS_DISABLED or MFS_GRAYED)
+    SetItemState(scxMinimize, MFS_ENABLED);
+    SetItemState(scxMaximize, MFS_ENABLED);
+    SetItemState(scxMove,     MFS_ENABLED);
+    SetItemState(scxSize,     MFS_ENABLED);
+    SetItemState(scxRestore,  MFS_DISABLED or MFS_GRAYED)
   end
 end;
 
@@ -265,26 +270,31 @@ end;
  |                                                                      |
  | Grab messages sent to the main form                                  |
  *----------------------------------------------------------------------*)
-procedure TStandardSystemMenu.OwnerWindowProc (var msg : TMessage);
+procedure TStandardSystemMenu.OwnerWindowProc(var msg: TMessage);
 begin
   with msg do
   begin
     if msg = WM_SIZE then       // Window sized.  Set menu item states.
     begin
       case wParam of
-        SIZE_MAXIMIZED : OnMaximized;
-        SIZE_MINIMIZED : OnMinimized;
-        SIZE_RESTORED  : OnRestored (true)
+        SIZE_MAXIMIZED: OnMaximized;
+        SIZE_MINIMIZED: OnMinimized;
+        SIZE_RESTORED : OnRestored(True);
       end
     end
     else
       if msg = WM_DESTROY then  // Window destroyed - unsubclass
       begin
-        SetWindowLong(TForm(Owner).Handle, GWL_WNDPROC, NativeInt(fOldOwnerWindowProc));
-        SetWindowLong(Application.Handle, GWL_WNDPROC, NativeInt(fOldSysWindowProc));
+        {$IFDEF CPUX64}
+          SetWindowLongPtr(TForm(Owner).Handle, GWL_WNDPROC, LONG_PTR(fOldOwnerWindowProc));
+          SetWindowLongPtr(Application.Handle, GWL_WNDPROC, LONG_PTR(fOldSysWindowProc));
+        {$ELSE}
+          SetWindowLong(TForm(Owner).Handle, GWL_WNDPROC, NativeInt(fOldOwnerWindowProc));
+          SetWindowLong(Application.Handle, GWL_WNDPROC, NativeInt(fOldSysWindowProc));
+        {$ENDIF}
         Application.UnHookMainWindow(HookProc);
       end;
-    result := CallWindowProc (fOldOwnerWindowProc, TForm (Owner).Handle, msg, wParam, lParam)
+    Result := CallWindowProc(fOldOwnerWindowProc, TForm(Owner).Handle, msg, wParam, lParam)
   end
 end;
 
@@ -294,21 +304,21 @@ end;
  | Set the required menu item state                                     |
  |                                                                      |
  | Parameters:                                                          |
- |   itemID : Integer           The id of the item to adjust            |
+ |   itemID: Integer            The id of the item to adjust            |
  |   state: Integer             The new state                           |
  *----------------------------------------------------------------------*)
 procedure TStandardSystemMenu.SetItemState(itemID, state: Integer);
 var
-  item : TMenuItemInfo;
+  item: TMenuItemInfo;
 begin
-  FillChar (item, SizeOf (item), 0);
+  FillChar(item, SizeOf(item), 0);
   item.cbSize := 44;
   item.fMask := MIIM_STATE;
-  if GetMenuItemInfo (fMenuHandle, itemID, False, item) then
+  if GetMenuItemInfo(fMenuHandle, itemID, False, item) then
   begin
     item.fState := state;
-    SetMenuItemInfo (fMenuHandle, itemID, False, item)
-  end
+    SetMenuItemInfo(fMenuHandle, itemID, False, item);
+  end;
 end;
 
 (*----------------------------------------------------------------------*
@@ -318,7 +328,7 @@ end;
  *----------------------------------------------------------------------*)
 procedure TStandardSystemMenu.SysOwnerWindowProc(var msg: TMessage);
 var
-  m : Integer;
+  m: Integer;
 begin
   with msg do
   begin
@@ -326,37 +336,37 @@ begin
     begin
       m := -1;
       case wParam of
-        scxRestore  : m := SC_RESTORE;
-        scxMinimize : m := SC_MINIMIZE;
-        scxMaximize : if fMaximized then  // It's also minimized, but it *was* maximized so restore!
-                        SendMessage (Application.Handle, WM_SYSCOMMAND, SC_RESTORE, lParam)
+        scxRestore : m := SC_RESTORE;
+        scxMinimize: m := SC_MINIMIZE;
+        scxMaximize: if fMaximized then  // It's also minimized, but it *was* maximized so restore!
+                        SendMessage(Application.Handle, WM_SYSCOMMAND, SC_RESTORE, lParam)
                       else
                       begin
                         if fIconic then
-                          SendMessage (Application.Handle, WM_SYSCOMMAND, SC_RESTORE, lParam);
-                        SendMessage (TForm (owner).Handle, WM_SYSCOMMAND, SC_MAXIMIZE, lParam);
+                          SendMessage(Application.Handle, WM_SYSCOMMAND, SC_RESTORE, lParam);
+                        SendMessage(TForm(owner).Handle, WM_SYSCOMMAND, SC_MAXIMIZE, lParam);
                       end;
 
-        scxMove     : m := SC_MOVE;
-        scxSize     : m := SC_SIZE;
+        scxMove    : m := SC_MOVE;
+        scxSize    : m := SC_SIZE;
       end;
 
       if m <> -1 then
         if fIconic then
-          SendMessage (Application.Handle, WM_SYSCOMMAND, m, lParam)
+          SendMessage(Application.Handle, WM_SYSCOMMAND, m, lParam)
         else
-          SendMessage (TForm (owner).Handle, WM_SYSCOMMAND, m, lParam);
+          SendMessage(TForm(Owner).Handle, WM_SYSCOMMAND, m, lParam);
     end
     else
       if msg = WM_SIZE then
         case wParam of
-          SIZE_MAXIMIZED : OnMaximized;
-          SIZE_MINIMIZED : OnMinimized;
-          SIZE_RESTORED  : OnRestored (false)
+          SIZE_MAXIMIZED: OnMaximized;
+          SIZE_MINIMIZED: OnMinimized;
+          SIZE_RESTORED : OnRestored(False);
         end;
 
-    result := CallWindowProc (fOldSysWindowProc, Application.Handle, msg, wParam, lParam);
-  end
+    Result := CallWindowProc(fOldSysWindowProc, Application.Handle, msg, wParam, lParam);
+  end;
 end;
 
 end.
