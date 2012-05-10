@@ -71,7 +71,7 @@ implementation
 
 uses
   GIFImg, Jpeg, pngImage, NewsGlobals, idGlobal, idCoderUUE, idCoder, idCoderMIME,
-  unitStreamTextReader, unitRFC2646Coder, XnCoderUUE;
+  unitStreamTextReader, unitRFC2646Coder, XnCoderQuotedPrintable, XnCoderUUE;
 
 function GetMimeGraphicClass(const imageClass: string): TGraphicClass;
 begin
@@ -281,8 +281,25 @@ begin
   begin
     fData.Seek(0, soBeginning);
     s.Size := 0;
-    if DecodeType <> ttText then
-    begin
+    case DecodeType of
+      ttText:
+        s.CopyFrom(fData, fData.Size);
+
+      ttQuotedPrintable:
+        begin
+          Decoder := TXnDecoderQuotedPrintable.Create(nil);
+          try
+            try
+              Decoder.DecodeBegin(s);
+              Decoder.Decode(fData);
+              Decoder.DecodeEnd;
+            except
+            end;
+          finally
+            Decoder.Free;
+          end;
+        end
+    else
       Decoder := nil;
       case DecodeType of
         ttUUEncode: Decoder := TXnDecoderUUE.Create(nil);
@@ -293,7 +310,6 @@ begin
       Reader := nil;
       if Assigned(Decoder) then
       try
-        fData.Seek(0, soBeginning);
         EncodedStream := TMemoryStream.Create;
         Reader := TStreamTextReader.Create(fData);
         try
@@ -308,9 +324,7 @@ begin
         EncodedStream.Free;
         Reader.Free;
       end;
-    end
-    else
-      s.CopyFrom(fData, fData.Size);
+    end;
   end;
   fData.Seek(0, soEnd);
 end;

@@ -3960,7 +3960,7 @@ var
         begin
           if p.fPartNo = c then
             Inc(c);
-          p := TArticle(p.Sibling);
+          p := TArticle(p.fSibling);
         end;
 
         if (p <> nil) or (c - 1 <> root.fPartCount) then
@@ -3986,7 +3986,7 @@ begin { GroupArticles }
     art := TArticle(fArticles[i]);
     art.fSibling := nil;
 
-    if(HideMessagesNotToMe and not art.IsMine) or (hideReadMessages and art.IsRead) or (hideIgnoredMessages and art.IsIgnore) or (Assigned(filters) and filters.HasFilters and filters.BlockArticle(art)) then
+    if (HideMessagesNotToMe and not art.IsMine) or (hideReadMessages and art.IsRead) or (hideIgnoredMessages and art.IsIgnore) or (Assigned(filters) and filters.HasFilters and filters.BlockArticle(art)) then
     begin
       Inc(i);
       Continue;
@@ -5287,8 +5287,8 @@ var
 begin
   if (fSorting) or
      ((fCurrentThreadOrder = fThreadOrder) and
-     (fCurrentThreadSortOrder = fThreadSortOrder) and
-     (fCurrentThreadSortDirection = fThreadSortDirection)) then
+      (fCurrentThreadSortOrder = fThreadSortOrder) and
+      (fCurrentThreadSortDirection = fThreadSortDirection)) then
      Exit;
 
   fDisplayFiltered := False;
@@ -5336,17 +5336,17 @@ begin
 
             l := ArticleBase[0];
 
-            if HideMessagesNotToMe or hideReadMessages or hideIgnoredMessages or fDisplayFiltered then
+            if HideMessagesNotToMe or HideReadMessages or HideIgnoredMessages or fDisplayFiltered then
               fThreads.Add(l);
 
             for i := 1 to ArticleCount - 1 do
             begin
               n := ArticleBase[i];
 
-              if (HideMessagesNotToMe and not n.IsMine) or (hideReadMessages and n.IsRead) or (hideIgnoredMessages and n.IsIgnore) or (fDisplayFiltered and filters.BlockArticle(n)) then
+              if (HideMessagesNotToMe and not n.IsMine) or (HideReadMessages and n.IsRead) or (HideIgnoredMessages and n.IsIgnore) or (fDisplayFiltered and filters.BlockArticle(n)) then
                 Continue;
 
-              if HideMessagesNotToMe or hideReadMessages or hideIgnoredMessages or fDisplayFiltered then
+              if HideMessagesNotToMe or HideReadMessages or HideIgnoredMessages or fDisplayFiltered then
                 fThreads.Add(n);
 
               l.fSibling := n;
@@ -5388,10 +5388,10 @@ begin
           for i := 0 to ArticleCount - 1 do
           begin
             n := ArticleBase[i];
-            if (hideMessagesNotToMe and not n.IsMine) or (hideReadMessages and n.IsRead) or (hideIgnoredMessages and n.IsIgnore) or (fDisplayFiltered and filters.BlockArticle(n)) then
+            if (HideMessagesNotToMe and not n.IsMine) or (HideReadMessages and n.IsRead) or (HideIgnoredMessages and n.IsIgnore) or (fDisplayFiltered and filters.BlockArticle(n)) then
               Continue;
 
-            if hideMessagesNotToMe or hideReadMessages or hideIgnoredMessages or fDisplayFiltered then
+            if HideMessagesNotToMe or HideReadMessages or HideIgnoredMessages or fDisplayFiltered then
               fThreads.Add(n);
 
             if l <> nil then
@@ -5951,8 +5951,8 @@ begin
                                 // the brackets.  It must be at least 3
       if l > 2 then
       begin
-        Inc(p);                // p now points to the first character in the n/x string
-        Dec(p1);               // and p1 points to the last character
+        Inc(p);                 // p now points to the first character in the n/x string
+        Dec(p1);                // and p1 points to the last character
         p2 := p;
         repeat                  // Find the '/' in the middle.
           Inc(p2);
