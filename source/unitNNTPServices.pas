@@ -6150,7 +6150,7 @@ begin
         begin
           case mp.DecodeType of
             // ttBase64: it is only an attachment when inside one of the message parts.
-            ttBase64:
+            ttBase64, ttQuotedPrintable:
               if i > 0 then
                 fFlags := fFlags or fgHasAttachment;
 
