@@ -585,8 +585,12 @@ end;
 
 procedure TIdMIMEBoundary.Pop;
 begin
-  FBoundaryList.Delete(0);
-  FParentPartList.Delete(0);
+  if FBoundaryList.Count > 0 then begin
+    FBoundaryList.Delete(0);
+  end;
+  if FParentPartList.Count > 0 then begin
+    FParentPartList.Delete(0);
+  end;
 end;
 
 procedure TIdMIMEBoundary.Push(ABoundary: string; AParentPart: integer);
@@ -925,6 +929,9 @@ var
     begin
       s := Trim(APriority);
       Num := IndyStrToInt(Fetch(s, ' '), 3); {do not localize}
+      if (Num < 1) or (Num > 5) then begin
+        Num := 3;
+      end;
       Result := TIdMessagePriority(Num - 1);
     end;
   end;

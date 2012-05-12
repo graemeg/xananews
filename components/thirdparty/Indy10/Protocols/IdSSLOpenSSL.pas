@@ -234,7 +234,7 @@ uses
   IdYarn;
 
 type
-  TIdSSLVersion = (sslvSSLv2, sslvSSLv23, sslvSSLv3, sslvTLSv1);
+  TIdSSLVersion = (sslvSSLv2, sslvSSLv23, sslvSSLv3, sslvTLSv1,sslvTLSv1_1,sslvTLSv1_2);
   TIdSSLVersions = set of TIdSSLVersion;
   TIdSSLMode = (sslmUnassigned, sslmClient, sslmServer, sslmBoth);
   TIdSSLVerifyMode = (sslvrfPeer, sslvrfFailIfNoPeerCert, sslvrfClientOnce);
@@ -629,6 +629,8 @@ http://csrc.nist.gov/CryptoToolkit/tkhash.html
 
 function LoadOpenSSLLibrary: Boolean;
 procedure UnLoadOpenSSLLibrary;
+
+function OpenSSLVersion: string;
 
 implementation
 
@@ -1096,7 +1098,7 @@ begin
             end;
             Inc(count);
             X509_Free(LX);
-            until False;
+          until False;
           Result := count;
         end;
       X509_FILETYPE_ASN1:
@@ -1230,7 +1232,11 @@ begin
         if Assigned(LB) then begin
           try
             try
-              while (PEM_read_bio_X509(LB, @LX, nil, nil) <> nil) do begin
+              repeat
+                LX := PEM_read_bio_X509(LB, nil, nil, nil);
+                if LX = nil then begin
+                  Break;
+                end;
                 if not Assigned(Result) then begin
                   Result := sk_X509_NAME_new_null;
                   if not Assigned(Result) then begin
@@ -1260,7 +1266,9 @@ begin
                   sk_X509_NAME_push(Lsk, LXNDup);
                   sk_X509_NAME_push(Result, LXNDup);
                 end;
-              end;
+                X509_free(LX);
+                LX := nil;
+              until False;
             finally
               if Assigned(LX) then begin
                 X509_free(LX);
@@ -1744,6 +1752,22 @@ begin
 end;
 {$ENDIF}
 
+function IsTLSv1_1Available : Boolean;
+{$IFDEF USE_INLINE} inline; {$ENDIF}
+begin
+  Result := Assigned(TLSv1_1_method) and
+    Assigned(TLSv1_1_server_method) and
+    Assigned(TLSv1_1_client_method);
+end;
+
+function IsTLSv1_2Available : Boolean;
+{$IFDEF USE_INLINE} inline; {$ENDIF}
+begin
+  Result := Assigned(TLSv1_1_method) and
+    Assigned(TLSv1_2_server_method) and
+    Assigned(TLSv1_2_client_method);
+end;
+
 {$IFNDEF OPENSSL_NO_BIO}
 procedure DumpCert(AOut: TStrings; AX509: PX509);
 {$IFDEF USE_INLINE} inline; {$ENDIF}
@@ -2003,6 +2027,15 @@ begin
   SSLIsLoaded.Value := False;
 end;
 
+function OpenSSLVersion: string;
+begin
+  Result := '';
+  if IdSSLOpenSSL.LoadOpenSSLLibrary then
+  begin
+    Result := String(_SSLeay_version(SSLEAY_VERSION));
+  end;
+end;
+
 //////////////////////////////////////////////////////
 //   TIdSSLOptions
 ///////////////////////////////////////////////////////
@@ -2019,9 +2052,11 @@ begin
   fMethod := AValue;
   case AValue of
     sslvSSLv2 : fSSLVersions := [sslvSSLv2];
-    sslvSSLv23 : fSSLVersions := [sslvSSLv2,sslvSSLv3,sslvTLSv1];
+    sslvSSLv23 : fSSLVersions := [sslvSSLv2,sslvSSLv3,sslvTLSv1,sslvTLSv1_1,sslvTLSv1_2];
     sslvSSLv3 : fSSLVersions := [sslvSSLv3];
     sslvTLSv1 : fSSLVersions := [sslvTLSv1];
+    sslvTLSv1_1 : fSSLVersions := [sslvTLSv1_1];
+    sslvTLSv1_2 : fSSLVersions := [sslvTLSv1_2];
   end;
 end;
 
@@ -2037,12 +2072,19 @@ begin
   else if fSSLVersions = [sslvTLSv1] then begin
     fMethod := sslvTLSv1;
   end
+  else if fSSLVersions = [sslvTLSv1_1 ] then begin
+    fMethod := sslvTLSv1_1;
+  end
+  else if fSSLVersions = [sslvTLSv1_2 ] then begin
+    fMethod := sslvTLSv1_2;
+
+  end
   else begin
     fMethod := sslvSSLv23;
     if sslvSSLv23 in fSSLVersions then begin
       Exclude(fSSLVersions, sslvSSLv23);
       if fSSLVersions = [] then begin
-        fSSLVersions := [sslvSSLv2,sslvSSLv3,sslvTLSv1];
+        fSSLVersions := [sslvSSLv2,sslvSSLv3,sslvTLSv1,sslvTLSv1_1,sslvTLSv1_2];
       end;
     end;
   end;
@@ -2596,6 +2638,12 @@ begin
   if not (sslvTLSv1 in SSLVersions) then begin
     SSL_CTX_set_options(fContext, SSL_OP_NO_TLSv1);
   end;
+  if not ( sslvTLSv1_1 in SSLVersions) then begin
+    SSL_CTX_set_options(fContext, SSL_OP_NO_TLSv1_1);
+  end;
+  if not ( sslvTLSv1_2 in SSLVersions) then begin
+    SSL_CTX_set_options(fContext, SSL_OP_NO_TLSv1_2);
+  end;
   SSL_CTX_set_mode(fContext, SSL_MODE_AUTO_RETRY);
   // assign a password lookup routine
 //  if PasswordRoutineOn then begin
@@ -2716,6 +2764,20 @@ begin
       else
         Result := TLSv1_method;
       end;
+    sslvTLSv1_1 :
+      case fMode of
+        sslmServer : Result := TLSv1_1_server_method;
+        sslmClient : Result := TLSv1_1_client_method;
+      else
+        Result := TLSv1_1_method;
+      end;
+    sslvTLSv1_2 :
+      case fMode of
+        sslmServer : Result := TLSv1_2_server_method;
+        sslmClient : Result := TLSv1_2_client_method;
+      else
+        Result := TLSv1_2_method;
+      end;
   else
     raise EIdOSSLGetMethodError.Create(RSSSLGetMethodError);
   end;
@@ -2776,6 +2838,10 @@ end;
 destructor TIdSSLSocket.Destroy;
 begin
   if fSSL <> nil then begin
+    if (fSSLContext <> nil) and (fSSLContext.StatusInfoOn) and
+       (fSSLContext.fContext <> nil) then begin
+      SSL_CTX_set_info_callback(fSSLContext.fContext, nil);
+    end;
     //SSL_set_shutdown(fSSL, SSL_SENT_SHUTDOWN);
     SSL_shutdown(fSSL);
     SSL_free(fSSL);
@@ -3367,7 +3433,7 @@ initialization
   Assert(SSLIsLoaded=nil);
   SSLIsLoaded := TIdThreadSafeBoolean.Create;
   RegisterSSL('OpenSSL','Indy Pit Crew',                                  {do not localize}
-    'Copyright '+Char(169)+' 1993 - 2009'#10#13 +                                     {do not localize}
+    'Copyright '+Char(169)+' 1993 - 2012'#10#13 +                                     {do not localize}
     'Chad Z. Hower (Kudzu) and the Indy Pit Crew. All rights reserved.',  {do not localize}
     'Open SSL Support DLL Delphi and C++Builder interface',               {do not localize}
     'http://www.indyproject.org/'#10#13 +                                 {do not localize}

@@ -59,8 +59,9 @@
 // the iconv library to charactor conversions.
 {.$UNDEF USE_ICONV}
 
-//Define for Delphi cross-compiler targetting Posix
+//Define for Delphi cross-compiler
 {$UNDEF USE_VCL_POSIX}
+{$UNDEF HAS_ComponentPlatformsAttribute}
 
 // detect compiler versions
 
@@ -190,7 +191,6 @@
 {$IFDEF VER220}
 //REMOVE DCC DEFINE after the next Fulcrum beta.
 //It will be defined there.
-  {$DEFINE DCC}
   {$DEFINE VCL_XE}
   {$IFDEF CBUILDER}
     {$DEFINE CBUILDER_XE}
@@ -304,6 +304,9 @@
   // FPC_FULLVERSION was added in FPC 2.2.4
 
   {$MACRO ON} // must be on in order to use versioning macros
+  {$IF DEFINED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20600)}
+    {$DEFINE FPC_2_6_0_OR_ABOVE}
+  {$IFEND}
   {$IF DEFINED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20404)}
     {$DEFINE FPC_2_4_4_OR_ABOVE}
   {$IFEND}
@@ -314,11 +317,23 @@
     {$DEFINE FPC_2_2_4_OR_ABOVE}
   {$IFEND}
 
-  {$IFDEF FPC_2_4_4} // just in case
+  // just in case
+  {$IFDEF FPC_2_6_0}
+    {$DEFINE FPC_2_6_0_OR_ABOVE}
+  {$ENDIF}
+  {$IFDEF FPC_2_4_4}
     {$DEFINE FPC_2_4_4_OR_ABOVE}
   {$ENDIF}
-  {$IFDEF FPC_2_4_2} // just in case
+  {$IFDEF FPC_2_4_2}
     {$DEFINE FPC_2_4_2_OR_ABOVE}
+  {$ENDIF}
+
+  {$IFDEF FPC_2_6_0_OR_ABOVE}
+    {$DEFINE FPC_2_4_4_OR_ABOVE}
+  {$ELSE}
+    {$IFDEF FPC_2_4_4}
+      {$DEFINE FPC_2_4_4_OR_ABOVE}
+    {$ENDIF}
   {$ENDIF}
 
   {$IFDEF FPC_2_4_4_OR_ABOVE}
@@ -569,12 +584,15 @@
   {$DEFINE HAS_UNIT_Types}
   {$DEFINE HAS_TryStrToInt}
   {$DEFINE HAS_TryStrToInt64}
+  {$DEFINE HAS_TryEncodeDate}
+  {$DEFINE HAS_TryEncodeTime}
   {$DEFINE HAS_ENUM_ELEMENT_VALUES}
   {$IFNDEF FPC}
     {$DEFINE HAS_TSelectionEditor}
     {$DEFINE HAS_TStringList_CaseSensitive}
     {$IFNDEF KYLIX}
       {$DEFINE HAS_DEPRECATED}
+      {$DEFINE HAS_SYMBOL_PLATFORM}
     {$ENDIF}
   {$ENDIF}
   {$IFNDEF DOTNET}
@@ -690,6 +708,7 @@
 
 {$IFDEF VCL_XE2_OR_ABOVE}
   {$DEFINE HAS_SIZE_T}
+  {$DEFINE HAS_ComponentPlatformsAttribute}
 {$ENDIF}
 
 // Delphi XE+ cross-compiling
@@ -751,6 +770,10 @@
     {$DEFINE HAS_DEPRECATED} // TODO: when was deprecated introduced?
     {$DEFINE HAS_DEPRECATED_MSG}
     {$DEFINE HAS_UnicodeString} // TODO: when was UnicodeString introduced?
+  {$ENDIF}
+  {$IFDEF FPC_2_6_0_OR_ABOVE}
+    {$DEFINE HAS_NativeInt}
+    {$DEFINE HAS_NativeUInt}
   {$ENDIF}
 {$ENDIF}
 

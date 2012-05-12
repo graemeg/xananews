@@ -543,17 +543,13 @@ begin
     BadSequenceError(ASender);
     Exit;
   end;
-  if Length(ASender.UnparsedParams) > 0 then begin
-    DoReset(LContext);
-    LContext.HeloString := ASender.UnparsedParams;
-    LContext.HELO := True;
-    if SPFAuthOk(LContext, ASender.Reply, 'HELO', DomainName(ASender.UnparsedParams), ASender.UnparsedParams) then {do not localize}
-    begin
-      ASender.Reply.SetReply(250, IndyFormat(RSSMTPSvrHello, [ASender.UnparsedParams]));
-      LContext.SMTPState := idSMTPHelo;
-    end;
-  end else begin
-    ASender.Reply.SetReply(501, RSSMTPSvrParmErr);
+  DoReset(LContext);
+  LContext.HeloString := ASender.UnparsedParams;
+  LContext.HELO := True;
+  if SPFAuthOk(LContext, ASender.Reply, 'HELO', DomainName(ASender.UnparsedParams), ASender.UnparsedParams) then {do not localize}
+  begin
+    ASender.Reply.SetReply(250, IndyFormat(RSSMTPSvrHello, [ASender.UnparsedParams]));
+    LContext.SMTPState := idSMTPHelo;
   end;
 end;
 
@@ -922,7 +918,7 @@ begin
             rAddressOk :
             begin
               AddrValid(ASender, EMailAddress.Address);
-              LContext.RCPTList.Add.Text := EMailAddress.Text;
+              LContext.RCPTList.Add.Assign(EMailAddress);
               LContext.SMTPState := idSMTPRcpt;
             end;
             rRelayDenied :
@@ -935,7 +931,7 @@ begin
               if LForward <> '' then begin
                 LContext.RCPTList.Add.Text := LForward;
               end else begin
-                LContext.RCPTList.Add.Text := EMailAddress.Text;
+                LContext.RCPTList.Add.Assign(EMailAddress);
               end;
               LContext.SMTPState := idSMTPRcpt;
             end;

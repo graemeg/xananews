@@ -261,6 +261,7 @@ resourcestring
   RSHTTPErrorParsingCommand = 'Error in parsing command.';
   RSHTTPUnsupportedAuthorisationScheme = 'Unsupported authorization scheme.';
   RSHTTPCannotSwitchSessionStateWhenActive = 'Cannot change session state when the server is active.';
+  RSHTTPCannotSwitchSessionListWhenActive = 'Cannot change session list when the server is active.';
 
   //HTTP Authentication
   RSHTTPAuthAlreadyRegistered = 'This authentication method is already registered with class name %s.';
@@ -959,7 +960,8 @@ resourcestring
 
   { TIdMultipartFormDataStream exceptions }
   RSMFDInvalidObjectType        = 'Unsupported object type. You can assign only one of the following types or their descendants: TStrings, TStream.';
-  RSMFDInvalidTransfer          = 'Unsupported transfer type. You can assign only an empty string or one of the following types: 7bit, 8bit, binary, quoted-printable, base64.';
+  RSMFDInvalidTransfer          = 'Unsupported transfer type. You can assign only an empty string or one of the following values: 7bit, 8bit, binary, quoted-printable, base64.';
+  RSMFDInvalidEncoding          = 'Unsupported encoding. You can assign only one of the following values: Q, B, 8.';
 
   { TIdURI exceptions }
   RSURINoProto                 = 'Protocol field is empty';
