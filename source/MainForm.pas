@@ -5426,6 +5426,7 @@ begin
   // the scan starts from the next article after the current focused one.
   if firstArticle = nil then
     Options := Options + [naTempFirstArticle];
+
   if (firstArticle <> nil) and skipThisThread then
   begin
     Options := Options + [naTempFirstArticle];
@@ -5451,6 +5452,7 @@ begin
   end
   else
     grp := GetFocusedGroup;
+
   if (firstArticle = nil) and (naCanLeaveGroup in Options) then
   begin
     if grp = nil then
@@ -7835,7 +7837,7 @@ begin
 
       // NOTE: I have received some bug reports (in earlier versions: r194, r269 mostly)
       //       on the following line:
-      //         FullExpandThreads(GetNodeArticle(vstArticles.FocusedNode), node);
+      //         FullExpandThreads(GetNodeArticle(vstArticles.FocusedNode).Owner, node);
       //       that did indicate that the result of GetNodeArticle is nil.
       //       Looking at the code of GetNodeArticle the problem can't be about
       //       vstArticles.FocusedNode, it is more likely that fLastFocusedArticleContainer
@@ -10033,7 +10035,8 @@ end;
 procedure TfmMain.WmNameThread(var msg: TMessage);
 begin
   {$ifdef madExcept}
-    NameThread(msg.WParam, UTF8Encode(PChar(msg.LParam)));
+//  NameThread(msg.WParam, UTF8Encode(PChar(msg.LParam))); // madExcept v3
+    NameThread(msg.WParam, PChar(msg.LParam));             // madExcept v4
   {$else}
     {$ifdef ConditionalExpressions}
       {$if CompilerVersion >= 21.0}
@@ -10738,14 +10741,12 @@ begin
     noAction.ActionType := batNone;
     noAction.ManagementOption := bmoNone;
 
-    group.NNTPSettings.DefaultAction := noAction
+    group.NNTPSettings.DefaultAction := noAction;
+    group.NNTPSettings.PerformDefaultAction := paNever;
+    group.WriteSettings();
   finally
     noAction.Free;
   end;
-
-  group.NNTPSettings.PerformDefaultAction := paNever;
-
-  NNTPAccounts.SaveToRegistry;
 end;
 
 { TDeferredCombineSet }
@@ -11631,6 +11632,7 @@ begin
     if MessageDlg(Format(rstConfirmMakeDormant, [st]), mtConfirmation, [mbYes, mbNo], 0) = idYes then
     begin
       ForEachSelectedGroup(MakeDormant, False);
+      NNTPAccounts.SaveToRegistry;
       fPrevArticle := nil;
     end;
 

@@ -30,8 +30,8 @@ unit unitNNTPServices;
 interface
 
 uses
-  Windows, Classes, SysUtils, Forms, Dialogs, Controls, Contnrs, idGlobal,
-  unitMessages, StrUtils, unitNNTPFilters, NewsGlobals, unitObjectCache,
+  Windows, Classes, SysUtils, Forms, Dialogs, Controls, Contnrs, StrUtils, idGlobal,
+  unitMessages, unitMessageMime, unitNNTPFilters, NewsGlobals, unitObjectCache,
   unitIdentities, unitSearchString, unitSettings, unitBatches, unitExSettings,
   unitStreamTextReader, Shfolder, ShellAPI, SyncObjs, XnClasses, XnRawByteStrings;
 
@@ -559,6 +559,7 @@ type
     procedure CloseMessageFile; override;
     procedure OpenMessageFile; override;
     function TSGetLastArticle: Int64;
+    procedure WriteSettings(reg: TExSettings = nil);
 
     property Articles[idx: Integer]: TArticle read GetArticle;
     property SortIdx: Integer read fSortIdx write SetSortIdx;
@@ -2612,15 +2613,10 @@ begin
       reg1.Section := group.Name;
 
       reg1.SetInteger64Value('Last Article', group.fHighWaterMark, 0);
-      reg1.SetStringValue('Nickname', group.Nickname, '');
       reg1.SetBooleanValue('Secret', group.Secret, False);
       reg1.SetIntegerValue('Sort Index', group.fSortIdx, -1);
 
-      group.FiltersCtnr.SaveFilters(reg1, False);
-      group.DisplayFiltersCtnr.SaveFilters(reg1, True);
-      group.NNTPSettings.WriteSettings(reg1);
-      group.PostingSettings.WriteSettings(reg1);
-      group.DisplaySettings.WriteSettings(reg1);
+      group.WriteSettings(reg1);
     end;
   finally
     reg1.Free;
@@ -3168,6 +3164,33 @@ begin
     Result := fHighWaterMark;
 end;
 
+procedure TSubscribedGroup.WriteSettings(reg: TExSettings);
+var
+  regCreated: Boolean;
+begin
+  regCreated := False;
+
+  if reg = nil then
+  begin
+    reg := CreateGroupRegistry(KEY_READ or KEY_WRITE);
+    regCreated := True;
+  end;
+
+  if Assigned(reg) then
+  try
+    FiltersCtnr.SaveFilters(reg, False);
+    DisplayFiltersCtnr.SaveFilters(reg, True);
+    NNTPSettings.WriteSettings(reg);
+    PostingSettings.WriteSettings(reg);
+    DisplaySettings.WriteSettings(reg);
+    reg.SetStringValue('Identity', NNTPSettings.Identity.Name, Owner.NNTPSettings.Identity.Name);
+    reg.SetStringValue('Nickname', fNickname, '');
+  finally
+    if regCreated then
+      reg.Free;
+  end;
+end;
+
 (*----------------------------------------------------------------------*
  | TSubscribedGroup.LeaveGroup                                          |
  |                                                                      |
@@ -3175,8 +3198,6 @@ end;
  | it's articles, and release the memory for the messages.              |
  *----------------------------------------------------------------------*)
 procedure TSubscribedGroup.LeaveGroup(clearMessages: Boolean);
-var
-  reg: TExSettings;
 begin
   ClearThreadInfo;
   NNTPAccounts.PerfCue(880, 'Leaving group');
@@ -3194,19 +3215,7 @@ begin
     NNTPAccounts.PerfCue(440, 'Unloaded articles');
   end;
 
-  reg := CreateGroupRegistry(KEY_READ or KEY_WRITE);
-  if Assigned(reg) then
-  try
-    FiltersCtnr.SaveFilters(reg, False);
-    DisplayFiltersCtnr.SaveFilters(reg, True);
-    NNTPSettings.WriteSettings(reg);
-    PostingSettings.WriteSettings(reg);
-    DisplaySettings.WriteSettings(reg);
-    reg.SetStringValue('Identity', NNTPSettings.Identity.Name, Owner.NNTPSettings.Identity.Name);
-    reg.SetStringValue('Nickname', fNickname, '');
-  finally
-    reg.Free;
-  end;
+  WriteSettings();
 
   ResetSortFlags;
 end;
@@ -6149,8 +6158,13 @@ begin
         if mp.Complete then
         begin
           case mp.DecodeType of
+            ttText, ttQuotedPrintable:
+              if mp is TmvMimeMessagePart then
+                if SameText(TmvMimeMessagePart(mp).MimeHeader.ContentDisposition, 'attachment') then
+                  fFlags := fFlags or fgHasAttachment;
+
             // ttBase64: it is only an attachment when inside one of the message parts.
-            ttBase64, ttQuotedPrintable:
+            ttBase64:
               if i > 0 then
                 fFlags := fFlags or fgHasAttachment;
 
@@ -6423,11 +6437,6 @@ begin
           SetLength(st, hLen);
           Owner.fMessageFile.Read(st[1], hLen);
           fMsg.Header.Add(st);
-
-          {$IFDEF CPUX64}
-          // TODO: remove workaround for x64 leaking RawByteStrings
-          st := '';
-          {$ENDIF}
 
           Owner.fMessageFile.Read(hLen, SizeOf(hLen));
         end;

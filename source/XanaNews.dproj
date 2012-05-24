@@ -8,7 +8,7 @@
 			<AppType>Application</AppType>
 			<FrameworkType>VCL</FrameworkType>
 			<ProjectVersion>13.4</ProjectVersion>
-			<Platform Condition="'$(Platform)'==''">Win64</Platform>
+			<Platform Condition="'$(Platform)'==''">Win32</Platform>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
 			<Base>true</Base>
@@ -28,6 +28,12 @@
 			<CfgParent>Base</CfgParent>
 			<Base>true</Base>
 		</PropertyGroup>
+		<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win64)'!=''">
+			<Cfg_1_Win64>true</Cfg_1_Win64>
+			<CfgParent>Cfg_1</CfgParent>
+			<Cfg_1>true</Cfg_1>
+			<Base>true</Base>
+		</PropertyGroup>
 		<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
 			<Cfg_1_Win32>true</Cfg_1_Win32>
 			<CfgParent>Cfg_1</CfgParent>
@@ -37,6 +43,12 @@
 		<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_2)'!=''">
 			<Cfg_2>true</Cfg_2>
 			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win64)'!=''">
+			<Cfg_2_Win64>true</Cfg_2_Win64>
+			<CfgParent>Cfg_2</CfgParent>
+			<Cfg_2>true</Cfg_2>
 			<Base>true</Base>
 		</PropertyGroup>
 		<PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win32)'!=''">
@@ -62,13 +74,13 @@
 			<DCC_WIDECHAR_REDUCED>false</DCC_WIDECHAR_REDUCED>
 			<Icon_MainIcon>XanaNews_Icon.ico</Icon_MainIcon>
 			<VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-			<DCC_UnitSearchPath>..\components\ImageTypes\Source;..\components\LowLevel\Source;..\components\MiscUnits\Source;..\components\thirdparty\VirtualTreeView\Source;..\components\thirdparty\Indy10\Core;..\components\thirdparty\Indy10\Protocols;..\components\thirdparty\Indy10\System;..\modified_vcl;$(BDSLIB)\$(Platform)\release;$(BDSUSERDIR)\Imports;$(BDS)\Imports;$(BDSCOMMONDIR)\Dcp;$(BDS)\include;C:\Program Files (x86)\Raize\CS4\Lib\RS-XE;$(BDS)\RaveReports\Lib;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+			<DCC_UnitSearchPath>..\components\ImageTypes\Source;..\components\LowLevel\Source;..\components\MiscUnits\Source;..\components\thirdparty\VirtualTreeView\Source;..\components\thirdparty\Indy10\Core;..\components\thirdparty\Indy10\Protocols;..\components\thirdparty\Indy10\System;..\modified_vcl;$(BDSLIB)\$(Platform)\release;$(BDSUSERDIR)\Imports;$(BDS)\Imports;$(BDSCOMMONDIR)\Dcp;$(BDS)\include;$(BDS)\RaveReports\Lib;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
 			<DCC_ImageBase>00400000</DCC_ImageBase>
-			<VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.19.1.352;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2012;LegalTrademarks=All Rights Reserved;OriginalFilename=XanaNews.exe;ProductName=XanaNews;ProductVersion=1.19.1.352;Comments=</VerInfo_Keys>
+			<VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.19.1.359;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2012;LegalTrademarks=All Rights Reserved;OriginalFilename=XanaNews.exe;ProductName=XanaNews;ProductVersion=1.19.1.359;Comments=</VerInfo_Keys>
 			<Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
 			<DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
 			<VerInfo_MinorVer>19</VerInfo_MinorVer>
-			<VerInfo_Build>352</VerInfo_Build>
+			<VerInfo_Build>359</VerInfo_Build>
 			<VerInfo_Locale>1033</VerInfo_Locale>
 			<DCC_N>false</DCC_N>
 			<DCC_S>false</DCC_S>
@@ -102,6 +114,12 @@
 			<DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
 			<DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
 		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
+			<DCC_LocalDebugSymbols>true</DCC_LocalDebugSymbols>
+			<DCC_DebugInformation>true</DCC_DebugInformation>
+			<DCC_Define>madExcept;$(DCC_Define)</DCC_Define>
+			<DCC_MapFile>3</DCC_MapFile>
+		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
 			<DCC_LocalDebugSymbols>true</DCC_LocalDebugSymbols>
 			<DCC_DebugInformation>true</DCC_DebugInformation>
@@ -116,6 +134,10 @@
 			<DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
 			<DCC_Optimize>false</DCC_Optimize>
 			<DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
+			<DCC_MapFile>3</DCC_MapFile>
+			<DCC_Define>madExcept;$(DCC_Define)</DCC_Define>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
 			<DCC_MapFile>3</DCC_MapFile>
