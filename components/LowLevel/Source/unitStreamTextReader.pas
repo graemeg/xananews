@@ -336,11 +336,6 @@ begin
     end;
 
     st := st + st1;
-
-    {$IFDEF CPUX64}
-    // TODO: remove workaround for x64 leaking RawByteStrings
-    st1 := '';
-    {$ENDIF}
   end;
 
   if cont then

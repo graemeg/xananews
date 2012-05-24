@@ -43,15 +43,6 @@ type
     procedure EndTransfer();
   end;
 
-
-(* TODO:
-To Implement:
-  Bitmap -> coded string
-  Bitmap -> coded string for news groups
-
-  Coded string -> Bitmap
-*)
-
 implementation
 
 end.

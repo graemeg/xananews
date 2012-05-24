@@ -890,11 +890,6 @@ begin
             end;
           end;
         end;
-
-        {$IFDEF CPUX64}
-        // TODO: remove workaround for x64 leaking RawByteStrings
-        st := '';
-        {$ENDIF}
       end;
     except  // 'GetLine' may occasionally throw an AV if the currently loading message
             // is being displayed.
