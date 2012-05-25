@@ -89,7 +89,9 @@ type
 
   TNNTPArticleThread = class(TNNTPThread)
   private
+    fFailedArticle: TArticle;
     fUICurrentArticle: TArticle;
+    procedure DoArticleFailed;
     procedure DoPipeLineCommandStartEvent(cmd: TPipelineCommand; var headrs: TAnsiStrings; var body: TStream);
     procedure DoPipeLineCommandEndEvent(cmd: TPipelineCommand);
     procedure DoPipeLineCommandCancelEvent(cmd: TPipelineCommand; startCalled: Boolean);
@@ -1016,12 +1018,17 @@ end;
 
 { TNNTPArticleThread }
 
+procedure TNNTPArticleThread.DoArticleFailed;
+begin
+  if Assigned(ThreadManager.OnArticleFailed) then
+    ThreadManager.OnArticleFailed(ThreadManager, fFailedArticle);
+end;
+
 procedure TNNTPArticleThread.DoPipeLineCommandCancelEvent(
   cmd: TPipelineCommand; startCalled: Boolean);
 var
   gtr: TArticleGetter;
   requests: TObjectList;
-  art: TArticle;
 begin
   if cmd.IsGet then
   begin
@@ -1040,13 +1047,10 @@ begin
       Synchronize(gtr.FailArticle)
     else
     begin
-      art := TArticle(cmd.Param);
-
-      if Assigned(ThreadManager.OnArticleFailed) then
-        ThreadManager.OnArticleFailed(ThreadManager, art);
-
-      if Assigned(art) then
-        art.IsNotOnServer := True;
+      fFailedArticle := TArticle(cmd.Param);
+      Synchronize(DoArticleFailed);
+      if Assigned(fFailedArticle) then
+        fFailedArticle.IsNotOnServer := True;
     end;
   end;
 end;
