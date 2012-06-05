@@ -8,6 +8,7 @@ program XanaNews;
   {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
 {$ifend}
 
+{$I IdCompilerDefines.inc}
 
 uses
   FastMM4,
@@ -23,6 +24,8 @@ uses
   SysUtils,
   SyncObjs,
   IdGlobal,
+  IdStack,
+  IdThread,
   IdThreadSafe,
   HTMLHelpViewer,
   NewsGlobals in 'NewsGlobals.pas',
@@ -158,6 +161,11 @@ begin
   end;
 end;
 
+{$ifdef REGISTER_EXPECTED_MEMORY_LEAK}
+type
+  TIdThreadSafeIntegerAccess = class(TIdThreadSafeInteger);
+  TCriticalSectionAcceess = class(TCriticalSection);
+{$endif}
 begin
 //  OutputDebugString('SAMPLING OFF');
   if CheckSetAsDefaultNewsreader then
@@ -167,6 +175,24 @@ begin
   begin
     Application.Initialize;
     Application.MainFormOnTaskBar := True;
+
+    // Ignore expected/documented Indy leaks
+    {$ifdef madExcept}
+      {$ifndef FREE_ON_FINAL}
+        {$ifdef REGISTER_EXPECTED_MEMORY_LEAK}
+          ThisIsNoLeak(GThreadCount);
+          ThisIsNoLeak(TIdThreadSafeIntegerAccess(GThreadCount).FCriticalSection);
+          ThisIsNoLeak(@TCriticalSectionAcceess(TIdThreadSafeIntegerAccess(GThreadCount).FCriticalSection).FSection);
+
+          {$ifndef DOTNET}
+            // Hmm, this is not possible it is a "global" in the implementation section.
+            //ThisIsNoLeak(GStackCriticalSection);
+            //ThisIsNoLeak(TIdThreadSafeIntegerAccess(GStackCriticalSection).FCriticalSection);
+            //ThisIsNoLeak(@TCriticalSectionAcceess(TIdThreadSafeIntegerAccess(GStackCriticalSection).FCriticalSection).FSection);
+          {$endif}
+        {$endif}
+      {$endif}
+    {$endif}
 
     SetThreadLocale(GetUserDefaultLCID);
     GetFormatSettings;

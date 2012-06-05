@@ -119,6 +119,7 @@ type
   public
     procedure CancelMonitor;
     constructor Create;
+    destructor Destroy; override;
   end;
 
   ENNTPThreadManager = class(Exception)
@@ -1315,6 +1316,12 @@ constructor TNetworkMonitorThread.Create;
 begin
   inherited Create(True);
   FOverlap.hEvent := WSACreateEvent;
+end;
+
+destructor TNetworkMonitorThread.Destroy;
+begin
+  inherited Destroy;
+  WSACloseEvent(FOverlap.hEvent);
 end;
 
 procedure TNetworkMonitorThread.CancelMonitor;

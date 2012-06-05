@@ -712,7 +712,7 @@ begin
         rv := RasEnumEntries(nil, nil, @RasEntries[0], cb, ce);
 
         case rv of
-          0: SetLength(RasEntries, ce);
+          ERROR_SUCCESS: SetLength(RasEntries, ce);
           ERROR_BUFFER_TOO_SMALL:;
         else
           SetLength(RasEntries, 0);
