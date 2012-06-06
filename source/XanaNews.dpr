@@ -178,17 +178,19 @@ begin
 
     // Ignore expected/documented Indy leaks
     {$ifdef madExcept}
-      {$ifndef FREE_ON_FINAL}
-        {$ifdef REGISTER_EXPECTED_MEMORY_LEAK}
-          ThisIsNoLeak(GThreadCount);
-          ThisIsNoLeak(TIdThreadSafeIntegerAccess(GThreadCount).FCriticalSection);
-          ThisIsNoLeak(@TCriticalSectionAcceess(TIdThreadSafeIntegerAccess(GThreadCount).FCriticalSection).FSection);
+      {$ifdef LeakChecking}
+        {$ifndef FREE_ON_FINAL}
+          {$ifdef REGISTER_EXPECTED_MEMORY_LEAK}
+            ThisIsNoLeak(GThreadCount);
+            ThisIsNoLeak(TIdThreadSafeIntegerAccess(GThreadCount).FCriticalSection);
+            ThisIsNoLeak(@TCriticalSectionAcceess(TIdThreadSafeIntegerAccess(GThreadCount).FCriticalSection).FSection);
 
-          {$ifndef DOTNET}
-            // Hmm, this is not possible it is a "global" in the implementation section.
-            //ThisIsNoLeak(GStackCriticalSection);
-            //ThisIsNoLeak(TIdThreadSafeIntegerAccess(GStackCriticalSection).FCriticalSection);
-            //ThisIsNoLeak(@TCriticalSectionAcceess(TIdThreadSafeIntegerAccess(GStackCriticalSection).FCriticalSection).FSection);
+            {$ifndef DOTNET}
+              // Hmm, this is not possible it is a "global" in the implementation section.
+              //ThisIsNoLeak(GStackCriticalSection);
+              //ThisIsNoLeak(TIdThreadSafeIntegerAccess(GStackCriticalSection).FCriticalSection);
+              //ThisIsNoLeak(@TCriticalSectionAcceess(TIdThreadSafeIntegerAccess(GStackCriticalSection).FCriticalSection).FSection);
+            {$endif}
           {$endif}
         {$endif}
       {$endif}

@@ -6144,6 +6144,7 @@ var
   i: Integer;
   mps: TmvMessageParts;
   mp: TmvMessagePart;
+  mh: TMimeHeader;
 begin
   gotHasAttachment := (flags and fgScannedAttachment) <> 0;
   if HasMsg and not gotHasAttachment then
@@ -6160,8 +6161,11 @@ begin
           case mp.DecodeType of
             ttText, ttQuotedPrintable:
               if mp is TmvMimeMessagePart then
-                if SameText(TmvMimeMessagePart(mp).MimeHeader.ContentDisposition, 'attachment') then
+              begin
+                mh := TmvMimeMessagePart(mp).MimeHeader;
+                if Assigned(mh) and SameText(mh.ContentDisposition, 'attachment') then
                   fFlags := fFlags or fgHasAttachment;
+              end;
 
             // ttBase64: it is only an attachment when inside one of the message parts.
             ttBase64:
