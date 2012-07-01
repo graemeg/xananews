@@ -2860,6 +2860,7 @@ begin
   if not Loaded then
     LoadArticles;
 
+  Result := nil;
   article := TArticle.Create(Self);
   try
     article.Initialize(articleNo, header);
@@ -2903,15 +2904,22 @@ begin
 
       if (ThreadOrder = toThreaded) or (ThreadSortOrder = soSubject) then
         fThreads.Add(article);
+
+      Result := article;
     end
     else
-      FreeAndNil(article);
+    begin
+      if article.fArticleNo > HighWaterMark then
+        HighWaterMark := article.fArticleNo
+      else
+        if article.fArticleNo < HighWaterMark then
+          HighWaterMark := 0;
+      article.Free;
+    end;
   except
-    FreeAndNil(article);
+    article.Free;
     raise;
   end;
-
-  Result := article;
 end;
 
 (*----------------------------------------------------------------------*
@@ -2941,6 +2949,8 @@ var
   lines: Cardinal;
   exd, val, hdr, st: string;
   article: TArticle;
+  filterIt, bozo: Boolean;
+  action: TBozoAction;
 begin
   if not fArticlesLoaded then
     LoadArticles;
@@ -2953,39 +2963,66 @@ begin
       Continue;
 
     ParseXOVER(headers[i], articleNo, subject, from, date, MessageID, references, bytes, lines, exd);
+
     article := TArticle.Create(Self);
+    try
+      article.fArticleNo := articleNo;
+      article.fMessageID := RawTrim(MessageID);
+      article.fBytes := bytes;
+      article.fLines := lines;
+      article.fReferences := RawTrim(references);
+      article.fFrom := from;
+      article.fSubject := subject;
+      article.fDate := date;
+      article.fMessageOffset := -1;
+      article.fFlags := fgNew;
 
-    article.fArticleNo := articleNo;
-    article.fMessageID := RawTrim(MessageID);
-    article.fBytes := bytes;
-    article.fLines := lines;
-    article.fReferences := RawTrim(references);
-    article.fFrom := from;
-    article.fSubject := subject;
-    article.fDate := date;
-    article.fMessageOffset := -1;
-    article.fFlags := fgNew;
+      n := 7;
 
-    n := 7;
+      if Assigned(XOverFMT) then
+        while (n < XOverFMT.Count) and (exd <> '') do
+        begin
+          val := Fetch(exd, #9);
+          st  := XOverFMT[n];
+          hdr := Fetch(st, ':');
+          Inc(n);
+          if SameText(st, 'full') then
+            article.fTempExtraHeaders := article.fTempExtraHeaders + #9 + val
+          else
+            article.fTempExtraHeaders := article.fTempExtraHeaders + #9 + hdr + ':' + val;
+        end;
 
-    if Assigned(XOverFMT) then
-      while (n < XOverFMT.Count) and (exd <> '') do
+      if article.fTempExtraHeaders <> '' then
+        Delete(article.fTempExtraHeaders, 1, 1);
+
+
+      filterIt := filtersCtnr.BlockArticle(article);
+      bozo := False;
+      if not filterIt then
       begin
-        val := Fetch(exd, #9);
-        st  := XOverFMT[n];
-        hdr := Fetch(st, ':');
-        Inc(n);
-        if SameText(st, 'full') then
-          article.fTempExtraHeaders := article.fTempExtraHeaders + #9 + val
-        else
-          article.fTempExtraHeaders := article.fTempExtraHeaders + #9 + hdr + ':' + val;
+        bozo := NNTPAccounts.ArticleIsFromBozo(article, action);
+        if bozo and (action = baDontDownload) then
+          filterIt := True;
       end;
 
-    if article.fTempExtraHeaders <> '' then
-      Delete(article.fTempExtraHeaders, 1, 1);
-
-    if not filtersCtnr.BlockArticle(article) then
-      RawAddArticle(article);
+      if not filterIt then
+      begin
+        if bozo then article.IsRead := True;
+        RawAddArticle(article);
+      end
+      else
+      begin
+        if article.fArticleNo > HighWaterMark then
+          HighWaterMark := article.fArticleNo
+        else
+          if article.fArticleNo < HighWaterMark then
+            HighWaterMark := 0;
+        article.Free;
+      end;
+    except
+      article.Free;
+      raise;
+    end;
   end;
 
   NNTPAccounts.PerfCue(660, 'Added Article Headers');
@@ -3467,6 +3504,7 @@ begin
 
     if reg = nil then Exit;
 
+    reg.SetInteger64Value('Last Article', HighWaterMark, 0);
     if ArticleCount > 0 then
     begin
       reg.SetIntegerValue('Unloaded Article Count', ArticleCount, 0);

@@ -1593,7 +1593,7 @@ begin
       Result := ExtractFileName(fContentTypeAttributes.Values['name']);
 
   if Result = '' then
-    if CompareText(ContentType_Type, 'Message') = 0 then
+    if CompareText(ContentType_Type, 'message') = 0 then
       Result := '*.eml';
 
   if Result = '' then
@@ -1601,7 +1601,7 @@ begin
       Result := '*.wav';
 
   if Result = '' then
-    if CompareText(ContentType_Type, 'Image') = 0 then
+    if CompareText(ContentType_Type, 'image') = 0 then
       if ContentType_Subtype <> '' then
         Result := '*.' + ContentType_SubType;
 

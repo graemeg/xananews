@@ -1,5 +1,5 @@
 [GeneralSettings]
-MesVersion=2
+MesVersion=4
 AppendMapFileToBinary=1
 HandleExceptions=1
 CheckForFrozenMainThread=1
@@ -33,7 +33,7 @@ BugReportFileSize=500000
 VersionVariable=
 NoOwnMadExceptSettings=0
 CheckFileCrc=1
-AutoSaveBugReportIfNotSent=1
+AutoSaveBugReportIfNotSent=0
 AutoMailProgressBox=0
 ShowPleaseWaitBox=1
 PleaseWaitIcon=plwait1
