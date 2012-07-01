@@ -53,7 +53,6 @@ interface
 
 {$booleval off} // Use fastest possible boolean evaluation.
 
-{$I Compilers.inc}
 {$I VTConfig.inc}
 
 // For some things to work we need code, which is classified as being unsafe for .NET.
@@ -61,23 +60,21 @@ interface
 {$WARN UNSAFE_CAST OFF}
 {$WARN UNSAFE_CODE OFF}
 
-{$ifdef COMPILER_12_UP}
+{$if CompilerVersion >= 20}
   {$WARN IMPLICIT_STRING_CAST       OFF}
   {$WARN IMPLICIT_STRING_CAST_LOSS  OFF}
-{$endif COMPILER_12_UP}
+{$ifend}
 
 {$HPPEMIT '#include <objidl.h>'}
-{$HPPEMIT '#include <oleidl.h>'} // Necessary for BCB 6 SP 2.
+{$HPPEMIT '#include <oleidl.h>'}
 {$HPPEMIT '#include <oleacc.h>'}
 {$HPPEMIT '#include <ShlObj.hpp>'}
 
 uses
   Windows,
-  {$ifndef COMPILER_10_UP}
-    MSAAIntf, // MSAA support for Delphi up to 2005
-  {$else}
+  {$if CompilerVersion >= 18}
     oleacc,   // MSAA support in Delphi 2006 or higher
-  {$endif COMPILER_10_UP}
+  {$ifend}
   Messages, SysUtils, Classes, Graphics, Controls, Forms, ImgList, ActiveX, StdCtrls, Menus, Printers,
   CommCtrl,   // image lists, common controls tree structures
   Themes, UxTheme
@@ -86,11 +83,42 @@ uses
   {$endif TntSupport}
   ;
 
-{$ifndef COMPILER_12_UP}
+{$if CompilerVersion < 20}
 type
   UnicodeString = WideString;
   PByte = PAnsiChar;
-{$endif COMPILER_12_UP}
+{$ifend}
+
+{$if CompilerVersion < 18}
+  //MSAA interfaces not included in Delphi 7
+  {$WARN BOUNDS_ERROR OFF}
+  IAccessible = interface(IDispatch)
+    ['{618736E0-3C3D-11CF-810C-00AA00389B71}']
+    function Get_accParent(out ppdispParent: IDispatch): HResult; stdcall;
+    function Get_accChildCount(out pcountChildren: Integer): HResult; stdcall;
+    function Get_accChild(varChild: OleVariant; out ppdispChild: IDispatch): HResult; stdcall;
+    function Get_accName(varChild: OleVariant; out pszName: WideString): HResult; stdcall;
+    function Get_accValue(varChild: OleVariant; out pszValue: WideString): HResult; stdcall;
+    function Get_accDescription(varChild: OleVariant; out pszDescription: WideString): HResult; stdcall;
+    function Get_accRole(varChild: OleVariant; out pvarRole: OleVariant): HResult; stdcall;
+    function Get_accState(varChild: OleVariant; out pvarState: OleVariant): HResult; stdcall;
+    function Get_accHelp(varChild: OleVariant; out pszHelp: WideString): HResult; stdcall;
+    function Get_accHelpTopic(out pszHelpFile: WideString; varChild: OleVariant;
+                              out pidTopic: Integer): HResult; stdcall;
+    function Get_accKeyboardShortcut(varChild: OleVariant; out pszKeyboardShortcut: WideString): HResult; stdcall;
+    function Get_accFocus(out pvarChild: OleVariant): HResult; stdcall;
+    function Get_accSelection(out pvarChildren: OleVariant): HResult; stdcall;
+    function Get_accDefaultAction(varChild: OleVariant; out pszDefaultAction: WideString): HResult; stdcall;
+    function accSelect(flagsSelect: Integer; varChild: OleVariant): HResult; stdcall;
+    function accLocation(out pxLeft: Integer; out pyTop: Integer; out pcxWidth: Integer;
+                         out pcyHeight: Integer; varChild: OleVariant): HResult; stdcall;
+    function accNavigate(navDir: Integer; varStart: OleVariant; out pvarEndUpAt: OleVariant): HResult; stdcall;
+    function accHitTest(xLeft: Integer; yTop: Integer; out pvarChild: OleVariant): HResult; stdcall;
+    function accDoDefaultAction(varChild: OleVariant): HResult; stdcall;
+    function Set_accName(varChild: OleVariant; const pszName: WideString): HResult; stdcall;
+    function Set_accValue(varChild: OleVariant; const pszValue: WideString): HResult; stdcall;
+  end;
+{$ifend}
 
 const
   VTVersion = '5.0.0';
@@ -1011,11 +1039,11 @@ type
     destructor Destroy; override;
 
     procedure Assign(Source: TPersistent); override;
-{$ifdef COMPILER_12_UP}
+{$if CompilerVersion >= 20}
    function Equals(OtherColumnObj: TObject): Boolean; override;
 {$else}
    function Equals(OtherColumnObj: TObject): Boolean;
-{$endif}
+{$ifend}
     function GetRect: TRect; virtual;
     procedure LoadFromStream(const Stream: TStream; Version: Integer);
     procedure ParentBiDiModeChanged;
@@ -1117,11 +1145,11 @@ type
     procedure Clear; virtual;
     function ColumnFromPosition(P: TPoint; Relative: Boolean = True): TColumnIndex; overload; virtual;
     function ColumnFromPosition(PositionIndex: TColumnPosition): TColumnIndex; overload; virtual;
-{$ifdef COMPILER_12_UP}
+{$if CompilerVersion >= 20}
    function Equals(OtherColumnsObj: TObject): Boolean; override;
 {$else}
    function Equals(OtherColumnsObj: TObject): Boolean;
-{$endif}
+{$ifend}
     procedure GetColumnBounds(Column: TColumnIndex; var Left, Right: Integer);
     function GetFirstVisibleColumn(ConsiderAllowFocus: Boolean = False): TColumnIndex;
     function GetLastVisibleColumn(ConsiderAllowFocus: Boolean = False): TColumnIndex;
@@ -1219,14 +1247,14 @@ type
   );
   THeaderStates = set of THeaderState;
 
-  // describes the used column resize behaviour for AutoFitColumns
+
   TSmartAutoFitType = (
     smaAllColumns,      // consider nodes in view only for all columns
     smaNoColumn,        // consider nodes in view only for no column
     smaUseColumnOption  // use coSmartResize of the corresponding column
-  );
+  );  // describes the used column resize behaviour for AutoFitColumns
 
-  // desribes what made a structure change event happen
+
   TChangeReason = (
     crIgnore,       // used as placeholder
     crAccumulated,  // used for delayed changes
@@ -1235,7 +1263,7 @@ type
     crNodeAdded,    // a node has been added
     crNodeCopied,   // a node has been duplicated
     crNodeMoved     // a node has been moved to a new place
-  );
+  ); // desribes what made a structure change event happen
 
   TVTHeader = class(TPersistent)
   private
@@ -1905,18 +1933,18 @@ type
 
   PVTVirtualNodeEnumeration = ^TVTVirtualNodeEnumeration;
 
-  TVTVirtualNodeEnumerator = {$ifdef COMPILER_10_UP}record{$else}class{$endif}
+  TVTVirtualNodeEnumerator = {$if CompilerVersion >= 18}record{$else}class{$ifend}
   private
     FNode: PVirtualNode;
     FCanModeNext: Boolean;
     FEnumeration: PVTVirtualNodeEnumeration;
-    function GetCurrent: PVirtualNode; {$ifdef COMPILER_10_UP}inline;{$endif}
+    function GetCurrent: PVirtualNode; {$if CompilerVersion >= 18}inline;{$ifend}
   public
-    function MoveNext: Boolean; {$ifdef COMPILER_10_UP}inline;{$endif}
+    function MoveNext: Boolean; {$if CompilerVersion >= 18}inline;{$ifend}
     property Current: PVirtualNode read GetCurrent;
   end;
 
-  TVTVirtualNodeEnumeration = {$ifdef COMPILER_10_UP}record{$else}object{$endif}
+  TVTVirtualNodeEnumeration = {$if CompilerVersion >= 18}record{$else}object{$ifend}
   private
     FMode: TVZVirtualNodeEnumerationMode;
     FTree: TBaseVirtualTree;
@@ -2914,6 +2942,7 @@ type
     function GetNextNoInit(Node: PVirtualNode; ConsiderChildrenAbove: Boolean = False): PVirtualNode;
     function GetNextSelected(Node: PVirtualNode; ConsiderChildrenAbove: Boolean = False): PVirtualNode;
     function GetNextSibling(Node: PVirtualNode): PVirtualNode;
+    function GetNextSiblingNoInit(Node: PVirtualNode): PVirtualNode;
     function GetNextVisible(Node: PVirtualNode; ConsiderChildrenAbove: Boolean = True): PVirtualNode;
     function GetNextVisibleNoInit(Node: PVirtualNode; ConsiderChildrenAbove: Boolean = True): PVirtualNode;
     function GetNextVisibleSibling(Node: PVirtualNode; IncludeFiltered: Boolean = False): PVirtualNode;
@@ -2932,6 +2961,7 @@ type
     function GetPreviousNoInit(Node: PVirtualNode; ConsiderChildrenAbove: Boolean = False): PVirtualNode;
     function GetPreviousSelected(Node: PVirtualNode; ConsiderChildrenAbove: Boolean = False): PVirtualNode;
     function GetPreviousSibling(Node: PVirtualNode): PVirtualNode;
+    function GetPreviousSiblingNoInit(Node: PVirtualNode): PVirtualNode;
     function GetPreviousVisible(Node: PVirtualNode; ConsiderChildrenAbove: Boolean = True): PVirtualNode;
     function GetPreviousVisibleNoInit(Node: PVirtualNode; ConsiderChildrenAbove: Boolean = True): PVirtualNode;
     function GetPreviousVisibleSibling(Node: PVirtualNode; IncludeFiltered: Boolean = False): PVirtualNode;
@@ -3279,7 +3309,7 @@ type
     procedure ContentToCustom(Source: TVSTTextSourceType);
     function ContentToHTML(Source: TVSTTextSourceType; Caption: UnicodeString = ''): AnsiString;
     function ContentToRTF(Source: TVSTTextSourceType): AnsiString;
-    function ContentToText(Source: TVSTTextSourceType; Separator: AnsiChar): AnsiString; overload;
+    function ContentToText(Source: TVSTTextSourceType; Separator: Char): AnsiString; overload;
     function ContentToText(Source: TVSTTextSourceType; const Separator: AnsiString): AnsiString; overload;
     function ContentToUnicode(Source: TVSTTextSourceType; Separator: WideChar): UnicodeString; overload;
     function ContentToUnicode(Source: TVSTTextSourceType; const Separator: UnicodeString): UnicodeString; overload;
@@ -3892,6 +3922,7 @@ type
     class function GetElementDetails(Detail: TThemedHeader): TThemedElementDetails; overload;
     class function GetElementDetails(Detail: TThemedToolTip): TThemedElementDetails; overload;
     class function GetElementDetails(Detail: TThemedWindow): TThemedElementDetails; overload;
+    class function GetElementDetails(Detail: TThemedButton): TThemedElementDetails; overload;
     class procedure PaintBorder(Control: TWinControl; EraseLRCorner: Boolean);
   end;
 
@@ -3925,6 +3956,11 @@ type
   end;
 
   class function StyleServices.GetElementDetails(Detail: TThemedWindow): TThemedElementDetails;
+  begin
+    Result := ThemeServices.GetElementDetails(Detail);
+  end;
+
+  class function StyleServices.GetElementDetails(Detail: TThemedButton): TThemedElementDetails;
   begin
     Result := ThemeServices.GetElementDetails(Detail);
   end;
@@ -3999,10 +4035,10 @@ const
   CaptionChunk = 3;     // used by the string tree to store a node's caption
   UserChunk = 4;        // used for data supplied by the application
 
-  {$ifndef COMPILER_11_UP}
+  {$if CompilerVersion < 19}
     const
       TVP_HOTGLYPH = 4;
-  {$endif COMPILER_11_UP}
+  {$ifend}
 
   RTLFlag: array[Boolean] of Integer = (0, ETO_RTLREADING);
   AlignmentToDrawFlag: array[TAlignment] of Cardinal = (DT_LEFT, DT_RIGHT, DT_CENTER);
@@ -7535,7 +7571,7 @@ begin
             end;
           end
           else
-            Rectangle(R);
+          Rectangle(R);
 
           // Determine text position and don't forget the border.
           InflateRect(R, -1, -1);
@@ -8422,10 +8458,10 @@ end;
 function TVTVirtualNodeEnumeration.GetEnumerator: TVTVirtualNodeEnumerator;
 
 begin
-  {$ifdef COMPILER_10_UP}
+  {$if CompilerVersion >= 18}
   {$else}
   Result := TVTVirtualNodeEnumerator.Create;
-  {$endif COMPILER_10_UP}
+  {$ifend}
   Result.FNode := nil;
   Result.FCanModeNext := True;
   Result.FEnumeration := @Self;
@@ -13191,11 +13227,11 @@ begin
       SetLength(S, Dummy);
       ReadBuffer(PAnsiChar(S)^, Dummy);
       if VTHeaderStreamVersion >= 4 then
-        {$ifdef COMPILER_12_UP}
+        {$if CompilerVersion >= 20}
         Name := UTF8ToString(S)
         {$else}
         Name := UTF8Decode(S)
-        {$endif}
+        {$ifend}
       else
         Name := S;
       ReadBuffer(Dummy, SizeOf(Dummy));
@@ -17876,9 +17912,11 @@ begin
     if FAccessibleItem = nil then
       FAccessibleItem := GetAccessibilityFactory.CreateIAccessible(Self);
     if Cardinal(Message.LParam) = OBJID_CLIENT then
+      {$if CompilerVersion >= 18}
       if Assigned(Accessible) then
         Message.Result := LresultFromObject(IID_IAccessible, Message.WParam, FAccessible)
       else
+      {$ifend}
         Message.Result := 0;
   end;
 end;
@@ -20093,7 +20131,7 @@ begin
     end;
   end;
 
-  if Offset < Indent then
+  if Offset < (Indent + Margin{See issue #259}) then
   begin
     // Position is to the left of calculated indentation which can only happen for the main column.
     // Check whether it corresponds to a button/checkbox.
@@ -24860,24 +24898,35 @@ begin
       R := Rect(XPos - 1, YPos, XPos + 16, YPos + 16);
       Details.Element := teButton;
       case Index of
-        0..8: // radio buttons
-          begin
-            Details.Part := BP_RADIOBUTTON;
-            Details.State := Index;
-          end;
-        9..20: // check boxes
-          begin
-            Details.Part := BP_CHECKBOX;
-            Details.State := Index - 8;
-          end;
-        21..24: // buttons
-          begin
-            Details.Part := BP_PUSHBUTTON;
-            Details.State := Index - 20;
-          end;
+        // ctRadioButton
+        1 : Details := StyleServices.GetElementDetails(tbRadioButtonUncheckedNormal);
+        2 : Details := StyleServices.GetElementDetails(tbRadioButtonUncheckedHot);
+        3 : Details := StyleServices.GetElementDetails(tbRadioButtonUncheckedPressed);
+        4 : Details := StyleServices.GetElementDetails(tbRadioButtonUncheckedDisabled);
+        5 : Details := StyleServices.GetElementDetails(tbRadioButtonCheckedNormal);
+        6 : Details := StyleServices.GetElementDetails(tbRadioButtonCheckedHot);
+        7 : Details := StyleServices.GetElementDetails(tbRadioButtonCheckedPressed);
+        8 : Details := StyleServices.GetElementDetails(tbRadioButtonCheckedDisabled);
+       // ct(TriState)CheckBox
+        9 : Details := StyleServices.GetElementDetails(tbCheckBoxUncheckedNormal);
+       10 : Details := StyleServices.GetElementDetails(tbCheckBoxUncheckedHot);
+       11 : Details := StyleServices.GetElementDetails(tbCheckBoxUncheckedPressed);
+       12 : Details := StyleServices.GetElementDetails(tbCheckBoxUncheckedDisabled);
+       13 : Details := StyleServices.GetElementDetails(tbCheckBoxCheckedNormal);
+       14 : Details := StyleServices.GetElementDetails(tbCheckBoxCheckedHot);
+       15 : Details := StyleServices.GetElementDetails(tbCheckBoxCheckedPressed);
+       16 : Details := StyleServices.GetElementDetails(tbCheckBoxCheckedDisabled);
+       17 : Details := StyleServices.GetElementDetails(tbCheckBoxMixedNormal);
+       18 : Details := StyleServices.GetElementDetails(tbCheckBoxMixedHot);
+       19 : Details := StyleServices.GetElementDetails(tbCheckBoxMixedPressed);
+       20 : Details := StyleServices.GetElementDetails(tbCheckBoxMixedDisabled);
+       // ctButton
+       21 : Details := StyleServices.GetElementDetails(tbPushButtonNormal);
+       22 : Details := StyleServices.GetElementDetails(tbPushButtonHot);
+       23 : Details := StyleServices.GetElementDetails(tbPushButtonPressed);
+       24 : Details := StyleServices.GetElementDetails(tbPushButtonDisabled);
       else
-        Details.Part := 0;
-        Details.State := 0;
+        Details := StyleServices.GetElementDetails(tbButtonRoot);
       end;
       StyleServices.DrawElement(Canvas.Handle, Details, R);
       if Index in [21..24] then
@@ -25197,10 +25246,11 @@ var
   InnerRect: TRect;
   RowRect: TRect;
   Theme: HTHEME;
-  {$ifndef COMPILER_11_UP}
+  {$if CompilerVersion < 19}
+
     const
       TREIS_HOTSELECTED = 6;
-  {$endif COMPILER_11_UP}
+  {$ifend}
 
   //--------------- local functions -------------------------------------------
 
@@ -28139,7 +28189,7 @@ begin
               InitNode(Result);
           end;
 
-          // If there a no visible siblings take the parent.
+          // If there are no visible siblings take the parent.
           if not (vsVisible in Result.States) then
           begin
             Result := Result.Parent;
@@ -28554,23 +28604,21 @@ function TBaseVirtualTree.GetLastVisible(Node: PVirtualNode = nil; ConsiderChild
   IncludeFiltered: Boolean = False): PVirtualNode;
 
 // Returns the very last visible node in the tree while optionally considering toChildrenAbove.
-// The nodes are intialized all the way down including the result node.
+// The nodes are intialized all the way up including the result node.
 
 var
-  Next: PVirtualNode;
+  Run: PVirtualNode;
 
 begin
-  Result := GetLastVisibleChild(Node, IncludeFiltered);
-  if not ConsiderChildrenAbove or not (toChildrenAbove in FOptions.FPaintOptions) then
-    while Assigned(Result) do
-    begin
-      // Test if there is a next last visible child. If not keep the node from the last run.
-      // Otherwise use the next last visible child.
-      Next := GetLastVisibleChild(Result, IncludeFiltered);
-      if Next = nil then
-        Break;
-      Result := Next;
-    end;
+  Result := GetLastVisibleNoInit(Node, ConsiderChildrenAbove);
+
+  Run := Result;
+  while Assigned(Run) and (Run <> Node) do
+  begin
+    if not (vsInitialized in Run.States) then
+      InitNode(Run);
+    Run := Run.Parent;
+  end;
 end;
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -28624,21 +28672,18 @@ function TBaseVirtualTree.GetLastVisibleNoInit(Node: PVirtualNode = nil;
 // Returns the very last visible node in the tree while optionally considering toChildrenAbove.
 // No initialization is performed.
 
-var
-  Next: PVirtualNode;
-
 begin
-  Result := GetLastVisibleChildNoInit(Node, IncludeFiltered);
-  if not ConsiderChildrenAbove or not (toChildrenAbove in FOptions.FPaintOptions) then
-    while Assigned(Result) do
-    begin
-      // Test if there is a next last visible child. If not keep the node from the last run.
-      // Otherwise use the next last visible child.
-      Next := GetLastVisibleChildNoInit(Result, IncludeFiltered);
-      if Next = nil then
-        Break;
-      Result := Next;
-    end;
+  Result := GetLastNoInit(Node, ConsiderChildrenAbove);
+  while Assigned(Result) and (Result <> Node) do
+  begin
+    if FullyVisible[Result] and
+       (IncludeFiltered or not IsEffectivelyFiltered[Result]) then
+      Break;
+    Result := GetPreviousNoInit(Result, ConsiderChildrenAbove);
+  end;
+
+  if (Result = Node) then // i.e. there is no visible node
+    Result := nil;
 end;
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -29083,6 +29128,20 @@ begin
     Result := Result.NextSibling;
     if Assigned(Result) and not (vsInitialized in Result.States) then
       InitNode(Result);
+  end;
+end;
+
+function TBaseVirtualTree.GetNextSiblingNoInit(Node: PVirtualNode): PVirtualNode;
+
+// Returns the next sibling of Node.
+
+begin
+  Result := Node;
+  if Assigned(Result) then
+  begin
+    Assert(Result <> FRoot, 'Node must not be the hidden root node.');
+
+    Result := Result.NextSibling;
   end;
 end;
 
@@ -29738,7 +29797,7 @@ end;
 
 function TBaseVirtualTree.GetPreviousSibling(Node: PVirtualNode): PVirtualNode;
 
-// Get next sibling of Node, initialize it if necessary.
+// Returns the previous sibling of Node and initializes it if necessary.
 
 begin
   Result := Node;
@@ -29749,6 +29808,20 @@ begin
     Result := Result.PrevSibling;
     if Assigned(Result) and not (vsInitialized in Result.States) then
       InitNode(Result);
+  end;
+end;
+
+function TBaseVirtualTree.GetPreviousSiblingNoInit(Node: PVirtualNode): PVirtualNode;
+
+// Returns the previous sibling of Node
+
+begin
+  Result := Node;
+  if Assigned(Result) then
+  begin
+    Assert(Result <> FRoot, 'Node must not be the hidden root node.');
+
+    Result := Result.PrevSibling;
   end;
 end;
 
@@ -33604,7 +33677,7 @@ var
   LastFont: THandle;
 
 begin
-  if not (vsMultiline in FLink.FNode.States) then
+  if not (vsMultiline in FLink.FNode.States) and not (toGridExtensions in FLink.FTree.FOptions.FMiscOptions{see issue #252}) then
   begin
     // avoid flicker
     SendMessage(Handle, WM_SETREDRAW, 0, 0);
@@ -34912,7 +34985,7 @@ begin
       end;
   else
     if Format = CF_CSV then
-      S := ContentToText(Source, AnsiChar ({$ifdef COMPILER_15_UP}FormatSettings.{$endif}ListSeparator)) + #0
+      S := ContentToText(Source, AnsiChar ({$if CompilerVersion>=23}FormatSettings.{$ifend}ListSeparator)) + #0
     else
       if (Format = CF_VRTF) or (Format = CF_VRTFNOOBJS) then
         S := ContentToRTF(Source) + #0
@@ -35865,7 +35938,7 @@ end;
 
 //----------------------------------------------------------------------------------------------------------------------
 
-function TCustomVirtualStringTree.ContentToText(Source: TVSTTextSourceType; Separator: AnsiChar): AnsiString;
+function TCustomVirtualStringTree.ContentToText(Source: TVSTTextSourceType; Separator: Char): AnsiString;
 
 begin
   Result := ContentToText(Source, AnsiString(Separator));
