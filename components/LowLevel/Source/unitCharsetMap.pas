@@ -32,6 +32,9 @@ var
   CP_USASCII: Integer = 0;
   DefaultCodePage: Integer = 0;
 
+const
+  CP_MAC = 10000;
+
 function MIMECharsetNameToCodepage(const MIMECharsetName: string): Integer;
 function CharsetNameToCodepage(const CharsetName: string): Integer;
 function CodepageToMIMECharsetName(codepage: Integer): string;
@@ -101,7 +104,7 @@ type
   end;
 
 var
-  gCharsetMap: array[0..35] of TCharsetRec = (
+  gCharsetMap: array[0..37] of TCharsetRec = (
     (Name:'US ASCII';                      URLSuffix:'';    CodePage:0;     Charset:0;   MIMECharsetName:'';                CharsetName:'ANSI_CHARSET'       ),
     (Name:'US ASCII';                      URLSuffix:'';    CodePage:0;     Charset:0;   MIMECharsetName:'us-ascii';        CharsetName:'ANSI_CHARSET'       ),
     (Name:'Western Europe (ISO)';          URLSuffix:'';    CodePage:28591; Charset:0;   MIMECharsetName:'iso-8859-1';      CharsetName:'ANSI_CHARSET'       ),
@@ -134,10 +137,13 @@ var
     (Name:'Greek (Windows)';               URLSuffix:'.gr'; CodePage:01253; Charset:161; MIMECharsetName:'windows-1253';    CharsetName:'GREEK_CHARSET'      ),
     (Name:'Turkish (ISO)';                 URLSuffix:'.tr'; CodePage:28599; Charset:162; MIMECharsetName:'iso-8859-9';      CharsetName:'TURKISH_CHARSET'    ),
     (Name:'Hebrew (Windows)';              URLSuffix:'.il'; CodePage:01255; Charset:177; MIMECharsetName:'windows-1255';    CharsetName:'HEBREW_CHARSET'     ),
-    (Name:'Hebrew (ISO)';                  URLSuffix:'';    CodePage:28598; Charset:177; MIMECharsetName:'iso-8859-9';      CharsetName:'HEBREW_CHARSET'     ),
+    (Name:'Hebrew (ISO)';                  URLSuffix:'';    CodePage:28598; Charset:177; MIMECharsetName:'iso-8859-8';      CharsetName:'HEBREW_CHARSET'     ),
     (Name:'Arabic (ISO)';                  URLSuffix:'';    CodePage:28596; Charset:178; MIMECharsetName:'iso-8859-6';      CharsetName:'ARABIC_CHARSET'     ),
     (Name:'Baltic (ISO)';                  URLSuffix:'';    CodePage:28594; Charset:186; MIMECharsetName:'iso-8859-4';      CharsetName:'BALTIC_CHARSET'     ),
-    (Name:'Unicode (UTF-8)';               URLSuffix:'';    CodePage:65001; Charset:0;   MIMECharsetName:'utf-8';           CharsetName:'BALTIC_CHARSET'     )
+    (Name:'Unicode (UTF-8)';               URLSuffix:'';    CodePage:65001; Charset:0;   MIMECharsetName:'utf-8';           CharsetName:'BALTIC_CHARSET'     ),
+    // Following item(s) must be the last item in the list
+    (Name:'Western European (Mac)';        URLSuffix:'';    CodePage:CP_MAC;Charset:77;  MIMECharsetName:'macintosh';       CharsetName:'MAC_CHARSET'        ),
+    (Name:'Western European (Mac)';        URLSuffix:'';    CodePage:CP_MAC;Charset:77;  MIMECharsetName:'x-mac-roman';     CharsetName:'MAC_CHARSET'        )
   );
 
   CharsetMap: array of TCharsetRec;
@@ -161,7 +167,7 @@ begin
     if Assigned(gIMultiLanguage) then
     begin
       gIMultiLanguage.EnumCodePages(MIMECONTF_MAILNEWS, enum);
-      info := CoTaskMemAlloc(10* SizeOf(tagMIMECPInfo));;
+      info := CoTaskMemAlloc(10 * SizeOf(tagMIMECPInfo));
       try
         c := 2;
         while SUCCEEDED(enum.Next(10, info^, ct)) and (ct <> 0) do
@@ -188,17 +194,24 @@ begin
 
         for i := 0 to c - 1 do
           for j := Low(gCharsetMap) to High(gCharsetMap) do
-            if gCharsetMap[j].CodePage = charsetMap[i].CodePage then
+            if gCharsetMap[j].CodePage = CharsetMap[i].CodePage then
             begin
-              if charsetMap[i].URLSuffix = '' then
-                charsetMap[i].URLSuffix := gCharsetMap[j].URLSuffix;
-              if charsetMap[i].URLSuffix <> '' then
+              if CharsetMap[i].URLSuffix = '' then
+                CharsetMap[i].URLSuffix := gCharsetMap[j].URLSuffix;
+              if CharsetMap[i].URLSuffix <> '' then
                 Break;
             end;
 
+        // Add MIME charset(s) 'macintosh' to the list.
+        SetLength(CharsetMap, c + 2);
+        CharsetMap[c] := gCharsetMap[High(gCharsetMap)-1];
+        Inc(c);
+        CharsetMap[c] := gCharsetMap[High(gCharsetMap)];
+        Inc(c);
+
         found := False;
         for i := 0 to c - 1 do
-          if charsetMap[i].CodePage = DefaultCodePage then
+          if CharsetMap[i].CodePage = DefaultCodePage then
           begin
             found := True;
             Break;
@@ -208,8 +221,8 @@ begin
           for i := Low(gCharsetMap) to High(gCharsetMap) do
             if gCharsetMap[i].CodePage = DefaultCodePage then
             begin
-              SetLength(charsetMap, c + 1);
-              charsetMap[c] := gCharsetMap[i];
+              SetLength(CharsetMap, c + 1);
+              CharsetMap[c] := gCharsetMap[i];
               Break;
             end;
 
@@ -337,7 +350,7 @@ end;
 function WideStringToAnsiString(const ws: string; codePage: Integer): AnsiString;
 var
   dlen, len: DWORD;
-  mode: DWORD;
+//  mode: DWORD;
 begin
   LoadMultiLanguage;
 
@@ -347,13 +360,17 @@ begin
   if codePage = -1 then
     codePage := CP_USASCII;
 
-  if gMultiLang and (codePage <> CP_ACP) then
-  begin
-    mode := 0;
-    if not SUCCEEDED(gIMultiLanguage.ConvertStringFromUnicode(mode, codepage, PWideChar(ws), len, PAnsiChar(Result), dlen)) then
-      dlen := 0;
-  end
-  else
+// NOTE: IMultiLanguage is kind of limited in the number of codepages it
+//       supports and, AFAICS, it actually is using WideCharToMultiByte
+//       when converting from an UnicodeString.
+//       PZ20120702
+//  if gMultiLang and (codePage <> CP_ACP) and (codePage <> CP_MAC) then
+//  begin
+//    mode := 0;
+//    if not SUCCEEDED(gIMultiLanguage.ConvertStringFromUnicode(mode, codepage, PWideChar(ws), len, PAnsiChar(Result), dlen)) then
+//      dlen := 0;
+//  end
+//  else
     dlen := WideCharToMultiByte(codePage, 0, PWideChar(ws), len, PAnsiChar(Result), len * 4, nil, nil);
 
   if dlen = 0 then
@@ -364,7 +381,8 @@ end;
 
 function AnsiStringToWideString(const st: AnsiString; codePage: Integer): string;
 var
-  len, dlen, mode: DWORD;
+  len, dlen: DWORD;
+//  mode: DWORD;
 begin
   LoadMultiLanguage;
 
@@ -378,13 +396,17 @@ begin
     dlen := len * 4;
     SetLength(Result, dlen);
 
-    if gMultiLang and (codePage <> CP_ACP) then
-    begin
-      mode := 0;
-      if not SUCCEEDED(gIMultiLanguage.ConvertStringToUnicode(mode, codepage, PAnsiChar(st), len, PWideChar(Result), dlen)) then
-        dlen := 0;
-    end
-    else
+// NOTE: IMultiLanguage is kind of limited in the number of codepages it
+//       supports and, AFAICS, it actually is using MultiByteToWideChar
+//       when converting to an UnicodeString.
+//       PZ20120702
+//    if gMultiLang and (codePage <> CP_ACP) and (codePage <> CP_MAC) then
+//    begin
+//      mode := 0;
+//      if not SUCCEEDED(gIMultiLanguage.ConvertStringToUnicode(mode, codepage, PAnsiChar(st), len, PWideChar(Result), dlen)) then
+//        dlen := 0;
+//    end
+//    else
       dlen := MultiByteToWideChar(codepage, 0, PAnsiChar(st), len, PWideChar(Result), len * 4);
 
     if dlen = 0 then
