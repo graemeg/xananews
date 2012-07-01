@@ -216,6 +216,9 @@ begin
   lblBackground.Visible := not (TAppearanceEnum(fData.Param) in [apMainForm..apMenu]);
   clrBackground.Visible := lblBackground.Visible;
 
+  lblBackground.Enabled := not (TAppearanceEnum(fData.Param) in [apMessagePane..apLevel3Quotes]);
+  clrBackground.Enabled := lblBackground.Enabled;
+
   cbBold.Checked := fsBold in fData.fFontStyle;
   cbUnderline.Checked := fsUnderline in fData.fFontStyle;
   cbItalic.Checked := fsItalic in fData.fFontStyle;
