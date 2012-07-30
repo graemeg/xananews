@@ -4801,7 +4801,12 @@ procedure TfmMain.GoToArticle(article: TArticleBase);
 var
   node: PVirtualNode;
 begin
-  if not Assigned(article) then Exit;
+  if not Assigned(article) then
+  begin
+    DisplayArticleBody(nil);
+    Exit;
+  end;
+
   if article.Owner <> fLastFocusedArticleContainer then
   begin
     FocusArticleContainer(article.Owner);
