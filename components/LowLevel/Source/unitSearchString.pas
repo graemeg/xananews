@@ -305,25 +305,18 @@ begin
   l1 := Length(b);
 
   if (l1 = 0) or (l = 0) then
-  begin
-    Result := False;
-    Exit;
-  end;
+    Exit(False);
 
-  if b[l1] = '*' then
+  if b[l1] = '*' then  // wild card at the end of the search string?
   begin
-    if l1 = 1 then
-      Result := True
+    if b[1] = '*' then // wild card at both the begin and the end of the search string?
+      Exit((l1 = 2) or AnsiContainsStr(a, Copy(b, 2, l1 - 2)))
     else
-      Result := AnsiContainsStr(a, Copy(b, 1, l1 - 1));
-    Exit;
-  end;
-
-  if b[1] = '*' then
-  begin
-    Result := AnsiContainsStr(a, Copy(b, 2, l1 - 1));
-    Exit;
-  end;
+      Exit((l1 = 1) or AnsiContainsStr(a, Copy(b, 1, l1 - 1)));
+  end
+  else
+    if b[1] = '*' then // wild card at the begin of the search string?
+      Exit(AnsiContainsStr(a, Copy(b, 2, l1 - 1)));
 
   offs := 1;
   repeat
