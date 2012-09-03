@@ -1,0 +1,96 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{13CE6E7C-4552-47AB-94D2-7A5E63BC96FA}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="components\ImageTypes\Source\ImageTypesDXE3.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="components\LowLevel\Source\LowLevelDXE3.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="components\MiscUnits\Source\MiscUnitsDXE3.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesDXE3.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesDXE3D.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="source\XanaNews.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="ImageTypesDXE3">
+        <MSBuild Projects="components\ImageTypes\Source\ImageTypesDXE3.dproj"/>
+    </Target>
+    <Target Name="ImageTypesDXE3:Clean">
+        <MSBuild Projects="components\ImageTypes\Source\ImageTypesDXE3.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ImageTypesDXE3:Make">
+        <MSBuild Projects="components\ImageTypes\Source\ImageTypesDXE3.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="LowLevelDXE3">
+        <MSBuild Projects="components\LowLevel\Source\LowLevelDXE3.dproj"/>
+    </Target>
+    <Target Name="LowLevelDXE3:Clean">
+        <MSBuild Projects="components\LowLevel\Source\LowLevelDXE3.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="LowLevelDXE3:Make">
+        <MSBuild Projects="components\LowLevel\Source\LowLevelDXE3.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="MiscUnitsDXE3">
+        <MSBuild Projects="components\MiscUnits\Source\MiscUnitsDXE3.dproj"/>
+    </Target>
+    <Target Name="MiscUnitsDXE3:Clean">
+        <MSBuild Projects="components\MiscUnits\Source\MiscUnitsDXE3.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="MiscUnitsDXE3:Make">
+        <MSBuild Projects="components\MiscUnits\Source\MiscUnitsDXE3.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="VirtualTreesDXE3">
+        <MSBuild Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesDXE3.dproj"/>
+    </Target>
+    <Target Name="VirtualTreesDXE3:Clean">
+        <MSBuild Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesDXE3.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="VirtualTreesDXE3:Make">
+        <MSBuild Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesDXE3.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="VirtualTreesDXE3D">
+        <MSBuild Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesDXE3D.dproj"/>
+    </Target>
+    <Target Name="VirtualTreesDXE3D:Clean">
+        <MSBuild Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesDXE3D.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="VirtualTreesDXE3D:Make">
+        <MSBuild Projects="components\thirdparty\VirtualTreeView\Delphi\VirtualTreesDXE3D.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="XanaNews">
+        <MSBuild Projects="source\XanaNews.dproj"/>
+    </Target>
+    <Target Name="XanaNews:Clean">
+        <MSBuild Projects="source\XanaNews.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="XanaNews:Make">
+        <MSBuild Projects="source\XanaNews.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="ImageTypesDXE3;LowLevelDXE3;MiscUnitsDXE3;VirtualTreesDXE3;VirtualTreesDXE3D;XanaNews"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="ImageTypesDXE3:Clean;LowLevelDXE3:Clean;MiscUnitsDXE3:Clean;VirtualTreesDXE3:Clean;VirtualTreesDXE3D:Clean;XanaNews:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="ImageTypesDXE3:Make;LowLevelDXE3:Make;MiscUnitsDXE3:Make;VirtualTreesDXE3:Make;VirtualTreesDXE3D:Make;XanaNews:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

@@ -139,7 +139,11 @@ function TextToNNTPFilter(var text: string; var col: TNNTPFilterColumn; var op: 
 
 implementation
 
-uses NewsGlobals, unitNNTPServices, unitMessages;
+uses
+  {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
+    System.Types,
+  {$ifend}
+  NewsGlobals, unitNNTPServices, unitMessages;
 
 resourcestring
   sFilterFormat = '%s %s %s';

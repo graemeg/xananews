@@ -536,6 +536,9 @@ type
 implementation
 
 uses
+  {$IFDEF VCL_XE3_OR_ABOVE}
+  System.SyncObjs,
+  {$ENDIF}
   {$IFDEF KYLIXCOMPAT}
   Libc,
   {$ENDIF}
@@ -901,7 +904,7 @@ destructor TIdCustomHTTPServer.Destroy;
 begin
   Active := False; // Set Active to false in order to close all active sessions.
   FreeAndNil(FMIMETable);
-  FreeAndNil(FSessionList);
+  FreeAndNil(FSessionList); // RLebeau: remove this? It frees  the USER'S component if still assigned...
   inherited Destroy;
 end;
 
@@ -1473,9 +1476,12 @@ begin
     FreeAndNil(FSessionCleanupThread);
   end;
 
+  // RLebeau: FSessionList might not be assignd yet if Shutdown() is being
+  // called due to an exception raised in Startup()...
   if FImplicitSessionList then begin
     SessionList := nil;
-  end else begin
+  end
+  else if Assigned(FSessionList) then begin
     FSessionList.Clear;
   end;
 
@@ -1954,6 +1960,14 @@ begin
       ContentType := 'text/html; charset=utf-8';    {Do not Localize}
       ContentText := '<HTML><BODY><B>' + IntToStr(ResponseNo) + ' ' + ResponseText + '</B></BODY></HTML>';    {Do not Localize}
       ContentLength := -1; // calculated below
+    end;
+  end;
+
+  // RLebeau 5/15/2012: for backwards compatibility. We really should
+  // make the user set this every time instead...
+  if ContentType = '' then begin
+    if (ContentText <> '') or (Assigned(ContentStream)) then begin
+      ContentType := 'text/html; charset=ISO-8859-1'; {Do not Localize}
     end;
   end;
 

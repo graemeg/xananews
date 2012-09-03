@@ -3,7 +3,7 @@ program NewsReader3;
 {$SetPEFlags $21}  // $01 = IMAGE_FILE_RELOCS_STRIPPED
                    // $20 = IMAGE_FILE_LARGE_ADDRESS_AWARE
 
-{$if CompilerVersion >= 21.0}
+{$if CompilerVersion >= 21.0} // 21.0 = Delphi 2010
   {$WEAKLINKRTTI ON}
   {$RTTI EXPLICIT METHODS([]) FIELDS([]) PROPERTIES([])}
 {$ifend}

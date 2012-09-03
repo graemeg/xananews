@@ -1,12 +1,9 @@
 inherited fmPropertyPageShortcuts: TfmPropertyPageShortcuts
   Caption = 'Keyboard Shortcuts'
   OnCreate = FormCreate
-  ExplicitWidth = 400
-  ExplicitHeight = 450
   PixelsPerInch = 96
   TextHeight = 13
   inherited Panel1: TPanel
-    ExplicitWidth = 414
     inherited Bevel1: TBevel
       ExplicitWidth = 414
     end

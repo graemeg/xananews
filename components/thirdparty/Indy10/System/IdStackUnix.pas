@@ -981,11 +981,8 @@ end;
 
 function TIdStackUnix.IOControl(const s: TIdStackSocketHandle; const cmd: LongWord;
   var arg: LongWord): Integer;
-var
-  LArg : PtrUInt;
 begin
-  LArg := arg;
-  Result := fpioctl(s, cmd, Pointer(LArg));
+  Result := fpioctl(s, cmd, @arg);
 end;
 (*
 Why did I remove this again?
@@ -1035,8 +1032,12 @@ procedure TIdStackUnix.SetKeepAliveValues(ASocket: TIdStackSocketHandle;
   const AEnabled: Boolean; const ATimeMS, AInterval: Integer);
 begin
   if AEnabled then begin
+    {$IFDEF HAS_TCP_KEEPIDLE}
     SetSocketOption(ASocket, Id_SOL_TCP, Id_TCP_KEEPIDLE, ATimeMS div MSecsPerSec);
+    {$ENDIF}
+    {$IFDEF HAS_TCP_KEEPINTVL}
     SetSocketOption(ASocket, Id_SOL_TCP, Id_TCP_KEEPINTVL, AInterval div MSecsPerSec);
+    {$ENDIF}
   end;
   inherited;
 end;
@@ -1185,9 +1186,15 @@ begin
   //
   Result := FDSelect(LPReadSet, LPWriteSet, LPExceptSet, ATimeout) <> 0;
   //
-  TIdSocketListUnix(AReadList).SetFDSet(LReadSet);
-  TIdSocketListUnix(AWriteList).SetFDSet(LWriteSet);
-  TIdSocketListUnix(AExceptList).SetFDSet(LExceptSet);
+  if AReadList <> nil then begin
+    TIdSocketListUnix(AReadList).SetFDSet(LReadSet);
+  end;
+  if AWriteList <> nil then begin
+    TIdSocketListUnix(AWriteList).SetFDSet(LWriteSet);
+  end;
+  if AExceptList <> nil then begin
+    TIdSocketListUnix(AExceptList).SetFDSet(LExceptSet);
+  end;
 end;
 
 function TIdSocketListUnix.SelectRead(const ATimeout: Integer): Boolean;

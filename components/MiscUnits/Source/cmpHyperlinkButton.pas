@@ -63,7 +63,11 @@ type
 
 implementation
 
-uses shellapi, urlmon;
+uses
+  {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
+    System.UITypes,
+  {$ifend}
+  ShellApi, UrlMon;
 
 { THyperlinkButton }
 

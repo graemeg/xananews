@@ -44,7 +44,8 @@ uses
 {$endif}
   unitBookmarks, cmpSplitterPanel, unitNewsStringsDisplayObject,
   unitGetMessages1, unitMailServices, Tabs, ButtonGroup, CategoryButtons,
-  unitExSettings, XnClasses, XnRawByteStrings, XnCaptionedDockTree, DockingUtils;
+  unitExSettings, XnClasses, XnRawByteStrings, XnCaptionedDockTree, DockingUtils,
+  System.Actions;
 
 type
 
@@ -1190,6 +1191,9 @@ implementation
 {$R *.dfm}
 
 uses
+  {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
+    System.UITypes,
+  {$ifend}
   ClipBrd, Printers, StrUtils,
   AccountsDialog, NewsgroupsDialog, FilterDialog, MessagesDialog, unitNNTPFilters,
   IdException, SplashForm, unitNNTPThreadManager, BatchesDialog, NewsgroupStatisticsForm,
@@ -10043,11 +10047,9 @@ begin
 //  NameThread(msg.WParam, UTF8Encode(PChar(msg.LParam))); // madExcept v3
     NameThread(msg.WParam, PChar(msg.LParam));             // madExcept v4
   {$else}
-    {$ifdef ConditionalExpressions}
-      {$if CompilerVersion >= 21.0}
-        TThread.NameThreadForDebugging(UTF8Encode(PChar(msg.LParam)), msg.WParam);
-      {$ifend}
-    {$endif}
+    {$if CompilerVersion >= 21.0} // 21.0 = Delphi 2010
+      TThread.NameThreadForDebugging(UTF8Encode(PChar(msg.LParam)), msg.WParam);
+    {$ifend}
   {$endif}
 end;
 

@@ -2638,11 +2638,19 @@ begin
   if not (sslvTLSv1 in SSLVersions) then begin
     SSL_CTX_set_options(fContext, SSL_OP_NO_TLSv1);
   end;
-  if not ( sslvTLSv1_1 in SSLVersions) then begin
-    SSL_CTX_set_options(fContext, SSL_OP_NO_TLSv1_1);
+{IMPORTANT!!!  Do not set SSL_CTX_set_options SSL_OP_NO_TLSv1_1 and
+SSL_OP_NO_TLSv1_2 if that functionality is not available.  OpenSSL 1.0 and
+earlier do not support those flags.  Those flags would only cause
+an invalid MAC when doing SSL.}
+  if IsTLSv1_1Available then begin
+    if not ( sslvTLSv1_1 in SSLVersions) then begin
+      SSL_CTX_set_options(fContext, SSL_OP_NO_TLSv1_1);
+    end;
   end;
-  if not ( sslvTLSv1_2 in SSLVersions) then begin
-    SSL_CTX_set_options(fContext, SSL_OP_NO_TLSv1_2);
+  if IsTLSv1_2Available then begin
+    if not ( sslvTLSv1_2 in SSLVersions) then begin
+      SSL_CTX_set_options(fContext, SSL_OP_NO_TLSv1_2);
+    end;
   end;
   SSL_CTX_set_mode(fContext, SSL_MODE_AUTO_RETRY);
   // assign a password lookup routine
@@ -2730,6 +2738,17 @@ begin
   Result := True;
 end;
 }
+function SelectTLS1Method(const AMode : TIdSSLMode) : PSSL_METHOD;
+{$IFDEF USE_INLINE} inline; {$ENDIF}
+begin
+  case AMode of
+    sslmServer : Result := TLSv1_server_method;
+    sslmClient : Result := TLSv1_client_method;
+  else
+    Result := TLSv1_method;
+  end;
+end;
+
 function TIdSSLContext.SetSSLMethod: PSSL_METHOD;
 begin
   if fMode = sslmUnassigned then begin
@@ -2757,27 +2776,37 @@ begin
       else
         Result := SSLv3_method;
       end;
+{IMPORTANT!!!  fallback to TLS 1.0 if TLS 1.1 or 1.2 is not available.
+This is important because OpenSSL earlier than 1.0.1 does not support this
+functionality.
+
+Todo:  Figure out a better fallback.
+}
     sslvTLSv1:
-      case fMode of
-        sslmServer : Result := TLSv1_server_method;
-        sslmClient : Result := TLSv1_client_method;
-      else
-        Result := TLSv1_method;
-      end;
+      Result :=  SelectTLS1Method(fMode);
     sslvTLSv1_1 :
-      case fMode of
-        sslmServer : Result := TLSv1_1_server_method;
-        sslmClient : Result := TLSv1_1_client_method;
-      else
-        Result := TLSv1_1_method;
+      if IsTLSv1_1Available then begin
+        case fMode of
+          sslmServer : Result := TLSv1_1_server_method;
+          sslmClient : Result := TLSv1_1_client_method;
+        else
+          Result := TLSv1_1_method;
+        end;
+      end else begin
+        Result :=  SelectTLS1Method(fMode);
       end;
     sslvTLSv1_2 :
-      case fMode of
-        sslmServer : Result := TLSv1_2_server_method;
-        sslmClient : Result := TLSv1_2_client_method;
-      else
-        Result := TLSv1_2_method;
-      end;
+      if IsTLSv1_2Available then begin
+
+        case fMode of
+          sslmServer : Result := TLSv1_2_server_method;
+          sslmClient : Result := TLSv1_2_client_method;
+        else
+          Result := TLSv1_2_method;
+        end;
+      end else begin
+        Result :=  SelectTLS1Method(fMode);
+      end
   else
     raise EIdOSSLGetMethodError.Create(RSSSLGetMethodError);
   end;

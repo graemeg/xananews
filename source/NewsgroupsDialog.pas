@@ -77,6 +77,9 @@ var
 implementation
 
 uses
+  {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
+    System.UITypes,
+  {$ifend}
   Contnrs, ClipBrd, NewsGlobals, unitSearchString;
 
 {$R *.dfm}

@@ -423,7 +423,12 @@ type
 
 implementation
 
-uses ShellAPI, ClipBrd, printers, unitCharsetMap, CommDlg;
+uses
+  {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
+    System.Types,
+    System.UITypes,
+  {$ifend}
+  ShellAPI, ClipBrd, printers, unitCharsetMap, CommDlg;
 
 var
   gRichEditModule: THandle;

@@ -210,7 +210,9 @@ begin
     FClient.DoReplyUnknownCommand(FContext, FRecvData);
   end;
   //Synchronize(?);
-  FClient.IOHandler.CheckForDisconnect;
+  if not Terminated then begin
+    FClient.IOHandler.CheckForDisconnect;
+  end;
 end;
 
 { TIdCmdTCPClient }
@@ -243,10 +245,10 @@ begin
   try
     inherited Disconnect(ANotifyPeer);
   finally
-    if Assigned(FListeningThread) then begin
+    if Assigned(FListeningThread) and not IsCurrentThread(FListeningThread) then begin
       FListeningThread.WaitFor;
+      FreeAndNil(FListeningThread);
     end;
-    FreeAndNil(FListeningThread);
   end;
 end;
 

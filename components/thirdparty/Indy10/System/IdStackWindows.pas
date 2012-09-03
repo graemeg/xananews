@@ -316,7 +316,7 @@ var
 implementation
 
 uses
-  IdResourceStrings, IdWship6;
+  IdIDN, IdResourceStrings, IdWship6;
 
 {$IFNDEF WINCE}
 type
@@ -339,6 +339,7 @@ begin
     try
       InitializeWinSock;
       IdWship6.InitLibrary;
+      IdIDN.InitIDNLibrary;
     except
       on E: Exception do begin
         raise EIdStackInitializationFailed.Create(E.Message);
@@ -453,7 +454,7 @@ var
   LTemp: AnsiString;
   {$ELSE}
     {$IFDEF UNICODE_BUT_STRING_IS_ANSI}
-  LTemp: WideString;
+  LTemp: TIdUnicodeString;
     {$ENDIF}
   {$ENDIF}
 begin
@@ -499,7 +500,7 @@ begin
   LAddrInfo := nil;
 
   {$IFDEF UNICODE_BUT_STRING_IS_ANSI}
-  LTemp := WideString(AAddress); // explicit convert to Unicode
+  LTemp := TIdUnicodeString(AAddress); // explicit convert to Unicode
   {$ENDIF}
 
   RetVal := getaddrinfo(
@@ -540,7 +541,7 @@ end;
 
 procedure TIdStackWindows.Listen(ASocket: TIdStackSocketHandle; ABackLog: Integer);
 begin
-  CheckForSocketError(IdWinsock2.Listen(ASocket, ABacklog));
+  CheckForSocketError(IdWinsock2.listen(ASocket, ABacklog));
 end;
 
 // RLebeau 12/16/09: MS Hotfix #971383 supposedly fixes a bug in Windows
@@ -802,7 +803,7 @@ var
   LTemp: AnsiString;
   {$ELSE}
     {$IFDEF UNICODE_BUT_STRING_IS_ANSI}
-  LTemp: WideString;
+  LTemp: TIdUnicodeString;
     {$ENDIF}
   {$ENDIF}
 begin
@@ -845,7 +846,7 @@ begin
   LAddrList := nil;
 
   {$IFDEF UNICODE_BUT_STRING_IS_ANSI}
-  LTemp := WideString(LHostName); // explicit convert to Unicode
+  LTemp := TIdUnicodeString(LHostName); // explicit convert to Unicode
   {$ENDIF}
 
   RetVal := getaddrinfo(
@@ -1167,13 +1168,7 @@ var
   Hints: TAddrInfo;
   {$ENDIF}
   RetVal: Integer;
-  {$IFDEF STRING_IS_UNICODE}
-  LTemp: AnsiString;
-  {$ELSE}
-    {$IFDEF UNICODE_BUT_STRING_IS_ANSI}
-  LTemp: WideString;
-    {$ENDIF}
-  {$ENDIF}
+  LTemp: string;
 begin
   //GetHostByName and GetHostByAddr may not be availble in future versions
   //of Windows CE.  Those functions are depreciated in favor of the new
@@ -1187,11 +1182,13 @@ begin
     case AIPVersion of
       Id_IPv4:
         begin
-          {$IFDEF STRING_IS_UNICODE}
-          LTemp := AnsiString(AHostName); // explicit convert to Ansi
-          {$ENDIF}
           LHost := IdWinsock2.gethostbyname(
-            PAnsiChar({$IFDEF STRING_IS_UNICODE}LTemp{$ELSE}AHostName{$ENDIF}));
+            {$IFDEF STRING_IS_UNICODE}
+            PAnsiChar(AnsiString(AHostName)) // explicit convert to Ansi
+            {$ELSE}
+            PAnsiChar(AHostName)
+            {$ENDIF}
+            );
           if LHost = nil then begin
             RaiseLastSocketError;
           end;
@@ -1224,12 +1221,23 @@ begin
   Hints.ai_socktype := SOCK_STREAM;
   LAddrInfo := nil;
 
-  {$IFDEF UNICODE_BUT_STRING_IS_ANSI}
-  LTemp := WideString(AHostName); // explicit convert to Unicode
-  {$ENDIF}
-
+  if UseIDNAPI then begin
+    LTemp := IDNToPunnyCode(
+      {$IFDEF STRING_IS_UNICODE}
+      AHostName
+      {$ELSE}
+      TIdUnicodeString(AHostName) // explicit convert to Unicode
+      {$ENDIF}
+    );
+  end else begin
+    LTemp := AHostName;
+  end;
   RetVal := getaddrinfo(
-    {$IFDEF UNICODE_BUT_STRING_IS_ANSI}PWideChar(LTemp){$ELSE}PChar(AHostName){$ENDIF},
+    {$IFDEF UNICODE}
+    PIdWideChar({$IFDEF STRING_IS_UNICODE}LTemp{$ELSE}TIdUnicodeString(LTemp){$ENDIF})
+    {$ELSE}
+    PAnsiChar({$IFDEF STRING_IS_ANSI}LTemp{$ELSE}AnsiString(LTemp){$ENDIF})
+    {$ENDIF},
     nil, @Hints, @LAddrInfo);
   if RetVal <> 0 then begin
     RaiseSocketError(gaiErrorToWsaError(RetVal));
@@ -1322,7 +1330,7 @@ end;
 procedure TIdStackWindows.SetSocketOption(const ASocket: TIdStackSocketHandle;
   const Alevel, Aoptname: Integer; Aoptval: PAnsiChar; const Aoptlen: Integer);
 begin
-  CheckForSocketError(setsockopt(ASocket, ALevel, Aoptname, Aoptval, Aoptlen));
+  CheckForSocketError(IdWinsock2.setsockopt(ASocket, ALevel, Aoptname, Aoptval, Aoptlen));
 end;
 
 procedure TIdStackWindows.GetSocketOption(ASocket: TIdStackSocketHandle;
@@ -1494,9 +1502,9 @@ var
   LPort : TIdPort;
   LIPVersion : TIdIPVersion;
   {Windows CE does not have WSARecvMsg}
-   {$IFNDEF WINCE}
+  {$IFNDEF WINCE}
   LSize: PtrUInt;
-  LAddr: TSockAddrIn6;
+  LAddr: PSockAddrIn6;
   LMsg : TWSAMSG;
   LMsgBuf : TWSABUF;
   LControl : TIdBytes;
@@ -1515,7 +1523,7 @@ begin
     SetLength(LControl, LSize);
 
     LMsgBuf.len := Length(VBuffer); // Length(VMsgData);
-    LMsgBuf.buf := PAnsiChar(@VBuffer[0]); // @VMsgData[0];
+    LMsgBuf.buf := PAnsiChar(Pointer(VBuffer)); // @VMsgData[0];
 
     FillChar(LMsg, SIZE_TWSAMSG, 0);
 
@@ -1523,69 +1531,78 @@ begin
     LMsg.dwBufferCount := 1;
 
     LMsg.Control.Len := LSize;
-    LMsg.Control.buf := PAnsiChar(@LControl[0]);
+    LMsg.Control.buf := PAnsiChar(Pointer(LControl));
 
-    LMsg.name :=  PSOCKADDR(@LAddr);
-    LMsg.namelen := SizeOf(LAddr);
+    // RLebeau: despite that we are not performing an overlapped I/O operation,
+    // WSARecvMsg() does not like the SOCKADDR variable being allocated on the
+    // stack, at least on my tests with Windows 7.  So we will allocate it on
+    // the heap instead to keep WinSock happy...
+    GetMem(LAddr, SizeOf(TSockAddrIn6));
+    try
+      LMsg.name := PSOCKADDR(LAddr);
+      LMsg.namelen := SizeOf(TSockAddrIn6);
 
-    CheckForSocketError(WSARecvMsg(ASocket, @LMsg, Result, nil, nil));
-    APkt.Reset;
+      CheckForSocketError(WSARecvMsg(ASocket, @LMsg, Result, nil, nil));
+      APkt.Reset;
 
-    case LAddr.sin6_family of
-      Id_PF_INET4: begin
-        with PSOCKADDR(@LAddr)^ do
-        begin
-          APkt.SourceIP := TranslateTInAddrToString(sin_addr, Id_IPv4);
-          APkt.SourcePort := ntohs(sin_port);
+      case LAddr^.sin6_family of
+        Id_PF_INET4: begin
+          with PSOCKADDR(LAddr)^ do
+          begin
+            APkt.SourceIP := TranslateTInAddrToString(sin_addr, Id_IPv4);
+            APkt.SourcePort := ntohs(sin_port);
+          end;
+          APkt.SourceIPVersion := Id_IPv4;
         end;
-        APkt.SourceIPVersion := Id_IPv4;
-      end;
-      Id_PF_INET6: begin
-        with LAddr do
-        begin
-          APkt.SourceIP := TranslateTInAddrToString(sin6_addr, Id_IPv6);
-          APkt.SourcePort := ntohs(sin6_port);
+        Id_PF_INET6: begin
+          with LAddr^ do
+          begin
+            APkt.SourceIP := TranslateTInAddrToString(sin6_addr, Id_IPv6);
+            APkt.SourcePort := ntohs(sin6_port);
+          end;
+          APkt.SourceIPVersion := Id_IPv6;
         end;
-        APkt.SourceIPVersion := Id_IPv6;
+        else begin
+          Result := 0; // avoid warning
+          IPVersionUnsupported;
+        end;
       end;
-      else begin
-        Result := 0; // avoid warning
-        IPVersionUnsupported;
-      end;
-    end;
 
-    LCurCmsg := nil;
-    repeat
-      LCurCmsg := WSA_CMSG_NXTHDR(@LMsg, LCurCmsg);
-      if LCurCmsg = nil then begin
-        Break;
-      end;
-      case LCurCmsg^.cmsg_type of
-        IP_PKTINFO :     //done this way because IPV6_PKTINF and  IP_PKTINFO are both 19
-        begin
-          case LAddr.sin6_family of
-            Id_PF_INET4: begin
-              with PInPktInfo(WSA_CMSG_DATA(LCurCmsg))^ do begin
-                APkt.DestIP := TranslateTInAddrToString(ipi_addr, Id_IPv4);
-                APkt.DestIF := ipi_ifindex;
+      LCurCmsg := nil;
+      repeat
+        LCurCmsg := WSA_CMSG_NXTHDR(@LMsg, LCurCmsg);
+        if LCurCmsg = nil then begin
+          Break;
+        end;
+        case LCurCmsg^.cmsg_type of
+          IP_PKTINFO :     //done this way because IPV6_PKTINF and  IP_PKTINFO are both 19
+          begin
+            case LAddr^.sin6_family of
+              Id_PF_INET4: begin
+                with PInPktInfo(WSA_CMSG_DATA(LCurCmsg))^ do begin
+                  APkt.DestIP := TranslateTInAddrToString(ipi_addr, Id_IPv4);
+                  APkt.DestIF := ipi_ifindex;
+                end;
+                APkt.DestIPVersion := Id_IPv4;
               end;
-              APkt.DestIPVersion := Id_IPv4;
-            end;
-            Id_PF_INET6: begin
-              with PIn6PktInfo(WSA_CMSG_DATA(LCurCmsg))^ do begin
-                APkt.DestIP := TranslateTInAddrToString(ipi6_addr, Id_IPv6);
-                APkt.DestIF := ipi6_ifindex;
+              Id_PF_INET6: begin
+                with PIn6PktInfo(WSA_CMSG_DATA(LCurCmsg))^ do begin
+                  APkt.DestIP := TranslateTInAddrToString(ipi6_addr, Id_IPv6);
+                  APkt.DestIF := ipi6_ifindex;
+                end;
+                APkt.DestIPVersion := Id_IPv6;
               end;
-              APkt.DestIPVersion := Id_IPv6;
             end;
           end;
+          Id_IPV6_HOPLIMIT :
+          begin
+            APkt.TTL := WSA_CMSG_DATA(LCurCmsg)^;
+          end;
         end;
-        Id_IPV6_HOPLIMIT :
-        begin
-          APkt.TTL := WSA_CMSG_DATA(LCurCmsg)^;
-        end;
-      end;
-    until False;
+      until False;
+    finally
+      FreeMem(LAddr);
+    end;
   end else
   begin
   {$ENDIF}

@@ -27,7 +27,7 @@ implementation
 uses
   Types, ExtCtrls, Forms, GraphUtil;
 
-{$if CompilerVersion < 22.0}
+{$if CompilerVersion < 22.0} // 22.0 = Delphi XE
 procedure TCaptionedDockTreeEx.AdjustDockRect(Control: TControl;
   var ARect: TRect);
 begin

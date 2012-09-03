@@ -326,6 +326,19 @@ begin
   end;  { try..except }
 end;
 
+// TODO: move this into IdGlobal.pas
+procedure AdjustStreamSize(const AStream: TStream; const ASize: TIdStreamSize);
+var
+  LStreamPos: TIdStreamSize;
+begin
+  LStreamPos := AStream.Position;
+  AStream.Size := ASize;
+  // Must reset to original value in cases where size changes position
+  if AStream.Position <> LStreamPos then begin
+    AStream.Position := LStreamPos;
+  end;
+end;
+
 procedure TIdTrivialFTPServer.DoWriteFile(FileName: String; const Mode: TIdTFTPMode;
   const PeerInfo: TPeerInfo; RequestedBlockSize: Integer; RequestedTransferSize: TIdStreamSize);
 var
@@ -355,7 +368,7 @@ begin
     if RequestedTransferSize >= 0 then
     begin
       try
-        LStream.Size := RequestedTransferSize;
+        AdjustStreamSize(LStream, RequestedTransferSize);
       except
         raise EIdTFTPAllocationExceeded.CreateFmt(RSTFTPDiskFull, [0]);
       end;
@@ -427,6 +440,7 @@ begin
   FOwner := AOwner;
   with FUDPClient do
   begin
+    IPVersion := FOwner.IPVersion;
     ReceiveTimeout := 1500;
     Host := PeerInfo.PeerIP;
     Port := PeerInfo.PeerPort;

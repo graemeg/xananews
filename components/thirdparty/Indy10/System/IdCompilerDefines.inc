@@ -1,3 +1,10 @@
+{$IFDEF CONDITIONALEXPRESSIONS}
+  // Must be at the top...
+  {$IF COMPILERVERSION >= 24.0}
+    {$LEGACYIFEND ON}
+  {$IFEND}
+{$ENDIF}
+
 // General
 
 // Make this $DEFINE to use the 16 color icons required by Borland
@@ -8,7 +15,7 @@
 {$DEFINE IdIPv4}
 
 {$DEFINE INDY100}
-{$DEFINE 10_5_8}  //so developers can IFDEF for this specific version
+{$DEFINE 10_5_9}  //so developers can IFDEF for this specific version
 
 // When invoking DCC on the command-line, use the -DBCB
 // parameter when generating C++Builder output files!
@@ -210,6 +217,18 @@
   {$ENDIF}
 {$ENDIF}
 
+//Delphi & CBuilder XE3 (Waterdragon)
+{$IFDEF VER240}
+  // DCC is now defined by the compiler
+  {$DEFINE VCL_XE3}
+  {$IFDEF CBUILDER}
+    {$DEFINE CBUILDER_XE3}
+  {$ELSE}
+    {$DEFINE DELPHI_XE3}
+  {$ENDIF}
+  {$LEGACYIFEND ON}
+{$ENDIF}
+
 // Delphi.NET
 // Covers D8+
 {$IFDEF CIL}
@@ -363,8 +382,16 @@
 
 // end FPC
 
-{$IFDEF VCL_XE2}
+{$IFDEF VCL_XE3}
+  {$DEFINE VCL_XE3_OR_ABOVE}
+{$ENDIF}
+
+{$IFDEF VCL_XE3_OR_ABOVE}
   {$DEFINE VCL_XE2_OR_ABOVE}
+{$ELSE}
+  {$IFDEF VCL_XE2}
+    {$DEFINE VCL_XE2_OR_ABOVE}
+  {$ENDIF}
 {$ENDIF}
 
 {$IFDEF VCL_XE2_OR_ABOVE}
@@ -1104,19 +1131,32 @@ They work somewhat similarly but there's a key difference.
 In Linux, TCP_CORK is turned on to send fixed packet sizes and
 when turned-off (uncorked), any remaining data is sent. With 
 TCP_NOPUSH, this might not happen and remaining data is only sent
-before disconnect.}
+before disconnect.  TCP_KEEPIDLE and TCP_KEEPINTVL so the IFDEF LINUX and IFDEF
+SOLARIS instead of IFDEF UNIX is not an error, it's deliberate.}
 {$UNDEF HAS_TCP_NOPUSH}
 {$UNDEF HAS_TCP_CORK}
+{$UNDEF HAS_TCP_KEEPIDLE}
+{$UNDEF HAS_TCP_KEEPINTVL}
 {$IFDEF BSD}
+  {$DEFINE HAS_TCP_NOPUSH}
+{$ENDIF}
+{$IFDEF HAIKU}
   {$DEFINE HAS_TCP_NOPUSH}
 {$ENDIF}
 {$IFDEF LINUX}
   {$DEFINE HAS_TCP_CORK}
+  {$DEFINE HAS_TCP_KEEPIDLE}
+  {$DEFINE HAS_TCP_KEEPINTVL}
 {$ENDIF}
 {$IFDEF SOLARIS}
   {$DEFINE HAS_TCP_CORK}
 {$ENDIF}
-
+{$IFDEF NETBSD}
+  {$DEFINE HAS_TCP_CORK}
+  {$DEFINE HAS_TCP_KEEPIDLE}
+  {$DEFINE HAS_TCP_KEEPINTVL}
+{$ENDIF}
+{end Unix OS specific stuff}
 {$IFDEF DEBUG}
   {$UNDEF USE_INLINE}
 {$ENDIF}

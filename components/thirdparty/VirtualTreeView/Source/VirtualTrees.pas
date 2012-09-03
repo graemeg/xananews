@@ -3842,6 +3842,10 @@ implementation
 {$R VirtualTrees.res}
 
 uses
+  {$if CompilerVersion >= 24.0}
+    System.Types,
+    System.UITypes,
+  {$ifend}
   Consts, Math,
   AxCtrls,                 // TOLEStream
   MMSystem,                // for animation timer (does not include further resources)

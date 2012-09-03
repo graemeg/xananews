@@ -2931,7 +2931,7 @@ number sequence: if not, pass in an empty AMsgList and copy the results to your
 own AMsgList.}
 var
   Ln: Integer;
-  LMsgItem: TIdMessageItem;
+  LMsg: TIdMessage;
 begin
   Result := False;
   {CC2: This is one of the few cases where the server can return only "OK completed"
@@ -2943,11 +2943,11 @@ begin
     for Ln := 0 to LastCmdResult.Text.Count-1 do begin
       if ParseLastCmdResult(LastCmdResult.Text[Ln], IMAP4Commands[cmdFetch], [IMAP4FetchDataItem[fdEnvelope]]) then begin
         if LN >= AMsgList.Count then begin
-          LMsgItem := AMsgList.Add;
-          ParseEnvelopeResult(LMsgItem.Msg, FLineStruct.IMAPValue);
+          LMsg := AMsgList.Add.Msg;
         end else begin
-          ParseEnvelopeResult(AMsgList.Messages[LN], FLineStruct.IMAPValue);
+          LMsg := AMsgList.Messages[LN];
         end;
+        ParseEnvelopeResult(LMsg, FLineStruct.IMAPValue);
       end;
     end;
     Result := True;
@@ -2961,7 +2961,7 @@ number sequence: if not, pass in an empty AMsgList and copy the results to your
 own AMsgList.}
 var
   Ln: Integer;
-  LMsgItem: TIdMessageItem;
+  LMsg: TIdMessage;
 begin
   Result := False;
   {CC2: This is one of the few cases where the server can return only "OK completed"
@@ -2973,15 +2973,13 @@ begin
     for Ln := 0 to LastCmdResult.Text.Count-1 do begin
       if ParseLastCmdResult(LastCmdResult.Text[Ln], IMAP4Commands[cmdFetch], [IMAP4FetchDataItem[fdEnvelope]]) then begin
         if LN >= AMsgList.Count then begin
-          LMsgItem := AMsgList.Add;
-          ParseEnvelopeResult(LMsgItem.Msg, FLineStruct.IMAPValue);
-          LMsgItem.Msg.UID := FLineStruct.UID;
-          LMsgItem.Msg.Flags := FLineStruct.Flags;
+          LMsg := AMsgList.Add.Msg;
         end else begin
-          ParseEnvelopeResult(AMsgList.Messages[LN], FLineStruct.IMAPValue);
-          AMsgList.Messages[LN].UID := FLineStruct.UID;
-          AMsgList.Messages[LN].Flags := FLineStruct.Flags;
+          LMsg := AMsgList.Messages[LN];
         end;
+        ParseEnvelopeResult(LMsg, FLineStruct.IMAPValue);
+        LMsg.UID := FLineStruct.UID;
+        LMsg.Flags := FLineStruct.Flags;
       end;
     end;
     Result := True;
@@ -4963,39 +4961,39 @@ begin
     LPos := Pos('[UIDVALIDITY ', LLine); {Do not Localize}
     if LPos > 0 then begin
       Inc(LPos, 13);
-      AMB.UIDValidity := Trim(Copy(LLine, LPos, (PosIdx(']', LLine, LPos) - LPos))); {Do not Localize}
+      AMB.UIDValidity := Trim(Copy(LLine, LPos, (Integer(PosIdx(']', LLine, LPos)) - LPos))); {Do not Localize}
       Continue;
     end;
     LPos := Pos('[UIDNEXT ', LLine); {Do not Localize}
     if LPos > 0 then begin
       Inc(LPos, 9);
-      AMB.UIDNext := Trim(Copy(LLine, LPos, (PosIdx(']', LLine, LPos) - LPos))); {Do not Localize}
+      AMB.UIDNext := Trim(Copy(LLine, LPos, (Integer(PosIdx(']', LLine, LPos)) - LPos))); {Do not Localize}
       Continue;
     end;
     LPos := Pos('[PERMANENTFLAGS ', LLine); {Do not Localize}
     if LPos > 0 then begin {Do not Localize}
       LPos := PosIdx('(', LLine, LPos + 16) + 1; {Do not Localize}
-      ParseMessageFlagString(Copy(LLine, LPos, PosIdx(')', LLine, LPos) - LPos), LFlags); {Do not Localize}
+      ParseMessageFlagString(Copy(LLine, LPos, Integer(PosIdx(')', LLine, LPos)) - LPos), LFlags); {Do not Localize}
       AMB.ChangeableFlags := LFlags;
       Continue;
     end;
     LPos := Pos('FLAGS ', LLine); {Do not Localize}
     if LPos > 0 then begin
       LPos := PosIdx('(', LLine, LPos + 6) + 1; {Do not Localize}
-      ParseMessageFlagString(Copy(LLine, LPos, (PosIdx(')', LLine, LPos) - LPos)), LFlags); {Do not Localize}
+      ParseMessageFlagString(Copy(LLine, LPos, (Integer(PosIdx(')', LLine, LPos)) - LPos)), LFlags); {Do not Localize}
       AMB.Flags := LFlags;
       Continue;
     end;
     LPos := Pos('[UNSEEN ', LLine); {Do not Localize}
     if LPos> 0 then begin
       Inc(LPos, 8);
-      AMB.FirstUnseenMsg := IndyStrToInt(Copy(LLine, LPos, (PosIdx(']', LLine, LPos) - LPos))); {Do not Localize}
+      AMB.FirstUnseenMsg := IndyStrToInt(Copy(LLine, LPos, (Integer(PosIdx(']', LLine, LPos)) - LPos))); {Do not Localize}
       Continue;
     end;
     LPos := Pos('[READ-', LLine); {Do not Localize}
     if LPos > 0 then begin
       Inc(LPos, 6);
-      LStr := Trim(Copy(LLine, LPos, PosIdx(']', LLine, LPos) - LPos)); {Do not Localize}
+      LStr := Trim(Copy(LLine, LPos, Integer(PosIdx(']', LLine, LPos)) - LPos)); {Do not Localize}
       {CCB: AMB.State ambiguous unless coded response received - default to msReadOnly...}
       if TextIsSame(LStr, 'WRITE') then begin {Do not Localize}
         AMB.State := msReadWrite;

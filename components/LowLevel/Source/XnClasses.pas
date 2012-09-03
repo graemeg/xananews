@@ -8,11 +8,9 @@ uses
 type
   TXnThread = class(TThread)
   public
-{$ifdef ConditionalExpressions}
- {$if CompilerVersion < 21.0}
+  {$if CompilerVersion < 21.0} // 21.0 = Delphi 2010
     procedure Start;
- {$ifend}
-{$endif}
+  {$ifend}
   end;
 
   TAnsiStrings = class(TPersistent)
@@ -185,16 +183,14 @@ implementation
 uses
   Character, RTLConsts, SysConst, Types;
 
-{ TxnThread }
+{ TXnThread }
 
-{$ifdef ConditionalExpressions}
- {$if CompilerVersion < 21.0}
+{$if CompilerVersion < 21.0}} // 21.0 = Delphi 2010
 procedure TXnThread.Start;
 begin
   Resume;
 end;
- {$ifend}
-{$endif}
+{$ifend}
 
 
 { TAnsiStrings }

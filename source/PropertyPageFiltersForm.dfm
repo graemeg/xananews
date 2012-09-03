@@ -3,8 +3,6 @@ inherited fmPropertyPageFilters: TfmPropertyPageFilters
   HelpKeyword = 'Filters'
   Caption = 'Filters'
   OnCreate = FormCreate
-  ExplicitWidth = 471
-  ExplicitHeight = 450
   PixelsPerInch = 96
   TextHeight = 13
   inherited Bevel2: TBevel
@@ -16,9 +14,6 @@ inherited fmPropertyPageFilters: TfmPropertyPageFilters
         'XanaNews holds a single list of filters, but it allows you to ap' +
         'ply each one globally, per account or per newsgroup'
     end
-  end
-  inherited btnReset: TButton
-    ExplicitTop = 296
   end
   object btnUpdate: TButton
     Left = 168

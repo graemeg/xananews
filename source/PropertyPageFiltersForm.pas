@@ -3,7 +3,7 @@ unit PropertyPageFiltersForm;
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms, Contnrs,
   Dialogs, PropertyPageForm, PropertyPageDefaultsForm, VirtualTrees, StdCtrls, ExtCtrls, unitNNTPFilters,
   unitNNTPServices;
 

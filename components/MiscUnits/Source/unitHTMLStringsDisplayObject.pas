@@ -13,7 +13,7 @@ type
     fRendering: Boolean;
     fNavigating: Boolean;
     fXanaLink: string;
-{$if CompilerVersion >= 23.0}
+{$if CompilerVersion >= 23.0} // 23.0 = Delphi XE2
     procedure DoOnDocumentComplete(Sender: TObject; const pDisp: IDispatch; const URL: OleVariant);
     procedure DoOnBeforeNavigate2(ASender: TObject; const pDisp: IDispatch; const URL: OleVariant;
                                                     const Flags: OleVariant;
@@ -132,7 +132,7 @@ begin
   end;
 end;
 
-{$if CompilerVersion >= 23.0}
+{$if CompilerVersion >= 23.0} // 23.0 = Delphi XE2
 procedure THTMLStringsDisplayObjectLink.DoOnBeforeNavigate2(ASender: TObject;
   const pDisp: IDispatch;
   const URL: OleVariant;
@@ -159,7 +159,7 @@ begin
   end;
 end;
 
-{$if CompilerVersion >= 23.0}
+{$if CompilerVersion >= 23.0} // 23.0 = Delphi XE2
 procedure THTMLStringsDisplayObjectLink.DoOnDocumentComplete(
   Sender: TObject; const pDisp: IDispatch; const URL: OleVariant);
 {$else}

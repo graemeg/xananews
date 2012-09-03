@@ -3,7 +3,7 @@ unit unitNewsReaderOptions;
 interface
 
 uses
-  Windows, Classes, SysUtils, Forms, Graphics, StrUtils,
+  Windows, Classes, SysUtils, Forms, Graphics, StrUtils, Contnrs,
   cmpMessageScrollBox, NewsGlobals, unitExSettings;
 
 type
@@ -257,6 +257,9 @@ var
 implementation
 
 uses
+  {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
+    System.UITypes,
+  {$ifend}
   unitSearchString, unitNNTPServices;
 
 const

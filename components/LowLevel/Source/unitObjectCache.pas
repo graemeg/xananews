@@ -191,6 +191,11 @@ type
 
 implementation
 
+{$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
+uses
+  System.Types;
+{$ifend}
+
 { TObjectCache }
 
 (*----------------------------------------------------------------------*

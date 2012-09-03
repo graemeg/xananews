@@ -2,7 +2,7 @@
  FileName............: CompVers.inc
  Project.............: library
  Author(s)...........: PZ
- Version.............: 2.0.0.0
+ Version.............: 2.4.0.0
  -------------------------------------------------------------------------------
  General include file for Delphi version depended handling.
 
@@ -19,6 +19,7 @@
  1.8.0.0 20090918 - Added Delphi 2010 compiler directives.
  1.9.0.0 20101217 - Added Delphi XE   compiler directives.
  2.0.0.0 20110930 - Added Delphi XE2  compiler directives.
+ 2.4.0.0 20120903 - Added Delphi XE3  compiler directives.
 *******************************************************************************}
 
 {$B-} { Boolean shortcut evaluation. }
@@ -136,6 +137,12 @@
 {$IFDEF VER230}
   {$DEFINE COMPILER16}
   {$DEFINE DELPHI16}
+  {$DEFINE DELPHI}
+{$ENDIF}
+
+{$IFDEF VER240}
+  {$DEFINE COMPILER17}
+  {$DEFINE DELPHI17}
   {$DEFINE DELPHI}
 {$ENDIF}
 
@@ -319,6 +326,25 @@
   {$DEFINE COMPILER1_UP}
 {$ENDIF}
 
+{$IFDEF COMPILER17}
+  {$DEFINE COMPILER17_UP}
+  {$DEFINE COMPILER16_UP}
+  {$DEFINE COMPILER15_UP}
+  {$DEFINE COMPILER14_UP}
+  {$DEFINE COMPILER12_UP}
+  {$DEFINE COMPILER11_UP}
+  {$DEFINE COMPILER10_UP}
+  {$DEFINE COMPILER9_UP}
+  {$DEFINE COMPILER7_UP}
+  {$DEFINE COMPILER35_UP}
+  {$DEFINE COMPILER6_UP}
+  {$DEFINE COMPILER5_UP}
+  {$DEFINE COMPILER4_UP}
+  {$DEFINE COMPILER3_UP}
+  {$DEFINE COMPILER2_UP}
+  {$DEFINE COMPILER1_UP}
+{$ENDIF}
+
 
 {*******************************************************************************
   DELPHIx_UP definitions for Delphi
@@ -455,6 +481,24 @@
 {$ENDIF}
 
 {$IFDEF DELPHI16}
+  {$DEFINE DELPHI16_UP}
+  {$DEFINE DELPHI15_UP}
+  {$DEFINE DELPHI14_UP}
+  {$DEFINE DELPHI12_UP}
+  {$DEFINE DELPHI11_UP}
+  {$DEFINE DELPHI10_UP}
+  {$DEFINE DELPHI9_UP}
+  {$DEFINE DELPHI7_UP}
+  {$DEFINE DELPHI6_UP}
+  {$DEFINE DELPHI5_UP}
+  {$DEFINE DELPHI4_UP}
+  {$DEFINE DELPHI3_UP}
+  {$DEFINE DELPHI2_UP}
+  {$DEFINE DELPHI1_UP}
+{$ENDIF}
+
+{$IFDEF DELPHI17}
+  {$DEFINE DELPHI17_UP}
   {$DEFINE DELPHI16_UP}
   {$DEFINE DELPHI15_UP}
   {$DEFINE DELPHI14_UP}

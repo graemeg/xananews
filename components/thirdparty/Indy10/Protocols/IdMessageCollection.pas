@@ -51,14 +51,15 @@ type
   TIdMessageItem = class(TCollectionItem)
   protected
     FAttempt: Integer;
+    FMsg: TIdMessage;
     FQueued: Boolean;
   public
-    Msg: TIdMessage;
-    //
-    property Attempt: Integer read FAttempt write FAttempt;
-    property Queued: Boolean read FQueued write FQueued;
     constructor Create(Collection: TCollection); override;
     destructor Destroy; override;
+    //
+    property Attempt: Integer read FAttempt write FAttempt;
+    property Msg: TIdMessage read FMsg;
+    property Queued: Boolean read FQueued write FQueued;
   end;
 
   TIdMessageCollection = class(TCollection)
@@ -66,6 +67,7 @@ type
     function GetIdMessage(index: Integer): TIdMessage;
     procedure SetIdMessage(index: Integer; const Value: TIdMessage);
   public
+    constructor Create; reintroduce;
     function Add: TIdMessageItem;
     property Messages[index: Integer]: TIdMessage read GetIdMessage write SetIdMessage; Default;
   end;
@@ -75,23 +77,30 @@ implementation
 uses
   IdGlobal, SysUtils;
 
-function TIdMessageCollection.Add;
-begin
-  Result := TIdMessageItem(inherited Add);
-end;
-
 { TIdMessageItem }
 
 constructor TIdMessageItem.Create(Collection: TCollection);
 begin
   inherited Create(Collection);
-  Msg := TIdMessage.Create(nil);
+  FMsg := TIdMessage.Create(nil);
 end;
 
 destructor TIdMessageItem.Destroy;
 begin
-  FreeAndNil(Msg);
+  FreeAndNil(FMsg);
   inherited Destroy;
+end;
+
+{ TIdMessageCollection }
+
+constructor TIdMessageCollection.Create;
+begin
+  inherited Create(TIdMessageItem);
+end;
+
+function TIdMessageCollection.Add;
+begin
+  Result := TIdMessageItem(inherited Add);
 end;
 
 function TIdMessageCollection.GetIdMessage(index: Integer): TIdMessage;
@@ -109,8 +118,8 @@ begin
   // the caller manage its TIdMessage object separately.  Or else make
   // the Messages[] property read-only instead...
 
-  TIdMessageItem(Items[index]).Msg.Free;
-  TIdMessageItem(Items[index]).Msg := Value;
+  TIdMessageItem(Items[index]).FMsg.Free;
+  TIdMessageItem(Items[index]).FMsg := Value;
 end;
 
 end.

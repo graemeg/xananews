@@ -884,9 +884,13 @@ const
 
 implementation
 
-uses IdNNTPX, unitArticleHash, unitNewsReaderOptions, unitCharsetMap,
-     unitSavedArticles, unitMailServices, unitNewUserWizard, unitLog,
-     unitCheckVersion, unitNNTPThreadManager, DateUtils, IdGlobalProtocols;
+uses
+  {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
+    System.Types,
+  {$ifend}
+  IdNNTPX, unitArticleHash, unitNewsReaderOptions, unitCharsetMap,
+  unitSavedArticles, unitMailServices, unitNewUserWizard, unitLog,
+  unitCheckVersion, unitNNTPThreadManager, DateUtils, IdGlobalProtocols;
 
 
 function ForceRenameFile(const Source, Dest: string): Boolean;
