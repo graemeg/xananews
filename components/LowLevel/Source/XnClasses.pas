@@ -185,7 +185,7 @@ uses
 
 { TXnThread }
 
-{$if CompilerVersion < 21.0}} // 21.0 = Delphi 2010
+{$if CompilerVersion < 21.0} // 21.0 = Delphi 2010
 procedure TXnThread.Start;
 begin
   Resume;

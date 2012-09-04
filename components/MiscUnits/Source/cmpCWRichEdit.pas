@@ -27,6 +27,10 @@ interface
 
 uses
   Windows, Messages, Classes, SysUtils, Forms, Graphics, Controls, StdCtrls,
+  {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
+    System.Types,
+    System.UITypes,
+  {$ifend}
   ComCtrls, StdActns, RichEdit, Dialogs, RichOLE;
 
 type
@@ -424,10 +428,6 @@ type
 implementation
 
 uses
-  {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
-    System.Types,
-    System.UITypes,
-  {$ifend}
   ShellAPI, ClipBrd, printers, unitCharsetMap, CommDlg;
 
 var

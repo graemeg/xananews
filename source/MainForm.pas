@@ -30,6 +30,9 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
   Dialogs, ToolWin, ActnList, Types,
+{$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
+  System.Actions,
+{$ifend}
   cmpPersistentPosition, cmpStandardSystemMenu, ImgList, StdActns,
   cmpNTAboutBox, ComCtrls, ExtCtrls, VirtualTrees, ConTnrs, unitNNTPServices,
   Menus, AppEvnts, ExtDlgs, cmpMessageScrollBox, cmpExSplitter,
@@ -44,8 +47,7 @@ uses
 {$endif}
   unitBookmarks, cmpSplitterPanel, unitNewsStringsDisplayObject,
   unitGetMessages1, unitMailServices, Tabs, ButtonGroup, CategoryButtons,
-  unitExSettings, XnClasses, XnRawByteStrings, XnCaptionedDockTree, DockingUtils,
-  System.Actions;
+  unitExSettings, XnClasses, XnRawByteStrings, XnCaptionedDockTree, DockingUtils;
 
 type
 
