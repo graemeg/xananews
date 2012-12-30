@@ -1042,8 +1042,8 @@ var
   icon: HICON;
   ext: string;
   shfi: TSHFileInfo;
-  i: Integer;
-  x: DWORD;
+//  i: Integer;
+//  x: DWORD;
   jpg: TJPegImage;
   p: pbmf;
   sz: DWORD;
@@ -1106,18 +1106,19 @@ begin
         // Try to salvage something, though you may end up with just a thumbnail.
         if fGraphic is TJPEGImage then
         begin
-          i := 0;
-          while i < DecodedData.Size do
-          begin
-            x := PDWORD(PByte(DecodedData.Memory) + i)^;
-            if x = $E0FFD8FF then
-            begin
-              DecodedData.Seek(i, soBeginning);
-              Break;
-            end
-            else
-              Inc(i);
-          end;
+// TODO: check again, removed special handling of JPeg data
+//          i := 0;
+//          while i < DecodedData.Size do
+//          begin
+//            x := PDWORD(PByte(DecodedData.Memory) + i)^;
+//            if x = $E0FFD8FF then
+//            begin
+//              DecodedData.Seek(i, soBeginning);
+//              Break;
+//            end
+//            else
+//              Inc(i);
+//          end;
 
           jpg := TJPegImage(fGraphic);
           if not Complete then

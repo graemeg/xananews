@@ -206,6 +206,8 @@ implementation
 
 uses
   IdResourceStrings,
+  IdResourceStringsKylixCompat,
+  IdResourceStringsUnix,
   IdException,
   SysUtils;
 
@@ -774,25 +776,39 @@ var
 begin
   // this won't get IPv6 addresses as I didn't find a way
   // to enumerate IPv6 addresses on a linux machine
+
+  // TODO: Using gethostname() and gethostbyname() like this may not always
+  // return just the machine's IP addresses. Technically speaking, they will
+  // return the local hostname, and then return the address(es) to which that
+  // hostname resolves. It is possible for a machine to (a) be configured such
+  // that its name does not resolve to an IP, or (b) be configured such that
+  // its name resolves to multiple IPs, only one of which belongs to the local
+  // machine. For better results, we should use getifaddrs() on platforms that
+  // support it...
+
   LHostName := AnsiString(HostName);
   LAHost := Libc.gethostbyname(PAnsiChar(LHostName));
   if LAHost = nil then begin
     RaiseLastSocketError;
   end else begin
-    LPAdrPtr := PAPInAddr(LAHost^.h_addr_list);
-    Li := 0;
-    if LPAdrPtr^[Li] <> nil then begin
-      AAddresses.BeginUpdate;
-      try
-        repeat
-          // TODO: gethostbynaame() might return other things besides IPv4
-          // addresses, so we should be validating the address type before
-          // attempting the conversion...
-          AAddresses.Add(TranslateTInAddrToString(LPAdrPtr^[Li]^, Id_IPv4));
-          Inc(Li);
-        until LPAdrPtr^[Li] = nil;
-      finally
-        AAddresses.EndUpdate;
+    // gethostbyname() might return other things besides IPv4 addresses, so we
+    // need to validate the address type before attempting the conversion...
+
+    // TODO: support IPv6 addresses
+    if LAHost^.h_addrtype = Id_PF_INET4 then
+    begin
+      LPAdrPtr := PAPInAddr(LAHost^.h_addr_list);
+      Li := 0;
+      if LPAdrPtr^[Li] <> nil then begin
+        AAddresses.BeginUpdate;
+        try
+          repeat
+            AAddresses.Add(TranslateTInAddrToString(LPAdrPtr^[Li]^, Id_IPv4));
+            Inc(Li);
+          until LPAdrPtr^[Li] = nil;
+        finally
+          AAddresses.EndUpdate;
+        end;
       end;
     end;
   end;
@@ -1003,8 +1019,7 @@ begin
 //is sent.  All of the parameters required are because Windows is bonked
 //because it doesn't have the IPV6CHECKSUM socket option meaning we have
 //to querry the network interface in TIdStackWindows -- yuck!!
-  LOffset := AOffset;
-  CheckForSocketError(Libc.setsockopt(s, IPPROTO_IPV6, IPV6_CHECKSUM, @LOffset, SizeOf(LOffset)));
+  SetSocketOption(s, IPPROTO_IPV6, IPV6_CHECKSUM, AOffset);
 end;
 
 function TIdStackLibc.IOControl(const s: TIdStackSocketHandle;
@@ -1086,6 +1101,7 @@ begin
     LTime.tv_usec := (ATimeout mod 1000) * 1000;
     LTimePtr := @LTime;
   end;
+  // TODO: calculate the actual nfds value based on the Sets provided...
   Result := Libc.select(MaxLongint, AReadSet, AWriteSet, AExceptSet, LTimePtr);
 end;
 
@@ -1239,7 +1255,7 @@ procedure TIdStackLibc.SetBlocking(ASocket: TIdStackSocketHandle;
   const ABlocking: Boolean);
 begin
   if not ABlocking then begin
-    raise EIdBlockingNotSupported.Create(RSStackNotSupportedOnUnix);
+    raise EIdNonBlockingNotSupported.Create(RSStackNonBlockingNotSupported);
   end;
 end;
 

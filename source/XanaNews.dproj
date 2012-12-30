@@ -3,11 +3,11 @@
         <ProjectGuid>{BBA882D7-C955-47C2-9605-2593A74F9161}</ProjectGuid>
         <MainSource>XanaNews.dpr</MainSource>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Release with madExcept</Config>
+        <Config Condition="'$(Config)'==''">Release</Config>
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Application</AppType>
         <FrameworkType>VCL</FrameworkType>
-        <ProjectVersion>14.3</ProjectVersion>
+        <ProjectVersion>14.4</ProjectVersion>
         <Platform Condition="'$(Platform)'==''">Win32</Platform>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
@@ -109,11 +109,11 @@
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <DCC_UnitSearchPath>..\components\ImageTypes\Source;..\components\LowLevel\Source;..\components\MiscUnits\Source;..\components\thirdparty\VirtualTreeView\Source;..\components\thirdparty\Indy10\Core;..\components\thirdparty\Indy10\Protocols;..\components\thirdparty\Indy10\System;..\modified_vcl;$(BDSLIB)\$(Platform)\release;$(BDSUSERDIR)\Imports;$(BDS)\Imports;$(BDSCOMMONDIR)\Dcp;$(BDS)\include;$(BDS)\RaveReports\Lib;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_ImageBase>00400000</DCC_ImageBase>
-        <VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.19.1.372;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2012;LegalTrademarks=All Rights Reserved;OriginalFilename=XanaNews.exe;ProductName=XanaNews;ProductVersion=1.19.1.372;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.19.1.373;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2012;LegalTrademarks=All Rights Reserved;OriginalFilename=XanaNews.exe;ProductName=XanaNews;ProductVersion=1.19.1.373;Comments=</VerInfo_Keys>
         <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
         <VerInfo_MinorVer>19</VerInfo_MinorVer>
-        <VerInfo_Build>372</VerInfo_Build>
+        <VerInfo_Build>373</VerInfo_Build>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <DCC_N>false</DCC_N>
         <DCC_S>false</DCC_S>
@@ -147,12 +147,15 @@
         <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
+        <UsePackages>true</UsePackages>
+        <DCC_Define>madExcept;$(DCC_Define)</DCC_Define>
         <DCC_LocalDebugSymbols>true</DCC_LocalDebugSymbols>
         <DCC_DebugInformation>true</DCC_DebugInformation>
         <DCC_MapFile>3</DCC_MapFile>
         <DCC_WIDECHAR_REDUCED>false</DCC_WIDECHAR_REDUCED>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
+        <DCC_Define>madExcept;$(DCC_Define)</DCC_Define>
         <DCC_LocalDebugSymbols>true</DCC_LocalDebugSymbols>
         <DCC_DebugInformation>true</DCC_DebugInformation>
         <DCC_MapFile>3</DCC_MapFile>

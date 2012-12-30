@@ -53,20 +53,28 @@ uses
   IdTCPConnection;
 
 type
+  TIdSASLEntries = class;
+
   TIdSASLListEntry = class(TCollectionItem)
   protected
     FSASL : TIdSASL;
     function GetDisplayName: String; override;
+    function GetOwnerComponent: TComponent;
+    function GetSASLEntries: TIdSASLEntries;
+    procedure SetSASL(AValue : TIdSASL);
   public
     procedure Assign(Source: TPersistent); override;
+    property OwnerComponent: TComponent read GetOwnerComponent;
+    property SASLEntries: TIdSASLEntries read GetSASLEntries;
   published
-    property SASL : TIdSASL read FSASL write FSASL;
+    property SASL : TIdSASL read FSASL write SetSASL;
   end;
 
   TIdSASLEntries = class ( TOwnedCollection )
   protected
     procedure CheckIfEmpty;
     function GetItem(Index: Integer) : TIdSASLListEntry;
+    function GetOwnerComponent: TComponent;
     procedure SetItem(Index: Integer; const Value: TIdSASLListEntry);
   public
     constructor Create ( AOwner : TPersistent ); reintroduce;
@@ -84,6 +92,7 @@ type
     procedure RemoveByComp(AComponent : TComponent);
     function IndexOfComp(AItem : TIdSASL): Integer;
     property Items[Index: Integer] : TIdSASLListEntry read GetItem write SetItem; default;
+    property OwnerComponent: TComponent read GetOwnerComponent;
   end;
 
   EIdSASLException = class(EIdException);
@@ -106,7 +115,7 @@ uses
 procedure TIdSASLListEntry.Assign(Source: TPersistent);
 begin
   if Source is TIdSASLListEntry then begin
-    FSASL := TIdSASLListEntry(Source).SASL;
+    SASL := TIdSASLListEntry(Source).SASL;
   end else begin
     inherited Assign(Source);
   end;
@@ -118,6 +127,43 @@ begin
     Result := String(FSASL.ServiceName);
   end else begin
     Result := inherited GetDisplayName;
+  end;
+end;
+
+function TIdSASLListEntry.GetOwnerComponent: TComponent;
+var
+  LEntries: TIdSASLEntries;
+begin
+  LEntries := SASLEntries;
+  if Assigned(LEntries) then begin
+    Result := LEntries.OwnerComponent;
+  end else begin
+    Result := nil;
+  end;
+end;
+
+function TIdSASLListEntry.GetSASLEntries: TIdSASLEntries;
+begin
+  if Collection is TIdSASLEntries then begin
+    Result := TIdSASLEntries(Collection);
+  end else begin
+    Result := nil;
+  end;
+end;
+
+procedure TIdSASLListEntry.SetSASL(AValue : TIdSASL);
+var
+  LOwnerComp: TComponent;
+begin
+  if FSASL <> AValue then begin
+    LOwnerComp := OwnerComponent;
+    if (FSASL <> nil) and (LOwnerComp <> nil) then begin
+      FSASL.RemoveFreeNotification(LOwnerComp);
+    end;
+    FSASL := AValue;
+    if (FSASL <> nil) and (LOwnerComp <> nil) then begin
+      FSASL.FreeNotification(LOwnerComp);
+    end;
   end;
 end;
 
@@ -191,6 +237,18 @@ end;
 function TIdSASLEntries.GetItem(Index: Integer): TIdSASLListEntry;
 begin
   Result := TIdSASLListEntry(inherited Items[Index]);
+end;
+
+function TIdSASLEntries.GetOwnerComponent: TComponent;
+var
+  LOwner: TPersistent;
+begin
+  LOwner := inherited GetOwner;
+  if LOwner is TComponent then begin
+    Result := TComponent(LOwner);
+  end else begin
+    Result := nil;
+  end;
 end;
 
 function TIdSASLEntries.IndexOfComp(AItem: TIdSASL): Integer;

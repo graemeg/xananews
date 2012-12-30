@@ -145,6 +145,8 @@ implementation
 
 uses
   IdResourceStrings,
+  IdResourceStringsUnix,
+  IdResourceStringsVCLPosix,
   IdException,
   IdVCLPosixSupplemental,
   Posix.Base,
@@ -283,7 +285,8 @@ begin
     LTime.tv_usec := (ATimeout mod 1000) * 1000;
     LTimePtr := @LTime;
   end;
-  Result := Posix.SysSelect.select(MaxLongint, AReadSet, AWriteSet, AExceptSet, LTimePtr);
+  // TODO: calculate the actual nfds value based on the Sets provided...
+  Result := Posix.SysSelect.select(FD_SETSIZE, AReadSet, AWriteSet, AExceptSet, LTimePtr);
 end;
 
 procedure TIdSocketListVCLPosix.GetFDSet(var VSet: fd_set);
@@ -482,14 +485,21 @@ var
   LHostName: AnsiString;
   Hints: AddrInfo;
   LAddrList, LAddrInfo: pAddrInfo;
-
 begin
+  // TODO: Using gethostname() and getaddrinfo() like this may not always return just
+  // the machine's IP addresses. Technically speaking, they will return the local
+  // hostname, and then return the address(es) to which that hostname resolves.
+  // It is possible for a machine to (a) be configured such that its name does
+  // not resolve to an IP, or (b) be configured such that its name resolves to
+  // multiple IPs, only one of which belongs to the local machine. For better
+  // results, we should use getifaddrs() on platforms that support it...
+
   //IMPORTANT!!!
   //
   //The Hints structure must be zeroed out or you might get an AV.
   //I've seen this in Mac OS X
   FillChar(Hints, SizeOf(Hints), 0);
-  Hints.ai_family := PF_UNSPEC; // TODO: support IPv6 addresses
+  Hints.ai_family := PF_UNSPEC; // returns both IPv4 and IPv6 addresses
   Hints.ai_socktype := SOCK_STREAM;
 
   LHostName := AnsiString(HostName);
@@ -995,7 +1005,7 @@ procedure TIdStackVCLPosix.SetBlocking(ASocket: TIdStackSocketHandle;
   const ABlocking: Boolean);
 begin
   if not ABlocking then begin
-    raise EIdBlockingNotSupported.Create(RSStackNotSupportedOnUnix);
+    raise EIdNonBlockingNotSupported.Create(RSStackNonBlockingNotSupported);
   end;
 end;
 

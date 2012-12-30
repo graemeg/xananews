@@ -152,7 +152,7 @@ type
     function WSGetLastError: Integer; override;
     procedure WSSetLastError(const AErr : Integer); override;
     function WSGetServByName(const AServiceName: string): TIdPort; override;
-    function WSGetServByPort(const APortNumber: TIdPort): TStrings; override;
+    procedure AddServByPortToList(const APortNumber: TIdPort; AAddresses: TStrings); override;
     procedure WSGetSockOpt(ASocket: TIdStackSocketHandle; Alevel, AOptname: Integer;
       AOptval: PAnsiChar; var AOptlen: Integer); override;
     procedure GetSocketOption(ASocket: TIdStackSocketHandle;
@@ -220,6 +220,7 @@ uses
   netdb,
   unix,
   IdResourceStrings,
+  IdResourceStringsUnix,
   IdException,
   SysUtils;
 
@@ -415,7 +416,7 @@ var
   LRetVal : Integer;
 begin
   case AIPVersion of
-    ID_IPv4 :
+    Id_IPv4 :
     begin
       if GetHostByName(AHostName, LH4) then
       begin
@@ -429,7 +430,7 @@ begin
       end;
       Result := NetAddrToStr(LI4[0]);
     end;
-    ID_IPv6 :
+    Id_IPv6 :
     begin
       SetLength(LI6, 10);
       LRetVal :=  ResolveName6(AHostName, LI6);
@@ -697,21 +698,6 @@ begin
   end;
 end;
 
-function TIdStackUnix.WSGetServByPort(const APortNumber: TIdPort): TStrings;
-var
-  LS : TServiceEntry;
-begin
-  Result := TStringList.Create;
-  try
-    if GetServiceByPort(APortNumber, '', LS) then begin
-      Result.Add(LS.Name);
-    end;
-  except
-    FreeAndNil(Result);
-    raise;
-  end;
-end;
-
 function TIdStackUnix.HostToNetwork(AValue: Word): Word;
 begin
   Result := htons(AValue);
@@ -772,8 +758,7 @@ begin
   if LHostName = '' then begin
     RaiseLastSocketError;
   end;
-  // this won't get IPv6 addresses as I didn't find a way
-  // to enumerate IPv6 addresses on a linux machine
+  // TODO: support IPv6 addresses via ResolveName6()...
   if ResolveName(LHostName, LI) = 0 then
   begin
     AAddresses.BeginUpdate;
@@ -899,6 +884,15 @@ begin
   CheckForSocketError(fpGetSockOpt(ASocket, ALevel, AOptname, AOptval, @LP));
 end;
 
+procedure TIdStackUnix.AddServByPortToList(const APortNumber: TIdPort; AAddresses: TStrings);
+var
+  LS : TServiceEntry;
+begin
+  if GetServiceByPort(APortNumber, '', LS) then begin
+    AAddresses.Add(LS.Name);
+  end;
+end;
+
 procedure TIdStackUnix.GetSocketOption(ASocket: TIdStackSocketHandle;
   ALevel: TIdSocketOptionLevel; AOptName: TIdSocketOption;
   out AOptVal: Integer);
@@ -926,7 +920,7 @@ procedure TIdStackUnix.SetBlocking(ASocket: TIdStackSocketHandle;
   const ABlocking: Boolean);
 begin
   if not ABlocking then begin
-    raise EIdBlockingNotSupported.Create(RSStackNotSupportedOnUnix);
+    raise EIdNonBlockingNotSupported.Create(RSStackNonBlockingNotSupported);
   end;
 end;
 
@@ -968,15 +962,12 @@ end;
 procedure TIdStackUnix.WriteChecksumIPv6(s: TIdStackSocketHandle;
   var VBuffer: TIdBytes; const AOffset: Integer; const AIP: String;
   const APort: TIdPort);
-var
-  LOffset : Integer;
 begin
 //we simply request that the kernal write the checksum when the data
 //is sent.  All of the parameters required are because Windows is bonked
 //because it doesn't have the IPV6CHECKSUM socket option meaning we have
 //to querry the network interface in TIdStackWindows -- yuck!!
-  LOffset := AOffset;
-  CheckForSocketError(fpsetsockopt(s, Id_IPPROTO_IPV6, IPV6_CHECKSUM, @Loffset, SizeOf(Loffset)));
+  SetSocketOption(s, Id_IPPROTO_IPV6, IPV6_CHECKSUM, AOffset);
 end;
 
 function TIdStackUnix.IOControl(const s: TIdStackSocketHandle; const cmd: LongWord;
@@ -1104,6 +1095,7 @@ begin
     LTime.tv_usec := (ATimeout mod 1000) * 1000;
     LTimePtr := @LTime;
   end;
+  // TODO: calculate the actual nfds value based on the Sets provided...
   Result := fpSelect(FD_SETSIZE, AReadSet, AWriteSet, AExceptSet, LTimePtr);
 end;
 
