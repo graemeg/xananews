@@ -40,7 +40,7 @@ uses
   {$ENDIF}
   IdGlobal,
   IdStruct;
-// TODO: research subtypes of ICMP header
+                                         
 
 type
 //RFC 3542 definitions

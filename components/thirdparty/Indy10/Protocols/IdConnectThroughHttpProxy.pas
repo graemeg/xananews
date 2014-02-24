@@ -90,28 +90,33 @@ var
   LResponseCode: Integer;
   LHeaders: TIdHeaderList;
   LContentLength: Int64;
+  LEncoder: TIdEncoderMIME;
 begin
   LHeaders := TIdHeaderList.Create(QuoteHTTP);
   try
     AIOHandler.WriteLn(IndyFormat('CONNECT %s:%d HTTP/1.0', [AHost,APort])); {do not localize}
     if ALogin then begin
-      with TIdEncoderMIME.Create do try
-        AIOHandler.WriteLn('Proxy-Authorization: Basic ' + Encode(Username + ':' + Password));  {do not localize}
-      finally Free; end;
+      LEncoder := TIdEncoderMIME.Create;
+      try
+        AIOHandler.WriteLn('Proxy-Authorization: Basic ' + LEncoder.Encode(Username + ':' + Password));  {do not localize}
+      finally
+        LEncoder.Free;
+      end;
     end;
     AIOHandler.WriteLn;
     LStatus := AIOHandler.ReadLn;
     if LStatus <> '' then begin // if empty response then we assume it succeeded
       AIOHandler.Capture(LHeaders, '', False);
-      // TODO: support chunked replies...
+                                         
       LContentLength := IndyStrToInt64(LHeaders.Values['Content-Length'], -1); {do not localize}
       if LContentLength > 0 then begin
         AIOHandler.Discard(LContentLength);
       end;
       Fetch(LStatus);// to remove the http/1.0 or http/1.1
       LResponseCode := IndyStrToInt(Fetch(LStatus, ' ', False), 200); // if invalid response then we assume it succeeded
-      if (LResponseCode = 407) and (Length(Username) > 0) and (not ALogin) then begin // authorization required
-        if TextIsSame(LHeaders.Values['Proxy-Connection'], 'close') then begin {do not localize}
+      if (LResponseCode = 407) and (not ALogin) and ((Length(Username) > 0) or (Length(Password) > 0)) then begin // authorization required
+        if TextIsSame(LHeaders.Values['Proxy-Connection'], 'close') or {do not localize}
+           TextIsSame(LHeaders.Values['Connection'], 'close') then begin {do not localize}
           // need to reconnect before trying again with login
           AIOHandler.Close;
           FAuthorizationRequired := True;

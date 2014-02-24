@@ -5,7 +5,7 @@ interface
 uses
   Classes,
   SysUtils, //here to facilitate inline expansion
-   IdSASL, IdSASLUserPass, IdUserPassProvider, IdException;
+  IdSASL, IdSASLUserPass, IdUserPassProvider, IdException;
 
 type
   TIdSASLDigest = class(TIdSASLUserPass)
@@ -26,7 +26,7 @@ type
   EIdSASLDigestChallInvalidAlg  = class(EIdSASLDigestChallException);
   EIdSASLDigestAuthConfNotSupported = class(EIdSASLDigestException);
 
-//done this way so we can use testboxes
+                                       
 
 function CalcDigestResponse(const AUserName, APassword, ARealm, ANonce, ACNonce : String;
   const ANC : Integer;
@@ -70,34 +70,40 @@ end;
 //
 function HashResult(const AStr : String): TIdBytes;
 {$IFDEF USE_INLINE} inline; {$ENDIF}
+var
+  LMD5: TIdHashMessageDigest5;
 begin
-  with TIdHashMessageDigest5.Create do
+  LMD5 := TIdHashMessageDigest5.Create;
   try
-    Result := HashString(AStr);
+    Result := LMD5.HashString(AStr);
   finally
-    Free;
+    LMD5.Free;
   end;
 end;
 
 function HashResultAsHex(const ABytes : TIdBytes) : String;  overload;
 {$IFDEF USE_INLINE} inline; {$ENDIF}
+var
+  LMD5: TIdHashMessageDigest5;
 begin
-  with TIdHashMessageDigest5.Create do
+  LMD5 := TIdHashMessageDigest5.Create;
   try
-    Result := LowerCase(HashBytesAsHex(ABytes));
+    Result := LowerCase(LMD5.HashBytesAsHex(ABytes));
   finally
-    Free;
+    LMD5.Free;
   end;
 end;
 
 function HashResultAsHex(const AStr : String) : String; overload;
 {$IFDEF USE_INLINE} inline; {$ENDIF}
+var
+  LMD5: TIdHashMessageDigest5;
 begin
-  with TIdHashMessageDigest5.Create do
+  LMD5 := TIdHashMessageDigest5.Create;
   try
-    Result := LowerCase(HashStringAsHex(AStr));
+    Result := LowerCase(LMD5.HashStringAsHex(AStr));
   finally
-    Free;
+    LMD5.Free;
   end;
 end;
 
@@ -170,7 +176,6 @@ begin
   try
     LBuf := AChallenge;
     while Length(LBuf) > 0 do begin
-      LChallange.Add(Fetch(LBuf,','));
       LName := Trim(Fetch(LBuf, '=')); {do not localize}
       LBuf := TrimLeft(LBuf);
       if TextStartsWith(LBuf, '"') then begin {do not localize}

@@ -225,7 +225,7 @@ begin
   end;
 end;
 
-// TODO: check nibbles in IP header
+                                   
 procedure IdRawBuildIp(ALen: Word; ATos: Byte; AnId, AFrag: Word; ATtl, AProtocol: Byte;
   ASource, ADest: TIdInAddr; const APayload: TIdBytes; var VBuffer: TIdBytes;
   const AIdx: Integer = 0);
@@ -557,7 +557,7 @@ begin
   end;
 end;
 
-// TODO: check nibbles in TCP header
+                                    
 procedure IdRawBuildTcp(const ASourcePort, ADestPort: Word;
   const ASeq, AnAck: LongWord; const AControl: Byte;
   const AWindowSize, AnUrgent: Word; const APayload: TIdBytes;

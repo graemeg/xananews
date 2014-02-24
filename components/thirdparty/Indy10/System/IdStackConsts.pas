@@ -79,7 +79,7 @@ uses
   {$IFDEF DOTNET}
   System.Net.Sockets;
   {$ENDIF}
-  //TODO:  I'm not really sure how other platforms are supported with asockets header
+                                                                                     
   //Do I use the sockets unit or do something totally different for each platform
   {$IFDEF WINDOWS}
   IdWship6, //for some constants that supplement IdWinsock
@@ -192,13 +192,13 @@ const
   Id_IPV6_DROP_MEMBERSHIP = IPV6_DROP_MEMBERSHIP;
   Id_IPV6_PKTINFO         = IPV6_PKTINFO;
   Id_IPV6_HOPLIMIT        = IPV6_HOPLIMIT;
-  Id_IP_MULTICAST_TTL     = IP_MULTICAST_TTL; // TODO integrate into IdStackConsts
-  Id_IP_MULTICAST_LOOP    = IP_MULTICAST_LOOP; // TODO integrate into IdStackConsts
-  Id_IP_ADD_MEMBERSHIP    = IP_ADD_MEMBERSHIP; // TODO integrate into IdStackConsts
-  Id_IP_DROP_MEMBERSHIP   = IP_DROP_MEMBERSHIP; // TODO integrate into IdStackConsts
+  Id_IP_MULTICAST_TTL     = IP_MULTICAST_TTL;                                     
+  Id_IP_MULTICAST_LOOP    = IP_MULTICAST_LOOP;                                     
+  Id_IP_ADD_MEMBERSHIP    = IP_ADD_MEMBERSHIP;                                     
+  Id_IP_DROP_MEMBERSHIP   = IP_DROP_MEMBERSHIP;                                     
 
   //In Windows CE 4.2, IP_HDRINCL may not be supported.
-  Id_IP_HDR_INCLUDED      = IP_HDRINCL; // TODO integrate into IdStackConsts
+  Id_IP_HDR_INCLUDED      = IP_HDRINCL;                                     
   {$ENDIF}
 
   {$IFDEF WINDOWS}
@@ -211,11 +211,11 @@ const
   Id_IPV6_DROP_MEMBERSHIP = IPV6_DROP_MEMBERSHIP;
   Id_IPV6_PKTINFO         = IPV6_PKTINFO;
   Id_IPV6_HOPLIMIT        = IPV6_HOPLIMIT;
-  Id_IP_MULTICAST_TTL     = 10; // TODO integrate into IdStackConsts FIX ERROR in IdWinsock
-  Id_IP_MULTICAST_LOOP    = 11; // TODO integrate into IdStackConsts FIX ERROR in IdWinsock
-  Id_IP_ADD_MEMBERSHIP    = 12; // TODO integrate into IdStackConsts FIX ERROR in IdWinsock
-  Id_IP_DROP_MEMBERSHIP   = 13; // TODO integrate into IdStackConsts FIX ERROR in IdWinsock
-  Id_IP_HDR_INCLUDED      = 2; // TODO integrate into IdStackConsts FIX ERROR in IdWinsock
+  Id_IP_MULTICAST_TTL     = 10;                                                            
+  Id_IP_MULTICAST_LOOP    = 11;                                                            
+  Id_IP_ADD_MEMBERSHIP    = 12;                                                            
+  Id_IP_DROP_MEMBERSHIP   = 13;                                                            
+  Id_IP_HDR_INCLUDED      = 2;                                                            
   {$ENDIF}
 
 (*
@@ -378,6 +378,10 @@ const
 
   // Socket options
   {$IFNDEF DOTNET}
+    {$IFNDEF WINDOWS}
+  SO_DONTLINGER          =  not SO_LINGER;
+  {$EXTERNALSYM SO_DONTLINGER}
+    {$ENDIF}
   Id_SO_BROADCAST        =  SO_BROADCAST;
   Id_SO_DEBUG            =  SO_DEBUG;
   Id_SO_DONTLINGER       =  SO_DONTLINGER;
@@ -397,11 +401,12 @@ SocketOptionName.AddSourceMembership;//  Join a source group.
 SocketOptionName.BlockSource;//  Block data from a source.
 }
   Id_SO_BROADCAST        =  SocketOptionName.Broadcast;//  Permit sending broadcast messages on the socket.
-  Id_SO_DEBUG            =  SocketOptionName.Debug;
 {
 SocketOptionName.BsdUrgent;//  Use urgent data as defined in RFC-1222. This option can be set only once, and once set, cannot be turned off.
 SocketOptionName.ChecksumCoverage;//  Set or get UDP checksum coverage.
-SocketOptionName.Debug;//  Record debugging information.
+}
+  Id_SO_DEBUG            =  SocketOptionName.Debug;//  Record debugging information.
+{
 SocketOptionName.DontFragment;//  Do not fragment IP datagrams.
 }
   Id_SO_DONTLINGER       =  SocketOptionName.DontLinger;//  Close socket gracefully without lingering.
@@ -467,16 +472,17 @@ SocketOptionName.UseLoopback;//  Bypass hardware when possible.
   {for some reason, the compiler doesn't accept  INADDR_ANY below saying a constant is expected. }
    {$IFDEF USE_VCL_POSIX}
   Id_INADDR_ANY  = 0;// INADDR_ANY;
+  Id_INADDR_NONE = $ffffffff;// INADDR_NONE;
    {$ELSE}
   Id_INADDR_ANY  =  INADDR_ANY;
-    {$ENDIF}
   Id_INADDR_NONE = INADDR_NONE;
+    {$ENDIF}
   {$ENDIF}
 
   // TCP Options
   {$IFNDEF DOTNET}
     {$IFDEF USE_VCL_POSIX}
-  INVALID_SOCKET = 0;
+  INVALID_SOCKET           = -1;
   SOCKET_ERROR             = socklen_t(-1);
     {$ENDIF}
   Id_TCP_NODELAY           = TCP_NODELAY;
@@ -871,7 +877,7 @@ SocketOptionName.UseLoopback;//  Bypass hardware when possible.
   WSA_NOT_ENOUGH_MEMORY   = ERROR_NOT_ENOUGH_MEMORY;
   WSA_OPERATION_ABORTED   = ERROR_OPERATION_ABORTED;
 
-  //TODO: Map these to .net constants. Unfortunately .net does not seem to
+                                                                          
   //define these anywhere.
 
   Id_WSAEINTR           = WSAEINTR;

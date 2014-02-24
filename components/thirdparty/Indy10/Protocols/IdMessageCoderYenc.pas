@@ -175,21 +175,23 @@ function TIdMessageDecoderInfoYenc.CheckForStart(ASender: TIdMessage; const ALin
     end;
   end;
 
+var
+  LYenc: TIdMessageDecoderYenc;
 begin
   if TextStartsWith(ALine, '=ybegin ') {Do not Localize} then
   begin
-    Result := TIdMessageDecoderYenc.Create(ASender);
-    with TIdMessageDecoderYenc(Result) do
+    LYenc := TIdMessageDecoderYenc.Create(ASender);
     try
-      FSize := GetIntValue(ALine, 'size'); {Do not Localize}
-      FLine := GetIntValue(ALine, 'line'); {Do not Localize}
-      FPart := GetIntValue(ALine, 'part'); {Do not Localize}
-      FFilename := GetName;
-      FPartType := mcptAttachment;
+      LYenc.FSize := GetIntValue(ALine, 'size'); {Do not Localize}
+      LYenc.FLine := GetIntValue(ALine, 'line'); {Do not Localize}
+      LYenc.FPart := GetIntValue(ALine, 'part'); {Do not Localize}
+      LYenc.FFilename := GetName;
+      LYenc.FPartType := mcptAttachment;
     except
-      FreeAndNil(Result);
+      FreeAndNil(LYenc);
       raise;
     end;
+    Result := LYenc;
   end else begin
     Result := nil;
   end;
@@ -206,15 +208,15 @@ var
   LPartSize: Integer;
   LCrc32: string;
   LMsgEnd: Boolean;
-
   LOutputBuffer: TIdBytes;
   LOutputBufferUsed: Integer;
   LHash: Cardinal;
   LH: TIdHashCRC32;
+  LEncoding: IIdTextEncoding;
 
   procedure FlushOutputBuffer;
   begin
-    //TODO: this uses Array of Characters. Unless its dealing in Unicode or MBCS it should
+                                                                                          
     // be using TIdBuffer
     if Assigned(ADestStream) then begin
       WriteTIdBytesToStream(ADestStream, LOutputBuffer, LOutputBufferUsed);
@@ -245,9 +247,9 @@ begin
     //note that we have to do hashing here because there's no seek
     // in the TStream class, changing definitions in this API might
     // break something, and storing in an extra buffer will just eat space
-    while True do
-    begin
-      LLine := ReadLnRFC(LMsgEnd, Indy8BitEncoding{$IFDEF STRING_IS_ANSI}, Indy8BitEncoding{$ENDIF});
+    LEncoding := IndyTextEncoding_8Bit;
+    repeat
+      LLine := ReadLnRFC(LMsgEnd, LEncoding{$IFDEF STRING_IS_ANSI}, LEncoding{$ENDIF});
       if (IndyPos('=yend', LowerCase(LLine)) <> 0) or LMsgEnd then {Do not Localize}
       begin
         Break;
@@ -276,7 +278,7 @@ begin
           Inc(LBytesDecoded);
         end;
       end;
-    end;
+    until False;
     LH.HashEnd(LHash);
 
     FlushOutputBuffer;
@@ -286,7 +288,7 @@ begin
 
     LCrc32 := LowerCase(GetStrValue(LLine, 'crc32', $FFFF)); {Do not Localize}
     if LCrc32 <> '' then begin
-      //done this way because values can be computed faster than strings and we don't
+                                                                                     
       //have to mess with charactor case.
       if IndyStrToInt64('$' + LCrc32) <> LHash then begin
         EIdMessageYencInvalidCRCException.Toss(RSYencInvalidCRC);

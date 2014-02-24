@@ -24,7 +24,7 @@ type
 
   // RLebeau 2/14/09: this forces C++Builder to link to this unit so
   // RegisterFTPListParser can be called correctly at program startup...
-  (*$HPPEMIT '#pragma link "IdFTPListParseWinQVTNET"'*)
+  {$HPPEMIT LINKUNIT}
 
 {
 THis is a parser for "PC/TCP v 2.11 ftpsrv.exe".  This was a part of the PC/TCP

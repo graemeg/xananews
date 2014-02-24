@@ -115,7 +115,7 @@ begin
         raise EIdTFTPOptionNegotiationFailed.Create('');
       end;
 
-      LOptName := BytesToString(OptionPacket, LOffset, Idx-LOffset, IndyASCIIEncoding);
+      LOptName := BytesToString(OptionPacket, LOffset, Idx-LOffset, IndyTextEncoding_ASCII);
       LOffset := Idx+1;
 
       Idx := ByteIndex(0, OptionPacket, LOffset);
@@ -123,7 +123,7 @@ begin
         raise EIdTFTPOptionNegotiationFailed.Create('');
       end;
 
-      LOptValue := BytesToString(OptionPacket, LOffset, Idx-LOffset, IndyASCIIEncoding);
+      LOptValue := BytesToString(OptionPacket, LOffset, Idx-LOffset, IndyTextEncoding_ASCII);
       LOffset := Idx+1;
 
       OptionIdx := PosInStrArray(LOptName, [sBlockSize, sTransferSize], False);
@@ -148,7 +148,7 @@ begin
           begin
             if Reading then
             begin
-              // TODO
+                     
               {
               if (IndyStrToInt(LOptValue) is not available) then begin
                 raise EIdTFTPAllocationExceeded.Create('');
@@ -232,11 +232,11 @@ begin
         SetLength(Buffer, BufferSize);
         DataLen := ReceiveBuffer(Buffer, FPeerIP, FPeerPort, ReceiveTimeout);
         if DataLen <= 0 then begin
-          // TODO: re-transmit the last sent packet again instead of erroring...
+                                                                                
           raise EIdTFTPException.Create(RSTimeOut);
         end;
         SetLength(Buffer, DataLen);
-        // TODO: validate the correct peer is sending the data...
+                                                                 
         case GStack.NetworkToHost(BytesToWord(Buffer)) of
           TFTP_DATA:
             begin
@@ -397,11 +397,11 @@ begin
         SetLength(Buffer, BufferSize);
         DataLen := ReceiveBuffer(Buffer, FPeerIP, FPeerPort, IndyMax(500, ReceiveTimeout));
         if DataLen <= 0 then begin
-          // TODO: re-transmit the last sent packet again instead of erroring...
+                                                                                
           raise EIdTFTPException.Create(RSTimeOut);
         end;
         SetLength(Buffer, DataLen);
-        // TODO: validate the correct peer is sending the data...
+                                                                 
         wOp := GStack.NetworkToHost(BytesToWord(Buffer));
         case wOp of
           TFTP_ACK:
@@ -467,7 +467,7 @@ procedure TIdTrivialFTP.RaiseError(const ErrorPacket: TIdBytes);
 var
   ErrMsg: string;
 begin
-  ErrMsg := BytesToString(ErrorPacket, 4, Length(ErrorPacket)-4, IndyASCIIEncoding);
+  ErrMsg := BytesToString(ErrorPacket, 4, Length(ErrorPacket)-4, IndyTextEncoding_ASCII);
   case GStack.NetworkToHost(BytesToWord(ErrorPacket, 2)) of
     ErrFileNotFound:            raise EIdTFTPFileNotFound.Create(ErrMsg);
     ErrAccessViolation:         raise EIdTFTPAccessViolation.Create(ErrMsg);

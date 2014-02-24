@@ -77,25 +77,25 @@ uses
   Classes,
   IdBaseComponent;
 
-{ TODO:
+       
 
-Agent property does not work and the current parsing stops whenever it
-sees END:VCard meaning that the VCard will be truncated if AGENT is
-used to embed a VCard.
+                                                                      
+                                                                   
+                      
 
-I omitted a property for spelling out a sound.  Appearently VCard 2.1
-permitted a charactor representation of sound in addition to an embedded
-sound, and a URL.
+                                                                     
+                                                                        
+                 
 
-I am not sure how well the KEY property works.  That is used for
-embedding some encryption keys into a VCard such as PGP public-key or
-something from Versign.
+                                                                
+                                                                     
+                       
 
-VCard does not have any Quoted Printable decoding or Base64 encoding
-and decoding.  Some routines may have to be changed to accomodate
-this although I don't have the where-with-all.   
+                                                                    
+                                                                 
+                                                 
 
-VCards can not be saved. }
+                          
 
 type
 
@@ -938,7 +938,7 @@ var
   procedure ProcessAgent;
   begin
     // The current idx of FRawForm could be an embedded vCard.
-    { TODO : Eliminate embedded vCard }
+                                       
   end;
 
   procedure ParseEmbeddedObject(EmObj : TIdVCardEmbeddedObject; StLn : String);

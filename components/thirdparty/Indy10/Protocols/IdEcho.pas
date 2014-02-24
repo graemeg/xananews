@@ -100,16 +100,18 @@ end;
 
 function TIdEcho.Echo(const AText: String): String;
 var
-  LEncoding: TIdTextEncoding;
+  LEncoding: IIdTextEncoding;
   LBuffer: TIdBytes;
   LLen: Integer;
   StartTime: Cardinal;
 begin
-  {$IFDEF STRING_IS_UNICODE}
-  LEncoding := TIdTextEncoding.Unicode;
-  {$ELSE}
-  LEncoding := TIdTextEncoding.Default;
-  {$ENDIF}
+  LEncoding := IndyTextEncoding(
+    {$IFDEF STRING_IS_UNICODE}
+    encUTF16LE
+    {$ELSE}
+    encOSDefault
+    {$ENDIF}
+  );
   {Send time monitoring}
   LBuffer := ToBytes(AText, LEncoding);
   LLen := Length(LBuffer);

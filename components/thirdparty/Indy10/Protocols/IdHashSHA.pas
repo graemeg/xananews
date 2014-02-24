@@ -411,7 +411,7 @@ begin
 
   repeat
     LSize := ReadTIdBytesFromStream(AStream, FCBuffer, 64);
-    // TODO: handle stream read error
+                                     
     Inc(LLenLo, LSize * 8);
     if LLenLo < LongWord(LSize * 8) then begin
       Inc(LLenHi);

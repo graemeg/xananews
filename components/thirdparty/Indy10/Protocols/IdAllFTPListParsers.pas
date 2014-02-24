@@ -12,7 +12,7 @@ ABSOLELY NO CODE is permitted in this unit.
 // RLebeau 4/17/10: this forces C++Builder to link to this unit so
 // the units can register themselves correctly at program startup...
 
-(*$HPPEMIT '#pragma link "IdAllFTPListParsers"'*)
+{$HPPEMIT LINKUNIT}
 
 implementation
 uses

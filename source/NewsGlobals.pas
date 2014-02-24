@@ -921,7 +921,7 @@ begin
         AttachSpace := False;
         with TidDecoderMIME.Create(nil) do
         begin
-          WriteStringToStream(EncodedStream, Data, TIdTextEncoding.ASCII);
+          WriteStringToStream(EncodedStream, Data, IndyTextEncoding_ASCII);
           EncodedStream.Position := 0;
           try
             DecodeBegin(DecodedStream);
@@ -939,7 +939,7 @@ begin
         AttachSpace := data[Length(data)] = ' ';
         with TXnDecoderQuotedPrintable.Create(nil) do
         begin
-          WriteStringToStream(EncodedStream, Data, TIdTextEncoding.ASCII);
+          WriteStringToStream(EncodedStream, Data, IndyTextEncoding_ASCII);
           EncodedStream.Position := 0;
           try
             DecodeBegin(DecodedStream);

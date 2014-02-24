@@ -31,7 +31,7 @@ type
     function GetBytesLen: LongWord; virtual;
   public
     constructor Create; virtual;
-    //done this way in case we also need to advance an index pointer
+                                                                    
     //after a read or write
     procedure ReadStruct(const ABytes : TIdBytes; var VIndex : LongWord); virtual;
     procedure WriteStruct(var VBytes : TIdBytes; var VIndex : LongWord);  virtual;

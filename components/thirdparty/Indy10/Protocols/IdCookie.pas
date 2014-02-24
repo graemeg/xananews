@@ -73,11 +73,19 @@ interface
 
 uses
   Classes,
-  IdGlobal, IdException, IdGlobalProtocols, IdURI, SysUtils;
+  {$IFDEF HAS_UNIT_Generics_Collections}
+  System.Generics.Collections,
+  {$ENDIF}
+  IdGlobal, IdException, IdGlobalProtocols, IdURI,
+  SysUtils;
 
 type
+  {$HPPEMIT 'class DELPHICLASS TIdCookie;'}
   TIdCookie = class;
 
+  {$IFDEF HAS_GENERICS_TList}
+  TIdCookieList = TList<TIdCookie>;
+  {$ELSE}
   TIdCookieList = class(TList)
   protected
     function GetCookie(Index: Integer): TIdCookie;
@@ -86,6 +94,7 @@ type
     function IndexOfCookie(ACookie: TIdCookie): Integer;
     property Cookies[Index: Integer]: TIdCookie read GetCookie write SetCookie; default;
   end;
+  {$ENDIF}
 
   { Base Cookie class as described in [RFC6265] }
   TIdCookie = class(TCollectionItem)
@@ -239,7 +248,7 @@ end;
 
 function CanonicalizeHostName(const AHost: String): String;
 begin
-  // TODO: implement this
+                         
   {
   Per RFC 6265 Section 5.1.2:
 
@@ -343,7 +352,7 @@ begin
     if Length(VCookie) > 0 then begin
       VCookie := VCookie + '; '; {Do not Localize}
     end;
-    // TODO: encode illegal characters?
+                                       
     VCookie := VCookie + AProperty + '=' + AValue; {Do not Localize}
   end;
 end;
@@ -357,6 +366,8 @@ begin
 end;
 
 { TIdCookieList }
+
+{$IFNDEF HAS_GENERICS_TList}
 
 function TIdCookieList.GetCookie(Index: Integer): TIdCookie;
 begin
@@ -378,6 +389,8 @@ begin
   end;
   Result := -1;
 end;
+
+{$ENDIF}
 
 { TIdCookie }
 
@@ -408,23 +421,23 @@ begin
 end;
 
 procedure TIdCookie.Assign(Source: TPersistent);
+var
+  LSource: TIdCookie;
 begin
   if Source is TIdCookie then
   begin
-    with TIdCookie(Source) do
-    begin
-      Self.FDomain := FDomain;
-      Self.FExpires := FExpires;
-      Self.FHttpOnly := FHttpOnly;
-      Self.FName := FName;
-      Self.FPath := FPath;
-      Self.FSecure := FSecure;
-      Self.FValue := FValue;
-      Self.FCreatedAt := FCreatedAt;
-      Self.FHostOnly := FHostOnly;
-      Self.FLastAccessed := FLastAccessed;
-      Self.FPersistent := FPersistent;
-    end;
+    LSource := TIdCookie(Source);
+    FDomain := LSource.FDomain;
+    FExpires := LSource.FExpires;
+    FHttpOnly := LSource.FHttpOnly;
+    FName := LSource.FName;
+    FPath := LSource.FPath;
+    FSecure := LSource.FSecure;
+    FValue := LSource.FValue;
+    FCreatedAt := LSource.FCreatedAt;
+    FHostOnly := LSource.FHostOnly;
+    FLastAccessed := LSource.FLastAccessed;
+    FPersistent := LSource.FPersistent;
   end else
   begin
     inherited Assign(Source);
@@ -519,8 +532,8 @@ var
         LName := Trim(Copy(LAttr, 1, I-1));
         LValue := Trim(Copy(LAttr, I+1, MaxInt));
         // RLebeau: RFC 6265 does not account for quoted attribute values,
-	// despite several complaints asking for it.  We'll do it anyway in
-	// the hopes that the RFC will be updated to "do the right thing"...
+        // despite several complaints asking for it.  We'll do it anyway in
+        // the hopes that the RFC will be updated to "do the right thing"...
         if TextStartsWith(LValue, '"') then begin
           IdDelete(LValue, 1, 1);
           LNameValue := LValue;
@@ -537,6 +550,8 @@ var
             // Not in the RFCs, but some servers specify Expires as an
             // integer number in seconds instead of using Max-Age...
             if LSecs >= 0 then begin
+                                              
+              // LExpiryTime := (Now + (LSecs / SecsPerDay));
               LExpiryTime := (Now + LSecs * 1000 / MSecsPerDay);
             end else begin
               LExpiryTime := EncodeDate(1, 1, 1);
@@ -553,6 +568,8 @@ var
         1: begin
           if TryStrToInt64(LValue, LSecs) then begin
             if LSecs >= 0 then begin
+                                              
+              // LExpiryTime := (Now + (LSecs / SecsPerDay));
               LExpiryTime := (Now + LSecs * 1000 / MSecsPerDay);
             end else begin
               LExpiryTime := EncodeDate(1, 1, 1);
@@ -656,7 +673,7 @@ begin
     S := '';
     if GetLastValueOf('DOMAIN', S) then {Do not Localize}
     begin
-      // TODO
+             
       {
         If the user agent is configured to reject "public suffixes" and
         the domain-attribute is a public suffix:
@@ -829,7 +846,7 @@ var
       LValue := '';
       if (not IsFlag) and (LTemp <> '') then
       begin
-        if LTemp[1] = '"' then
+        if TextStartsWith(LTemp, '"') then {Do not Localize}
         begin
           IdDelete(LTemp, 1, 1);
           LValue := Fetch(LTemp, '"'); {Do not Localize}
@@ -1065,7 +1082,7 @@ begin
       try
         for i := 0 to LSrcCookies.Count - 1 do
         begin
-          LSrcCookie := LSrcCookies.Cookies[i];
+          LSrcCookie := LSrcCookies[i];
           LDestCookie := TIdCookieClass(LSrcCookie.ClassType).Create(Self);
           try
             LDestCookie.Assign(LSrcCookie);

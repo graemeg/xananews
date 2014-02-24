@@ -67,7 +67,7 @@ type
 
   // RLebeau 2/14/09: this forces C++Builder to link to this unit so
   // RegisterFTPListParser can be called correctly at program startup...
-  (*$HPPEMIT '#pragma link "IdFTPListParseNCSAForDOS"'*)
+  {$HPPEMIT LINKUNIT}
 
 implementation
 
@@ -95,7 +95,7 @@ begin
       LData := AListing[i];
       s := TStringList.Create;
       try
-        SplitColumns(LData, s);
+        SplitDelimitedString(LData, s, True);
         if s.Count = 4 then
         begin
           Result := ((s[1] = '<DIR>') or IsNumeric(s[1])) and  {do not localize}
@@ -125,7 +125,7 @@ begin
   Result := False;
   LWords := TStringList.Create;
   try
-    SplitColumns(Trim(StringReplace(AData, '-', ' ', [rfReplaceAll])), LWords);
+    SplitDelimitedString(StringReplace(AData, '-', ' ', [rfReplaceAll]), LWords, True);
     while LWords.Count > 2 do begin
       LWords.Delete(0);
     end;

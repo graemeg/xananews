@@ -110,7 +110,7 @@ type
     function SelectArticle(const AMsgNo: Int64): Boolean;
     procedure SelectGroup(const AGroup: string);
     function SendCmd(AOut: string; const AResponse: array of SmallInt;
-      AEncoding: TIdTextEncoding = nil): SmallInt; override;
+      AEncoding: IIdTextEncoding = nil): SmallInt; override;
     procedure SendXOVER(const AParam: string; AResponse: TAnsiStrings);
     procedure Send(header, msg: TAnsiStrings);
     procedure Authenticate;
@@ -622,7 +622,7 @@ begin
       begin
         S := name + ': ' + val + EOL;
         LogMessage('[tx] ' + string(S), False, False);
-        IOHandler.Write(BytesOf(S));
+        IOHandler.Write(ToBytes(S));
       end;
     end;
 
@@ -636,7 +636,7 @@ begin
       else
         S := msg[i] + EOL;
       LogMessage('[tx] ' + string(S), False, False);
-      IOHandler.Write(BytesOf(S));
+      IOHandler.Write(ToBytes(S));
     end;
   finally
     EndWork(wmWrite);
@@ -645,7 +645,7 @@ begin
 end;
 
 function TidNNTPX.SendCmd(AOut: string; const AResponse: array of SmallInt;
-  AEncoding: TIdTextEncoding = nil): SmallInt;
+  AEncoding: IIdTextEncoding = nil): SmallInt;
 begin
   // NOTE: Responses must be passed as arrays so that the proper inherited SendCmd is called
   // and a stack overflow is not caused.

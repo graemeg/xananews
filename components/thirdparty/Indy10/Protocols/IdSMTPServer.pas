@@ -265,7 +265,7 @@ type
     function GetTLSIsRequired: Boolean;
     procedure SetPipeLining(const AValue : Boolean);
   public
-    constructor Create(AConnection: TIdTCPConnection; AYarn: TIdYarn; AList: TThreadList = nil); override;
+    constructor Create(AConnection: TIdTCPConnection; AYarn: TIdYarn; AList: TIdContextThreadList = nil); override;
     destructor Destroy; override;
     //
     procedure CheckPipeLine;
@@ -795,7 +795,7 @@ begin
           LM := mAccept;
           LParams := TStringList.Create;
           try
-            SplitColumns(S, LParams);
+            SplitDelimitedString(S, LParams, True);
             // RLebeau: check the message size before accepting the message
             if LParams.IndexOfName('SIZE') <> -1 then
             begin
@@ -909,7 +909,7 @@ begin
         if Assigned(FOnRcptTo) then begin
           LParams := TStringList.Create;
           try
-            SplitColumns(S, LParams);
+            SplitDelimitedString(S, LParams, True);
             FOnRcptTo(LContext, EMailAddress.Address, LParams, LAction, LForward);
           finally
             FreeAndNil(LParams);
@@ -1017,10 +1017,12 @@ begin
 end;
 
 procedure TIdSMTPServer.CommandDATA(ASender: TIdCommand);
+const
+  BodyEncType: array[TIdSMTPBodyType] of IdTextEncodingType = (encASCII, enc8Bit, enc8Bit);
 var
   LContext : TIdSMTPServerContext;
   LStream: TStream;
-  LEncoding: TIdTextEncoding;
+  LEncoding: IIdTextEncoding;
 begin
   LContext := TIdSMTPServerContext(ASender.Context);
   if LContext.SMTPState <> idSMTPRcpt then begin
@@ -1038,11 +1040,7 @@ begin
       // RLebeau: TODO - do not even create the stream if the OnMsgReceive
       // event is not assigned, or at least create a stream that discards
       // any data received...
-      if LContext.FBodyType = idSMTP7Bit then begin
-        LEncoding := IndyASCIIEncoding;
-      end else begin
-        LEncoding := Indy8BitEncoding;
-      end;
+      LEncoding := IndyTextEncoding(BodyEncType[LContext.FBodyType]);
       SetEnhReply(ASender.Reply, 354, '', RSSMTPSvrStartData, LContext.EHLO);
       ASender.SendReply;
       LContext.PipeLining := False;
@@ -1130,11 +1128,13 @@ end;
 function ReplaceReceivedTokens(AContext: TIdSMTPServerContext; const AReceivedString: String): String;
 var
   LTokens: TStringList;
-  i, LPos: Integer;
+  i: Integer;
   //we do it this way so we can take advantage of the StringBuilder in DotNET.
   ReplaceOld, ReplaceNew: array of string;
+  {$IFNDEF HAS_TStrings_ValueFromIndex}
+  S: String;
+  {$ENDIF}
 begin
-  Result := '';
   LTokens := TStringList.Create;
   try
     if Pos('$hostname', AReceivedString) <> 0 then begin                  {do not localize}
@@ -1171,12 +1171,18 @@ begin
       SetLength(ReplaceOld, LTokens.Count);
 
       for i := 0 to LTokens.Count-1 do begin
-        LPos := Pos('=', LTokens.Strings[i]); {do not localize}
-        ReplaceOld[i] := Copy(LTokens.Strings[i], 1, LPos-1);
-        ReplaceNew[i] := Copy(LTokens.Strings[i], LPos+1, MaxInt);
+        ReplaceOld[i] := LTokens.Names[i];
+        {$IFDEF HAS_TStrings_ValueFromIndex}
+        ReplaceNew[i] := LTokens.ValueFromIndex[i];
+        {$ELSE}
+        S := LTokens.Strings[i];
+        ReplaceNew[i] := Copy(S, Pos('=', S)+1, MaxInt);
+        {$ENDIF}
       end;
 
       Result := StringsReplace(AReceivedString, ReplaceOld, ReplaceNew);
+    end else begin
+      Result := AReceivedString;
     end;
   finally
     FreeAndNil(LTokens);
@@ -1270,7 +1276,7 @@ begin
 end;
 
 constructor TIdSMTPServerContext.Create(AConnection: TIdTCPConnection;
-  AYarn: TIdYarn; AList: TThreadList = nil);
+  AYarn: TIdYarn; AList: TIdContextThreadList = nil);
 begin
   inherited Create(AConnection, AYarn, AList);
   SMTPState := idSMTPNone;

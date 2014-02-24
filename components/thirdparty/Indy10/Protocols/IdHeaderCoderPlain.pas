@@ -17,7 +17,7 @@ type
 
   // RLebeau 4/17/10: this forces C++Builder to link to this unit so
   // RegisterHeaderCoder can be called correctly at program startup...
-  (*$HPPEMIT '#pragma link "IdHeaderCoderPlain"'*)
+  {$HPPEMIT LINKUNIT}
 
 implementation
 
@@ -31,7 +31,7 @@ end;
 
 class function TIdHeaderCoderPlain.Encode(const ACharSet, AData: String): TIdBytes;
 begin
-  Result := ToBytes(AData, Indy8BitEncoding);
+  Result := ToBytes(AData, IndyTextEncoding_8Bit);
 end;
 
 class function TIdHeaderCoderPlain.CanHandle(const ACharSet: String): Boolean;

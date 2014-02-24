@@ -214,14 +214,14 @@ begin
   // Code the entire file in complete 16-byte chunks.
   while ASize >= 16 do begin
     LSize := ReadTIdBytesFromStream(AStream, FCBuffer, 16);
-    // TODO: handle stream read error
+                                     
     MDCoder;
     Dec(ASize, LSize);
   end;
 
   // Read the last set of bytes.
   LStartPos := ReadTIdBytesFromStream(AStream, FCBuffer, ASize);
-  // TODO: handle stream read error
+                                   
   Pad := 16 - LStartPos;
 
   // Step 1
@@ -366,14 +366,14 @@ begin
   while LSize >= 64 do
   begin
     LReadSize := ReadTIdBytesFromStream(AStream, FCBuffer, 64);
-    // TODO: handle stream read error
+                                     
     MDCoder;
     Dec(LSize, LReadSize);
   end;
 
   // Read the last set of bytes.
   LStartPos := ReadTIdBytesFromStream(AStream, FCBuffer, ASize);
-  // TODO: handle stream read error
+                                   
 
   // Append one bit with value 1
   FCBuffer[LStartPos] := $80;

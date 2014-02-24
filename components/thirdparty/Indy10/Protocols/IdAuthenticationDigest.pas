@@ -87,7 +87,7 @@ type
 
   // RLebeau 4/17/10: this forces C++Builder to link to this unit so
   // RegisterAuthenticationMethod can be called correctly at program startup...
-  (*$HPPEMIT '#pragma link "IdAuthenticationDigest"'*)
+  {$HPPEMIT LINKUNIT}
 
 implementation
 
@@ -119,10 +119,15 @@ end;
 function TIdDigestAuthentication.Authentication: String;
 
   function Hash(const S: String): String;
+  var
+    LMD5: TIdHashMessageDigest5;
   begin
-    with TIdHashMessageDigest5.Create do try
-      Result := LowerCase(HashStringAsHex(S));
-    finally Free end;
+    LMD5 := TIdHashMessageDigest5.Create;
+    try
+      Result := LowerCase(LMD5.HashStringAsHex(S));
+    finally
+      LMD5.Free;
+    end;
   end;
 
 var
