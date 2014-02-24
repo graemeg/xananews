@@ -65,7 +65,7 @@ const
 
   // RLebeau 2/14/09: this forces C++Builder to link to this unit so
   // RegisterFTPListParser can be called correctly at program startup...
-  (*$HPPEMIT '#pragma link "IdFTPListParseStercomOS390Exp"'*)
+  {$HPPEMIT LINKUNIT}
 
 implementation
 
@@ -147,7 +147,7 @@ begin
   LI := AItem as TIdSterCommExpOS390FTPListItem;
   s := TStringList.Create;
   try
-    SplitColumns(AItem.Data, s);
+    SplitDelimitedString(AItem.Data, s, True);
     if s.Count > 3 then
     begin
       if s[3] <> '-' then begin {do not localize}

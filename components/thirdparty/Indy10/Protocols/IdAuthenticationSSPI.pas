@@ -52,89 +52,172 @@ uses
 
 const
   SEC_E_OK                         = 0;
+  {$EXTERNALSYM SEC_E_OK}
   SEC_E_INSUFFICIENT_MEMORY        = HRESULT($80090300);
+  {$EXTERNALSYM SEC_E_INSUFFICIENT_MEMORY}
   SEC_E_INVALID_HANDLE             = HRESULT($80090301);
+  {$EXTERNALSYM SEC_E_INVALID_HANDLE}
   SEC_E_UNSUPPORTED_FUNCTION       = HRESULT($80090302);
+  {$EXTERNALSYM SEC_E_UNSUPPORTED_FUNCTION}
   SEC_E_TARGET_UNKNOWN             = HRESULT($80090303);
+  {$EXTERNALSYM SEC_E_TARGET_UNKNOWN}
   SEC_E_INTERNAL_ERROR             = HRESULT($80090304);
+  {$EXTERNALSYM SEC_E_INTERNAL_ERROR}
   SEC_E_SECPKG_NOT_FOUND           = HRESULT($80090305);
+  {$EXTERNALSYM SEC_E_SECPKG_NOT_FOUND}
   SEC_E_NOT_OWNER                  = HRESULT($80090306);
+  {$EXTERNALSYM SEC_E_NOT_OWNER}
   SEC_E_CANNOT_INSTALL             = HRESULT($80090307);
+  {$EXTERNALSYM SEC_E_CANNOT_INSTALL}
   SEC_E_INVALID_TOKEN              = HRESULT($80090308);
+  {$EXTERNALSYM SEC_E_INVALID_TOKEN}
   SEC_E_CANNOT_PACK                = HRESULT($80090309);
+  {$EXTERNALSYM SEC_E_CANNOT_PACK}
   SEC_E_QOP_NOT_SUPPORTED          = HRESULT($8009030A);
+  {$EXTERNALSYM SEC_E_QOP_NOT_SUPPORTED}
   SEC_E_NO_IMPERSONATION           = HRESULT($8009030B);
+  {$EXTERNALSYM SEC_E_NO_IMPERSONATION}
   SEC_E_LOGON_DENIED               = HRESULT($8009030C);
+  {$EXTERNALSYM SEC_E_LOGON_DENIED}
   SEC_E_UNKNOWN_CREDENTIALS        = HRESULT($8009030D);
+  {$EXTERNALSYM SEC_E_UNKNOWN_CREDENTIALS}
   SEC_E_NO_CREDENTIALS             = HRESULT($8009030E);
+  {$EXTERNALSYM SEC_E_NO_CREDENTIALS}
   SEC_E_MESSAGE_ALTERED            = HRESULT($8009030F);
+  {$EXTERNALSYM SEC_E_MESSAGE_ALTERED}
   SEC_E_OUT_OF_SEQUENCE            = HRESULT($80090310);
+  {$EXTERNALSYM SEC_E_OUT_OF_SEQUENCE}
   SEC_E_NO_AUTHENTICATING_AUTHORITY = HRESULT($80090311);
+  {$EXTERNALSYM SEC_E_NO_AUTHENTICATING_AUTHORITY}
   SEC_I_CONTINUE_NEEDED            = HRESULT($00090312);
+  {$EXTERNALSYM SEC_I_CONTINUE_NEEDED}
   SEC_I_COMPLETE_NEEDED            = HRESULT($00090313);
+  {$EXTERNALSYM SEC_I_COMPLETE_NEEDED}
   SEC_I_COMPLETE_AND_CONTINUE      = HRESULT($00090314);
+  {$EXTERNALSYM SEC_I_COMPLETE_AND_CONTINUE}
   SEC_I_LOCAL_LOGON                = HRESULT($00090315);
+  {$EXTERNALSYM SEC_I_LOCAL_LOGON}
   SEC_E_BAD_PKGID                  = HRESULT($80090316);
+  {$EXTERNALSYM SEC_E_BAD_PKGID}
   SEC_E_CONTEXT_EXPIRED            = HRESULT($80090317);
+  {$EXTERNALSYM SEC_E_CONTEXT_EXPIRED}
   SEC_E_INCOMPLETE_MESSAGE         = HRESULT($80090318);
+  {$EXTERNALSYM SEC_E_INCOMPLETE_MESSAGE}
   SEC_E_INCOMPLETE_CREDENTIALS     = HRESULT($80090320);
+  {$EXTERNALSYM SEC_E_INCOMPLETE_CREDENTIALS}
   SEC_E_BUFFER_TOO_SMALL           = HRESULT($80090321);
+  {$EXTERNALSYM SEC_E_BUFFER_TOO_SMALL}
   SEC_I_INCOMPLETE_CREDENTIALS     = HRESULT($00090320);
+  {$EXTERNALSYM SEC_I_INCOMPLETE_CREDENTIALS}
   SEC_I_RENEGOTIATE                = HRESULT($00090321);
+  {$EXTERNALSYM SEC_I_RENEGOTIATE}
   SEC_E_WRONG_PRINCIPAL            = HRESULT($80090322);
+  {$EXTERNALSYM SEC_E_WRONG_PRINCIPAL}
   SEC_I_NO_LSA_CONTEXT             = HRESULT($00090323);
+  {$EXTERNALSYM SEC_I_NO_LSA_CONTEXT}
   SEC_E_TIME_SKEW                  = HRESULT($80090324);
+  {$EXTERNALSYM SEC_E_TIME_SKEW}
   SEC_E_UNTRUSTED_ROOT             = HRESULT($80090325);
+  {$EXTERNALSYM SEC_E_UNTRUSTED_ROOT}
   SEC_E_ILLEGAL_MESSAGE            = HRESULT($80090326);
+  {$EXTERNALSYM SEC_E_ILLEGAL_MESSAGE}
   SEC_E_CERT_UNKNOWN               = HRESULT($80090327);
+  {$EXTERNALSYM SEC_E_CERT_UNKNOWN}
   SEC_E_CERT_EXPIRED               = HRESULT($80090328);
+  {$EXTERNALSYM SEC_E_CERT_EXPIRED}
   SEC_E_ENCRYPT_FAILURE            = HRESULT($80090329);
+  {$EXTERNALSYM SEC_E_ENCRYPT_FAILURE}
   SEC_E_DECRYPT_FAILURE            = HRESULT($80090330);
+  {$EXTERNALSYM SEC_E_DECRYPT_FAILURE}
   SEC_E_ALGORITHM_MISMATCH         = HRESULT($80090331);
+  {$EXTERNALSYM SEC_E_ALGORITHM_MISMATCH}
   SEC_E_SECURITY_QOS_FAILED        = HRESULT($80090332);
-
+  {$EXTERNALSYM SEC_E_SECURITY_QOS_FAILED}
+ 
   SEC_E_UNFINISHED_CONTEXT_DELETED = HRESULT($80090333);
+  {$EXTERNALSYM SEC_E_UNFINISHED_CONTEXT_DELETED}
   SEC_E_NO_TGT_REPLY               = HRESULT($80090334);
+  {$EXTERNALSYM SEC_E_NO_TGT_REPLY}
   SEC_E_NO_IP_ADDRESSES            = HRESULT($80090335);
+  {$EXTERNALSYM SEC_E_NO_IP_ADDRESSES}
   SEC_E_WRONG_CREDENTIAL_HANDLE    = HRESULT($80090336);
+  {$EXTERNALSYM SEC_E_WRONG_CREDENTIAL_HANDLE}
   SEC_E_CRYPTO_SYSTEM_INVALID      = HRESULT($80090337);
+  {$EXTERNALSYM SEC_E_CRYPTO_SYSTEM_INVALID}
   SEC_E_MAX_REFERRALS_EXCEEDED     = HRESULT($80090338);
+  {$EXTERNALSYM SEC_E_MAX_REFERRALS_EXCEEDED}
   SEC_E_MUST_BE_KDC                = HRESULT($80090339);
+  {$EXTERNALSYM SEC_E_MUST_BE_KDC}
   SEC_E_STRONG_CRYPTO_NOT_SUPPORTED = HRESULT($8009033A);
+  {$EXTERNALSYM SEC_E_STRONG_CRYPTO_NOT_SUPPORTED}
   SEC_E_TOO_MANY_PRINCIPALS        = HRESULT($8009033B);
+  {$EXTERNALSYM SEC_E_TOO_MANY_PRINCIPALS}
   SEC_E_NO_PA_DATA                 = HRESULT($8009033C);
+  {$EXTERNALSYM SEC_E_NO_PA_DATA}
   SEC_E_PKINIT_NAME_MISMATCH       = HRESULT($8009033D);
+  {$EXTERNALSYM SEC_E_PKINIT_NAME_MISMATCH}
   SEC_E_SMARTCARD_LOGON_REQUIRED   = HRESULT($8009033E);
+  {$EXTERNALSYM SEC_E_SMARTCARD_LOGON_REQUIRED}
   SEC_E_SHUTDOWN_IN_PROGRESS       = HRESULT($8009033F);
+  {$EXTERNALSYM SEC_E_SHUTDOWN_IN_PROGRESS}
   SEC_E_KDC_INVALID_REQUEST        = HRESULT($80090340);
+  {$EXTERNALSYM SEC_E_KDC_INVALID_REQUEST}
   SEC_E_KDC_UNABLE_TO_REFER        = HRESULT($80090341);
+  {$EXTERNALSYM SEC_E_KDC_UNABLE_TO_REFER}
   SEC_E_KDC_UNKNOWN_ETYPE          = HRESULT($80090342);
+  {$EXTERNALSYM SEC_E_KDC_UNKNOWN_ETYPE}
   SEC_E_UNSUPPORTED_PREAUTH        = HRESULT($80090343);
+  {$EXTERNALSYM SEC_E_UNSUPPORTED_PREAUTH}
   SEC_E_DELEGATION_REQUIRED        = HRESULT($80090345);
+  {$EXTERNALSYM SEC_E_DELEGATION_REQUIRED}
   SEC_E_BAD_BINDINGS               = HRESULT($80090346);
+  {$EXTERNALSYM SEC_E_BAD_BINDINGS}
   SEC_E_MULTIPLE_ACCOUNTS          = HRESULT($80090347);
+  {$EXTERNALSYM SEC_E_MULTIPLE_ACCOUNTS}
   SEC_E_NO_KERB_KEY                = HRESULT($80090348);
+  {$EXTERNALSYM SEC_E_NO_KERB_KEY}
   SEC_E_CERT_WRONG_USAGE           = HRESULT($80090349);
+  {$EXTERNALSYM SEC_E_CERT_WRONG_USAGE}
   SEC_E_DOWNGRADE_DETECTED         = HRESULT($80090350);
+  {$EXTERNALSYM SEC_E_DOWNGRADE_DETECTED}
   SEC_E_SMARTCARD_CERT_REVOKED     = HRESULT($80090351);
+  {$EXTERNALSYM SEC_E_SMARTCARD_CERT_REVOKED}
   SEC_E_ISSUING_CA_UNTRUSTED       = HRESULT($80090352);
+  {$EXTERNALSYM SEC_E_ISSUING_CA_UNTRUSTED}
   SEC_E_REVOCATION_OFFLINE_C       = HRESULT($80090353);
+  {$EXTERNALSYM SEC_E_REVOCATION_OFFLINE_C}
   SEC_E_PKINIT_CLIENT_FAILURE      = HRESULT($80090354);
+  {$EXTERNALSYM SEC_E_PKINIT_CLIENT_FAILURE}
   SEC_E_SMARTCARD_CERT_EXPIRED     = HRESULT($80090355);
+  {$EXTERNALSYM SEC_E_SMARTCARD_CERT_EXPIRED}
   SEC_E_NO_S4U_PROT_SUPPORT        = HRESULT($80090356);
+  {$EXTERNALSYM SEC_E_NO_S4U_PROT_SUPPORT}
   SEC_E_CROSSREALM_DELEGATION_FAILURE = HRESULT($80090357);
+  {$EXTERNALSYM SEC_E_CROSSREALM_DELEGATION_FAILURE}
   SEC_E_REVOCATION_OFFLINE_KDC     = HRESULT($80090358);
+  {$EXTERNALSYM SEC_E_REVOCATION_OFFLINE_KDC}
   SEC_E_ISSUING_CA_UNTRUSTED_KDC   = HRESULT($80090359);
+  {$EXTERNALSYM SEC_E_ISSUING_CA_UNTRUSTED_KDC}
   SEC_E_KDC_CERT_EXPIRED           = HRESULT($8009035A);
+  {$EXTERNALSYM SEC_E_KDC_CERT_EXPIRED}
   SEC_E_KDC_CERT_REVOKED           = HRESULT($8009035B);
+  {$EXTERNALSYM SEC_E_KDC_CERT_REVOKED}
   SEC_I_SIGNATURE_NEEDED           = HRESULT($0009035C);
+  {$EXTERNALSYM SEC_I_SIGNATURE_NEEDED}
   SEC_E_INVALID_PARAMETER          = HRESULT($8009035D);
+  {$EXTERNALSYM SEC_E_INVALID_PARAMETER}
   SEC_E_DELEGATION_POLICY          = HRESULT($8009035E);
+  {$EXTERNALSYM SEC_E_DELEGATION_POLICY}
   SEC_E_POLICY_NLTM_ONLY           = HRESULT($8009035F);
+  {$EXTERNALSYM SEC_E_POLICY_NLTM_ONLY}
   SEC_I_NO_RENEGOTIATION           = HRESULT($00090360);
+  {$EXTERNALSYM SEC_I_NO_RENEGOTIATION}
   SEC_E_NO_CONTEXT                 = HRESULT($80090361);
+  {$EXTERNALSYM SEC_E_NO_CONTEXT}
   SEC_E_PKU2U_CERT_FAILURE         = HRESULT($80090362);
+  {$EXTERNALSYM SEC_E_PKU2U_CERT_FAILURE}
   SEC_E_MUTUAL_AUTH_FAILED         = HRESULT($80090363);
+  {$EXTERNALSYM SEC_E_MUTUAL_AUTH_FAILED}
 
 type
   ESSPIException = class(Exception)
@@ -340,7 +423,7 @@ type
 
   // RLebeau 4/17/10: this forces C++Builder to link to this unit so
   // RegisterAuthenticationMethod can be called correctly at program startup...
-  (*$HPPEMIT '#pragma link "IdAuthenticationSSPI"'*)
+  {$HPPEMIT LINKUNIT}
 
 implementation
 
@@ -602,30 +685,28 @@ function TSSPIInterface.IsAvailable: Boolean;
       fPFunctionTable := entrypoint();
       { let's see what SSPI functions are available
         and if we can continue on with the set }
-      with fPFunctionTable^ do begin
-        fIsAvailable :=
-          Assigned({$IFDEF SSPI_UNICODE}QuerySecurityPackageInfoW{$ELSE}QuerySecurityPackageInfoA{$ENDIF}) and
-          Assigned(FreeContextBuffer) and
-          Assigned(DeleteSecurityContext) and
-          Assigned(FreeCredentialsHandle) and
-          Assigned({$IFDEF SSPI_UNICODE}AcquireCredentialsHandleW{$ELSE}AcquireCredentialsHandleA{$ENDIF}) and
-          Assigned({$IFDEF SSPI_UNICODE}InitializeSecurityContextW{$ELSE}InitializeSecurityContextA{$ENDIF}) and
-          Assigned(AcceptSecurityContext) and
-          Assigned(ImpersonateSecurityContext) and
-          Assigned(RevertSecurityContext) and
-          Assigned({$IFDEF SSPI_UNICODE}QueryContextAttributesW{$ELSE}QueryContextAttributesA{$ENDIF}) and
-          Assigned(MakeSignature) and
-          Assigned(VerifySignature);
-        {$IFDEF SET_ENCRYPT_IN_FT_WITH_GETPROCADDRESS_FUDGE}
-        { fudge for Encrypt/DecryptMessage }
-        if not Assigned(EncryptMessage) then begin
-          EncryptMessage := GetProcAddress(fDLLHandle, ENCRYPT_MESSAGE);
-        end;
-        if not Assigned(DecryptMessage) then begin
-          DecryptMessage := GetProcAddress(fDLLHandle, DECRYPT_MESSAGE);
-        end;
-        {$ENDIF}
+      fIsAvailable :=
+        Assigned({$IFDEF SSPI_UNICODE}fPFunctionTable^.QuerySecurityPackageInfoW{$ELSE}fPFunctionTable^.QuerySecurityPackageInfoA{$ENDIF}) and
+        Assigned(fPFunctionTable^.FreeContextBuffer) and
+        Assigned(fPFunctionTable^.DeleteSecurityContext) and
+        Assigned(fPFunctionTable^.FreeCredentialsHandle) and
+        Assigned({$IFDEF SSPI_UNICODE}fPFunctionTable^.AcquireCredentialsHandleW{$ELSE}fPFunctionTable^.AcquireCredentialsHandleA{$ENDIF}) and
+        Assigned({$IFDEF SSPI_UNICODE}fPFunctionTable^.InitializeSecurityContextW{$ELSE}fPFunctionTable^.InitializeSecurityContextA{$ENDIF}) and
+        Assigned(fPFunctionTable^.AcceptSecurityContext) and
+        Assigned(fPFunctionTable^.ImpersonateSecurityContext) and
+        Assigned(fPFunctionTable^.RevertSecurityContext) and
+        Assigned({$IFDEF SSPI_UNICODE}fPFunctionTable^.QueryContextAttributesW{$ELSE}fPFunctionTable^.QueryContextAttributesA{$ENDIF}) and
+        Assigned(fPFunctionTable^.MakeSignature) and
+        Assigned(fPFunctionTable^.VerifySignature);
+      {$IFDEF SET_ENCRYPT_IN_FT_WITH_GETPROCADDRESS_FUDGE}
+      { fudge for Encrypt/DecryptMessage }
+      if not Assigned(fPFunctionTable^.EncryptMessage) then begin
+        fPFunctionTable^.EncryptMessage := GetProcAddress(fDLLHandle, ENCRYPT_MESSAGE);
       end;
+      if not Assigned(fPFunctionTable^.DecryptMessage) then begin
+        fPFunctionTable^.DecryptMessage := GetProcAddress(fDLLHandle, DECRYPT_MESSAGE);
+      end;
+      {$ENDIF}
     end;
   end;
 
@@ -817,25 +898,23 @@ var
 begin
   Use := aUse;
   if (Length(aDomain) > 0) and (Length(aUserName) > 0) then begin
-    with ai do begin
-      {$IFDEF SSPI_UNICODE}
-      User := PWideChar(aUserName);
-      UserLength := Length(aUserName);
-      Domain := PWideChar(aDomain);
-      DomainLength := Length(aDomain);
-      Password := PWideChar(aPassword);
-      PasswordLength := Length(aPassword);
-      Flags := SEC_WINNT_AUTH_IDENTITY_UNICODE;
-      {$ELSE}
-      User := PAnsiChar(aUserName);
-      UserLength := Length(aUserName);
-      Domain := PAnsiChar(aDomain);
-      DomainLength := Length(aDomain);
-      Password := PAnsiChar(aPassword);
-      PasswordLength := Length(aPassword);
-      Flags := SEC_WINNT_AUTH_IDENTITY_ANSI;
-      {$ENDIF}
-    end;
+    {$IFDEF SSPI_UNICODE}
+    ai.User := PUSHORT(PWideChar(aUserName));
+    ai.UserLength := Length(aUserName);
+    ai.Domain := PUSHORT(PWideChar(aDomain));
+    ai.DomainLength := Length(aDomain);
+    ai.Password := PUSHORT(PWideChar(aPassword));
+    ai.PasswordLength := Length(aPassword);
+    ai.Flags := SEC_WINNT_AUTH_IDENTITY_UNICODE;
+    {$ELSE}
+    ai.User := PUCHAR(PAnsiChar(aUserName));
+    ai.UserLength := Length(aUserName);
+    ai.Domain := PUCHAR(PAnsiChar(aDomain));
+    ai.DomainLength := Length(aDomain);
+    ai.Password := PUCHAR(PAnsiChar(aPassword));
+    ai.PasswordLength := Length(aPassword);
+    ai.Flags := SEC_WINNT_AUTH_IDENTITY_ANSI;
+    {$ENDIF}
     pai := @ai;
   end else
   begin
@@ -1010,9 +1089,7 @@ begin
       (fStatus = SEC_I_COMPLETE_AND_CONTINUE) or
       (fOutBuff.cbBuffer > 0);
     if Result then begin
-      with fOutBuff do begin
-        aToPeerToken := RawToBytes(pvBuffer^, cbBuffer);
-      end;
+      aToPeerToken := RawToBytes(fOutBuff.pvBuffer^, fOutBuff.cbBuffer);
     end;
   finally
     FreeMem(fOutBuff.pvBuffer);
@@ -1022,18 +1099,15 @@ end;
 constructor TCustomSSPIConnectionContext.Create(aCredentials: TSSPICredentials);
 begin
   inherited Create(aCredentials);
-  with fInBuff do begin
-    BufferType := SECBUFFER_TOKEN;
-  end;
-  with fInBuffDesc do begin
-    ulVersion := SECBUFFER_VERSION;
-    cBuffers := 1;
-    pBuffers := @fInBuff;
-  end;
-  with fOutBuffDesc do begin
-    ulVersion := SECBUFFER_VERSION;
-    cBuffers := 1;
-  end;
+
+  fInBuff.BufferType := SECBUFFER_TOKEN;
+
+  fInBuffDesc.ulVersion := SECBUFFER_VERSION;
+  fInBuffDesc.cBuffers := 1;
+  fInBuffDesc.pBuffers := @fInBuff;
+
+  fOutBuffDesc.ulVersion := SECBUFFER_VERSION;
+  fOutBuffDesc.cBuffers := 1;
 end;
 
 { TSSPIClientConnectionContext }

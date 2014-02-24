@@ -225,6 +225,37 @@ type
     procedure Unlock;
   end;
 
+  TIdStackLocalAddress = class(TCollectionItem)
+  protected
+    FIPVersion: TIdIPVersion;
+    FIPAddress: String;
+  public
+    constructor Create(ACollection: TCollection; const AIPVersion: TIdIPVersion; const AIPAddress: string); reintroduce;
+    property IPVersion: TIdIPVersion read FIPVersion;
+    property IPAddress: String read FIPAddress;
+  end;
+
+  TIdStackLocalAddressIPv4 = class(TIdStackLocalAddress)
+  protected
+    FSubNetMask: String;
+  public
+    constructor Create(ACollection: TCollection; const AIPAddress, ASubNetMask: string); reintroduce;
+    property SubNetMask: String read FSubNetMask;
+  end;
+
+  TIdStackLocalAddressIPv6 = class(TIdStackLocalAddress)
+  public
+    constructor Create(ACollection: TCollection; const AIPAddress: string); reintroduce;
+  end;
+
+  TIdStackLocalAddressList = class(TCollection)
+  protected
+    function GetAddress(AIndex: Integer): TIdStackLocalAddress;
+  public
+    constructor Create; reintroduce;
+    property Addresses[AIndex: Integer]: TIdStackLocalAddress read GetAddress; default;
+  end;
+
   TIdStack = class(TObject)
   protected
     FLocalAddresses: TStrings;
@@ -232,7 +263,7 @@ type
     procedure IPVersionUnsupported;
     function HostByName(const AHostName: string;
       const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION): string; virtual; abstract;
-    function MakeCanonicalIPv6Address(const AAddr: string): string;
+    function MakeCanonicalIPv6Address(const AAddr: string): string; {$IFDEF HAS_DEPRECATED}deprecated{$IFDEF HAS_DEPRECATED_MSG} 'Use IdGlobal.MakeCanonicalIPv6Address()'{$ENDIF};{$ENDIF}
     function ReadHostName: string; virtual; abstract;
     function GetLocalAddress: string;
     function GetLocalAddresses: TStrings;
@@ -283,7 +314,7 @@ type
     function NetworkToHost(const AValue: TIdIPv6Address): TIdIPv6Address; overload; virtual;
     procedure GetSocketOption(ASocket: TIdStackSocketHandle;
       ALevel: TIdSocketOptionLevel; AOptName: TIdSocketOption;
-      out AOptVal: Integer); virtual; abstract;
+      out AOptVal: Integer); overload; virtual; abstract;
     procedure SetSocketOption(ASocket: TIdStackSocketHandle; ALevel: TIdSocketOptionLevel;
       AOptName: TIdSocketOption; AOptVal: Integer); overload; virtual; abstract;
     function ResolveHost(const AHost: string;
@@ -364,7 +395,7 @@ implementation
 {$O-}
 
 uses
-  //done this way so we can have a separate stack for FPC under Unix systems
+                                                                            
   {$IFDEF UNIX}
     {$IFDEF USE_VCL_POSIX}
   IdStackVCLPosix,
@@ -461,6 +492,36 @@ begin
   FLastError := AErr;
 end;
 
+{ TIdStackLocalAddressList }
+
+constructor TIdStackLocalAddress.Create(ACollection: TCollection; const AIPVersion: TIdIPVersion; const AIPAddress: string);
+begin
+  inherited Create(ACollection);
+  FIPVersion := AIPVersion;
+  FIPAddress := AIPAddress;
+end;
+
+constructor TIdStackLocalAddressIPv4.Create(ACollection: TCollection; const AIPAddress, ASubNetMask: string);
+begin
+  inherited Create(ACollection, Id_IPv4, AIPAddress);
+  FSubNetMask := ASubNetMask;
+end;
+
+constructor TIdStackLocalAddressIPv6.Create(ACollection: TCollection; const AIPAddress: string);
+begin
+  inherited Create(ACollection, Id_IPv6, AIPAddress);
+end;
+
+constructor TIdStackLocalAddressList.Create;
+begin
+  inherited Create(TIdStackLocalAddress);
+end;
+
+function TIdStackLocalAddressList.GetAddress(AIndex: Integer): TIdStackLocalAddress;
+begin
+  Result := TIdStackLocalAddress(inherited Items[AIndex]);
+end;
+
 { TIdStack }
 
 constructor TIdStack.Create;
@@ -540,6 +601,8 @@ function TIdStack.IsIP(AIP: string): Boolean;
 var
   i: Integer;
 begin
+                       
+
 //
 //Result := Result and ((i > 0) and (i < 256));
 //
@@ -574,7 +637,7 @@ begin
         end;
       end;
     Id_IPv6: begin
-        Result := MakeCanonicalIPv6Address(AHost);
+        Result := IdGlobal.MakeCanonicalIPv6Address(AHost);
         if Result = '' then begin
           Result := HostByName(AHost, Id_IPv6);
         end;
@@ -783,7 +846,7 @@ var
   LVal: Integer;
 begin
   Result := False;
-  if GStack.IsIP(Value) then
+  if IsIP(Value) then
   begin
     LIP := Value;
     LVal := IndyStrToInt(Fetch(LIP, '.'));    {Do not Localize}
@@ -876,7 +939,7 @@ function TIdStack.IsValidIPv6MulticastGroup(const Value: string): Boolean;
 var
   LTmp : String;
 begin
-  LTmp := MakeCanonicalIPv6Address(Value);
+  LTmp := IdGlobal.MakeCanonicalIPv6Address(Value);
   if LTmp <> '' then
   begin
     Result := TextStartsWith(LTmp, 'FF');
@@ -908,32 +971,54 @@ begin
   Result := not Word(LCRC);
 end;
 
+{$UNDEF HAS_TCP_KEEPIDLE_OR_KEEPINTVL}
+{$IFDEF HAS_TCP_KEEPIDLE}
+  {$DEFINE HAS_TCP_KEEPIDLE_OR_KEEPINTVL}
+{$ENDIF}
+{$IFDEF HAS_TCP_KEEPINTVL}
+  {$DEFINE HAS_TCP_KEEPIDLE_OR_KEEPINTVL}
+{$ENDIF}
+
 procedure TIdStack.SetKeepAliveValues(ASocket: TIdStackSocketHandle;
   const AEnabled: Boolean; const ATimeMS, AInterval: Integer);
 begin
+  {$IFDEF HAS_TCP_KEEPIDLE_OR_KEEPINTVL}
+  if AEnabled then
+  begin
+    {$IFDEF HAS_TCP_KEEPIDLE}
+    SetSocketOption(ASocket, Id_SOL_TCP, Id_TCP_KEEPIDLE, ATimeMS);
+    {$ENDIF}
+    {$IFDEF HAS_TCP_KEEPINTVL}
+    SetSocketOption(ASocket, Id_SOL_TCP, Id_TCP_KEEPINTVL, AInterval);
+    {$ENDIF}
+    Exit;
+  end;
+  {$ENDIF}
   SetSocketOption(ASocket, Id_SOL_SOCKET, Id_SO_KEEPALIVE, iif(AEnabled, 1, 0));
 end;
 
 initialization
-  //done this way so we can have a separate stack just for FPC under Unix systems
+                                                                                 
   GStackClass :=
-    {$IFDEF UNIX}
-      {$IFDEF USE_VCL_POSIX}
-      TIdStackVCLPosix;
+    {$IFDEF USE_VCL_POSIX}
+    TIdStackVCLPosix
+    {$ELSE}
+      {$IFDEF UNIX}
+        {$IFDEF KYLIXCOMPAT}
+        TIdStackLibc
+        {$ENDIF}
+        {$IFDEF USE_BASEUNIX}
+        TIdStackUnix
+        {$ENDIF}
       {$ENDIF}
-      {$IFDEF KYLIXCOMPAT}
-      TIdStackLibc;
+      {$IFDEF WINDOWS}
+      TIdStackWindows
       {$ENDIF}
-      {$IFDEF USE_BASEUNIX}
-      TIdStackUnix;
+      {$IFDEF DOTNET}
+      TIdStackDotNet
       {$ENDIF}
     {$ENDIF}
-    {$IFDEF WINDOWS}
-    TIdStackWindows;
-    {$ENDIF}
-    {$IFDEF DOTNET}
-    TIdStackDotNet;
-    {$ENDIF}
+  ;
   GStackCriticalSection := TIdCriticalSection.Create;
   {$IFNDEF DOTNET}
     {$IFDEF REGISTER_EXPECTED_MEMORY_LEAK}

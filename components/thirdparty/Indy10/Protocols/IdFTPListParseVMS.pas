@@ -116,7 +116,7 @@ type
 
   // RLebeau 2/14/09: this forces C++Builder to link to this unit so
   // RegisterFTPListParser can be called correctly at program startup...
-  (*$HPPEMIT '#pragma link "IdFTPListParseVMS"'*)
+  {$HPPEMIT LINKUNIT}
 
 implementation
 
@@ -276,7 +276,7 @@ begin
   end;
   LCols := TStringList.Create;
   try
-    SplitColumns(LLine, LCols);
+    SplitDelimitedString(LLine, LCols, True);
     LOwnerIdx := 3;
     //if this isn't numeric, there may be an error that is
     //is reported in the File list.  Do not parse the line further.

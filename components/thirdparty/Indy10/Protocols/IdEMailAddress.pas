@@ -120,7 +120,7 @@ uses
 type
    EIdEmailParseError = class(EIdException);
 
-   { ToDo: look into alterations required for TIdEMailAddressItem.GetText }
+                                                                           
    TIdEMailAddressItem = class(TCollectionItem)
    protected
      FAddress: string;

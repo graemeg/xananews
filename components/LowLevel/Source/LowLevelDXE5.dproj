@@ -1,0 +1,197 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{be35c31f-d1c5-49f7-aa13-93370c8c5076}</ProjectGuid>
+        <MainSource>LowLevelDXE5.dpk</MainSource>
+        <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+        <DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
+        <DCC_DependencyCheckOutputName>..\..\BPLs\LowLevel100.bpl</DCC_DependencyCheckOutputName>
+        <ProjectVersion>15.3</ProjectVersion>
+        <Config Condition="'$(Config)'==''">Release</Config>
+        <Base>True</Base>
+        <AppType>Package</AppType>
+        <FrameworkType>VCL</FrameworkType>
+        <Platform Condition="'$(Platform)'==''">Win32</Platform>
+        <TargetedPlatforms>1</TargetedPlatforms>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Android' and '$(Base)'=='true') or '$(Base_Android)'!=''">
+        <Base_Android>true</Base_Android>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
+        <Base_Win32>true</Base_Win32>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
+        <Base_Win64>true</Base_Win64>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_1)'!=''">
+        <Cfg_1>true</Cfg_1>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
+        <Cfg_1_Win32>true</Cfg_1_Win32>
+        <CfgParent>Cfg_1</CfgParent>
+        <Cfg_1>true</Cfg_1>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_2)'!=''">
+        <Cfg_2>true</Cfg_2>
+        <CfgParent>Base</CfgParent>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win32)'!=''">
+        <Cfg_2_Win32>true</Cfg_2_Win32>
+        <CfgParent>Cfg_2</CfgParent>
+        <Cfg_2>true</Cfg_2>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base)'!=''">
+        <VerInfo_MinorVer>20</VerInfo_MinorVer>
+        <VerInfo_Build>376</VerInfo_Build>
+        <DCC_DcuOutput>..\..\..\dcu32</DCC_DcuOutput>
+        <VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.20.0.376;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2012;LegalTrademarks=All Rights Reserved;OriginalFilename=LowLevel.bpl;ProductName=XanaNews;ProductVersion=1.20.0.376;Comments=Contributions by jachguate http://jachguateit.wordpress.com</VerInfo_Keys>
+        <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+        <VerInfo_Locale>2057</VerInfo_Locale>
+        <DCC_StringChecks>off</DCC_StringChecks>
+        <DCC_WIDECHAR_REDUCED>false</DCC_WIDECHAR_REDUCED>
+        <DCC_DependencyCheckOutputName>C:\Users\Public\Documents\RAD Studio\7.0\Bpl\LowLevelD2010.bpl</DCC_DependencyCheckOutputName>
+        <DCC_ImageBase>00400000</DCC_ImageBase>
+        <DCC_Description>Low Level support units for Delphi 2011</DCC_Description>
+        <RuntimeOnlyPackage>true</RuntimeOnlyPackage>
+        <DCC_OutputNeverBuildDcps>true</DCC_OutputNeverBuildDcps>
+        <GenDll>true</GenDll>
+        <GenPackage>true</GenPackage>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base_Android)'!=''">
+        <VerInfo_Keys>package=com.embarcadero.$(MSBuildProjectName);label=$(MSBuildProjectName);versionCode=1;versionName=1.0.0;persistent=False;restoreAnyVersion=False;installLocation=preferExternal;largeHeap=False;theme=TitleBar</VerInfo_Keys>
+        <VerInfo_IncludeVerInfo>false</VerInfo_IncludeVerInfo>
+        <BT_BuildType>Debug</BT_BuildType>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base_Win32)'!=''">
+        <Icon_MainIcon>LowLevelDXE2_Icon.ico</Icon_MainIcon>
+        <DCC_Namespace>Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
+        <VerInfo_Locale>1033</VerInfo_Locale>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Base_Win64)'!=''">
+        <Icon_MainIcon>LowLevelDXE2_Icon.ico</Icon_MainIcon>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_1)'!=''">
+        <DCC_MapFile>3</DCC_MapFile>
+        <Version>7.0</Version>
+        <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
+        <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
+        <VerInfo_Locale>1033</VerInfo_Locale>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2)'!=''">
+        <VerInfo_MinorVer>20</VerInfo_MinorVer>
+        <VerInfo_Build>376</VerInfo_Build>
+        <VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.20.0.376;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2012;LegalTrademarks=All Rights Reserved;OriginalFilename=LowLevel.bpl;ProductName=XanaNews;ProductVersion=1.20.0.376;Comments=Contributions by jachguate http://jachguateit.wordpress.com</VerInfo_Keys>
+        <Version>7.0</Version>
+        <DCC_ObjOutput>..\..\..\dcus</DCC_ObjOutput>
+        <DCC_HppOutput>..\..\..\dcus</DCC_HppOutput>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
+        <VerInfo_Locale>1033</VerInfo_Locale>
+    </PropertyGroup>
+    <ItemGroup>
+        <DelphiCompile Include="$(MainSource)">
+            <MainSource>MainSource</MainSource>
+        </DelphiCompile>
+        <DCCReference Include="rtl.dcp"/>
+        <DCCReference Include="vcl.dcp"/>
+        <DCCReference Include="unitBTree.pas"/>
+        <DCCReference Include="unitObjectCache.pas"/>
+        <DCCReference Include="ras.pas"/>
+        <DCCReference Include="RichOle.pas"/>
+        <DCCReference Include="unitCharsetMap.pas"/>
+        <DCCReference Include="unitSearchString.pas"/>
+        <DCCReference Include="unitStreamTextReader.pas"/>
+        <DCCReference Include="MultiLanguage_tlb.pas"/>
+        <DCCReference Include="unitRTF2HTML.pas"/>
+        <DCCReference Include="unitExFileSettings.pas"/>
+        <DCCReference Include="unitExRegSettings.pas"/>
+        <DCCReference Include="unitExSettings.pas"/>
+        <DCCReference Include="unitExXMLSettings.pas"/>
+        <DCCReference Include="unitQpcTimer.pas"/>
+        <DCCReference Include="XnClasses.pas"/>
+        <DCCReference Include="XnRawByteStrings.pas"/>
+        <DCCReference Include="unitWow64.pas"/>
+        <BuildConfiguration Include="Debug">
+            <Key>Cfg_2</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Base">
+            <Key>Base</Key>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Release">
+            <Key>Cfg_1</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
+    </ItemGroup>
+    <Import Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')" Project="$(BDS)\Bin\CodeGear.Delphi.Targets"/>
+    <Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
+    <ProjectExtensions>
+        <Borland.Personality>Delphi.Personality.12</Borland.Personality>
+        <Borland.ProjectType>Package</Borland.ProjectType>
+        <BorlandProject>
+            <Delphi.Personality>
+                <Parameters/>
+                <VersionInfo>
+                    <VersionInfo Name="IncludeVerInfo">True</VersionInfo>
+                    <VersionInfo Name="AutoIncBuild">False</VersionInfo>
+                    <VersionInfo Name="MajorVer">1</VersionInfo>
+                    <VersionInfo Name="MinorVer">0</VersionInfo>
+                    <VersionInfo Name="Release">0</VersionInfo>
+                    <VersionInfo Name="Build">0</VersionInfo>
+                    <VersionInfo Name="Debug">False</VersionInfo>
+                    <VersionInfo Name="PreRelease">False</VersionInfo>
+                    <VersionInfo Name="Special">False</VersionInfo>
+                    <VersionInfo Name="Private">False</VersionInfo>
+                    <VersionInfo Name="DLL">False</VersionInfo>
+                    <VersionInfo Name="Locale">2057</VersionInfo>
+                    <VersionInfo Name="CodePage">1252</VersionInfo>
+                </VersionInfo>
+                <VersionInfoKeys>
+                    <VersionInfoKeys Name="CompanyName">Colin Wilson</VersionInfoKeys>
+                    <VersionInfoKeys Name="FileDescription">Low level support units for Delphi 2005</VersionInfoKeys>
+                    <VersionInfoKeys Name="FileVersion">1.0.0.0</VersionInfoKeys>
+                    <VersionInfoKeys Name="InternalName">LowLevel.bpl</VersionInfoKeys>
+                    <VersionInfoKeys Name="LegalCopyright">Copyright (c) Colin Wilson 2005</VersionInfoKeys>
+                    <VersionInfoKeys Name="LegalTrademarks">All rights reserved</VersionInfoKeys>
+                    <VersionInfoKeys Name="OriginalFilename">LowLevel.bpl</VersionInfoKeys>
+                    <VersionInfoKeys Name="ProductName">Colin Wilson&apos;s Delphi Components</VersionInfoKeys>
+                    <VersionInfoKeys Name="ProductVersion">2005.0.0.1</VersionInfoKeys>
+                    <VersionInfoKeys Name="Comments">Programmed in Delphi 2005 by Colin Wilson</VersionInfoKeys>
+                </VersionInfoKeys>
+                <Source>
+                    <Source Name="MainSource">LowLevelDXE5.dpk</Source>
+                </Source>
+                <Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\bcboffice2k160.bpl">Embarcadero C++Builder Office 2000 Servers Package</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\bcbofficexp160.bpl">Embarcadero C++Builder Office XP Servers Package</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dcloffice2k160.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dclofficexp160.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
+                </Excluded_Packages>
+            </Delphi.Personality>
+            <Platforms>
+                <Platform value="Android">False</Platform>
+                <Platform value="iOSDevice">False</Platform>
+                <Platform value="iOSSimulator">False</Platform>
+                <Platform value="Win32">True</Platform>
+                <Platform value="Win64">False</Platform>
+            </Platforms>
+        </BorlandProject>
+        <ProjectFileVersion>12</ProjectFileVersion>
+    </ProjectExtensions>
+</Project>

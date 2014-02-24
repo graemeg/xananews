@@ -76,8 +76,8 @@ unit IdCoderHeader;
 
 //refer http://www.faqs.org/rfcs/rfc2047.html
 
-//TODO: Optimize and restructure code
-//TODO: Redo this unit to fit with the new coders and use the exisiting MIME stuff
+                                     
+                                                                                  
 
 {
 2002-08-21 JM Berg
@@ -178,7 +178,7 @@ begin
 end;
 
 function B64(AChar: Char): Byte;
-//TODO: Make this use the more efficient MIME Coder
+                                                   
 begin
   for Result := Low(base64_tbl) to High(base64_tbl) do begin
     if AChar = base64_tbl[Result] then begin
@@ -240,7 +240,7 @@ var
     Result := True;
   end;
 
-  // TODO: use TIdCoderQuotedPrintable and TIdCoderMIME instead
+                                                               
   function ExtractEncodedData(const AEncoding, AData: String; var VDecoded: TIdBytes): Boolean;
   var
     I, J: Integer;
@@ -303,7 +303,7 @@ var
           VDecoded := RawToBytes(AData[1], Length(AData));
         end;
         {$ELSE}
-        VDecoded := Indy8BitEncoding.GetBytes(AData);
+        VDecoded := IndyTextEncoding_8Bit.GetBytes(AData);
         {$ENDIF}
         Result := True;
       end;
@@ -544,7 +544,7 @@ begin
   AppendBytes(csNoReqQuote, CreateEncodeRange(64, 94));
   AppendBytes(csNoReqQuote, CreateEncodeRange(96, 126));
 
-  csSpecials := ToBytes(Specials, Indy8BitEncoding);
+  csSpecials := ToBytes(Specials, IndyTextEncoding_8Bit);
 
   BeginEncode := '=?' + MimeCharSet + '?' + HeaderEncoding + '?';    {Do not Localize}
   EndEncode := '?=';  {Do not Localize}

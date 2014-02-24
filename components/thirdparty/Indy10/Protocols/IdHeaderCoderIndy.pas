@@ -17,7 +17,7 @@ type
 
   // RLebeau 4/17/10: this forces C++Builder to link to this unit so
   // RegisterHeaderCoder can be called correctly at program startup...
-  (*$HPPEMIT '#pragma link "IdHeaderCoderIndy"'*)
+  {$HPPEMIT LINKUNIT}
 
 implementation
 
@@ -25,57 +25,27 @@ uses
   IdGlobalProtocols;
 
 class function TIdHeaderCoderIndy.Decode(const ACharSet: string; const AData: TIdBytes): String;
-var
-  LEncoding: TIdTextEncoding;
 begin
-  Result := '';
   try
-    LEncoding := CharsetToEncoding(ACharSet);
-    {$IFNDEF DOTNET}
-    try
-    {$ENDIF}
-      Result := LEncoding.GetString(AData);
-    {$IFNDEF DOTNET}
-    finally
-      LEncoding.Free;
-    end;
-    {$ENDIF}
+    Result := CharsetToEncoding(ACharSet).GetString(AData);
   except
+    Result := '';
   end;
 end;
 
 class function TIdHeaderCoderIndy.Encode(const ACharSet, AData: String): TIdBytes;
-var
-  LEncoding: TIdTextEncoding;
 begin
-  Result := nil;
   try
-    LEncoding := CharsetToEncoding(ACharSet);
-    {$IFNDEF DOTNET}
-    try
-    {$ENDIF}
-      Result := LEncoding.GetBytes(AData);
-    {$IFNDEF DOTNET}
-    finally
-      LEncoding.Free;
-    end;
-    {$ENDIF}
+    Result := CharsetToEncoding(ACharSet).GetBytes(AData);
   except
+    Result := nil;
   end;
 end;
 
 class function TIdHeaderCoderIndy.CanHandle(const ACharSet: String): Boolean;
-var
-  LEncoding: TIdTextEncoding;
 begin
   try
-    LEncoding := CharsetToEncoding(ACharSet);
-    Result := Assigned(LEncoding);
-    {$IFNDEF DOTNET}
-    if Result then begin
-      LEncoding.Free;
-    end;
-    {$ENDIF}
+    Result := CharsetToEncoding(ACharSet) <> nil;
   except
     Result := False;
   end;

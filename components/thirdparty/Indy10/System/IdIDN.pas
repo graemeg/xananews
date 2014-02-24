@@ -74,21 +74,21 @@ type
      cchScripts : Integer      // size of output buffer
   ) : Integer stdcall;
   {$EXTERNALSYM DownlevelGetStringScripts_LPFN}
- DownlevelGetStringScripts_LPFN = function (
+  DownlevelGetStringScripts_LPFN = function (
      dwFlags : DWORD;          // optional behavior flags
      lpString : LPCWSTR;       // Unicode character input string
      cchString : Integer;      // size of input string
      lpScripts : LPWSTR;       // Script list output string
      cchScripts : Integer      // size of output string
-   ) : Integer stdcall;
+  ) : Integer stdcall;
   {$EXTERNALSYM DownlevelVerifyScripts_LPFN}
- DownlevelVerifyScripts_LPFN = function (
+  DownlevelVerifyScripts_LPFN = function (
      dwFlags : DWORD;            // optional behavior flags
      lpLocaleScripts : LPCWSTR;  // Locale list of scripts string
      cchLocaleScripts : Integer; // size of locale script list string
      lpTestScripts : LPCWSTR;    // test scripts string
      cchTestScripts : Integer    // size of test list string
- ) : BOOL stdcall;
+  ) : BOOL stdcall;
 
 // Normalization.h
 // Copyright 2002 Microsoft
@@ -251,7 +251,7 @@ begin
     end;
     Result := LIDN;
   end else begin
-    // TODO: manual implementation here ...
+                                           
   end;
 end;
 
@@ -279,7 +279,7 @@ begin
     {$ENDIF}
   end else
   begin
-    // TODO: manual implementation here ...
+                                           
   end;
 end;
 

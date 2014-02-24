@@ -1,6 +1,6 @@
 {$IFDEF CONDITIONALEXPRESSIONS}
   // Must be at the top...
-  {$IF COMPILERVERSION >= 24.0}
+  {$IF CompilerVersion >= 24.0}
     {$LEGACYIFEND ON}
   {$IFEND}
 {$ENDIF}
@@ -15,7 +15,7 @@
 {$DEFINE IdIPv4}
 
 {$DEFINE INDY100}
-{$DEFINE 10_5_9}  //so developers can IFDEF for this specific version
+{$DEFINE 10_6_0}  //so developers can IFDEF for this specific version
 
 // When invoking DCC on the command-line, use the -DBCB
 // parameter when generating C++Builder output files!
@@ -26,6 +26,8 @@
 {$ENDIF}
 
 {$UNDEF USE_OPENSSL}
+{$UNDEF STATICLOAD_OPENSSL}
+
 {$UNDEF USE_ZLIB_UNIT}
 {$UNDEF USE_SSPI}
 
@@ -44,7 +46,7 @@
 {.$DEFINE USE_FASTMM4}
 {$UNDEF USE_FASTMM4}
 
-// Make sure the following is $DEFINE'd only for Delphi/C++Builder 2009 onwards
+// Make sure the following are $DEFINE'd only for Delphi/C++Builder 2009 onwards
 // as specified further below.  The VCL is fully Unicode, where the 'String'
 // type maps to System.UnicodeString, not System.AnsiString anymore
 {$UNDEF STRING_IS_UNICODE}
@@ -56,19 +58,44 @@
 {$UNDEF UNICODE_BUT_STRING_IS_ANSI}
 
 // Make sure the following are $DEFINE'd only for suitable environments
+// as specified further below.  Delphi/C++Builder Mobile/NextGen compilers
+// do not support Ansi data types anymore, and is moving away from raw
+// pointers as well.
+{$DEFINE HAS_AnsiString}
+{$DEFINE HAS_AnsiChar}
+{$DEFINE HAS_PAnsiChar}
+{$UNDEF HAS_PPAnsiChar}
+{$UNDEF NO_ANSI_TYPES}
+{$UNDEF USE_MARSHALLED_PTRS}
+{$UNDEF HAS_MarshaledAString}
+{$UNDEF USE_OBJECT_ARC}
+
+// Make sure the following is $DEFINE'd only for suitable environments
+// as specified further below.
+{$UNDEF STRING_IS_IMMUTABLE}
+{$UNDEF HAS_DIRECTIVE_ZEROBASEDSTRINGS}
+
+// Make sure the following are $DEFINE'd only for suitable environments
 // as specified further below.
 {$UNDEF HAS_TEncoding}
 {$UNDEF HAS_TCharacter}
 {$UNDEF HAS_TInterlocked}
-{$UNDEF TIdTextEncoding_IS_NATIVE}
 
 // Make sure that this is defined only for environments where we are using
 // the iconv library to charactor conversions.
 {.$UNDEF USE_ICONV}
 
-//Define for Delphi cross-compiler
+//Define for Delphi cross-compiler targetting Posix
 {$UNDEF USE_VCL_POSIX}
 {$UNDEF HAS_ComponentPlatformsAttribute}
+{$UNDEF HAS_ComponentPlatformsAttribute_Win32}
+{$UNDEF HAS_ComponentPlatformsAttribute_Win64}
+{$UNDEF HAS_ComponentPlatformsAttribute_OSX32}
+{$UNDEF HAS_ComponentPlatformsAttribute_iOS_Simulator}
+{$UNDEF HAS_ComponentPlatformsAttribute_Android}
+{$UNDEF HAS_ComponentPlatformsAttribute_Linux32}
+{$UNDEF HAS_ComponentPlatformsAttribute_iOS_Device}
+{$UNDEF HAS_ComponentPlatformsAttribute_WinNX32}
 
 // detect compiler versions
 
@@ -198,6 +225,9 @@
 {$IFDEF VER220}
 //REMOVE DCC DEFINE after the next Fulcrum beta.
 //It will be defined there.
+  {$IFNDEF DCC}
+    {$DEFINE DCC}
+  {$ENDIF}
   {$DEFINE VCL_XE}
   {$IFDEF CBUILDER}
     {$DEFINE CBUILDER_XE}
@@ -206,9 +236,10 @@
   {$ENDIF}
 {$ENDIF}
 
+// DCC is now defined by the Delphi compiler starting in XE2
+
 //Delphi & CBuilder XE2 (Pulsar)
 {$IFDEF VER230}
-  // DCC is now defined by the compiler
   {$DEFINE VCL_XE2}
   {$IFDEF CBUILDER}
     {$DEFINE CBUILDER_XE2}
@@ -218,15 +249,37 @@
 {$ENDIF}
 
 //Delphi & CBuilder XE3 (Waterdragon)
+//Delphi & CBuilder XE3.5 (Quintessence - early betas only)
 {$IFDEF VER240}
-  // DCC is now defined by the compiler
   {$DEFINE VCL_XE3}
   {$IFDEF CBUILDER}
     {$DEFINE CBUILDER_XE3}
   {$ELSE}
     {$DEFINE DELPHI_XE3}
   {$ENDIF}
-  {$LEGACYIFEND ON}
+{$ENDIF}
+
+//Delphi & CBuilder XE4 (Quintessence)
+{$IFDEF VER250}
+  {$UNDEF VCL_XE3}
+  {$DEFINE VCL_XE4}
+  {$IFDEF CBUILDER}
+    {$UNDEF CBUILDER_XE3}
+    {$DEFINE CBUILDER_XE4}
+  {$ELSE}
+    {$UNDEF DELPHI_XE3}
+    {$DEFINE DELPHI_XE4}
+  {$ENDIF}
+{$ENDIF}
+
+//Delphi & CBuilder XE5 (Zephyr)
+{$IFDEF VER260}
+  {$DEFINE VCL_XE5}
+  {$IFDEF CBUILDER}
+    {$DEFINE CBUILDER_XE5}
+  {$ELSE}
+    {$DEFINE DELPHI_XE5}
+  {$ENDIF}
 {$ENDIF}
 
 // Delphi.NET
@@ -235,6 +288,7 @@
   // Platform specific conditional. Used for platform specific code.
   {$DEFINE DOTNET}
   {$DEFINE STRING_IS_UNICODE}
+  {$DEFINE STRING_IS_IMMUTABLE}
 {$ENDIF}
 
 // Kylix
@@ -321,22 +375,33 @@
   {$DEFINE DELPHI_7}
 
   // FPC_FULLVERSION was added in FPC 2.2.4
+  // Have to use Declared() or else Delphi compiler chokes, since it
+  // evaluates $IF statements before $IFDEF statements...
 
   {$MACRO ON} // must be on in order to use versioning macros
-  {$IF DEFINED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20600)}
+  {$IF DECLARED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20701)}
+    {$DEFINE FPC_2_7_1_OR_ABOVE}
+  {$IFEND}
+  {$IF DECLARED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20600)}
     {$DEFINE FPC_2_6_0_OR_ABOVE}
   {$IFEND}
-  {$IF DEFINED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20404)}
+  {$IF DECLARED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20404)}
     {$DEFINE FPC_2_4_4_OR_ABOVE}
   {$IFEND}
-  {$IF DEFINED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20402)}
+  {$IF DECLARED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20402)}
     {$DEFINE FPC_2_4_2_OR_ABOVE}
   {$IFEND}
-  {$IF DEFINED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20204)}
+  {$IF DECLARED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20204)}
     {$DEFINE FPC_2_2_4_OR_ABOVE}
+  {$IFEND}
+  {$IF DECLARED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20105)}
+    {$DEFINE FPC_2_1_5_OR_ABOVE}
   {$IFEND}
 
   // just in case
+  {$IFDEF FPC_2_7_1}
+    {$DEFINE FPC_2_7_1_OR_ABOVE}
+  {$ENDIF}
   {$IFDEF FPC_2_6_0}
     {$DEFINE FPC_2_6_0_OR_ABOVE}
   {$ENDIF}
@@ -345,6 +410,20 @@
   {$ENDIF}
   {$IFDEF FPC_2_4_2}
     {$DEFINE FPC_2_4_2_OR_ABOVE}
+  {$ENDIF}
+  {$IFDEF FPC_2_2_4}
+    {$DEFINE FPC_2_2_4_OR_ABOVE}
+  {$ENDIF}
+  {$IFDEF FPC_2_1_5}
+    {$DEFINE FPC_2_1_5_OR_ABOVE}
+  {$ENDIF}
+
+  {$IFDEF FPC_2_7_1_OR_ABOVE}
+    {$DEFINE FPC_2_6_0_OR_ABOVE}
+  {$ELSE}
+    {$IFDEF FPC_2_6_0}
+      {$DEFINE FPC_2_6_0_OR_ABOVE}
+    {$ENDIF}
   {$ENDIF}
 
   {$IFDEF FPC_2_6_0_OR_ABOVE}
@@ -378,12 +457,36 @@
       {$DEFINE FPC_2_2_0_OR_ABOVE}
     {$ENDIF}
   {$ENDIF}
+
+  {$IFDEF FPC_2_2_0_OR_ABOVE}
+    {$DEFINE FPC_2_1_5_OR_ABOVE}
+  {$ELSE}
+    {$IFDEF FPC_2_1_5}
+      {$DEFINE FPC_2_1_5_OR_ABOVE}
+    {$ENDIF}
+  {$ENDIF}
 {$ENDIF}
 
 // end FPC
 
-{$IFDEF VCL_XE3}
+{$IFDEF VCL_XE5}
+  {$DEFINE VCL_XE5_OR_ABOVE}
+{$ENDIF}
+
+{$IFDEF VCL_XE5_OR_ABOVE}
+  {$DEFINE VCL_XE4_OR_ABOVE}
+{$ELSE}
+  {$IFDEF VCL_XE4}
+    {$DEFINE VCL_XE4_OR_ABOVE}
+  {$ENDIF}
+{$ENDIF}
+
+{$IFDEF VCL_XE4_OR_ABOVE}
   {$DEFINE VCL_XE3_OR_ABOVE}
+{$ELSE}
+  {$IFDEF VCL_XE3}
+    {$DEFINE VCL_XE3_OR_ABOVE}
+  {$ENDIF}
 {$ENDIF}
 
 {$IFDEF VCL_XE3_OR_ABOVE}
@@ -546,7 +649,7 @@
     {$IFDEF CPUX64}
       //any 64-bit CPU
       {$DEFINE CPU64}
-      //AMD64 compatible chip architecture 
+      //AMD64 compatible chip architecture
       {$DEFINE CPUX86_64}  //historical name for AMD64
       {$DEFINE CPUAMD64}
     {$ENDIF}
@@ -592,9 +695,11 @@
 {$IFDEF VCL_5_OR_ABOVE}
   {$IFNDEF FPC}
     {$IFNDEF KYLIX}
-      {$DEFINE HAS_REMOVEFREENOTIFICATION}
+      {$DEFINE HAS_RemoveFreeNotification}
     {$ENDIF}
   {$ENDIF}
+  {$DEFINE HAS_GetObjectProp}
+  {$DEFINE HAS_TObjectList}
 {$ENDIF}
 
 {$IFDEF VCL_6_OR_ABOVE}
@@ -615,6 +720,7 @@
   {$DEFINE HAS_TryEncodeTime}
   {$DEFINE HAS_ENUM_ELEMENT_VALUES}
   {$IFNDEF FPC}
+    {$DEFINE HAS_IInterface}
     {$DEFINE HAS_TSelectionEditor}
     {$DEFINE HAS_TStringList_CaseSensitive}
     {$IFNDEF KYLIX}
@@ -679,6 +785,7 @@
   {$DEFINE HAS_StrToInt64Def}
   {$DEFINE HAS_DWORD_PTR}
   {$DEFINE HAS_ULONG_PTR}
+  {$DEFINE HAS_ULONGLONG}
   {$DEFINE HAS_PGUID}
   {$DEFINE HAS_PPAnsiChar}
   {$DEFINE HAS_CurrentYear}
@@ -695,16 +802,11 @@
     {$DEFINE HAS_TCharacter}
     {$DEFINE HAS_InterlockedCompareExchangePointer}
     {$DEFINE HAS_WIDE_TCharArray}
+    {$DEFINE HAS_UNIT_AnsiStrings}
     {$IFDEF VCL_2009}
       // TODO: need to differentiate between RTM and Update 1
       // FmtStr() is broken in RTM but was fixed in Update 1
       {$DEFINE BROKEN_FmtStr}
-    {$ENDIF}
-    {$IFNDEF VCL_XE_OR_ABOVE}
-      // TEncoding.GetEncoding() and TMBCSEncoding support for codepage 20127
-      // have some bugs in 2009 and 2010 that were finally fixed in XE
-      {$DEFINE BROKEN_TEncoding_GetEncoding}
-      {$DEFINE BROKEN_TMBCSEncoding_CP20127}
     {$ENDIF}
   {$ENDIF}
   {$DEFINE HAS_CLASSVARS}
@@ -713,6 +815,8 @@
   // Native(U)Int are still buggy, so do not use them yet
   {.$DEFINE HAS_NativeInt}
   {.$DEFINE HAS_NativeUInt}
+  {$DEFINE HAS_UINT8}
+  {$DEFINE HAS_UINT32}
 {$ENDIF}
 
 {$IFDEF VCL_2010_OR_ABOVE}
@@ -724,10 +828,15 @@
   // Native(U)Int are finally ok to use now
   {$DEFINE HAS_NativeInt}
   {$DEFINE HAS_NativeUInt}
+  {$DEFINE HAS_USHORT}
 {$ENDIF}
 
 {$IFDEF VCL_XE_OR_ABOVE}
   {$DEFINE HAS_TFormatSettings_Object}
+  {$DEFINE HAS_LocaleCharsFromUnicode}
+  {$DEFINE HAS_UnicodeFromLocaleChars}
+  {$DEFINE HAS_PVOID}
+  {$DEFINE HAS_ULONG64}
   {$IFNDEF DOTNET}
     {$DEFINE HAS_TInterlocked}
   {$ENDIF}
@@ -735,7 +844,40 @@
 
 {$IFDEF VCL_XE2_OR_ABOVE}
   {$DEFINE HAS_SIZE_T}
+  {$DEFINE HAS_LONG}
   {$DEFINE HAS_ComponentPlatformsAttribute}
+  {$DEFINE HAS_ComponentPlatformsAttribute_Win32}
+  {$DEFINE HAS_ComponentPlatformsAttribute_Win64}
+  {$DEFINE HAS_ComponentPlatformsAttribute_OSX32}
+{$ENDIF}
+
+{$IFDEF VCL_XE3_OR_ABOVE}
+  {$DEFINE HAS_DIRECTIVE_ZEROBASEDSTRINGS}
+  {$DEFINE HAS_SysUtils_TStringHelper}
+  {$IFDEF NEXTGEN}
+    {$DEFINE DCC_NEXTGEN}
+    {$DEFINE HAS_MarshaledAString}
+    {$DEFINE USE_MARSHALLED_PTRS}
+    {$IFDEF AUTOREFCOUNT}
+      {$DEFINE USE_OBJECT_ARC}
+    {$ENDIF}
+  {$ENDIF}
+{$ENDIF}
+
+{$IFDEF VCL_XE4_OR_ABOVE}
+  {$DEFINE HAS_AnsiStrings_StrPLCopy}
+  {$DEFINE HAS_AnsiStrings_StrLen}
+  {$DEFINE HAS_Character_TCharHelper}
+  {$DEFINE HAS_ComponentPlatformsAttribute_iOS_Simulator}
+  {$DEFINE HAS_ComponentPlatformsAttribute_iOS_Device}
+  // technically, these are present in XE4, but they are not used yet
+  {.$DEFINE HAS_ComponentPlatformsAttribute_Android}
+  {.$DEFINE HAS_ComponentPlatformsAttribute_Linux32}
+  {.$DEFINE HAS_ComponentPlatformsAttribute_WinNX32}
+{$ENDIF}
+
+{$IFDEF VCL_XE5_OR_ABOVE}
+  {$DEFINE HAS_ComponentPlatformsAttribute_Android}
 {$ENDIF}
 
 // Delphi XE+ cross-compiling
@@ -774,12 +916,14 @@
   {$DEFINE FPC_CIRCULAR_BUG}
   {$DEFINE NO_REDECLARE}
   {$DEFINE BYTE_COMPARE_SETS}
+  {$IFDEF FPC_2_1_5_OR_ABOVE}
+    {$DEFINE HAS_UInt64}
+  {$ENDIF}
   {$IFDEF FPC_2_2_0_OR_ABOVE}
     {$DEFINE HAS_InterlockedCompareExchange_Pointers}
   {$ENDIF}
   {$IFDEF FPC_2_2_4_OR_ABOVE}
     {$DEFINE HAS_SIZE_T}
-    {$DEFINE HAS_UInt64} // TODO: when was UInt64 introduced?
   {$ENDIF}
   {$DEFINE HAS_PtrInt}
   {$DEFINE HAS_PtrUInt}
@@ -789,6 +933,7 @@
   {$DEFINE HAS_ENUM_ELEMENT_VALUES}
   {$IFDEF WINDOWS}
     {$DEFINE HAS_ULONG_PTR}
+    {.$DEFINE HAS_ULONGLONG} // TODO: is this defined?
   {$ENDIF}
   {$DEFINE HAS_UNIT_ctypes}
   {$DEFINE HAS_sLineBreak}
@@ -801,6 +946,13 @@
   {$IFDEF FPC_2_6_0_OR_ABOVE}
     {$DEFINE HAS_NativeInt}
     {$DEFINE HAS_NativeUInt}
+  {$ENDIF}
+  {$IFDEF FPC_2_7_1_OR_ABOVE}
+    {$DEFINE HAS_UINT8}
+    {$DEFINE HAS_UINT32}
+  {$ENDIF}
+  {$IFDEF FPC_UNICODESTRINGS}
+    {$DEFINE STRING_IS_UNICODE}
   {$ENDIF}
 {$ENDIF}
 
@@ -830,6 +982,34 @@
   {$ENDIF}
 {$ENDIF}
 
+{$IFDEF DCC_NEXTGEN}
+  {$DEFINE NO_ANSI_TYPES}
+  {.$DEFINE STRING_IS_IMMUTABLE} // Strings are NOT immutable in NEXTGEN yet
+  {$IFDEF USE_OBJECT_ARC}
+    // TODO: move these to an appropriate section. Not doing this yet because
+    // it is a major interface change to switch to Generics and we should
+    // maintain backwards compatibility with earlier compilers for the time
+    // being. Defining them only here for now because the non-Generic versions
+    // of these classes have become deprecated by ARC and so we need to start
+    // taking advantage of the Generics versions...
+    {$DEFINE HAS_UNIT_Generics_Collections}
+    {$DEFINE HAS_UNIT_Generics_Defaults}
+    {$DEFINE HAS_GENERICS_TDictionary}
+    {$DEFINE HAS_GENERICS_TList}
+    {$DEFINE HAS_GENERICS_TObjectList}
+    {$DEFINE HAS_GENERICS_TThreadList}
+  {$ENDIF}
+{$ENDIF}
+
+{$IFDEF NO_ANSI_TYPES}
+  {$UNDEF HAS_AnsiString}
+  {$UNDEF HAS_AnsiChar}
+  {$UNDEF HAS_PAnsiChar}
+  {$UNDEF HAS_PPAnsiChar}
+  {$UNDEF HAS_UNIT_AnsiStrings}
+  {$UNDEF HAS_AnsiStrings_StrPLCopy}
+{$ENDIF}
+
 {$IFDEF WIN32}
   {$DEFINE WIN32_OR_WIN64}
 {$ENDIF}
@@ -840,9 +1020,11 @@
 {$IFDEF WIN32_OR_WIN64}
   {$DEFINE USE_OPENSSL}
   {$DEFINE USE_ZLIB_UNIT}
-  {$DEFINE USE_SSPI}
-  {$IFDEF STRING_IS_UNICODE}
-    {$DEFINE SSPI_UNICODE}
+  {$IFNDEF DCC_NEXTGEN}
+    {$DEFINE USE_SSPI}
+    {$IFDEF STRING_IS_UNICODE}
+      {$DEFINE SSPI_UNICODE}
+    {$ENDIF}
   {$ENDIF}
 {$ENDIF}
 
@@ -861,6 +1043,24 @@
 {$IFDEF UNIX}
   {$DEFINE USE_OPENSSL}
   {$DEFINE USE_ZLIB_UNIT}
+{$ENDIF}
+
+{$IFDEF MACOS}
+  {$DEFINE HAS_getifaddrs}
+{$ENDIF}
+
+{$IFDEF IOS}
+  {$DEFINE HAS_getifaddrs}
+  {$DEFINE USE_OPENSSL}
+  {$IFDEF CPUARM}
+    // RLebeau: For iOS devices, OpenSSL cannot be used as an external library,
+    // it must be statically linked into the app.  For the iOS simulator, this
+    // is not true.  Users who want to use OpenSSL in iOS device apps will need
+    // to add the static OpenSSL library to the project and then include the
+    // IdSSLOpenSSLHeaders_static unit in their uses clause. It hooks up the
+    // statically linked functions for the IdSSLOpenSSLHeaders unit to use...
+    {$DEFINE STATICLOAD_OPENSSL}
+  {$ENDIF}
 {$ENDIF}
 
 {$IFDEF FPC_REQUIRES_PROPER_ALIGNMENT}
@@ -907,9 +1107,8 @@
 //If this comes before the ICONV defines, it creates problems.
 //This also must go before the THandle size calculations.
 {$IFDEF VCL_CROSS_COMPILE}
-  {$IFDEF MACOS}
+  {$IFDEF POSIX}
     {$DEFINE BSD}
-    {$DEFINE DARWIN}
     {$DEFINE USE_SAFELOADLIBRARY}
     {$DEFINE USE_INVALIDATE_MOD_CACHE}
   {$ENDIF}
@@ -931,8 +1130,11 @@
 //Do not remove this!!!  This is to work around a conflict.  In DCC, MACOS
 //will mean OS X.  In FreePascal, the DEFINE MACOS means MacIntosh System OS Classic.
 {$IFDEF DCC}
+  // DCC defines MACOS for both iOS and OS X platforms, need to differentiate
   {$IFDEF MACOS}
-    {$DEFINE DARWIN}
+    {$IFNDEF IOS}
+      {$DEFINE DARWIN}
+    {$ENDIF}
   {$ENDIF}
 {$ENDIF}
 {$IFDEF FPC}
@@ -960,7 +1162,7 @@ word to an 8 bit byte and an 8 bit byte field named sa_len was added.
 {$ENDIF}
 
 // Do NOT remove these IFDEF's.  They are here because InterlockedExchange
-// only handles 32bit values.  Some Operating Systems may have 64bit  
+// only handles 32bit values.  Some Operating Systems may have 64bit
 // THandles.  This is not always tied to the platform architecture.
 
 {$IFDEF AMIGA}
@@ -1046,13 +1248,7 @@ word to an 8 bit byte and an 8 bit byte field named sa_len was added.
 
 {$IFDEF DOTNET}
   {$DEFINE DOTNET_OR_ICONV}
-  {$DEFINE TIdTextEncoding_IS_NATIVE}
 {$ELSE}
-  {$IFDEF HAS_TEncoding}
-    {$IFNDEF USE_ICONV}
-      {$DEFINE TIdTextEncoding_IS_NATIVE}
-    {$ENDIF}
-  {$ENDIF}
 {$ENDIF}
 {$IFDEF USE_ICONV}
   {$DEFINE DOTNET_OR_ICONV}
@@ -1129,7 +1325,7 @@ it's a LongInt.
 {Take advantage of some TCP features specific to some stacks.
 They work somewhat similarly but there's a key difference.
 In Linux, TCP_CORK is turned on to send fixed packet sizes and
-when turned-off (uncorked), any remaining data is sent. With 
+when turned-off (uncorked), any remaining data is sent. With
 TCP_NOPUSH, this might not happen and remaining data is only sent
 before disconnect.  TCP_KEEPIDLE and TCP_KEEPINTVL so the IFDEF LINUX and IFDEF
 SOLARIS instead of IFDEF UNIX is not an error, it's deliberate.}
@@ -1137,6 +1333,7 @@ SOLARIS instead of IFDEF UNIX is not an error, it's deliberate.}
 {$UNDEF HAS_TCP_CORK}
 {$UNDEF HAS_TCP_KEEPIDLE}
 {$UNDEF HAS_TCP_KEEPINTVL}
+{$UNDEF HAS_SOCKET_NOSIGPIPE}
 {$IFDEF BSD}
   {$DEFINE HAS_TCP_NOPUSH}
 {$ENDIF}
@@ -1156,7 +1353,19 @@ SOLARIS instead of IFDEF UNIX is not an error, it's deliberate.}
   {$DEFINE HAS_TCP_KEEPIDLE}
   {$DEFINE HAS_TCP_KEEPINTVL}
 {$ENDIF}
+{$IFDEF USE_VCL_POSIX}
+  {$IFNDEF ANDROID}
+    {$DEFINE HAS_SOCKET_NOSIGPIPE}
+  {$ENDIF}
+{$ENDIF}
 {end Unix OS specific stuff}
 {$IFDEF DEBUG}
   {$UNDEF USE_INLINE}
+{$ENDIF}
+
+// RLebeau 9/5/2013: it would take a lot of work to re-write Indy to support
+// both 0-based and 1-based string indexing, so we'll just turn off 0-based
+// indexing for now...
+{$IFDEF HAS_DIRECTIVE_ZEROBASEDSTRINGS}
+  {$ZEROBASEDSTRINGS OFF}
 {$ENDIF}

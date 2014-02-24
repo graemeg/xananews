@@ -123,7 +123,7 @@ uses
 
 type
   TIdReplies = class;
-  //TODO: a streamed write only property will be registered to convert old DFMs
+                                                                               
   // into the new one for old TextCode and to ignore NumericCode which has been
   // removed
   TIdReply = class(TCollectionItem)

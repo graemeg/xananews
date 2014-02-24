@@ -80,7 +80,7 @@ type
 
   // RLebeau 2/14/09: this forces C++Builder to link to this unit so
   // RegisterFTPListParser can be called correctly at program startup...
-  (*$HPPEMIT '#pragma link "IdFTPListParseDistinctTCPIP"'*)
+  {$HPPEMIT LINKUNIT}
 
 implementation
 
@@ -111,7 +111,7 @@ begin
   begin
     s := TStringList.Create;
     try
-      SplitColumns(AListing[0], s);
+      SplitDelimitedString(AListing[0], s, True);
       if s.Count > 2 then
       begin
         Result := (Length(s[0]) = 5) and (CharIsInSet(s[0], 1, DistValidTypes))

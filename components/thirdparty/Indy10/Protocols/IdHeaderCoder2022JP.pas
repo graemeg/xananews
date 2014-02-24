@@ -4,7 +4,7 @@ interface
 
 {$i IdCompilerDefines.inc}
 
-{RLebeau: TODO - move this logic into a TIdTextEncoding descendant class}
+{RLebeau: TODO - move this logic into an IIdTextEncoding implementation}
 
 uses
   IdGlobal, IdHeaderCoderBase;
@@ -19,7 +19,7 @@ type
 
   // RLebeau 4/17/10: this forces C++Builder to link to this unit so
   // RegisterHeaderCoder can be called correctly at program startup...
-  (*$HPPEMIT '#pragma link "IdHeaderCoder2022JP"'*)
+  {$HPPEMIT LINKUNIT}
 
 implementation
 
@@ -113,7 +113,7 @@ begin
         else if (AData[I] = Ord('(')) and (AData[I+1] = Ord('B')) then begin {do not localize}
           isK := False;
         end;
-        Inc(I, 2);   { TODO -oTArisawa : Check RFC 1468}
+        Inc(I, 2);                                      
       end;
     end
     else if isK then

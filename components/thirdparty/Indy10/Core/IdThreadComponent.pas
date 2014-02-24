@@ -120,6 +120,11 @@ type
     FOnTerminate: TIdNotifyThreadComponentEvent;
     FOnHandleRunException: TIdExceptionThreadComponentEventEx;
     //
+    {$IFDEF INT_THREAD_PRIORITY}
+    procedure DefineProperties(Filer: TFiler); override;
+    procedure ReadPriority(Reader: TReader);
+    procedure WritePriority(Writer: TWriter);
+    {$ENDIF}
     procedure DoAfterExecute; virtual;
     procedure DoAfterRun; virtual;
     procedure DoBeforeExecute; virtual;
@@ -131,7 +136,15 @@ type
     procedure DoStopped(AThread: TIdThread); virtual; //thev
     procedure DoTerminate(Sender: TObject); virtual; //thev
     function GetActive: Boolean;
+    {$IFDEF USE_OBJECT_ARC}
+    // When ARC is enabled, object references MUST be valid objects.
+    // It is common for users to store non-object values, though, so
+    // we will provide separate properties for those purposes
+    function GetDataObject: TObject;
+    function GetDataValue: PtrInt;
+    {$ELSE}
     function GetData: TObject;
+    {$ENDIF}
     function GetHandle: TIdThreadHandle;
     function GetPriority: TIdThreadPriority;
     function GetReturnValue: Integer;
@@ -145,7 +158,12 @@ type
     function IsRunning: Boolean;
     procedure Loaded; override;
     procedure SetActive(const AValue: Boolean); virtual;
+    {$IFDEF USE_OBJECT_ARC}
+    procedure SetDataObject(const AValue: TObject);
+    procedure SetDataValue(const AValue: PtrInt);
+    {$ELSE}
     procedure SetData(const AValue: TObject);
+    {$ENDIF}
     procedure SetLoop(const AValue: Boolean);
     procedure SetThreadName(const AValue: string);
     procedure SetOnTerminate(const AValue: TIdNotifyThreadComponentEvent);
@@ -161,7 +179,12 @@ type
     procedure TerminateAndWaitFor; virtual;
     function WaitFor: LongWord;
     // Properties
+    {$IFDEF USE_OBJECT_ARC}
+    property DataObject: TObject read GetDataObject write SetDataObject;
+    property DataValue: PtrInt read GetDataValue write SetDataValue;
+    {$ELSE}
     property Data: TObject read GetData write SetData;
+    {$ENDIF}
     property Handle: TIdThreadHandle read GetHandle;
     property ReturnValue: Integer read GetReturnValue write SetReturnValue;
     property Stopped: Boolean read GetStopped;
@@ -169,10 +192,15 @@ type
     property TerminatingException: string read GetTerminatingException;
     property TerminatingExceptionClass: TClass read GetTerminatingExceptionClass;
     property Terminated: Boolean read GetTerminated;
+    {$IFDEF INT_THREAD_PRIORITY}
+    property Priority: TIdThreadPriority read GetPriority write SetPriority;
+    {$ENDIF}
   published
     property Active: Boolean read GetActive write SetActive;
     property Loop: Boolean read FLoop write SetLoop;
+    {$IFNDEF INT_THREAD_PRIORITY}
     property Priority: TIdThreadPriority read GetPriority write SetPriority;
+    {$ENDIF}
     property StopMode: TIdThreadStopMode read GetStopMode write SetStopMode;
     property ThreadName: string read FThreadName write SetThreadName;
     // Events
@@ -266,6 +294,50 @@ end;
 
 { TIdThreadComponent }
 
+{$IFDEF INT_THREAD_PRIORITY}
+procedure TIdThreadComponent.DefineProperties(Filer: TFiler);
+begin
+  inherited;
+  Filer.DefineProperty('Priority', ReadPriority, WritePriority, FPriority <> tpNormal);
+end;
+
+procedure TIdThreadComponent.ReadPriority(Reader: TReader);
+var
+  Value: Integer;
+begin
+  if Reader.NextValue = vaIdent then
+  begin
+    // an older DFM that stored TThreadPriority as enum value names is being read, so convert to integer ...
+    case PosInStrArray(Reader.ReadIdent, ['tpIdle', 'tpLowest', 'tpLower', 'tpNormal', 'tpHigher', 'tpHighest', 'tpTimeCritical'], False) of {do not localize}
+      0: Value := tpIdle;
+      1: Value := tpLowest;
+      2: Value := tpLower;
+      3: Value := tpNormal;
+      4: Value := tpHigher;
+      5: Value := tpHighest;
+      6: Value := tpTimeCritical;
+    else
+      Value := tpNormal;
+    end;
+  end else
+  begin
+    Value := Reader.ReadInteger;
+    if Value < -20 then begin
+      Value := -20;
+    end
+    else if Value > 19 then begin
+      Value := 19;
+    end;
+  end;
+  FPriority := Value;
+end;
+
+procedure TIdThreadComponent.WritePriority(Writer: TWriter);
+begin
+  Writer.WriteInteger(FPriority);
+end;
+{$ENDIF}
+
 procedure TIdThreadComponent.DoAfterExecute;
 begin
   if Assigned(FOnAfterExecute) then
@@ -347,10 +419,26 @@ begin
   end;
 end;
 
+{$IFDEF USE_OBJECT_ARC}
+
+function TIdThreadComponent.GetDataObject: TObject;
+begin
+  Result := FThread.DataObject;
+end;
+
+function TIdThreadComponent.GetDataValue: PtrInt;
+begin
+  Result := FThread.DataValue;
+end;
+
+{$ELSE}
+
 function TIdThreadComponent.GetData: TObject;
 begin
   Result := FThread.Data;
 end;
+
+{$ENDIF}
 
 function TIdThreadComponent.GetHandle: TIdThreadHandle;
 begin
@@ -442,11 +530,29 @@ begin
   end;
 end;
 
+{$IFDEF USE_OBJECT_ARC}
+
+procedure TIdThreadComponent.SetDataObject(const AValue: TObject);
+begin
+// this should not be accessed at design-time.
+  FThread.DataObject := AValue;
+end;
+
+procedure TIdThreadComponent.SetDataValue(const AValue: PtrInt);
+begin
+// this should not be accessed at design-time.
+  FThread.DataValue := AValue;
+end;
+
+{$ELSE}
+
 procedure TIdThreadComponent.SetData(const AValue: TObject);
 begin
 // this should not be accessed at design-time.
   FThread.Data := AValue;
 end;
+
+{$ENDIF}
 
 procedure TIdThreadComponent.SetReturnValue(const AValue: Integer);
 begin

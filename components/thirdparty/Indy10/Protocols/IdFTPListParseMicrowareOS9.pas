@@ -72,7 +72,7 @@ type
 
   // RLebeau 2/14/09: this forces C++Builder to link to this unit so
   // RegisterFTPListParser can be called correctly at program startup...
-  (*$HPPEMIT '#pragma link "IdFTPListParseMicrowareOS9"'*)
+  {$HPPEMIT LINKUNIT}
 
 implementation
 
@@ -102,7 +102,7 @@ begin
   LWrds := TStringList.Create;
   try
     Result := False;
-    SplitColumns(AData, LWrds);
+    SplitDelimitedString(AData, LWrds, True);
     if LWrds.Count > 2 then
     begin
       Result := (LWrds[0] = 'Directory') and (LWrds[1] = 'of') and  {do not localize}

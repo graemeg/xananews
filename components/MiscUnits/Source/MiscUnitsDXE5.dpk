@@ -1,0 +1,61 @@
+package MiscUnitsDXE5;
+
+{$R *.res}
+{$IFDEF IMPLICITBUILDING This IFDEF should not be used by users}
+{$ALIGN 8}
+{$ASSERTIONS ON}
+{$BOOLEVAL OFF}
+{$DEBUGINFO ON}
+{$EXTENDEDSYNTAX ON}
+{$IMPORTEDDATA ON}
+{$IOCHECKS ON}
+{$LOCALSYMBOLS ON}
+{$LONGSTRINGS ON}
+{$OPENSTRINGS ON}
+{$OPTIMIZATION ON}
+{$OVERFLOWCHECKS OFF}
+{$RANGECHECKS OFF}
+{$REFERENCEINFO OFF}
+{$SAFEDIVIDE OFF}
+{$STACKFRAMES OFF}
+{$TYPEDADDRESS OFF}
+{$VARSTRINGCHECKS ON}
+{$WRITEABLECONST OFF}
+{$MINENUMSIZE 1}
+{$IMAGEBASE $400000}
+{$DEFINE RELEASE}
+{$ENDIF IMPLICITBUILDING}
+{$DESCRIPTION 'Colin Wilson - Miscellaneous Components for DXE5'}
+{$DESIGNONLY}
+{$IMPLICITBUILD ON}
+
+requires
+  LowLevelDXE5,
+  rtl,
+  vclie,
+  vcl,
+  vclimg;
+
+contains
+  MiscUnitsReg in 'MiscUnitsReg.pas',
+  cmpFileCopier in 'cmpFileCopier.pas',
+  cmpSplitterPanel in 'cmpSplitterPanel.pas',
+  cmpCWSpellChecker in 'cmpCWSpellChecker.pas',
+  cmpSpellChecker in 'cmpSpellChecker.pas',
+  SpellCheckerForm in 'SpellCheckerForm.pas',
+  cmpThemedScrollBox in 'cmpThemedScrollBox.pas',
+  cmpCWRichEdit in 'cmpCWRichEdit.pas',
+  cmpNewsRichEdit in 'cmpNewsRichEdit.pas',
+  cmpRuler in 'cmpRuler.pas',
+  cmpMessageDisplay in 'cmpMessageDisplay.pas',
+  cmpNTAboutBox in 'cmpNTAboutBox.pas',
+  cmpRunOnce in 'cmpRunOnce.pas',
+  cmpStandardSystemMenu in 'cmpStandardSystemMenu.pas',
+  cmpExSplitter in 'cmpExSplitter.pas',
+  cmpHyperlinkButton in 'cmpHyperlinkButton.pas',
+  cmpExWebBrowser in 'cmpExWebBrowser.pas',
+  cmpPersistentPosition in 'cmpPersistentPosition.pas',
+  unitHTMLStringsDisplayObject in 'unitHTMLStringsDisplayObject.pas',
+  unitNewsStringsDisplayObject in 'unitNewsStringsDisplayObject.pas';
+
+end.

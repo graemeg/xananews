@@ -7,8 +7,8 @@
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Application</AppType>
         <FrameworkType>VCL</FrameworkType>
-        <ProjectVersion>14.4</ProjectVersion>
-        <Platform Condition="'$(Platform)'==''">Win32</Platform>
+        <ProjectVersion>15.3</ProjectVersion>
+        <Platform Condition="'$(Platform)'==''">Win64</Platform>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
         <Base>true</Base>
@@ -90,6 +90,26 @@
         <Cfg_2>true</Cfg_2>
         <Base>true</Base>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(Config)'=='Debug - Without MadExcept' or '$(Cfg_5)'!=''">
+        <Cfg_5>true</Cfg_5>
+        <CfgParent>Cfg_2</CfgParent>
+        <Cfg_2>true</Cfg_2>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_5)'=='true') or '$(Cfg_5_Win32)'!=''">
+        <Cfg_5_Win32>true</Cfg_5_Win32>
+        <CfgParent>Cfg_5</CfgParent>
+        <Cfg_5>true</Cfg_5>
+        <Cfg_2>true</Cfg_2>
+        <Base>true</Base>
+    </PropertyGroup>
+    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_5)'=='true') or '$(Cfg_5_Win64)'!=''">
+        <Cfg_5_Win64>true</Cfg_5_Win64>
+        <CfgParent>Cfg_5</CfgParent>
+        <Cfg_5>true</Cfg_5>
+        <Cfg_2>true</Cfg_2>
+        <Base>true</Base>
+    </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='FullDebugMode' or '$(Cfg_3)'!=''">
         <Cfg_3>true</Cfg_3>
         <CfgParent>Base</CfgParent>
@@ -109,15 +129,14 @@
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
         <DCC_UnitSearchPath>..\components\ImageTypes\Source;..\components\LowLevel\Source;..\components\MiscUnits\Source;..\components\thirdparty\VirtualTreeView\Source;..\components\thirdparty\Indy10\Core;..\components\thirdparty\Indy10\Protocols;..\components\thirdparty\Indy10\System;..\modified_vcl;$(BDSLIB)\$(Platform)\release;$(BDSUSERDIR)\Imports;$(BDS)\Imports;$(BDSCOMMONDIR)\Dcp;$(BDS)\include;$(BDS)\RaveReports\Lib;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
         <DCC_ImageBase>00400000</DCC_ImageBase>
-        <VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.19.1.373;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2012;LegalTrademarks=All Rights Reserved;OriginalFilename=XanaNews.exe;ProductName=XanaNews;ProductVersion=1.19.1.373;Comments=</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.20.0.376;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2012;LegalTrademarks=All Rights Reserved;OriginalFilename=XanaNews.exe;ProductName=XanaNews;ProductVersion=1.20.0.376;Comments=Contributions by jachguate http://jachguateit.wordpress.com</VerInfo_Keys>
         <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
-        <VerInfo_MinorVer>19</VerInfo_MinorVer>
-        <VerInfo_Build>373</VerInfo_Build>
+        <VerInfo_MinorVer>20</VerInfo_MinorVer>
+        <VerInfo_Build>376</VerInfo_Build>
         <VerInfo_Locale>1033</VerInfo_Locale>
         <DCC_N>false</DCC_N>
         <DCC_S>false</DCC_S>
-        <VerInfo_Release>1</VerInfo_Release>
         <DCC_E>false</DCC_E>
         <DCC_F>false</DCC_F>
         <DCC_K>false</DCC_K>
@@ -142,25 +161,28 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
-        <DCC_DebugInformation>false</DCC_DebugInformation>
+        <DCC_DebugInformation>0</DCC_DebugInformation>
         <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
         <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
         <UsePackages>true</UsePackages>
-        <DCC_Define>madExcept;$(DCC_Define)</DCC_Define>
         <DCC_LocalDebugSymbols>true</DCC_LocalDebugSymbols>
         <DCC_DebugInformation>true</DCC_DebugInformation>
         <DCC_MapFile>3</DCC_MapFile>
         <DCC_WIDECHAR_REDUCED>false</DCC_WIDECHAR_REDUCED>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
-        <DCC_Define>madExcept;$(DCC_Define)</DCC_Define>
         <DCC_LocalDebugSymbols>true</DCC_LocalDebugSymbols>
         <DCC_DebugInformation>true</DCC_DebugInformation>
         <DCC_MapFile>3</DCC_MapFile>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_4)'!=''">
+        <VerInfo_Build>376</VerInfo_Build>
+        <VerInfo_MinorVer>20</VerInfo_MinorVer>
+        <VerInfo_Release>0</VerInfo_Release>
+        <VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.20.0.376;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2012;LegalTrademarks=All Rights Reserved;OriginalFilename=XanaNews.exe;ProductName=XanaNews;ProductVersion=1.20.0.376;Comments=Contributions by jachguate http://jachguateit.wordpress.com</VerInfo_Keys>
+        <DCC_DebugInformation>0</DCC_DebugInformation>
         <DCC_Define>madExcept;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_4_Win32)'!=''">
@@ -184,8 +206,26 @@
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
         <DCC_MapFile>3</DCC_MapFile>
     </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_6)'!=''">
+        <VerInfo_MinorVer>20</VerInfo_MinorVer>
+        <VerInfo_Build>376</VerInfo_Build>
+        <VerInfo_Release>0</VerInfo_Release>
+        <VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.20.0.376;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2012;LegalTrademarks=All Rights Reserved;OriginalFilename=XanaNews.exe;ProductName=XanaNews;ProductVersion=1.20.0.376;Comments=Contributions by jachguate http://jachguateit.wordpress.com</VerInfo_Keys>
+    </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_6_Win32)'!=''">
         <Debugger_RunParams>-XMLSettings:XanaNews.xml</Debugger_RunParams>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_5)'!=''">
+        <VerInfo_MinorVer>20</VerInfo_MinorVer>
+        <VerInfo_Build>376</VerInfo_Build>
+        <VerInfo_Release>0</VerInfo_Release>
+        <VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.20.0.376;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2012;LegalTrademarks=All Rights Reserved;OriginalFilename=XanaNews.exe;ProductName=XanaNews;ProductVersion=1.20.0.376;Comments=Contributions by jachguate http://jachguateit.wordpress.com</VerInfo_Keys>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_5_Win32)'!=''">
+        <DCC_Define>DEBUG</DCC_Define>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_5_Win64)'!=''">
+        <DCC_Define>DEBUG</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_3)'!=''">
         <DCC_Optimize>false</DCC_Optimize>
@@ -465,20 +505,24 @@
             <Key>Cfg_4</Key>
             <CfgParent>Cfg_1</CfgParent>
         </BuildConfiguration>
-        <BuildConfiguration Include="Debug">
-            <Key>Cfg_2</Key>
-            <CfgParent>Base</CfgParent>
+        <BuildConfiguration Include="Debug - Without MadExcept">
+            <Key>Cfg_5</Key>
+            <CfgParent>Cfg_2</CfgParent>
         </BuildConfiguration>
         <BuildConfiguration Include="Debug - XML">
             <Key>Cfg_6</Key>
             <CfgParent>Cfg_2</CfgParent>
         </BuildConfiguration>
+        <BuildConfiguration Include="Base">
+            <Key>Base</Key>
+        </BuildConfiguration>
+        <BuildConfiguration Include="Debug">
+            <Key>Cfg_2</Key>
+            <CfgParent>Base</CfgParent>
+        </BuildConfiguration>
         <BuildConfiguration Include="FullDebugMode">
             <Key>Cfg_3</Key>
             <CfgParent>Base</CfgParent>
-        </BuildConfiguration>
-        <BuildConfiguration Include="Base">
-            <Key>Base</Key>
         </BuildConfiguration>
         <BuildConfiguration Include="Release">
             <Key>Cfg_1</Key>
@@ -521,10 +565,12 @@
                     <VersionInfoKeys Name="Comments"/>
                 </VersionInfoKeys>
                 <Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\bcboffice2k170.bpl">Embarcadero C++Builder Office 2000 Servers Package</Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\bcbofficexp170.bpl">Embarcadero C++Builder Office XP Servers Package</Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\dcloffice2k170.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\dclofficexp170.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\bcboffice2k190.bpl">Embarcadero C++Builder Office 2000 Servers Package</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\bcbofficexp190.bpl">Embarcadero C++Builder Office XP Servers Package</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dcloffice2k190.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dclofficexp190.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
+                    <Excluded_Packages Name="C:\Program Files (x86)\FastReports\FastReport 4\LibD19\dclfsibx19.bpl">FastScript 1.9 IBX Components</Excluded_Packages>
+                    <Excluded_Packages Name="C:\Program Files (x86)\FastReports\FastReport 4\LibD19\dclfrxibx19.bpl">FastReport 4.0 IBX Components</Excluded_Packages>
                 </Excluded_Packages>
             </Delphi.Personality>
             <Platforms>

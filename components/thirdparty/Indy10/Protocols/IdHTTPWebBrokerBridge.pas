@@ -114,6 +114,7 @@ type
     FResponseInfo: TIdHTTPResponseInfo;
     FSent: Boolean;
     FThread: TIdContext;
+    FContentType: AnsiString; // Workaround to preserve value of ContentType property
     //
     function GetContent: AnsiString; override;
     function GetDateVariable(Index: Integer): TDateTime; override;
@@ -473,7 +474,7 @@ end;
 function TIdHTTPAppResponse.GetContent: AnsiString;
 {$IFDEF STRING_IS_UNICODE}
 var
-  LEncoding: TIdTextEncoding;
+  LEncoding: IIdTextEncoding;
   LBytes: TIdBytes;
 {$ENDIF}
 begin
@@ -484,26 +485,15 @@ begin
   // string variables later on...
   Result := '';
   LEncoding := CharsetToEncoding(FResponseInfo.CharSet);
-    {$IFNDEF DOTNET}
-  try
-    {$ENDIF}
-    LBytes := TIdTextEncoding.Unicode.GetBytes(FResponseInfo.ContentText);
-    if LEncoding <> TIdTextEncoding.Unicode then begin
-      LBytes := TIdTextEncoding.Convert(TIdTextEncoding.Unicode, LEncoding, LBytes);
-    end;
+  LBytes := LEncoding.GetBytes(FResponseInfo.ContentText);
     {$IFDEF DOTNET}
-    // RLebeau: how to handle this correctly in .NET?
-    Result := AnsiString(BytesToStringRaw(LBytes));
+  // RLebeau: how to handle this correctly in .NET?
+  Result := AnsiString(BytesToStringRaw(LBytes));
     {$ELSE}
-    SetString(Result, PAnsiChar(LBytes), Length(LBytes));
+  SetString(Result, PAnsiChar(LBytes), Length(LBytes));
       {$IFDEF VCL_2009_OR_ABOVE}
-    SetCodePage(PRawByteString(@Result)^, CharsetToCodePage(FResponseInfo.CharSet), False);
+  SetCodePage(PRawByteString(@Result)^, CharsetToCodePage(FResponseInfo.CharSet), False);
       {$ENDIF}
-    {$ENDIF}
-    {$IFNDEF DOTNET}
-  finally
-    LEncoding.Free;
-  end;
     {$ENDIF}
   {$ELSE}
   Result := FResponseInfo.ContentText;
@@ -529,7 +519,7 @@ function TIdHTTPAppResponse.GetDateVariable(Index: Integer): TDateTime;
       Result := Result - OffsetFromUTC;
   end;
 begin
-  //TODO: resource string these
+                               
   case Index of
     INDEX_RESP_Date             : Result := ToGMT(FResponseInfo.Date);
     INDEX_RESP_Expires          : Result := ToGMT(FResponseInfo.Expires);
@@ -548,7 +538,7 @@ procedure TIdHTTPAppResponse.SetDateVariable(Index: Integer; const Value: TDateT
       Result := Result + OffsetFromUTC;
   end;
 begin
-  //TODO: resource string these
+                               
   case Index of
     INDEX_RESP_Date             : FResponseInfo.Date := ToLocal(Value);
     INDEX_RESP_Expires          : FResponseInfo.Expires := ToLocal(Value);
@@ -560,7 +550,7 @@ end;
 
 function TIdHTTPAppResponse.GetIntegerVariable(Index: Integer): Integer;
 begin
-  //TODO: resource string these
+                               
   case Index of
     INDEX_RESP_ContentLength: Result := FResponseInfo.ContentLength;
   else
@@ -570,7 +560,7 @@ end;
 
 procedure TIdHTTPAppResponse.SetIntegerVariable(Index, Value: Integer);
 begin
-  //TODO: resource string these
+                               
   case Index of
     INDEX_RESP_ContentLength: FResponseInfo.ContentLength := Value;
   else
@@ -580,7 +570,7 @@ end;
 
 function TIdHTTPAppResponse.GetStringVariable(Index: Integer): AnsiString;
 begin
-  //TODO: resource string these
+                               
   case Index of
     INDEX_RESP_Version           :Result := AnsiString(FRequestInfo.Version);
     INDEX_RESP_ReasonString      :Result := AnsiString(FResponseInfo.ResponseText);
@@ -590,7 +580,14 @@ begin
     INDEX_RESP_Allow             :Result := AnsiString(FResponseInfo.CustomHeaders.Values['Allow']);        {do not localize}
     INDEX_RESP_Location          :Result := AnsiString(FResponseInfo.Location);
     INDEX_RESP_ContentEncoding   :Result := AnsiString(FResponseInfo.ContentEncoding);
-    INDEX_RESP_ContentType       :Result := AnsiString(FResponseInfo.ContentType);
+    INDEX_RESP_ContentType       :
+    begin
+      if FContentType <> '' then begin
+        Result := FContentType;
+      end else begin
+        Result := AnsiString(FResponseInfo.ContentType);
+      end;
+    end;
     INDEX_RESP_ContentVersion    :Result := AnsiString(FResponseInfo.ContentVersion);
     INDEX_RESP_DerivedFrom       :Result := AnsiString(FResponseInfo.CustomHeaders.Values['Derived-From']); {do not localize}
     INDEX_RESP_Title             :Result := AnsiString(FResponseInfo.CustomHeaders.Values['Title']);        {do not localize}
@@ -601,7 +598,7 @@ end;
 
 procedure TIdHTTPAppResponse.SetStringVariable(Index: Integer; const Value: AnsiString);
 begin
-  //TODO: resource string these
+                               
   case Index of
     INDEX_RESP_Version           :EWBBInvalidStringVar.Create(RSWBBInvalidStringVar);
     INDEX_RESP_ReasonString      :FResponseInfo.ResponseText := string(Value);
@@ -611,7 +608,11 @@ begin
     INDEX_RESP_Allow             :FResponseInfo.CustomHeaders.Values['Allow'] := string(Value); {do not localize}
     INDEX_RESP_Location          :FResponseInfo.Location := string(Value);
     INDEX_RESP_ContentEncoding   :FResponseInfo.ContentEncoding := string(Value);
-    INDEX_RESP_ContentType       :FResponseInfo.ContentType := string(Value);
+    INDEX_RESP_ContentType       :
+    begin
+      FResponseInfo.ContentType := string(Value);
+      FContentType := Value;
+    end;
     INDEX_RESP_ContentVersion    :FResponseInfo.ContentVersion := string(Value);
     INDEX_RESP_DerivedFrom       :FResponseInfo.CustomHeaders.Values['Derived-From'] := string(Value);  {do not localize}
     INDEX_RESP_Title             :FResponseInfo.CustomHeaders.Values['Title'] := string(Value); {do not localize}
@@ -648,9 +649,21 @@ end;
 
 procedure TIdHTTPAppResponse.SetContent(const AValue: AnsiString);
 var
- LValue : string;
+  LValue : string;
 begin
+  {$IFDEF STRING_IS_UNICODE}
+  // RLebeau 3/28/2013: decode the content using the specified charset.
+  if FResponseInfo.CharSet <> '' then begin
+    // AValue contains Encoded bytes
+    if AValue <> '' then begin
+      LValue := CharsetToEncoding(FResponseInfo.CharSet).GetString(RawToBytes(PAnsiChar(AValue)^, Length(AValue)));
+    end;
+  end else begin
+    LValue := string(AValue);
+  end;
+  {$ELSE}
   LValue := string(AValue);
+  {$ENDIF}
   FResponseInfo.ContentText := LValue;
   FResponseInfo.ContentLength := Length(LValue);
 end;
@@ -686,7 +699,7 @@ begin
     LDestCookie.Path := String(LSrcCookie.Path);
     LDestCookie.Expires := LSrcCookie.Expires;
     LDestCookie.Secure := LSrcCookie.Secure;
-    // TODO: LDestCookie.HttpOnly := LSrcCookie.HttpOnly;
+                                                         
   end;
   FResponseInfo.CustomHeaders.Clear;
   FResponseInfo.CustomHeaders.AddStdValues(CustomHeaders);

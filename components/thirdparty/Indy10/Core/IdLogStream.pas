@@ -65,7 +65,7 @@ type
 implementation
  uses SysUtils;
 
-// TODO: This was orginally for VCL. For .Net what do we do? Convert back to
+                                                                            
 // 7 bit? Log all? Logging all seems to be a disaster.
 // Text seems to be best, users are expecting text in this class. But
 // this write stream will dump unicode out in .net.....
@@ -90,16 +90,22 @@ begin
 end;
 
 procedure TIdLogStream.LogReceivedData(const AText, AData: string);
+var
+  LEncoding: IIdTextEncoding;
 begin
   if FReceiveStream <> nil then begin
-    WriteStringToStream(FReceiveStream, AData, Indy8BitEncoding{$IFDEF STRING_IS_ANSI}, Indy8BitEncoding{$ENDIF});
+    LEncoding := IndyTextEncoding_8Bit;
+    WriteStringToStream(FReceiveStream, AData, LEncoding{$IFDEF STRING_IS_ANSI}, LEncoding{$ENDIF});
   end;
 end;
 
 procedure TIdLogStream.LogSentData(const AText, AData: string);
+var
+  LEncoding: IIdTextEncoding;
 begin
   if FSendStream <> nil then begin
-    WriteStringToStream(FSendStream, AData, Indy8BitEncoding{$IFDEF STRING_IS_ANSI}, Indy8BitEncoding{$ENDIF});
+    LEncoding := IndyTextEncoding_8Bit;
+    WriteStringToStream(FSendStream, AData, LEncoding{$IFDEF STRING_IS_ANSI}, LEncoding{$ENDIF});
   end;
 end;
 

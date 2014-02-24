@@ -15,7 +15,7 @@ ABSOLUTELY NO CODE is permitted in this unit.
 
 // RLebeau 2/14/09: this forces C++Builder to link to this unit so
 // the units can register themselves correctly at program startup...
-(*$HPPEMIT '#pragma link "IdAllHeaderCoders"'*)
+{$HPPEMIT LINKUNIT}
 
 implementation
 

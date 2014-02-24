@@ -4,3 +4,9 @@
 *.lps
 *.compiled
 *.bak*
+/*.dsk
+/*.~dsk
+/*.local
+__history
+*.local
+*.identcache

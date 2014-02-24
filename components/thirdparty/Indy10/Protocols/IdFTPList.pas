@@ -523,16 +523,22 @@ begin
 end;
 
 procedure TIdFTPListItem.Assign(Source: TPersistent);
+var
+  LSource: TIdFTPListItem;
 begin
   if Source is TIdFTPListItem then begin
-    with Source as TIdFTPListItem do
-    begin
-      Self.Data := Data;
-      Self.ItemType := ItemType;
-      Self.Size := Size;
-      Self.ModifiedDate := ModifiedDate;
-      Self.FileName := FileName;
-    end;
+    LSource := TIdFTPListItem(Source);
+    Data := LSource.Data;
+    ItemType := LSource.ItemType;
+    Size := LSource.Size;
+    ModifiedDate := LSource.ModifiedDate;
+    ModifiedDateGMT := LSource.ModifiedDateGMT;
+    FFileName := LSource.FileName;
+    FLocalFileName := LSource.LocalFileName;
+    SizeAvail := LSource.SizeAvail;
+    ModifiedAvail := LSource.ModifiedAvail;
+    PermissionDisplay := LSource.PermissionDisplay;
+    FDirError := LSource.FDirError;
   end else begin
     inherited Assign(Source);
   end;
@@ -596,7 +602,7 @@ begin
     //prefer lower case filenames.  We do not want to force lowercase if a file
     //has both uppercase and lowercase because the uppercase letters are probably intentional
     LDoLowerCase := True;
-    // TODO: add IsLower() functions in IdGlobal/Protocol?
+                                                          
     for i := 1 to Length(AValue) do begin
       if CharIsInSet(AValue, i, LLowCase) then begin
         LDoLowerCase := False;

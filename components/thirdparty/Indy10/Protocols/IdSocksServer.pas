@@ -143,7 +143,7 @@ type
     FPassword: string;
     FSocksVersion: Byte; // either 4 or 5, or 0 when version not known yet
   public
-    constructor Create(AConnection: TIdTCPConnection; AYarn: TIdYarn; AList: TThreadList = nil); override;
+    constructor Create(AConnection: TIdTCPConnection; AYarn: TIdYarn; AList: TIdContextThreadList = nil); override;
     property IPVersion: TIdIPVersion read FIPVersion;
     property Username: string read FUsername;
     property Password: string read FPassword;
@@ -262,7 +262,7 @@ begin
     LBuffer.Size := cMaxBufSize;
     while FromConn.Connected and ToConn.Connected do
     begin
-      // TODO: use TIdSocketList here
+                                     
       LAmount := ReadFrom(FromConn);
       if LAmount > 0 then begin
         LBuffer.Position := 0;
@@ -379,7 +379,7 @@ var
   begin
     Result := '';
     repeat
-      // TODO: use ReadLn() instead
+                                   
       C := AContext.Connection.IOHandler.ReadChar;
       if C <> #0 then begin
         Result := Result + C;
@@ -702,7 +702,7 @@ end;
 
 { TIdSocksServerContext }
 
-constructor TIdSocksServerContext.Create(AConnection: TIdTCPConnection; AYarn: TIdYarn; AList: TThreadList = nil);
+constructor TIdSocksServerContext.Create(AConnection: TIdTCPConnection; AYarn: TIdYarn; AList: TIdContextThreadList = nil);
 begin
   inherited Create(AConnection, AYarn, AList);
   FIPVersion := ID_DEFAULT_IP_VERSION;

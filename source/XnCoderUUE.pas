@@ -102,8 +102,8 @@ end;
 procedure TXnEncoderUUE.InitComponent;
 begin
   inherited InitComponent;
-  FCodingTable := GUUECodeTable;
-  FFillChar := FCodingTable[1];
+  FCodingTable := ToBytes(GUUECodeTable);
+  FFillChar := GUUECodeTable[1];
 end;
 
 end.

@@ -94,7 +94,7 @@ implementation
 uses
   IdResourceStringsProtocols, SysUtils;
 
-// TODO: for .NET, implement functions that use .NET Hash/HMAC classes
+                                                                      
 
 procedure CheckMD2Permitted; {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin

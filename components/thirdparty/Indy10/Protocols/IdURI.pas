@@ -99,17 +99,17 @@ type
     function GetFullURI(const AOptionalFields: TIdURIOptionalFieldsSet = [ofAuthInfo, ofBookmark]): String;
     function GetPathAndParams: String;
     class procedure NormalizePath(var APath: string);
-    class function URLDecode(ASrc: string; AByteEncoding: TIdTextEncoding = nil
-      {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
+    class function URLDecode(ASrc: string; AByteEncoding: IIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ADestEncoding: IIdTextEncoding = nil{$ENDIF}
       ): string;
-    class function URLEncode(const ASrc: string; AByteEncoding: TIdTextEncoding = nil
-      {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+    class function URLEncode(const ASrc: string; AByteEncoding: IIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ASrcEncoding: IIdTextEncoding = nil{$ENDIF}
       ): string;
-    class function ParamsEncode(const ASrc: string; AByteEncoding: TIdTextEncoding = nil
-      {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+    class function ParamsEncode(const ASrc: string; AByteEncoding: IIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ASrcEncoding: IIdTextEncoding = nil{$ENDIF}
       ): string;
-    class function PathEncode(const ASrc: string; AByteEncoding: TIdTextEncoding = nil
-      {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+    class function PathEncode(const ASrc: string; AByteEncoding: IIdTextEncoding = nil
+      {$IFDEF STRING_IS_ANSI}; ASrcEncoding: IIdTextEncoding = nil{$ENDIF}
       ): string;
     //
     property Bookmark : string read FBookmark write FBookMark;
@@ -146,7 +146,15 @@ end;
 class procedure TIdURI.NormalizePath(var APath: string);
 var
   i: Integer;
+  LChar: Char;
+  {$IFDEF STRING_IS_IMMUTABLE}
+  LSB: TIdStringBuilder;
+  {$ENDIF}
 begin
+  {$IFDEF STRING_IS_IMMUTABLE}
+  LSB := nil;
+  {$ENDIF}
+
   // Normalize the directory delimiters to follow the UNIX syntax
 
   // RLebeau 8/10/2010: only normalize within the actual path,
@@ -166,20 +174,35 @@ begin
   end;
 
   while i <= Length(APath) do begin
+    LChar := APath[i];
     {$IFDEF STRING_IS_ANSI}
-    if IsLeadChar(APath[i]) then begin
-      Inc(i, 2)
-    end else
+    if IsLeadChar(LChar) then begin
+      Inc(i, 2);
+      Continue;
+    end;
     {$ENDIF}
-    if (APath[i] = '?') or (APath[i] = '#') then begin {Do not Localize}
+    if (LChar = '?') or (LChar = '#') then begin {Do not Localize}
       // stop normalizing at query/fragment portion of the URL
       Break;
     end;
-    if APath[i] = '\' then begin    {Do not Localize}
+    if LChar = '\' then begin    {Do not Localize}
+      {$IFDEF STRING_IS_IMMUTABLE}
+      if LSB = nil then begin
+        LSB := TIdStringBuilder.Create(APath);
+      end;
+      LSB[i-1] := '/';    {Do not Localize}
+      {$ELSE}
       APath[i] := '/';    {Do not Localize}
+      {$ENDIF}
     end;
     Inc(i);
   end;
+
+  {$IFDEF STRING_IS_IMMUTABLE}
+  if LSB <> nil then begin
+    APath := LSB.ToString;
+  end;
+  {$ENDIF}
 end;
 
 procedure TIdURI.SetURI(const Value: String);
@@ -218,6 +241,19 @@ begin
     if LTokenPos > 0 then begin
       FParams := Copy(LURI, LTokenPos + 1, MaxInt);
       LURI := Copy(LURI, 1, LTokenPos - 1);
+      // separate the bookmark from the parameters
+      LTokenPos := IndyPos('#', FParams);    {Do not Localize}
+      if LTokenPos > 0 then begin   {Do not Localize}
+        FBookmark := FParams;
+        FParams := Fetch(FBookmark, '#');       {Do not Localize}
+      end;
+    end else begin
+      // separate the path from the bookmark
+      LTokenPos := IndyPos('#', LURI);    {Do not Localize}
+      if LTokenPos > 0 then begin   {Do not Localize}
+        FBookmark := Copy(LURI, LTokenPos + 1, MaxInt);
+        LURI := Copy(LURI, 1, LTokenPos - 1);
+      end;
     end;
     // Get the user name, password, host and the port number
     LBuffer := Fetch(LURI, '/', True);    {Do not Localize}
@@ -261,6 +297,19 @@ begin
     if LTokenPos > 0 then begin // The case when there is parameters after the document name
       FParams := Copy(LURI, LTokenPos + 1, MaxInt);
       LURI := Copy(LURI, 1, LTokenPos - 1);
+      // separate the bookmark from the parameters
+      LTokenPos := IndyPos('#', FParams);    {Do not Localize}
+      if LTokenPos > 0 then begin
+        FBookmark := FParams;
+        FParams := Fetch(FBookmark, '#');       {Do not Localize}
+      end;
+    end else begin
+      // separate the bookmark from the path
+      LTokenPos := IndyPos('#', LURI);    {Do not Localize}
+      if LTokenPos > 0 then begin // The case when there is a bookmark after the document name
+        FBookmark := Copy(LURI, LTokenPos + 1, MaxInt);
+        LURI := Copy(LURI, 1, LTokenPos - 1);
+      end;
     end;
     // Get the path
     LTokenPos := RPos('/', LURI, -1);    {Do not Localize}
@@ -271,9 +320,6 @@ begin
   end;
   // Get the document
   FDocument := LURI;
-  // Parse the # bookmark from the document
-  FBookmark := FDocument;
-  FDocument := Fetch(FBookmark, '#');    {Do not Localize}
 end;
 
 function TIdURI.GetURI: String;
@@ -284,8 +330,8 @@ begin
   Result := GetFullURI([]);
 end;
 
-class function TIdURI.URLDecode(ASrc: string; AByteEncoding: TIdTextEncoding = nil
-  {$IFDEF STRING_IS_ANSI}; ADestEncoding: TIdTextEncoding = nil{$ENDIF}
+class function TIdURI.URLDecode(ASrc: string; AByteEncoding: IIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ADestEncoding: IIdTextEncoding = nil{$ENDIF}
   ): string;
 var
   i: Integer;
@@ -337,17 +383,15 @@ begin
   end;
   {$IFDEF STRING_IS_ANSI}
   EnsureEncoding(ADestEncoding, encOSDefault);
-  if AByteEncoding <> ADestEncoding then begin
-    LBytes := TIdTextEncoding.Convert(AByteEncoding, ADestEncoding, LBytes);
-  end;
+  CheckByteEncoding(LBytes, AByteEncoding, ADestEncoding);
   SetString(Result, PAnsiChar(LBytes), Length(LBytes));
   {$ELSE}
   Result := AByteEncoding.GetString(LBytes);
   {$ENDIF}
 end;
 
-class function TIdURI.ParamsEncode(const ASrc: string; AByteEncoding: TIdTextEncoding = nil
-  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+class function TIdURI.ParamsEncode(const ASrc: string; AByteEncoding: IIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: IIdTextEncoding = nil{$ENDIF}
   ): string;
 const
   UnsafeChars: TIdUnicodeString = '*<>#%"{}|\^[]`';  {do not localize}
@@ -416,8 +460,8 @@ begin
   end;
 end;
 
-class function TIdURI.PathEncode(const ASrc: string; AByteEncoding: TIdTextEncoding = nil
-  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+class function TIdURI.PathEncode(const ASrc: string; AByteEncoding: IIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: IIdTextEncoding = nil{$ENDIF}
   ): string;
 const
   UnsafeChars = '*<>#%"{}|\^[]`+';  {do not localize}
@@ -475,22 +519,27 @@ begin
   end;
 end;
 
-class function TIdURI.URLEncode(const ASrc: string; AByteEncoding: TIdTextEncoding = nil
-  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: TIdTextEncoding = nil{$ENDIF}
+class function TIdURI.URLEncode(const ASrc: string; AByteEncoding: IIdTextEncoding = nil
+  {$IFDEF STRING_IS_ANSI}; ASrcEncoding: IIdTextEncoding = nil{$ENDIF}
   ): string;
+var
+  LUri: TIdURI;
 begin
-  with TIdURI.Create(ASrc) do try
-    Path := PathEncode(Path, AByteEncoding
+  LUri := TIdURI.Create(ASrc);
+  try
+    LUri.Path := PathEncode(LUri.Path, AByteEncoding
       {$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF}
       );
-    Document := PathEncode(Document, AByteEncoding
+    LUri.Document := PathEncode(LUri.Document, AByteEncoding
       {$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF}
       );
-    Params := ParamsEncode(Params, AByteEncoding
+    LUri.Params := ParamsEncode(LUri.Params, AByteEncoding
       {$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF}
       );
-    Result := URI;
-  finally Free; end;
+    Result := LUri.URI;
+  finally
+    LUri.Free;
+  end;
 end;
 
 function TIdURI.GetFullURI(const AOptionalFields: TIdURIOptionalFieldsSet): String;
@@ -515,7 +564,12 @@ begin
     LURI := LURI + '@';    {Do not Localize}
   end;
 
-  LURI := LURI + FHost;
+  if IPVersion = Id_IPv6 then begin
+    LURI := LURI + '[' + FHost + ']';    {Do not Localize}
+  end else begin
+    LURI := LURI + FHost;
+  end;
+
   if FPort <> '' then begin
     case PosInStrArray(FProtocol, ['HTTP', 'HTTPS', 'FTP'], False) of {Do not Localize}
       0:

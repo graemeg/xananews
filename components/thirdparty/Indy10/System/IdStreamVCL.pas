@@ -92,7 +92,7 @@ begin
   //should we raise assert instead of this nil check?
   if ABytes <> nil then begin
     LActual := IndyLength(ABytes, ACount, AOffset);
-    // TODO: loop the writing, or use WriteBuffer(), to mimic .NET where
+                                                                        
     // System.IO.Stream.Write() writes all provided bytes in a single operation
     if LActual > 0 then begin
       Result := AStream.Write(ABytes[AOffset], LActual);

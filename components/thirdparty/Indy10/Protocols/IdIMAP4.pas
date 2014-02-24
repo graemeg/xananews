@@ -397,26 +397,26 @@ unit IdIMAP4;
 
 interface
 
-{ Todo -oIC :
-Change the mailbox list commands so that they receive TMailBoxTree
-structures and so they can store in them the mailbox name and it's attributes. }
+             
+                                                                  
+                                                                                
 
-{ Todo -oIC :
-Add support for \* special flag in messages, and check for \Recent
-flag in STORE command because it cant be stored (will get no reply!!!) }
+             
+                                                                  
+                                                                        
 
-{ Todo -oIC :
-5.1.2.  Mailbox Namespace Naming Convention
-By convention, the first hierarchical element of any mailbox name
-which begins with "#" identifies the "namespace" of the remainder of
-the name.  This makes it possible to disambiguate between different
-types of mailbox stores, each of which have their own namespaces.
-For example, implementations which offer access to USENET
-newsgroups MAY use the "#news" namespace to partition the USENET
-newsgroup namespace from that of other mailboxes.  Thus, the
-comp.mail.misc newsgroup would have an mailbox name of
-"#news.comp.mail.misc", and the name "comp.mail.misc" could refer
-to a different object (e.g. a user's private mailbox). }   
+             
+                                           
+                                                                 
+                                                                    
+                                                                   
+                                                                 
+                                                         
+                                                                
+                                                            
+                                                      
+                                                                 
+                                                           
 
 { TO BE CONSIDERED -CC :
 Double-quotes in mailbox names can cause major but subtle failures.  Maybe
@@ -460,12 +460,13 @@ type
   EmUTF7Decode = class(EmUTF7Error);
 
 type
+                                                                    
   TIdMUTF7 = class(TObject)
   public
-    function Encode(const aString : TIdUnicodeString): AnsiString;
-    function Decode(const aString : AnsiString): TIdUnicodeString;
-    function Valid(const aMUTF7String : AnsiString): Boolean;
-    function Append(const aMUTF7String: AnsiString; const aStr: TIdUnicodeString): AnsiString;
+    function Encode(const aString : TIdUnicodeString): String;
+    function Decode(const aString : String): TIdUnicodeString;
+    function Valid(const aMUTF7String : String): Boolean;
+    function Append(const aMUTF7String: String; const aStr: TIdUnicodeString): String;
   end;
 
 { TIdIMAP4 }
@@ -1131,6 +1132,9 @@ uses
   {$ELSE}
   IdStreamVCL,
   {$ENDIF}
+  {$IFDEF HAS_UNIT_Generics_Collections}
+  System.Generics.Collections,
+  {$ENDIF}
   IdCoder,
   IdEMailAddress,
   IdResourceStrings,
@@ -1149,6 +1153,7 @@ uses
   IdReplyIMAP4,
   IdTCPConnection,
   IdSSL,
+  IdSASL,
   SysUtils;
 
 type
@@ -1314,6 +1319,169 @@ const
     'UNSEEN'         {Do not Localize}
   );
 
+function IMAPQuotedStr(const S: String): String;
+begin
+  Result := '"' + StringsReplace(S, ['\', '"'], ['\\', '\"']) + '"'; {Do not Localize}
+end;
+
+{ TIdSASLEntriesIMAP4 }
+
+// RLebeau 2/8/2013 - TIdSASLEntries.LoginSASL() uses TIdTCPConnection.SendCmd()
+// but TIdIMAP4 does not override the necessary virtuals to make that SendCmd()
+// work correctly with IMAP.  TIdIMAP reintroduces its own SendCmd() implementation,
+// which TIdSASLEntries does not call.  Until that can be changed, we will have
+// to send the IMAP 'AUTHENTICATE' command manually!  Doing it this way so as
+// not to introduce an interface change that breaks backwards compatibility...
+
+function CheckStrFail(const AStr : String; const AOk, ACont: array of string) : Boolean;
+begin
+  Result := (PosInStrArray(AStr, AOk) = -1) and (PosInStrArray(AStr, ACont) = -1);
+end;
+
+function PerformSASLLogin_IMAP(ASASL: TIdSASL; AEncoder: TIdEncoder;
+  ADecoder: TIdDecoder; AClient : TIdIMAP4): Boolean;
+const
+  AOkReplies: array[0..0] of string = (IMAP_OK);
+  AContinueReplies: array[0..0] of string = (IMAP_CONT);
+var
+  S: String;
+begin
+  Result := False;
+                                         
+  AClient.SendCmd(AClient.NewCmdCounter, 'AUTHENTICATE ' + String(ASASL.ServiceName), [], True); {Do not Localize}
+  if CheckStrFail(AClient.LastCmdResult.Code, AOkReplies, AContinueReplies) then begin
+    Exit; // this mechanism is not supported
+  end;
+  if (PosInStrArray(AClient.LastCmdResult.Code, AOkReplies) > -1) then begin
+    Result := True;
+    Exit; // we've authenticated successfully :)
+  end;
+  S := ADecoder.DecodeString(TrimRight(TIdReplyIMAP4(AClient.LastCmdResult).Extra.Text));
+  S := ASASL.StartAuthenticate(S, AClient.Host, IdGSKSSN_imap);
+  AClient.IOHandler.WriteLn(AEncoder.Encode(S));
+  AClient.GetInternalResponse('', [], True);
+  if CheckStrFail(AClient.LastCmdResult.Code, AOkReplies, AContinueReplies) then
+  begin
+    ASASL.FinishAuthenticate;
+    Exit;
+  end;
+  while PosInStrArray(AClient.LastCmdResult.Code, AContinueReplies) > -1 do begin
+    S := ADecoder.DecodeString(TrimRight(TIdReplyIMAP4(AClient.LastCmdResult).Extra.Text));
+    S := ASASL.ContinueAuthenticate(S, AClient.Host, IdGSKSSN_imap);
+    AClient.IOHandler.WriteLn(AEncoder.Encode(S));
+    AClient.GetInternalResponse('', [], True);
+    if CheckStrFail(AClient.LastCmdResult.Code, AOkReplies, AContinueReplies) then
+    begin
+      ASASL.FinishAuthenticate;
+      Exit;
+    end;
+  end;
+  Result := (PosInStrArray(AClient.LastCmdResult.Code, AOkReplies) > -1);
+  ASASL.FinishAuthenticate;
+end;
+
+type
+  {$IFDEF HAS_GENERICS_TList}
+  TIdSASLList = TList<TIdSASL>;
+  {$ELSE}
+                                                                       
+  TIdSASLList = TList;
+  {$ENDIF}
+
+  TIdSASLEntriesIMAP4 = class(TIdSASLEntries)
+  public
+    procedure LoginSASL_IMAP(AClient: TIdIMAP4);
+  end;
+
+procedure TIdSASLEntriesIMAP4.LoginSASL_IMAP(AClient: TIdIMAP4);
+var
+  i : Integer;
+  LE : TIdEncoderMIME;
+  LD : TIdDecoderMIME;
+  LSupportedSASL : TStrings;
+  LSASLList: TIdSASLList;
+  LSASL : TIdSASL;
+  LError : TIdReply;
+
+  function SetupErrorReply: TIdReply;
+  begin
+    Result := TIdReplyClass(AClient.LastCmdResult.ClassType).Create(nil);
+    Result.Assign(AClient.LastCmdResult);
+  end;
+
+begin
+  // make sure the collection is not empty
+  CheckIfEmpty;
+
+  //create a list of mechanisms that both parties support
+  LSASLList := TIdSASLList.Create;
+  try
+    LSupportedSASL := TStringList.Create;
+    try
+      ParseCapaReplyToList(AClient.FCapabilities, LSupportedSASL, 'AUTH'); {Do not Localize}
+      for i := Count-1 downto 0 do begin
+        LSASL := Items[i].SASL;
+        if LSASL <> nil then begin
+          if not LSASL.IsAuthProtocolAvailable(LSupportedSASL) then begin
+            Continue;
+          end;
+          if LSASLList.IndexOf(LSASL) = -1 then begin
+            LSASLList.Add(LSASL);
+          end;
+        end;
+      end;
+    finally
+      FreeAndNil(LSupportedSASL);
+    end;
+
+    if LSASLList.Count = 0 then begin
+      EIdSASLNotSupported.Toss(RSSASLNotSupported);
+    end;
+
+    //now do it
+    LE := nil;
+    try
+      LD := nil;
+      try
+        LError := nil;
+        try
+          for i := 0 to LSASLList.Count-1 do begin
+            LSASL := {$IFDEF HAS_GENERICS_TList}LSASLList.Items[i]{$ELSE}TIdSASL(LSASLList.Items[i]){$ENDIF};
+            if not LSASL.IsReadyToStart then begin
+              Continue;
+            end;
+            if not Assigned(LE) then begin
+              LE := TIdEncoderMIME.Create(nil);
+            end;
+            if not Assigned(LD) then begin
+              LD := TIdDecoderMIME.Create(nil);
+            end;
+            if PerformSASLLogin_IMAP(LSASL, LE, LD, AClient) then begin
+              Exit;
+            end;
+            if not Assigned(LError) then begin
+              LError := SetupErrorReply;
+            end;
+          end;
+          if Assigned(LError) then begin
+            LError.RaiseReplyError;
+          end else begin
+            EIdSASLNotReady.Toss(RSSASLNotReady);
+          end;
+        finally
+          FreeAndNil(LError);
+        end;
+      finally
+        FreeAndNil(LD);
+      end;
+    finally
+      FreeAndNil(LE);
+    end;
+  finally
+    FreeAndNil(LSASLList);
+  end;
+end;
+
 { TIdIMAP4WorkHelper }
 
 type
@@ -1346,7 +1514,7 @@ end;
 { TIdEMUTF7 }
 
 const
-  b64Chars : array[0..63] of AnsiChar =
+  b64Chars : String =
     'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,';  {Do not Localize}
 
   b64Index : array [0..127] of Integer = (
@@ -1370,9 +1538,9 @@ const
     $60,$61,$62,$63, $64,$65,$66,$67, $68,$69,$6A,$6B, $6C,$6D,$6E,$6F, // 112
     $70,$71,$72,$73, $74,$75,$76,$77, $78,$79,$7A,$7B, $7C,$7D,$7E,$FF);// 128
 
-// TODO: re-write this to derive from IdCoder3To4.pas or IdCoderMIME.pas classes...
+                                                                                   
 
-function TIdMUTF7.Encode(const aString: TIdUnicodeString): AnsiString;
+function TIdMUTF7.Encode(const aString: TIdUnicodeString): String;
 { -- MUTF7Encode -------------------------------------------------------------
 PRE:  nothing
 POST: returns a string encoded as described in IETF RFC 3501, section 5.1.3
@@ -1388,11 +1556,19 @@ var
   bitShift : Integer;
   x : Integer;
   escaped : Boolean;
+  CharToAppend: Char;
+  {$IFDEF STRING_IS_IMMUTABLE}
+  LSB: TIdStringBuilder;
+  {$ENDIF}
 begin
   Result := '';
   escaped := False;
   bitShift := 0;
   bitBuf := 0;
+
+  {$IFDEF STRING_IS_IMMUTABLE}
+  LSB := TIdStringBuilder.Create;
+  {$ENDIF}
 
   for x := 1 to Length(aString) do begin
     c := Word(aString[x]);
@@ -1400,19 +1576,41 @@ begin
     if (c <= $7f) and (b64Table[c] <> $FF) or (aString[x] = '&') then begin  // we can directly encode that char
       if escaped then begin
         if (bitShift > 0) then begin  // flush bitbuffer if needed
-          Result := Result + b64Chars[bitBuf shl (6 - bitShift) and $3F];
+          CharToAppend := b64Chars[(bitBuf shl (6 - bitShift) and $3F) + 1];
+          {$IFDEF STRING_IS_IMMUTABLE}
+          LSB.Append(CharToAppend);
+          {$ELSE}
+          Result := Result + CharToAppend;
+          {$ENDIF}
         end;
+        {$IFDEF STRING_IS_IMMUTABLE}
+        LSB.Append(Char('-'));        // leave escape sequence
+        {$ELSE}
         Result := Result + '-';       // leave escape sequence
+        {$ENDIF}
         escaped := False;
       end;
       if (aString[x] = '&') then begin   // escape special char "&"
+        {$IFDEF STRING_IS_IMMUTABLE}
+        LSB.Append('&-');
+        {$ELSE}
         Result := Result + '&-';
+        {$ENDIF}
       end else begin
-        Result := Result + AnsiChar(c);     // store direct translated char
+        CharToAppend := Char(c);
+        {$IFDEF STRING_IS_IMMUTABLE}
+        LSB.Append(CharToAppend);            // store direct translated char
+        {$ELSE}
+        Result := Result + CharToAppend;     // store direct translated char
+        {$ENDIF}
       end;
     end else begin
       if not escaped then begin
+        {$IFDEF STRING_IS_IMMUTABLE}
+        LSB.Append(Char('&'));
+        {$ELSE}
         Result := Result + '&';
+        {$ENDIF}
         bitShift := 0;
         bitBuf := 0;
         escaped := True;
@@ -1421,7 +1619,12 @@ begin
       Inc(bitShift, 16);
       while (bitShift >= 6) do begin    // flush buffer as far as we can
         Dec(bitShift, 6);
-        Result := Result + b64Chars[(bitBuf shr bitShift) and $3F];
+        CharToAppend := b64Chars[((bitBuf shr bitShift) and $3F) + 1];
+        {$IFDEF STRING_IS_IMMUTABLE}
+        LSB.Append(CharToAppend);
+        {$ELSE}
+        Result := Result + CharToAppend;
+        {$ENDIF}
       end;
     end;
   end;
@@ -1430,13 +1633,26 @@ begin
   // of speed (loop)
   if escaped then begin
     if (bitShift > 0) then begin
-      Result := Result + b64Chars[bitBuf shl (6 - bitShift) and $3F];
+      CharToAppend := b64Chars[(bitBuf shl (6 - bitShift) and $3F) + 1];
+      {$IFDEF STRING_IS_IMMUTABLE}
+      LSB.Append(CharToAppend);
+      {$ELSE}
+      Result := Result + CharToAppend;
+      {$ENDIF}
     end;
+    {$IFDEF STRING_IS_IMMUTABLE}
+    LSB.Append(Char('-'));
+    {$ELSE}
     Result := Result + '-';
+    {$ENDIF}
   end;
+
+  {$IFDEF STRING_IS_IMMUTABLE}
+  Result := LSB.ToString;
+  {$ENDIF}
 end;
 
-function TIdMUTF7.Decode(const aString: AnsiString): TIdUnicodeString;
+function TIdMUTF7.Decode(const aString: String): TIdUnicodeString;
 { -- mUTF7Decode -------------------------------------------------------------
 PRE:  aString encoding must conform to IETF RFC 3501, section 5.1.3
 POST: SUCCESS: an 8bit string
@@ -1454,12 +1670,20 @@ var
   bitBuf  : Cardinal;
   escaped : Boolean;
   x, bitShift: Integer;
+  CharToAppend: WideChar;
+  {$IFDEF STRING_IS_IMMUTABLE}
+  LSB: TIdStringBuilder;
+  {$ENDIF}
 begin
   Result := '';
   escaped := False;
   bitShift := 0;
   last := #0;
   bitBuf := 0;
+
+  {$IFDEF STRING_IS_IMMUTABLE}
+  LSB := TIdStringBuilder.Create;
+  {$ENDIF}
 
   for x := 1 to Length(aString) do begin
     ch := Byte(aString[x]);
@@ -1471,7 +1695,11 @@ begin
         last := '&';
       end
       else if (ch < $80) and (b64Table[ch] <> $FF) then begin
+        {$IFDEF STRING_IS_IMMUTABLE}
+        LSB.Append(WideChar(ch));
+        {$ELSE}
         Result := Result + WideChar(ch);
+        {$ENDIF}
       end else begin
         raise EMUTF7Decode.CreateFmt('Illegal char #%d in UTF7 sequence.', [ch]);    {do not localize}
       end;
@@ -1480,11 +1708,20 @@ begin
       if (aString[x] = '-') then begin
         // extra check for pending bits
         if (last = '&') then begin // special sequence '&-' ?
+          {$IFDEF STRING_IS_IMMUTABLE}
+          LSB.Append(Char('&'));
+          {$ELSE}
           Result := Result + '&';
+          {$ENDIF}
         end else begin
           if (bitShift >= 16) then begin
             Dec(bitShift, 16);
-            Result := Result + WideChar((bitBuf shr bitShift) and $FFFF);
+            CharToAppend := WideChar((bitBuf shr bitShift) and $FFFF);
+            {$IFDEF STRING_IS_IMMUTABLE}
+            LSB.Append(CharToAppend);
+            {$ELSE}
+            Result := Result + CharToAppend;
+            {$ENDIF}
           end;
           if (bitShift > 4) or ((bitBuf and bitMasks[bitShift]) <> 0) then begin  // check for bitboundaries
             raise EMUTF7Decode.Create('Illegal bit sequence in MUTF7 string');       {do not localize}
@@ -1501,18 +1738,27 @@ begin
         Inc(bitShift, 6);
         if (bitShift >= 16) then begin
           Dec(bitShift, 16);
-          Result := Result + WideChar((bitBuf shr bitShift) and $FFFF);
+          CharToAppend := WideChar((bitBuf shr bitShift) and $FFFF);
+          {$IFDEF STRING_IS_IMMUTABLE}
+          LSB.Append(CharToAppend);
+          {$ELSE}
+          Result := Result + CharToAppend;
+          {$ENDIF}
         end;
       end;
       last := #0;
     end;
   end;
   if escaped then begin
-    raise EmUTF7Decode.create('Missing unescape in UTF7 sequence.');           {do not localize}
+    raise EmUTF7Decode.Create('Missing unescape in UTF7 sequence.');           {do not localize}
   end;
+
+  {$IFDEF STRING_IS_IMMUTABLE}
+  Result := LSB.ToString;
+  {$ENDIF}
 end;
 
-function TIdMUTF7.Valid(const aMUTF7String : AnsiString): Boolean;
+function TIdMUTF7.Valid(const aMUTF7String : String): Boolean;
 { -- mUTF7valid -------------------------------------------------------------
 PRE:  NIL
 POST: returns true if string is correctly encoded (as described in mUTF7Encode)
@@ -1529,11 +1775,11 @@ begin
   end;
 end;
 
-function TIdMUTF7.Append(const aMUTF7String: AnsiString; const aStr : TIdUnicodeString): AnsiString;
+function TIdMUTF7.Append(const aMUTF7String: String; const aStr : TIdUnicodeString): String;
 { -- mUTF7Append -------------------------------------------------------------
 PRE:  aMUTF7String is complying to mUTF7Encode's description
 POST: SUCCESS: a concatenation of both input strings in mUTF
-    FAILURE: an exception of EMUTF7Decode or EMUTF7Decode will be raised
+    FAILURE: an exception of EMUTF7Decode or EMUTF7Encode will be raised
 }
 begin
   Result := {mUTF7}Encode({mUTF7}Decode(aMUTF7String) + aStr);
@@ -1595,8 +1841,16 @@ end;
 //The following call FMUTF7 but do exception-handling on invalid strings...
 function TIdIMAP4.DoMUTFEncode(const aString : String): String;
 begin
+                                                                     
+  // a UTF-8 quoted string instead of IMAP's Modified UTF-7...
   try
-    Result := String(FMUTF7.Encode(TIdUnicodeString(aString)));
+    Result := FMUTF7.Encode(
+      {$IFDEF STRING_IS_UNICODE}
+      aString
+      {$ELSE}
+      TIdUnicodeString(aString) // explicit convert to Unicode
+      {$ENDIF}
+    );
   except
     Result := aString;
   end;
@@ -1605,7 +1859,11 @@ end;
 function TIdIMAP4.DoMUTFDecode(const aString : String): String;
 begin
   try
-    Result := String(FMUTF7.Decode(AnsiString(aString)));
+    {$IFDEF STRING_IS_UNICODE}
+    Result := FMUTF7.Decode(aString);
+    {$ELSE}
+    Result := String(FMUTF7.Decode(aString)); // explicit convert to Ansi
+    {$ENDIF}
   except
     Result := aString;
   end;
@@ -1644,17 +1902,20 @@ end;
 function TIdIMAP4.CheckReplyForCapabilities: Boolean;
 var
   I: Integer;
+  LExtra: TStrings;
 begin
   FCapabilities.Clear;
   FHasCapa := False;
-  with TIdReplyIMAP4(FLastCmdResult).Extra do begin
-    for I := 0 to Count-1 do begin
-      if TextStartsWith(Strings[I], 'CAPABILITY ') then begin {Do not Localize}
-        BreakApart(Strings[I], ' ', FCapabilities);           {Do not Localize}
-        FCapabilities.Delete(0);
-        FHasCapa := True;
-        Break;
-      end;
+  LExtra := TIdReplyIMAP4(FLastCmdResult).Extra;
+  for I := 0 to LExtra.Count-1 do begin
+    if TextStartsWith(LExtra.Strings[I], 'CAPABILITY ') then begin {Do not Localize}
+      BreakApart(LExtra.Strings[I], ' ', FCapabilities);           {Do not Localize}
+      // RLebeau: do not delete the first item anymore! It specifies the IMAP
+      // version/revision, which is needed to support certain extensions, like
+      // 'IMAP4rev1'...
+      {FCapabilities.Delete(0);}
+      FHasCapa := True;
+      Break;
     end;
   end;
   Result := FHasCapa;
@@ -1899,6 +2160,10 @@ begin
       if LPos <> 0 then begin
         {There are at least two words on this line...}
         LWord := Trim(Copy(LLine, 1, LPos-1));
+      end else begin
+        {No space, so this line is a single word.  A bit weird, but it
+        could be just an OK...}
+        LWord := LLine;  {A bit pedantic, but emphasises we have a word, not a line}
       end;
     until
       TextStartsWith(LLine, ATag)
@@ -1998,9 +2263,9 @@ begin
     FCmdCounter := 0;
     if FAuthType = iatUserPass then begin
       if Length(Password) <> 0 then begin                              {Do not Localize}
-        SendCmd(NewCmdCounter, IMAP4Commands[cmdLogin] + ' ' + Username + ' "' + Password + '"', ['OK']);   {Do not Localize}
+        SendCmd(NewCmdCounter, IMAP4Commands[cmdLogin] + ' ' + Username + ' ' + IMAPQuotedStr(Password), [IMAP_OK]);   {Do not Localize}
       end else begin
-        SendCmd(NewCmdCounter, IMAP4Commands[cmdLogin] + ' ' + Username, ['OK']);          {Do not Localize}
+        SendCmd(NewCmdCounter, IMAP4Commands[cmdLogin] + ' ' + Username, [IMAP_OK]);          {Do not Localize}
       end;
       if LastCmdResult.Code <> IMAP_OK then begin
         RaiseExceptionForLastCmdResult;
@@ -2010,7 +2275,8 @@ begin
       if not FHasCapa then begin
         Capability;
       end;
-      FSASLMechanisms.LoginSASL('AUTHENTICATE', FHost, IdGSKSSN_imap, ['* OK'], ['* +'], Self, FCapabilities);     {Do not Localize}
+      // FSASLMechanisms.LoginSASL('AUTHENTICATE', FHost, IdGSKSSN_imap, [IMAP_OK], [IMAP_CONT], Self, FCapabilities);     {Do not Localize}
+      TIdSASLEntriesIMAP4(FSASLMechanisms).LoginSASL_IMAP(Self);
     end;
     FConnectionState := csAuthenticated;
     // RLebeau: check if the response includes new Capabilities, if not then query for them...
@@ -2048,7 +2314,13 @@ begin
       if LastCmdResult.Code = IMAP_PREAUTH then begin
         FConnectionState := csAuthenticated;
         FCmdCounter := 0;
-        Capability;
+        // RLebeau: check if the greeting includes initial Capabilities, if not then query for them...
+        if not CheckReplyForCapabilities then begin
+          Capability;
+        end;
+      end else begin
+        // RLebeau: check if the greeting includes initial Capabilities...
+        CheckReplyForCapabilities;
       end;
     end;
     if AAutoLogin then begin
@@ -2065,7 +2337,8 @@ procedure TIdIMAP4.InitComponent;
 begin
   inherited InitComponent;
   FMailBox := TIdMailBox.Create(Self);
-  FSASLMechanisms := TIdSASLEntries.Create(Self);
+  //FSASLMechanisms := TIdSASLEntries.Create(Self);
+  FSASLMechanisms := TIdSASLEntriesIMAP4.Create(Self);
   Port := IdPORT_IMAP4;
   FLineStruct := TIdIMAPLineStruct.Create;
   FCapabilities := TStringList.Create;
@@ -2074,7 +2347,7 @@ begin
   {$ENDIF}
   FMUTF7 := TIdMUTF7.Create;
 
-  //Todo:  Not sure which number is appropriate.  Should be tested further.
+                                                                           
   FImplicitTLSProtPort := IdPORT_IMAP4S;
   FRegularProtPort := IdPORT_IMAP4;
 
@@ -2137,9 +2410,14 @@ begin
     if LastCmdResult.Text.Count > 0 then begin
       BreakApart(LastCmdResult.Text[0], ' ', ASlCapability);        {Do not Localize}
     end;
+    // RLebeau: do not delete the first item anymore! It specifies the IMAP
+    // version/revision, which is needed to support certain extensions, like
+    // 'IMAP4rev1'...
+    {
     if ASlCapability.Count > 0 then begin
       ASlCapability.Delete(0);
     end;
+    }
     Result := True;
   end;
 end;
@@ -2346,7 +2624,7 @@ var
   Ln : Integer;
   LTextBuf: TIdBytes;
   LCharSet: string;
-  LEncoding: TIdTextEncoding;
+  LEncoding: IIdTextEncoding;
   LLiteral: string;
   LUseNonSyncLiteral: Boolean;
   LUseUTF8QuotedString: Boolean;
@@ -2378,7 +2656,6 @@ var
         skSubject,
         skText,
         skTo,
-        skUID,
         skGmailRaw,
         skGmailMsgID,
         skGmailThreadID,
@@ -2418,132 +2695,122 @@ begin
   end else begin
     LUseNonSyncLiteral := False;
     LUseUTF8QuotedString := False;
-    LEncoding := nil;
   end;
 
-  {$IFNDEF DOTNET}
+  {CC3: Catch "Connection reset by peer"...}
   try
-  {$ENDIF}
-    {CC3: Catch "Connection reset by peer"...}
-    try
-      //Remove anything that may be unprocessed from a previous (probably failed) command...
-      repeat
-        IOHandler.InputBuffer.Clear;
-      until not IOHandler.CheckForDataOnSource(MilliSecsToWaitToClearBuffer);
-      CheckConnected;
-      //IMAP.PrepareCmd(LCmd);
+    //Remove anything that may be unprocessed from a previous (probably failed) command...
+    repeat
+      IOHandler.InputBuffer.Clear;
+    until not IOHandler.CheckForDataOnSource(MilliSecsToWaitToClearBuffer);
+    CheckConnected;
+    //IMAP.PrepareCmd(LCmd);
 
-      // now encode the search values. Most values are ASCII and do not need
-      // special encoding.  For text values that do need to be encoded, IMAP
-      // string literals have to be used in order to support 8-bit octets in
-      // charset encoded payloads...
-      for Ln := Low(ASearchInfo) to High(ASearchInfo) do begin
-        case ASearchInfo[Ln].SearchKey of
-          skAll,
-          skAnswered,
-          skDeleted,
-          skDraft,
-          skFlagged,
-          skNew,
-          skNot,
-          skOld,
-          skOr,
-          skRecent,
-          skSeen,
-          skUnanswered,
-          skUndeleted,
-          skUndraft,
-          skUnflagged,
-          skUnKeyWord,
-          skUnseen:
-            LCmd := LCmd + ' ' + IMAP4SearchKeys[ASearchInfo[Ln].SearchKey]; {Do not Localize}
+    // now encode the search values. Most values are ASCII and do not need
+    // special encoding.  For text values that do need to be encoded, IMAP
+    // string literals have to be used in order to support 8-bit octets in
+    // charset encoded payloads...
+    for Ln := Low(ASearchInfo) to High(ASearchInfo) do begin
+      case ASearchInfo[Ln].SearchKey of
+        skAll,
+        skAnswered,
+        skDeleted,
+        skDraft,
+        skFlagged,
+        skNew,
+        skNot,
+        skOld,
+        skOr,
+        skRecent,
+        skSeen,
+        skUnanswered,
+        skUndeleted,
+        skUndraft,
+        skUnflagged,
+        skUnKeyWord,
+        skUnseen:
+          LCmd := LCmd + ' ' + IMAP4SearchKeys[ASearchInfo[Ln].SearchKey]; {Do not Localize}
 
-          skBcc,
-          skBody,
-          skCc,
-          skFrom,
-          skSubject,
-          skText,
-          skTo,
-          skUID,
-          skGmailRaw,
-          skGmailMsgID,
-          skGmailThreadID,
-          skGmailLabels:
+        skUID:
+          LCmd := LCmd + ' ' + IMAP4SearchKeys[ASearchInfo[Ln].SearchKey] + ' ' + ASearchInfo[Ln].Text; {Do not Localize}
+
+        skBcc,
+        skBody,
+        skCc,
+        skFrom,
+        skSubject,
+        skText,
+        skTo,
+        skGmailRaw,
+        skGmailMsgID,
+        skGmailThreadID,
+        skGmailLabels:
+        begin
+                                                                             
+          if not RequiresEncoding(ASearchInfo[Ln].Text) then begin
+            LCmd := LCmd + ' ' + IMAP4SearchKeys[ASearchInfo[Ln].SearchKey] + ' ' + IMAPQuotedStr(ASearchInfo[Ln].Text); {Do not Localize}
+          end else
           begin
-            // TODO: support RFC 5738 to allow for UTF-8 encoded quoted strings
-            if not RequiresEncoding(ASearchInfo[Ln].Text) then begin
-              LCmd := LCmd + ' ' + IMAP4SearchKeys[ASearchInfo[Ln].SearchKey] + ' "' + ASearchInfo[Ln].Text + '"'; {Do not Localize}
+            if LUseUTF8QuotedString then begin
+              LCmd := LCmd + ' ' + IMAP4SearchKeys[ASearchInfo[Ln].SearchKey] + ' *'; {Do not Localize}
+              IOHandler.Write(LCmd);
+              IOHandler.Write(IMAPQuotedStr(ASearchInfo[Ln].Text), LEncoding{$IFDEF STRING_IS_ANSI}, IndyTextEncoding_OSDefault{$ENDIF});
             end else
             begin
-              LTextBuf := ToBytes(ASearchInfo[Ln].Text, LEncoding{$IFDEF STRING_IS_ANSI}, TIdTextEncoding.Default{$ENDIF});
-              if LUseUTF8QuotedString then begin
-                LCmd := LCmd + ' ' + IMAP4SearchKeys[ASearchInfo[Ln].SearchKey] + ' *"'; {Do not Localize}
-                IOHandler.Write(LCmd);
-                IOHandler.Write(LTextBuf);
-                IOHandler.Write('"'); {Do not Localize}
-              end else
-              begin
-                if LUseNonSyncLiteral then begin
-                  LLiteral := '{' + IntToStr(Length(LTextBuf)) + '+}'; {Do not Localize}
-                end else begin
-                  LLiteral := '{' + IntToStr(Length(LTextBuf)) + '}';  {Do not Localize}
-                end;
-                LCmd := LCmd + ' ' + IMAP4SearchKeys[ASearchInfo[Ln].SearchKey] + ' ' + LLiteral; {Do not Localize}
-                IOHandler.WriteLn(LCmd);
-                if not LUseNonSyncLiteral then begin
-                  if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdSearch], IMAP4Commands[cmdUID]], False) <> IMAP_CONT then begin
-                    RaiseExceptionForLastCmdResult;
-                  end;
-                end;
-                IOHandler.Write(LTextBuf);
+              LTextBuf := ToBytes(ASearchInfo[Ln].Text, LEncoding{$IFDEF STRING_IS_ANSI}, IndyTextEncoding_OSDefault{$ENDIF});
+              if LUseNonSyncLiteral then begin
+                LLiteral := '{' + IntToStr(Length(LTextBuf)) + '+}'; {Do not Localize}
+              end else begin
+                LLiteral := '{' + IntToStr(Length(LTextBuf)) + '}';  {Do not Localize}
               end;
-              LTextBuf := nil;
-              LCmd := '';
+              LCmd := LCmd + ' ' + IMAP4SearchKeys[ASearchInfo[Ln].SearchKey] + ' ' + LLiteral; {Do not Localize}
+              IOHandler.WriteLn(LCmd);
+              if not LUseNonSyncLiteral then begin
+                if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdSearch], IMAP4Commands[cmdUID]], False) <> IMAP_CONT then begin
+                  RaiseExceptionForLastCmdResult;
+                end;
+              end;
+              IOHandler.Write(LTextBuf);
             end;
+            LTextBuf := nil;
+            LCmd := '';
           end;
-
-          skBefore,
-          skOn,
-          skSentBefore,
-          skSentOn,
-          skSentSince,
-          skSince:
-            LCmd := LCmd + ' ' + IMAP4SearchKeys[ASearchInfo[Ln].SearchKey] + ' ' + DateToIMAPDateStr(ASearchInfo[Ln].Date); {Do not Localize}
-
-          skLarger,
-          skSmaller:
-            LCmd := LCmd + ' ' + IMAP4SearchKeys[ASearchInfo[Ln].SearchKey] + ' ' + IntToStr(ASearchInfo[Ln].Size); {Do not Localize}
         end;
-      end;
 
-      if LCmd <> '' then begin
-        IOHandler.Write(LCmd);
-      end;
+        skBefore,
+        skOn,
+        skSentBefore,
+        skSentOn,
+        skSentSince,
+        skSince:
+          LCmd := LCmd + ' ' + IMAP4SearchKeys[ASearchInfo[Ln].SearchKey] + ' ' + DateToIMAPDateStr(ASearchInfo[Ln].Date); {Do not Localize}
 
-      // After we send the last of the data, we need to send an EXTRA CRLF to terminates the SEARCH command...
-      IOHandler.WriteLn;
-
-      if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdSearch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
-        ParseSearchResult(FMailBox, LastCmdResult.Text);
-        Result := True;
-      end;
-    except
-      on E: EIdSocketError do begin
-        if E.LastError = Id_WSAECONNRESET then begin
-          //Connection reset by peer...
-          FConnectionState := csUnexpectedlyDisconnected;
-        end;
-        raise;
+        skLarger,
+        skSmaller:
+          LCmd := LCmd + ' ' + IMAP4SearchKeys[ASearchInfo[Ln].SearchKey] + ' ' + IntToStr(ASearchInfo[Ln].Size); {Do not Localize}
       end;
     end;
-  {$IFNDEF DOTNET}
-  finally
-    if LEncoding <> nil then begin
-      LEncoding.Free;
+
+    if LCmd <> '' then begin
+      IOHandler.Write(LCmd);
+    end;
+
+    // After we send the last of the data, we need to send an EXTRA CRLF to terminates the SEARCH command...
+    IOHandler.WriteLn;
+
+    if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdSearch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
+      ParseSearchResult(FMailBox, LastCmdResult.Text);
+      Result := True;
+    end;
+  except
+    on E: EIdSocketError do begin
+      if E.LastError = Id_WSAECONNRESET then begin
+        //Connection reset by peer...
+        FConnectionState := csUnexpectedlyDisconnected;
+      end;
+      raise;
     end;
   end;
-  {$ENDIF}
 end;
 
 function TIdIMAP4.SearchMailBox(const ASearchInfo: array of TIdIMAP4SearchRec;
@@ -3296,7 +3563,7 @@ var
     LStream: TStream;
     LStrippedStream: TStringStream;
     LUnstrippedStream: TStringStream;
-    LEncoding: TIdTextEncoding;
+    LEncoding: IIdTextEncoding;
   begin
     LStream := TMemoryStream.Create;
     try
@@ -3337,17 +3604,9 @@ var
       LStream.Position := 0;
       if LCharSet <> '' then begin
         LEncoding := CharsetToEncoding(LCharSet);
-        {$IFNDEF DOTNET}
-        try
-        {$ENDIF}
-          AText := ReadStringFromStream(LStream, -1, LEncoding{$IFDEF STRING_IS_ANSI}, TIdTextEncoding.Default{$ENDIF});
-        {$IFNDEF DOTNET}
-        finally
-          LEncoding.Free;
-        end;
-        {$ENDIF}
+        AText := ReadStringFromStream(LStream, -1, LEncoding{$IFDEF STRING_IS_ANSI}, IndyTextEncoding_OSDefault{$ENDIF});
       end else begin
-        AText := ReadStringFromStream(LStream, -1, Indy8BitEncoding{$IFDEF STRING_IS_ANSI}, Indy8BitEncoding{$ENDIF});
+        AText := ReadStringFromStream(LStream, -1, IndyTextEncoding_8Bit{$IFDEF STRING_IS_ANSI}, IndyTextEncoding_8Bit{$ENDIF});
       end;
     finally
       FreeAndNil(LStream);
@@ -3394,7 +3653,7 @@ begin
       FreeAndNil(LParts);
     end;
   end else begin
-    // TODO: detect LCharSet and LContentTransferEncoding...
+                                                            
   end;
   LCmd := '';
   if AUseUID then begin
@@ -3724,7 +3983,7 @@ begin
 end;
 
 // retrieve a specific individual part of a message
-// TODO: remove the ABufferLength output parameter under DOTNET, it is redundant...
+                                                                                   
 function TIdIMAP4.InternalRetrievePart(const AMsgNum: Integer; const APartNum: {Integer} string;
   AUseUID: Boolean; AUsePeek: Boolean; ADestStream: TStream;
   var ABuffer: {$IFDEF DOTNET}TIdBytes{$ELSE}PByte{$ENDIF};
@@ -4942,16 +5201,33 @@ var
   LBracketLevel: Integer;
   Ln: Integer;
   LInQuotesInsideBrackets: Boolean;
+  LInQuotedSpecial: Boolean;
+
+  function ResolveQuotedSpecials(const AParam: string): string;
+  begin
+    // Handle quoted_specials, RFC1730
+    // \ with other chars than " or \ after, looks illegal in RFC1730, but leave them untouched
+    Result := StringReplace(AParam, '\"', '"', [rfReplaceAll]);
+    Result := StringReplace(Result, '\\', '\', [rfReplaceAll]);
+  end;
+
 begin
   LStartPos := 0; {Stop compiler whining}
   LBracketLevel := 0; {Stop compiler whining}
   LInQuotesInsideBrackets := False;  {Stop compiler whining}
+  LInQuotedSpecial := False; {Stop compiler whining}
   LInPart := 0;   {0 is not in a part, 1 is in a quote-delimited part, 2 is in a bracketted parameter-pair list}
   for Ln := 1 to Length(APartString) do begin
     if LInPart = 1 then begin
-      if APartString[Ln] = '"' then begin {Do not Localize}
+      if LInQuotedSpecial then begin
+        LInQuotedSpecial := False;
+      end
+      else if APartString[Ln] = '\' then begin {Do not Localize}
+        LInQuotedSpecial := True;
+      end
+      else if APartString[Ln] = '"' then begin {Do not Localize}
         LParamater := Copy(APartString, LStartPos+1, Ln-LStartPos-1);
-        AParams.Add(LParamater);
+        AParams.Add(ResolveQuotedSpecials(LParamater));
         LInPart := 0;
       end;
     end else if LInPart = 2 then begin
@@ -5364,7 +5640,7 @@ begin
   try
     if ACmdResultDetails.Count > 0 then
     begin
-      // TODO: convert server response to uppercase?
+                                                    
       LRespStr := Trim(ACmdResultDetails[0]);
       LStatPos := Pos(IMAP4Commands[cmdStatus], LRespStr);
       if (LStatPos > 0) then
@@ -5496,7 +5772,7 @@ begin
   try
     for Ln := 0 to ACmdResultDetails.Count - 1 do begin
       LStr := ACmdResultDetails[Ln];
-      //Todo: Get mail box attributes here
+                                          
       {CC2: Could put mailbox attributes in AMBList's Objects property?}
       {The line is of the form:
       * LIST (\UnMarked \AnotherFlag) "/" "Mailbox name"
@@ -5674,7 +5950,7 @@ begin
   //Extract envelope subject field
   AMsg.Subject := '';                                       {Do not Localize}
   if TextStartsWith(ACmdResultStr, 'NIL ') then begin     {Do not Localize}
-    ACmdResultStr := Copy(ACmdResultStr, 4, MaxInt);
+    ACmdResultStr := Copy(ACmdResultStr, 5, MaxInt);
   end else begin
     if TextStartsWith(ACmdResultStr, '{') then begin                      {Do not Localize}
       ACmdResultStr := Copy(ACmdResultStr, Pos('}', ACmdResultStr) + 1, MaxInt);      {Do not Localize}
@@ -6094,16 +6370,16 @@ var
 const
   SContentType = 'Content-Type'; {do not localize}
 
-  // TODO - move this procedure into TIdIOHandler as a new Capture method?
+                                                                          
   procedure CaptureAndDecodeCharset;
   var
     LMStream: TMemoryStream;
   begin
     LMStream := TMemoryStream.Create;
     try
-      IOHandler.Capture(LMStream, LDelim, True, Indy8BitEncoding(){$IFDEF STRING_IS_ANSI}, Indy8BitEncoding(){$ENDIF});
+      IOHandler.Capture(LMStream, LDelim, True, IndyTextEncoding_8Bit{$IFDEF STRING_IS_ANSI}, IndyTextEncoding_8Bit{$ENDIF});
       LMStream.Position := 0;
-      ReadStringsAsCharSet(LMStream, AMsg.Body, AMsg.CharSet{$IFDEF STRING_IS_ANSI}, Indy8BitEncoding(){$ENDIF});
+      ReadStringsAsCharSet(LMStream, AMsg.Body, AMsg.CharSet{$IFDEF STRING_IS_ANSI}, IndyTextEncoding_8Bit{$ENDIF});
     finally
       LMStream.Free;
     end;

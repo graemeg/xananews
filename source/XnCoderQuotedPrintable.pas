@@ -174,7 +174,8 @@ var
     SLen: Integer;
   begin
     SLen := Length(s);
-    MoveChars(s, 1, CurrentLine, CurrentPos, SLen);
+    Move(s[1], CurrentLine[CurrentPos], SLen);
+//    MoveChars(s, 1, CurrentLine, CurrentPos, SLen);
     Inc(CurrentPos, SLen);
   end;
 

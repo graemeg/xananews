@@ -146,7 +146,7 @@ const
 
   // RLebeau 2/14/09: this forces C++Builder to link to this unit so
   // RegisterFTPListParser can be called correctly at program startup...
-  (*$HPPEMIT '#pragma link "IdFTPListParseTandemGuardian"'*)
+  {$HPPEMIT LINKUNIT}
 
 implementation
 
@@ -167,7 +167,7 @@ begin
   Result := False;
   LCols := TStringList.Create;
   try
-     SplitColumns(Trim(AData), LCols);
+     SplitDelimitedString(AData, LCols, True);
      if LCols.Count = 7 then
      begin
        Result := (LCols[0] = 'File') and            {do not localize}

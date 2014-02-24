@@ -70,31 +70,31 @@ uses
 { Note that this only supports Level One SNPP }
 
 type
-  { TODO : Unused... remove? }
+                              
   TConnectionResult = (crCanPost, crNoPost, crAuthRequired, crTempUnavailable);
 
-  { TODO : Unused... remove? }
+                              
   TCheckResp = Record
     Code : SmallInt;
     Resp : String;
   end;
 
-  { TODO : Add optional HELP command }
+                                      
 
-  { TODO : Add QUIT procedure }
+                               
 
-  { TODO : Add overridden GetResponse to handle multiline 214 response codes
-    that omit the continuation mark.  For example:
+                                                                            
+                                                  
 
-      214 First line...
-      214 Second line...
-      214 Final line
-      250 OK
-  }
+                       
+                        
+                    
+            
+   
 
-  { TODO : Raise an exception when the fatal error response code 421
-    is received in SendMessage, SNPPMsg, Pager
-  }
+                                                                    
+                                              
+   
 
   TIdSNPP = class(TIdTCPClientCustom)
   protected

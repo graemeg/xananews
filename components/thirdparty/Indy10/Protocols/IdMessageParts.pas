@@ -367,7 +367,7 @@ begin
 end;
 
 procedure TIdMessageParts.CountParts;
-//TODO: Make AttCount, etc maintained on the fly
+                                                
 var
   i: integer;
 begin

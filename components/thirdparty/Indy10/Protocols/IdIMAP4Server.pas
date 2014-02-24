@@ -135,42 +135,42 @@
 
 unit IdIMAP4Server;
 
-{
-TODO (ex RFC 3501):
+ 
+                   
 
-Dont allow & to be used as a mailbox separator.
+                                               
 
-  Certain server data (unsolicited responses) MUST be recorded,
-  see Server Responses section.
+                                                               
+                               
 
-  UIDs must be unique to a mailbox AND any subsequent mailbox with
-  the same name - record in a text file.
+                                                                  
+                                        
 
-\Recent cannot be changed by STORE or APPEND.
+                                             
 
-COPY should preserve the date of the original message.
+                                                      
 
 
-  TODO (ccostelloe):
+                    
 
-Add a file recording the UIDVALIDITY in each mailbox.
+                                                     
 
-Emails should be ordered in date order.
+                                       
 
-Optional date/time param to be implemented in APPEND.
+                                                     
 
-  Consider integrating IdUserAccounts into login mechanism
-  (or per-user passwords).
+                                                          
+                          
 
-Implement utf mailbox encoding.
+                               
 
-Implement * in message numbers.
+                               
 
-  Implement multiple-option FETCH commands (will need breaking out some
-  options which are abbreviations into their subsets).
+                                                                       
+                                                      
 
-Need some method of preserving flags permanently.
-}
+                                                 
+ 
 
 {
   IMPLEMENTATION NOTES:
@@ -239,13 +239,6 @@ uses
 const
   DEF_IMAP4_IMPLICIT_TLS = False;
 
-{
-resourcestring
-  RSIMAP4SvrBeginTLSNegotiation = 'Begin TLS negotiation now';
-  RSIMAP4SvrNotPermittedWithTLS = 'Command not permitted when TLS active';
-  RSIMAP4SvrImplicitTLSRequiresSSL = 'Implicit IMAP4 requires that IOHandler be set to a TIdServerIOHandlerSSLBase.';
-}
-
 type
   TIMAP4CommandEvent = procedure(AContext: TIdContext; const ATag, ACmd: String) of object;
   TIdIMAP4CommandBeforeEvent = procedure(ASender: TIdCommandHandlers; var AData: string; AContext: TIdContext) of object;
@@ -283,7 +276,7 @@ type
     constructor Create(
       AConnection: TIdTCPConnection;
       AYarn: TIdYarn;
-      AList: TThreadList = nil
+      AList: TIdContextThreadList = nil
       ); override;
     destructor Destroy; override;
     property ConnectionState: TIdIMAP4ConnectionState read FConnectionState;
@@ -587,7 +580,7 @@ end;
 procedure TIdIMAP4Server.InitComponent;
 begin
   inherited InitComponent;
-  //Todo:  Not sure which number is appropriate.  Should be tested
+                                                                  
   FImplicitTLSProtPort := IdPORT_IMAP4S;  //Id_PORT_imap4_ssl_dp;
   FRegularProtPort := IdPORT_IMAP4;
   DefaultPort := IdPORT_IMAP4;
@@ -611,34 +604,34 @@ end;
 function TIdIMAP4Server.CreateExceptionReply: TIdReply;
 begin
   Result := TIdReplyIMAP4.CreateWithReplyTexts(nil, ReplyTexts);
-  Result.SetReply('BAD', 'Unknown Internal Error'); {do not localize}
+  Result.SetReply(IMAP_BAD, 'Unknown Internal Error'); {do not localize}
 end;
 
 function TIdIMAP4Server.CreateGreeting: TIdReply;
 begin
   Result := TIdReplyIMAP4.CreateWithReplyTexts(nil, ReplyTexts);
-  Result.SetReply('OK', 'Welcome'); {do not localize}
+  Result.SetReply(IMAP_OK, 'Welcome'); {do not localize}
 end;
 
 function TIdIMAP4Server.CreateHelpReply: TIdReply;
 begin
   Result := TIdReplyIMAP4.CreateWithReplyTexts(nil, ReplyTexts);
-  Result.SetReply('OK', 'Help follows'); {do not localize}
+  Result.SetReply(IMAP_OK, 'Help follows'); {do not localize}
 end;
 
 function TIdIMAP4Server.CreateMaxConnectionReply: TIdReply;
 begin
   Result := TIdReplyIMAP4.CreateWithReplyTexts(nil, ReplyTexts);
-  Result.SetReply('BAD', 'Too many connections. Try again later.'); {do not localize}
+  Result.SetReply(IMAP_BAD, 'Too many connections. Try again later.'); {do not localize}
 end;
 
 function TIdIMAP4Server.CreateReplyUnknownCommand: TIdReply;
 begin
   Result := TIdReplyIMAP4.CreateWithReplyTexts(nil, ReplyTexts);
-  Result.SetReply('BAD', 'Unknown command'); {do not localize}
+  Result.SetReply(IMAP_BAD, 'Unknown command'); {do not localize}
 end;
 
-constructor TIdIMAP4PeerContext.Create(AConnection: TIdTCPConnection; AYarn: TIdYarn; AList: TThreadList = nil);
+constructor TIdIMAP4PeerContext.Create(AConnection: TIdTCPConnection; AYarn: TIdYarn; AList: TIdContextThreadList = nil);
 begin
   inherited Create(AConnection, AYarn, AList);
   FMailBox := TIdMailBox.Create;
@@ -755,7 +748,7 @@ function TIdIMAP4Server.GetRecordForUID(const AUID: String; AMailBox: TIdMailBox
 var
   LN, LUID: Integer;
 begin
-  // TODO: do string comparisons instead so that conversions are not needed?
+                                                                            
   LUID := IndyStrToInt(AUID);
   for LN := 0 to AMailBox.MessageList.Count-1 do begin
     if IndyStrToInt(AMailBox.MessageList.Messages[LN].UID) = LUID then begin
@@ -1315,13 +1308,13 @@ begin
           end;
           case LStoreMethod of
             sdAdd, sdReplace:
-	      begin
-	        LMessage.Flags := LMessage.Flags + [LCMsgFlags[LFlag]];
-	      end;
+              begin
+                LMessage.Flags := LMessage.Flags + [LCMsgFlags[LFlag]];
+              end;
             sdRemove:
-	      begin
-	        LMessage.Flags := LMessage.Flags - [LCMsgFlags[LFlag]];
-	      end;
+              begin
+                LMessage.Flags := LMessage.Flags - [LCMsgFlags[LFlag]];
+              end;
           end;
         end;
         if not LSilent then begin
@@ -1349,115 +1342,141 @@ begin
 end;
 
 procedure TIdIMAP4Server.InitializeCommandHandlers;
+var
+  LCommandHandler: TIdCommandHandler;
 begin
-  with CommandHandlers.Add do begin
-    Command := 'CAPABILITY';  {do not localize}
-    OnCommand := DoCommandCAPABILITY;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'NOOP';  {do not localize}
-    OnCommand := DoCommandNOOP;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'LOGOUT';  {do not localize}
-    OnCommand := DoCommandLOGOUT;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'AUTHENTICATE';  {do not localize}
-    OnCommand := DoCommandAUTHENTICATE;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'LOGIN'; {do not localize}
-    OnCommand := DoCommandLOGIN;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'SELECT';  {do not localize}
-    OnCommand := DoCommandSELECT;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'EXAMINE'; {do not localize}
-    OnCommand := DoCommandEXAMINE;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'CREATE';  {do not localize}
-    OnCommand := DoCommandCREATE;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'DELETE';  {do not localize}
-    OnCommand := DoCommandDELETE;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'RENAME';  {do not localize}
-    OnCommand := DoCommandRENAME;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'SUBSCRIBE'; {do not localize}
-    OnCommand := DoCommandSUBSCRIBE;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'UNSUBSCRIBE'; {do not localize}
-    OnCommand := DoCommandUNSUBSCRIBE;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'LIST';  {do not localize}
-    OnCommand := DoCommandLIST;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'LSUB';  {do not localize}
-    OnCommand := DoCommandLSUB;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'STATUS';  {do not localize}
-    OnCommand := DoCommandSTATUS;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'APPEND';  {do not localize}
-    OnCommand := DoCommandAPPEND;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'CHECK'; {do not localize}
-    OnCommand := DoCommandCHECK;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'CLOSE'; {do not localize}
-    OnCommand := DoCommandCLOSE;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'EXPUNGE'; {do not localize}
-    OnCommand := DoCommandEXPUNGE;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'SEARCH';  {do not localize}
-    OnCommand := DoCommandSEARCH;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'FETCH'; {do not localize}
-    OnCommand := DoCommandFETCH;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'STORE'; {do not localize}
-    OnCommand := DoCommandSTORE;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'COPY';  {do not localize}
-    OnCommand := DoCommandCOPY;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'UID'; {do not localize}
-    OnCommand := DoCommandUID;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'X'; {do not localize}
-    OnCommand := DoCommandX;
-  end;
-  with CommandHandlers.Add do begin
-    Command := 'STARTTLS';  {do not localize}
-    OnCommand := DoCommandSTARTTLS;
-  end;
-  with FCommandHandlers do begin
-    OnBeforeCommandHandler := DoBeforeCmd;
-    OnCommandHandlersException := DoCmdHandlersException;
-  end;
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'CAPABILITY';  {do not localize}
+  LCommandHandler.OnCommand := DoCommandCAPABILITY;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'NOOP';  {do not localize}
+  LCommandHandler.OnCommand := DoCommandNOOP;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'LOGOUT';  {do not localize}
+  LCommandHandler.OnCommand := DoCommandLOGOUT;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'AUTHENTICATE';  {do not localize}
+  LCommandHandler.OnCommand := DoCommandAUTHENTICATE;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'LOGIN'; {do not localize}
+  LCommandHandler.OnCommand := DoCommandLOGIN;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'SELECT';  {do not localize}
+  LCommandHandler.OnCommand := DoCommandSELECT;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'EXAMINE'; {do not localize}
+  LCommandHandler.OnCommand := DoCommandEXAMINE;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'CREATE';  {do not localize}
+  LCommandHandler.OnCommand := DoCommandCREATE;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'DELETE';  {do not localize}
+  LCommandHandler.OnCommand := DoCommandDELETE;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'RENAME';  {do not localize}
+  LCommandHandler.OnCommand := DoCommandRENAME;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'SUBSCRIBE'; {do not localize}
+  LCommandHandler.OnCommand := DoCommandSUBSCRIBE;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'UNSUBSCRIBE'; {do not localize}
+  LCommandHandler.OnCommand := DoCommandUNSUBSCRIBE;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'LIST';  {do not localize}
+  LCommandHandler.OnCommand := DoCommandLIST;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'LSUB';  {do not localize}
+  LCommandHandler.OnCommand := DoCommandLSUB;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'STATUS';  {do not localize}
+  LCommandHandler.OnCommand := DoCommandSTATUS;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'APPEND';  {do not localize}
+  LCommandHandler.OnCommand := DoCommandAPPEND;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'CHECK'; {do not localize}
+  LCommandHandler.OnCommand := DoCommandCHECK;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'CLOSE'; {do not localize}
+  LCommandHandler.OnCommand := DoCommandCLOSE;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'EXPUNGE'; {do not localize}
+  LCommandHandler.OnCommand := DoCommandEXPUNGE;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'SEARCH';  {do not localize}
+  LCommandHandler.OnCommand := DoCommandSEARCH;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'FETCH'; {do not localize}
+  LCommandHandler.OnCommand := DoCommandFETCH;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'STORE'; {do not localize}
+  LCommandHandler.OnCommand := DoCommandSTORE;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'COPY';  {do not localize}
+  LCommandHandler.OnCommand := DoCommandCOPY;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'UID'; {do not localize}
+  LCommandHandler.OnCommand := DoCommandUID;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'X'; {do not localize}
+  LCommandHandler.OnCommand := DoCommandX;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  LCommandHandler := CommandHandlers.Add;
+  LCommandHandler.Command := 'STARTTLS';  {do not localize}
+  LCommandHandler.OnCommand := DoCommandSTARTTLS;
+  LCommandHandler.NormalReply.Code := IMAP_OK;
+
+  FCommandHandlers.OnBeforeCommandHandler := DoBeforeCmd;
+  FCommandHandlers.OnCommandHandlersException := DoCmdHandlersException;
 end;
 
 //Command handlers
@@ -1507,7 +1526,8 @@ begin
     Exit;
   end;
   {Tell the client our capabilities...}
-  SendOkReply(ASender, 'IMAP4rev1 AUTH=PLAIN'); {Do not Localize}
+  DoSendReply(ASender.Context, '* CAPABILITY IMAP4rev1 AUTH=PLAIN'); {Do not Localize}
+  SendOkReply(ASender, 'Completed'); {Do not Localize}
 end;
 
 procedure TIdIMAP4Server.DoCommandNOOP(ASender: TIdCommand);
@@ -2642,7 +2662,7 @@ begin
     DoSendReply(ASender.Context, 'BAD %s', [RSIMAP4SvrNotPermittedWithTLS]); {do not localize}
     Exit;
   end;
-  // TODO: STARTTLS may only be issued in auth-state
+                                                    
   DoSendReply(ASender.Context, 'OK %s', [RSIMAP4SvrBeginTLSNegotiation]);  {do not localize}
   (ASender.Context.Connection.IOHandler as TIdSSLIOHandlerSocketBase).Passthrough := False;
 end;

@@ -120,12 +120,12 @@ unit IdDateTimeStamp;
 
   Pete Mee
 }
-{
-  ToDo: Allow localisation date / time strings generated (i.e., to zone name).
-  ToDo: Rework SetFromRFC822 as it is (marginally) limited by it's
-    conversion to TDateTime.
-  ToDo: Conversion between Time Zones.
-}
+ 
+                                                                              
+                                                                  
+                            
+                                      
+ 
 
 interface
 
@@ -352,7 +352,7 @@ const
   TZM_Zulu = TZM_Z;
 
 type
-  { TODO: I'm sure these are stored in a unit elsewhere... need to find out }    {Do not Localize}
+                                                                                 {Do not Localize}
   TDays = (TDaySun, TDayMon, TDayTue, TDayWed, TDayThu, TDayFri, TDaySat);
   TMonths = (TMthJan, TMthFeb, TMthMar, TMthApr, TMthMay, TMthJun,
              TMthJul, TMthAug, TMthSep, TMthOct, TMthNov, TMthDec);
@@ -387,7 +387,7 @@ type
     function GetAsISO8601Ordinal : String;
     function GetAsISO8601Week : String;
     function GetAsRFC822 : String;
-{TODO :    function GetAsRFC977DateTime : String;}
+                                                  
     function GetAsTDateTime : TDateTime;
     function GetAsTTimeStamp : TIdDateTimeStamp;
     function GetAsTimeOfDay : String; // HH:MM:SS
@@ -690,13 +690,13 @@ end;
 
 procedure TIdDateTimeStamp.AddTDateTime;
 begin
-// todo:
+        
 //  AddTTimeStamp(DateTimeToTimeStamp(ADateTime));
 end;
 
 procedure TIdDateTimeStamp.AddTIdDateTimeStamp;
 begin
-  { TODO : Check for accuracy }
+                               
   AddYears(AIdDateTime.Year);
   AddDays(AIdDateTime.Day);
   AddSeconds(AIdDateTime.Second);
@@ -724,7 +724,7 @@ end;
 
 procedure TIdDateTimeStamp.AddYears;
 begin
-  {TODO: Capture overflow because adding Cardinal to Integer }
+                                                              
   if (FYear <= -1) and (Integer(ANumber) >= -FYear) then begin
     Inc(ANumber);
   end;
@@ -748,9 +748,9 @@ begin
   end else begin
     FIsLeapYear := False;
   end;
-  {TODO : If (FIsLeapYear = false) and (FDay = IdDaysInLeapYear) then begin
-            and, do what?
-  }
+                                                                           
+                         
+   
 end;
 
 function TIdDateTimeStamp.GetAsISO8601Calendar : String;
@@ -1411,7 +1411,7 @@ end;
 
 procedure TIdDateTimeStamp.SubtractTIdDateTimeStamp(AIdDateTime : TIdDateTimeStamp);
 begin
-  { TODO : Check for accuracy }
+                               
   SubtractYears(AIdDateTime.Year);
   SubtractDays(AIdDateTime.Day);
   SubtractSeconds(AIdDateTime.Second);

@@ -60,7 +60,7 @@ type
 
   // RLebeau 2/14/09: this forces C++Builder to link to this unit so
   // RegisterFTPListParser can be called correctly at program startup...
-  (*$HPPEMIT '#pragma link "IdFTPListParseVxWorks"'*)
+  {$HPPEMIT LINKUNIT}
 
 implementation
 
@@ -89,7 +89,7 @@ begin
   Result := False;
   LCols := TStringList.Create;
   try
-    SplitColumns(Trim(AData), LCols);
+    SplitDelimitedString(AData, LCols, True);
     if LCols.Count > 3 then
     begin
       Result := (LCols[0] = 'size') and   {do not localize}
