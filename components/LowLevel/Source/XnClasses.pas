@@ -1,7 +1,9 @@
 unit XnClasses;
 
 interface
-
+ {$IF CompilerVersion >= 24}
+  {$LEGACYIFEND ON}
+{$IFEND}
 uses
   Windows, Messages, Classes, SysUtils, Variants, TypInfo, ActiveX;
 
@@ -181,6 +183,11 @@ type
 implementation
 
 uses
+ {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
+   AnsiStrings,
+ {$ifend}
+  {$IFDEF AmsoStromg}
+  {$ENDIF}
   Character, RTLConsts, SysConst, Types;
 
 { TXnThread }
@@ -437,7 +444,11 @@ end;
 
 function TAnsiStrings.GetText: PAnsiChar;
 begin
-  Result := StrNew(PAnsiChar(GetTextStr));
+  Result :=
+ {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
+   System.AnsiStrings.
+ {$ifend}
+    StrNew(PAnsiChar(GetTextStr));
 end;
 
 function TAnsiStrings.GetTextStr: AnsiString;
@@ -721,7 +732,11 @@ begin
         while P^ <> #0 do
         begin
           Start := P;
-          LB := AnsiStrPos(P, PAnsiChar(LineBreak));
+          LB :=
+          {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
+          System.AnsiStrings.
+          {$ifend}
+          AnsiStrPos(P, PAnsiChar(LineBreak));
           while (P^ <> #0) and (P <> LB) do Inc(P);
           SetString(S, Start, P - Start);
           Add(S);
@@ -893,7 +908,12 @@ end;
 
 function TAnsiStrings.CompareAnsiStrings(const S1, S2: AnsiString): Integer;
 begin
-  Result := AnsiStrComp(PAnsiChar(S1), PAnsiChar(S2));
+  Result :=
+ {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE5
+   System.AnsiStrings.
+   {$ifend}
+  AnsiStrComp(PAnsiChar(S1), PAnsiChar(S2));
+
 end;
 
 function TAnsiStrings.GetNameValueSeparator: AnsiChar;
@@ -1250,9 +1270,17 @@ end;
 function TAnsiStringList.CompareAnsiStrings(const S1, S2: AnsiString): Integer;
 begin
   if CaseSensitive then
-    Result := AnsiStrComp(PAnsiChar(S1), PAnsiChar(S2))
+    Result :=
+ {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
+    System.AnsiStrings.
+ {$ifend}
+    AnsiStrComp(PAnsiChar(S1), PAnsiChar(S2))
   else
-    Result := AnsiStrIComp(PAnsiChar(S1), PAnsiChar(S2))
+    Result :=
+ {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
+    System.AnsiStrings.
+ {$ifend}
+    AnsiStrIComp(PAnsiChar(S1), PAnsiChar(S2))
 end;
 
 constructor TAnsiStringList.Create;

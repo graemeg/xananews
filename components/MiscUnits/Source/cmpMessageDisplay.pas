@@ -24,8 +24,22 @@
 unit cmpMessageDisplay;
 
 interface
+{$IF CompilerVersion >= 24}
+  {$LEGACYIFEND ON}
+  {$define has_StyleElements}
+  {$define HasSystemUITypes}
+{$IFEND}
+{$IF CompilerVersion >= 23}
+   {$define UseVCLStyles}
+{$IFEND}
 
 uses
+{$ifdef HasSystemUITypes}
+  System.UITypes,
+{$endif}
+{$ifdef UseVCLStyles}
+  Vcl.Themes,
+{$endif}
   Windows, Messages, SysUtils, Classes, Controls, Graphics, Forms, Contnrs,
   Math, StrUtils, StdActns, ShellAPI, Dialogs;
 
@@ -282,7 +296,7 @@ procedure RegisterDisplayObjectLink(dispObj: TDisplayObjectLinkClass; Position: 
 
 implementation
 
-uses ClipBrd, unitCharsetMap, Printers, unitHTMLStringsDisplayObject;
+uses ClipBrd, unitGUIUtils, unitCharsetMap, Printers, unitHTMLStringsDisplayObject;
 
 //----------------------------------------------------------------------------
 // Keep details of registered display objects
@@ -452,7 +466,7 @@ end;
 procedure TMessageDisplay.CMColorChanged(var Message: TMessage);
 begin
   inherited;
-  if Canvas <> nil then Canvas.Brush.Color := Color;
+  if Canvas <> nil then Canvas.Brush.Color := ThemedColor(Color{$ifdef has_StyleElements},seClient in StyleElements{$endif});
 end;
 
 procedure TMessageDisplay.CMCtl3DChanged(var Message: TMessage);
@@ -465,6 +479,7 @@ procedure TMessageDisplay.CMFontChanged(var Message: TMessage);
 begin
   inherited;
   Canvas.Font := Self.Font;
+  Canvas.Font.Color := ThemedColor( Font.Color {$ifdef has_StyleElements},seFont in StyleElements{$endif});
   fLineHeight := Canvas.TextHeight('M');
   InvalidateRect(Handle, nil, True);
 end;
@@ -523,6 +538,8 @@ begin
     ShowMessage(Format('Could not create a %dx%d window.  Unable to display messages.', [fCreateWindowSizeW, fCreateWindowSizeH]));
 
   Canvas.Font := Self.Font;
+  Canvas.Font.Color := ThemedColor( Font.Color {$ifdef has_StyleElements},seFont in StyleElements{$endif});
+
   RecalcBounds;         // Will be required if RecreateWnd was called
 end;
 

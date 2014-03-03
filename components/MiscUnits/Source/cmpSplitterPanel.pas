@@ -26,6 +26,14 @@ unit cmpSplitterPanel;
 
 interface
 
+{$IF CompilerVersion >= 24}
+  {$LEGACYIFEND ON}
+  {$define has_StyleElements}
+  {$define HasSystemUITypes}
+{$IFEND}
+{$IF CompilerVersion >= 23}
+   {$define UseVCLStyles}
+{$IFEND}
 uses
   Windows, Messages, SysUtils, Classes, Controls, ExtCtrls, Graphics, Forms;
 
@@ -157,11 +165,15 @@ type
 
 implementation
 
-{$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
 uses
+{$ifdef HasSystemUITypes}
   System.Types,
-  System.UITypes;
-{$ifend}
+  System.UITypes,
+{$endif}
+{$ifdef UseVCLStyles}
+  Vcl.Themes,
+{$endif}
+  unitGUIUtils;
 
 type
   TWinControlAccess = class(TWinControl);
@@ -400,11 +412,11 @@ var
     oldColor : TColor;
   begin
     oldColor := canvas.Brush.Color;
-    canvas.Brush.Color := Color;
+    canvas.Brush.Color := ThemedColor(Color{$ifdef has_StyleElements},seClient in StyleElements{$endif} );
     Canvas.FillRect(rect);
     canvas.Brush.Color := oldColor;
     if fBevelled then
-      Frame3D (Canvas, rect, clBtnShadow, clBtnHighlight, 1);
+      Frame3D (Canvas, rect, ThemedColor(clBtnShadow{$ifdef has_StyleElements},seBorder in StyleElements{$endif}  ), ThemedColor(clBtnHighlight{$ifdef has_StyleElements},seBorder in StyleElements{$endif}) , 1);
   end;
 
 begin
