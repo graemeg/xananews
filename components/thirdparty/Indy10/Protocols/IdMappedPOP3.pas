@@ -193,7 +193,7 @@ Begin
       FGreeting := FOutboundClient.IOHandler.ReadLn;
       FOutboundClient.IOHandler.WriteLn('USER ' + FUserName);    {Do not Localize}
     except
-      on E: Exception do                                 
+      on E: Exception do // DONE: Handle connect failures
       begin
         FErrorMsg := '[' + E.ClassName + '] ' + E.Message;    {Do not Localize}
         DoException(E);

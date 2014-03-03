@@ -289,7 +289,7 @@ begin
     LTime.tv_usec := (ATimeout mod 1000) * 1000;
     LTimePtr := @LTime;
   end;
-                                                                        
+  // TODO: calculate the actual nfds value based on the Sets provided...
   Result := Posix.SysSelect.select(FD_SETSIZE, AReadSet, AWriteSet, AExceptSet, LTimePtr);
 end;
 
@@ -487,6 +487,11 @@ end;
 {$IFDEF HAS_getifaddrs}
 function getifaddrs(ifap: pifaddrs): Integer; cdecl; external libc name _PU + 'getifaddrs'; {do not localize}
 procedure freeifaddrs(ifap: pifaddrs); cdecl; external libc name _PU + 'freeifaddrs'; {do not localize}
+{$ELSE}
+  {$IFDEF ANDROID}
+  // TODO: implement getifaddrs() manually using code from https://github.com/kmackay/android-ifaddrs
+  {.$DEFINE HAS_getifaddrs}
+  {$ENDIF}
 {$ENDIF}
 
 procedure TIdStackVCLPosix.AddLocalAddressesToList(AAddresses: TStrings);
@@ -503,7 +508,7 @@ var
     {$ENDIF}
   {$ENDIF}
 begin
-                                                                                     
+  // TODO: Using gethostname() and getaddrinfo() like this may not always return just
   // the machine's IP addresses. Technically speaking, they will return the local
   // hostname, and then return the address(es) to which that hostname resolves.
   // It is possible for a machine to (a) be configured such that its name does
@@ -513,7 +518,7 @@ begin
 
   {$IFDEF HAS_getifaddrs}
 
-  if getifaddrs(@LAddrList) = 0 then                                        
+  if getifaddrs(@LAddrList) = 0 then // TODO: raise an exception if it fails
   try
     AAddresses.BeginUpdate;
     try
@@ -762,7 +767,7 @@ var
   LAddr : sockaddr absolute LAddrStore;
   LHostName : array[0..NI_MAXHOST] of TIdAnsiChar;
   {$IFDEF USE_MARSHALLED_PTRS}
-  LWrapper: TPtrWrapper;
+  LHostNamePtr: TPtrWrapper;
   {$ENDIF}
   LRet : Integer;
   LHints : addrinfo;
@@ -787,11 +792,11 @@ begin
   end;
   FillChar(LHostName[0],Length(LHostName),0);
   {$IFDEF USE_MARSHALLED_PTRS}
-  LWrapper := TPtrWrapper.Create(@LHostName[0]);
+  LHostNamePtr := TPtrWrapper.Create(@LHostName[0]);
   {$ENDIF}
   LRet := getnameinfo(LAddr,LiSize,
     {$IFDEF USE_MARSHALLED_PTRS}
-    LWrapper.ToPointer
+    LHostNamePtr.ToPointer
     {$ELSE}
     LHostName
     {$ENDIF},
@@ -821,7 +826,7 @@ we disregard the result and raise an exception.
   LHints.ai_flags := AI_NUMERICHOST;
   if getaddrinfo(
     {$IFDEF USE_MARSHALLED_PTRS}
-    LWrapper.ToPointer
+    LHostNamePtr.ToPointer
     {$ELSE}
     LHostName
     {$ENDIF},
@@ -833,7 +838,7 @@ we disregard the result and raise an exception.
   end;
 
   {$IFDEF USE_MARSHALLED_PTRS}
-  Result := TMarshal.ReadStringAsAnsi(LWrapper, NI_MAXHOST);
+  Result := TMarshal.ReadStringAsAnsi(LHostNamePtr);
   {$ELSE}
   Result := String(LHostName);
   {$ENDIF}
@@ -959,15 +964,22 @@ const
 var
   LStr: array[0..sMaxHostSize] of TIdAnsiChar;
   {$IFDEF USE_MARSHALLED_PTRS}
-  LWrapper: TPtrWrapper;
+  LStrPtr: TPtrWrapper;
   {$ENDIF}
 begin
   {$IFDEF USE_MARSHALLED_PTRS}
-  LWrapper := TPtrWrapper.Create(@LStr[0]);
-  gethostname(LWrapper.ToPointer, sMaxHostSize);
-  Result := TMarshal.ReadStringAsAnsi(LWrapper, sMaxHostSize);
+  LStrPtr := TPtrWrapper.Create(@LStr[0]);
+  {$ENDIF}
+  gethostname(
+    {$IFDEF USE_MARSHALLED_PTRS}
+    LStrPtr.ToPointer
+    {$ELSE}
+    LStr
+    {$ENDIF}, sMaxHostSize);
+  LStr[sMaxHostSize] := TIdAnsiChar(0);
+  {$IFDEF USE_MARSHALLED_PTRS}
+  Result := TMarshal.ReadStringAsAnsi(LStrPtr);
   {$ELSE}
-  gethostname(LStr, sMaxHostSize);
   Result := String(LStr);
   {$ENDIF}
 end;
@@ -1034,7 +1046,7 @@ begin
       break;
     end;
     case LCurCmsg^.cmsg_type of
-      IPV6_PKTINFO :                                                                    
+      IPV6_PKTINFO :     //done this way because IPV6_PKTINF and  IP_PKTINFO are both 19
       begin
         case LAddr.sa_family of
           Id_PF_INET4: begin
@@ -1290,7 +1302,7 @@ begin
   LiSize := Posix.SysSocket.sendto(
     ASocket, ABuffer, ABufferLength, AFlags or Id_MSG_NOSIGNAL, LAddr,LiSize);
   if LiSize = Id_SOCKET_ERROR then begin
-                                                         
+    // TODO: move this into RaiseLastSocketError directly
     if WSGetLastError() = Id_WSAEMSGSIZE then begin
       raise EIdPackageSizeTooBig.Create(RSPackageSizeTooBig);
     end else begin

@@ -283,7 +283,7 @@ begin
     //handle integer overflow
     {$IFDEF STREAM_SIZE_64}
     Available := TIdC_UINT(IndyMin(AStream.Size - AStream.Position, High(TIdC_UINT)));
-                                                                  
+    // TODO: account for a 64-bit position in a 32-bit environment
     Inc(PtrInt(Result), AStream.Position);
     {$ELSE}
     Available := AStream.Size - AStream.Position;
@@ -480,6 +480,9 @@ begin
   FillChar(strm, sizeof(strm), 0);
   GetMem(BackObj, SizeOf(TZBack));
   try
+    //Darcy
+    FillChar(BackObj^, sizeof(TZBack), 0);
+
     //direct memory access if possible!
     BackObj.InMem := DMAOfStream(InStream, BackObj.InMemSize);
 
@@ -980,7 +983,7 @@ begin
     // class is changed later on...
     LBytes := CharsetToEncoding('ISO-8859-1').GetBytes(AName);
     {$IFDEF USE_MARSHALLED_PTRS}
-                          
+    // TODO: optimize this
     FillChar(FGZHeader.name^, FGZHeader.name_max, 0);
     TMarshal.Copy(TBytesPtr(@LBytes)^, 0, TPtrWrapper.Create(FGZHeader.name), IndyMin(Length(LBytes), FGZHeader.name_max));
     {$ELSE}

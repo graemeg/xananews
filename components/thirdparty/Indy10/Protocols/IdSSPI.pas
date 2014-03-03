@@ -1894,161 +1894,161 @@ type
   {$EXTERNALSYM INIT_SECURITY_INTERFACE}
 
 
-       
+(* TODO
 
-  
-                       
-  
-
-
-               
-         
-                       
-                            
-                            
-      
-
-               
-         
-                       
-                             
-                            
-      
-
-              
-                                                      
-     
-                                                      
-      
+//
+// SASL Profile Support
+//
 
 
-               
-         
-                       
-                         
-                                  
-      
+SECURITY_STATUS
+SEC_ENTRY
+SaslEnumerateProfilesA(
+    OUT LPSTR * ProfileList,
+    OUT ULONG * ProfileCount
+    );
+
+SECURITY_STATUS
+SEC_ENTRY
+SaslEnumerateProfilesW(
+    OUT LPWSTR * ProfileList,
+    OUT ULONG * ProfileCount
+    );
+
+#ifdef UNICODE
+#define SaslEnumerateProfiles   SaslEnumerateProfilesW
+#else
+#define SaslEnumerateProfiles   SaslEnumerateProfilesA
+#endif
 
 
-               
-         
-                       
-                          
-                                  
-      
-
-              
-                                                      
-     
-                                                      
-      
-
-               
-         
-                     
-                             
-                                  
-      
-
-               
-         
-                     
-                             
-                                  
-      
-
-              
-                                                
-     
-                                                
-      
-
-               
-         
-                               
-                                                                           
-                                                                             
-                                                                     
-                                                                           
-                                                                    
-                                                                         
-                                                                    
-                                                                    
-                                                                               
-                                                                             
-                                                                          
-                                                                            
-      
-
-               
-         
-                               
-                                                                           
-                                                                             
-                                                                     
-                                                                           
-                                                                    
-                                                                         
-                                                                    
-                                                                    
-                                                                               
-                                                                             
-                                                                          
-                                                                            
-      
-
-              
-                                                                      
-     
-                                                                      
-      
+SECURITY_STATUS
+SEC_ENTRY
+SaslGetProfilePackageA(
+    IN LPSTR ProfileName,
+    OUT PSecPkgInfoA * PackageInfo
+    );
 
 
-               
-         
-                          
-                                                                           
-                                                                             
-                                                                   
-                                                                           
-                                                                      
-                                                                               
-                                                                             
-                                                                               
-                                                                            
-      
+SECURITY_STATUS
+SEC_ENTRY
+SaslGetProfilePackageW(
+    IN LPWSTR ProfileName,
+    OUT PSecPkgInfoW * PackageInfo
+    );
 
-                                                                           
-                                                                              
-                                                                   
-                                                                                  
+#ifdef UNICODE
+#define SaslGetProfilePackage   SaslGetProfilePackageW
+#else
+#define SaslGetProfilePackage   SaslGetProfilePackageA
+#endif
 
-                                  
-                                                                                                        
-                                                                                        
-                      
+SECURITY_STATUS
+SEC_ENTRY
+SaslIdentifyPackageA(
+    IN PSecBufferDesc pInput,
+    OUT PSecPkgInfoA * PackageInfo
+    );
 
-               
-         
-                     
-                                   
-                      
-                     
-                   
-      
+SECURITY_STATUS
+SEC_ENTRY
+SaslIdentifyPackageW(
+    IN PSecBufferDesc pInput,
+    OUT PSecPkgInfoW * PackageInfo
+    );
+
+#ifdef UNICODE
+#define SaslIdentifyPackage SaslIdentifyPackageW
+#else
+#define SaslIdentifyPackage SaslIdentifyPackageA
+#endif
+
+SECURITY_STATUS
+SEC_ENTRY
+SaslInitializeSecurityContextW(
+    PCredHandle                 phCredential,       // Cred to base context
+    PCtxtHandle                 phContext,          // Existing context (OPT)
+    LPWSTR                      pszTargetName,      // Name of target
+    unsigned long               fContextReq,        // Context Requirements
+    unsigned long               Reserved1,          // Reserved, MBZ
+    unsigned long               TargetDataRep,      // Data rep of target
+    PSecBufferDesc              pInput,             // Input Buffers
+    unsigned long               Reserved2,          // Reserved, MBZ
+    PCtxtHandle                 phNewContext,       // (out) New Context handle
+    PSecBufferDesc              pOutput,            // (inout) Output Buffers
+    unsigned long SEC_FAR *     pfContextAttr,      // (out) Context attrs
+    PTimeStamp                  ptsExpiry           // (out) Life span (OPT)
+    );
+
+SECURITY_STATUS
+SEC_ENTRY
+SaslInitializeSecurityContextA(
+    PCredHandle                 phCredential,       // Cred to base context
+    PCtxtHandle                 phContext,          // Existing context (OPT)
+    LPSTR                       pszTargetName,      // Name of target
+    unsigned long               fContextReq,        // Context Requirements
+    unsigned long               Reserved1,          // Reserved, MBZ
+    unsigned long               TargetDataRep,      // Data rep of target
+    PSecBufferDesc              pInput,             // Input Buffers
+    unsigned long               Reserved2,          // Reserved, MBZ
+    PCtxtHandle                 phNewContext,       // (out) New Context handle
+    PSecBufferDesc              pOutput,            // (inout) Output Buffers
+    unsigned long SEC_FAR *     pfContextAttr,      // (out) Context attrs
+    PTimeStamp                  ptsExpiry           // (out) Life span (OPT)
+    );
+
+#ifdef UNICODE
+#define SaslInitializeSecurityContext   SaslInitializeSecurityContextW
+#else
+#define SaslInitializeSecurityContext   SaslInitializeSecurityContextA
+#endif
 
 
-               
-         
-                     
-                                        
-                           
-                          
-                         
-                                    
-      
+SECURITY_STATUS
+SEC_ENTRY
+SaslAcceptSecurityContext(
+    PCredHandle                 phCredential,       // Cred to base context
+    PCtxtHandle                 phContext,          // Existing context (OPT)
+    PSecBufferDesc              pInput,             // Input buffer
+    unsigned long               fContextReq,        // Context Requirements
+    unsigned long               TargetDataRep,      // Target Data Rep
+    PCtxtHandle                 phNewContext,       // (out) New context handle
+    PSecBufferDesc              pOutput,            // (inout) Output buffers
+    unsigned long SEC_FAR *     pfContextAttr,      // (out) Context attributes
+    PTimeStamp                  ptsExpiry           // (out) Life span (OPT)
+    );
 
-  
+#define SASL_OPTION_SEND_SIZE       1       // Maximum size to send to peer
+#define SASL_OPTION_RECV_SIZE       2       // Maximum size willing to receive
+#define SASL_OPTION_AUTHZ_STRING    3       // Authorization string
+#define SASL_OPTION_AUTHZ_PROCESSING    4       // Authorization string processing
+
+typedef enum _SASL_AUTHZID_STATE {
+    Sasl_AuthZIDForbidden,             // allow no AuthZID strings to be specified - error out (default)
+    Sasl_AuthZIDProcessed             // AuthZID Strings processed by Application or SSP
+} SASL_AUTHZID_STATE ;
+
+SECURITY_STATUS
+SEC_ENTRY
+SaslSetContextOption(
+    __in PCtxtHandle ContextHandle,
+    __in ULONG Option,
+    __in PVOID Value,
+    __in ULONG Size
+    );
+
+
+SECURITY_STATUS
+SEC_ENTRY
+SaslGetContextOption(
+    __in      PCtxtHandle ContextHandle,
+    __in      ULONG Option,
+    __out     PVOID Value,
+    __in      ULONG Size,
+    __out_opt PULONG Needed OPTIONAL
+    );
+
+*)
 
 //
 // This is the legacy credentials structure.
@@ -2183,464 +2183,464 @@ type
 {$ENDIF}
   {$EXTERNALSYM SEC_WINNT_AUTH_IDENTITY_EX}
 
-       
+(* TODO
 
-  
-                                                                           
-  
-                                                                               
-                                                                                   
-                                                                                     
-                                          
-  
-                                                                  
-                                                                                    
-                                                                                   
-                                                                                
-  
-
-                                             
-                                          
-                                          
-                                       
-                                       
-                                          
-                                                               
-
-                                            
-                                    
-                                                            
-
-                                                            
-                                 
-                                        
-                                                            
-
-                                                            
-                                                            
-                                                            
-
-  
-                                                                       
-                                                                     
-            
-  
-
-                                                                  
-
-  
-                                                                    
-                                                              
-  
-
-                                                                              
-
-  
-                                                    
-                                                                   
-  
-
-                                                                              
-
-                                                             
-                                                                              
-                                                                         
-
-
-                                     
-
-                                         
-
-              
-
-                                                                                    
-
-            
-
-                           
-
-                                                                      
-
-                        
-
-  
-                                                    
-  
-
-  
-                                                         
-                                                           
-                                                               
-                                                                
-                          
-  
-                                                                  
-                                                                 
-                                    
-  
-
-                                                  
-
-                                                         
-
-                                         
-
-                                                         
-                     
-
-             
-         
-                          
-                              
-                           
-                                   
-     
-                           
-                              
-                                   
-                           
-                                                                
-                                                                
-                            
-                              
-      
-
-                                                         
-                     
-
-             
-         
-                          
-                             
-                           
-                                   
-     
-                           
-                              
-                                   
-                          
-                                                                
-                                                                
-                            
-                              
-      
-                        
-
-              
-                                                            
-     
-                                                            
-      
-
-                            
-
-                                            
-                                                            
-                                      
-                                                           
-
-                                     
-                 
-                                       
-                                             
-
-                                                   
-                                                                
-                                                                            
-                                
-                                                                         
-
-                                         
-                                                     
-                                                                                      
-
-                                         
-                                                 
-                                                                                    
-
-                                              
-                                              
-                                                              
-
-  
-                      
-  
-                                         
-
-                                                     
-                                                                                    
-
-                                                 
-                                 
-                                    
-                                          
-                                                                     
-
-                                               
- 
-                                                                       
-                                                                           
-                                                                        
-                             
-                                                                     
-
-                                           
- 
-                                                      
-                                                   
-                                                             
-
-                                               
-
-               
-         
-                     
-                             
-                       
-                                                                                                   
-                                                                
-                                
-     
-
-               
-         
-                      
-                             
-                       
-                                      
-                                                                
-     
-
-                                           
- 
-                       
-                          
-                                    
-                           
-                              
-                               
-                                                             
-
-                                        
- 
-                          
-                                                                            
-                           
-                                                                  
-     
-                 
-                              
-                                                  
-                                                       
-                               
-                                                       
-
-                                         
-                                                     
-                                                                                  
-
-                                         
-                                                         
-                                                                                   
-
-                                                      
-                                 
-                                                      
-                                                     
-                                                
-                                           
-                                                                               
-
-  
-                                               
-  
-
-               
-         
-                           
-                                                                            
-                                            
-                                                        
-      
-
-                               
-
-               
-         
-                       
-                                                      
-                              
-                                        
-                                             
-      
-
-               
-         
-                        
-                                                      
-                                                                                 
-                                        
-                                              
-                                            
-                                                                      
-                                    
-      
-
-               
-         
-                        
-                                                    
-      
-
-               
-         
-                        
-                                                             
-      
-
-       
-         
-                            
-                                                          
-      
-
-              
-
-                                 
-  
-                                                  
-                                               
-  
-                                                        
-                                                      
-                                                           
-                                                          
-                                                              
-              
-  
-                                               
-                                                 
-  
-
-               
-         
-                                
-                                                       
-                                         
-                                           
-                                                           
-      
-
-               
-         
-                         
-                                                 
-      
-
-  
-                                                        
-  
-
-               
-         
-                     
-                                                  
-                                                             
-      
-
-  
-                                                              
-                                           
-  
-
-    
-         
-                     
-                                                     
-      
-
-    
-         
-                     
-                                                     
-      
-
-    
-         
-              
-                             
-      
-
-  
-                                                              
-                                                          
-  
-
-               
-         
-                                
-                                
-                                  
-                                               
-                                                               
-      
-
-               
-         
-                          
-                                                           
-                                                           
-                                        
-                                           
-      
-
-  
-                                                   
-                                                 
-  
-
-               
-         
-                        
-                                                      
-                                            
-                                                                        
-      
-
-  
-                                                               
-  
-
-               
-         
-                          
-                                          
-                                                                
-                                                               
-      
-
-       
-         
-                      
-                                      
-      
-
-               
-         
-                      
-                              
-                                  
-      
-
-               
-         
-                   
-                                                          
-                               
-                                                                  
-      
-
-  
+//
+// the procedure for how to parse a SEC_WINNT_AUTH_IDENTITY_INFO structure:
+//
+// 1) First check the first DWORD of SEC_WINNT_AUTH_IDENTITY_INFO, if the first
+//   DWORD is 0x200, it is either an AuthIdExw or AuthIdExA, otherwise if the first
+//   DWORD is 0x201, the structure is an AuthIdEx2 structure. Otherwise the structure
+//   is either an AuthId_a or an AuthId_w.
+//
+// 2) Secondly check the flags for SEC_WINNT_AUTH_IDENTITY_ANSI or
+//   SEC_WINNT_AUTH_IDENTITY_UNICODE, the presence of the former means the structure
+//   is an ANSI structure. Otherwise, the structure is the wide version.  Note that
+//   AuthIdEx2 does not have an ANSI version so this check does not apply to it.
+//
+
+typedef union _SEC_WINNT_AUTH_IDENTITY_INFO {
+    SEC_WINNT_AUTH_IDENTITY_EXW AuthIdExw;
+    SEC_WINNT_AUTH_IDENTITY_EXA AuthIdExa;
+    SEC_WINNT_AUTH_IDENTITY_A AuthId_a;
+    SEC_WINNT_AUTH_IDENTITY_W AuthId_w;
+    SEC_WINNT_AUTH_IDENTITY_EX2 AuthIdEx2;
+} SEC_WINNT_AUTH_IDENTITY_INFO, *PSEC_WINNT_AUTH_IDENTITY_INFO;
+
+// the credential structure is encrypted via
+// RtlEncryptMemory(OptionFlags = 0)
+#define SEC_WINNT_AUTH_IDENTITY_FLAGS_PROCESS_ENCRYPTED 0x10
+
+// the credential structure is protected by local system via
+// RtlEncryptMemory(OptionFlags =
+// IOCTL_KSEC_ENCRYPT_MEMORY_SAME_LOGON)
+#define SEC_WINNT_AUTH_IDENTITY_FLAGS_SYSTEM_PROTECTED  0x20
+
+#define SEC_WINNT_AUTH_IDENTITY_FLAGS_RESERVED       0x10000
+#define SEC_WINNT_AUTH_IDENTITY_FLAGS_NULL_USER      0x20000
+#define SEC_WINNT_AUTH_IDENTITY_FLAGS_NULL_DOMAIN    0x40000
+
+//
+//  These bits are for communication between SspiPromptForCredentials()
+//  and the credential providers. Do not use these bits for any other
+//  purpose.
+//
+
+#define SEC_WINNT_AUTH_IDENTITY_FLAGS_SSPIPFC_USE_MASK  0xFF000000
+
+//
+//  Instructs the credential provider to not save credentials itself
+//  when caller selects the "Remember my credential" checkbox.
+//
+
+#define SEC_WINNT_AUTH_IDENTITY_FLAGS_SSPIPFC_SAVE_CRED_BY_CALLER   0x80000000
+
+//
+//  State of the "Remember my credentials" checkbox.
+//  When set, indicates checked; when cleared, indicates unchecked.
+//
+
+#define SEC_WINNT_AUTH_IDENTITY_FLAGS_SSPIPFC_SAVE_CRED_CHECKED     0x40000000
+
+#define SEC_WINNT_AUTH_IDENTITY_FLAGS_VALID_SSPIPFC_FLAGS   \
+                (SEC_WINNT_AUTH_IDENTITY_FLAGS_SSPIPFC_SAVE_CRED_BY_CALLER | \
+                 SEC_WINNT_AUTH_IDENTITY_FLAGS_SSPIPFC_SAVE_CRED_CHECKED)
+
+
+#endif // _AUTH_IDENTITY_INFO_DEFINED
+
+#ifndef _SSPIPFC_NONE_ // the public view
+
+// begin_ntifs
+
+typedef PVOID PSEC_WINNT_AUTH_IDENTITY_OPAQUE; // the credential structure is opaque
+
+// end_ntifs
+
+#else  // the internal view
+
+typedef PSEC_WINNT_AUTH_IDENTITY_INFO PSEC_WINNT_AUTH_IDENTITY_OPAQUE;
+
+#endif // _SSPIPFC_NONE_
+
+//
+//  dwFlags parameter of SspiPromptForCredentials():
+//
+
+//
+//  Indicates that the credentials should not be saved if
+//  the user selects the 'save' (or 'remember my password')
+//  checkbox in the credential dialog box. The location pointed
+//  to by the pfSave parameter indicates whether or not the user
+//  selected the checkbox.
+//
+//  Note that some credential providers won't honour this flag and
+//  may save the credentials in a persistent manner anyway if the
+//  user selects the 'save' checbox.
+//
+
+#define SSPIPFC_SAVE_CRED_BY_CALLER     0x00000001
+
+#define SSPIPFC_VALID_FLAGS (SSPIPFC_SAVE_CRED_BY_CALLER)
+
+#ifndef _SSPIPFC_NONE_ // the public view
+
+// Use SspiFreeAuthIdentity() to free the buffer returned
+// in ppAuthIdentity.
+
+unsigned long
+SEC_ENTRY
+SspiPromptForCredentialsW(
+    __in PCWSTR pszTargetName,
+#ifdef _CREDUI_INFO_DEFINED
+    __in_opt PCREDUI_INFOW pUiInfo,
+#else
+    __in_opt PVOID pUiInfo,
+#endif // _CREDUI_INFO_DEFINED
+    __in unsigned long dwAuthError,
+    __in PCWSTR pszPackage,
+    __in_opt PSEC_WINNT_AUTH_IDENTITY_OPAQUE pInputAuthIdentity,
+    __deref_out PSEC_WINNT_AUTH_IDENTITY_OPAQUE* ppAuthIdentity,
+    __inout_opt int* pfSave,
+    __in unsigned long dwFlags
+    );
+
+// Use SspiFreeAuthIdentity() to free the buffer returned
+// in ppAuthIdentity.
+
+unsigned long
+SEC_ENTRY
+SspiPromptForCredentialsA(
+    __in PCSTR pszTargetName,
+#ifdef _CREDUI_INFO_DEFINED
+    __in_opt PCREDUI_INFOA pUiInfo,
+#else
+    __in_opt PVOID pUiInfo,
+#endif // _CREDUI_INFO_DEFINED
+    __in unsigned long dwAuthError,
+    __in PCSTR pszPackage,
+    __in_opt PSEC_WINNT_AUTH_IDENTITY_OPAQUE pInputAuthIdentity,
+    __deref_out PSEC_WINNT_AUTH_IDENTITY_OPAQUE* ppAuthIdentity,
+    __inout_opt int* pfSave,
+    __in unsigned long dwFlags
+    );
+#endif // _SSPIPFC_NONE_
+
+#ifdef UNICODE
+#define SspiPromptForCredentials   SspiPromptForCredentialsW
+#else
+#define SspiPromptForCredentials   SspiPromptForCredentialsA
+#endif
+
+#ifdef _SEC_WINNT_AUTH_TYPES
+
+typedef struct _SEC_WINNT_AUTH_BYTE_VECTOR {
+    unsigned long ByteArrayOffset; // each element is a byte
+    unsigned short ByteArrayLength; //
+} SEC_WINNT_AUTH_BYTE_VECTOR, *PSEC_WINNT_AUTH_BYTE_VECTOR;
+
+typedef struct _SEC_WINNT_AUTH_DATA {
+   GUID CredType;
+   SEC_WINNT_AUTH_BYTE_VECTOR CredData;
+} SEC_WINNT_AUTH_DATA, *PSEC_WINNT_AUTH_DATA;
+
+typedef struct _SEC_WINNT_AUTH_PACKED_CREDENTIALS {
+   unsigned short cbHeaderLength;    // the length of the header
+   unsigned short cbStructureLength; // pay load length including the header
+   SEC_WINNT_AUTH_DATA AuthData;
+} SEC_WINNT_AUTH_PACKED_CREDENTIALS, *PSEC_WINNT_AUTH_PACKED_CREDENTIALS;
+
+// {28BFC32F-10F6-4738-98D1-1AC061DF716A}
+static const GUID SEC_WINNT_AUTH_DATA_TYPE_PASSWORD =
+   { 0x28bfc32f, 0x10f6, 0x4738, { 0x98, 0xd1, 0x1a, 0xc0, 0x61, 0xdf, 0x71, 0x6a } };
+
+// {235F69AD-73FB-4dbc-8203-0629E739339B}
+static const GUID SEC_WINNT_AUTH_DATA_TYPE_CERT =
+   { 0x235f69ad, 0x73fb, 0x4dbc, { 0x82, 0x3, 0x6, 0x29, 0xe7, 0x39, 0x33, 0x9b } };
+
+typedef struct _SEC_WINNT_AUTH_DATA_PASSWORD {
+   SEC_WINNT_AUTH_BYTE_VECTOR UnicodePassword;
+} SEC_WINNT_AUTH_DATA_PASSWORD, PSEC_WINNT_AUTH_DATA_PASSWORD;
+
+//
+// smartcard cred data
+//
+// {68FD9879-079C-4dfe-8281-578AADC1C100}
+
+static const GUID SEC_WINNT_AUTH_DATA_TYPE_CSP_DATA =
+   { 0x68fd9879, 0x79c, 0x4dfe, { 0x82, 0x81, 0x57, 0x8a, 0xad, 0xc1, 0xc1, 0x0 } };
+
+typedef struct _SEC_WINNT_AUTH_CERTIFICATE_DATA {
+   unsigned short cbHeaderLength;
+   unsigned short cbStructureLength;
+   SEC_WINNT_AUTH_BYTE_VECTOR Certificate;
+} SEC_WINNT_AUTH_CERTIFICATE_DATA, *PSEC_WINNT_AUTH_CERTIFICATE_DATA;
+
+typedef struct _SEC_WINNT_CREDUI_CONTEXT_VECTOR
+{
+   ULONG CredUIContextArrayOffset; // offset starts at the beginning of
+   // this structure, and each element is a SEC_WINNT_AUTH_BYTE_VECTOR that
+   // describes the flat CredUI context returned by SpGetCredUIContext()
+   USHORT CredUIContextCount;
+} SEC_WINNT_CREDUI_CONTEXT_VECTOR, *PSEC_WINNT_CREDUI_CONTEXT_VECTOR;
+
+typedef struct _SEC_WINNT_AUTH_SHORT_VECTOR
+{
+    ULONG ShortArrayOffset; // each element is a short
+    USHORT ShortArrayCount; // number of characters
+} SEC_WINNT_AUTH_SHORT_VECTOR, *PSEC_WINNT_AUTH_SHORT_VECTOR;
+
+// free the returned memory using SspiLocalFree
+
+SECURITY_STATUS
+SEC_ENTRY
+SspiGetCredUIContext(
+   __in HANDLE ContextHandle,
+   __in GUID* CredType,
+   __in_opt LUID* LogonId, // use this LogonId, the caller must be localsystem to supply a logon id
+   __deref_out PSEC_WINNT_CREDUI_CONTEXT_VECTOR* CredUIContexts,
+   __out_opt HANDLE* TokenHandle
+   );
+
+SECURITY_STATUS
+SEC_ENTRY
+SspiUpdateCredentials(
+   __in HANDLE ContextHandle,
+   __in GUID* CredType,
+   __in ULONG FlatCredUIContextLength,
+   __in_bcount(FlatCredUIContextLength) PUCHAR FlatCredUIContext
+   );
+
+typedef struct _CREDUIWIN_MARSHALED_CONTEXT
+{
+    GUID StructureType;
+    USHORT cbHeaderLength;
+    LUID LogonId; // user's logon id
+    GUID MarshaledDataType;
+    ULONG MarshaledDataOffset;
+    USHORT MarshaledDataLength;
+} CREDUIWIN_MARSHALED_CONTEXT, *PCREDUIWIN_MARSHALED_CONTEXT;
+
+typedef struct _SEC_WINNT_CREDUI_CONTEXT
+{
+    USHORT cbHeaderLength;
+    HANDLE CredUIContextHandle; // the handle to call SspiGetCredUIContext()
+#ifdef _CREDUI_INFO_DEFINED
+    PCREDUI_INFOW UIInfo; // input from SspiPromptForCredentials()
+#else
+    PVOID UIInfo;
+#endif // _CREDUI_INFO_DEFINED
+    ULONG dwAuthError; // the authentication error
+    PSEC_WINNT_AUTH_IDENTITY_OPAQUE pInputAuthIdentity;
+    PUNICODE_STRING TargetName;
+} SEC_WINNT_CREDUI_CONTEXT, *PSEC_WINNT_CREDUI_CONTEXT;
+
+// {3C3E93D9-D96B-49b5-94A7-458592088337}
+static const GUID CREDUIWIN_STRUCTURE_TYPE_SSPIPFC  =
+{ 0x3c3e93d9, 0xd96b, 0x49b5, { 0x94, 0xa7, 0x45, 0x85, 0x92, 0x8, 0x83, 0x37 } };
+
+// {C2FFFE6F-503D-4c3d-A95E-BCE821213D44}
+static const GUID SSPIPFC_STRUCTURE_TYPE_CREDUI_CONTEXT =
+{ 0xc2fffe6f, 0x503d, 0x4c3d, { 0xa9, 0x5e, 0xbc, 0xe8, 0x21, 0x21, 0x3d, 0x44 } };
+
+typedef struct _SEC_WINNT_AUTH_PACKED_CREDENTIALS_EX {
+   unsigned short cbHeaderLength;
+   unsigned long Flags; // contains the Flags field in
+                        // SEC_WINNT_AUTH_IDENTITY_EX
+   SEC_WINNT_AUTH_BYTE_VECTOR PackedCredentials;
+   SEC_WINNT_AUTH_SHORT_VECTOR PackageList;
+} SEC_WINNT_AUTH_PACKED_CREDENTIALS_EX, *PSEC_WINNT_AUTH_PACKED_CREDENTIALS_EX;
+
+//
+// free the returned memory using SspiLocalFree
+//
+
+SECURITY_STATUS
+SEC_ENTRY
+SspiUnmarshalCredUIContext(
+    __in_bcount(MarshaledCredUIContextLength) PUCHAR MarshaledCredUIContext,
+    __in ULONG MarshaledCredUIContextLength,
+    __deref_out PSEC_WINNT_CREDUI_CONTEXT* CredUIContext
+    );
+
+#endif // _SEC_WINNT_AUTH_TYPES
+
+SECURITY_STATUS
+SEC_ENTRY
+SspiPrepareForCredRead(
+    __in PSEC_WINNT_AUTH_IDENTITY_OPAQUE AuthIdentity,
+    __in PCWSTR pszTargetName,
+    __out PULONG pCredmanCredentialType,
+    __deref_out PCWSTR* ppszCredmanTargetName
+    );
+
+SECURITY_STATUS
+SEC_ENTRY
+SspiPrepareForCredWrite(
+    __in PSEC_WINNT_AUTH_IDENTITY_OPAQUE AuthIdentity,
+    __in_opt PCWSTR pszTargetName, // supply NULL for username-target credentials
+    __out PULONG pCredmanCredentialType,
+    __deref_out PCWSTR* ppszCredmanTargetName,
+    __deref_out PCWSTR* ppszCredmanUserName,
+    __deref_out_bcount(*pCredentialBlobSize) PUCHAR *ppCredentialBlob,
+    __out PULONG pCredentialBlobSize
+    );
+
+SECURITY_STATUS
+SEC_ENTRY
+SspiEncryptAuthIdentity(
+    __inout PSEC_WINNT_AUTH_IDENTITY_OPAQUE AuthData
+    );
+
+SECURITY_STATUS
+SEC_ENTRY
+SspiDecryptAuthIdentity(
+    __inout PSEC_WINNT_AUTH_IDENTITY_OPAQUE EncryptedAuthData
+    );
+
+BOOLEAN
+SEC_ENTRY
+SspiIsAuthIdentityEncrypted(
+    __in PSEC_WINNT_AUTH_IDENTITY_OPAQUE EncryptedAuthData
+    );
+
+// begin_ntifs
+
+#if (NTDDI_VERSION >= NTDDI_WIN7)
+//
+//  Convert the _OPAQUE structure passed in to the
+//  3 tuple <username, domainname, 'password'>.
+//
+//  Note: The 'strings' returned need not necessarily be
+//  in user recognisable form. The purpose of this API
+//  is to 'flatten' the _OPAQUE structure into the 3 tuple.
+//  User recognisable <username, domainname> can always be
+//  obtained by passing NULL to the pszPackedCredentialsString
+//  parameter.
+//
+// zero out the pszPackedCredentialsString then
+// free the returned memory using SspiLocalFree()
+//
+
+SECURITY_STATUS
+SEC_ENTRY
+SspiEncodeAuthIdentityAsStrings(
+    __in PSEC_WINNT_AUTH_IDENTITY_OPAQUE pAuthIdentity,
+    __deref_out_opt PCWSTR* ppszUserName,
+    __deref_out_opt PCWSTR* ppszDomainName,
+    __deref_opt_out_opt PCWSTR* ppszPackedCredentialsString
+    );
+
+SECURITY_STATUS
+SEC_ENTRY
+SspiValidateAuthIdentity(
+    __in PSEC_WINNT_AUTH_IDENTITY_OPAQUE AuthData
+    );
+
+//
+// free the returned memory using SspiFreeAuthIdentity()
+//
+
+SECURITY_STATUS
+SEC_ENTRY
+SspiCopyAuthIdentity(
+    __in PSEC_WINNT_AUTH_IDENTITY_OPAQUE AuthData,
+    __deref_out PSEC_WINNT_AUTH_IDENTITY_OPAQUE* AuthDataCopy
+    );
+
+//
+// use only for the memory returned by SspiCopyAuthIdentity().
+// Internally calls SspiZeroAuthIdentity().
+//
+
+VOID
+SEC_ENTRY
+SspiFreeAuthIdentity(
+    __in_opt PSEC_WINNT_AUTH_IDENTITY_OPAQUE AuthData
+    );
+
+VOID
+SEC_ENTRY
+SspiZeroAuthIdentity(
+    __in_opt PSEC_WINNT_AUTH_IDENTITY_OPAQUE AuthData
+    );
+
+VOID
+SEC_ENTRY
+SspiLocalFree(
+    __in_opt PVOID DataBuffer
+    );
+
+//
+// call SspiFreeAuthIdentity to free the returned AuthIdentity
+// which zeroes out the credentials blob before freeing it
+//
+
+SECURITY_STATUS
+SEC_ENTRY
+SspiEncodeStringsAsAuthIdentity(
+    __in_opt PCWSTR pszUserName,
+    __in_opt PCWSTR pszDomainName,
+    __in_opt PCWSTR pszPackedCredentialsString,
+    __deref_out PSEC_WINNT_AUTH_IDENTITY_OPAQUE* ppAuthIdentity
+    );
+
+SECURITY_STATUS
+SEC_ENTRY
+SspiCompareAuthIdentities(
+    __in_opt PSEC_WINNT_AUTH_IDENTITY_OPAQUE AuthIdentity1,
+    __in_opt PSEC_WINNT_AUTH_IDENTITY_OPAQUE AuthIdentity2,
+    __out_opt PBOOLEAN SameSuppliedUser,
+    __out_opt PBOOLEAN SameSuppliedIdentity
+    );
+
+//
+// zero out the returned AuthIdentityByteArray then
+// free the returned memory using SspiLocalFree()
+//
+
+SECURITY_STATUS
+SEC_ENTRY
+SspiMarshalAuthIdentity(
+    __in PSEC_WINNT_AUTH_IDENTITY_OPAQUE AuthIdentity,
+    __out unsigned long* AuthIdentityLength,
+    __deref_out_bcount(*AuthIdentityLength) char** AuthIdentityByteArray
+    );
+
+//
+// free the returned auth identity using SspiFreeAuthIdentity()
+//
+
+SECURITY_STATUS
+SEC_ENTRY
+SspiUnmarshalAuthIdentity(
+    __in unsigned long AuthIdentityLength,
+    __in_bcount(AuthIdentityLength) char* AuthIdentityByteArray,
+    __deref_out PSEC_WINNT_AUTH_IDENTITY_OPAQUE* ppAuthIdentity
+    );
+
+BOOLEAN
+SEC_ENTRY
+SspiIsPromptingNeeded(
+    __in unsigned long ErrorOrNtStatus
+    );
+
+SECURITY_STATUS
+SEC_ENTRY
+SspiGetTargetHostName(
+    __in PCWSTR pszTargetName,
+    __deref_out PWSTR* pszHostName
+    );
+
+SECURITY_STATUS
+SEC_ENTRY
+SspiExcludePackage(
+    __in_opt PSEC_WINNT_AUTH_IDENTITY_OPAQUE AuthIdentity,
+    __in PCWSTR pszPackageName,
+    __deref_out PSEC_WINNT_AUTH_IDENTITY_OPAQUE* ppNewAuthIdentity
+    );
+
+*)
 
 //
 // Common types used by negotiable security packages
@@ -2654,218 +2654,218 @@ const
   {$EXTERNALSYM SEC_WINNT_AUTH_IDENTITY_ONLY}
 
 
-       
+(* TODO
 
-  
-                                     
-  
+//
+// Routines for manipulating packages
+//
 
-                                          
-                         
-                         
-                          
-                                  
-                              
-                                                                
+typedef struct _SECURITY_PACKAGE_OPTIONS {
+    unsigned long   Size;
+    unsigned long   Type;
+    unsigned long   Flags;
+    unsigned long   SignatureSize;
+    void SEC_FAR *  Signature;
+} SECURITY_PACKAGE_OPTIONS, SEC_FAR * PSECURITY_PACKAGE_OPTIONS;
 
-                                     
-                                     
-                                     
+#define SECPKG_OPTIONS_TYPE_UNKNOWN 0
+#define SECPKG_OPTIONS_TYPE_LSA     1
+#define SECPKG_OPTIONS_TYPE_SSPI    2
 
-                                              
+#define SECPKG_OPTIONS_PERMANENT    0x00000001
 
-               
-         
-                    
-                                       
-                                              
-      
+SECURITY_STATUS
+SEC_ENTRY
+AddSecurityPackageA(
+    SEC_CHAR SEC_FAR *  pszPackageName,
+    SECURITY_PACKAGE_OPTIONS SEC_FAR * Options
+    );
 
-               
-         
-                    
-                                       
-                                              
-      
+SECURITY_STATUS
+SEC_ENTRY
+AddSecurityPackageW(
+    SEC_WCHAR SEC_FAR * pszPackageName,
+    SECURITY_PACKAGE_OPTIONS SEC_FAR * Options
+    );
 
-              
-                                               
-     
-                                               
-      
+#ifdef UNICODE
+#define AddSecurityPackage  AddSecurityPackageW
+#else
+#define AddSecurityPackage  AddSecurityPackageA
+#endif
 
-               
-         
-                       
-                                         
+SECURITY_STATUS
+SEC_ENTRY
+DeleteSecurityPackageA(
+    SEC_CHAR SEC_FAR *  pszPackageName );
 
-               
-         
-                       
-                                         
+SECURITY_STATUS
+SEC_ENTRY
+DeleteSecurityPackageW(
+    SEC_WCHAR SEC_FAR * pszPackageName );
 
-              
-                                                      
-     
-                                                      
-      
+#ifdef UNICODE
+#define DeleteSecurityPackage   DeleteSecurityPackageW
+#else
+#define DeleteSecurityPackage   DeleteSecurityPackageA
+#endif
 
-                                                                          
-  
-                    
-  
-                                                
-  
-                        
-  
-                                                                      
-                                                                    
-                                                      
-  
-  
-                                               
-  
-                                                                          
+//+-----------------------------------------------------------------------
+//
+// Microsoft Windows
+//
+// Copyright (c) Microsoft Corporation 1991-1999
+//
+// File:        secext.h
+//
+// Contents:    Security function prototypes for functions not part of
+//              the SSPI interface. This file should not be directly
+//              included - include security.h instead.
+//
+//
+// History:     22 Dec 92   RichardW    Created
+//
+//------------------------------------------------------------------------
 
-  
-                             
-  
-
-
-            
- 
-                                                                    
-                                                                        
-      
-                                       
-      
-                      
-      
-                                                           
-      
-                          
-      
-                                    
-      
-                                  
-      
-                    
-      
-                                          
-      
-                                                             
-      
-                                                       
-      
-                            
-      
-                                                                    
-      
-                                                                            
-      
-                               
-
-                        
-                    
-
-                                                               
-                             
-
-                          
-                          
-
-                                                                 
-                                                        
-                    
+//
+// Extended Name APIs for ADS
+//
 
 
-                                                       
-                                                 
-                     
+typedef enum
+{
+    // Examples for the following formats assume a fictitous company
+    // which hooks into the global X.500 and DNS name spaces as follows.
+    //
+    // Enterprise root domain in DNS is
+    //
+    //      widget.com
+    //
+    // Enterprise root domain in X.500 (RFC 1779 format) is
+    //
+    //      O=Widget, C=US
+    //
+    // There exists the child domain
+    //
+    //      engineering.widget.com
+    //
+    // equivalent to
+    //
+    //      OU=Engineering, O=Widget, C=US
+    //
+    // There exists a container within the Engineering domain
+    //
+    //      OU=Software, OU=Engineering, O=Widget, C=US
+    //
+    // There exists the user
+    //
+    //      CN=John Doe, OU=Software, OU=Engineering, O=Widget, C=US
+    //
+    // And this user's downlevel (pre-ADS) user name is    {Do not Localize}
+    //
+    //      Engineering\JohnDoe
 
-                                               
-                      
+    // unknown name type
+    NameUnknown = 0,
 
-                              
-                          
+    // CN=John Doe, OU=Software, OU=Engineering, O=Widget, C=US
+    NameFullyQualifiedDN = 1,
 
-                                                                              
-                                                                          
-                                                    
-                        
+    // Engineering\JohnDoe
+    NameSamCompatible = 2,
 
-                                              
-                             
+    // Probably "John Doe" but could be something else.  I.e. The
+    // display name is not necessarily the defining RDN.
+    NameDisplay = 3,
 
-                                                 
 
-       
-         
-               
-                                     
-                       
-                
-      
-       
-         
-               
-                                    
-                        
-                
-      
+    // String-ized GUID as returned by IIDFromString().
+    // eg: {4fa050f0-f561-11cf-bdd9-00aa003a77b6}
+    NameUniqueId = 6,
 
-              
-                                      
-     
-                                      
-      
+    // engineering.widget.com/software/John Doe
+    NameCanonical = 7,
 
-       
-         
-                       
-                                     
-                       
-                
-      
-       
-         
-                       
-                                    
-                        
-                
-      
+    // johndoe@engineering.com
+    NameUserPrincipal = 8,
 
-              
-                                                      
-     
-                                                      
-      
+    // Same as NameCanonical except that rightmost '/' is    {Do not Localize}
+    // replaced with '\n' - even in domain-only case.    {Do not Localize}
+    // eg: engineering.widget.com/software\nJohn Doe
+    NameCanonicalEx = 9,
 
-       
-         
-               
-                         
-                                           
-                                           
-                           
-                
-      
-       
-         
-               
-                          
-                                           
-                                           
-                            
-                
-      
-              
-                                      
-     
-                                      
-      
+    // www/srv.engineering.com/engineering.com
+    NameServicePrincipal = 10
 
-  
+} EXTENDED_NAME_FORMAT, * PEXTENDED_NAME_FORMAT ;
+
+BOOLEAN
+SEC_ENTRY
+GetUserNameExA(
+    EXTENDED_NAME_FORMAT  NameFormat,
+    LPSTR lpNameBuffer,
+    PULONG nSize
+    );
+BOOLEAN
+SEC_ENTRY
+GetUserNameExW(
+    EXTENDED_NAME_FORMAT NameFormat,
+    LPWSTR lpNameBuffer,
+    PULONG nSize
+    );
+
+#ifdef UNICODE
+#define GetUserNameEx   GetUserNameExW
+#else
+#define GetUserNameEx   GetUserNameExA
+#endif
+
+BOOLEAN
+SEC_ENTRY
+GetComputerObjectNameA(
+    EXTENDED_NAME_FORMAT  NameFormat,
+    LPSTR lpNameBuffer,
+    PULONG nSize
+    );
+BOOLEAN
+SEC_ENTRY
+GetComputerObjectNameW(
+    EXTENDED_NAME_FORMAT NameFormat,
+    LPWSTR lpNameBuffer,
+    PULONG nSize
+    );
+
+#ifdef UNICODE
+#define GetComputerObjectName   GetComputerObjectNameW
+#else
+#define GetComputerObjectName   GetComputerObjectNameA
+#endif
+
+BOOLEAN
+SEC_ENTRY
+TranslateNameA(
+    LPCSTR lpAccountName,
+    EXTENDED_NAME_FORMAT AccountNameFormat,
+    EXTENDED_NAME_FORMAT DesiredNameFormat,
+    LPSTR lpTranslatedName,
+    PULONG nSize
+    );
+BOOLEAN
+SEC_ENTRY
+TranslateNameW(
+    LPCWSTR lpAccountName,
+    EXTENDED_NAME_FORMAT AccountNameFormat,
+    EXTENDED_NAME_FORMAT DesiredNameFormat,
+    LPWSTR lpTranslatedName,
+    PULONG nSize
+    );
+#ifdef UNICODE
+#define TranslateName   TranslateNameW
+#else
+#define TranslateName   TranslateNameA
+#endif
+
+*)
 
 implementation
 

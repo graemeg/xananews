@@ -112,7 +112,7 @@ type
     FMsgType: byte;
     FMsgCode : Byte;
     FSequenceId: word;       // sequence id of ping reply
-                                                                   
+    // TODO: roundtrip time in ping reply should be float, not byte
     FMsRoundTripTime: longword; // ping round trip time in milliseconds
     FTimeToLive: byte;       // time to live
     FReplyStatusType: TReplyStatusTypes;
@@ -129,7 +129,7 @@ type
     property MsgType: byte read FMsgType write FMsgType;
     property MsgCode : Byte read FMsgCode write FMsgCode;
     property SequenceId: word read FSequenceId write FSequenceId;       // sequence id of ping reply
-                                                                   
+    // TODO: roundtrip time in ping reply should be float, not byte
     property MsRoundTripTime: longword read FMsRoundTripTime write FMsRoundTripTime; // ping round trip time in milliseconds
     property TimeToLive: byte read FTimeToLive write FTimeToLive;       // time to live
     property ReplyStatusType: TReplyStatusTypes read FReplyStatusType write FReplyStatusType;
@@ -139,7 +139,7 @@ type
 
   TOnReplyEvent = procedure(ASender: TComponent; const AReplyStatus: TReplyStatus) of object;
 
-                                                                            
+  // TODO: on MacOSX (and maybe iOS?), can use a UDP socket instead of a RAW
   // socket so that non-privilege processes do not require root access...
 
   TIdCustomIcmpClient = class(TIdRawClient)
@@ -410,7 +410,7 @@ begin
     LIcmp.ReadStruct(FBufReceive, LIdx);
 
     {$IFDEF LINUX}
-                                                                          
+    // TODO: baffled as to why linux kernel sends back echo from localhost
     {$ENDIF}
 
     case LIcmp.icmp_hdr.icmp_type of
@@ -476,7 +476,7 @@ begin
         // contained withing the DATA section of the packet...
         // pOriginalIP := PIdIPHdr(@picmp^.icmp_dun.data);
 
-                                                                                    
+        // TODO: verify this!  I don't think it is indexing far enough into the data
         LActualSeqID := BytesToWord(FBufReceive, LIpHeaderLen+8+6);//pOriginalICMP^.icmp_hun.echo.seq;
         RTTime := GetTickDiff(BytesToLongWord(FBufReceive, LIpHeaderLen+8+8), Ticks); //pOriginalICMP^.icmp_dun.ts.otime;
 

@@ -364,7 +364,7 @@ uses
 type
   TIdTCPConnection = class(TIdComponent)
   protected
-    FGreeting: TIdReply;
+    FGreeting: TIdReply; // TODO: Only TIdFTP uses it, so it should be moved!
     {$IFDEF USE_OBJECT_ARC}[Weak]{$ENDIF} FIntercept: TIdConnectionIntercept;
     {$IFDEF USE_OBJECT_ARC}[Weak]{$ENDIF} FIOHandler: TIdIOHandler;
     FLastCmdResult: TIdReply;
@@ -531,6 +531,13 @@ begin
   try
     // Separately to avoid calling .Connected unless needed
     if ANotifyPeer then begin
+      // TODO: do not call Connected() here if DisconnectNotifyPeer() is not
+      // overriden. Ideally, Connected() should be called by overridden
+      // DisconnectNotifyPeer() implementations if they really need it. But
+      // to avoid any breakages in third-party overrides, we could check here
+      // if DisconnectNotifyPeer() has been overridden and then call Connected()
+      // to maintain existing behavior...
+      //
       if Connected then begin
         DisconnectNotifyPeer;
       end;
@@ -705,11 +712,7 @@ begin
     if ManagedIOHandler then begin
       if Assigned(LIOHandler) then begin
         FIOHandler := nil;
-        {$IFDEF USE_OBJECT_ARC}
-        // have to remove the Owner's strong references so it can be freed
-        RemoveComponent(LIOHandler);
-        {$ENDIF}
-        FreeAndNil(LIOHandler);
+        IdDisposeAndNil(LIOHandler);
       end;
       ManagedIOHandler := False;
     end;

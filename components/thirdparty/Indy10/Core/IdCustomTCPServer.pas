@@ -293,9 +293,11 @@ type
 
   {$IFDEF HAS_GENERICS_TThreadList}
   TIdListenerThreadList = TThreadList<TIdListenerThread>;
+  TIdListenerList = TList<TIdListenerThread>;
   {$ELSE}
-                                                                                       
+  // TODO: flesh out to match TThreadList<TIdListenerThread> and TList<TIdListenerThread> for non-Generics compilers
   TIdListenerThreadList = TThreadList;
+  TIdListenerList = TList;
   {$ENDIF}
 
   TIdListenExceptionEvent = procedure(AThread: TIdListenerThread; AException: Exception) of object;
@@ -683,11 +685,7 @@ begin
       // -Kudzu
       FScheduler := nil;
       FImplicitScheduler := False;
-      {$IFDEF USE_OBJECT_ARC}
-      // have to remove the Owner's strong references so it can be freed
-      RemoveComponent(LScheduler);
-      {$ENDIF}
-      FreeAndNil(LScheduler);
+      IdDisposeAndNil(LScheduler);
     end;
 
     {$IFNDEF USE_OBJECT_ARC}
@@ -725,11 +723,7 @@ begin
     if FImplicitIOHandler then begin
       FIOHandler := nil;
       FImplicitIOHandler := False;
-      {$IFDEF USE_OBJECT_ARC}
-      // have to remove the Owner's strong references so it can be freed
-      RemoveComponent(LIOHandler);
-      {$ENDIF}
-      FreeAndNil(LIOHandler);
+      IdDisposeAndNil(LIOHandler);
     end;
 
     {$IFNDEF USE_OBJECT_ARC}
@@ -751,9 +745,6 @@ begin
     end;
   end;
 end;
-
-type
-  TIdListenerList = TList{$IFDEF HAS_GENERICS_TList}<TIdListenerThread>{$ENDIF};
 
 procedure TIdCustomTCPServer.StartListening;
 var
@@ -801,7 +792,7 @@ begin
       try
         LListenerThread.Name := Name + ' Listener #' + IntToStr(I + 1); {do not localize}
         LListenerThread.OnBeforeRun := DoBeforeListenerRun;
-                                                            
+        //Todo: Implement proper priority handling for Linux
         //http://www.midnightbeach.com/jon/pubs/2002/BorCon.London/Sidebar.3.html
         LListenerThread.Priority := tpListener;
         LListenerThreads.Add(LListenerThread);
@@ -853,12 +844,12 @@ procedure TIdCustomTCPServer.TerminateAllThreads;
 var
   i: Integer;
   LContext: TIdContext;
-  LList: TList{$IFDEF HAS_GENERICS_TList}<TIdContext>{$ENDIF};
+  LList: TIdContextList;
 
   // under ARC, convert a weak reference to a strong reference before working with it
   LScheduler: TIdScheduler;
 begin
-                                                        
+  // TODO:  reimplement support for TerminateWaitTimeout
 
   //BGO: find out why TerminateAllThreads is sometimes called multiple times
   //Kudzu: Its because of notifications. It calls shutdown when the Scheduler is
@@ -922,7 +913,7 @@ begin
   FTerminateWaitTime := 5000;
   FListenQueue := IdListenQueueDefault;
   FListenerThreads := TIdListenerThreadList.Create;
-                                                           
+  //TODO: When reestablished, use a sleeping thread instead
 //  fSessionTimer := TTimer.Create(self);
   FUseNagle := true; // default
 end;
@@ -940,7 +931,7 @@ begin
     TerminateAllThreads;
   finally
     {//bgo TODO: fix this: and Threads.IsCountLessThan(1)}
-                                                        
+    // DONE -oAPR: BUG! Threads still live, Mgr dead ;-(
     if ImplicitScheduler then begin
       SetScheduler(nil);
     end;
@@ -952,6 +943,19 @@ begin
   end;
 end;
 
+// Linux/Unix does not allow an IPv4 socket and an IPv6 socket
+// to listen on the same port at the same time! Windows does not
+// have that problem...
+{$IFNDEF IdIPv6}
+  {$DEFINE CanCreateTwoBindings}
+  {$IFDEF LINUX} // should this be UNIX instead?
+    {$UNDEF CanCreateTwoBindings}
+  {$ENDIF}
+  {$IFDEF ANDROID}
+    {$UNDEF CanCreateTwoBindings}
+  {$ENDIF}
+{$ENDIF}
+
 procedure TIdCustomTCPServer.Startup;
 var
   LScheduler: TIdScheduler;
@@ -959,14 +963,16 @@ var
 begin
   // Set up bindings
   if Bindings.Count = 0 then begin
-                                                                        
+    // TODO: on systems that support dual-stack sockets, create a single
     // Binding object that supports both IPv4 and IPv6 on the same socket...
-    Bindings.Add; // IPv4 by default
+    Bindings.Add; // IPv4 or IPv6 by default
     {$IFNDEF IdIPv6}
+      {$IFDEF CanCreateTwoBindings}
     if GStack.SupportsIPv6 then begin
       // maybe add a property too, so the developer can switch it on/off
       Bindings.Add.IPVersion := Id_IPv6;
     end;
+      {$ENDIF}
     {$ENDIF}
   end;
 
@@ -1044,7 +1050,7 @@ begin
     // GetYarn can raise exceptions
     LYarn := Server.Scheduler.AcquireYarn;
 
-                                                                       
+    // TODO: under Windows at least, use SO_CONDITIONAL_ACCEPT to allow
     // the user to reject connections before they are accepted.  Somehow
     // expose an event here for the user to decide with...
     
@@ -1056,6 +1062,16 @@ begin
     end else begin
       // We have accepted the connection and need to handle it
       LPeer := TIdTCPConnection.Create(nil);
+      {$IFDEF USE_OBJECT_ARC}
+      // under ARC, the TIdTCPConnection.IOHandler property is a weak reference.
+      // TIdServerIOHandler.Accept() returns an IOHandler with no Owner assigned,
+      // so lets make the TIdTCPConnection become the Owner in order to keep the
+      // IOHandler alive whic this method exits.
+      //
+      // TODO: should we assign Ownership unconditionally on all platforms?
+      //
+      LPeer.InsertComponent(LIOHandler);
+      {$ENDIF}
       LPeer.IOHandler := LIOHandler;
       LPeer.ManagedIOHandler := True;
     end;

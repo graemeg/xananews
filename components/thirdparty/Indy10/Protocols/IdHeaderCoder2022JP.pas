@@ -19,7 +19,12 @@ type
 
   // RLebeau 4/17/10: this forces C++Builder to link to this unit so
   // RegisterHeaderCoder can be called correctly at program startup...
-  {$HPPEMIT LINKUNIT}
+
+  {$IFDEF HAS_DIRECTIVE_HPPEMIT_LINKUNIT}
+    {$HPPEMIT LINKUNIT}
+  {$ELSE}
+    {$HPPEMIT '#pragma link "IdHeaderCoder2022JP"'}
+  {$ENDIF}
 
 implementation
 
@@ -113,7 +118,7 @@ begin
         else if (AData[I] = Ord('(')) and (AData[I+1] = Ord('B')) then begin {do not localize}
           isK := False;
         end;
-        Inc(I, 2);                                      
+        Inc(I, 2);   { TODO -oTArisawa : Check RFC 1468}
       end;
     end
     else if isK then

@@ -275,7 +275,7 @@ begin
   // previously accepted authentication, when they are supposed to reset only
   // their mail sending buffers and nothing else.  Send a RSET only if the mail
   // transaction fails and needs to be cleaned up...
-                                  
+  // TODO: make this configurable?
 
   //SendCmd(RSET_CMD);
   SendCmd(LCmd, MAILFROM_ACCEPT);
@@ -329,7 +329,7 @@ begin
     // previously accepted authentication, when they are supposed to reset only
     // their mail sending buffers and nothing else.  Send a RSET only if the mail
     // transaction fails and needs to be cleaned up...
-                                    
+    // TODO: make this configurable?
 
     try
       //IOHandler.WriteLn(RSET_CMD);

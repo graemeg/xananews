@@ -182,7 +182,7 @@ begin
       LClient.ConnectTimeout := Self.FConnectTimeOut;
       LClient.Connect;
     except
-      on E: Exception do                                 
+      on E: Exception do // DONE: Handle connect failures
       begin
         FErrorMsg := 'ERROR: ['+E.ClassName+'] ' + E.Message;    {Do not Localize}
         DoException(E);

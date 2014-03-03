@@ -320,7 +320,7 @@ const
 implementation
 
 uses
-                                                                             
+  //done this way so we can have a separate stack for the Unix systems in FPC
   {$IFDEF UNIX}
     {$IFDEF KYLIXCOMPAT}
   IdStackLibc,
@@ -350,14 +350,14 @@ var
 begin
   case AIPVersion of
     Id_IPv4: begin
-                                                                        
+      // TODO: use RtlIpv4AddressToString() on Windows when available...
       Result := IntToStr(TIdIn4Addr(AInAddr).S_un_b.s_b1) + '.'   {Do not Localize}
                 + IntToStr(TIdIn4Addr(AInAddr).S_un_b.s_b2) + '.' {Do not Localize}
                 + IntToStr(TIdIn4Addr(AInAddr).S_un_b.s_b3) + '.' {Do not Localize}
                 + IntToStr(TIdIn4Addr(AInAddr).S_un_b.s_b4);
     end;
     Id_IPv6: begin
-                                                                        
+      // TODO: use RtlIpv6AddressToString() on Windows when available...
       Result := '';
       for i := 0 to 7 do begin
         Result := Result + IntToHex(NetworkToHost(TIdIn6Addr(AInAddr).s6_addr16[i]), 1) + ':';
@@ -378,7 +378,7 @@ var
 begin
   case AIPVersion of
     Id_IPv4: begin
-                                                                        
+      // TODO: use RtlIpv4StringToAddress() on Windows when available...
       LIP := AIP;
       TIdIn4Addr(AInAddr).S_un_b.s_b1 := IndyStrToInt(Fetch(LIP, '.'));    {Do not Localize}
       TIdIn4Addr(AInAddr).S_un_b.s_b2 := IndyStrToInt(Fetch(LIP, '.'));    {Do not Localize}
@@ -386,7 +386,7 @@ begin
       TIdIn4Addr(AInAddr).S_un_b.s_b4 := IndyStrToInt(Fetch(LIP, '.'));    {Do not Localize}
     end;
     Id_IPv6: begin
-                                                                        
+      // TODO: use RtlIpv6StringToAddress() on Windows when available...
       IPv6ToIdIPv6Address(AIP, LAddress);
       TIdIPv6Address(TIdIn6Addr(AInAddr).s6_addr16) := HostToNetwork(LAddress);
     end;

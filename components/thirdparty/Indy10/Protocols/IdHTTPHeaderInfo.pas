@@ -260,6 +260,7 @@ type
 
   TIdResponseHeaderInfo = class(TIdEntityHeaderInfo)
   protected
+    FAcceptPatch: string;
     FAcceptRanges: string;
     FLocation: string;
     FServer: string;
@@ -269,6 +270,7 @@ type
     //
     procedure SetProxyAuthenticate(const Value: TIdHeaderList);
     procedure SetWWWAuthenticate(const Value: TIdHeaderList);
+    procedure SetAcceptPatch(const Value: string);
     procedure SetAcceptRanges(const Value: string);
     procedure ProcessHeaders; override;
     procedure SetHeaders; override;
@@ -278,6 +280,7 @@ type
     constructor Create(AOwner: TPersistent); override;
     destructor Destroy; override;
   published
+    property AcceptPatch: string read FAcceptPatch write SetAcceptPatch;
     property AcceptRanges: string read FAcceptRanges write SetAcceptRanges;
     property Location: string read FLocation write FLocation;
     property ProxyConnection: string read FProxyConnection write FProxyConnection;
@@ -305,9 +308,11 @@ constructor TIdEntityHeaderInfo.Create(AOwner: TPersistent);
 begin
   inherited Create;
   FOwner := AOwner;
+  // HTTP does not fold headers based on line length
   FRawHeaders := TIdHeaderList.Create(QuoteHTTP);
-  FRawHeaders.FoldLength := 1024;
+  FRawHeaders.FoldLength := MaxInt;
   FCustomHeaders := TIdHeaderList.Create(QuoteHTTP);
+  FCustomHeaders.FoldLength := MaxInt;
 end;
 
 procedure TIdEntityHeaderInfo.AfterConstruction;
@@ -544,7 +549,7 @@ begin
   if FCustomHeaders.Count > 0 then
   begin
     // append custom headers
-                                      
+    // TODO: use AddStrings() instead?
     FRawHeaders.Text := FRawHeaders.Text + FCustomHeaders.Text;
   end;
 end;
@@ -956,7 +961,7 @@ begin
     LDest.FRanges.Assign(FRanges);
     LDest.FMethodOverride := FMethodOverride;
 
-                                   
+    // TODO: omitted intentionally?
     // LDest.FHost := FHost;
     // LDest.FProxyConnection := FProxyConnection;
   end else begin
@@ -973,7 +978,7 @@ begin
   FRanges.Text := '';
   FMethodOverride := '';
 
-                                 
+  // TODO: omitted intentionally?
   // FAcceptEncoding := '';
   // FAcceptLanguage := '';
   // FHost := '';
@@ -1088,6 +1093,7 @@ begin
   FCharSet := '';
   FWWWAuthenticate := TIdHeaderList.Create(QuoteHTTP);
   FProxyAuthenticate := TIdHeaderList.Create(QuoteHTTP);
+  FAcceptPatch := '';
   FAcceptRanges := '';
 end;
 
@@ -1121,6 +1127,7 @@ begin
   FProxyAuthenticate.Clear;
   FRawHeaders.Extract('Proxy-Authenticate', FProxyAuthenticate);{do not localize}
 
+  FAcceptPatch := FRawHeaders.Values['Accept-Patch'];           {do not localize}
   FAcceptRanges := FRawHeaders.Values['Accept-Ranges'];         {do not localize}
 end;
 
@@ -1145,11 +1152,15 @@ begin
     sCI := iif(HasContentRangeInstance,
       IndyFormat('%d', [FContentRangeInstanceLength]), '*'); {do not localize}
 
-    RawHeaders.Values['Content-Range'] := sUnits + ' ' + sCR + '/' + sCI;
+    RawHeaders.Values['Content-Range'] := sUnits + ' ' + sCR + '/' + sCI; {do not localize}
+  end;
+  if Length(FAcceptPatch) > 0 then
+  begin
+    RawHeaders.Values['Accept-Patch'] := FAcceptPatch; {do not localize}
   end;
   if Length(FAcceptRanges) > 0 then
   begin
-    RawHeaders.Values['Accept-Ranges'] := FAcceptRanges;
+    RawHeaders.Values['Accept-Ranges'] := FAcceptRanges; {do not localize}
   end;
   if FLastModified > 0 then
   begin
@@ -1167,6 +1178,7 @@ begin
 
   FLocation := '';
   FServer := '';
+  FAcceptPatch := '';
   FAcceptRanges := '';
 
   if Assigned(FProxyAuthenticate) then
@@ -1178,6 +1190,11 @@ begin
   begin
     FWWWAuthenticate.Clear;
   end;
+end;
+
+procedure TIdResponseHeaderInfo.SetAcceptPatch(const Value: string);
+begin
+  FAcceptPatch := Value;
 end;
 
 procedure TIdResponseHeaderInfo.SetAcceptRanges(const Value: string);

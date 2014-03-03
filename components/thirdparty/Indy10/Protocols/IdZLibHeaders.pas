@@ -19,10 +19,10 @@ interface
 {$I IdCompilerDefines.inc}
 
 {$WRITEABLECONST OFF}
- 
-                                                                           
-                             
- 
+{
+TODO:  Wait for Emb to decide how to approach ZLib for their 64-bit support
+before we proceed at our end.
+}
 {$UNDEF STATICLOAD_ZLIB}
 {$UNDEF STATIC_CDECL_PROCS}
 {$IFDEF DCC}
@@ -755,22 +755,54 @@ uses
   {$ENDIF};
 
 {$IFDEF STATICLOAD_ZLIB}
-{$L adler32.obj}
-{$L compress.obj}
-{$L crc32.obj}
-{$L deflate.obj}
-{$L infback.obj}
-{$L inffast.obj}
-{$L inflate.obj}
-{$L inftrees.obj}
-{$L trees.obj}
-{$L uncompr.obj}
-{$L zutil.obj}
-{$IFDEF VCL_XE2_OR_ABOVE}
-  {$L gzclose.obj}
-  {$L gzread.obj}
-  {$L gzwrite.obj}
-  {$L gzlib.obj}
+{$IFNDEF VCL_XE2_OR_ABOVE}
+  {$L adler32.obj}
+  {$L compress.obj}
+  {$L crc32.obj}
+  {$L deflate.obj}
+  {$L infback.obj}
+  {$L inffast.obj}
+  {$L inflate.obj}
+  {$L inftrees.obj}
+  {$L trees.obj}
+  {$L uncompr.obj}
+  {$L zutil.obj}
+{$ELSE}
+  {$IFDEF WIN32}
+    {$L ZLib\i386-Win32-ZLib\zlibudec.obj} // undecorated stubs which are not needed for x64 compilation
+    {$L ZLib\i386-Win32-ZLib\deflate.obj}
+    {$L ZLib\i386-Win32-ZLib\inflate.obj}
+    {$L ZLib\i386-Win32-ZLib\infback.obj}
+    {$L ZLib\i386-Win32-ZLib\inffast.obj}
+    {$L ZLib\i386-Win32-ZLib\inftrees.obj}
+    {$L ZLib\i386-Win32-ZLib\trees.obj}
+    {$L ZLib\i386-Win32-ZLib\compress.obj}
+    {$L ZLib\i386-Win32-ZLib\uncompr.obj}
+    {$L ZLib\i386-Win32-ZLib\adler32.obj}
+    {$L ZLib\i386-Win32-ZLib\crc32.obj}
+    {$L ZLib\i386-Win32-ZLib\zutil.obj}
+    {$L ZLib\i386-Win32-ZLib\gzclose.obj}
+    {$L ZLib\i386-Win32-ZLib\gzread.obj}
+    {$L ZLib\i386-Win32-ZLib\gzwrite.obj}
+    {$L ZLib\i386-Win32-ZLib\gzlib.obj}
+  {$ENDIF}
+  {$IFDEF WIN64}
+    {$L ZLib\x86_64-Win64-ZLib\deflate.obj}
+    {$L ZLib\x86_64-Win64-ZLib\inflate.obj}
+    {$L ZLib\x86_64-Win64-ZLib\infback.obj}
+    {$L ZLib\x86_64-Win64-ZLib\inffast.obj}
+    {$L ZLib\x86_64-Win64-ZLib\inftrees.obj}
+    {$L ZLib\x86_64-Win64-ZLib\trees.obj}
+    {$L ZLib\x86_64-Win64-ZLib\compress.obj}
+    {$L ZLib\x86_64-Win64-ZLib\uncompr.obj}
+    {$L ZLib\x86_64-Win64-ZLib\adler32.obj}
+    {$L ZLib\x86_64-Win64-ZLib\crc32.obj}
+    {$L ZLib\x86_64-Win64-ZLib\zutil.obj}
+    {$L ZLib\x86_64-Win64-ZLib\gzclose.obj}
+    {$L ZLib\x86_64-Win64-ZLib\gzread.obj}
+    {$L ZLib\x86_64-Win64-ZLib\gzwrite.obj}
+    {$L ZLib\x86_64-Win64-ZLib\gzlib.obj}
+  {$ENDIF}
 {$ENDIF}
 
 function adler32; external;

@@ -177,7 +177,7 @@ type
   TIdNotifyThreadList = TThreadList<TIdNotify>;
   TIdNotifyList = TList<TIdNotify>;
   {$ELSE}
-                                                                                                       
+  // TODO: flesh out to match TThreadList<TIdNotify> and TList<TIdNotify> for non-Generics compilers...
   TIdNotifyThreadList = TThreadList;
   TIdNotifyList = TList;
   {$ENDIF}

@@ -657,12 +657,12 @@ uses
   SyncObjs;
 
 type
-                                           
+  // TODO: TIdThreadSafeObjectList instead?
   {$IFDEF HAS_GENERICS_TThreadList}
   TIdCriticalSectionThreadList = TThreadList<TIdCriticalSection>;
   TIdCriticalSectionList = TList<TIdCriticalSection>;
   {$ELSE}
-                                                                                                                     
+  // TODO: flesh out to match TThreadList<TIdCriticalSection> and TList<TIdCriticalSection> on non-Generics compilers
   TIdCriticalSectionThreadList = TThreadList;
   TIdCriticalSectionList = TList;
   {$ENDIF}
@@ -973,7 +973,7 @@ function IndySSL_CTX_load_verify_locations(ctx: PSSL_CTX;
 function IndySSL_CTX_use_DHparams_file(ctx: PSSL_CTX;
   const AFileName: String; AType: Integer): TIdC_INT; forward;
 
-       
+// TODO
 {
 function d2i_DHparams_bio(bp: PBIO; x: PPointer): PDH; inline;
 begin
@@ -1470,7 +1470,7 @@ begin
     end;
   end;
   if APathName <> '' then begin
-                                                                    
+    { TODO: Figure out how to do the hash dir lookup with Unicode. }
     if (X509_STORE_load_locations(ctx, nil, PAnsiChar(AnsiString(APathName))) <> 1) then begin
       Exit;
     end;
@@ -1518,7 +1518,7 @@ begin
     end;
     try
       case AType of
-               
+        // TODO
         {
         SSL_FILETYPE_ASN1:
           begin
@@ -1563,7 +1563,7 @@ var
 begin
   Result := SSL_load_client_CA_file(
     {$IFDEF USE_MARSHALLED_PTRS}
-    M.AsAnsi(AFileName, CP_UTF8).ToPointer
+    M.AsUtf8(AFileName).ToPointer
     {$ELSE}
     PAnsiChar(UTF8String(AFileName))
     {$ENDIF}
@@ -1580,7 +1580,7 @@ var
 begin
   Result := SSL_CTX_use_PrivateKey_file(ctx,
     {$IFDEF USE_MARSHALLED_PTRS}
-    M.AsAnsi(AFileName, CP_UTF8).ToPointer
+    M.AsUtf8(AFileName).ToPointer
     {$ELSE}
     PAnsiChar(UTF8String(AFileName))
     {$ENDIF}
@@ -1597,7 +1597,7 @@ var
 begin
   Result := SSL_CTX_use_certificate_file(ctx,
     {$IFDEF USE_MARSHALLED_PTRS}
-    M.AsAnsi(AFileName, CP_UTF8).ToPointer
+    M.AsUtf8(AFileName).ToPointer
     {$ELSE}
     PAnsiChar(UTF8String(AFileName))
     {$ENDIF}
@@ -1620,8 +1620,8 @@ begin
   //
   Result := X509_STORE_load_locations(ctx,
     {$IFDEF USE_MARSHALLED_PTRS}
-    M.AsAnsi(AFileName, CP_UTF8).ToPointer,
-    M.AsAnsi(APathName, CP_UTF8).ToPointer
+    M.AsUtf8(AFileName).ToPointer,
+    M.AsUtf8(APathName).ToPointer
     {$ELSE}
     PAnsiChar(Pointer(UTF8String(AFileName))),
     PAnsiChar(Pointer(UTF8String(APathName)))
@@ -1649,7 +1649,7 @@ begin
   Result := 0;
   B := BIO_new_file(
     {$IFDEF USE_MARSHALLED_PTRS}
-    M.AsAnsi(AFileName, CP_UTF8).ToPointer
+    M.AsUtf8(AFileName).ToPointer
     {$ELSE}
     PAnsiChar(UTF8String(AFileName))
     {$ENDIF}
@@ -1657,7 +1657,7 @@ begin
   if Assigned(B) then begin
     try
       case AType of
-               
+        // TODO
         {
         SSL_FILETYPE_ASN1:
           begin
@@ -1753,7 +1753,7 @@ begin
   if Assigned(B) then begin
     try
       case AType of
-               
+        // TODO
         {
         SSL_FILETYPE_ASN1:
           begin
@@ -1845,7 +1845,7 @@ end;
 function IsTLSv1_2Available : Boolean;
 {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
-  Result := Assigned(TLSv1_1_method) and
+  Result := Assigned(TLSv1_2_method) and
     Assigned(TLSv1_2_server_method) and
     Assigned(TLSv1_2_client_method);
 end;
@@ -1903,7 +1903,7 @@ end;
 
 function _GetThreadID: TIdC_ULONG; cdecl;
 begin
-                                                                              
+  // TODO: Verify how well this will work with fibers potentially running from
   // thread to thread or many on the same thread.
   Result := TIdC_ULONG(CurrentThreadId);
 end;
@@ -2332,7 +2332,7 @@ begin
     LIO.PassThrough := True;
     LIO.OnGetPassword := DoGetPassword;
     LIO.OnGetPasswordEx := OnGetPasswordEx;
-                                                                      
+    //todo memleak here - setting IsPeer causes SSLOptions to not free
     LIO.IsPeer := True;
     LIO.SSLOptions.Assign(SSLOptions);
     LIO.SSLOptions.Mode := sslmBoth;{doesn't really matter}
@@ -2359,7 +2359,7 @@ begin
     LIO.PassThrough := True;
     LIO.OnGetPassword := DoGetPassword;
     LIO.OnGetPasswordEx := OnGetPasswordEx;
-                                                                      
+    //todo memleak here - setting IsPeer causes SSLOptions to not free
     LIO.IsPeer := True;
     LIO.SSLOptions.Assign(SSLOptions);
     LIO.SSLOptions.Mode := sslmBoth;{or sslmServer}
@@ -2481,16 +2481,16 @@ begin
           raise EIdOSSLCouldNotLoadSSLLibrary.Create(RSOSSLCouldNotLoadSSLLibrary);
         end;
       end;
-      {$IFDEF WIN32_OR_WIN64}
-      // begin bug fix
-      end
-      else if BindingAllocated and (Win32MajorVersion >= 6) then
-      begin
-        // disables Vista+ SSL_Read and SSL_Write timeout fix
-        Binding.SetSockOpt(Id_SOL_SOCKET, Id_SO_RCVTIMEO, 0);
-        Binding.SetSockOpt(Id_SOL_SOCKET, Id_SO_SNDTIMEO, 0);
-      // end bug fix
-      {$ENDIF}
+    {$IFDEF WIN32_OR_WIN64}
+    // begin bug fix
+    end
+    else if BindingAllocated and IndyCheckWindowsVersion(6) then
+    begin
+      // disables Vista+ SSL_Read and SSL_Write timeout fix
+      Binding.SetSockOpt(Id_SOL_SOCKET, Id_SO_RCVTIMEO, 0);
+      Binding.SetSockOpt(Id_SOL_SOCKET, Id_SO_SNDTIMEO, 0);
+    // end bug fix
+    {$ENDIF}
     end;
     fPassThrough := Value;
   end;
@@ -2598,7 +2598,7 @@ begin
   fSSLSocket.fSSLContext := fSSLContext;
   {$IFDEF WIN32_OR_WIN64}
   // begin bug fix
-  if Win32MajorVersion >= 6 then
+  if IndyCheckWindowsVersion(6) then
   begin
     // Note: Fix needed to allow SSL_Read and SSL_Write to timeout under
     // Vista+ when connection is dropped
@@ -2635,6 +2635,7 @@ begin
     LIO.SSLOptions.Assign( SSLOptions );
     LIO.OnStatusInfo := DoStatusInfo;
     LIO.OnGetPassword := DoGetPassword;
+    LIO.OnGetPasswordEx := OnGetPasswordEx;
     LIO.OnVerifyPeer := DoVerifyPeer;
     LIO.fSSLSocket := TIdSSLSocket.Create(Self);
   except
@@ -2807,7 +2808,7 @@ an invalid MAC when doing SSL.}
     );
   end;
   if error <= 0 then begin
-    EIdOSSLLoadingKeyError.RaiseException(RSSSLSettingCipherError);
+    raise EIdOSSLSettingCipherError.Create(RSSSLSettingCipherError);
   end;
   if fVerifyMode <> [] then begin
     SetVerifyMode(fVerifyMode, VerifyOn);
@@ -3133,6 +3134,12 @@ begin
   if error <= 0 then begin
     EIdOSSLConnectError.RaiseException(fSSL, error, RSSSLConnectError);
   end;
+  // TODO: even if SSL_connect() returns success, the connection might
+  // still be insecure if SSL_connect() detected that certificate validation
+  // actually failed, but ignored it because SSL_VERIFY_PEER was disabled!
+  // It would report such a failure via SSL_get_verify_result() instead of
+  // returning an error code, so we should call SSL_get_verify_result() here
+  // to make sure...
   StatusStr := 'Cipher: name = ' + Cipher.Name + '; ' +    {Do not Localize}
                'description = ' + Cipher.Description + '; ' +    {Do not Localize}
                'bits = ' + IntToStr(Cipher.Bits) + '; ' +    {Do not Localize}

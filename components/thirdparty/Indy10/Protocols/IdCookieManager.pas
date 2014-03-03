@@ -211,7 +211,7 @@ procedure TIdCookieManager.AddServerCookie(const ACookie: String; AURL: TIdURI);
 var
   LCookie: TIdCookie;
 begin
-                                                        
+  // TODO: use TIdCookies.AddServerCookie() after adding
   // a way for it to query the manager for rejections...
   //
   //FCookieCollection.AddServerCookie(ACookie, AURI);

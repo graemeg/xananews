@@ -135,42 +135,42 @@
 
 unit IdIMAP4Server;
 
- 
-                   
+{
+TODO (ex RFC 3501):
 
-                                               
+Dont allow & to be used as a mailbox separator.
 
-                                                               
-                               
+  Certain server data (unsolicited responses) MUST be recorded,
+  see Server Responses section.
 
-                                                                  
-                                        
+  UIDs must be unique to a mailbox AND any subsequent mailbox with
+  the same name - record in a text file.
 
-                                             
+\Recent cannot be changed by STORE or APPEND.
 
-                                                      
+COPY should preserve the date of the original message.
 
 
-                    
+  TODO (ccostelloe):
 
-                                                     
+Add a file recording the UIDVALIDITY in each mailbox.
 
-                                       
+Emails should be ordered in date order.
 
-                                                     
+Optional date/time param to be implemented in APPEND.
 
-                                                          
-                          
+  Consider integrating IdUserAccounts into login mechanism
+  (or per-user passwords).
 
-                               
+Implement utf mailbox encoding.
 
-                               
+Implement * in message numbers.
 
-                                                                       
-                                                      
+  Implement multiple-option FETCH commands (will need breaking out some
+  options which are abbreviations into their subsets).
 
-                                                 
- 
+Need some method of preserving flags permanently.
+}
 
 {
   IMPLEMENTATION NOTES:
@@ -430,6 +430,7 @@ type
     {$ENDIF}
     destructor Destroy; override;
   published
+    property DefaultPort default IdPORT_IMAP4;
     property SaferMode: Boolean read FSaferMode write FSaferMode default False;
     property UseDefaultMechanismsForUnassignedCommands: Boolean read FUseDefaultMechanismsForUnassignedCommands write FUseDefaultMechanismsForUnassignedCommands default True;
     property RootPath: string read FRootPath write FRootPath;
@@ -580,7 +581,7 @@ end;
 procedure TIdIMAP4Server.InitComponent;
 begin
   inherited InitComponent;
-                                                                  
+  //Todo:  Not sure which number is appropriate.  Should be tested
   FImplicitTLSProtPort := IdPORT_IMAP4S;  //Id_PORT_imap4_ssl_dp;
   FRegularProtPort := IdPORT_IMAP4;
   DefaultPort := IdPORT_IMAP4;
@@ -748,7 +749,7 @@ function TIdIMAP4Server.GetRecordForUID(const AUID: String; AMailBox: TIdMailBox
 var
   LN, LUID: Integer;
 begin
-                                                                            
+  // TODO: do string comparisons instead so that conversions are not needed?
   LUID := IndyStrToInt(AUID);
   for LN := 0 to AMailBox.MessageList.Count-1 do begin
     if IndyStrToInt(AMailBox.MessageList.Messages[LN].UID) = LUID then begin
@@ -2662,7 +2663,7 @@ begin
     DoSendReply(ASender.Context, 'BAD %s', [RSIMAP4SvrNotPermittedWithTLS]); {do not localize}
     Exit;
   end;
-                                                    
+  // TODO: STARTTLS may only be issued in auth-state
   DoSendReply(ASender.Context, 'OK %s', [RSIMAP4SvrBeginTLSNegotiation]);  {do not localize}
   (ASender.Context.Connection.IOHandler as TIdSSLIOHandlerSocketBase).Passthrough := False;
 end;

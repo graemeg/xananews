@@ -97,6 +97,9 @@
 {$UNDEF HAS_ComponentPlatformsAttribute_iOS_Device}
 {$UNDEF HAS_ComponentPlatformsAttribute_WinNX32}
 
+// Define for Delphi to auto-generate platform-appropriate '#pragma link' statements in HPP files
+{$UNDEF HAS_DIRECTIVE_HPPEMIT_LINKUNIT}
+
 // detect compiler versions
 
 // Delphi 4
@@ -471,6 +474,8 @@
 
 {$IFDEF VCL_XE5}
   {$DEFINE VCL_XE5_OR_ABOVE}
+    // TODO: figure out how to detect this version
+    {.$DEFINE VCL_XE5_UPDATE2_OR_ABOVE}
 {$ENDIF}
 
 {$IFDEF VCL_XE5_OR_ABOVE}
@@ -880,6 +885,10 @@
   {$DEFINE HAS_ComponentPlatformsAttribute_Android}
 {$ENDIF}
 
+{$IFDEF VCL_XE5_UPDATE2_OR_ABOVE}
+  {$DEFINE HAS_DIRECTIVE_HPPEMIT_LINKUNIT}
+{$ENDIF}
+
 // Delphi XE+ cross-compiling
 {$IFNDEF FPC}
   {$IFDEF POSIX}
@@ -1248,7 +1257,6 @@ word to an 8 bit byte and an 8 bit byte field named sa_len was added.
 
 {$IFDEF DOTNET}
   {$DEFINE DOTNET_OR_ICONV}
-{$ELSE}
 {$ENDIF}
 {$IFDEF USE_ICONV}
   {$DEFINE DOTNET_OR_ICONV}

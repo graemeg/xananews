@@ -519,7 +519,7 @@ function TIdHTTPAppResponse.GetDateVariable(Index: Integer): TDateTime;
       Result := Result - OffsetFromUTC;
   end;
 begin
-                               
+  //TODO: resource string these
   case Index of
     INDEX_RESP_Date             : Result := ToGMT(FResponseInfo.Date);
     INDEX_RESP_Expires          : Result := ToGMT(FResponseInfo.Expires);
@@ -538,7 +538,7 @@ procedure TIdHTTPAppResponse.SetDateVariable(Index: Integer; const Value: TDateT
       Result := Result + OffsetFromUTC;
   end;
 begin
-                               
+  //TODO: resource string these
   case Index of
     INDEX_RESP_Date             : FResponseInfo.Date := ToLocal(Value);
     INDEX_RESP_Expires          : FResponseInfo.Expires := ToLocal(Value);
@@ -550,7 +550,7 @@ end;
 
 function TIdHTTPAppResponse.GetIntegerVariable(Index: Integer): Integer;
 begin
-                               
+  //TODO: resource string these
   case Index of
     INDEX_RESP_ContentLength: Result := FResponseInfo.ContentLength;
   else
@@ -560,7 +560,7 @@ end;
 
 procedure TIdHTTPAppResponse.SetIntegerVariable(Index, Value: Integer);
 begin
-                               
+  //TODO: resource string these
   case Index of
     INDEX_RESP_ContentLength: FResponseInfo.ContentLength := Value;
   else
@@ -570,7 +570,7 @@ end;
 
 function TIdHTTPAppResponse.GetStringVariable(Index: Integer): AnsiString;
 begin
-                               
+  //TODO: resource string these
   case Index of
     INDEX_RESP_Version           :Result := AnsiString(FRequestInfo.Version);
     INDEX_RESP_ReasonString      :Result := AnsiString(FResponseInfo.ResponseText);
@@ -598,7 +598,7 @@ end;
 
 procedure TIdHTTPAppResponse.SetStringVariable(Index: Integer; const Value: AnsiString);
 begin
-                               
+  //TODO: resource string these
   case Index of
     INDEX_RESP_Version           :EWBBInvalidStringVar.Create(RSWBBInvalidStringVar);
     INDEX_RESP_ReasonString      :FResponseInfo.ResponseText := string(Value);
@@ -699,7 +699,7 @@ begin
     LDestCookie.Path := String(LSrcCookie.Path);
     LDestCookie.Expires := LSrcCookie.Expires;
     LDestCookie.Secure := LSrcCookie.Secure;
-                                                         
+    // TODO: LDestCookie.HttpOnly := LSrcCookie.HttpOnly;
   end;
   FResponseInfo.CustomHeaders.Clear;
   FResponseInfo.CustomHeaders.AddStdValues(CustomHeaders);

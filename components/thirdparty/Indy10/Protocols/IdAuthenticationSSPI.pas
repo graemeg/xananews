@@ -423,7 +423,12 @@ type
 
   // RLebeau 4/17/10: this forces C++Builder to link to this unit so
   // RegisterAuthenticationMethod can be called correctly at program startup...
-  {$HPPEMIT LINKUNIT}
+
+  {$IFDEF HAS_DIRECTIVE_HPPEMIT_LINKUNIT}
+    {$HPPEMIT LINKUNIT}
+  {$ELSE}
+    {$HPPEMIT '#pragma link "IdAuthenticationSSPI"'}
+  {$ENDIF}
 
 implementation
 
@@ -668,7 +673,7 @@ function TSSPIInterface.IsAvailable: Boolean;
     entrypoint: INIT_SECURITY_INTERFACE;
   begin
     fIsAvailable := False;
-    if Win32Platform = VER_PLATFORM_WIN32_WINDOWS then
+    if IndyWindowsPlatform = VER_PLATFORM_WIN32_WINDOWS then
       { Windows95 SSPI dll }
       dllName := SECURITY_DLL_95
     else

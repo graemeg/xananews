@@ -172,6 +172,13 @@ end;
 
 { TIdSASLEntries }
 
+// RLebeau 2/8/2013: WARNING!!! To work around a design limitation in the way
+// TIdIMAP4 implements SendCmd(), it cannot use TIdSASLEntries.LoginSASL() for
+// SASL authentication because the SASL commands sent in this unit will not end
+// up being IMAP-compatible!  Until that can be addressed, any changes made to
+// PerformSASLLogin() or LoginSASL() in this unit need to be duplicated in the
+// IdIMAP4.pas unit for the TIdIMAP4.Login() method as well...
+
 function CheckStrFail(const AStr : String; const AOk, ACont: array of string) : Boolean;
 begin
   Result := (PosInStrArray(AStr, AOk) = -1) and
@@ -275,7 +282,7 @@ type
   {$IFDEF HAS_GENERICS_TList}
   TIdSASLList = TList<TIdSASL>;
   {$ELSE}
-                                                                       
+  // TODO: flesh out to match TList<TIdSASL> for non-Generics compilers
   TIdSASLList = TList;
   {$ENDIF}
 

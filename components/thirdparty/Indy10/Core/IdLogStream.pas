@@ -65,7 +65,7 @@ type
 implementation
  uses SysUtils;
 
-                                                                            
+// TODO: This was orginally for VCL. For .Net what do we do? Convert back to
 // 7 bit? Log all? Logging all seems to be a disaster.
 // Text seems to be best, users are expecting text in this class. But
 // this write stream will dump unicode out in .net.....

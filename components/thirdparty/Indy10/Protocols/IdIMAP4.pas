@@ -397,26 +397,26 @@ unit IdIMAP4;
 
 interface
 
-             
-                                                                  
-                                                                                
+{ Todo -oIC :
+Change the mailbox list commands so that they receive TMailBoxTree
+structures and so they can store in them the mailbox name and it's attributes. }
 
-             
-                                                                  
-                                                                        
+{ Todo -oIC :
+Add support for \* special flag in messages, and check for \Recent
+flag in STORE command because it cant be stored (will get no reply!!!) }
 
-             
-                                           
-                                                                 
-                                                                    
-                                                                   
-                                                                 
-                                                         
-                                                                
-                                                            
-                                                      
-                                                                 
-                                                           
+{ Todo -oIC :
+5.1.2.  Mailbox Namespace Naming Convention
+By convention, the first hierarchical element of any mailbox name
+which begins with "#" identifies the "namespace" of the remainder of
+the name.  This makes it possible to disambiguate between different
+types of mailbox stores, each of which have their own namespaces.
+For example, implementations which offer access to USENET
+newsgroups MAY use the "#news" namespace to partition the USENET
+newsgroup namespace from that of other mailboxes.  Thus, the
+comp.mail.misc newsgroup would have an mailbox name of
+"#news.comp.mail.misc", and the name "comp.mail.misc" could refer
+to a different object (e.g. a user's private mailbox). }   
 
 { TO BE CONSIDERED -CC :
 Double-quotes in mailbox names can cause major but subtle failures.  Maybe
@@ -460,7 +460,7 @@ type
   EmUTF7Decode = class(EmUTF7Error);
 
 type
-                                                                    
+  // TODO: make an IIdTextEncoding implementation for Modified UTF-7
   TIdMUTF7 = class(TObject)
   public
     function Encode(const aString : TIdUnicodeString): String;
@@ -1347,7 +1347,7 @@ var
   S: String;
 begin
   Result := False;
-                                         
+  // TODO: support 'SASL-IR' extension...
   AClient.SendCmd(AClient.NewCmdCounter, 'AUTHENTICATE ' + String(ASASL.ServiceName), [], True); {Do not Localize}
   if CheckStrFail(AClient.LastCmdResult.Code, AOkReplies, AContinueReplies) then begin
     Exit; // this mechanism is not supported
@@ -1384,7 +1384,7 @@ type
   {$IFDEF HAS_GENERICS_TList}
   TIdSASLList = TList<TIdSASL>;
   {$ELSE}
-                                                                       
+  // TODO: flesh out to match TList<TIdSASL> for non-Generics compilers
   TIdSASLList = TList;
   {$ENDIF}
 
@@ -1538,7 +1538,7 @@ const
     $60,$61,$62,$63, $64,$65,$66,$67, $68,$69,$6A,$6B, $6C,$6D,$6E,$6F, // 112
     $70,$71,$72,$73, $74,$75,$76,$77, $78,$79,$7A,$7B, $7C,$7D,$7E,$FF);// 128
 
-                                                                                   
+// TODO: re-write this to derive from IdCoder3To4.pas or IdCoderMIME.pas classes...
 
 function TIdMUTF7.Encode(const aString: TIdUnicodeString): String;
 { -- MUTF7Encode -------------------------------------------------------------
@@ -1841,7 +1841,7 @@ end;
 //The following call FMUTF7 but do exception-handling on invalid strings...
 function TIdIMAP4.DoMUTFEncode(const aString : String): String;
 begin
-                                                                     
+  // TODO: if the server advertises the "UTF8=ACCEPT" capability, use
   // a UTF-8 quoted string instead of IMAP's Modified UTF-7...
   try
     Result := FMUTF7.Encode(
@@ -2347,7 +2347,7 @@ begin
   {$ENDIF}
   FMUTF7 := TIdMUTF7.Create;
 
-                                                                           
+  //Todo:  Not sure which number is appropriate.  Should be tested further.
   FImplicitTLSProtPort := IdPORT_IMAP4S;
   FRegularProtPort := IdPORT_IMAP4;
 
@@ -2746,7 +2746,7 @@ begin
         skGmailThreadID,
         skGmailLabels:
         begin
-                                                                             
+          // TODO: support RFC 5738 to allow for UTF-8 encoded quoted strings
           if not RequiresEncoding(ASearchInfo[Ln].Text) then begin
             LCmd := LCmd + ' ' + IMAP4SearchKeys[ASearchInfo[Ln].SearchKey] + ' ' + IMAPQuotedStr(ASearchInfo[Ln].Text); {Do not Localize}
           end else
@@ -3653,7 +3653,7 @@ begin
       FreeAndNil(LParts);
     end;
   end else begin
-                                                            
+    // TODO: detect LCharSet and LContentTransferEncoding...
   end;
   LCmd := '';
   if AUseUID then begin
@@ -3983,7 +3983,7 @@ begin
 end;
 
 // retrieve a specific individual part of a message
-                                                                                   
+// TODO: remove the ABufferLength output parameter under DOTNET, it is redundant...
 function TIdIMAP4.InternalRetrievePart(const AMsgNum: Integer; const APartNum: {Integer} string;
   AUseUID: Boolean; AUsePeek: Boolean; ADestStream: TStream;
   var ABuffer: {$IFDEF DOTNET}TIdBytes{$ELSE}PByte{$ENDIF};
@@ -5640,7 +5640,7 @@ begin
   try
     if ACmdResultDetails.Count > 0 then
     begin
-                                                    
+      // TODO: convert server response to uppercase?
       LRespStr := Trim(ACmdResultDetails[0]);
       LStatPos := Pos(IMAP4Commands[cmdStatus], LRespStr);
       if (LStatPos > 0) then
@@ -5772,7 +5772,7 @@ begin
   try
     for Ln := 0 to ACmdResultDetails.Count - 1 do begin
       LStr := ACmdResultDetails[Ln];
-                                          
+      //Todo: Get mail box attributes here
       {CC2: Could put mailbox attributes in AMBList's Objects property?}
       {The line is of the form:
       * LIST (\UnMarked \AnotherFlag) "/" "Mailbox name"
@@ -6370,7 +6370,7 @@ var
 const
   SContentType = 'Content-Type'; {do not localize}
 
-                                                                          
+  // TODO - move this procedure into TIdIOHandler as a new Capture method?
   procedure CaptureAndDecodeCharset;
   var
     LMStream: TMemoryStream;
@@ -6391,6 +6391,9 @@ const
     Li: integer;
     LTxt: TIdText;
     LNewDecoder: TIdMessageDecoder;
+    {$IFNDEF HAS_TStrings_ValueFromIndex}
+    LTmp: String;
+    {$ENDIF}
   begin
     LDestStream := TMemoryStream.Create;
     try
@@ -6405,10 +6408,19 @@ const
           LTxt.ContentDescription := VDecoder.Headers.Values['Content-Description']; {Do not Localize}
           LTxt.ContentDisposition := VDecoder.Headers.Values['Content-Disposition']; {Do not Localize}
           LTxt.ContentTransfer := VDecoder.Headers.Values['Content-Transfer-Encoding'];  {Do not Localize}
-          LTxt.ExtraHeaders.NameValueSeparator := '=';  {Do not Localize}
           for Li := 0 to VDecoder.Headers.Count-1 do begin
             if LTxt.Headers.IndexOfName(VDecoder.Headers.Names[Li]) < 0 then begin
-              LTxt.ExtraHeaders.Add(VDecoder.Headers.Strings[Li]);
+              {$IFNDEF HAS_TStrings_ValueFromIndex}
+              LTmp := VDecoder.Headers.Strings[Li];
+              {$ENDIF}
+              LTxt.ExtraHeaders.AddValue(
+                VDecoder.Headers.Names[Li],
+                {$IFDEF HAS_TStrings_ValueFromIndex}
+                VDecoder.Headers.ValueFromIndex[Li]
+                {$ELSE}
+                Copy(LTmp, Pos('=', LTmp)+1, MaxInt) {Do not Localize}
+                {$ENDIF}
+              );
             end;
           end;
           ReadStringsAsCharset(LDestStream, LTxt.Body, LTxt.CharSet);
@@ -6435,6 +6447,9 @@ const
     Li: integer;
     LAttachment: TIdAttachment;
     LNewDecoder: TIdMessageDecoder;
+    {$IFNDEF HAS_TStrings_ValueFromIndex}
+    LTmp: String;
+    {$ENDIF}
   begin
     AMsg.DoCreateAttachment(VDecoder.Headers, LAttachment);
     Assert(Assigned(LAttachment), 'Attachment must not be unassigned here!');    {Do not Localize}
@@ -6454,10 +6469,19 @@ const
         LAttachment.ContentLocation := VDecoder.Headers.Values['Content-Location'];  {Do not Localize}
         LAttachment.ContentDescription := VDecoder.Headers.Values['Content-Description']; {Do not Localize}
         LAttachment.Filename := VDecoder.Filename;
-        LAttachment.ExtraHeaders.NameValueSeparator := '=';  {Do not Localize}
         for Li := 0 to VDecoder.Headers.Count-1 do begin
           if LAttachment.Headers.IndexOfName(VDecoder.Headers.Names[Li]) < 0 then begin
-            LAttachment.ExtraHeaders.Add(VDecoder.Headers.Strings[Li]);
+            {$IFNDEF HAS_TStrings_ValueFromIndex}
+            LTmp := VDecoder.Headers.Strings[Li];
+            {$ENDIF}
+            LAttachment.ExtraHeaders.AddValue(
+              VDecoder.Headers.Names[Li],
+              {$IFDEF HAS_TStrings_ValueFromIndex}
+              VDecoder.Headers.ValueFromIndex[Li]
+              {$ELSE}
+              Copy(LTmp, Pos('=', LTmp)+1, MaxInt) {Do not Localize}
+              {$ENDIF}
+            );
           end;
         end;
       except

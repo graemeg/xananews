@@ -216,7 +216,7 @@ var
 
   procedure FlushOutputBuffer;
   begin
-                                                                                          
+    //TODO: this uses Array of Characters. Unless its dealing in Unicode or MBCS it should
     // be using TIdBuffer
     if Assigned(ADestStream) then begin
       WriteTIdBytesToStream(ADestStream, LOutputBuffer, LOutputBufferUsed);
@@ -288,7 +288,7 @@ begin
 
     LCrc32 := LowerCase(GetStrValue(LLine, 'crc32', $FFFF)); {Do not Localize}
     if LCrc32 <> '' then begin
-                                                                                     
+      //done this way because values can be computed faster than strings and we don't
       //have to mess with charactor case.
       if IndyStrToInt64('$' + LCrc32) <> LHash then begin
         EIdMessageYencInvalidCRCException.Toss(RSYencInvalidCRC);

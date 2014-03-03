@@ -457,7 +457,7 @@ type
     FReadLnSplit: Boolean;
     FReadLnTimedOut: Boolean;
     FReadTimeOut: Integer;
-       
+//TODO:
     FRecvBufferSize: Integer;
     FSendBufferSize: Integer;
 
@@ -700,7 +700,7 @@ type
     //
     property ConnectTimeout: Integer read FConnectTimeout write FConnectTimeout default 0;
     property ClosedGracefully: Boolean read FClosedGracefully;
-                                                                            
+    // TODO: Need to name this consistent. Originally no access was allowed,
     // but new model requires it for writing. Will decide after next set
     // of changes are complete what to do with Buffer prop.
     //
@@ -770,7 +770,7 @@ type
   {$IFDEF HAS_GENERICS_TList}
   TIdIOHandlerClassList = TList<TIdIOHandlerClass>;
   {$ELSE}
-                                                                                 
+  // TODO: flesh out to match TList<TIdIOHandlerClass> for non-Generics compilers
   TIdIOHandlerClassList = TList;
   {$ENDIF}
 
@@ -894,7 +894,7 @@ begin
     GIOHandlerClassList := TIdIOHandlerClassList.Create;
   end;
   {$IFNDEF DOTNET_EXCLUDE}
-                                                                       
+  //TODO: Reenable this. Dot net wont allow class references as objects
   // Use an array?
   if GIOHandlerClassList.IndexOf(Self) = -1 then begin
     GIOHandlerClassList.Add(Self);
@@ -1507,7 +1507,7 @@ begin
         if Opened then begin
           // No need to call AntiFreeze, the Readable does that.
           if SourceIsAvailable then begin
-                                                                      
+            // TODO: Whey are we reallocating LBuffer every time? This
             // should be a one time operation per connection.
 
             // RLebeau: because the Intercept does not allow the buffer
@@ -1528,7 +1528,7 @@ begin
                 end;
 
                 // Pass through LBuffer first so it can go through Intercept
-                                                               
+                //TODO: If not intercept, we can skip this step
                 InputBuffer.Write(LBuffer);
               end;
             finally
@@ -1602,7 +1602,7 @@ begin
   if ASize < 0 then begin //"-1" All from current position
     LStreamPos := AStream.Position;
     ASize := AStream.Size - LStreamPos;
-                                 
+    //todo is this step required?
     AStream.Position := LStreamPos;
   end
   else if ASize = 0 then begin //"0" ALL
@@ -1760,7 +1760,7 @@ begin
    and Opened;
 end;
 
-                                    
+// TODO: move this into IdGlobal.pas
 procedure AdjustStreamSize(const AStream: TStream; const ASize: TIdStreamSize);
 var
   LStreamPos: TIdStreamSize;
@@ -1855,8 +1855,8 @@ begin
           Break;
         end;
       end;
-                                                                       
-                                                                                           
+      //TODO: Improve this - dont like the use of the exception handler
+      //DONE -oAPR: Dont use a string, use a memory buffer or better yet the buffer itself.
       try
         try
           ReadBytes(LBuf, i, False);
@@ -1871,7 +1871,7 @@ begin
             if (E is EIdConnClosedGracefully) and AReadUntilDisconnect then begin
               Break;
             end else begin
-                                                                                     
+              // TODO: check for socket error 10054 when AReadUntilDisconnect is True
               raise;
             end;
           end;
@@ -1939,7 +1939,7 @@ begin
     // prematurely and thus leave unread bytes in the InputBuffer.
     // Let the loop catch the exception before exiting...
     repeat
-                                                                       
+      //TODO: Improve this - dont like the use of the exception handler
       try
         if ReadFromSource(False) > 0 then begin
           FInputBuffer.Clear;
@@ -2189,9 +2189,9 @@ begin
   end;
 end;
 
-                                                                   
-                                        
-                                     
+//TODO: Add a time out (default to infinite) and event to pass data
+//TODO: Add a max size argument as well.
+//TODO: Add a case insensitive option
 function TIdIOHandler.WaitFor(const AString: string; ARemoveFromBuffer: Boolean = True;
   AInclusive: Boolean = False; AByteEncoding: IIdTextEncoding = nil;
   ATimeout: Integer = IdTimeoutDefault
@@ -2362,7 +2362,7 @@ end;
 
 function TIdIOHandler.WriteFile(const AFile: String; AEnableTransferFile: Boolean): Int64;
 var
-                                                                           
+//TODO: There is a way in linux to dump a file to a socket as well. use it.
   LStream: TStream;
   {$IFDEF WIN32_OR_WIN64}
   LOldErrorMode : Integer;
@@ -2454,7 +2454,7 @@ begin
 
   LIntercept := Intercept;
   if LIntercept <> nil then begin
-                                                         
+    // TODO: pass offset/size parameters to the Intercept
     // so that a copy is no longer needed here
     LTemp := ToBytes(ABuffer, ALength, AOffset);
     LIntercept.Send(LTemp);
@@ -2476,7 +2476,7 @@ begin
       Close;
       RaiseError(LLastError);
     end;
-                                                                                          
+    // TODO - Have a AntiFreeze param which allows the send to be split up so that process
     // can be called more. Maybe a prop of the connection, MaxSendSize?
     TIdAntiFreezeBase.DoProcess(False);
     if LByteCount = 0 then begin

@@ -112,7 +112,7 @@ type
     procedure SetTTL(const Value: Integer);
     procedure SetHost(const AValue : String); virtual;
     //
-                                                          
+    // TODO: figure out which ReceiveXXX functions we want
     //
     property IPVersion : TIdIPVersion read GetIPVersion write SetIPVersion;
     //
@@ -202,7 +202,7 @@ var
   LIPVersion: TIdIPVersion;
 begin
   Result := 0;
-                               
+  // TODO: pass flags to recv()
   if ATimeOut < 0 then
   begin
     ATimeOut := FReceiveTimeout;

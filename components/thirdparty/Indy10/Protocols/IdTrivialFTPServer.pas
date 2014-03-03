@@ -95,6 +95,7 @@ type
     property OnReadFile: TAccessFileEvent read FOnReadFile write FOnReadFile;
     property OnWriteFile: TAccessFileEvent read FOnWriteFile write FOnWriteFile;
     property OnTransferComplete: TTransferCompleteEvent read FOnTransferComplete write FOnTransferComplete;
+    property DefaultPort default IdPORT_TFTP;
   end;
 
 implementation
@@ -126,6 +127,9 @@ uses
   {$IFNDEF HAS_GENERICS_TObjectList}
   IdThread,
   {$ENDIF}
+  {$IFDEF VCL_XE3_OR_ABOVE}
+  System.Types,
+{$ENDIF}
   IdUDPClient,
   SysUtils;
 
@@ -218,7 +222,7 @@ begin
 
   {$IFNDEF DOTNET}
   except
-                                                                                      
+    // TODO: implement this in a platform-neutral manner.  EFOpenError is VCL-specific
     on E: EFOpenError do begin
       raise EIdTFTPFileNotFound.Create(E.Message);
     end;
@@ -337,7 +341,7 @@ begin
   end;  { try..except }
 end;
 
-                                    
+// TODO: move this into IdGlobal.pas
 procedure AdjustStreamSize(const AStream: TStream; const ASize: TIdStreamSize);
 var
   LStreamPos: TIdStreamSize;
@@ -389,7 +393,7 @@ begin
 
   {$IFNDEF DOTNET}
   except
-                                                                                        
+    // TODO: implement this in a platform-neutral manner.  EFCreateError is VCL-specific
     on E: EFCreateError do begin
       raise EIdTFTPAllocationExceeded.Create(E.Message);
     end;
@@ -572,7 +576,7 @@ begin
     Exit;
   end;
   SetLength(Buffer, i);
-                                                           
+  // TODO: validate the correct peer is sending the data...
   case GStack.NetworkToHost(BytesToWord(Buffer)) of
     TFTP_ACK:
       begin
@@ -635,7 +639,7 @@ end;
 {$IFNDEF DOTNET}
 function TIdTFTPServerReceiveFileThread.HandleRunException(AException: Exception): Boolean;
 begin
-                                                                                    
+  // TODO: implement this in a platform-neutral manner.  EWriteError is VCL-specific
   if AException is EWriteError then
   begin
     Result := False;
@@ -677,7 +681,7 @@ begin
     Exit;
   end;
   SetLength(Buffer, i);
-                                                           
+  // TODO: validate the correct peer is sending the data...
   case GStack.NetworkToHost(BytesToWord(Buffer)) of
     TFTP_ACK:
       begin

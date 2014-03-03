@@ -17,7 +17,12 @@ type
 
   // RLebeau 4/17/10: this forces C++Builder to link to this unit so
   // RegisterHeaderCoder can be called correctly at program startup...
-  {$HPPEMIT LINKUNIT}
+
+  {$IFDEF HAS_DIRECTIVE_HPPEMIT_LINKUNIT}
+    {$HPPEMIT LINKUNIT}
+  {$ELSE}
+    {$HPPEMIT '#pragma link "IdHeaderCoderPlain"'}
+  {$ENDIF}
 
 implementation
 
@@ -31,7 +36,7 @@ end;
 
 class function TIdHeaderCoderPlain.Encode(const ACharSet, AData: String): TIdBytes;
 begin
-  Result := ToBytes(AData, IndyTextEncoding_8Bit);
+  Result := ToBytes(AData, IndyTextEncoding_8Bit{$IFDEF STRING_IS_ANSI}, IndyTextEncoding_8Bit{$ENDIF});
 end;
 
 class function TIdHeaderCoderPlain.CanHandle(const ACharSet: String): Boolean;

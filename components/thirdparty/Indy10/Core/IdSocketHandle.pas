@@ -297,7 +297,7 @@ begin
       // UpdateBindingLocal needs to be called even though Bind calls it. After
       // Bind is may be 0.0.0.0 (INADDR_ANY). After connect it will be a real IP.
       UpdateBindingLocal;
-                                                                            
+      //TODO: Could Peer binding ever be other than what we specified above?
       // Need to reread it?
       UpdateBindingPeer;
     end;
@@ -401,7 +401,10 @@ var
 begin
   LIP := Trim(AIP);
   if LIP = '' then begin
-                                                                        
+    // TODO: on Windows, use WSAIoctl(SIO_GET_BROADCAST_ADDRESS) instead.
+    // On other platforms, use getifaddrs() or other suitable API to retreive
+    // the broadcast IP if possible, or else the local IP/Subnet and then
+    // calculate the broadcast IP manually...
     LIP := '255.255.255.255'; {Do not Localize}
   end else begin
     LIP := GStack.ResolveHost(LIP, IPVersion);
@@ -447,7 +450,7 @@ end;
 
 procedure TIdSocketHandle.SetOverLapped(const AValue:boolean);
 begin
-                                    
+  // TODO: check for HandleAllocated
   FOverLapped := AValue;
 end;
 

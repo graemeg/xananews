@@ -192,7 +192,7 @@ type
     property Value: Double read GetValue write SetValue;
   end;
 
-                                                            
+  //TODO: Later make this descend from TIdThreadSafe instead
   {$IFDEF HAS_GENERICS_TThreadList}
   TIdThreadSafeList<T> = class(TThreadList<T>)
   {$ELSE}

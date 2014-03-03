@@ -241,6 +241,7 @@ type
   public
     constructor Create(ACollection: TCollection; const AIPAddress, ASubNetMask: string); reintroduce;
     property SubNetMask: String read FSubNetMask;
+    // TODO: add BroadcastIP
   end;
 
   TIdStackLocalAddressIPv6 = class(TIdStackLocalAddress)
@@ -395,7 +396,7 @@ implementation
 {$O-}
 
 uses
-                                                                            
+  //done this way so we can have a separate stack for FPC under Unix systems
   {$IFDEF UNIX}
     {$IFDEF USE_VCL_POSIX}
   IdStackVCLPosix,
@@ -601,7 +602,7 @@ function TIdStack.IsIP(AIP: string): Boolean;
 var
   i: Integer;
 begin
-                       
+  // TODO: support IPv6
 
 //
 //Result := Result and ((i > 0) and (i < 256));
@@ -982,23 +983,23 @@ end;
 procedure TIdStack.SetKeepAliveValues(ASocket: TIdStackSocketHandle;
   const AEnabled: Boolean; const ATimeMS, AInterval: Integer);
 begin
+  SetSocketOption(ASocket, Id_SOL_SOCKET, Id_SO_KEEPALIVE, iif(AEnabled, 1, 0));
   {$IFDEF HAS_TCP_KEEPIDLE_OR_KEEPINTVL}
   if AEnabled then
   begin
+    // TODO: support TCP_KEEPCNT
     {$IFDEF HAS_TCP_KEEPIDLE}
     SetSocketOption(ASocket, Id_SOL_TCP, Id_TCP_KEEPIDLE, ATimeMS);
     {$ENDIF}
     {$IFDEF HAS_TCP_KEEPINTVL}
     SetSocketOption(ASocket, Id_SOL_TCP, Id_TCP_KEEPINTVL, AInterval);
     {$ENDIF}
-    Exit;
   end;
   {$ENDIF}
-  SetSocketOption(ASocket, Id_SOL_SOCKET, Id_SO_KEEPALIVE, iif(AEnabled, 1, 0));
 end;
 
 initialization
-                                                                                 
+  //done this way so we can have a separate stack just for FPC under Unix systems
   GStackClass :=
     {$IFDEF USE_VCL_POSIX}
     TIdStackVCLPosix

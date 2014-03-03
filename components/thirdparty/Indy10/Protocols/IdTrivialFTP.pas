@@ -148,7 +148,7 @@ begin
           begin
             if Reading then
             begin
-                     
+              // TODO
               {
               if (IndyStrToInt(LOptValue) is not available) then begin
                 raise EIdTFTPAllocationExceeded.Create('');
@@ -232,11 +232,11 @@ begin
         SetLength(Buffer, BufferSize);
         DataLen := ReceiveBuffer(Buffer, FPeerIP, FPeerPort, ReceiveTimeout);
         if DataLen <= 0 then begin
-                                                                                
+          // TODO: re-transmit the last sent packet again instead of erroring...
           raise EIdTFTPException.Create(RSTimeOut);
         end;
         SetLength(Buffer, DataLen);
-                                                                 
+        // TODO: validate the correct peer is sending the data...
         case GStack.NetworkToHost(BytesToWord(Buffer)) of
           TFTP_DATA:
             begin
@@ -397,11 +397,11 @@ begin
         SetLength(Buffer, BufferSize);
         DataLen := ReceiveBuffer(Buffer, FPeerIP, FPeerPort, IndyMax(500, ReceiveTimeout));
         if DataLen <= 0 then begin
-                                                                                
+          // TODO: re-transmit the last sent packet again instead of erroring...
           raise EIdTFTPException.Create(RSTimeOut);
         end;
         SetLength(Buffer, DataLen);
-                                                                 
+        // TODO: validate the correct peer is sending the data...
         wOp := GStack.NetworkToHost(BytesToWord(Buffer));
         case wOp of
           TFTP_ACK:
