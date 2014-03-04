@@ -25,7 +25,7 @@ package LowLevelDXE5;
 {$IMAGEBASE $400000}
 {$DEFINE RELEASE}
 {$ENDIF IMPLICITBUILDING}
-{$DESCRIPTION 'Low Level support units for Delphi XE5'}
+{$DESCRIPTION 'Low Level support units for Delphi 2011'}
 {$RUNONLY}
 {$IMPLICITBUILD OFF}
 
@@ -50,6 +50,7 @@ contains
   unitQpcTimer in 'unitQpcTimer.pas',
   XnClasses in 'XnClasses.pas',
   XnRawByteStrings in 'XnRawByteStrings.pas',
-  unitWow64 in 'unitWow64.pas';
+  unitWow64 in 'unitWow64.pas',
+  unitVersionHelpers in 'unitVersionHelpers.pas';
 
 end.

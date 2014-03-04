@@ -3,6 +3,15 @@
 unit cmpNTAboutBox;
 
 interface
+{$IF CompilerVersion >= 24}   //XE3 - Rad Studio 10.0
+  {$LEGACYIFEND ON}
+  {$define has_StyleElements}
+  {$define HasSystemUITypes}
+{$IFEND}
+{$IF CompilerVersion >= 23}   //XE2 - Rad Studio 9.0
+   {$define UseVCLStyles}
+   {$define HasTOSVersion}
+{$IFEND}
 
 uses
   Windows, SysUtils, Classes, Graphics, Forms, Controls, StdCtrls,
@@ -61,7 +70,14 @@ implementation
 {$R *.DFM}
 
 uses
-  Registry, gifimg, unitWow64;
+  Registry, gifimg, unitWow64, unitVersionHelpers;
+
+function IsAMD64Arch : Boolean;
+var lp : _SYSTEM_INFO;
+begin
+  GetNativeSystemInfo(lp);
+  Result := lp.wProcessorArchitecture = PROCESSOR_ARCHITECTURE_AMD64;
+end;
 
 function LoadGifResource(const resName: string; image: TImage): Boolean;
 var
@@ -228,13 +244,45 @@ begin
         if Win32MinorVersion = 0 then
           os := 'Windows 2000'
         else
-          os := 'Windows XP';
+          if Win32MinorVersion = 1 then
+            os := 'Windows XP'
+          else
+            if IsAMD64Arch and (IsWindowsServer = False) then begin
+              os := 'Windows XP Professional x64 Edition'
+            end else begin
+              if GetSystemMetrics(SM_SERVERR2) <> 0 then
+                os := 'Windows Server 2003 R2'
+              else
+                os := 'Windows Server 2003';
+            end;
       6:
-        if Win32MinorVersion = 0 then
-          os := 'Windows Vista'
-        else
-          os := 'Windows 7';
-    end
+        if Win32MinorVersion = 0 then begin
+          if IsWindowsServer then begin
+            os := 'Windows Server 2008'
+          end else
+            os := 'Windows Vista';
+        end else
+          if Win32MinorVersion = 1 then begin
+            if IsWindowsServer then
+               os := 'Windows Server 2008 R2'
+            else
+              os := 'Windows 7';
+          end else begin
+            if IsWindows8Point1OrGreater then begin
+                if IsWindowsServer then begin
+                  os := 'Windows Server 2012 R2';
+                end else begin
+                  os := 'Windows 8.1';
+                end;
+            end else begin
+                if IsWindowsServer then begin
+                  os := 'Windows Server 2012';
+                 end else begin
+                  os := 'Windows 8';
+                end;
+            end;
+          end;
+        end
   else
     case Win32MajorVersion of
       4:
@@ -249,7 +297,10 @@ begin
   GetRegistrationInformation(Win32Platform = VER_PLATFORM_WIN32_NT, owner, organization);
   stLicense1.Caption := owner;
   stLicense2.Caption := organization;
-  stVersion.Caption := Format('%s  (Build %d: %s)', [os, Win32BuildNumber, Win32CSDVersion]);
+  if Win32CSDVersion = '' then
+    stVersion.Caption := Format('%s  (Build %d)', [os, Win32BuildNumber])
+  else
+    stVersion.Caption := Format('%s  (Build %d: %s)', [os, Win32BuildNumber, Win32CSDVersion]);
   stMemAvail.Caption := Format('Physical Memory Available to Windows: %10.0n KB',
     [memInfo.ullTotalPhys / 1024]);
   LoadGifResource(Application.Title + '1', icoProduct1);
