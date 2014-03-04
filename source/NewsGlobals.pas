@@ -31,6 +31,7 @@ interface
 {$IF CompilerVersion >= 24}
   {$LEGACYIFEND ON}
   {$define has_StyleElements}
+  {$define HasSystemUITypes}
 {$IFEND}
 {$IF CompilerVersion >= 23}
    {$define UseVCLStyles}
