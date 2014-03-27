@@ -150,7 +150,7 @@
 unit IdMessageCoderMIME;
 
 // for all 3 to 4s:
-                                                                   
+// TODO: Predict output sizes and presize outputs, then use move on
 // presized outputs when possible, or presize only and reposition if stream
 
 interface
@@ -573,7 +573,7 @@ begin
     // Read header
     repeat
       LLine := ReadLnRFC(LMsgEnd);
-      if LMsgEnd then begin                                                            
+      if LMsgEnd then begin // TODO: abnormal situation (Masters!)    {Do not Localize}
         FPartType := mcptEOF;
         Exit;
       end;//if

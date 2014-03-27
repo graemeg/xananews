@@ -432,7 +432,7 @@ var
 function gaiErrorToWsaError(const gaiError: Integer): Integer;
 begin
   case gaiError of
-    GIA_EAI_ADDRFAMILY: Result := 0;                                      
+    GIA_EAI_ADDRFAMILY: Result := 0; // TODO: find a decent error for here
     GIA_EAI_AGAIN:      Result := WSATRY_AGAIN;
     GIA_EAI_BADFLAGS:   Result := WSAEINVAL;
     GIA_EAI_FAIL:       Result := WSANO_RECOVERY;
@@ -466,8 +466,13 @@ begin
     FreeLibrary(h);
   end;
   {$ENDIF}
+  {$IFDEF HAS_DEPRECATED}
+    {$WARN SYMBOL_DEPRECATED OFF}
+  {$ENDIF}
   GIdIPv6FuncsAvailable := False;
-
+  {$IFDEF HAS_DEPRECATED}
+    {$WARN SYMBOL_DEPRECATED ON}
+  {$ENDIF}
   getaddrinfo := nil;
   getnameinfo := nil;
   freeaddrinfo := nil;
@@ -521,7 +526,6 @@ begin
 end;
 
 function WspiapiStrdup(const pszString: PChar): PChar; stdcall;
-  {$IFDEF USE_INLINE}inline;{$ENDIF}
 var
   pszMemory: PChar;
   cchMemory: size_t;
@@ -543,7 +547,6 @@ begin
 end;
 
 function WspiapiParseV4Address(const pszAddress: PChar; var pdwAddress: DWORD): BOOL; stdcall;
-  {$IFDEF USE_INLINE}inline;{$ENDIF}
 var
   dwAddress: DWORD;
   pcNext: PChar;
@@ -583,7 +586,6 @@ begin
 end;
 
 function WspiapiNewAddrInfo(iSocketType, iProtocol: Integer; wPort: WORD; dwAddress: DWORD): {$IFDEF UNICODE}PaddrinfoW{$ELSE}Paddrinfo{$ENDIF}; stdcall;
-  {$IFDEF USE_INLINE}inline;{$ENDIF}
 var
   ptNew: {$IFDEF UNICODE}PaddrinfoW{$ELSE}Paddrinfo{$ENDIF};
   ptAddress: PSockAddrIn;
@@ -621,7 +623,6 @@ end;
 
 function WspiapiQueryDNS(const pszNodeName: PChar; iSocketType, iProtocol: Integer;
   wPort: WORD; pszAlias: PChar; var pptResult: {$IFDEF UNICODE}PaddrinfoW{$ELSE}Paddrinfo{$ENDIF}): Integer; stdcall;
-  {$IFDEF USE_INLINE}inline;{$ENDIF}
 var
   pptNext: {$IFDEF UNICODE}PPaddrinfoW{$ELSE}PPaddrinfo{$ENDIF};
   ptHost: Phostent;
@@ -736,7 +737,6 @@ begin
 end;
 
 function WspiapiClone(wPort: WORD; ptResult: {$IFDEF UNICODE}PaddrinfoW{$ELSE}Paddrinfo{$ENDIF}): Integer; stdcall;
-  {$IFDEF USE_INLINE}inline;{$ENDIF}
 var
   ptNext, ptNew: {$IFDEF UNICODE}PaddrinfoW{$ELSE}Paddrinfo{$ENDIF};
 begin
@@ -782,7 +782,7 @@ begin
 end;
 
 {$IFNDEF HAS_TryStrToInt}
-                                                               
+// TODO: use the implementation already in IdGlobalProtocols...
 function TryStrToInt(const S: string; out Value: Integer): Boolean;
 {$IFDEF USE_INLINE}inline;{$ENDIF}
 var
@@ -1021,7 +1021,6 @@ var
   tAddress: in_addr;
   pszNode: PChar;
   pc: PChar;
-  tmp: String;
   {$IFNDEF STRING_IS_ANSI}
   tmpService: String;
   tmpNode: String;
@@ -1077,7 +1076,7 @@ begin
         pszService := ptService^.s_name;
         {$ELSE}
         tmpService := String(ptService^.s_name);
-        pszService := PChar(tmp);
+        pszService := PChar(tmpService);
         {$ENDIF}
       end else begin
         // DRAFT: return numeric form of the port!
@@ -1223,7 +1222,13 @@ locations.  hWship6Dll is kept so we can unload the Wship6.dll if necessary.
   getnameinfo := @WspiapiLegacyGetNameInfo;
   freeaddrinfo := @WspiapiLegacyFreeAddrInfo;
 
+  {$IFDEF HAS_DEPRECATED}
+    {$WARN SYMBOL_DEPRECATED OFF}
+  {$ENDIF}
   GIdIPv6FuncsAvailable := True;
+  {$IFDEF HAS_DEPRECATED}
+    {$WARN SYMBOL_DEPRECATED ON}
+  {$ENDIF}
 end;
 
 initialization

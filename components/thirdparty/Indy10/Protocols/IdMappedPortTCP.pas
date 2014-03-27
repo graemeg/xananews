@@ -366,7 +366,7 @@ begin
       //1.LConnectionHandle
       if FDataAvailList.ContainsSocket(Connection.Socket.Binding.Handle) then
       begin
-                                                                                                         
+        // TODO: WSAECONNRESET (Exception [EIdSocketError] Socket Error # 10054 Connection reset by peer)
         Connection.IOHandler.CheckForDataOnSource(0);
       end;
       //2.LOutBoundHandle
@@ -427,7 +427,7 @@ begin
   except
     on E: Exception do
     begin
-      DoException(E);                                
+      DoException(E);// DONE: Handle connect failures
       Connection.Disconnect; //req IdTcpServer with "Stop this thread if we were disconnected"
       raise;
     end;

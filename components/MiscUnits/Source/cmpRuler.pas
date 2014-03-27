@@ -1,7 +1,14 @@
 unit cmpRuler;
 
 interface
-
+{$IF CompilerVersion >= 24}
+  {$LEGACYIFEND ON}
+  {$define has_StyleElements}
+  {$define HasSystemUITypes}
+{$IFEND}
+{$IF CompilerVersion >= 23}
+   {$define UseVCLStyles}
+{$IFEND}
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs;
 
@@ -47,6 +54,14 @@ type
   end;
 
 implementation
+uses
+{$ifdef HasSystemUITypes}
+  System.UITypes,
+{$endif}
+{$ifdef UseVCLStyles}
+  Vcl.Themes,
+{$endif}
+  unitGUIUtils;
 
 { TXNRuler }
 
@@ -86,8 +101,10 @@ var
   r : TRect;
   offset : Integer;
 begin
-  Canvas.Brush.Color := Color;
+  Canvas.Brush.Color := ThemedColor(Color{$ifdef has_StyleElements},seClient in StyleElements{$endif});
+
   Canvas.Font := Font;
+  Canvas.Font.Color := ThemedColor( Font.Color {$ifdef has_StyleElements},seFont in StyleElements{$endif});
 
   w := ClientWidth;
   h := ClientHeight;

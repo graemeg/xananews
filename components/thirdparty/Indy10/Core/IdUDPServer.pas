@@ -100,6 +100,9 @@ type
     // When AutoRefCounting is enabled, object references MUST be valid objects.
     // It is common for users to store non-object values, though, so we will
     // provide separate properties for those purpose
+    //
+    // TODO; use TValue instead of separating them
+    //
     FDataObject: TObject;
     FDataValue: PtrInt;
     {$ELSE}
@@ -129,12 +132,14 @@ type
     {$ENDIF}
   end;
 
-                                               
+  // TODO: use TIdThreadSafeObjectList instead?
   {$IFDEF HAS_GENERICS_TThreadList}
   TIdUDPListenerThreadList = TThreadList<TIdUDPListenerThread>;
+  TIdUDPListenerList = TList<TIdUDPListenerThread>;
   {$ELSE}
-                                                                                    
+  // TODO: flesh out TThreadList<TIdUDPListenerThread> and TList<TIdUDPListenerThread> for non-Generics compilers...
   TIdUDPListenerThreadList = TThreadList;
+  TIdUDPListenerList = TList;
   {$ENDIF}
 
   TIdUDPListenerThreadClass = class of TIdUDPListenerThread;
@@ -206,14 +211,6 @@ begin
     end;
   end;
 end;
-
-type
-  {$IFDEF HAS_GENERICS_TList}
-  TIdUDPListenerList = TList<TIdUDPListenerThread>;
-  {$ELSE}
-                                                                              
-  TIdUDPListenerList = TList;
-  {$ENDIF}
 
 procedure TIdUDPServer.CloseBinding;
 var
@@ -290,6 +287,19 @@ begin
   end;
 end;
 
+// Linux/Unix does not allow an IPv4 socket and an IPv6 socket
+// to listen on the same port at the same time! Windows does not
+// have that problem...
+{$IFNDEF IdIPv6}
+  {$DEFINE CanCreateTwoBindings}
+  {$IFDEF LINUX} // should this be UNIX instead?
+    {$UNDEF CanCreateTwoBindings}
+  {$ENDIF}
+  {$IFDEF ANDROID}
+    {$UNDEF CanCreateTwoBindings}
+  {$ENDIF}
+{$ENDIF}
+
 function TIdUDPServer.GetBinding: TIdSocketHandle;
 var
   LListenerThread: TIdUDPListenerThread;
@@ -298,12 +308,14 @@ var
 begin
   if FCurrentBinding = nil then begin
     if Bindings.Count = 0 then begin
-      Bindings.Add; // IPv4 by default
+      Bindings.Add; // IPv4 or IPv6 by default
       {$IFNDEF IdIPv6}
+        {$IFDEF CanCreateTwoBindings}
       if GStack.SupportsIPv6 then begin
         // maybe add a property too, so the developer can switch it on/off
         Bindings.Add.IPVersion := Id_IPv6;
       end;
+        {$ENDIF}
       {$ENDIF}
     end;
 
@@ -341,7 +353,7 @@ begin
       LListenerThread.Name := Name + ' Listener #' + IntToStr(i + 1); {do not localize}
       {$IFDEF DELPHI_CROSS}
         {$IFNDEF MACOSX}
-                                                          
+      //Todo: Implement proper priority handling for Linux
       //http://www.midnightbeach.com/jon/pubs/2002/BorCon.London/Sidebar.3.html
       LListenerThread.Priority := tpListener;
         {$ENDIF}
@@ -417,10 +429,17 @@ begin
     if not Stopped then begin
       SetLength(FBuffer, FServer.BufferSize);
       ByteCount := FBinding.RecvFrom(FBuffer, PeerIP, PeerPort, PeerIPVersion);
-      FBinding.SetPeer(PeerIP, PeerPort, PeerIPVersion);
-      if ByteCount > 0 then
+      // RLebeau: some protocols make use of 0-length messages, so don't discard
+      // them here. This is not connection-oriented, so recvfrom() only returns
+      // 0 if a 0-length packet was actually received...
+      if ByteCount >= 0 then
       begin
         SetLength(FBuffer, ByteCount);
+        FBinding.SetPeer(PeerIP, PeerPort, PeerIPVersion);
+        // TODO: figure out a way to let UDPRead() run in this thread context
+        // and only synchronize the OnUDPRead event handler so that descendants
+        // do not need to be synchronized unnecessarily. Probably just have
+        // TIdUDPServer.DoUDPRead() use TIdSync when ThreadedEvent is false...
         if FServer.ThreadedEvent then begin
           UDPRead;
         end else begin

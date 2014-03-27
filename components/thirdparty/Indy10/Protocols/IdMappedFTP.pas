@@ -393,14 +393,14 @@ begin
   end;
 end;
 
-                                                           
-     
-                                            
-                                 
-                                 
-                            
-      
-     
+{TODO: procedure TIdMappedFtpContext.FreeDataChannelThread;
+Begin
+  if Assigned(FDataChannelThread) then begin
+    //TODO: здесь надо Disconnect
+    FDataChannelThread.Terminate;
+    FDataChannelThread:=NIL;
+  end;
+End;}
 
 function TIdMappedFtpContext.GetFtpCmdLine: string;
 begin
@@ -418,7 +418,7 @@ begin
   inherited BeforeRun;
 
   //? Is it normal code?
-                                                                  
+  // TODO: check error. Send reply to client, send abort to server
 
   //1.Outbound PASV => connect
   if FOutboundClient is TIdTCPClient then
@@ -476,7 +476,7 @@ begin
           Connection.IOHandler.InputBuffer.ExtractToBytes(FNetData);
           if Length(FNetData) > 0 then
           begin
-                                                                              
+            // TODO: DoLocalClientData(TIdMappedPortThread(AThread));//bServer
             FOutboundClient.IOHandler.Write(FNetData);
           end;
         end;
@@ -487,7 +487,7 @@ begin
           FOutboundClient.IOHandler.InputBuffer.ExtractToBytes(FNetData);
           if Length(FNetData) > 0 then
           begin
-                                                                        
+            // TODO: DoOutboundClientData(TIdMappedPortThread(AThread));
             FConnection.IOHandler.Write(FNetData);
           end;
         end;
@@ -495,13 +495,13 @@ begin
     finally
       if not FOutboundClient.Connected then
       begin
-                                                                    
+        // TODO: DoOutboundDisconnect(TIdMappedPortThread(AThread));
         FConnection.Disconnect; //disconnect local
         Stop;
       end;
       if not FConnection.Connected then
       begin
-                    
+        // TODO: ^^^
         FOutboundClient.Disconnect;
         Stop;
       end;

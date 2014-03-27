@@ -26,7 +26,7 @@ type
   EIdSASLDigestChallInvalidAlg  = class(EIdSASLDigestChallException);
   EIdSASLDigestAuthConfNotSupported = class(EIdSASLDigestException);
 
-                                       
+//done this way so we can use testboxes
 
 function CalcDigestResponse(const AUserName, APassword, ARealm, ANonce, ACNonce : String;
   const ANC : Integer;
@@ -36,9 +36,6 @@ implementation
 
 uses
   IdFIPS, IdGlobal, IdGlobalProtocols, IdHash, IdHashMessageDigest, IdResourceStringsProtocols;
-
-const
-  SASL_DIGEST_METHOD = 'AUTHENTICATE:';  {do not localize}
 
 function NCToStr(const AValue : Integer):String;
 {$IFDEF USE_INLINE} inline; {$ENDIF}

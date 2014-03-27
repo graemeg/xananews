@@ -56,6 +56,7 @@ contains
   cmpExWebBrowser in 'cmpExWebBrowser.pas',
   cmpPersistentPosition in 'cmpPersistentPosition.pas',
   unitHTMLStringsDisplayObject in 'unitHTMLStringsDisplayObject.pas',
-  unitNewsStringsDisplayObject in 'unitNewsStringsDisplayObject.pas';
+  unitNewsStringsDisplayObject in 'unitNewsStringsDisplayObject.pas',
+  unitGUIUtils in 'unitGUIUtils.pas';
 
 end.

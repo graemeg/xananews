@@ -174,6 +174,9 @@ type
     // When ARC is enabled, object references MUST be valid objects.
     // It is common for users to store non-object values, though, so
     // we will provide separate properties for those purposes
+    //
+    // TODO; use TValue instead of separating them
+    //
     FDataObject: TObject;
     FDataValue: PtrInt;
     {$ELSE}
@@ -533,12 +536,16 @@ begin
   if not Result then begin
     if CmdDelimiter <> #0 then begin
       Result := TextStartsWith(AData, Command + CmdDelimiter);
-      LUnparsedParams := Copy(AData, Length(Command) + 2, MaxInt);
+      if Result then begin
+        LUnparsedParams := Copy(AData, Length(Command) + 2, MaxInt);
+      end;
     end else begin
       // Dont strip any part of the params out.. - just remove the command purely on length and
       // no delim
       Result := TextStartsWith(AData, Command);
-      LUnparsedParams := Copy(AData, Length(Command) + 1, MaxInt);
+      if Result then begin
+        LUnparsedParams := Copy(AData, Length(Command) + 1, MaxInt);
+      end;
     end;
   end;
 

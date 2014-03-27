@@ -71,6 +71,9 @@ interface
 uses
   Classes,
   IdSocketHandle, IdTCPConnection, IdTask, IdYarn, IdThreadSafe,
+  {$IFDEF HAS_GENERICS_TThreadList}
+  System.Generics.Collections,
+  {$ENDIF}
   SysUtils;
 
 type
@@ -80,7 +83,14 @@ type
   TIdContextEvent = procedure(AContext: TIdContext) of object;
   TIdContextExceptionEvent = procedure(AContext: TIdContext; AException: Exception) of object;
 
-  TIdContextThreadList = TIdThreadSafeObjectList{$IFDEF HAS_GENERICS_TThreadList}<TIdContext>{$ENDIF};
+  {$IFDEF HAS_GENERICS_TThreadList}
+  TIdContextThreadList = TIdThreadSafeObjectList<TIdContext>;
+  TIdContextList = TList<TIdContext>;
+  {$ELSE}
+  // TODO: flesh out to match TThreadList<TIdContext> and TList<TIdContext> for non-Generics compilers
+  TIdContextThreadList = TIdThreadSafeObjectList;
+  TIdContextList = TList;
+  {$ENDIF}
 
   TIdContext = class(TIdTask)
   protected

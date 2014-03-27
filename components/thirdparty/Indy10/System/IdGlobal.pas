@@ -1438,7 +1438,7 @@ function Fetch(var AInput: string; const ADelim: string = IdFetchDelimDefault;
 function FetchCaseInsensitive(var AInput: string; const ADelim: string = IdFetchDelimDefault;
   const ADelete: Boolean = IdFetchDeleteDefault): string;
 
-                               
+// TODO: add an index parameter
 procedure FillBytes(var VBytes : TIdBytes; const ACount : Integer; const AValue : Byte);
 
 function CurrentThreadId: TIdThreadID;
@@ -1450,11 +1450,11 @@ procedure IdInsert(const Source: string; var S: string; Index: Integer);
 
 {$IFNDEF DOTNET}
 type
-                                          
+  // TODO: use "array of Integer" instead?
   {$IFDEF HAS_GENERICS_TList}
-  TIdPortList = TList<Integer>;                              
+  TIdPortList = TList<Integer>; // TODO: use TIdPort instead?
   {$ELSE}
-                                                                       
+  // TODO: flesh out to match TList<Integer> for non-Generics compilers
   TIdPortList = TList;
   {$ENDIF}
 
@@ -1544,7 +1544,7 @@ procedure IndySetThreadPriority(AThread: TThread; const APriority: TIdThreadPrio
 procedure SetThreadName(const AName: string; {$IFDEF DOTNET}AThread: System.Threading.Thread = nil{$ELSE}AThreadID: LongWord = $FFFFFFFF{$ENDIF});
 procedure IndySleep(ATime: LongWord);
 
-                                                                  
+// TODO: create TIdStringPositionList for non-Nextgen compilers...
 {$IFDEF USE_OBJECT_ARC}
 type
   TIdStringPosition = record
@@ -1588,11 +1588,25 @@ function IndyIndexOfName(AStrings: TStrings; const AStr: string; const ACaseSens
 function IndyIndexOfName(AStrings: TStringList; const AStr: string; const ACaseSensitive: Boolean = False): Integer; overload;
 {$ENDIF}
 
+{$IFDEF WINDOWS}
+function IndyWindowsMajorVersion: Integer;
+function IndyWindowsMinorVersion: Integer;
+function IndyWindowsBuildNumber: Integer;
+function IndyWindowsPlatform: Integer;
+function IndyCheckWindowsVersion(const AMajor: Integer; const AMinor: Integer = 0): Boolean;
+{$ENDIF}
+
+//For non-Nextgen compilers: IdDisposeAndNil is the same as FreeAndNil()
+//For Nextgen compilers: IdDisposeAndNil calls TObject.DisposeOf() to ensure
+// the object is freed immediately even if it has active references to it,
+// for instance when freeing an Owned component
+procedure IdDisposeAndNil(var Obj); {$IFDEF USE_INLINE}inline;{$ENDIF}
+
 var
   {$IFDEF UNIX}
 
   // For linux the user needs to set this variable to be accurate where used (mail, etc)
-  GOffsetFromUTC: TDateTime = 0;
+  GOffsetFromUTC: TDateTime = 0 {$IFDEF HAS_DEPRECATED}deprecated{$ENDIF};
   {$ENDIF}
 
   IndyPos: TPosProc = nil;
@@ -1600,11 +1614,15 @@ var
 {$IFDEF UNIX}
 
   {$UNDEF LIBEXT_IS_DYLIB}
+  {$UNDEF LIBEXT_IS_SO}
+
   {$IFDEF DARWIN}
     {$DEFINE LIBEXT_IS_DYLIB}
   {$ELSE}
     {$IFDEF DCC_NEXTGEN}
-      {$IFNDEF ANDROID}
+      {$IFDEF ANDROID}
+        {$DEFINE LIBEXT_IS_SO}
+      {$ELSE}
         {$DEFINE LIBEXT_IS_DYLIB}
       {$ENDIF}
     {$ENDIF}
@@ -1613,7 +1631,8 @@ var
 const
   {$IFDEF LIBEXT_IS_DYLIB}
   LIBEXT = '.dylib'; {do not localize}
-  {$ELSE}
+  {$ENDIF}
+  {$IFDEF LIBEXT_IS_SO}
   LIBEXT = '.so'; {do not localize}
   {$ENDIF}
 {$ENDIF}
@@ -1683,7 +1702,7 @@ end;
 
 {$IFNDEF DOTNET}
 var
-                                          
+  // TODO: use "array of Integer" instead?
   GIdPorts: TIdPortList = nil;
 
   GIdOSDefaultEncoding: IIdTextEncoding = nil;
@@ -2477,7 +2496,7 @@ const
   // charset explicitally instead so no BOM is outputted. This also saves us
   // from having to manually detect the presense of a BOM and strip it out.
   //
-                                                                         
+  // TODO: should we be using UTF-16LE or UTF-16BE on big-endian systems?
   // Delphi uses UTF-16LE, but what does FreePascal use? Let's err on the
   // side of caution until we know otherwise...
   //
@@ -2653,6 +2672,7 @@ begin
       {$IFDEF WINDOWS}
   Result := WideCharToMultiByte(FCodePage, FWCharToMBFlags, AChars, ACharCount, nil, 0, nil, nil);
       {$ELSE}
+  Result := 0;
   ToDo('GetByteCount() method of TIdMBCSEncoding class is not implemented for this platform yet'); {do not localize}
       {$ENDIF}
     {$ENDIF}
@@ -2806,7 +2826,7 @@ begin
         Exit;
       end;
 
-                                                                             
+      // TODO: figure out a better way to calculate the number of input bytes
       // needed to generate a single UTF-16 output sequence...
       LMaxBytesSize := IndyMin(AByteCount, FMaxCharSize);
       LConverted := False;
@@ -2923,7 +2943,7 @@ begin
         Exit;
       end;
 
-                                                                             
+      // TODO: figure out a better way to calculate the number of input bytes
       // needed to generate a single UTF-16 output sequence...
       LMaxBytesSize := IndyMin(AByteCount, FMaxCharSize);
       LConverted := False;
@@ -3093,7 +3113,7 @@ end;
 
 { TIdUTF8Encoding }
 
-                                                                                  
+// TODO: implement UTF-8 manually so we don't have to deal with codepage issues...
 
 constructor TIdUTF8Encoding.Create;
 begin
@@ -3136,7 +3156,7 @@ end;
 
 function TIdUTF16LittleEndianEncoding.GetByteCount(const AChars: PIdWideChar; ACharCount: Integer): Integer;
 begin
-                                  
+  // TODO: verify UTF-16 sequences
   Result := ACharCount * SizeOf(WideChar);
 end;
 
@@ -3148,7 +3168,7 @@ var
   LChars: PIdWideChar;
 {$ENDIF}
 begin
-                                  
+  // TODO: verify UTF-16 sequences
   {$IFDEF ENDIAN_BIG}
   LChars := AChars;
   for I := ACharCount - 1 downto 0 do
@@ -3168,7 +3188,7 @@ end;
 
 function TIdUTF16LittleEndianEncoding.GetCharCount(const ABytes: PByte; AByteCount: Integer): Integer;
 begin
-                                  
+  // TODO: verify UTF-16 sequences
   Result := AByteCount div SizeOf(WideChar);
 end;
 
@@ -3180,7 +3200,7 @@ var
   I: Integer;
 {$ENDIF}
 begin
-                                  
+  // TODO: verify UTF-16 sequences
   {$IFDEF ENDIAN_BIG}
   LBytes1 := ABytes;
   LBytes2 := ABytes;
@@ -3537,7 +3557,7 @@ end;
 
 function IndyTextEncoding(const ACharSet: String): IIdTextEncoding;
 begin
-                                                              
+  // TODO: move IdCharsets unit into IndySystem package so the
   // IdGlobalProtocols.CharsetToEncoding() function can be moved
   // into this unit...
   case PosInStrArray(ACharSet, ['ascii', 'us-ascii', 'utf-16be', 'utf-16le', 'utf-16', 'utf-7', 'utf-8'], False) of {do not localize}
@@ -3593,7 +3613,7 @@ var
 begin
   if GIdOSDefaultEncoding = nil then begin
     {$IFDEF DOTNET}
-                                       
+    // TODO: use thread-safe assignment
     GIdOSDefaultEncoding := TIdDotNetEncoding.Create(System.Text.Encoding.Default);
     {$ELSE}
     LEncoding := TIdMBCSEncoding.Create;
@@ -3622,7 +3642,7 @@ begin
     // and seems to be just as widely supported as Windows-1252 on most systems,
     // so we'll use that for now...
 
-                                       
+    // TODO: use thread-safe assignment
     GId8BitEncoding := TIdDotNetEncoding.Create('ISO-8859-1');
     {$ELSE}
     LEncoding := TId8BitEncoding.Create;
@@ -3642,7 +3662,7 @@ var
 begin
   if GIdASCIIEncoding = nil then begin
     {$IFDEF DOTNET}
-                                       
+    // TODO: use thread-safe assignment
     GIdASCIIEncoding := TIdDotNetEncoding.Creeate(System.Text.Encoding.ASCII);
     {$ELSE}
     LEncoding := TIdASCIIEncoding.Create;
@@ -3662,7 +3682,7 @@ var
 begin
   if GIdUTF16BigEndianEncoding = nil then begin
     {$IFDEF DOTNET}
-                                       
+    // TODO: use thread-safe assignment
     GIdUTF16BigEndianEncoding := TIdDotNetEncoding.Create(System.Text.Encoding.BigEndianUnicode);
     {$ELSE}
     LEncoding := TIdUTF16BigEndianEncoding.Create;
@@ -3682,7 +3702,7 @@ var
 begin
   if GIdUTF16LittleEndianEncoding = nil then begin
     {$IFDEF DOTNET}
-                                       
+    // TODO: use thread-safe assignment
     GIdUTF16LittleEndianEncoding := TIdDotNetEncoding.Create(System.Text.Encoding.Unicode);
     {$ELSE}
     LEncoding := TIdUTF16LittleEndianEncoding.Create;
@@ -3702,7 +3722,7 @@ var
 begin
   if GIdUTF7Encoding = nil then begin
     {$IFDEF DOTNET}
-                                       
+    // TODO: use thread-safe assignment
     GIdUTF7Encoding := TIdDotNetEncoding.Create(System.Text.Encoding.UTF7);
     {$ELSE}
     LEncoding := TIdUTF7Encoding.Create;
@@ -3722,7 +3742,7 @@ var
 begin
   if GIdUTF8Encoding = nil then begin
     {$IFDEF DOTNET}
-                                       
+    // TODO: use thread-safe assignment
     GIdUTF8Encoding := TIdDotNetEncoding.Create(System.Text.Encoding.UTF8);
     {$ELSE}
     LEncoding := TIdUTF8Encoding.Create;
@@ -3942,9 +3962,9 @@ function Impl_InterlockedCompareExchange(var Destination: PtrInt; Exchange, Comp
 {$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
   {$IFDEF CPU64}
-                                                                
+  // TODO: use LOCK CMPXCHG8B directly so this is more atomic...
   {$ELSE}
-                                                              
+  // TODO: use LOCK CMPXCHG directly so this is more atomic...
   {$ENDIF}
   Result := Destination;
   if Destination = Comparand then begin
@@ -3957,7 +3977,7 @@ function Stub_InterlockedCompareExchange(var Destination: PtrInt; Exchange, Comp
   function GetImpl: Pointer;
   const
     cKernel32 = 'KERNEL32'; {do not localize}
-                                                             
+    // TODO: what is Embarcadero's 64-bit define going to be?
     cInterlockedCompareExchange = {$IFDEF CPU64}'InterlockedCompareExchange64'{$ELSE}'InterlockedCompareExchange'{$ENDIF}; {do not localize}
   begin
     Result := GetProcAddress(GetModuleHandle(cKernel32), cInterlockedCompareExchange);
@@ -4141,7 +4161,7 @@ begin
   {$ENDIF}
 end;
 
-                                
+// TODO: add an AIndex parameter
 procedure FillBytes(var VBytes : TIdBytes; const ACount : Integer; const AValue : Byte);
 {$IFDEF STRING_IS_ANSI}
   {$IFDEF USE_INLINE}inline;{$ENDIF}
@@ -4155,7 +4175,7 @@ begin
   // instead. Now that Char maps to WideChar, this causes problems for FillChar().
   {$IFDEF STRING_IS_UNICODE}
   //System.&Array.Clear(VBytes, 0, ACount);
-                        
+  // TODO: optimize this
   for I := 0 to ACount-1 do begin
     VBytes[I] := AValue;
   end;
@@ -4164,22 +4184,28 @@ begin
   {$ENDIF}
 end;
 
+// RLebeau 10/22/2013: prior to Delphi 2010, fmCreate was an all-encompassing
+// bitmask, no other flags could be combined with it.  The RTL was updated in
+// Delphi 2010 to allow other flags to be specified along with fmCreate.  So
+// at best, we will now be able to allow read-only access to other processes
+// in Delphi 2010 and later, and at worst we will continue having exclusive
+// right to the file in Delphi 2009 and earlier, just like we always did...
+
 constructor TIdFileCreateStream.Create(const AFile : String);
 begin
-  inherited Create(AFile, fmCreate);
+  inherited Create(AFile, fmCreate or fmOpenReadWrite or fmShareDenyWrite);
 end;
 
 constructor TIdAppendFileStream.Create(const AFile : String);
 var
   LFlags: Word;
 begin
-  if FileExists(AFile) then begin
-    LFlags := fmOpenReadWrite or fmShareDenyWrite;
-  end else begin
-    LFlags := fmCreate;
+  LFlags := fmOpenReadWrite or fmShareDenyWrite;
+  if not FileExists(AFile) then begin
+    LFlags := LFLags or fmCreate;
   end;
   inherited Create(AFile, LFlags);
-  if LFlags <> fmCreate then begin
+  if (LFlags and fmCreate) = 0 then begin
     TIdStreamHelper.Seek(Self, 0, soEnd);
   end;
 end;
@@ -4263,7 +4289,7 @@ begin
   begin
     if (ABytes[2] = cDash) and (ABytes[3] = cDash) then
     begin
-                                                                               
+      // TODO: just do byte comparisons so String conversions are not needed...
       {$IFDEF STRING_IS_IMMUTABLE}
       LS := TIdStringBuilder.Create(2);
       LS.Append(Char(ABytes[0]));
@@ -4711,12 +4737,12 @@ begin
   // SG: I'm not sure if this return the handle of the dotnet thread or the handle of the application domain itself (or even if there is a difference)
   Result := AppDomain.GetCurrentThreadId;
   // RLebeau
-                                                                 
+  // TODO: find if there is something like the following instead:
   // System.Diagnostics.Thread.GetCurrentThread.ID
   // System.Threading.Thread.CurrentThread.ID
   {$ENDIF}
 {$ELSE}
-                                                      
+  // TODO: is GetCurrentThreadId() available on Linux?
   Result := GetCurrentThreadID;
 {$ENDIF}
 end;
@@ -4822,7 +4848,7 @@ function Ticks: LongWord;
   {$IFDEF USE_INLINE}inline;{$ENDIF}
 {$ENDIF}
 {$IFDEF UNIX}
-  {$IFDEF MACOSX}
+  {$IFDEF DARWIN}
     {$IFDEF USE_INLINE} inline;{$ENDIF}
   {$ELSE}
 var
@@ -4838,9 +4864,26 @@ var
 {$ENDIF}
 begin
   {$IFDEF UNIX}
-    {$IFDEF MACOSX}
+    {$IFDEF DARWIN}
   //This seems to be available on the Delphi cross-compiler for OS/X
   Result := AbsoluteToNanoseconds(UpTime) div 1000000;
+
+  // TODO: UpTime() and AbsoluteToNanoseconds() are from the Carbon API, which
+  // is deprecated in OSX 10.8+. The newer Cocoa way would be as follows:
+  {
+  var
+    s_timebase_info: mach_timebase_info_data_t;
+
+  function Ticks: LongWord;
+  begin
+    // mach_absolute_time() returns billionth of seconds,
+    // so divide by one million to get milliseconds
+    Result := (mach_absolute_time() * s_timebase_info.numer) div (1000000 * s_timebase_info.denom);
+  end;
+
+  initialization
+    mach_timebase_info(@s_timebase_info);
+  }
     {$ELSE}
       {$IFDEF USE_BASEUNIX}
   fpgettimeofday(@tv,nil);
@@ -4922,7 +4965,7 @@ end;
 {$IFNDEF DOTNET}
 function ServicesFilePath: string;
 var
-  {$IFDEF MSWINDOWS}
+  {$IFDEF WINDOWS}
   sLocation: {$IFDEF UNICODE_BUT_STRING_IS_ANSI}WideString{$ELSE}string{$ENDIF};
   {$ELSE}
   sLocation: string;
@@ -4932,11 +4975,11 @@ begin
   sLocation := '/etc/';  // assume Berkeley standard placement   {do not localize}
   {$ENDIF}
 
-  {$IFDEF MSWINDOWS}
+  {$IFDEF WINDOWS}
   SetLength(sLocation, MAX_PATH);
   SetLength(sLocation, GetWindowsDirectory(PChar(sLocation), MAX_PATH));
   sLocation := IndyIncludeTrailingPathDelimiter(sLocation);
-  if Win32Platform = VER_PLATFORM_WIN32_NT then begin
+  if IndyWindowsPlatform = VER_PLATFORM_WIN32_NT then begin
     sLocation := sLocation + 'system32\drivers\etc\'; {do not localize}
   end;
   {$ENDIF}
@@ -4975,7 +5018,7 @@ begin
             if i = 0 then begin
               raise EIdCorruptServicesFile.CreateFmt(RSCorruptServicesFile, [ServicesFilePath]); {do not localize}
             end;
-                                                            
+          //TODO: Make Whitespace a function to elim warning
           until Ord(s[i]) in IdWhiteSpace;
           i := IndyStrToInt(Copy(s, i+1, iPosSlash-i-1));
           if i <> iPrev then begin
@@ -5076,8 +5119,8 @@ end;
 function IsAlpha(const AChar: Char): Boolean;
 {$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
-                                                           
-                                                          
+  // TODO: under XE3.5+, use TCharHelper.IsLetter() instead
+  // TODO: under D2009+, use TCharacter.IsLetter() instead
 
   // Do not use IsCharAlpha or IsCharAlphaNumeric - they are Win32 routines
   Result := ((AChar >= 'a') and (AChar <= 'z')) or ((AChar >= 'A') and (AChar <= 'Z')); {Do not Localize}
@@ -5207,8 +5250,8 @@ end;
 function IsNumeric(const AChar: Char): Boolean;
 {$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
-                                                          
-                                                         
+  // TODO: under XE3.5+, use TCharHelper.IsDigit() instead
+  // TODO: under D2009+, use TCharacter.IsDigit() instead
 
   // Do not use IsCharAlpha or IsCharAlphaNumeric - they are Win32 routines
   Result := (AChar >= '0') and (AChar <= '9'); {Do not Localize}
@@ -5572,7 +5615,7 @@ begin
 end;
 
 {$IFNDEF DOTNET}
-                                        
+// TODO: validate this with Unicode data
 function MemoryPos(const ASubStr: string; MemBuff: PChar; MemorySize: Integer): Integer;
 var
   LSearchLength: Integer;
@@ -6453,27 +6496,25 @@ begin
   {$IFDEF UNIX}
 
     {$IFDEF USE_VCL_POSIX}
-  {from http://edn.embarcadero.com/article/27890 }
+  {from http://edn.embarcadero.com/article/27890 but without multiplying the Result by -1}
 
   gettimeofday(TV, nil);
   T := TV.tv_sec;
   localtime_r(T, UT);
-  Result := -1*(UT.tm_gmtoff / 60 / 60 / 24);
+  Result := UT.tm_gmtoff / 60 / 60 / 24;
     {$ENDIF}
     {$IFDEF USE_BASEUNIX}
   fpGetTimeOfDay (@TimeVal, @TimeZone);
-  Result := -1 * (timezone.tz_minuteswest /60 / 60 / 24)
+  Result := -1 * (timezone.tz_minuteswest / 60 / 24)
     {$ENDIF}
     {$IFDEF KYLIXCOMPAT}
-  {from http://edn.embarcadero.com/article/27890 }
+  {from http://edn.embarcadero.com/article/27890 but without multiplying the Result by -1}
 
   gettimeofday(TV, nil);
   T := TV.tv_sec;
   localtime_r(@T, UT);
-  Result := -1*(UT.__tm_gmtoff / 60 / 60 / 24);
+  Result := UT.__tm_gmtoff / 60 / 60 / 24;
     {$ENDIF}
-    // __tm_gmtoff is the bias in seconds from the UTC to the current time.
-    // so I multiply by -1 to compensate for this.
 
   {$ENDIF}
   {$IFDEF DOTNET}
@@ -6571,7 +6612,7 @@ function StringsReplace(const S: String; const OldPattern, NewPattern: array of 
 var
   i : Integer;
 begin
-                                                                          
+  // TODO: re-write this to not use StringReplace() in a loop anymore.  If
   // OldPattern contains multiple strings, a string appearing later in the
   // list may be replaced multiple times by accident if it appears in the
   // Result of an earlier string replacement.
@@ -7970,7 +8011,7 @@ begin
   end;
 end;
 
-                                                                                       
+//TODO: Continue to optimize this function. Its performance severely impacts the coders
 function ReadLnFromStream(AStream: TStream; var VLine: String; AMaxLineLength: Integer = -1;
   AByteEncoding: IIdTextEncoding = nil
   {$IFDEF STRING_IS_ANSI}; ADestEncoding: IIdTextEncoding = nil{$ENDIF}
@@ -8196,6 +8237,69 @@ begin
   end;
 end;
 {$ENDIF}
+
+{$IFDEF WINDOWS}
+function IndyWindowsMajorVersion: Integer;
+begin
+  {$IFDEF WINCE}
+  Result := SysUtils.WinCEMajorVersion;
+  {$ELSE}
+  Result := SysUtils.Win32MajorVersion;
+  {$ENDIF}
+end;
+
+function IndyWindowsMinorVersion: Integer;
+begin
+  {$IFDEF WINCE}
+  Result := SysUtils.WinCEMinorVersion;
+  {$ELSE}
+  Result := SysUtils.Win32MinorVersion;
+  {$ENDIF}
+end;
+
+function IndyWindowsBuildNumber: Integer;
+begin
+  // for this, you need to strip off some junk to do comparisons
+  {$IFDEF WINCE}
+  Result := SysUtils.WinCEBuildNumber and $FFFF;
+  {$ELSE}
+  Result := SysUtils.Win32BuildNumber and $FFFF;
+  {$ENDIF}
+end;
+
+function IndyWindowsPlatform: Integer;
+begin
+  {$IFDEF WINCE}
+  Result := SysUtils.WinCEPlatform;
+  {$ELSE}
+  Result := SysUtils.Win32Platform;
+  {$ENDIF}
+end;
+
+function IndyCheckWindowsVersion(const AMajor: Integer; const AMinor: Integer = 0): Boolean;
+var
+  LMajor, LMinor: Integer;
+begin
+  LMajor := IndyWindowsMajorVersion;
+  LMinor := IndyWindowsMinorVersion;
+  Result := (LMajor > AMajor) or ((LMajor = AMajor) and (LMinor >= AMinor));
+end;
+{$ENDIF}
+
+procedure IdDisposeAndNil(var Obj);
+{$IFDEF USE_OBJECT_ARC}
+var
+  Temp: Pointer;
+{$ENDIF}
+begin
+  {$IFDEF USE_OBJECT_ARC}
+  Temp := Pointer(Obj);
+  Pointer(Obj) := nil;
+  TObject(Temp).DisposeOf;
+  {$ELSE}
+  FreeAndNil(Obj);
+  {$ENDIF}
+end;
 
 initialization
   // AnsiPos does not handle strings with #0 and is also very slow compared to Pos

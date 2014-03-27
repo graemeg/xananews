@@ -76,8 +76,8 @@ unit IdCoderHeader;
 
 //refer http://www.faqs.org/rfcs/rfc2047.html
 
-                                     
-                                                                                  
+//TODO: Optimize and restructure code
+//TODO: Redo this unit to fit with the new coders and use the exisiting MIME stuff
 
 {
 2002-08-21 JM Berg
@@ -178,7 +178,7 @@ begin
 end;
 
 function B64(AChar: Char): Byte;
-                                                   
+//TODO: Make this use the more efficient MIME Coder
 begin
   for Result := Low(base64_tbl) to High(base64_tbl) do begin
     if AChar = base64_tbl[Result] then begin
@@ -240,7 +240,7 @@ var
     Result := True;
   end;
 
-                                                               
+  // TODO: use TIdCoderQuotedPrintable and TIdCoderMIME instead
   function ExtractEncodedData(const AEncoding, AData: String; var VDecoded: TIdBytes): Boolean;
   var
     I, J: Integer;
@@ -519,6 +519,11 @@ begin
     Result := '';
     Exit;
   end;
+
+  // TODO: this function needs to take encoded codeunits into account when
+  // deciding where to split the encoded data between adjacent encoded-words,
+  // so that a single encoded character does not get split between encoded-words
+  // thus corrupting that character...
 
   Buf := EncodeHeaderData(MimeCharSet, Header);
 

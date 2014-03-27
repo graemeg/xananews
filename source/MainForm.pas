@@ -26,6 +26,14 @@ unit MainForm;
 interface
 
 {$WARN UNIT_PLATFORM OFF}
+{$IF CompilerVersion >= 24}
+  {$LEGACYIFEND ON}
+  {$define has_StyleElements}
+  {$define HasSystemUITypes}
+{$IFEND}
+{$IF CompilerVersion >= 23}
+   {$define UseVCLStyles}
+{$IFEND}
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms,
@@ -1196,6 +1204,9 @@ uses
   {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
     System.UITypes,
   {$ifend}
+{$if CompilerVersion >= 24.0} // 23.0 = Delphi XE2
+  Vcl.Themes,
+{$ifend}
   ClipBrd, Printers, StrUtils,
   AccountsDialog, NewsgroupsDialog, FilterDialog, MessagesDialog, unitNNTPFilters,
   IdException, SplashForm, unitNNTPThreadManager, BatchesDialog, NewsgroupStatisticsForm,
@@ -1206,7 +1217,7 @@ uses
   MoveMessagebaseDialog, IdCoder, IdCoderUUE, IdCoderMIME, CombineDecodeDialog,
   OptionsForm, AccountForm, NewsgroupForm, unitFontDetails, AddAccountWizard,
   FindOnInternetDialog, ReadlnDelayDialog, IdURI, GraphUtil, unitMessageBaseSearch,
-  XnCoderUUE;
+  XnCoderUUE, unitGUIUtils;
 
 type
   TfnIterator = function(proc: TGroupIteratorProc; purge: Boolean; param: LPARAM = 0): Integer of object;
@@ -6615,7 +6626,7 @@ begin
 
   if Assigned(article) and article.IsOdd then
   begin
-    TargetCanvas.Brush.Color := XNOptions.Appearance[apMessageHeaders].AlternateBGColor;
+    TargetCanvas.Brush.Color := ThemedColor(XNOptions.Appearance[apMessageHeaders].AlternateBGColor{$ifdef has_StyleElements},seClient in StyleElements{$endif}  );;
     TargetCanvas.FillRect(ItemRect);
   end;
 end;
@@ -6662,7 +6673,7 @@ begin
         case art.KeyPhraseNo of
           -1: ;
         else
-          TargetCanvas.Brush.Color := XNOptions.KeywordColors[art.KeyPhraseNo];
+          TargetCanvas.Brush.Color := ThemedColor(XNOptions.KeywordColors[art.KeyPhraseNo]{$ifdef has_StyleElements},seClient in StyleElements{$endif}  );;
           r.Left := r.Left + 23;
           r.Right := r.Left + 9;
           r.Top := r.Top + 5;
@@ -7116,7 +7127,7 @@ var
   h1, l1, s1: word;
   h2, l2, s2: word;
 begin
-  c1 := ColorToRGB(fontColor);
+  c1 := ColorToRGB( fontColor);
   c2 := ColorToRGB(bkColor);
 
   ColorRGBToHLS(c1, h1, l1, s1);
@@ -7147,10 +7158,10 @@ var
   clr, bclr: TColor;
 begin
   article := GetNodeArticle(node);
-  clr := Canvas.Font.Color;
-  bclr := Canvas.Brush.Color;
+  clr := ThemedColor( Canvas.Font.Color{$ifdef has_StyleElements},seFont in StyleElements{$endif}  );
+  bclr := ThemedColor( Canvas.Brush.Color{$ifdef has_StyleElements},seClient in StyleElements{$endif}  );
   if vsSelected in node.States then
-    bclr := clHighlight;
+    bclr := ThemedColor( clHighlight {$ifdef has_StyleElements},seClient in StyleElements{$endif}  );
   if Assigned(article) then
   begin
     if not (vsSelected in node^.States) or XNOptions.HighlightSelectedText then
@@ -7202,7 +7213,7 @@ begin
   end;
 
   if (vsSelected in Node.States) and XNOptions.HighlightSelectedText then
-    Canvas.Font.Color := BoostContrast(Canvas.Font.Color, bclr, clr);
+    Canvas.Font.Color := BoostContrast( Canvas.Font.Color, bclr, clr);
 end;
 
 procedure TfmMain.vstArticlesResize(Sender: TObject);
@@ -7780,9 +7791,9 @@ begin
   group := GetNodeSubscribedGroup(node);
   bclr := Canvas.Brush.Color;
   if vsSelected in node.States then
-    bclr := clHighlight;
+    bclr := ThemedColor(clHighlight{$ifdef has_StyleElements},seClient in StyleElements{$endif}  );
 
-  clr := Canvas.Font.Color;
+  clr := ThemedColor(Canvas.Font.Color{$ifdef has_StyleElements},seFont in StyleElements{$endif}  );
   if Assigned(group) then
   begin
     if group.UnreadArticleCount > 0 then
@@ -7791,10 +7802,10 @@ begin
 
       if not (vsSelected in node^.States) or XNOptions.HighlightSelectedText then
         if group.UnreadReplyCount > 0 then
-          Canvas.Font.Color := XNOptions.Appearance[apReplies].FontColor
+          Canvas.Font.Color := ThemedColor(XNOptions.Appearance[apReplies].FontColor{$ifdef has_StyleElements},seFont in StyleElements{$endif}  )
         else
           if group.UnreadArticleToMeCount > 0 then
-            Canvas.Font.Color := XNOptions.Appearance[apMessagesToMe].FontColor;
+            Canvas.Font.Color := ThemedColor(XNOptions.Appearance[apMessagesToMe].FontColor{$ifdef has_StyleElements},seFont in StyleElements{$endif}  );
     end;
     if gAudiblePerformanceCues then
       if group.Loaded then
@@ -7818,12 +7829,12 @@ begin
 
           if group.UnreadReplyCount > 0 then
           begin
-            Canvas.Font.Color := XNOptions.Appearance[apReplies].FontColor;
+            Canvas.Font.Color := ThemedColor(XNOptions.Appearance[apReplies].FontColor{$ifdef has_StyleElements},seFont in StyleElements{$endif}  );
             Break
           end;
 
           if group.UnreadArticleToMeCount > 0 then
-            Canvas.Font.Color := XNOptions.Appearance[apMessagesToMe].FontColor;
+            Canvas.Font.Color := ThemedColor(XNOptions.Appearance[apMessagesToMe].FontColor{$ifdef has_StyleElements},seFont in StyleElements{$endif}  );;
         end;
       end;
     end;

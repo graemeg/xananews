@@ -327,12 +327,12 @@ begin
   //of the start of the attachment and it's length.
   LN := 1 + LOut[0];        //Length byte + length of filename
   Inc(LN, 1 + 4 + 4 + 2);   //Version, type, creator, flags
-                                                              
+  // TODO: use one of the BytesTo...() functions here instead?
   LForkLength := (((((LOut[LN]*256)+LOut[LN+1])*256)+LOut[LN+2])*256)+LOut[LN+3];
   Inc(LN, 4);               //Go past the data fork length
   if LForkLength = 0 then begin
     //No data fork present, save the resource fork instead...
-                                                                
+    // TODO: use one of the BytesTo...() functions here instead?
     LForkLength := (((((LOut[LN]*256)+LOut[LN+1])*256)+LOut[LN+2])*256)+LOut[LN+3];
   end;
   Inc(LN, 4);               //Go past the resource fork length

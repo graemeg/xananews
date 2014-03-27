@@ -755,7 +755,7 @@ end;
 
 function _GetThreadID: TIdC_ULONG; cdecl;
 begin
-                                                                              
+  // TODO: Verify how well this will work with fibers potentially running from
   // thread to thread or many on the same thread.
   Result := TIdC_ULONG(CurrentThreadId);
 end;

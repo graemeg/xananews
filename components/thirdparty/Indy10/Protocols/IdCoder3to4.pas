@@ -204,7 +204,7 @@ class procedure TIdDecoder4to3.ConstructDecodeTable(const ACodingTable: string;
 var
   c, i: integer;
 begin
-                                                                                         
+  //TODO: See if we can find an efficient way, or maybe an option to see if the requested
   //decode char is valid, that is it returns a 255 from the DecodeTable, or at maybe
   //check its presence in the encode table.
   for i := Low(ADecodeArray) to High(ADecodeArray) do begin
@@ -323,7 +323,7 @@ begin
   end;
 end;
 
-                                                                           
+//TODO: Make this more efficient. Profile it to test, but maybe make single
 // calls to ReadBuffer then pull from memory
 function TIdEncoder3to4.InternalEncode(const ABuffer: TIdBytes): TIdBytes;
 var

@@ -622,7 +622,8 @@ begin
       begin
         S := name + ': ' + val + EOL;
         LogMessage('[tx] ' + string(S), False, False);
-        IOHandler.Write(ToBytes(S));
+        IOHandler.Write(RawToBytes(S[1],Length(S) ));
+     //   IOHandler.Write(ToBytes(S));
       end;
     end;
 
@@ -636,7 +637,8 @@ begin
       else
         S := msg[i] + EOL;
       LogMessage('[tx] ' + string(S), False, False);
-      IOHandler.Write(ToBytes(S));
+      IOHandler.Write(RawToBytes(S[1],Length(S)));
+   //   IOHandler.Write(ToBytes(S));
     end;
   finally
     EndWork(wmWrite);

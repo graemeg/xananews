@@ -25,13 +25,26 @@ unit cmpCWRichEdit;
 
 interface
 
+{$IF CompilerVersion >= 24}
+  {$LEGACYIFEND ON}
+  {$define has_StyleElements}
+  {$define HasSystemUITypes}
+{$IFEND}
+{$IF CompilerVersion >= 23}
+   {$define UseVCLStyles}
+{$IFEND}
+
 uses
   Windows, Messages, Classes, SysUtils, Forms, Graphics, Controls, StdCtrls,
-  {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
-    System.Types,
-    System.UITypes,
-  {$ifend}
-  ComCtrls, StdActns, RichEdit, Dialogs, RichOLE;
+  ComCtrls, StdActns, RichEdit, Dialogs,
+{$ifdef HasSystemUITypes}
+System.Types,
+  System.UITypes,
+{$endif}
+{$ifdef UseVCLStyles}
+  Vcl.Themes,
+{$endif}
+   RichOLE;
 
 type
   TCustomExRichEdit = class;
@@ -428,7 +441,7 @@ type
 implementation
 
 uses
-  ShellAPI, ClipBrd, printers, unitCharsetMap, CommDlg;
+  ShellAPI, ClipBrd, printers, unitGUIUtils, unitCharsetMap, CommDlg;
 
 var
   gRichEditModule: THandle;
@@ -1293,6 +1306,7 @@ begin
     try
       canvas.Control := Self;
       canvas.font.Assign(font);
+      canvas.Font.Color := ThemedColor(font.Color {$ifdef has_StyleElements},seFont in StyleElements{$endif}  );
       GetTextMetrics(canvas.Handle, tm);
 
       fAveCharWidth := tm.tmAveCharWidth;

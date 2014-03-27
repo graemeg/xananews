@@ -208,7 +208,7 @@ var
 
 function UseIDNAPI : Boolean;
 begin
-  Result := (Win32MajorVersion < 6) or ((Win32MajorVersion = 6) and (Win32MinorVersion < 2));
+  Result := not IndyCheckWindowsVersion(6, 2);
   if Result then begin
     Result := Assigned( IdnToAscii ) and Assigned( IdnToUnicode );
   end;
@@ -251,7 +251,7 @@ begin
     end;
     Result := LIDN;
   end else begin
-                                           
+    // TODO: manual implementation here ...
   end;
 end;
 
@@ -279,7 +279,7 @@ begin
     {$ENDIF}
   end else
   begin
-                                           
+    // TODO: manual implementation here ...
   end;
 end;
 

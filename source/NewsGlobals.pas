@@ -28,8 +28,22 @@ unit NewsGlobals;
 {$WARN SYMBOL_PLATFORM OFF}
 
 interface
-
+{$IF CompilerVersion >= 24}
+  {$LEGACYIFEND ON}
+  {$define has_StyleElements}
+  {$define HasSystemUITypes}
+{$IFEND}
+{$IF CompilerVersion >= 23}
+   {$define UseVCLStyles}
+{$IFEND}
 uses
+  Graphics,
+{$ifdef HasSystemUITypes}
+  System.UITypes,
+{$endif}
+{$ifdef UseVCLStyles}
+  Vcl.Themes,
+{$endif}
   Windows, Messages, Classes, SysUtils, Forms, Ras, StrUtils, ActnList, ConTnrs, Dialogs, SyncObjs,
   unitExSettings, unitExRegSettings, unitExXMLSettings, XnClasses, XnRawByteStrings;
 
@@ -228,7 +242,6 @@ procedure AdjustFormConstraints(form: TForm);
 //function AdjustForLargeFonts(x: Integer): Integer;
 function CreateExSettings(cls: TExSettingsClass = nil): TExSettings;
 function CreateChildSettings(parent: TExSettings; const section: string = ''): TExSettings;
-
 
 implementation
 

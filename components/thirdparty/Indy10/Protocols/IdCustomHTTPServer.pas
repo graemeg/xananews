@@ -359,7 +359,7 @@ type
   TIdHTTPSessionThreadList = TThreadList<TIdHTTPSession>;
   TIdHTTPSessionList = TList<TIdHTTPSession>;
   {$ELSE}
-                                                                                                              
+  // TODO: flesh out to match TThreadList<TIdHTTPSession> and TList<TIdHTTPSession> for non-Generics compilers
   TIdHTTPSessionThreadList = TThreadList;
   TIdHTTPSessionList = TList;
   {$ENDIF}
@@ -861,7 +861,7 @@ begin
       soCurrent: LOffset := FSourceStream.Position + AOffset;
       soEnd: LOffset := (FRangeEnd+1) + AOffset;
     else
-                                                            
+      // TODO: move this into IdResourceStringsProtocols.pas
       raise EIdException.Create('Unknown Seek Origin'); {do not localize}
     end;
     LOffset := IndyMax(LOffset, FRangeStart);
@@ -981,11 +981,7 @@ begin
   if Assigned(LSessionList) and FImplicitSessionList then begin
     FSessionList := nil;
     FImplicitSessionList := False;
-    {$IFDEF USE_OBJECT_ARC}
-    // have to remove the Owner's strong references so it can be freed
-    RemoveComponent(LSessionList);
-    {$ENDIF}
-    FreeAndNil(LSessionList);
+    IdDisposeAndNil(LSessionList);
   end;
   inherited Destroy;
 end;
@@ -1024,7 +1020,7 @@ begin
   // together.  The whole point of the PassThrough property is to allow
   // per-connection SSL handling.
   //
-                                                                       
+  // TODO: move this new logic into TIdCustomTCPServer directly somehow
   
   if AContext.Connection.IOHandler is TIdSSLIOHandlerSocketBase then begin
     TIdSSLIOHandlerSocketBase(AContext.Connection.IOHandler).PassThrough :=
@@ -1291,7 +1287,7 @@ begin
               LResponseInfo.CloseConnection := not TextIsSame(LRequestInfo.Connection, 'keep-alive'); {Do not Localize}
             end;
 
-                                                   
+            {TODO Check for 1.0 only at this point}
             LCmd := UpperCase(Fetch(LInputLine, ' '));    {Do not Localize}
 
             s := LRequestInfo.MethodOverride;
@@ -1343,7 +1339,7 @@ begin
             // Grab Params so we can parse them
             // POSTed data - may exist with GETs also. With GETs, the action
             // params from the form element will be posted
-                                                                                  
+            // TODO: Rune this is the area that needs fixed. Ive hacked it for now
             // Get data can exists with POSTs, but can POST data exist with GETs?
             // If only the first, the solution is easy. If both - need more
             // investigation.
@@ -1626,11 +1622,7 @@ begin
       // -Kudzu
       FSessionList := nil;
       FImplicitSessionList := False;
-      {$IFDEF USE_OBJECT_ARC}
-      // have to remove the Owner's strong references so it can be freed
-      RemoveComponent(LSessionList);
-      {$ENDIF}
-      FreeAndNil(LSessionList);
+      IdDisposeAndNil(LSessionList);
     end;
 
     {$IFNDEF USE_OBJECT_ARC}
@@ -1654,7 +1646,7 @@ end;
 
 procedure TIdCustomHTTPServer.SetSessionState(const Value: Boolean);
 begin
-                                                
+  // ToDo: Add thread multiwrite protection here
   if (not (IsDesignTime or IsLoading)) and Active then begin
     raise EIdHTTPCannotSwitchSessionStateWhenActive.Create(RSHTTPCannotSwitchSessionStateWhenActive);
   end;
@@ -1754,7 +1746,7 @@ end;
 
 procedure TIdHTTPSession.Lock;
 begin
-                                        
+  // ToDo: Add session locking code here
   FLock.Enter;
 end;
 
@@ -1765,7 +1757,7 @@ end;
 
 procedure TIdHTTPSession.Unlock;
 begin
-                                          
+  // ToDo: Add session unlocking code here
   FLock.Leave;
 end;
 
@@ -1862,7 +1854,7 @@ begin
   RawHeaders.FoldLines := False;
   FCookies := TIdCookies.Create(Self);
 
-                                                                      
+  {TODO Specify version - add a class method dummy that calls version}
   ServerSoftware := GServerSoftware;
 
 end;
@@ -1987,7 +1979,7 @@ begin
   end;
   ContentLength := FileSizeByName(AFile);
   if Length(ContentDisposition) = 0 then begin
-                                       
+    // TODO: use EncodeHeader() here...
     ContentDisposition := IndyFormat('attachment; filename="%s";', [ExtractFileName(AFile)]);
   end;
   WriteHeader;

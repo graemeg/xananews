@@ -79,7 +79,7 @@ uses
   {$IFDEF DOTNET}
   System.Net.Sockets;
   {$ENDIF}
-                                                                                     
+  //TODO:  I'm not really sure how other platforms are supported with asockets header
   //Do I use the sockets unit or do something totally different for each platform
   {$IFDEF WINDOWS}
   IdWship6, //for some constants that supplement IdWinsock
@@ -97,7 +97,7 @@ uses
   {$IFDEF NETWARE_LIBC}
   winsock;  //not sure if this is correct
   {$ENDIF}
-  {$IFDEF MACOS_CLASIC}
+  {$IFDEF MACOS_CLASSIC}
   {$ENDIF}
   {$IFDEF UNIX}
     {$IFDEF USE_VCL_POSIX}
@@ -173,17 +173,21 @@ const
     // also different behaviour?
       {$IFNDEF KYLIX}
         {$IFDEF USE_BASEUNIX}
-      //In Linux, the libc.pp header maps the old values to new ones,
-      //probably for consistancy.  I'm doing this because we can't link
-      //to Libc for Basic Unix stuff and some people may want to use this API
-      //in Linux instead of the libc API.
-      IPV6_ADD_MEMBERSHIP  = IPV6_JOIN_GROUP;
-      IPV6_DROP_MEMBERSHIP = IPV6_LEAVE_GROUP;
+        //In Linux, the libc.pp header maps the old values to new ones,
+        //probably for consistancy.  I'm doing this because we can't link
+        //to Libc for Basic Unix stuff and some people may want to use this API
+        //in Linux instead of the libc API.
+        IPV6_ADD_MEMBERSHIP  = IPV6_JOIN_GROUP;
+        IPV6_DROP_MEMBERSHIP = IPV6_LEAVE_GROUP;
         {$ENDIF}
       {$ENDIF}
     {$ELSE}
+    // FIXME: Android compiler is using these definitions, but maybe some
+    //        EXTERNALSYM-work is needed above.
       IPV6_ADD_MEMBERSHIP  = IPV6_JOIN_GROUP;
+      {$EXTERNALSYM IPV6_ADD_MEMBERSHIP}
       IPV6_DROP_MEMBERSHIP = IPV6_LEAVE_GROUP;
+      {$EXTERNALSYM IPV6_DROP_MEMBERSHIP}
       {$IFNDEF USE_VCL_POSIX}
       IPV6_CHECKSUM        = 26;
       {$ENDIF}
@@ -192,13 +196,13 @@ const
   Id_IPV6_DROP_MEMBERSHIP = IPV6_DROP_MEMBERSHIP;
   Id_IPV6_PKTINFO         = IPV6_PKTINFO;
   Id_IPV6_HOPLIMIT        = IPV6_HOPLIMIT;
-  Id_IP_MULTICAST_TTL     = IP_MULTICAST_TTL;                                     
-  Id_IP_MULTICAST_LOOP    = IP_MULTICAST_LOOP;                                     
-  Id_IP_ADD_MEMBERSHIP    = IP_ADD_MEMBERSHIP;                                     
-  Id_IP_DROP_MEMBERSHIP   = IP_DROP_MEMBERSHIP;                                     
+  Id_IP_MULTICAST_TTL     = IP_MULTICAST_TTL; // TODO integrate into IdStackConsts
+  Id_IP_MULTICAST_LOOP    = IP_MULTICAST_LOOP; // TODO integrate into IdStackConsts
+  Id_IP_ADD_MEMBERSHIP    = IP_ADD_MEMBERSHIP; // TODO integrate into IdStackConsts
+  Id_IP_DROP_MEMBERSHIP   = IP_DROP_MEMBERSHIP; // TODO integrate into IdStackConsts
 
   //In Windows CE 4.2, IP_HDRINCL may not be supported.
-  Id_IP_HDR_INCLUDED      = IP_HDRINCL;                                     
+  Id_IP_HDR_INCLUDED      = IP_HDRINCL; // TODO integrate into IdStackConsts
   {$ENDIF}
 
   {$IFDEF WINDOWS}
@@ -211,11 +215,11 @@ const
   Id_IPV6_DROP_MEMBERSHIP = IPV6_DROP_MEMBERSHIP;
   Id_IPV6_PKTINFO         = IPV6_PKTINFO;
   Id_IPV6_HOPLIMIT        = IPV6_HOPLIMIT;
-  Id_IP_MULTICAST_TTL     = 10;                                                            
-  Id_IP_MULTICAST_LOOP    = 11;                                                            
-  Id_IP_ADD_MEMBERSHIP    = 12;                                                            
-  Id_IP_DROP_MEMBERSHIP   = 13;                                                            
-  Id_IP_HDR_INCLUDED      = 2;                                                            
+  Id_IP_MULTICAST_TTL     = 10; // TODO integrate into IdStackConsts FIX ERROR in IdWinsock
+  Id_IP_MULTICAST_LOOP    = 11; // TODO integrate into IdStackConsts FIX ERROR in IdWinsock
+  Id_IP_ADD_MEMBERSHIP    = 12; // TODO integrate into IdStackConsts FIX ERROR in IdWinsock
+  Id_IP_DROP_MEMBERSHIP   = 13; // TODO integrate into IdStackConsts FIX ERROR in IdWinsock
+  Id_IP_HDR_INCLUDED      = 2; // TODO integrate into IdStackConsts FIX ERROR in IdWinsock
   {$ENDIF}
 
 (*
@@ -474,7 +478,7 @@ SocketOptionName.UseLoopback;//  Bypass hardware when possible.
   Id_INADDR_ANY  = 0;// INADDR_ANY;
   Id_INADDR_NONE = $ffffffff;// INADDR_NONE;
    {$ELSE}
-  Id_INADDR_ANY  =  INADDR_ANY;
+  Id_INADDR_ANY  = INADDR_ANY;
   Id_INADDR_NONE = INADDR_NONE;
     {$ENDIF}
   {$ENDIF}
@@ -877,7 +881,7 @@ SocketOptionName.UseLoopback;//  Bypass hardware when possible.
   WSA_NOT_ENOUGH_MEMORY   = ERROR_NOT_ENOUGH_MEMORY;
   WSA_OPERATION_ABORTED   = ERROR_OPERATION_ABORTED;
 
-                                                                          
+  //TODO: Map these to .net constants. Unfortunately .net does not seem to
   //define these anywhere.
 
   Id_WSAEINTR           = WSAEINTR;

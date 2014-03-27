@@ -279,7 +279,7 @@ begin
     end;
 
     // Get the data from the input and save it off
-                                                         
+    // TODO: get rid of FSendBuf and use ABuffer directly
     FSendCount := LSize;
     CopyTIdBytes(VBuffer, 0, FSendBuf, 0, FSendCount);
     FCompressRec.next_in := PIdAnsiChar(@FSendBuf[0]);

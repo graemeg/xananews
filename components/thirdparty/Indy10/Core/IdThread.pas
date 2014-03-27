@@ -229,7 +229,7 @@ type
     property StopMode: TIdThreadStopMode read FStopMode write FStopMode;
     property Stopped: Boolean read GetStopped;
     property Terminated;
-                                                                              
+    // TODO: Change this to be like TIdFiber. D6 implementation is not as good
     // as what is done in TIdFiber.
     property TerminatingException: string read FTerminatingException;
     property TerminatingExceptionClass: TClass read FTerminatingExceptionClass;
@@ -350,7 +350,7 @@ begin
           DoStopped;
           // It is possible that either in the DoStopped or from another thread,
           // the thread is restarted, in which case we dont want to restop it.
-          if Stopped then begin                        
+          if Stopped then begin // DONE: if terminated?
             if Terminated then begin
               Break;
             end;

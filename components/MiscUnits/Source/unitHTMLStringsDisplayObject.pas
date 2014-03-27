@@ -1,7 +1,9 @@
 unit unitHTMLStringsDisplayObject;
 
 interface
-
+{$IF CompilerVersion >= 24}
+  {$LEGACYIFEND ON}
+{$IFEND}
 uses
   Windows, Classes, SysUtils, Graphics, Forms, OleCtrls, SHDocVw, ComObj,
   ActiveX, ShlObj, MSHTML, ShellAPI, cmpMessageDisplay, XNClasses;
@@ -49,6 +51,7 @@ type
 implementation
 
 uses
+  unitGUIUtils,
   cmpExWebBrowser;
 
 resourcestring

@@ -135,6 +135,9 @@ type
 implementation
 
 uses
+ {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE5
+   AnsiStrings,
+ {$ifend}
   unitSearchString;
 
 (*----------------------------------------------------------------------*
@@ -294,7 +297,11 @@ begin
 
     pch := fBuffer;
     Inc(pch, fBufPos);
-    pch1 := StrScan(pch, #10);
+    pch1 :=
+ {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
+      System.AnsiStrings.
+ {$endif}
+      StrScan(pch, #10);
 
     if pch1 <> nil then
     begin
@@ -367,7 +374,11 @@ begin
 
     pch := fBuffer;
     Inc(pch, fBufPos);
-    pch1 := StrScan(pch, #10);
+    pch1 :=
+ {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
+   System.AnsiStrings.
+ {$ifend}
+      StrScan(pch, #10);
 
     if pch1 <> nil then
     begin
@@ -435,7 +446,11 @@ begin
     p := fBuffer;
     Inc(p, fBufPos);
 
-    p1 := StrPos(p, PAnsiChar(AnsiString(st)));
+    p1 :=
+ {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
+   System.AnsiStrings.
+ {$ifend}
+      StrPos(p, PAnsiChar(AnsiString(st)));
 
     if p1 <> nil then
     begin

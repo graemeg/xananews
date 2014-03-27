@@ -16461,34 +16461,40 @@ var
   X509_get_default_cert_file_env : function : PIdAnsiChar cdecl = nil;
   {$EXTERNALSYM BIO_new}
   BIO_new : function(_type: PBIO_METHOD): PBIO cdecl = nil;
-    {$EXTERNALSYM BIO_new_mem_buf}
+  {$EXTERNALSYM BIO_new_mem_buf}
   BIO_new_mem_buf : function (buf : Pointer; len : TIdC_INT) : PBIO cdecl = nil;
-    {$EXTERNALSYM BIO_free}
+  {$EXTERNALSYM BIO_free}
   BIO_free : function(bio: PBIO): TIdC_INT cdecl = nil;
-    {$EXTERNALSYM BIO_s_mem}
+  {$EXTERNALSYM BIO_s_mem}
   BIO_s_mem : function: PBIO_METHOD cdecl = nil;
-    {$EXTERNALSYM BIO_s_file}
+  {$EXTERNALSYM BIO_s_file}
   BIO_s_file : function: PBIO_METHOD cdecl = nil;
-    {$EXTERNALSYM BIO_ctrl}
+  {$EXTERNALSYM BIO_ctrl}
   BIO_ctrl : function(bp: PBIO; cmd: TIdC_INT; larg: TIdC_LONG; parg: Pointer): TIdC_LONG cdecl = nil;
-    {$EXTERNALSYM BIO_ptr_ctrl}
+  {$EXTERNALSYM BIO_ptr_ctrl}
   BIO_ptr_ctrl : function(bp : PBIO; cmd : TIdC_INT; larg : TIdC_LONG) : PIdAnsiChar cdecl = nil;
-    {$EXTERNALSYM BIO_int_ctrl}
+  {$EXTERNALSYM BIO_int_ctrl}
   BIO_int_ctrl : function(bp : PBIO; cmd : TIdC_INT; larg : TIdC_LONG; iArg : TIdC_INT) : TIdC_LONG cdecl = nil;
-    {$EXTERNALSYM BIO_callback_ctrl}
+  {$EXTERNALSYM BIO_callback_ctrl}
   BIO_callback_ctrl : function(b : PBIO; cmd : TIdC_INT; fp : SSL_callback_ctrl_fp ) : TIdC_LONG cdecl = nil;
-    {$EXTERNALSYM BIO_new_file}
+  {$EXTERNALSYM BIO_new_file}
   BIO_new_file : function(const filename: PIdAnsiChar; const mode: PIdAnsiChar): PBIO cdecl = nil;
-    {$EXTERNALSYM BIO_puts}
+  {$EXTERNALSYM BIO_puts}
   BIO_puts : function(b: PBIO; const txt: PIdAnsiChar): TIdC_INT cdecl = nil;
-    {$EXTERNALSYM BIO_read}
+  {$EXTERNALSYM BIO_read}
   BIO_read : function(b: PBIO; data: Pointer; len: TIdC_INT): TIdC_INT cdecl = nil;
-    {$EXTERNALSYM BIO_write}
+  {$EXTERNALSYM BIO_write}
   BIO_write : function(b: PBIO; const buf: Pointer; len: TIdC_INT): TIdC_INT cdecl = nil;
-    {$EXTERNALSYM BN_hex2bn}
+  {$EXTERNALSYM BN_hex2bn}
   BN_hex2bn: function(var n:PBIGNUM; const Str: PIdAnsiChar): TIdC_INT cdecl = nil;
+  {$EXTERNALSYM BN_new}
+  BN_new : function(): PBIGNUM cdecl = nil;
+  {$EXTERNALSYM BN_free}
+  BN_free : procedure(a: PBIGNUM) cdecl = nil;
   {$EXTERNALSYM BN_bn2hex}
   BN_bn2hex: function(const n:PBIGNUM): PIdAnsiChar cdecl = nil;
+  {$EXTERNALSYM BN_set_word}
+  BN_set_word: function(a: PBIGNUM; w: TIdC_ULONG): TIdC_INT cdecl = nil;
   {$EXTERNALSYM DH_free}
   DH_free : procedure(dh: PDH) cdecl = nil;
 
@@ -18192,8 +18198,10 @@ end;
 
 function GetErrorMessage(const AErr : TIdC_ULONG) : String;
 {$IFDEF USE_INLINE} inline; {$ENDIF}
+const
+  sMaxErrMsg = 160;
 var
-  LErrMsg: array [0..160] of TIdAnsiChar;
+  LErrMsg: array [0..sMaxErrMsg] of TIdAnsiChar;
   {$IFDEF USE_MARSHALLED_PTRS}
   LErrMsgPtr: TPtrWrapper;
   {$ENDIF}
@@ -18206,7 +18214,8 @@ begin
     LErrMsgPtr.ToPointer
     {$ELSE}
     LErrMsg
-    {$ENDIF}, 160);
+    {$ENDIF}, sMaxErrMsg);
+  LErrMsg[sMaxErrMsg] := TIdAnsiChar(0);
   {$IFDEF USE_MARSHALLED_PTRS}
   Result := TMarshal.ReadStringAsAnsi(LErrMsgPtr);
   {$ELSE}
@@ -18307,7 +18316,7 @@ const
   where the symbolic link libbsl.so and libcrypto.so do not exist}
   SSL_DLL_name         = 'libssl'; {Do not localize}
   SSLCLIB_DLL_name     = 'libcrypto'; {Do not localize}
-  SSLDLLVers : array [0..4] of string = ('','0.9.9','.0.9.8','.0.9.7','0.9.6');
+  SSLDLLVers : array [0..6] of string = ('','.10','.1.0.0','0.9.9','.0.9.8','.0.9.7','0.9.6');
   {$ENDIF}
   {$IFDEF WINDOWS}
 const
@@ -19179,7 +19188,7 @@ them in case we use them later.}
   {CH fn_BN_pseudo_rand_range = 'BN_pseudo_rand_range';  } {Do not localize}
   {CH fn_BN_num_bits = 'BN_num_bits'; }  {Do not localize}
   {CH fn_BN_num_bits_word = 'BN_num_bits_word'; }  {Do not localize}
-  {CH fn_BN_new = 'BN_new'; }  {Do not localize}
+  fn_BN_new = 'BN_new';   {Do not localize}
   {CH fn_BN_init = 'BN_init'; }  {Do not localize}
   {CH fn_BN_clear_free = 'BN_clear_free'; }  {Do not localize}
   {CH fn_BN_copy = 'BN_copy'; }  {Do not localize}
@@ -19200,10 +19209,10 @@ them in case we use them later.}
   {CH fn_BN_mul_word = 'BN_mul_word'; }  {Do not localize}
   {CH fn_BN_add_word = 'BN_add_word'; }  {Do not localize}
   {CH fn_BN_sub_word = 'BN_sub_word'; }  {Do not localize}
-  {CH fn_BN_set_word = 'BN_set_word'; }  {Do not localize}
+  fn_BN_set_word = 'BN_set_word';   {Do not localize}
   {CH fn_BN_get_word = 'BN_get_word'; }  {Do not localize}
   {CH fn_BN_cmp = 'BN_cmp'; }  {Do not localize}
-  {CH fn_BN_free = 'BN_free'; }  {Do not localize}
+  fn_BN_free = 'BN_free';   {Do not localize}
   {CH fn_BN_is_bit_set = 'BN_is_bit_set'; }  {Do not localize}
   {CH fn_BN_lshift = 'BN_lshift'; }  {Do not localize}
   {CH fn_BN_lshift1 = 'BN_lshift1'; }  {Do not localize}
@@ -21211,8 +21220,10 @@ end;
 
 // remove this function, it is not used
 function ErrMsg(AErr : TIdC_ULONG) : string;
+const
+  sMaxErrStr = 300;
 var
-  LString: array[0..300] of TIdAnsiChar;
+  LString: array[0..sMaxErrStr] of TIdAnsiChar;
   {$IFDEF USE_MARSHALLED_PTRS}
   LStringPtr: TPtrWrapper;
   {$ENDIF}
@@ -21225,7 +21236,8 @@ begin
     LStringPtr.ToPointer
     {$ELSE}
     LString
-    {$ENDIF}, 300);
+    {$ENDIF}, sMaxErrStr);
+  LString[sMaxErrStr] := TIdAnsiChar(0);
   {$IFDEF USE_MARSHALLED_PTRS}
   Result := TMarshal.ReadStringAsAnsi(LStringPtr);
   {$ELSE}
@@ -21522,8 +21534,11 @@ we have to handle both cases.
   //DH
   @DH_free := LoadFunctionCLib(fn_DH_free);
   //BN
+  @BN_new := LoadFunctionCLib(fn_BN_new);
+  @BN_free := LoadFunctionCLib(fn_BN_free);
   @BN_hex2bn := LoadFunctionCLib(fn_BN_hex2bn);
   @BN_bn2hex := LoadFunctionCLib(fn_BN_bn2hex);
+  @BN_set_word := LoadFunctionCLib(fn_BN_set_word);
   //BIO
   @BIO_new := LoadFunctionCLib(fn_BIO_new);
   @BIO_free := LoadFunctionCLib(fn_BIO_free);

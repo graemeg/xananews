@@ -107,7 +107,7 @@ begin
     LStatus := AIOHandler.ReadLn;
     if LStatus <> '' then begin // if empty response then we assume it succeeded
       AIOHandler.Capture(LHeaders, '', False);
-                                         
+      // TODO: support chunked replies...
       LContentLength := IndyStrToInt64(LHeaders.Values['Content-Length'], -1); {do not localize}
       if LContentLength > 0 then begin
         AIOHandler.Discard(LContentLength);

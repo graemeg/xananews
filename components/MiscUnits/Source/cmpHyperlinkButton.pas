@@ -1,7 +1,9 @@
 unit cmpHyperlinkButton;
 
 interface
-
+{$IF CompilerVersion >= 24}
+  {$LEGACYIFEND ON}
+{$IFEND}
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, ImgList;
 

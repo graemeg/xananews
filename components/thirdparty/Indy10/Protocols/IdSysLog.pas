@@ -47,9 +47,9 @@ unit IdSysLog;
   08/09/01: Dev started
 }
 
-                                                                          
-                                                                          
-                 
+{ ToDo:  Somehow figure out how to make a bound port and bound IP property
+  in UDP Client.  This will probably require some changes to the Indy core
+  units though. }
 
 interface
 
