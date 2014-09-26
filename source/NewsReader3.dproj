@@ -47,7 +47,7 @@
 		<PropertyGroup Condition="'$(Cfg_1)'!=''">
 			<DCC_AssertionsAtRuntime>false</DCC_AssertionsAtRuntime>
 			<Version>7.0</Version>
-			<DCC_Define>RELEASE;madExcept;$(DCC_Define)</DCC_Define>
+			<DCC_Define>RELEASE;madExceptX;$(DCC_Define)</DCC_Define>
 		</PropertyGroup>
 		<PropertyGroup Condition="'$(Cfg_2)'!=''">
 			<DCC_DebugDCUs>true</DCC_DebugDCUs>
