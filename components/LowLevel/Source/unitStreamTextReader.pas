@@ -300,7 +300,7 @@ begin
     pch1 :=
  {$if CompilerVersion >= 24.0} // 24.0 = Delphi XE3
       System.AnsiStrings.
- {$endif}
+ {$ifend}
       StrScan(pch, #10);
 
     if pch1 <> nil then

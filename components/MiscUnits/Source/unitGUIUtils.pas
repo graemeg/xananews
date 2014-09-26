@@ -16,6 +16,7 @@ uses
 {$ifdef UseVCLStyles}
   Vcl.Themes,
 {$endif}
+  Graphics,
   Windows;
 
 function ThemedColor(const AColor : {$ifdef HasSystemUITypes}System.UITypes.{$endif}TColor
@@ -24,7 +25,6 @@ function ThemedColor(const AColor : {$ifdef HasSystemUITypes}System.UITypes.{$en
 
 
 implementation
-uses Graphics;
 
   {$ifdef has_StyleElements}
 function ThemedColor(const AColor : TColor; const AUseThemes : Boolean): TColor; {$ifdef UseInline} inline; {$endif} overload;
