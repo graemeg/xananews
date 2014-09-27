@@ -8986,7 +8986,7 @@ end;
 procedure TfmMain.StatusBarClick(Sender: TObject);
 begin
   if fCaptureUpdatePanel then
-    ShellExecute(handle, 'open', 'http://xananews.techtips.com.br', nil, nil, SW_SHOW);
+    ShellExecute(handle, 'open', 'https://github.com/graemeg/xananews/releases', nil, nil, SW_SHOW);
 end;
 
 procedure TfmMain.actToolsToggleLoggingExecute(Sender: TObject);
