@@ -1846,6 +1846,8 @@ end;
 procedure TfmMain.actHelpAboutExecute(Sender: TObject);
 begin
   NTAboutBox.ThanksTo := fDeservesMedals;
+  NTAboutBox.ExtraURL := cReleaseURL;
+  NTAboutBox.SupportURL := cSupportURL;
   NTAboutBox.Execute;
 end;
 
@@ -8986,7 +8988,7 @@ end;
 procedure TfmMain.StatusBarClick(Sender: TObject);
 begin
   if fCaptureUpdatePanel then
-    ShellExecute(handle, 'open', 'https://github.com/graemeg/xananews/releases', nil, nil, SW_SHOW);
+    ShellExecute(handle, 'open', cReleaseURL, nil, nil, SW_SHOW);
 end;
 
 procedure TfmMain.actToolsToggleLoggingExecute(Sender: TObject);

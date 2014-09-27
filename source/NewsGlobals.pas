@@ -73,6 +73,9 @@ const
 
   DefaultMaxLineLength = 72;
 
+  cReleaseURL = 'https://github.com/graemeg/xananews/releases';
+  cSupportURL = 'http://www.wilsonc.demon.co.uk/delphi_2006.htm';
+
 type
   TTransfer = (bit7, bit8, iso2022jp);
   CSET = set of AnsiChar;
