@@ -47,6 +47,7 @@ contains
   unitQpcTimer in 'unitQpcTimer.pas',
   XnClasses in 'XnClasses.pas',
   XnRawByteStrings in 'XnRawByteStrings.pas',
-  unitWow64 in 'unitWow64.pas';
+  unitWow64 in 'unitWow64.pas',
+  unitVersionHelpers in 'unitVersionHelpers.pas';
 
 end.
