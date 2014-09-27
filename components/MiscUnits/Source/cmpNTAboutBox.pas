@@ -51,6 +51,8 @@ type
     fDisplayExtraLink: Boolean;
     fDisplaySupportLink: Boolean;
     fThanksTo: string;
+    FExtraURL: string;
+    FSupportURL: string;
   public
     procedure Execute;
   published
@@ -58,6 +60,8 @@ type
     property DisplayExtraLink: Boolean read fDisplayExtraLink write fDisplayExtraLink;
     property DisplaySupportLink: Boolean read fDisplaySupportLink write fDisplaySupportLink;
     property ThanksTo: string read fThanksTo write fThanksTo;
+    property ExtraURL: string read FExtraURL write FExtraURL;
+    property SupportURL: string read FSupportURL write FSupportURL;
   end;
 
 function LoadGifResource(const resName: string; image: TImage): Boolean;
@@ -320,13 +324,17 @@ begin
     if DisplaySupportLink then
     begin
       dlg.lblSupport.Visible := True;
-      dlg.hlbSupport.Visible := True
+      dlg.hlbSupport.Caption := SupportURL;
+      dlg.hlbSupport.Link := SupportURL;
+      dlg.hlbSupport.Visible := True;
     end;
 
     if DisplayExtraLink then
     begin
       dlg.lblExtra.Visible := True;
-      dlg.hlbExtra.Visible := True
+      dlg.hlbExtra.Caption := ExtraURL;
+      dlg.hlbExtra.Link := ExtraURL;
+      dlg.hlbExtra.Visible := True;
     end;
 
     dlg.fThanksTo := fThanksTo;
