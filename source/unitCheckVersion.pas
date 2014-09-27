@@ -41,7 +41,7 @@ begin
   try
     if handle = nil then RaiselastOSError;
 
-    hurl := InternetOpenURL(handle, 'http://xananews.techtips.com.br/xananews.txt', nil, 0,
+    hurl := InternetOpenURL(handle, 'https://raw.githubusercontent.com/graemeg/xananews/master/VERSION.txt', nil, 0,
                                     INTERNET_FLAG_EXISTING_CONNECT or
                                     INTERNET_FLAG_NO_CACHE_WRITE or
                                     INTERNET_FLAG_RESYNCHRONIZE or
@@ -61,7 +61,7 @@ begin
     end;
     InternetCloseHandle(hurl);
 
-    hurl := InternetOpenURL(handle, 'http://xananews.techtips.com.br/contributors.txt', nil, 0,
+    hurl := InternetOpenURL(handle, 'https://raw.githubusercontent.com/graemeg/xananews/master/AUTHORS.txt', nil, 0,
                                     INTERNET_FLAG_EXISTING_CONNECT or
                                     INTERNET_FLAG_NO_CACHE_WRITE or
                                     INTERNET_FLAG_RESYNCHRONIZE, 0);
