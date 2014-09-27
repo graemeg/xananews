@@ -1,0 +1,8 @@
+Here is a list of people that have worked or are working on
+the XanaNews project.
+
+Colin Wilson
+Graeme Geldenhuys
+J.Peter Mugaas
+ltogniolli
+pzijlstra
