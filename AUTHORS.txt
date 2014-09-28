@@ -1,8 +1,77 @@
-Here is a list of people that have worked or are working on
-the XanaNews project.
+Here is a list of people that have made a sizeable contribution
+to the XanaNews project.
 
+Allan Girvan
+Andrew Cope
+Angeline van de Manakker
+Barry Skidmore
+Benedikt Hochstrasser
+Brian Rice
+Brion L. Webster
+Carsten Schuette
+Chris Dickerson
+Chris Lepine
+Chris Mathews
 Colin Wilson
+Craig Clemans
+Craig Stuntz
+Dave Keighan
+Dave Nottage
+David Clegg
+David D Stretch
+David Orriss Jr
+David Ridgway
+Deepak Shenoy
+Dirk Kaiser
+Douglas Chamberlin
+Dr Ulrich Amann
+Ed Hanel
+Erik Loos
+Felix Geerinckx
+Frits van Buren
 Graeme Geldenhuys
+Hans Leander
+Hansang Bae
+Holger Ostermann
+J H Van Eekelen
 J.Peter Mugaas
-ltogniolli
-pzijlstra
+Jan Norden
+Jason Southwell
+Jeff Gaines
+Jim McKay
+Jody Holmes
+John Bilberg
+John E. Wilfong
+John Kaster
+Kevin Dean
+Kim Greve
+Lance Haig
+Loes van der Heijden
+Luca Menegotto
+Mark Erickson
+Mark Ford
+Markko Lehtonen
+Michael Golden
+Olaf Monien
+Ondrej Frantik
+Pete d'Oronzio
+Peter Below
+Peter Jam
+Pierre Albisser
+Pieter Zijlstra
+Quentin Correll
+Ralph Friedman
+Reinhard Fink
+Rob Bindels
+Robert Love
+Rudy Velthuis
+Ryan Hayward
+Simon Page
+Stephen Agnew
+Steve Baumgarten
+Steve Foster
+Steven Brown
+Steven Mitchell
+Tim Frost
+Tim McClure
+Yorai Aminov
