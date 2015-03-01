@@ -37,9 +37,9 @@
 			<DCC_UNSUPPORTED_CONSTRUCT>false</DCC_UNSUPPORTED_CONSTRUCT>
 			<DCC_StringChecks>off</DCC_StringChecks>
 			<DCC_MapFile>3</DCC_MapFile>
-			<DCC_UnitSearchPath>..\dcus;..\components\ImageTypes\Source;..\components\LowLevel\Source;..\components\MiscUnits\Source;..\components\thirdparty\VirtualTreeView\Source;..\components\thirdparty\Indy10\Core;..\components\thirdparty\Indy10\Protocols;..\components\thirdparty\Indy10\System;..\modified_vcl;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
-			<DCC_ExeOutput>..\bin</DCC_ExeOutput>
-			<DCC_DcuOutput>..\dcus</DCC_DcuOutput>
+			<DCC_UnitSearchPath>..\dcu32;..\components\ImageTypes\Source;..\components\LowLevel\Source;..\components\MiscUnits\Source;..\components\thirdparty\VirtualTreeView\Source;..\components\thirdparty\Indy10\Core;..\components\thirdparty\Indy10\Protocols;..\components\thirdparty\Indy10\System;..\modified_vcl;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+			<DCC_ExeOutput>..\bin32</DCC_ExeOutput>
+			<DCC_DcuOutput>..\dcu32</DCC_DcuOutput>
 			<DCC_UsePackage>vclx;vcl;dbrtl;Rave76VCL;bdertl;rtl;vclactnband;xmlrtl;vcldb;vcldbx;dsnap;dsnapcon;TeeUI;TeeDB;Tee;adortl;vclib;ibxpress;IndyCore;IndySystem;IndyProtocols;inet;intrawebdb_100_120;Intraweb_100_120;VclSmp;vclie;websnap;webdsnap;inetdbbde;inetdbxpress;soaprtl;vclribbon;DbxCommonDriver;DbxClientDriver;DBXInterBaseDriver;DBXMySQLDriver;dbexpress;dbxcds;RulerD2009;VirtualTreesD12;LismarD2009;VirtualTreesExD2009;ImageTypesD2009;madExcept_</DCC_UsePackage>
 			<DCC_WIDECHAR_REDUCED>false</DCC_WIDECHAR_REDUCED>
 			<DCC_DependencyCheckOutputName>..\bin\NewsReader3.exe</DCC_DependencyCheckOutputName>
@@ -344,7 +344,10 @@
 			</BuildConfiguration>
 		</ItemGroup>
 		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')" Project="$(BDS)\Bin\CodeGear.Delphi.Targets"/>
-		<Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
+		<Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\8.0\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\8.0\UserTools.proj"/>
+		<PropertyGroup>
+			<PreBuildEvent><![CDATA[version.bat]]></PreBuildEvent>
+		</PropertyGroup>
 		<ProjectExtensions>
 			<Borland.Personality>Delphi.Personality.12</Borland.Personality>
 			<Borland.ProjectType>VCLApplication</Borland.ProjectType>
@@ -358,9 +361,9 @@
 						<VersionInfo Name="IncludeVerInfo">True</VersionInfo>
 						<VersionInfo Name="AutoIncBuild">False</VersionInfo>
 						<VersionInfo Name="MajorVer">1</VersionInfo>
-						<VersionInfo Name="MinorVer">19</VersionInfo>
-						<VersionInfo Name="Release">1</VersionInfo>
-						<VersionInfo Name="Build">372</VersionInfo>
+						<VersionInfo Name="MinorVer">20</VersionInfo>
+						<VersionInfo Name="Release">0</VersionInfo>
+						<VersionInfo Name="Build">0</VersionInfo>
 						<VersionInfo Name="Debug">False</VersionInfo>
 						<VersionInfo Name="PreRelease">False</VersionInfo>
 						<VersionInfo Name="Special">False</VersionInfo>
@@ -372,20 +375,18 @@
 					<VersionInfoKeys>
 						<VersionInfoKeys Name="CompanyName">Colin Wilson</VersionInfoKeys>
 						<VersionInfoKeys Name="FileDescription">XanaNews News Reader</VersionInfoKeys>
-						<VersionInfoKeys Name="FileVersion">1.19.1.372</VersionInfoKeys>
+						<VersionInfoKeys Name="FileVersion">1.20.0.0</VersionInfoKeys>
 						<VersionInfoKeys Name="InternalName">XanaNews</VersionInfoKeys>
-						<VersionInfoKeys Name="LegalCopyright">Copyright (c) XanaNews 2012</VersionInfoKeys>
+						<VersionInfoKeys Name="LegalCopyright">Copyright (c) XanaNews 2015</VersionInfoKeys>
 						<VersionInfoKeys Name="LegalTrademarks">All Rights Reserved</VersionInfoKeys>
-						<VersionInfoKeys Name="OriginalFilename">NewsReader3.exe</VersionInfoKeys>
+						<VersionInfoKeys Name="OriginalFilename">NewsReader.exe</VersionInfoKeys>
 						<VersionInfoKeys Name="ProductName">XanaNews</VersionInfoKeys>
-						<VersionInfoKeys Name="ProductVersion">1.19.1.372</VersionInfoKeys>
+						<VersionInfoKeys Name="ProductVersion">1.20</VersionInfoKeys>
 						<VersionInfoKeys Name="Comments"/>
 					</VersionInfoKeys>
 					<Excluded_Packages>
-						<Excluded_Packages Name="%BDSBIN%\bcboffice2k150.bpl">Embarcadero C++Builder Office 2000 Servers Package</Excluded_Packages>
-						<Excluded_Packages Name="%BDSBIN%\bcbofficexp150.bpl">Embarcadero C++Builder Office XP Servers Package</Excluded_Packages>
-						<Excluded_Packages Name="%BDSBIN%\dcloffice2k150.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
-						<Excluded_Packages Name="%BDSBIN%\dclofficexp150.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
+						<Excluded_Packages Name="$(BDSBIN)\dcloffice2k150.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
+						<Excluded_Packages Name="$(BDSBIN)\dclofficexp150.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
 					</Excluded_Packages>
 					<Source>
 						<Source Name="MainSource">NewsReader3.dpr</Source>
