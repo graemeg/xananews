@@ -1848,6 +1848,7 @@ begin
   NTAboutBox.ThanksTo := fDeservesMedals;
   NTAboutBox.ExtraURL := cReleaseURL;
   NTAboutBox.SupportURL := cSupportURL;
+  NTAboutBox.BuildStr := cGitSHA1;
   NTAboutBox.Execute;
 end;
 

@@ -75,6 +75,7 @@ const
 
   cReleaseURL = 'https://github.com/graemeg/xananews/releases';
   cSupportURL = 'http://www.wilsonc.demon.co.uk/delphi_2006.htm';
+  cGitSHA1 = {$I version.inc}
 
 type
   TTransfer = (bit7, bit8, iso2022jp);
@@ -356,6 +357,7 @@ var
   buffer, pBuffer: pointer;
   info: PVSFixedFileInfo;
 begin
+  // reduces overhead - if we already fetched the version info
   if gProductVersion <> '' then
   begin
     Result := gProductVersion;
@@ -376,10 +378,11 @@ begin
 
       info := PVSFixedFileInfo(pBuffer);
 
-      Result := Format('%d.%d.%d.%d', [HiWord(info^.dwProductVersionMS),
+      Result := Format('%d.%d-%s', [HiWord(info^.dwProductVersionMS),
                                        LoWord(info^.dwProductVersionMS),
-                                       HiWord(info^.dwProductVersionLS),
-                                       LoWord(info^.dwProductVersionLS)]);
+                                       {HiWord(info^.dwProductVersionLS),
+                                       LoWord(info^.dwProductVersionLS),}
+                                       cGitSHA1]);
     finally
       FreeMem(buffer);
     end;
