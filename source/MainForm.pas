@@ -6101,6 +6101,8 @@ var
   lv: string;
   sl: TStringList;
 
+  // We now only compare Major.Minor since we introduced the SHA1 build string
+  // True result means v1 is bigger (newer version) than v2
   function VersionCompare(v1, v2: string): Boolean;
   var
     v1hh, v1h, v1l: string;
@@ -6110,22 +6112,37 @@ var
     l2hh, l2h, l2l, l2ll: Integer;
     i: Integer;
   begin
-    v1hh := SplitString('.', v1); v1h := SplitString('.', v1); v1l := SplitString('.', v1);
-    v2hh := SplitString('.', v2); v2h := SplitString('.', v2); v2l := SplitString('.', v2);
+    if Pos('-', v1) > 0 then
+    begin
+      v1hh := SplitString('.', v1);   // major
+      v1h := SplitString('-', v1);    // minor
+    end
+    else
+    begin
+      v1hh := SplitString('.', v1);   // major
+      v1h := SplitString('.', v1);    // minor
+      v1l := SplitString('.', v1);    // release
+    end;
 
-    l1hh := StrToIntDef(v1hh, 0); l1h := StrToIntDef(v1h, 0); l1l := StrtoIntDef(v1l, 0); l1ll := StrToIntDef(v1, 0);
-    l2hh := StrToIntDef(v2hh, 0); l2h := StrToIntDef(v2h, 0); l2l := StrtoIntDef(v2l, 0); l2ll := StrToIntDef(v2, 0);
+    v2hh := SplitString('.', v2);   // major
+    v2h := SplitString('-', v2);    // minor
+
+    l1hh := StrToIntDef(v1hh, 0);
+    l1h := StrToIntDef(v1h, 0);
+
+    l2hh := StrToIntDef(v2hh, 0);
+    l2h := StrToIntDef(v2h, 0);
 
     i := l1hh - l2hh;
     if i = 0 then
     begin
       i := l1h - l2h;
-      if i = 0 then
-      begin
-        i := l1l - l2l;
-        if i = 0 then
-          i := l1ll - l2ll;
-      end;
+//      if i = 0 then
+//      begin
+//        i := l1l - l2l;
+//        if i = 0 then
+//          i := l1ll - l2ll;
+//      end;
     end;
 
     Result := i > 0;
