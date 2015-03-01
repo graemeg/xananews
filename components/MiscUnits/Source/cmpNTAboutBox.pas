@@ -42,6 +42,7 @@ type
     procedure FormShow(Sender: TObject);
   private
     fThanksTo: string;
+    fBuildStr: string;
     procedure GetRegistrationInformation(isNT: Boolean; var owner, organization: string);
   end;
 
@@ -53,6 +54,7 @@ type
     fThanksTo: string;
     FExtraURL: string;
     FSupportURL: string;
+    FBuildStr: string;
   public
     procedure Execute;
   published
@@ -62,6 +64,7 @@ type
     property ThanksTo: string read fThanksTo write fThanksTo;
     property ExtraURL: string read FExtraURL write FExtraURL;
     property SupportURL: string read FSupportURL write FSupportURL;
+    property BuildStr: string read FBuildStr write FBuildStr;
   end;
 
 function LoadGifResource(const resName: string; image: TImage): Boolean;
@@ -213,11 +216,21 @@ begin
 
       TabSheet1.Caption := 'About ' + st;
 
-      st := st + Format(' Version %d.%d.%d.%d',
-         [HiWord(info^.dwProductVersionMS),
-          LoWord(info^.dwProductVersionMS),
-          HiWord(info^.dwProductVersionLS),
-          LoWord(info^.dwProductVersionLS)]);
+      if FBuildStr = '' then
+      begin
+        st := st + Format(' Version %d.%d.%d.%d',
+           [HiWord(info^.dwProductVersionMS),
+            LoWord(info^.dwProductVersionMS),
+            HiWord(info^.dwProductVersionLS),
+            LoWord(info^.dwProductVersionLS)]);
+      end
+      else
+      begin
+        st := st + Format(' Version %d.%d-%s',
+           [HiWord(info^.dwProductVersionMS),
+            LoWord(info^.dwProductVersionMS),
+            FBuildStr]);
+      end;
     finally
       FreeMem(buffer);
     end;
@@ -320,6 +333,9 @@ begin
   try
     if Copyright <> '' then
       dlg.stCopyright.Caption := Copyright;
+
+    if BuildStr <> '' then
+      dlg.FBuildStr := BuildStr;
 
     if DisplaySupportLink then
     begin
