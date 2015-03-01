@@ -261,7 +261,7 @@ end;
  | function SplitString: string                                         |
  |                                                                      |
  | Search for a substring.  If the substring is found, return the       |
- | characters up to the substring, and set the soure string to the      |
+ | characters up to the substring, and set the source string to the     |
  | characters after it.  If it was not found, return the entire source  |
  | string, and set the source string to an empty string                 |
  *----------------------------------------------------------------------*)
