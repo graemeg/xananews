@@ -7301,3 +7301,6 @@ I shall be sober."
 .
 "Properly read, the Bible is the most potent force for atheism
  ever conceived." -- Isaac Asimov
+.
+"There are only two things wrong with C++: The initial concept
+and the implementation." -- Bertrand Meyer
