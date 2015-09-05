@@ -15,7 +15,7 @@
 			<Projects Include="components\thirdparty\VirtualTreeView\Packages\Delphi XE\VirtualTreesR.dproj">
 				<Dependencies/>
 			</Projects>
-			<Projects Include="source\NewsReader3.dproj">
+			<Projects Include="source\XanaNews.dproj">
 				<Dependencies/>
 			</Projects>
 		</ItemGroup>
@@ -64,23 +64,23 @@
 		<Target Name="VirtualTreesR:Make">
 			<MSBuild Projects="components\thirdparty\VirtualTreeView\Packages\Delphi XE\VirtualTreesR.dproj" Targets="Make"/>
 		</Target>
-		<Target Name="NewsReader3">
-			<MSBuild Projects="source\NewsReader3.dproj"/>
+		<Target Name="XanaNews">
+			<MSBuild Projects="source\XanaNews.dproj"/>
 		</Target>
-		<Target Name="NewsReader3:Clean">
-			<MSBuild Projects="source\NewsReader3.dproj" Targets="Clean"/>
+		<Target Name="XanaNews:Clean">
+			<MSBuild Projects="source\XanaNews.dproj" Targets="Clean"/>
 		</Target>
-		<Target Name="NewsReader3:Make">
-			<MSBuild Projects="source\NewsReader3.dproj" Targets="Make"/>
+		<Target Name="XanaNews:Make">
+			<MSBuild Projects="source\XanaNews.dproj" Targets="Make"/>
 		</Target>
 		<Target Name="Build">
-			<CallTarget Targets="ImageTypesD2011;LowLevelD2011;MiscUnitsD2011;VirtualTreesR;NewsReader3"/>
+			<CallTarget Targets="ImageTypesD2011;LowLevelD2011;MiscUnitsD2011;VirtualTreesR;XanaNews"/>
 		</Target>
 		<Target Name="Clean">
-			<CallTarget Targets="ImageTypesD2011:Clean;LowLevelD2011:Clean;MiscUnitsD2011:Clean;VirtualTreesR:Clean;NewsReader3:Clean"/>
+			<CallTarget Targets="ImageTypesD2011:Clean;LowLevelD2011:Clean;MiscUnitsD2011:Clean;VirtualTreesR:Clean;XanaNews:Clean"/>
 		</Target>
 		<Target Name="Make">
-			<CallTarget Targets="ImageTypesD2011:Make;LowLevelD2011:Make;MiscUnitsD2011:Make;VirtualTreesR:Make;NewsReader3:Make"/>
+			<CallTarget Targets="ImageTypesD2011:Make;LowLevelD2011:Make;MiscUnitsD2011:Make;VirtualTreesR:Make;XanaNews:Make"/>
 		</Target>
 		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')" Project="$(BDS)\Bin\CodeGear.Group.Targets"/>
 	</Project>

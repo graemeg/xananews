@@ -1,585 +1,401 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <PropertyGroup>
-        <ProjectGuid>{BBA882D7-C955-47C2-9605-2593A74F9161}</ProjectGuid>
-        <MainSource>XanaNews.dpr</MainSource>
-        <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Release</Config>
-        <TargetedPlatforms>3</TargetedPlatforms>
-        <AppType>Application</AppType>
-        <FrameworkType>VCL</FrameworkType>
-        <ProjectVersion>15.3</ProjectVersion>
-        <Platform Condition="'$(Platform)'==''">Win64</Platform>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Base)'=='true') or '$(Base_Win32)'!=''">
-        <Base_Win32>true</Base_Win32>
-        <CfgParent>Base</CfgParent>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Base)'=='true') or '$(Base_Win64)'!=''">
-        <Base_Win64>true</Base_Win64>
-        <CfgParent>Base</CfgParent>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_1)'!=''">
-        <Cfg_1>true</Cfg_1>
-        <CfgParent>Base</CfgParent>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win32)'!=''">
-        <Cfg_1_Win32>true</Cfg_1_Win32>
-        <CfgParent>Cfg_1</CfgParent>
-        <Cfg_1>true</Cfg_1>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_1)'=='true') or '$(Cfg_1_Win64)'!=''">
-        <Cfg_1_Win64>true</Cfg_1_Win64>
-        <CfgParent>Cfg_1</CfgParent>
-        <Cfg_1>true</Cfg_1>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Config)'=='Release with madExcept' or '$(Cfg_4)'!=''">
-        <Cfg_4>true</Cfg_4>
-        <CfgParent>Cfg_1</CfgParent>
-        <Cfg_1>true</Cfg_1>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_4)'=='true') or '$(Cfg_4_Win32)'!=''">
-        <Cfg_4_Win32>true</Cfg_4_Win32>
-        <CfgParent>Cfg_4</CfgParent>
-        <Cfg_4>true</Cfg_4>
-        <Cfg_1>true</Cfg_1>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_4)'=='true') or '$(Cfg_4_Win64)'!=''">
-        <Cfg_4_Win64>true</Cfg_4_Win64>
-        <CfgParent>Cfg_4</CfgParent>
-        <Cfg_4>true</Cfg_4>
-        <Cfg_1>true</Cfg_1>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_2)'!=''">
-        <Cfg_2>true</Cfg_2>
-        <CfgParent>Base</CfgParent>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win32)'!=''">
-        <Cfg_2_Win32>true</Cfg_2_Win32>
-        <CfgParent>Cfg_2</CfgParent>
-        <Cfg_2>true</Cfg_2>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_2)'=='true') or '$(Cfg_2_Win64)'!=''">
-        <Cfg_2_Win64>true</Cfg_2_Win64>
-        <CfgParent>Cfg_2</CfgParent>
-        <Cfg_2>true</Cfg_2>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Config)'=='Debug - XML' or '$(Cfg_6)'!=''">
-        <Cfg_6>true</Cfg_6>
-        <CfgParent>Cfg_2</CfgParent>
-        <Cfg_2>true</Cfg_2>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_6)'=='true') or '$(Cfg_6_Win32)'!=''">
-        <Cfg_6_Win32>true</Cfg_6_Win32>
-        <CfgParent>Cfg_6</CfgParent>
-        <Cfg_6>true</Cfg_6>
-        <Cfg_2>true</Cfg_2>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Config)'=='Debug - Without MadExcept' or '$(Cfg_5)'!=''">
-        <Cfg_5>true</Cfg_5>
-        <CfgParent>Cfg_2</CfgParent>
-        <Cfg_2>true</Cfg_2>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_5)'=='true') or '$(Cfg_5_Win32)'!=''">
-        <Cfg_5_Win32>true</Cfg_5_Win32>
-        <CfgParent>Cfg_5</CfgParent>
-        <Cfg_5>true</Cfg_5>
-        <Cfg_2>true</Cfg_2>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="('$(Platform)'=='Win64' and '$(Cfg_5)'=='true') or '$(Cfg_5_Win64)'!=''">
-        <Cfg_5_Win64>true</Cfg_5_Win64>
-        <CfgParent>Cfg_5</CfgParent>
-        <Cfg_5>true</Cfg_5>
-        <Cfg_2>true</Cfg_2>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Config)'=='FullDebugMode' or '$(Cfg_3)'!=''">
-        <Cfg_3>true</Cfg_3>
-        <CfgParent>Base</CfgParent>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="('$(Platform)'=='Win32' and '$(Cfg_3)'=='true') or '$(Cfg_3_Win32)'!=''">
-        <Cfg_3_Win32>true</Cfg_3_Win32>
-        <CfgParent>Cfg_3</CfgParent>
-        <Cfg_3>true</Cfg_3>
-        <Base>true</Base>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Base)'!=''">
-        <DCC_SYMBOL_DEPRECATED>false</DCC_SYMBOL_DEPRECATED>
-        <DCC_SYMBOL_PLATFORM>false</DCC_SYMBOL_PLATFORM>
-        <DCC_WIDECHAR_REDUCED>false</DCC_WIDECHAR_REDUCED>
-        <Icon_MainIcon>XanaNews_Icon.ico</Icon_MainIcon>
-        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-        <DCC_UnitSearchPath>..\components\ImageTypes\Source;..\components\LowLevel\Source;..\components\MiscUnits\Source;..\components\thirdparty\VirtualTreeView\Source;..\components\thirdparty\Indy10\Core;..\components\thirdparty\Indy10\Protocols;..\components\thirdparty\Indy10\System;..\modified_vcl;$(BDSLIB)\$(Platform)\release;$(BDSUSERDIR)\Imports;$(BDS)\Imports;$(BDSCOMMONDIR)\Dcp;$(BDS)\include;$(BDS)\RaveReports\Lib;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
-        <DCC_ImageBase>00400000</DCC_ImageBase>
-        <VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.20.0.376;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2012;LegalTrademarks=All Rights Reserved;OriginalFilename=XanaNews.exe;ProductName=XanaNews;ProductVersion=1.20.0.376;Comments=Contributions by jachguate http://jachguateit.wordpress.com</VerInfo_Keys>
-        <Manifest_File>$(BDS)\bin\default_app.manifest</Manifest_File>
-        <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
-        <VerInfo_MinorVer>20</VerInfo_MinorVer>
-        <VerInfo_Build>376</VerInfo_Build>
-        <VerInfo_Locale>1033</VerInfo_Locale>
-        <DCC_N>false</DCC_N>
-        <DCC_S>false</DCC_S>
-        <DCC_E>false</DCC_E>
-        <DCC_F>false</DCC_F>
-        <DCC_K>false</DCC_K>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Base_Win32)'!=''">
-        <DCC_DebugDCUs>true</DCC_DebugDCUs>
-        <DCC_DcuOutput>..\dcu32</DCC_DcuOutput>
-        <DCC_ExeOutput>..\bin32</DCC_ExeOutput>
-        <DCC_UnitSearchPath>..\dcu32;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
-        <DCC_SYMBOL_PLATFORM>false</DCC_SYMBOL_PLATFORM>
-        <DCC_UNIT_PLATFORM>false</DCC_UNIT_PLATFORM>
-        <DCC_SYMBOL_DEPRECATED>false</DCC_SYMBOL_DEPRECATED>
-        <DCC_Namespace>Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Base_Win64)'!=''">
-        <DCC_DebugDCUs>true</DCC_DebugDCUs>
-        <DCC_SYMBOL_DEPRECATED>false</DCC_SYMBOL_DEPRECATED>
-        <DCC_UnitSearchPath>..\dcu64;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
-        <DCC_ExeOutput>..\bin64</DCC_ExeOutput>
-        <DCC_DcuOutput>..\dcu64</DCC_DcuOutput>
-        <DCC_Namespace>Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Cfg_1)'!=''">
-        <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
-        <DCC_DebugInformation>0</DCC_DebugInformation>
-        <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
-        <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
-        <UsePackages>true</UsePackages>
-        <DCC_LocalDebugSymbols>true</DCC_LocalDebugSymbols>
-        <DCC_DebugInformation>true</DCC_DebugInformation>
-        <DCC_MapFile>3</DCC_MapFile>
-        <DCC_WIDECHAR_REDUCED>false</DCC_WIDECHAR_REDUCED>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
-        <DCC_LocalDebugSymbols>true</DCC_LocalDebugSymbols>
-        <DCC_DebugInformation>true</DCC_DebugInformation>
-        <DCC_MapFile>3</DCC_MapFile>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Cfg_4)'!=''">
-        <VerInfo_Build>376</VerInfo_Build>
-        <VerInfo_MinorVer>20</VerInfo_MinorVer>
-        <VerInfo_Release>0</VerInfo_Release>
-        <VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.20.0.376;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2012;LegalTrademarks=All Rights Reserved;OriginalFilename=XanaNews.exe;ProductName=XanaNews;ProductVersion=1.20.0.376;Comments=Contributions by jachguate http://jachguateit.wordpress.com</VerInfo_Keys>
-        <DCC_DebugInformation>0</DCC_DebugInformation>
-        <DCC_Define>madExcept;$(DCC_Define)</DCC_Define>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Cfg_4_Win32)'!=''">
-        <DCC_MapFile>3</DCC_MapFile>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Cfg_4_Win64)'!=''">
-        <DCC_MapFile>3</DCC_MapFile>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Cfg_2)'!=''">
-        <DCC_IntegerOverflowCheck>true</DCC_IntegerOverflowCheck>
-        <DCC_RangeChecking>true</DCC_RangeChecking>
-        <DCC_DebugDCUs>true</DCC_DebugDCUs>
-        <DCC_WIDECHAR_REDUCED>false</DCC_WIDECHAR_REDUCED>
-        <DCC_Define>DEBUG;madExcept;$(DCC_Define)</DCC_Define>
-        <DCC_Optimize>false</DCC_Optimize>
-        <DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
-        <DCC_MapFile>3</DCC_MapFile>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
-        <DCC_MapFile>3</DCC_MapFile>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Cfg_6)'!=''">
-        <VerInfo_MinorVer>20</VerInfo_MinorVer>
-        <VerInfo_Build>376</VerInfo_Build>
-        <VerInfo_Release>0</VerInfo_Release>
-        <VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.20.0.376;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2012;LegalTrademarks=All Rights Reserved;OriginalFilename=XanaNews.exe;ProductName=XanaNews;ProductVersion=1.20.0.376;Comments=Contributions by jachguate http://jachguateit.wordpress.com</VerInfo_Keys>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Cfg_6_Win32)'!=''">
-        <Debugger_RunParams>-XMLSettings:XanaNews.xml</Debugger_RunParams>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Cfg_5)'!=''">
-        <VerInfo_MinorVer>20</VerInfo_MinorVer>
-        <VerInfo_Build>376</VerInfo_Build>
-        <VerInfo_Release>0</VerInfo_Release>
-        <VerInfo_Keys>CompanyName=Colin Wilson;FileDescription=XanaNews News Reader;FileVersion=1.20.0.376;InternalName=XanaNews;LegalCopyright=Copyright (c) XanaNews 2012;LegalTrademarks=All Rights Reserved;OriginalFilename=XanaNews.exe;ProductName=XanaNews;ProductVersion=1.20.0.376;Comments=Contributions by jachguate http://jachguateit.wordpress.com</VerInfo_Keys>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Cfg_5_Win32)'!=''">
-        <DCC_Define>DEBUG</DCC_Define>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Cfg_5_Win64)'!=''">
-        <DCC_Define>DEBUG</DCC_Define>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Cfg_3)'!=''">
-        <DCC_Optimize>false</DCC_Optimize>
-        <DCC_MapFile>3</DCC_MapFile>
-        <DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
-        <DCC_IntegerOverflowCheck>true</DCC_IntegerOverflowCheck>
-        <DCC_RangeChecking>true</DCC_RangeChecking>
-        <DCC_DebugDCUs>true</DCC_DebugDCUs>
-        <DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
-        <DCC_Define>DEBUG;FullDebugMode;madExcept;$(DCC_Define)</DCC_Define>
-        <DCC_WIDECHAR_REDUCED>false</DCC_WIDECHAR_REDUCED>
-    </PropertyGroup>
-    <PropertyGroup Condition="'$(Cfg_3_Win32)'!=''">
-        <DCC_RemoteDebug>false</DCC_RemoteDebug>
-    </PropertyGroup>
-    <ItemGroup>
-        <DelphiCompile Include="$(MainSource)">
-            <MainSource>MainSource</MainSource>
-        </DelphiCompile>
-        <DCCReference Include="NewsGlobals.pas"/>
-        <DCCReference Include="MainForm.pas">
-            <Form>fmMain</Form>
-        </DCCReference>
-        <DCCReference Include="SplashForm.pas">
-            <Form>fmSplash</Form>
-        </DCCReference>
-        <DCCReference Include="AccountsDialog.pas">
-            <Form>dlgAccounts</Form>
-        </DCCReference>
-        <DCCReference Include="NewsgroupsDialog.pas">
-            <Form>dlgNewsgroups</Form>
-        </DCCReference>
-        <DCCReference Include="MessagebaseManagementDialog.pas">
-            <Form>dlgMessagebaseManagement</Form>
-        </DCCReference>
-        <DCCReference Include="PostMessageForm.pas">
-            <Form>fmPostMessage</Form>
-        </DCCReference>
-        <DCCReference Include="FilterDialog.pas">
-            <Form>dlgDeleteMessages</Form>
-        </DCCReference>
-        <DCCReference Include="MessagesDialog.pas">
-            <Form>dlgGetMessages</Form>
-        </DCCReference>
-        <DCCReference Include="AddFilterDialog.pas">
-            <Form>dlgAddFilter</Form>
-        </DCCReference>
-        <DCCReference Include="BatchesDialog.pas">
-            <Form>dlgBatches</Form>
-        </DCCReference>
-        <DCCReference Include="BatchDialog.pas">
-            <Form>dlgBatch</Form>
-        </DCCReference>
-        <DCCReference Include="ReplyByMailForm.pas">
-            <Form>fmReplyByMail</Form>
-        </DCCReference>
-        <DCCReference Include="AdvancedHeadersDialog.pas">
-            <Form>dlgAdvancedHeaders</Form>
-        </DCCReference>
-        <DCCReference Include="NewsgroupStatisticsForm.pas">
-            <Form>fmNewsgroupStatistics</Form>
-        </DCCReference>
-        <DCCReference Include="AttachmentsDialog.pas">
-            <Form>dlgAttachments</Form>
-        </DCCReference>
-        <DCCReference Include="ServerAdminCreateGroupDialog.pas">
-            <Form>dlgServerAdminCreateGroup</Form>
-        </DCCReference>
-        <DCCReference Include="ServerAdminRemoveGroupDialog.pas">
-            <Form>dlgServerAdminRemoveGroup</Form>
-        </DCCReference>
-        <DCCReference Include="TestPerformanceDialog.pas">
-            <Form>dlgTestPerformance</Form>
-        </DCCReference>
-        <DCCReference Include="FilterDetailsDialog.pas">
-            <Form>dlgFilterDetails</Form>
-        </DCCReference>
-        <DCCReference Include="MailAccountsDialog.pas">
-            <Form>dlgMailAccounts</Form>
-        </DCCReference>
-        <DCCReference Include="unitCheckVersion.pas"/>
-        <DCCReference Include="NewVersionDialog.pas">
-            <Form>fmNewVersionNotification</Form>
-        </DCCReference>
-        <DCCReference Include="PostToGroupsForm.pas">
-            <Form>fmPostToGroups</Form>
-        </DCCReference>
-        <DCCReference Include="unitXanaExporter.pas"/>
-        <DCCReference Include="ExportSettingsFrame.pas">
-            <Form>fmeExportSettings</Form>
-            <DesignClass>TFrame</DesignClass>
-        </DCCReference>
-        <DCCReference Include="BozoDetailsDialog.pas">
-            <Form>dlgBozoDetails</Form>
-        </DCCReference>
-        <DCCReference Include="unitBookmarks.pas"/>
-        <DCCReference Include="unitCIDMimeHandler.pas"/>
-        <DCCReference Include="unitLog.pas"/>
-        <DCCReference Include="CancelArticleDialog.pas">
-            <Form>dlgCancelArticles</Form>
-        </DCCReference>
-        <DCCReference Include="MoveMessagebaseDialog.pas">
-            <Form>dlgMoveMessagebase</Form>
-        </DCCReference>
-        <DCCReference Include="IdentityDialog.pas">
-            <Form>dlgIdentity</Form>
-        </DCCReference>
-        <DCCReference Include="IdentitiesDialog.pas">
-            <Form>dlgIdentities</Form>
-        </DCCReference>
-        <DCCReference Include="NewUserWizardForm.pas">
-            <Form>frmNewUserWizard</Form>
-        </DCCReference>
-        <DCCReference Include="CombineDecodeDialog.pas">
-            <Form>dlgCombineDecode</Form>
-        </DCCReference>
-        <DCCReference Include="CheckCrosspostDialog.pas">
-            <Form>dlgCheckCrosspost</Form>
-        </DCCReference>
-        <DCCReference Include="unitGetMessages1.pas">
-            <Form>dlgGetMessages1</Form>
-        </DCCReference>
-        <DCCReference Include="unitNNTPServices.pas"/>
-        <DCCReference Include="PropertyBaseForm.pas">
-            <Form>fmPropertyBase</Form>
-        </DCCReference>
-        <DCCReference Include="OptionsForm.pas">
-            <Form>fmOptions</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageForm.pas">
-            <Form>fmPropertyPage</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageGeneralForm.pas">
-            <Form>fmPropertyPageGeneral</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageEnterKeyForm.pas">
-            <Form>fmPropertyPageEnterKey</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageConnectionForm.pas">
-            <Form>fmPropertyPageConnection</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageGroupsTreeForm.pas">
-            <Form>fmPropertyPageGroupsTree</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageColorFontForm.pas">
-            <Form>fmPropertyPageColorFont</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageFontForm.pas">
-            <Form>fmPropertyPageFont</Form>
-        </DCCReference>
-        <DCCReference Include="unitFontDetails.pas"/>
-        <DCCReference Include="PropertyPageMessageTreeActionsForm.pas">
-            <Form>fmPropertyPageMessageTreeActions</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageMessageTreeDisplayForm.pas">
-            <Form>fmPropertyPageMessageTreeDisplay</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageMessagePaneForm.pas">
-            <Form>fmPropertyPageMessagePane</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageCustomHeadersForm.pas">
-            <Form>fmPropertyPageCustomHeaders</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageWin98Form.pas">
-            <Form>fmPropertyPageWin98</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageKeywordsForm.pas">
-            <Form>fmPropertyPageKeywords</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPagePosting.pas">
-            <Form>fmPropertyPagePosting</Form>
-        </DCCReference>
-        <DCCReference Include="AccountForm.pas">
-            <Form>fmAccount</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageAccountGeneralForm.pas">
-            <Form>fmPropertyPageAccountGeneral</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageAccountServerForm.pas">
-            <Form>fmPropertyPageAccountServer</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageAccountAdvancedServerForm.pas">
-            <Form>fmPropertyPageAccountAdvancedServer</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageDefaultsForm.pas">
-            <Form>fmPropertyPageDefaults</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageExtraPostingForm.pas">
-            <Form>fmPropertyPageExtraPosting</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageQuotingForm.pas">
-            <Form>fmPropertyPageQuoting</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageFiltersForm.pas">
-            <Form>fmPropertyPageFilters</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPagePreferencesForm.pas">
-            <Form>fmPropertyPagePreferences</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPagePostingServersForm.pas">
-            <Form>fmPropertyPagePostingServers</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageBozoForm.pas">
-            <Form>fmPropertyPageBozos</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageShortcutsForm.pas">
-            <Form>fmPropertyPageShortcuts</Form>
-        </DCCReference>
-        <DCCReference Include="MailAccountForm.pas">
-            <Form>fmMailAccount</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageMailAccountGeneralForm.pas">
-            <Form>fmPropertyPageMailAccountGeneral</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageMailAccountPreferencesForm.pas">
-            <Form>fmPropertyPageMailAccountPreferences</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageMailAccountServerForm.pas">
-            <Form>fmPropertyPageMailAccountServer</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageMailAccountConnectionForm.pas">
-            <Form>fmPropertyPageMailAccountConnection</Form>
-        </DCCReference>
-        <DCCReference Include="NewsgroupForm.pas">
-            <Form>fmNewsgroup</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageNewsgroupGeneralForm.pas">
-            <Form>fmPropertyPageNewsgroupGeneral</Form>
-        </DCCReference>
-        <DCCReference Include="PropertyPageSortingForm.pas">
-            <Form>fmPropertyPageSorting</Form>
-        </DCCReference>
-        <DCCReference Include="PostFrame.pas">
-            <Form>fmePost</Form>
-            <DesignClass>TFrame</DesignClass>
-        </DCCReference>
-        <DCCReference Include="unitMessages.pas"/>
-        <DCCReference Include="unitSettings.pas"/>
-        <DCCReference Include="unitIdentities.pas"/>
-        <DCCReference Include="unitNNTPFilters.pas"/>
-        <DCCReference Include="unitNewsReaderOptions.pas"/>
-        <DCCReference Include="unitSavedArticles.pas"/>
-        <DCCReference Include="unitMailServices.pas"/>
-        <DCCReference Include="unitNNTPThreadManager.pas"/>
-        <DCCReference Include="AddAccountWizard.pas">
-            <Form>fmAddAccountWizard</Form>
-        </DCCReference>
-        <DCCReference Include="FindOnInternetDialog.pas">
-            <Form>dlgFindMessageOnInternet</Form>
-        </DCCReference>
-        <DCCReference Include="SearchDialog.pas">
-            <Form>dlgSearch</Form>
-        </DCCReference>
-        <DCCReference Include="unitRFC2646Coder.pas"/>
-        <DCCReference Include="ReadLnDelayDialog.pas">
-            <Form>dlgReadLnDelay</Form>
-        </DCCReference>
-        <DCCReference Include="unitMessageBaseSearch.pas"/>
-        <DCCReference Include="unitNewsgroups.pas"/>
-        <DCCReference Include="unitNewsThread.pas"/>
-        <DCCReference Include="unitNNTPThreads.pas"/>
-        <DCCReference Include="cmpMessageScrollBox.pas"/>
-        <DCCReference Include="ExportDialog.pas"/>
-        <DCCReference Include="IdNNTPX.pas"/>
-        <DCCReference Include="unitArticleHash.pas"/>
-        <DCCReference Include="unitBatches.pas"/>
-        <DCCReference Include="unitCRC32.pas"/>
-        <DCCReference Include="unitMessageMime.pas"/>
-        <DCCReference Include="unitMessageNNTPBinary.pas"/>
-        <DCCReference Include="unitMessageYEncodedBinary.pas"/>
-        <DCCReference Include="unitNewUserWizard.pas"/>
-        <DCCReference Include="XnCoderQuotedPrintable.pas"/>
-        <DCCReference Include="XnCoderUUE.pas"/>
-        <DCCReference Include="unitDefaultNewsreader.pas"/>
-        <DCCReference Include="XnXFace.pas"/>
-        <BuildConfiguration Include="Release with madExcept">
-            <Key>Cfg_4</Key>
-            <CfgParent>Cfg_1</CfgParent>
-        </BuildConfiguration>
-        <BuildConfiguration Include="Debug - Without MadExcept">
-            <Key>Cfg_5</Key>
-            <CfgParent>Cfg_2</CfgParent>
-        </BuildConfiguration>
-        <BuildConfiguration Include="Debug - XML">
-            <Key>Cfg_6</Key>
-            <CfgParent>Cfg_2</CfgParent>
-        </BuildConfiguration>
-        <BuildConfiguration Include="Base">
-            <Key>Base</Key>
-        </BuildConfiguration>
-        <BuildConfiguration Include="Debug">
-            <Key>Cfg_2</Key>
-            <CfgParent>Base</CfgParent>
-        </BuildConfiguration>
-        <BuildConfiguration Include="FullDebugMode">
-            <Key>Cfg_3</Key>
-            <CfgParent>Base</CfgParent>
-        </BuildConfiguration>
-        <BuildConfiguration Include="Release">
-            <Key>Cfg_1</Key>
-            <CfgParent>Base</CfgParent>
-        </BuildConfiguration>
-    </ItemGroup>
-    <ProjectExtensions>
-        <Borland.Personality>Delphi.Personality.12</Borland.Personality>
-        <Borland.ProjectType/>
-        <BorlandProject>
-            <Delphi.Personality>
-                <Source>
-                    <Source Name="MainSource">XanaNews.dpr</Source>
-                </Source>
-                <VersionInfo>
-                    <VersionInfo Name="IncludeVerInfo">True</VersionInfo>
-                    <VersionInfo Name="AutoIncBuild">False</VersionInfo>
-                    <VersionInfo Name="MajorVer">1</VersionInfo>
-                    <VersionInfo Name="MinorVer">19</VersionInfo>
-                    <VersionInfo Name="Release">1</VersionInfo>
-                    <VersionInfo Name="Build">330</VersionInfo>
-                    <VersionInfo Name="Debug">False</VersionInfo>
-                    <VersionInfo Name="PreRelease">False</VersionInfo>
-                    <VersionInfo Name="Special">False</VersionInfo>
-                    <VersionInfo Name="Private">False</VersionInfo>
-                    <VersionInfo Name="DLL">False</VersionInfo>
-                    <VersionInfo Name="Locale">1033</VersionInfo>
-                    <VersionInfo Name="CodePage">1252</VersionInfo>
-                </VersionInfo>
-                <VersionInfoKeys>
-                    <VersionInfoKeys Name="CompanyName">Colin Wilson</VersionInfoKeys>
-                    <VersionInfoKeys Name="FileDescription">XanaNews NewsReader</VersionInfoKeys>
-                    <VersionInfoKeys Name="FileVersion">11.19.1.330</VersionInfoKeys>
-                    <VersionInfoKeys Name="InternalName">XanaNews</VersionInfoKeys>
-                    <VersionInfoKeys Name="LegalCopyright">Copyright (c) XanaNews 2011</VersionInfoKeys>
-                    <VersionInfoKeys Name="LegalTrademarks">All Rights Reserved</VersionInfoKeys>
-                    <VersionInfoKeys Name="OriginalFilename">XanaNews.exe</VersionInfoKeys>
-                    <VersionInfoKeys Name="ProductName">XanaNews</VersionInfoKeys>
-                    <VersionInfoKeys Name="ProductVersion">1.19.1.320</VersionInfoKeys>
-                    <VersionInfoKeys Name="Comments"/>
-                </VersionInfoKeys>
-                <Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\bcboffice2k190.bpl">Embarcadero C++Builder Office 2000 Servers Package</Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\bcbofficexp190.bpl">Embarcadero C++Builder Office XP Servers Package</Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\dcloffice2k190.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
-                    <Excluded_Packages Name="$(BDSBIN)\dclofficexp190.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
-                    <Excluded_Packages Name="C:\Program Files (x86)\FastReports\FastReport 4\LibD19\dclfsibx19.bpl">FastScript 1.9 IBX Components</Excluded_Packages>
-                    <Excluded_Packages Name="C:\Program Files (x86)\FastReports\FastReport 4\LibD19\dclfrxibx19.bpl">FastReport 4.0 IBX Components</Excluded_Packages>
-                </Excluded_Packages>
-            </Delphi.Personality>
-            <Platforms>
-                <Platform value="Win32">True</Platform>
-                <Platform value="Win64">True</Platform>
-            </Platforms>
-        </BorlandProject>
-        <ProjectFileVersion>12</ProjectFileVersion>
-    </ProjectExtensions>
-    <Import Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')" Project="$(BDS)\Bin\CodeGear.Delphi.Targets"/>
-    <Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj"/>
-</Project>
+﻿	<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+		<PropertyGroup>
+			<ProjectGuid>{6e864b85-c2fc-4b51-af75-a7c475365898}</ProjectGuid>
+			<MainSource>XanaNews.dpr</MainSource>
+			<Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+			<DCC_DCCCompiler>DCC32</DCC_DCCCompiler>
+			<DCC_DependencyCheckOutputName>..\bin\NewsReader3.exe</DCC_DependencyCheckOutputName>
+			<ProjectVersion>12.3</ProjectVersion>
+			<Config Condition="'$(Config)'==''">Release</Config>
+			<Platform Condition="'$(Platform)'==''">Win32</Platform>
+			<Base>True</Base>
+			<AppType>Application</AppType>
+			<FrameworkType>VCL</FrameworkType>
+			<Platform>Win32</Platform>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Base' or '$(Base)'!=''">
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Release' or '$(Cfg_1)'!=''">
+			<Cfg_1>true</Cfg_1>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Debug' or '$(Cfg_2)'!=''">
+			<Cfg_2>true</Cfg_2>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Config)'=='Full Debug mode' or '$(Cfg_3)'!=''">
+			<Cfg_3>true</Cfg_3>
+			<CfgParent>Base</CfgParent>
+			<Base>true</Base>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Base)'!=''">
+			<FrameworkType>VCL</FrameworkType>
+			<AppType>Application</AppType>
+			<DCC_UNSUPPORTED_CONSTRUCT>false</DCC_UNSUPPORTED_CONSTRUCT>
+			<DCC_StringChecks>off</DCC_StringChecks>
+			<DCC_MapFile>3</DCC_MapFile>
+			<DCC_UnitSearchPath>..\dcu32;..\components\ImageTypes\Source;..\components\LowLevel\Source;..\components\MiscUnits\Source;..\components\thirdparty\VirtualTreeView\Source;..\components\thirdparty\Indy10\Core;..\components\thirdparty\Indy10\Protocols;..\components\thirdparty\Indy10\System;..\modified_vcl;$(DCC_UnitSearchPath)</DCC_UnitSearchPath>
+			<DCC_ExeOutput>..\bin32</DCC_ExeOutput>
+			<DCC_DcuOutput>..\dcu32</DCC_DcuOutput>
+			<DCC_UsePackage>vclx;vcl;dbrtl;Rave76VCL;bdertl;rtl;vclactnband;xmlrtl;vcldb;vcldbx;dsnap;dsnapcon;TeeUI;TeeDB;Tee;adortl;vclib;ibxpress;IndyCore;IndySystem;IndyProtocols;inet;intrawebdb_100_120;Intraweb_100_120;VclSmp;vclie;websnap;webdsnap;inetdbbde;inetdbxpress;soaprtl;vclribbon;DbxCommonDriver;DbxClientDriver;DBXInterBaseDriver;DBXMySQLDriver;dbexpress;dbxcds;RulerD2009;VirtualTreesD12;LismarD2009;VirtualTreesExD2009;ImageTypesD2009;madExcept_</DCC_UsePackage>
+			<DCC_WIDECHAR_REDUCED>false</DCC_WIDECHAR_REDUCED>
+			<DCC_DependencyCheckOutputName>..\bin\NewsReader3.exe</DCC_DependencyCheckOutputName>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_1)'!=''">
+			<DCC_AssertionsAtRuntime>false</DCC_AssertionsAtRuntime>
+			<Version>7.0</Version>
+			<DCC_Define>RELEASE;madExceptX;$(DCC_Define)</DCC_Define>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_2)'!=''">
+			<DCC_DebugDCUs>true</DCC_DebugDCUs>
+			<DCC_IntegerOverflowCheck>true</DCC_IntegerOverflowCheck>
+			<DCC_RangeChecking>true</DCC_RangeChecking>
+			<Version>7.0</Version>
+			<DCC_Define>DEBUG;madExcept;$(DCC_Define)</DCC_Define>
+			<DCC_ObjOutput>..\dcus</DCC_ObjOutput>
+			<DCC_HppOutput>..\dcus</DCC_HppOutput>
+			<DCC_ResourcePath>..\dcus;..\components\thirdparty\madCollection;..\components\MiscUnits\Source;..\components\thirdparty\VirtualTreeView\Source;..\components\thirdparty\OpenStrSecII\Source;..\components\thirdparty\Indy10\Core;..\components\thirdparty\Indy10\Protocols;..\components\thirdparty\Indy10\System;$(DCC_ResourcePath)</DCC_ResourcePath>
+			<DCC_ObjPath>..\dcus;..\components\thirdparty\madCollection;..\components\MiscUnits\Source;..\components\thirdparty\VirtualTreeView\Source;..\components\thirdparty\OpenStrSecII\Source;..\components\thirdparty\Indy10\Core;..\components\thirdparty\Indy10\Protocols;..\components\thirdparty\Indy10\System;$(DCC_ObjPath)</DCC_ObjPath>
+			<DCC_IncludePath>..\dcus;..\components\thirdparty\madCollection;..\components\MiscUnits\Source;..\components\thirdparty\VirtualTreeView\Source;..\components\thirdparty\OpenStrSecII\Source;..\components\thirdparty\Indy10\Core;..\components\thirdparty\Indy10\Protocols;..\components\thirdparty\Indy10\System;$(DCC_IncludePath)</DCC_IncludePath>
+		</PropertyGroup>
+		<PropertyGroup Condition="'$(Cfg_3)'!=''">
+			<DCC_Define>DEBUG;FullDebugMode;madExcept;$(DCC_Define)</DCC_Define>
+			<DCC_RangeChecking>true</DCC_RangeChecking>
+			<DCC_IntegerOverflowCheck>true</DCC_IntegerOverflowCheck>
+			<DCC_DebugDCUs>true</DCC_DebugDCUs>
+		</PropertyGroup>
+		<ItemGroup>
+			<DelphiCompile Include="XanaNews.dpr">
+				<MainSource>MainSource</MainSource>
+			</DelphiCompile>
+			<DCCReference Include="NewsGlobals.pas"/>
+			<DCCReference Include="MainForm.pas">
+				<Form>fmMain</Form>
+			</DCCReference>
+			<DCCReference Include="SplashForm.pas">
+				<Form>fmSplash</Form>
+			</DCCReference>
+			<DCCReference Include="AccountsDialog.pas">
+				<Form>dlgAccounts</Form>
+			</DCCReference>
+			<DCCReference Include="NewsgroupsDialog.pas">
+				<Form>dlgNewsgroups</Form>
+			</DCCReference>
+			<DCCReference Include="MessagebaseManagementDialog.pas">
+				<Form>dlgMessagebaseManagement</Form>
+			</DCCReference>
+			<DCCReference Include="PostMessageForm.pas">
+				<Form>fmPostMessage</Form>
+			</DCCReference>
+			<DCCReference Include="FilterDialog.pas">
+				<Form>dlgDeleteMessages</Form>
+			</DCCReference>
+			<DCCReference Include="MessagesDialog.pas">
+				<Form>dlgGetMessages</Form>
+			</DCCReference>
+			<DCCReference Include="AddFilterDialog.pas">
+				<Form>dlgAddFilter</Form>
+			</DCCReference>
+			<DCCReference Include="BatchesDialog.pas">
+				<Form>dlgBatches</Form>
+			</DCCReference>
+			<DCCReference Include="BatchDialog.pas">
+				<Form>dlgBatch</Form>
+			</DCCReference>
+			<DCCReference Include="ReplyByMailForm.pas">
+				<Form>fmReplyByMail</Form>
+			</DCCReference>
+			<DCCReference Include="AdvancedHeadersDialog.pas">
+				<Form>dlgAdvancedHeaders</Form>
+			</DCCReference>
+			<DCCReference Include="NewsgroupStatisticsForm.pas">
+				<Form>fmNewsgroupStatistics</Form>
+			</DCCReference>
+			<DCCReference Include="AttachmentsDialog.pas">
+				<Form>dlgAttachments</Form>
+			</DCCReference>
+			<DCCReference Include="ServerAdminCreateGroupDialog.pas">
+				<Form>dlgServerAdminCreateGroup</Form>
+			</DCCReference>
+			<DCCReference Include="ServerAdminRemoveGroupDialog.pas">
+				<Form>dlgServerAdminRemoveGroup</Form>
+			</DCCReference>
+			<DCCReference Include="TestPerformanceDialog.pas">
+				<Form>dlgTestPerformance</Form>
+			</DCCReference>
+			<DCCReference Include="FilterDetailsDialog.pas">
+				<Form>dlgFilterDetails</Form>
+			</DCCReference>
+			<DCCReference Include="MailAccountsDialog.pas">
+				<Form>dlgMailAccounts</Form>
+			</DCCReference>
+			<DCCReference Include="unitCheckVersion.pas"/>
+			<DCCReference Include="NewVersionDialog.pas">
+				<Form>fmNewVersionNotification</Form>
+			</DCCReference>
+			<DCCReference Include="PostToGroupsForm.pas">
+				<Form>fmPostToGroups</Form>
+			</DCCReference>
+			<DCCReference Include="unitXanaExporter.pas"/>
+			<DCCReference Include="ExportSettingsFrame.pas">
+				<Form>fmeExportSettings</Form>
+				<DesignClass>TFrame</DesignClass>
+			</DCCReference>
+			<DCCReference Include="BozoDetailsDialog.pas">
+				<Form>dlgBozoDetails</Form>
+			</DCCReference>
+			<DCCReference Include="unitBookmarks.pas"/>
+			<DCCReference Include="unitCIDMimeHandler.pas"/>
+			<DCCReference Include="unitLog.pas"/>
+			<DCCReference Include="CancelArticleDialog.pas">
+				<Form>dlgCancelArticles</Form>
+			</DCCReference>
+			<DCCReference Include="MoveMessagebaseDialog.pas">
+				<Form>dlgMoveMessagebase</Form>
+			</DCCReference>
+			<DCCReference Include="IdentityDialog.pas">
+				<Form>dlgIdentity</Form>
+			</DCCReference>
+			<DCCReference Include="IdentitiesDialog.pas">
+				<Form>dlgIdentities</Form>
+			</DCCReference>
+			<DCCReference Include="NewUserWizardForm.pas">
+				<Form>frmNewUserWizard</Form>
+			</DCCReference>
+			<DCCReference Include="CombineDecodeDialog.pas">
+				<Form>dlgCombineDecode</Form>
+			</DCCReference>
+			<DCCReference Include="CheckCrosspostDialog.pas">
+				<Form>dlgCheckCrosspost</Form>
+			</DCCReference>
+			<DCCReference Include="unitGetMessages1.pas">
+				<Form>dlgGetMessages1</Form>
+			</DCCReference>
+			<DCCReference Include="unitNNTPServices.pas"/>
+			<DCCReference Include="PropertyBaseForm.pas">
+				<Form>fmPropertyBase</Form>
+			</DCCReference>
+			<DCCReference Include="OptionsForm.pas">
+				<Form>fmOptions</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageForm.pas">
+				<Form>fmPropertyPage</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageGeneralForm.pas">
+				<Form>fmPropertyPageGeneral</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageEnterKeyForm.pas">
+				<Form>fmPropertyPageEnterKey</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageConnectionForm.pas">
+				<Form>fmPropertyPageConnection</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageGroupsTreeForm.pas">
+				<Form>fmPropertyPageGroupsTree</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageColorFontForm.pas">
+				<Form>fmPropertyPageColorFont</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageFontForm.pas">
+				<Form>fmPropertyPageFont</Form>
+			</DCCReference>
+			<DCCReference Include="unitFontDetails.pas"/>
+			<DCCReference Include="PropertyPageMessageTreeActionsForm.pas">
+				<Form>fmPropertyPageMessageTreeActions</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageMessageTreeDisplayForm.pas">
+				<Form>fmPropertyPageMessageTreeDisplay</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageMessagePaneForm.pas">
+				<Form>fmPropertyPageMessagePane</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageCustomHeadersForm.pas">
+				<Form>fmPropertyPageCustomHeaders</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageWin98Form.pas">
+				<Form>fmPropertyPageWin98</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageKeywordsForm.pas">
+				<Form>fmPropertyPageKeywords</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPagePosting.pas">
+				<Form>fmPropertyPagePosting</Form>
+			</DCCReference>
+			<DCCReference Include="AccountForm.pas">
+				<Form>fmAccount</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageAccountGeneralForm.pas">
+				<Form>fmPropertyPageAccountGeneral</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageAccountServerForm.pas">
+				<Form>fmPropertyPageAccountServer</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageAccountAdvancedServerForm.pas">
+				<Form>fmPropertyPageAccountAdvancedServer</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageDefaultsForm.pas">
+				<Form>fmPropertyPageDefaults</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageExtraPostingForm.pas">
+				<Form>fmPropertyPageExtraPosting</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageQuotingForm.pas">
+				<Form>fmPropertyPageQuoting</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageFiltersForm.pas">
+				<Form>fmPropertyPageFilters</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPagePreferencesForm.pas">
+				<Form>fmPropertyPagePreferences</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPagePostingServersForm.pas">
+				<Form>fmPropertyPagePostingServers</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageBozoForm.pas">
+				<Form>fmPropertyPageBozos</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageShortcutsForm.pas">
+				<Form>fmPropertyPageShortcuts</Form>
+			</DCCReference>
+			<DCCReference Include="MailAccountForm.pas">
+				<Form>fmMailAccount</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageMailAccountGeneralForm.pas">
+				<Form>fmPropertyPageMailAccountGeneral</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageMailAccountPreferencesForm.pas">
+				<Form>fmPropertyPageMailAccountPreferences</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageMailAccountServerForm.pas">
+				<Form>fmPropertyPageMailAccountServer</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageMailAccountConnectionForm.pas">
+				<Form>fmPropertyPageMailAccountConnection</Form>
+			</DCCReference>
+			<DCCReference Include="NewsgroupForm.pas">
+				<Form>fmNewsgroup</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageNewsgroupGeneralForm.pas">
+				<Form>fmPropertyPageNewsgroupGeneral</Form>
+			</DCCReference>
+			<DCCReference Include="PropertyPageSortingForm.pas">
+				<Form>fmPropertyPageSorting</Form>
+			</DCCReference>
+			<DCCReference Include="PostFrame.pas">
+				<Form>fmePost</Form>
+				<DesignClass>TFrame</DesignClass>
+			</DCCReference>
+			<DCCReference Include="unitMessages.pas"/>
+			<DCCReference Include="unitSettings.pas"/>
+			<DCCReference Include="unitIdentities.pas"/>
+			<DCCReference Include="unitNNTPFilters.pas"/>
+			<DCCReference Include="unitNewsReaderOptions.pas"/>
+			<DCCReference Include="unitSavedArticles.pas"/>
+			<DCCReference Include="unitMailServices.pas"/>
+			<DCCReference Include="unitNNTPThreadManager.pas"/>
+			<DCCReference Include="AddAccountWizard.pas">
+				<Form>fmAddAccountWizard</Form>
+			</DCCReference>
+			<DCCReference Include="FindOnInternetDialog.pas">
+				<Form>dlgFindMessageOnInternet</Form>
+			</DCCReference>
+			<DCCReference Include="SearchDialog.pas">
+				<Form>dlgSearch</Form>
+			</DCCReference>
+			<DCCReference Include="unitRFC2646Coder.pas"/>
+			<DCCReference Include="ReadLnDelayDialog.pas">
+				<Form>dlgReadLnDelay</Form>
+			</DCCReference>
+			<DCCReference Include="unitMessageBaseSearch.pas"/>
+			<DCCReference Include="unitNewsgroups.pas"/>
+			<DCCReference Include="unitNewsThread.pas"/>
+			<DCCReference Include="unitNNTPThreads.pas"/>
+			<DCCReference Include="cmpMessageScrollBox.pas"/>
+			<DCCReference Include="ExportDialog.pas"/>
+			<DCCReference Include="IdNNTPX.pas"/>
+			<DCCReference Include="unitArticleHash.pas"/>
+			<DCCReference Include="unitBatches.pas"/>
+			<DCCReference Include="unitCRC32.pas"/>
+			<DCCReference Include="unitMessageMime.pas"/>
+			<DCCReference Include="unitMessageNNTPBinary.pas"/>
+			<DCCReference Include="unitMessageYEncodedBinary.pas"/>
+			<DCCReference Include="unitNewUserWizard.pas"/>
+			<DCCReference Include="XnCaptionedDockTree.pas"/>
+			<DCCReference Include="XnCoderQuotedPrintable.pas"/>
+			<DCCReference Include="XnCoderUUE.pas"/>
+			<DCCReference Include="unitDefaultNewsreader.pas"/>
+			<BuildConfiguration Include="Debug">
+				<Key>Cfg_2</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Full Debug mode">
+				<Key>Cfg_3</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Base">
+				<Key>Base</Key>
+			</BuildConfiguration>
+			<BuildConfiguration Include="Release">
+				<Key>Cfg_1</Key>
+				<CfgParent>Base</CfgParent>
+			</BuildConfiguration>
+		</ItemGroup>
+		<Import Condition="Exists('$(BDS)\Bin\CodeGear.Delphi.Targets')" Project="$(BDS)\Bin\CodeGear.Delphi.Targets"/>
+		<Import Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\8.0\UserTools.proj')" Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\8.0\UserTools.proj"/>
+		<PropertyGroup>
+			<PreBuildEvent><![CDATA[version.bat]]></PreBuildEvent>
+		</PropertyGroup>
+		<ProjectExtensions>
+			<Borland.Personality>Delphi.Personality.12</Borland.Personality>
+			<Borland.ProjectType>VCLApplication</Borland.ProjectType>
+			<BorlandProject>
+				<Delphi.Personality>
+					<Parameters>
+						<Parameters Name="RunParams">-ns</Parameters>
+						<Parameters Name="DebugSourceDirs">D:\Program Files\CodeGear\RAD Studio\6.0\source\Win32\vcl\Imaging\GIFImage\</Parameters>
+					</Parameters>
+					<VersionInfo>
+						<VersionInfo Name="IncludeVerInfo">True</VersionInfo>
+						<VersionInfo Name="AutoIncBuild">False</VersionInfo>
+						<VersionInfo Name="MajorVer">1</VersionInfo>
+						<VersionInfo Name="MinorVer">20</VersionInfo>
+						<VersionInfo Name="Release">0</VersionInfo>
+						<VersionInfo Name="Build">0</VersionInfo>
+						<VersionInfo Name="Debug">False</VersionInfo>
+						<VersionInfo Name="PreRelease">False</VersionInfo>
+						<VersionInfo Name="Special">False</VersionInfo>
+						<VersionInfo Name="Private">False</VersionInfo>
+						<VersionInfo Name="DLL">False</VersionInfo>
+						<VersionInfo Name="Locale">2057</VersionInfo>
+						<VersionInfo Name="CodePage">1252</VersionInfo>
+					</VersionInfo>
+					<VersionInfoKeys>
+						<VersionInfoKeys Name="CompanyName">Colin Wilson</VersionInfoKeys>
+						<VersionInfoKeys Name="FileDescription">XanaNews News Reader</VersionInfoKeys>
+						<VersionInfoKeys Name="FileVersion">1.20.0.0</VersionInfoKeys>
+						<VersionInfoKeys Name="InternalName">XanaNews</VersionInfoKeys>
+						<VersionInfoKeys Name="LegalCopyright">Copyright (c) XanaNews 2015</VersionInfoKeys>
+						<VersionInfoKeys Name="LegalTrademarks">All Rights Reserved</VersionInfoKeys>
+						<VersionInfoKeys Name="OriginalFilename">NewsReader.exe</VersionInfoKeys>
+						<VersionInfoKeys Name="ProductName">XanaNews</VersionInfoKeys>
+						<VersionInfoKeys Name="ProductVersion">1.20</VersionInfoKeys>
+						<VersionInfoKeys Name="Comments"/>
+					</VersionInfoKeys>
+					<Excluded_Packages>
+						<Excluded_Packages Name="$(BDSBIN)\dcloffice2k150.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
+						<Excluded_Packages Name="$(BDSBIN)\dclofficexp150.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
+					</Excluded_Packages>
+					<Source>
+						<Source Name="MainSource">XanaNews.dpr</Source>
+					</Source>
+				</Delphi.Personality>
+				<Platforms>
+					<Platform value="Win32">True</Platform>
+				</Platforms>
+			</BorlandProject>
+			<ProjectFileVersion>12</ProjectFileVersion>
+		</ProjectExtensions>
+	</Project>
