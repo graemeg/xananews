@@ -5069,7 +5069,7 @@ object fmMain: TfmMain
         Caption = '-'
       end
       object mnuFileExit: TMenuItem
-        Action = actFileExit
+        Action = actTrayExit
       end
     end
     object mnuEdit: TMenuItem
