@@ -6173,10 +6173,6 @@ The "abort()" function is now called "choice()."
  therefore, be regarded as a criminal offense."
  -- Edsger Dijkstra
 .
-"C makes it easy to shoot yourself in the foot; C++ makes it 
- harder, but when you do, it blows away your whole leg."
- -- Bjarne Stroustrup
-.
 "A mathematician is a device for turning coffee into theorems."
  -- Paul Erdos
 .
@@ -7304,4 +7300,7 @@ I shall be sober."
  -- Ronald Reagan on Walter Mondale
 .
 "Properly read, the Bible is the most potent force for atheism
- ever conceived." -- Isaac Asimov"
+ ever conceived." -- Isaac Asimov
+.
+"There are only two things wrong with C++: The initial concept
+and the implementation." -- Bertrand Meyer
