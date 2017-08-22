@@ -4480,7 +4480,8 @@ end;
 
 procedure TfmMain.FormShow(Sender: TObject);
 begin
-  Caption := Application.Title + ' ' + ProductVersion;
+  gProductVersion := ''; // force a reload of version info
+  Caption := Application.Title + ' ' + ProductVersion(True);
   SaveDefaultActions;
   vstSubscribed.SetFocus;
   LoadToolbarLayout;
@@ -6612,11 +6613,6 @@ begin
   actHelpTopicSearch.Enabled := Application.HelpFile <> '';
   actToolsBatches.Enabled := True;
 
-  s := Application.Title {$ifdef CPUX64} + ' (x64)' {$endif};
-  if Assigned(SelectedGroup) then
-    Caption := Format('%s %s - %s', [s, ProductVersion, SelectedGroup.Name])
-  else
-    Caption := s + ' ' + ProductVersion;
 
   actToolsMessagebaseManagement.Enabled := True;
   actToolsAdminCreateGroup.Enabled := hasSelAccount;
