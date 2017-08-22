@@ -294,6 +294,7 @@ var
   LStrmStartPos, LStrmPos, LStrmSize: TIdStreamSize;
 begin
   Assert(AStream<>nil);
+  LTerm := nil; // keep the compiler happy
 
   { we store the stream size for the whole routine to prevent
   so do not incur a performance penalty with TStream.Size.  It has
@@ -491,6 +492,10 @@ procedure TIdMessageEncoder.Encode(ASrc: TStream; ADest: TStrings);
 var
   LDestStream: TStream;
 begin
+  // TODO: provide an Encode() implementation that can save its output directly
+  // to ADest without having to waste memory encoding the data entirely to
+  // memory first. In Delphi 2009+ in particular, TStrings.LoadFromStream()
+  // wastes a lot of memory handling large streams...
   LDestStream := TMemoryStream.Create; try
     Encode(ASrc, LDestStream);
     LDestStream.Position := 0;

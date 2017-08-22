@@ -45,6 +45,14 @@ uses
   IdComponent, IdException, IdGlobal, IdSocketHandle,
   IdStack;
 
+(*$HPPEMIT '#if defined(_VCL_ALIAS_RECORDS)' *)
+(*$HPPEMIT '#if !defined(UNICODE)' *)
+(*$HPPEMIT '#pragma alias "@Idipmcastbase@TIdIPMCastBase@SetPortA$qqrxi"="@Idipmcastbase@TIdIPMCastBase@SetPort$qqrxi"' *)
+(*$HPPEMIT '#else' *)
+(*$HPPEMIT '#pragma alias "@Idipmcastbase@TIdIPMCastBase@SetPortW$qqrxi"="@Idipmcastbase@TIdIPMCastBase@SetPort$qqrxi"' *)
+(*$HPPEMIT '#endif' *)
+(*$HPPEMIT '#endif' *)
+
 const
   IPMCastLo = 224;
   IPMCastHi = 239;
@@ -141,8 +149,12 @@ end;
 procedure TIdIPMCastBase.InitComponent;
 begin
   inherited InitComponent;
-  FMultiCastGroup := Id_IPMC_All_Systems;
   FIPVersion := ID_DEFAULT_IP_VERSION;
+  {$IFDEF IdIPv6}
+  FMultiCastGroup := DEF_IPv6_MGROUP;
+  {$ELSE}
+  FMultiCastGroup := Id_IPMC_All_Systems;
+  {$ENDIF}
   FReuseSocket := rsOSDependent;
 end;
 
@@ -208,7 +220,7 @@ class function TIdIPMCastBase.SetIPv6AddrScope(const AVarIPv6Addr: String;
   const AScope: TIdIPMCValidScopes): String;
 begin
    //Replace the X in the Id_IPv6MC_V_ constants with the specified scope
-   Result := StringReplace(AVarIPv6Addr,'X',IntToHex(AScope,1),[]);
+   Result := ReplaceOnlyFirst(AVarIPv6Addr,'X',IntToHex(AScope,1));
 end;
 
 procedure TIdIPMCastBase.SetIPVersion(const AValue: TIdIPVersion);
@@ -217,24 +229,23 @@ begin
   begin
     Active := False;
     FIPVersion := AValue;
-    case AValue of
-       Id_IPv4: FMulticastGroup := Id_IPMC_All_Systems;
-       Id_IPv6: FMulticastGroup := DEF_IPv6_MGROUP;
+    if not IsLoading then begin
+      case AValue of
+        Id_IPv4: FMulticastGroup := Id_IPMC_All_Systems;
+        Id_IPv6: FMulticastGroup := DEF_IPv6_MGROUP;
+      end;
     end;
   end;
 end;
 
 procedure TIdIPMCastBase.SetMulticastGroup(const Value: string);
 begin
-  if (FMulticastGroup <> Value) then begin
-    if IsValidMulticastGroup(Value) then
-    begin
-      Active := False;
-      FMulticastGroup := Value;
-    end else
-    begin
-      Raise EIdMCastNotValidAddress.Create(RSIPMCastInvalidMulticastAddress);
+  if FMulticastGroup <> Value then begin
+    if (not IsLoading) and (not IsValidMulticastGroup(Value)) then begin
+      raise EIdMCastNotValidAddress.Create(RSIPMCastInvalidMulticastAddress);
     end;
+    Active := False;
+    FMulticastGroup := Value;
   end;
 end;
 

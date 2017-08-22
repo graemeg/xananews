@@ -216,6 +216,7 @@ uses
   IdResourceStringsProtocols,
   IdTcpClient,
   IdSimpleServer,
+  IdSocketHandle,
   IdStack;
 
 function IPToBytes(AIP: string; const AIPVersion: TIdIPVersion): TIdBytes;
@@ -262,7 +263,7 @@ begin
     LBuffer.Size := cMaxBufSize;
     while FromConn.Connected and ToConn.Connected do
     begin
-                                     
+      // TODO: use TIdSocketList here
       LAmount := ReadFrom(FromConn);
       if LAmount > 0 then begin
         LBuffer.Position := 0;
@@ -323,7 +324,7 @@ begin
   SetLength(LResponse, 8);
   LResponse[0] := 4; // SOCKS version
   LResponse[1] := AStatus;
-  CopyTIdWord(GStack.HostToNetwork(APort), LResponse, 2);
+  CopyTIdUInt16(GStack.HostToNetwork(APort), LResponse, 2);
   CopyTIdBytes(IPToBytes(AIP, Id_IPv4), 0, LResponse, 4, 4);
   AContext.Connection.IOHandler.Write(LResponse);
 end;
@@ -363,7 +364,7 @@ begin
   LResponse[2] := 0;
   LResponse[3] := LTypes[AContext.IPVersion];
   CopyTIdBytes(LIP, 0, LResponse, 4, Length(LIP));
-  CopyTIdWord(GStack.HostToNetwork(APort), LResponse, 4+Length(LIP));
+  CopyTIdUInt16(GStack.HostToNetwork(APort), LResponse, 4+Length(LIP));
 
   AContext.Connection.IOHandler.Write(LResponse);
 end;
@@ -372,27 +373,13 @@ procedure TIdCustomSocksServer.HandleConnectV4(AContext: TIdSocksServerContext;
   var VCommand: Byte; var VHost: string; var VPort: TIdPort);
 var
   LData: TIdBytes;
-
-  function ReadStringNullTerm: String;
-  var
-    C: Char;
-  begin
-    Result := '';
-    repeat
-                                   
-      C := AContext.Connection.IOHandler.ReadChar;
-      if C <> #0 then begin
-        Result := Result + C;
-      end;
-    until C = #0;
-  end;
-
+  LBinding: TIdSocketHandle;
 begin
   AContext.Connection.IOHandler.ReadBytes(LData, 7);
   VCommand := LData[0];
-  VPort := GStack.NetworkToHost(BytesToWord(LData, 1));
+  VPort := GStack.NetworkToHost(BytesToUInt16(LData, 1));
   VHost := BytesToIPv4Str(LData, 3);
-  AContext.FUsername := ReadStringNullTerm;
+  AContext.FUsername := AContext.Connection.IOHandler.ReadLn(#0);
   AContext.FPassword := '';
 
   // According to the Socks 4a spec:
@@ -405,9 +392,10 @@ begin
 
   // if VHost = '0.0.0.1' then begin
   if (LData[3] = 0) and (LData[4] = 0) and (LData[5] = 0) and (LData[6] <> 0) then begin
-    VHost := ReadStringNullTerm;
-    if AContext.Connection.Socket <> nil then begin
-      AContext.FIPVersion := AContext.Connection.Socket.IPVersion;
+    VHost := AContext.Connection.IOHandler.ReadLn(#0);
+    LBinding := AContext.Binding;
+    if LBinding <> nil then begin
+      AContext.FIPVersion := LBinding.IPVersion;
     end else begin
       AContext.FIPVersion := ID_DEFAULT_IP_VERSION;
     end;
@@ -418,7 +406,7 @@ begin
   if not DoAuthenticate(AContext) then begin
     SendV4Response(AContext, 93);
     AContext.Connection.Disconnect;
-    EIdSocksSvrInvalidLogin.Toss(RSSocksSvrInvalidLogin);
+    raise EIdSocksSvrInvalidLogin.Create(RSSocksSvrInvalidLogin);
   end;
 
   Sendv4Response(AContext, 90);
@@ -431,6 +419,7 @@ var
   LMethods, LData: TIdBytes;
   LIP6: TIdIPv6Address;
   I: Integer;
+  LBinding: TIdSocketHandle;
 begin
   AContext.Connection.IOHandler.ReadBytes(LMethods, AContext.Connection.IOHandler.ReadByte);
   if not NeedsAuthentication then begin
@@ -441,7 +430,7 @@ begin
     if ByteIndex(IdSocksAuthUsernamePassword, LMethods) = -1 then begin
       SendV5MethodResponse(AContext, IdSocksAuthNoAcceptableMethods);
       AContext.Connection.Disconnect; // not sure the server has to disconnect
-      EIdSocksSvrNotSupported.Toss(RSSocksSvrNotSupported);
+      raise EIdSocksSvrNotSupported.Create(RSSocksSvrNotSupported);
     end;
     SendV5MethodResponse(AContext, IdSocksAuthUsernamePassword);
     AContext.Connection.IOHandler.ReadByte; //subversion, we don't need it.
@@ -450,7 +439,7 @@ begin
     if not DoAuthenticate(AContext) then begin
       SendV5AuthResponse(AContext, IdSocks5ReplyGeneralFailure);
       AContext.Connection.Disconnect;
-      EIdSocksSvrInvalidLogin.Toss(RSSocksSvrInvalidLogin);
+      raise EIdSocksSvrInvalidLogin.Create(RSSocksSvrInvalidLogin);
     end;
     SendV5AuthResponse(AContext, IdSocks5ReplySuccess);
   end;
@@ -465,16 +454,17 @@ begin
       begin
         AContext.Connection.IOHandler.ReadBytes(LData, 6);
         VHost := BytesToIPv4Str(LData);
-        VPort := GStack.NetworkToHost(BytesToWord(LData, 4));
+        VPort := GStack.NetworkToHost(BytesToUInt16(LData, 4));
         AContext.FIPVersion := Id_IPv4;
       end;
     3:
       begin
         AContext.Connection.IOHandler.ReadBytes(LData, AContext.Connection.IOHandler.ReadByte+2);
         VHost := BytesToString(LData, 0, Length(LData)-2);
-        VPort := GStack.NetworkToHost(BytesToWord(LData, Length(LData)-2));
-        if AContext.Connection.Socket <> nil then begin
-          AContext.FIPVersion := AContext.Connection.Socket.IPVersion;
+        VPort := GStack.NetworkToHost(BytesToUInt16(LData, Length(LData)-2));
+        LBinding := AContext.Binding;
+        if LBinding <> nil then begin
+          AContext.FIPVersion := LBinding.IPVersion;
         end else begin
           AContext.FIPVersion := ID_DEFAULT_IP_VERSION;
         end;
@@ -487,14 +477,14 @@ begin
           LIP6[I] := GStack.NetworkToHost(LIP6[I]);
         end;
         VHost := IPv6AddressToStr(LIP6);
-        VPort := GStack.NetworkToHost(BytesToWord(LData, 16));
+        VPort := GStack.NetworkToHost(BytesToUInt16(LData, 16));
         AContext.FIPVersion := Id_IPv6;
       end;
     else
       begin
         SendV5Response(AContext, IdSocks5ReplyAddrNotSupported);
         AContext.Connection.Disconnect;
-        EIdSocksSvrSocks5WrongATYP.Toss(RSSocksSvrWrongATYP);
+        raise EIdSocksSvrSocks5WrongATYP.Create(RSSocksSvrWrongATYP);
       end;
   end;
 end;
@@ -515,7 +505,7 @@ begin
   if not (((LContext.SocksVersion = 4) and AllowSocks4) or
     ((LContext.SocksVersion = 5) and AllowSocks5)) then
   begin
-    EIdSocksSvrWrongSocksVer.Toss(RSSocksSvrWrongSocksVersion);
+    raise EIdSocksSvrWrongSocksVer.Create(RSSocksSvrWrongSocksVersion);
   end;
 
   case LContext.SocksVersion of
@@ -534,7 +524,7 @@ begin
         5: SendV5Response(LContext, IdSocks5ReplyCmdNotSupported);
       end;
       AContext.Connection.Disconnect;
-      EIdSocksSvrWrongSocksCmd.Toss(RSSocksSvrWrongSocksCommand);
+      raise EIdSocksSvrWrongSocksCmd.Create(RSSocksSvrWrongSocksCommand);
     end;
   end;
 end;
@@ -556,7 +546,7 @@ begin
       SendV5Response(AContext, IdSocks5ReplyConnNotAllowed);
     end;
     AContext.Connection.Disconnect;
-    EIdSocksSvrAccessDenied.Toss(RSSocksSvrAccessDenied);
+    raise EIdSocksSvrAccessDenied.Create(RSSocksSvrAccessDenied);
   end;
 
   LClient := nil;
@@ -567,6 +557,8 @@ begin
       LClient.Host := LHost;
       LClient.IPVersion := AContext.IPVersion;
       LClient.ConnectTimeout := 120000; // 2 minutes
+      // TODO: fire an event here so the user can customize the LClient as
+      // needed (enable SSL, etc) before connecting to the target Host...
       LClient.Connect;
     except
       if AContext.SocksVersion = 4 then begin
@@ -609,7 +601,7 @@ begin
       SendV5Response(AContext, IdSocks5ReplyConnNotAllowed);
     end;
     AContext.Connection.Disconnect;
-    EIdSocksSvrAccessDenied.Toss(RSSocksSvrAccessDenied);
+    raise EIdSocksSvrAccessDenied.Create(RSSocksSvrAccessDenied);
   end;
 
   LServer := nil;
@@ -655,7 +647,7 @@ begin
         SendV5Response(AContext, IdSocks5ReplyGeneralFailure);
       end;
       AContext.Connection.Disconnect;
-      EIdSocksSvrPeerMismatch.Toss(RSSocksSvrPeerMismatch);
+      raise EIdSocksSvrPeerMismatch.Create(RSSocksSvrPeerMismatch);
     end;
 
     if AContext.SocksVersion = 4 then begin

@@ -2026,6 +2026,7 @@ begin
   FContextClass := TIdNNTPContext;
   FRegularProtPort := IdPORT_NNTP;
   FImplicitTLSProtPort := IdPORT_SNEWS;
+  FExplicitTLSProtPort := IdPORT_NNTP;
   DefaultPort := IdPORT_NNTP;
 
   FSupportedAuthTypes := [atUserPass];
@@ -2034,7 +2035,7 @@ begin
   In general, 1xx codes may be ignored or displayed as desired;
   code 200 or 201 is sent upon initial connection to the NNTP server
   depending upon posting permission;  *)
-                                                                                     
+  // TODO: Account for 201 as well. Right now the user can override this if they wish
   Greeting.NumericCode := 200;
   //
 
@@ -2193,7 +2194,7 @@ begin
   LCommandHandler.ParseParams := False;
 
   // Before LIST
-                                                               
+  //TODO: This needs implemented as events to allow return data
   // RFC 2980 - NNTP Extension
   LCommandHandler := CommandHandlers.Add;
   LCommandHandler.Command := 'LIST NEWSGROUPS'; {do not localize}
@@ -2469,7 +2470,7 @@ begin
         LIP := LSocket.Binding.PeerIP;
         if LIP <> '' then begin  {do not localize}
           try
-            LHost := GStack.HostByAddress(LIP, LSocket.IPVersion);
+            LHost := GStack.HostByAddress(LIP, LSocket.Binding.IPVersion);
           except
             LHost := '';  {do not localize}
           end;

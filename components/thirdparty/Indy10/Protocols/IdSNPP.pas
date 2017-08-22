@@ -70,31 +70,31 @@ uses
 { Note that this only supports Level One SNPP }
 
 type
-                              
+  { TODO : Unused... remove? }
   TConnectionResult = (crCanPost, crNoPost, crAuthRequired, crTempUnavailable);
 
-                              
+  { TODO : Unused... remove? }
   TCheckResp = Record
-    Code : SmallInt;
+    Code : Int16;
     Resp : String;
   end;
 
-                                      
+  { TODO : Add optional HELP command }
 
-                               
+  { TODO : Add QUIT procedure }
 
-                                                                            
-                                                  
+  { TODO : Add overridden GetResponse to handle multiline 214 response codes
+    that omit the continuation mark.  For example:
 
-                       
-                        
-                    
-            
-   
+      214 First line...
+      214 Second line...
+      214 Final line
+      250 OK
+  }
 
-                                                                    
-                                              
-   
+  { TODO : Raise an exception when the fatal error response code 421
+    is received in SendMessage, SNPPMsg, Pager
+  }
 
   TIdSNPP = class(TIdTCPClientCustom)
   protected
@@ -146,16 +146,15 @@ end;
 
 procedure TIdSNPP.DisconnectNotifyPeer;
 begin
-  inherited;
+  inherited DisconnectNotifyPeer;
   SendCmd('QUIT', 211);  {do not localize}
 end;
 
 function TIdSNPP.Pager(APagerId: String): Boolean;
 begin
   Result := False;
-  Writeln('PAGER ' + APagerID);    {do not localize}
-  if GetResponse([]) = 250 then begin
-    Result := True
+  if SendCmd('PAGER ' + APagerID) = 250 then begin {do not localize}
+    Result := True;
   end else begin
     DoStatus(hsStatusText, [LastCmdResult.Text[0]]);
   end;
@@ -170,14 +169,14 @@ procedure TIdSNPP.SendMessage(APagerId, AMsg : String);
 begin
   if (Pos(CR,AMsg)>0) or (Pos(LF,AMsg)>0) then
   begin
-    EIdSNPPNoMultiLineMessages.Create(RSSNPPNoMultiLine);
+    raise EIdSNPPNoMultiLineMessages.Create(RSSNPPNoMultiLine);
   end;
   if (Length(APagerId) > 0) and (Length(AMsg) > 0) then begin
     if Pager(APagerID) then begin
       if SNPPMsg(AMsg) then begin
         WriteLn('SEND');    {do not localize}
       end;
-      GetResponse([250]);
+      GetResponse(250);
     end;
   end;
 end;
@@ -185,9 +184,8 @@ end;
 function TIdSNPP.SNPPMsg(AMsg: String): Boolean;
 begin
   Result := False;
-  Writeln('MESS ' + AMsg);    {do not localize}
-  if GetResponse([]) = 250 then begin
-    Result := True
+  if SendCmd('MESS ' + AMsg) = 250 then begin {do not localize}
+    Result := True;
   end else begin
     DoStatus(hsStatusText, [LastCmdResult.Text.Text]);
   end;

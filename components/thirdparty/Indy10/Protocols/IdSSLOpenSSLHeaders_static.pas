@@ -8,7 +8,7 @@ interface
   {$message error Should not compile if USE_OPENSSL is not defined!!!}
 {$ENDIF}
 
-{$IFDEF AS_DIRECTIVE_HPPEMIT_LINKUNIT}
+{$IFDEF HAS_DIRECTIVE_HPPEMIT_LINKUNIT}
   {$HPPEMIT LINKUNIT}
 {$ELSE}
   {$HPPEMIT '#pragma link "IdSSLOpenSSLHeaders_static"'}
@@ -88,11 +88,13 @@ function SSL_CTX_callback_ctrl_func(ssl : PSSL_CTX; cmd : TIdC_INT; fp : SSL_cal
 
 function SSL_get_error_func(s: PSSL; ret_code: TIdC_INT): TIdC_INT cdecl; external SSL_LIB_NAME name 'SSL_get_error';
 
+{$IFNDEF OPENSSL_NO_SSL2}
 function SSLv2_method_func: PSSL_METHOD cdecl; external SSL_LIB_NAME name 'SSLv2_method';
 
 function SSLv2_server_method_func: PSSL_METHOD cdecl; external SSL_LIB_NAME name 'SSLv2_server_method';
 
 function SSLv2_client_method_func: PSSL_METHOD cdecl; external SSL_LIB_NAME name 'SSLv2_client_method';
+{$ENDIF}
 
 function SSLv3_method_func: PSSL_METHOD cdecl; external SSL_LIB_NAME name 'SSLv3_method';
 
@@ -112,17 +114,17 @@ function TLSv1_server_method_func: PSSL_METHOD cdecl; external SSL_LIB_NAME name
 
 function TLSv1_client_method_func: PSSL_METHOD cdecl; external SSL_LIB_NAME name 'TLSv1_client_method';
 
-//function TLSv1_1_method_func: PSSL_METHOD cdecl; external SSL_LIB_NAME name 'TLSv1_1_method';
+function TLSv1_1_method_func: PSSL_METHOD cdecl; external SSL_LIB_NAME name 'TLSv1_1_method';
 
-//function TLSv1_1_server_method_func: PSSL_METHOD cdecl; external SSL_LIB_NAME name 'TLSv1_1_server_method';
+function TLSv1_1_server_method_func: PSSL_METHOD cdecl; external SSL_LIB_NAME name 'TLSv1_1_server_method';
 
-//function TLSv1_1_client_method_func: PSSL_METHOD cdecl; external SSL_LIB_NAME name 'TLSv1_1_client_method';
+function TLSv1_1_client_method_func: PSSL_METHOD cdecl; external SSL_LIB_NAME name 'TLSv1_1_client_method';
 
-//function TLSv1_2_method_func: PSSL_METHOD cdecl; external SSL_LIB_NAME name 'TLSv1_2_method';
+function TLSv1_2_method_func: PSSL_METHOD cdecl; external SSL_LIB_NAME name 'TLSv1_2_method';
 
-//function TLSv1_2_server_method_func: PSSL_METHOD cdecl; external SSL_LIB_NAME name 'TLSv1_2_server_method';
+function TLSv1_2_server_method_func: PSSL_METHOD cdecl; external SSL_LIB_NAME name 'TLSv1_2_server_method';
 
-//function TLSv1_2_client_method_func: PSSL_METHOD cdecl; external SSL_LIB_NAME name 'TLSv1_2_client_method';
+function TLSv1_2_client_method_func: PSSL_METHOD cdecl; external SSL_LIB_NAME name 'TLSv1_2_client_method';
 
 function DTLSv1_method_func: PSSL_METHOD cdecl; external SSL_LIB_NAME name 'DTLSv1_method';
 
@@ -222,6 +224,8 @@ function X509_add_ext_func(cert: PX509; ext: PX509_EXTENSION; loc: TIdC_INT): TI
 function X509_print_func(bp : PBIO; x : PX509) : TIdC_INT cdecl; external SSLCLIB_LIB_name name 'X509_print';
 {$ENDIF}
 
+procedure RAND_cleanup_func; cdecl; external SSLCLIB_LIB_name name 'RAND_cleanup';
+
 function RAND_bytes_func(buf : PIdAnsiChar; num : integer) : integer; cdecl; external SSLCLIB_LIB_name name 'RAND_bytes';
 
 function RAND_pseudo_bytes_func(buf : PIdAnsiChar; num : integer) : integer; cdecl; external SSLCLIB_LIB_name name 'RAND_pseudo_bytes';
@@ -317,6 +321,8 @@ procedure ERR_remove_thread_state_proc(const tId : PCRYPTO_THREADID) cdecl; exte
 procedure CRYPTO_cleanup_all_ex_data_proc cdecl; external SSLCLIB_LIB_name name 'CRYPTO_cleanup_all_ex_data';
 
 function SSL_COMP_get_compression_methods_func: PSTACK_OF_SSL_COMP cdecl; external SSL_LIB_NAME name 'SSL_COMP_get_compression_methods';
+
+procedure SSL_COMP_free_compression_methods_func; cdecl; external SSL_LIB_NAME name 'SSL_COMP_free_compression_methods'
 
 procedure sk_pop_free_proc(st: PSTACK; func: Tsk_pop_free_func) cdecl; external SSLCLIB_LIB_name name 'sk_pop_free';
 
@@ -422,7 +428,7 @@ function X509_get_default_cert_file_func: PIdAnsiChar cdecl; external SSLCLIB_LI
 
 function X509_get_default_cert_file_env_func: PIdAnsiChar cdecl; external SSLCLIB_LIB_name name 'X509_get_default_cert_file_env';
 
-function X509_new_func: PPX509 cdecl; external SSLCLIB_LIB_name name 'X509_new';
+function X509_new_func: PX509 cdecl; external SSLCLIB_LIB_name name 'X509_new';
 
 procedure X509_free_proc(x: PX509) cdecl; external SSLCLIB_LIB_name name 'X509_free';
 
@@ -488,6 +494,9 @@ function PEM_write_bio_X509_func(b: PBIO; x: PX509): TIdC_INT cdecl; external SS
 function PEM_write_bio_X509_REQ_func(bp: PBIO; x: PX509_REQ): TIdC_INT cdecl; external SSLCLIB_LIB_name name 'PEM_write_bio_X509_REQ';
 
 function PEM_write_bio_X509_CRL_func(bp : PBIO; x : PX509_CRL) : TIdC_INT cdecl; external SSLCLIB_LIB_name name 'PEM_write_bio_X509_CRL';
+
+function PEM_write_bio_RSAPrivateKey_func(bp : PBIO; x : PRSA; const enc : PEVP_CIPHER;
+  kstr : PIdAnsiChar; klen : TIdC_INT; cb : Ppem_password_cb; u : Pointer) : TIdC_INT cdecl; external SSLCLIB_LIB_name name 'PEM_write_bio_RSAPrivateKey';
 
 function PEM_write_bio_RSAPublicKey_func(bp : PBIO; x : PRSA) : TIdC_INT cdecl; external SSLCLIB_LIB_name name 'PEM_write_bio_RSAPublicKey';
 
@@ -697,9 +706,15 @@ begin
   SSL_CTX_ctrl := SSL_CTX_ctrl_func;
   SSL_CTX_callback_ctrl := SSL_CTX_callback_ctrl_func;
   SSL_get_error := SSL_get_error_func;
+  {$IFNDEF OPENSSL_NO_SSL2}
   SSLv2_method := SSLv2_method_func;
   SSLv2_server_method := SSLv2_server_method_func;
   SSLv2_client_method := SSLv2_client_method_func;
+  {$ELSE}
+  SSLv2_method := nil;
+  SSLv2_server_method := nil;
+  SSLv2_client_method := nil;
+  {$ENDIF}
   SSLv3_method := SSLv3_method_func;
   SSLv3_server_method := SSLv3_server_method_func;
   SSLv3_client_method := SSLv3_client_method_func;
@@ -767,6 +782,7 @@ begin
   //X509_print
   X509_print := X509_print_func;
   {$ENDIF}
+//  _RAND_cleanup := RAND_cleanup_func;
 //  _RAND_bytes := RAND_bytes_func;
 //  _RAND_pseudo_bytes := RAND_pseudo_bytes_func;
 //  _RAND_seed := RAND_seed_proc;
@@ -833,6 +849,7 @@ we have to handle both cases.
 //  end;
   CRYPTO_cleanup_all_ex_data := CRYPTO_cleanup_all_ex_data_proc;
   SSL_COMP_get_compression_methods := SSL_COMP_get_compression_methods_func;
+  SSL_COMP_free_compression_methods := SSL_COMP_free_compression_methods_func;
   sk_pop_free := sk_pop_free_proc;
   //RSA
   RSA_free := RSA_free_proc;
@@ -928,6 +945,7 @@ we have to handle both cases.
   _PEM_write_bio_X509 := PEM_write_bio_X509_func;
   _PEM_write_bio_X509_REQ := PEM_write_bio_X509_REQ_func;
   _PEM_write_bio_X509_CRL := PEM_write_bio_X509_CRL_func;
+  _PEM_write_bio_RSAPrivateKey := PEM_write_bio_RSAPrivateKey_func;
   _PEM_write_bio_RSAPublicKey := PEM_write_bio_RSAPublicKey_func;
   _PEM_write_bio_DSAPrivateKey := PEM_write_bio_DSAPrivateKey_func;
   _PEM_write_bio_PrivateKey := PEM_write_bio_PrivateKey_func;

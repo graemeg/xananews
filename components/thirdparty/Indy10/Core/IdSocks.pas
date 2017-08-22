@@ -380,7 +380,7 @@ begin
 
   // port
 
-  CopyTIdWord(GStack.HostToNetwork(APort), VBuf, VLen);
+  CopyTIdUInt16(GStack.HostToNetwork(APort), VBuf, VLen);
   VLen := VLen + 2;
 end;
 
@@ -398,7 +398,7 @@ begin
   try
     AIOHandler.ReadBytes(LBuf, 5, False);    // Socks server replies on connect, this is the first part
   except
-    raise EIdSocksServerRespondError.Create(RSSocksServerRespondError);
+    IndyRaiseOuterException(EIdSocksServerRespondError.Create(RSSocksServerRespondError));
   end;
 
   case LBuf[1] of
@@ -430,7 +430,7 @@ begin
     // RLebeau: why -1?
     AIOHandler.ReadBytes(LBuf, Lpos-1, False);      // just write it over the first part for now
   except
-    raise EIdSocksServerRespondError.Create(RSSocksServerRespondError);
+    IndyRaiseOuterException(EIdSocksServerRespondError.Create(RSSocksServerRespondError));
   end;
 end;
 
@@ -464,7 +464,7 @@ begin
       AIOHandler.ReadBytes(LResponse, 6, False); //overwrite the first part for now
       TIdIOHandlerSocket(AIOHandler).Binding.SetBinding(BytesToIPv4Str(LResponse, 2), LResponse[0]*256+LResponse[1]);
     except
-      raise EIdSocksServerRespondError.Create(RSSocksServerRespondError);
+      IndyRaiseOuterException(EIdSocksServerRespondError.Create(RSSocksServerRespondError));
     end;
   finally
     LClient.IOHandler := nil;
@@ -527,9 +527,7 @@ begin
   try
     AIOHandler.ReadBytes(LBuf, 2, False); // Socks server sends the selected authentication method
   except
-    On E: Exception do begin
-      raise EIdSocksServerRespondError.Create(RSSocksServerRespondError);
-    end;
+    IndyRaiseOuterException(EIdSocksServerRespondError.Create(RSSocksServerRespondError));
   end;
 
   LServerAuthMethod := LBuf[1];
@@ -561,9 +559,7 @@ begin
     try
       AIOHandler.ReadBytes(LBuf, 2, False);    // Socks server sends the authentication status
     except
-      On E: Exception do begin
-        raise EIdSocksServerRespondError.Create(RSSocksServerRespondError);
-      end;
+      IndyRaiseOuterException(EIdSocksServerRespondError.Create(RSSocksServerRespondError));
     end;
 
     if LBuf[1] <> $0 then begin
@@ -580,6 +576,7 @@ var
   LClient: TIdTCPClient;
   LType : Byte;
   LAddress: TIdIPv6Address;
+  LIPVersion: TIdIPVersion;
 begin
   LClient := TIdTCPClient.Create(nil);
   try
@@ -600,7 +597,7 @@ begin
     try
       AIOHandler.ReadBytes(LBuf, 4, False);    // Socks server replies on connect, this is the first part
     except
-      raise EIdSocksServerRespondError.Create(RSSocksServerRespondError);
+      IndyRaiseOuterException(EIdSocksServerRespondError.Create(RSSocksServerRespondError));
     end;
 
     case LBuf[1] of
@@ -635,7 +632,8 @@ begin
               TIdIOHandlerSocket(AIOHandler).Binding.SetPeer(BytesToIPv4Str(LBuf), LBuf[4]*256+LBuf[5], Id_IPv4);
             end;
         3 : begin
-              TIdIOHandlerSocket(AIOHandler).Binding.SetPeer(GStack.ResolveHost(BytesToString(LBuf,0,LPos-2)), LBuf[4]*256+LBuf[5], TIdIOHandlerSocket(AIOHandler).IPVersion);
+              LIPVersion := TIdIOHandlerSocket(AIOHandler).IPVersion;
+              TIdIOHandlerSocket(AIOHandler).Binding.SetPeer(GStack.ResolveHost(BytesToString(LBuf,0,LPos-2), LIPVersion), LBuf[4]*256+LBuf[5], LIPVersion);
             end;
         4 : begin
               BytesToIPv6(LBuf, LAddress);
@@ -643,7 +641,7 @@ begin
             end;
       end;
     except
-      raise EIdSocksServerRespondError.Create(RSSocksServerRespondError);
+      IndyRaiseOuterException(EIdSocksServerRespondError.Create(RSSocksServerRespondError));
     end;
   finally
     LClient.IOHandler := nil;
@@ -677,6 +675,7 @@ var
   LBuf: TIdBytes;
   LType : Byte;
   LAddress: TIdIPv6Address;
+  LIPVersion: TIdIPVersion;
 begin
   SetLength(LBuf, 255);
   Result := TIdIOHandlerSocket(AIOHandler).Binding.Readable(ATimeOut);
@@ -716,7 +715,8 @@ begin
           end;
       3 : begin
             //FQN
-            TIdIOHandlerSocket(AIOHandler).Binding.SetPeer(GStack.ResolveHost(BytesToString(LBuf,0,LPos-2)), LBuf[4]*256+LBuf[5], TIdIOHandlerSocket(AIOHandler).IPVersion);
+            LIPVersion := TIdIOHandlerSocket(AIOHandler).IPVersion;
+            TIdIOHandlerSocket(AIOHandler).Binding.SetPeer(GStack.ResolveHost(BytesToString(LBuf,0,LPos-2), LIPVersion), LBuf[4]*256+LBuf[5], LIPVersion);
           end;
       else begin
             //IPv6
@@ -747,7 +747,7 @@ begin
 
     // Socks server replies on connect, this is the second part
     AIOHandler.ReadBytes(LBuf, 6, False);      // just write it over the first part for now
-    TIdIOHandlerSocket(AIOHandler).Binding.SetPeer(BytesToIPv4Str(LBuf, 2), LBuf[0]*256+LBuf[1]);
+    TIdIOHandlerSocket(AIOHandler).Binding.SetPeer(BytesToIPv4Str(LBuf, 2), LBuf[0]*256+LBuf[1], Id_IPv4);
   end;
 end;
 
@@ -764,10 +764,10 @@ var
   LBuf: TIdBytes;
   LIPVersion : TIdIPVersion;
 begin
+  LIPVersion := Self.IPVersion;
   FUDPSocksAssociation.Host := Self.Host;
   FUDPSocksAssociation.Port := Self.Port;
-  FUDPSocksAssociation.IPVersion := Self.IPVersion;
-  LIPVersion := Self.IPVersion;
+  FUDPSocksAssociation.IPVersion := LIPVersion;
   FUDPSocksAssociation.Open;
   try
     SetLength(LBuf, 255);
@@ -775,7 +775,7 @@ begin
     // Associate process
     //For SOCKS5 Associate, the IP address and port is the client's IP address and port which may
     //not be known
-    if IPVersion = Id_IPv4 then begin
+    if LIPVersion = Id_IPv4 then begin
       MakeSocks5Request(FUDPSocksAssociation, '0.0.0.0', 0, $03, LBuf, LPos); //associate request
     end else begin
       MakeSocks5Request(FUDPSocksAssociation, '::0', 0, $03, LBuf, LPos); //associate request
@@ -785,7 +785,7 @@ begin
     try
       FUDPSocksAssociation.ReadBytes(LBuf, 2, False);    // Socks server replies on connect, this is the first part )VER and RSP
     except
-      raise EIdSocksServerRespondError.Create(RSSocksServerRespondError);
+      IndyRaiseOuterException(EIdSocksServerRespondError.Create(RSSocksServerRespondError));
     end;
 
     case LBuf[1] of
@@ -823,14 +823,11 @@ begin
       AHandle.SetPeer( (FUDPSocksAssociation as TIdIOHandlerStack).Binding.PeerIP ,LBuf[4]*256+LBuf[5],LIPVersion);
       AHandle.Connect;
     except
-      raise EIdSocksServerRespondError.Create(RSSocksServerRespondError);
+      IndyRaiseOuterException(EIdSocksServerRespondError.Create(RSSocksServerRespondError));
     end;
   except
-    on E: Exception do
-    begin
-      FUDPSocksAssociation.Close;
-      raise;
-    end;
+    FUDPSocksAssociation.Close;
+    raise;
   end;
 end;
 
@@ -981,7 +978,7 @@ begin
   end;
 
   // port
-  CopyTIdWord(GStack.HostToNetwork(APort), Result, LLen);
+  CopyTIdUInt16(GStack.HostToNetwork(APort), Result, LLen);
   LLen := LLen + 2;
 
   //now do the rest of the packet

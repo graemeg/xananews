@@ -472,7 +472,7 @@ begin
             LCommand.Reply.Assign(TIdCommandHandlers(Collection).FExceptionReply);
           end;
           if LCommand.Reply.Code <> '' then begin
-                                                                                
+            //done this way in case an exception message has more than one line.
             //otherwise you could get something like this:
             //
             // 550 System Error.  Code: 2

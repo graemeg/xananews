@@ -12,13 +12,16 @@
 {.$DEFINE Borland}
 
 // S.G. 4/9/2002: IPv4/IPv6 general switch (for defaults only)
-{$DEFINE IdIPv4}
+{$DEFINE IdIPv4} // use IPv4 by default
+{.$IFDEF IdIPv6} // use IPv6 by default
 
 {$DEFINE INDY100}
-{$DEFINE 10_6_0}  //so developers can IFDEF for this specific version
+{$DEFINE 10_6_2}  //so developers can IFDEF for this specific version
 
-// When invoking DCC on the command-line, use the -DBCB
-// parameter when generating C++Builder output files!
+// When generating C++Builder output files, certain workarounds to compiler
+// problems need to be enabled! When invoking DCC on the command-line, use
+// the -DBCB parameter. When invoking MSBUILD, include the DCC_Define="BCB"
+// attribute in the /p parameter.
 {$IFDEF BCB}
   {$DEFINE CBUILDER}
 {$ELSE}
@@ -33,8 +36,8 @@
 
 // $DEFINE the following if the global objects in the IdStack and IdThread
 // units should be freed on finalization
-{.$DEFINE FREE_ON_FINAL}
-{$UNDEF FREE_ON_FINAL}
+{$DEFINE FREE_ON_FINAL}
+{.$UNDEF FREE_ON_FINAL}
 
 // Make sure the following is $DEFINE'd only for suitable environments
 // as specified further below.  This works in conjunction with the
@@ -42,20 +45,22 @@
 {$UNDEF REGISTER_EXPECTED_MEMORY_LEAK}
 
 // FastMM is natively available in BDS 2006 and higher.  $DEFINE the
-// following if FastMM has been installed manually
+// following if FastMM has been installed manually in earlier versions
 {.$DEFINE USE_FASTMM4}
 {$UNDEF USE_FASTMM4}
+
+// $DEFINE the following if MadExcept has been installed manually in
+// BDS 2005 or earlier (System.RegisterExpectedMemoryLeak() was introduced
+// in BDS 2006)
+{.$DEFINE USE_MADEXCEPT}
+{$UNDEF USE_MADEXCEPT}
 
 // Make sure the following are $DEFINE'd only for Delphi/C++Builder 2009 onwards
 // as specified further below.  The VCL is fully Unicode, where the 'String'
 // type maps to System.UnicodeString, not System.AnsiString anymore
 {$UNDEF STRING_IS_UNICODE}
 {$UNDEF STRING_IS_ANSI}
-
-// Make sure the following is $DEFINE'd only for suitable environments
-// as specified further below.  This works in conjunction with the
-// STRING_IS_ANSI and STRING_IS_UNICODE defines above.
-{$UNDEF UNICODE_BUT_STRING_IS_ANSI}
+{$UNDEF STRING_UNICODE_MISMATCH}
 
 // Make sure the following are $DEFINE'd only for suitable environments
 // as specified further below.  Delphi/C++Builder Mobile/NextGen compilers
@@ -78,8 +83,12 @@
 // Make sure the following are $DEFINE'd only for suitable environments
 // as specified further below.
 {$UNDEF HAS_TEncoding}
+{$UNDEF HAS_TEncoding_GetEncoding_ByEncodingName}
+{$UNDEF HAS_Exception_RaiseOuterException}
+{$UNDEF HAS_System_ReturnAddress}
 {$UNDEF HAS_TCharacter}
 {$UNDEF HAS_TInterlocked}
+{$UNDEF HAS_TNetEncoding}
 
 // Make sure that this is defined only for environments where we are using
 // the iconv library to charactor conversions.
@@ -95,210 +104,282 @@
 {$UNDEF HAS_ComponentPlatformsAttribute_Android}
 {$UNDEF HAS_ComponentPlatformsAttribute_Linux32}
 {$UNDEF HAS_ComponentPlatformsAttribute_iOS_Device}
+{$UNDEF HAS_ComponentPlatformsAttribute_iOS_Device32}
+{$UNDEF HAS_ComponentPlatformsAttribute_Linux64}
 {$UNDEF HAS_ComponentPlatformsAttribute_WinNX32}
+{$UNDEF HAS_ComponentPlatformsAttribute_WinIoT32}
+{$UNDEF HAS_ComponentPlatformsAttribute_iOS_Device64}
+{$UNDEF HAS_DIRECTIVE_WARN_DEFAULT}
 
 // Define for Delphi to auto-generate platform-appropriate '#pragma link' statements in HPP files
 {$UNDEF HAS_DIRECTIVE_HPPEMIT_LINKUNIT}
 
 // detect compiler versions
 
-// Delphi 4
-{$IFDEF VER120}
-  {$DEFINE DCC}
-  {$DEFINE VCL_40}
-  {$DEFINE DELPHI_4}
-{$ENDIF}
-
-// C++Builder 4
-{$IFDEF VER125}
-  {$DEFINE DCC}
-  {$DEFINE VCL_40}
-  {$DEFINE CBUILDER_4}
-{$ENDIF}
-
-// Delphi & C++Builder 5
-{$IFDEF VER130}
-  {$DEFINE DCC}
-  {$DEFINE VCL_50}
-  {$IFDEF CBUILDER}
-    {$DEFINE CBUILDER_5}
-  {$ELSE}
-    {$DEFINE DELPHI_5}
-  {$ENDIF}
-{$ENDIF}
-
-//Delphi & C++Builder 6
-{$IFDEF VER140}
-  {$DEFINE DCC}
-  {$DEFINE VCL_60}
-  {$IFDEF CBUILDER}
-    {$DEFINE CBUILDER_6}
-  {$ELSE}
-    {$DEFINE DELPHI_6}
-  {$ENDIF}
-{$ENDIF}
-
-//Delphi 7
-{$IFDEF VER150}
-  {$DEFINE DCC}
-  {$DEFINE VCL_70}
-  {$DEFINE DELPHI_7} // there was no C++ Builder 7
-{$ENDIF}
-
-//Delphi 8
-{$IFDEF VER160}
-  {$DEFINE DCC}
-  {$DEFINE VCL_80}
-  {$DEFINE DELPHI_8} // there was no C++ Builder 8
-{$ENDIF}
-
-//Delphi 2005
-{$IFDEF VER170}
-  {$DEFINE DCC}
-  {$DEFINE VCL_2005}
-  {$DEFINE DELPHI_2005} // there was no C++Builder 2005
-{$ENDIF}
-
-// NOTE: CodeGear decided to make Highlander be a non-breaking release
-// (no interface changes, thus fully backwards compatible without any
-// end user code changes), so VER180 applies to both BDS 2006 and
-// Highlander prior to the release of RAD Studio 2007.  Use VER185 to
-// identify Highlanger specifically.
-
-//Delphi & C++Builder 2006
-//Delphi & C++Builder 2007 (Highlander)
-{$IFDEF VER180}
-  {$DEFINE DCC}
-  {$DEFINE VCL_2006}
-  {$IFDEF CBUILDER}
-    {$DEFINE CBUILDER_2006}
-  {$ELSE}
-    {$DEFINE DELPHI_2006}
-  {$ENDIF}
-{$ENDIF}
-
-//Delphi & C++Builder 2007 (Highlander)
-{$IFDEF VER185}
-  {$DEFINE DCC}
-  {$UNDEF VCL_2006}
-  {$DEFINE VCL_2007}
-  {$IFDEF CBUILDER}
-    {$UNDEF CBUILDER_2006}
-    {$DEFINE CBUILDER_2007}
-  {$ELSE}
-    {$UNDEF DELPHI_2006}
-    {$DEFINE DELPHI_2007}
-  {$ENDIF}
-{$ENDIF}
-
-// BDS 2007 NET personality uses VER190 instead of 185.
-//Delphi .NET 2007
-{$IFDEF VER190}
-  {$DEFINE DCC}
-  {$IFDEF CIL}
-    //Delphi 2007
-    {$DEFINE VCL_2007}
-    {$DEFINE DELPHI_2007}
-  {$ENDIF}
-{$ENDIF}
-
-//Delphi & C++Builder 2009 (Tiburon)
-{$IFDEF VER200}
-  {$DEFINE DCC}
-  {$DEFINE VCL_2009}
-  {$IFDEF CBUILDER}
-    {$DEFINE CBUILDER_2009}
-  {$ELSE}
-    {$DEFINE DELPHI_2009}
-  {$ENDIF}
-{$ENDIF}
-
-//Delphi & C++Builder 2010 (Weaver)
-{$IFDEF VER210}
-  {$DEFINE DCC}
-  {$DEFINE VCL_2010}
-  {$IFDEF CBUILDER}
-    {$DEFINE CBUILDER_2010}
-  {$ELSE}
-    {$DEFINE DELPHI_2010}
-  {$ENDIF}
-{$ENDIF}
-
-//Delphi & C++Builder XE (Fulcrum)
-{$IFDEF VER220}
-//REMOVE DCC DEFINE after the next Fulcrum beta.
-//It will be defined there.
-  {$IFNDEF DCC}
-    {$DEFINE DCC}
-  {$ENDIF}
-  {$DEFINE VCL_XE}
-  {$IFDEF CBUILDER}
-    {$DEFINE CBUILDER_XE}
-  {$ELSE}
-    {$DEFINE DELPHI_XE}
-  {$ENDIF}
-{$ENDIF}
-
-// DCC is now defined by the Delphi compiler starting in XE2
-
-//Delphi & CBuilder XE2 (Pulsar)
-{$IFDEF VER230}
-  {$DEFINE VCL_XE2}
-  {$IFDEF CBUILDER}
-    {$DEFINE CBUILDER_XE2}
-  {$ELSE}
-    {$DEFINE DELPHI_XE2}
-  {$ENDIF}
-{$ENDIF}
-
-//Delphi & CBuilder XE3 (Waterdragon)
-//Delphi & CBuilder XE3.5 (Quintessence - early betas only)
-{$IFDEF VER240}
-  {$DEFINE VCL_XE3}
-  {$IFDEF CBUILDER}
-    {$DEFINE CBUILDER_XE3}
-  {$ELSE}
-    {$DEFINE DELPHI_XE3}
-  {$ENDIF}
-{$ENDIF}
-
-//Delphi & CBuilder XE4 (Quintessence)
-{$IFDEF VER250}
-  {$UNDEF VCL_XE3}
-  {$DEFINE VCL_XE4}
-  {$IFDEF CBUILDER}
-    {$UNDEF CBUILDER_XE3}
-    {$DEFINE CBUILDER_XE4}
-  {$ELSE}
-    {$UNDEF DELPHI_XE3}
-    {$DEFINE DELPHI_XE4}
-  {$ENDIF}
-{$ENDIF}
-
-//Delphi & CBuilder XE5 (Zephyr)
-{$IFDEF VER260}
-  {$DEFINE VCL_XE5}
-  {$IFDEF CBUILDER}
-    {$DEFINE CBUILDER_XE5}
-  {$ELSE}
-    {$DEFINE DELPHI_XE5}
-  {$ENDIF}
-{$ENDIF}
-
-// Delphi.NET
-// Covers D8+
-{$IFDEF CIL}
-  // Platform specific conditional. Used for platform specific code.
-  {$DEFINE DOTNET}
-  {$DEFINE STRING_IS_UNICODE}
-  {$DEFINE STRING_IS_IMMUTABLE}
-{$ENDIF}
-
-// Kylix
-//
-//Important:  Don't use CompilerVersion here as IF's are evaluated before
-//IFDEF's and Kylix 1 does not have CompilerVersion defined at all.
 {$IFNDEF FPC}
+
+  // TODO: to detect features in Delphi/C++Builder v6 and later, use CompilerVersion
+  // and RTLVersion constants instead of VERXXX defines.  We still support v5, which
+  // does not have such constants.
+
+  // Delphi 4
+  {$IFDEF VER120}
+    {$DEFINE DCC}
+    {$DEFINE VCL_40}
+    {$DEFINE DELPHI_4}
+  {$ENDIF}
+
+  // C++Builder 4
+  {$IFDEF VER125}
+    {$DEFINE DCC}
+    {$DEFINE VCL_40}
+    {$DEFINE CBUILDER_4}
+  {$ENDIF}
+
+  // Delphi & C++Builder 5
+  {$IFDEF VER130}
+    {$DEFINE DCC}
+    {$DEFINE VCL_50}
+    {$IFDEF CBUILDER}
+      {$DEFINE CBUILDER_5}
+    {$ELSE}
+      {$DEFINE DELPHI_5}
+    {$ENDIF}
+  {$ENDIF}
+
+  //Delphi & C++Builder 6
+  {$IFDEF VER140}
+    {$DEFINE DCC}
+    {$DEFINE VCL_60}
+    {$IFDEF CBUILDER}
+      {$DEFINE CBUILDER_6}
+    {$ELSE}
+      {$DEFINE DELPHI_6}
+    {$ENDIF}
+  {$ENDIF}
+
+  //Delphi 7
+  {$IFDEF VER150}
+    {$DEFINE DCC}
+    {$DEFINE VCL_70}
+    {$DEFINE DELPHI_7} // there was no C++ Builder 7
+  {$ENDIF}
+
+  //Delphi 8
+  {$IFDEF VER160}
+    {$DEFINE DCC}
+    {$DEFINE VCL_80}
+    {$DEFINE DELPHI_8} // there was no C++ Builder 8
+  {$ENDIF}
+
+  //Delphi 2005
+  {$IFDEF VER170}
+    {$DEFINE DCC}
+    {$DEFINE VCL_2005}
+    {$DEFINE DELPHI_2005} // there was no C++Builder 2005
+  {$ENDIF}
+
+  // NOTE: CodeGear decided to make Highlander be a non-breaking release
+  // (no interface changes, thus fully backwards compatible without any
+  // end user code changes), so VER180 applies to both BDS 2006 and
+  // Highlander prior to the release of RAD Studio 2007.  Use VER185 to
+  // identify Highlanger specifically.
+
+  //Delphi & C++Builder 2006
+  //Delphi & C++Builder 2007 (Highlander)
+  {$IFDEF VER180}
+    {$DEFINE DCC}
+    {$DEFINE VCL_2006}
+    {$IFDEF CBUILDER}
+      {$DEFINE CBUILDER_2006}
+    {$ELSE}
+      {$DEFINE DELPHI_2006}
+    {$ENDIF}
+  {$ENDIF}
+
+  //Delphi & C++Builder 2007 (Highlander)
+  {$IFDEF VER185}
+    {$DEFINE DCC}
+    {$UNDEF VCL_2006}
+    {$DEFINE VCL_2007}
+    {$IFDEF CBUILDER}
+      {$UNDEF CBUILDER_2006}
+      {$DEFINE CBUILDER_2007}
+    {$ELSE}
+      {$UNDEF DELPHI_2006}
+      {$DEFINE DELPHI_2007}
+    {$ENDIF}
+  {$ENDIF}
+
+  // BDS 2007 NET personality uses VER190 instead of 185.
+  //Delphi .NET 2007
+  {$IFDEF VER190}
+    {$DEFINE DCC}
+    {$IFDEF CIL}
+      //Delphi 2007
+      {$DEFINE VCL_2007}
+      {$DEFINE DELPHI_2007}
+    {$ENDIF}
+  {$ENDIF}
+
+  //Delphi & C++Builder 2009 (Tiburon)
+  {$IFDEF VER200}
+    {$DEFINE DCC}
+    {$DEFINE VCL_2009}
+    {$IFDEF CBUILDER}
+      {$DEFINE CBUILDER_2009}
+    {$ELSE}
+      {$DEFINE DELPHI_2009}
+    {$ENDIF}
+  {$ENDIF}
+
+  //Delphi & C++Builder 2010 (Weaver)
+  {$IFDEF VER210}
+    {$DEFINE DCC}
+    {$DEFINE VCL_2010}
+    {$IFDEF CBUILDER}
+      {$DEFINE CBUILDER_2010}
+    {$ELSE}
+      {$DEFINE DELPHI_2010}
+    {$ENDIF}
+  {$ENDIF}
+
+  //Delphi & C++Builder XE (Fulcrum)
+  {$IFDEF VER220}
+  //REMOVE DCC DEFINE after the next Fulcrum beta.
+  //It will be defined there.
+    {$IFNDEF DCC}
+      {$DEFINE DCC}
+    {$ENDIF}
+    {$DEFINE VCL_XE}
+    {$IFDEF CBUILDER}
+      {$DEFINE CBUILDER_XE}
+    {$ELSE}
+      {$DEFINE DELPHI_XE}
+    {$ENDIF}
+  {$ENDIF}
+
+  // DCC is now defined by the Delphi compiler starting in XE2
+
+  //Delphi & CBuilder XE2 (Pulsar)
+  {$IFDEF VER230}
+    {$DEFINE VCL_XE2}
+    {$IFDEF CBUILDER}
+      {$DEFINE CBUILDER_XE2}
+    {$ELSE}
+      {$DEFINE DELPHI_XE2}
+    {$ENDIF}
+  {$ENDIF}
+
+  //Delphi & CBuilder XE3 (Waterdragon)
+  //Delphi & CBuilder XE3.5 (Quintessence - early betas only)
+  {$IFDEF VER240}
+    {$DEFINE VCL_XE3}
+    {$IFDEF CBUILDER}
+      {$DEFINE CBUILDER_XE3}
+    {$ELSE}
+      {$DEFINE DELPHI_XE3}
+    {$ENDIF}
+  {$ENDIF}
+
+  //Delphi & CBuilder XE4 (Quintessence)
+  {$IFDEF VER250}
+    {$UNDEF VCL_XE3}
+    {$DEFINE VCL_XE4}
+    {$IFDEF CBUILDER}
+      {$UNDEF CBUILDER_XE3}
+      {$DEFINE CBUILDER_XE4}
+    {$ELSE}
+      {$UNDEF DELPHI_XE3}
+      {$DEFINE DELPHI_XE4}
+    {$ENDIF}
+  {$ENDIF}
+
+  //Delphi & CBuilder XE5 (Zephyr)
+  {$IFDEF VER260}
+    {$DEFINE VCL_XE5}
+    {$IFDEF CBUILDER}
+      {$DEFINE CBUILDER_XE5}
+    {$ELSE}
+      {$DEFINE DELPHI_XE5}
+    {$ENDIF}
+  {$ENDIF}
+
+  //Delphi & CBuilder AppMethod
+  //AppMethod is just XE5 for mobile only, VCL is removed
+  {$IFDEF VER265}
+    {$DEFINE VCL_XE5}
+    {$IFDEF CBUILDER}
+      {$DEFINE CBUILDER_XE5}
+    {$ELSE}
+      {$DEFINE DELPHI_XE5}
+    {$ENDIF}
+  {$ENDIF}
+
+  //Delphi & CBuilder XE6 (Proteus)
+  {$IFDEF VER270}
+    {$DEFINE VCL_XE6}
+    {$IFDEF CBUILDER}
+      {$DEFINE CBUILDER_XE6}
+    {$ELSE}
+      {$DEFINE DELPHI_XE6}
+    {$ENDIF}
+  {$ENDIF}
+
+  //Delphi & CBuilder XE7 (Carpathia)
+  {$IFDEF VER280}
+    {$DEFINE VCL_XE7}
+    {$IFDEF CBUILDER}
+      {$DEFINE CBUILDER_XE7}
+    {$ELSE}
+      {$DEFINE DELPHI_XE7}
+    {$ENDIF}
+  {$ENDIF}
+
+  //Delphi & CBuilder XE8 (Elbrus)
+  {$IFDEF VER290}
+    {$DEFINE VCL_XE8}
+    {$IFDEF CBUILDER}
+      {$DEFINE CBUILDER_XE8}
+    {$ELSE}
+      {$DEFINE DELPHI_XE8}
+    {$ENDIF}
+  {$ENDIF}
+
+  //Delphi & CBuilder 10.0 Seattle (Aitana)
+  {$IFDEF VER300}
+    {$DEFINE VCL_10_0_SEATTLE}
+    {$IFDEF CBUILDER}
+      {$DEFINE CBUILDER_VCL_10_0_SEATTLE}
+    {$ELSE}
+      {$DEFINE DELPHI_VCL_10_0_SEATTLE}
+    {$ENDIF}
+  {$ENDIF}
+
+  //Delphi & CBuilder 10.1 Berlin (BigBen)
+  {$IFDEF VER310}
+    {$DEFINE VCL_10_1_BERLIN}
+    {$IFDEF CBUILDER}
+      {$DEFINE CBUILDER_10_1_BERLIN}
+    {$ELSE}
+      {$DEFINE DELPHI_10_1_BERLIN}
+    {$ENDIF}
+  {$ENDIF}
+
+  //Delphi & CBuilder 10.2 Tokyo (Godzilla)
+  {$IFDEF VER320}
+    {$DEFINE VCL_10_2_TOKYO}
+    {$IFDEF CBUILDER}
+      {$DEFINE CBUILDER_10_2_TOKYO}
+    {$ELSE}
+      {$DEFINE DELPHI_10_2_TOKYO}
+    {$ENDIF}
+  {$ENDIF}
+
+  // Kylix
+  //
+  //Important:  Don't use CompilerVersion here as IF's are evaluated before
+  //IFDEF's and Kylix 1 does not have CompilerVersion defined at all.
   {$IFDEF LINUX}
     {$DEFINE UNIX}
     {$IFDEF CONDITIONALEXPRESSIONS}
@@ -314,6 +395,23 @@
       {$IFEND}
     {$ENDIF}
   {$ENDIF}
+
+{$ENDIF}
+
+// Delphi.NET
+// Covers D8+
+{$IFDEF CIL}
+  // Platform specific conditional. Used for platform specific code.
+  {$DEFINE DOTNET}
+  {$DEFINE STRING_IS_UNICODE}
+  {$DEFINE STRING_IS_IMMUTABLE}
+  {.$DEFINE HAS_Int8}
+  {.$DEFINE HAS_UInt8}
+  {$DEFINE HAS_Int16}
+  {$DEFINE HAS_UInt16}
+  {$DEFINE HAS_Int32}
+  {$DEFINE HAS_UInt32}
+  {$DEFINE HAS_UInt64}
 {$ENDIF}
 
 {$IFDEF KYLIX}
@@ -354,7 +452,20 @@
 // FPC (2+)
 
 {$IFDEF FPC}
+  // TODO: In FreePascal 4.2.0+, a Delphi-like UnicodeString type is supported.
+  // However, String/(P)Char do not map to UnicodeString/(P)WideChar unless
+  // either {$MODE DelphiUnicode} or {$MODESWITCH UnicodeStrings} is used.
+  // We should consider enabling one of them so Indy uses the same Unicode logic
+  // in Delphi 2009+ and FreePascal 4.2.0+ and reduces IFDEFs (in particular,
+  // STRING_UNICODE_MISMATCH, see further below).  However, FreePascal's RTL
+  // is largely not UnicodeString-enabled yet.  Maybe we should enable
+  // {$MODE DelphiUnicode} anyway, and then deal with any RTL function issues
+  // on an as-needed basis...
   {$MODE Delphi}
+  {$IFDEF FPC_2_7_1_OR_ABOVE}
+    {.$MODE DelphiUnicode}
+    {.$MODESWITCH UnicodeStrings}
+  {$ENDIF}
   //note that we may need further defines for widget types depending on
   //what we do and what platforms we support in FPC.
   //I'll let Marco think about that one.
@@ -374,36 +485,52 @@
       {$UNDEF KYLIXCOMPAT}
     {$ENDIF}
   {$ENDIF}
-  {$DEFINE VCL_70}
-  {$DEFINE DELPHI_7}
 
   // FPC_FULLVERSION was added in FPC 2.2.4
-  // Have to use Declared() or else Delphi compiler chokes, since it
+  // Have to use Defined() or else Delphi compiler chokes, since it
   // evaluates $IF statements before $IFDEF statements...
 
   {$MACRO ON} // must be on in order to use versioning macros
-  {$IF DECLARED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20701)}
+  {$IF DEFINED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20701)}
     {$DEFINE FPC_2_7_1_OR_ABOVE}
   {$IFEND}
-  {$IF DECLARED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20600)}
+  {$IF DEFINED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20604)}
+    {$DEFINE FPC_2_6_4_OR_ABOVE}
+  {$IFEND}
+  {$IF DEFINED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20602)}
+    {$DEFINE FPC_2_6_2_OR_ABOVE}
+  {$IFEND}
+  {$IF DEFINED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20600)}
     {$DEFINE FPC_2_6_0_OR_ABOVE}
   {$IFEND}
-  {$IF DECLARED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20404)}
+  {$IF DEFINED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20404)}
     {$DEFINE FPC_2_4_4_OR_ABOVE}
   {$IFEND}
-  {$IF DECLARED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20402)}
+  {$IF DEFINED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20402)}
     {$DEFINE FPC_2_4_2_OR_ABOVE}
   {$IFEND}
-  {$IF DECLARED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20204)}
+  {$IF DEFINED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20400)}
+    {$DEFINE FPC_2_4_0_OR_ABOVE}
+  {$IFEND}
+  {$IF DEFINED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20204)}
     {$DEFINE FPC_2_2_4_OR_ABOVE}
   {$IFEND}
-  {$IF DECLARED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20105)}
+  {$IF DEFINED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20202)}
+    {$DEFINE FPC_2_2_2_OR_ABOVE}
+  {$IFEND}
+  {$IF DEFINED(FPC_FULLVERSION) AND (FPC_FULLVERSION >= 20105)}
     {$DEFINE FPC_2_1_5_OR_ABOVE}
   {$IFEND}
 
   // just in case
   {$IFDEF FPC_2_7_1}
     {$DEFINE FPC_2_7_1_OR_ABOVE}
+  {$ENDIF}
+  {$IFDEF FPC_2_6_4}
+    {$DEFINE FPC_2_6_4_OR_ABOVE}
+  {$ENDIF}
+  {$IFDEF FPC_2_6_2}
+    {$DEFINE FPC_2_6_2_OR_ABOVE}
   {$ENDIF}
   {$IFDEF FPC_2_6_0}
     {$DEFINE FPC_2_6_0_OR_ABOVE}
@@ -414,14 +541,36 @@
   {$IFDEF FPC_2_4_2}
     {$DEFINE FPC_2_4_2_OR_ABOVE}
   {$ENDIF}
+  {$IFDEF FPC_2_4_0}
+    {$DEFINE FPC_2_4_0_OR_ABOVE}
+  {$ENDIF}
   {$IFDEF FPC_2_2_4}
     {$DEFINE FPC_2_2_4_OR_ABOVE}
+  {$ENDIF}
+  {$IFDEF FPC_2_2_2}
+    {$DEFINE FPC_2_2_2_OR_ABOVE}
   {$ENDIF}
   {$IFDEF FPC_2_1_5}
     {$DEFINE FPC_2_1_5_OR_ABOVE}
   {$ENDIF}
 
   {$IFDEF FPC_2_7_1_OR_ABOVE}
+    {$DEFINE FPC_2_6_4_OR_ABOVE}
+  {$ELSE}
+    {$IFDEF FPC_2_6_4}
+      {$DEFINE FPC_2_6_4_OR_ABOVE}
+    {$ENDIF}
+  {$ENDIF}
+
+  {$IFDEF FPC_2_6_4_OR_ABOVE}
+    {$DEFINE FPC_2_6_2_OR_ABOVE}
+  {$ELSE}
+    {$IFDEF FPC_2_6_2}
+      {$DEFINE FPC_2_6_2_OR_ABOVE}
+    {$ENDIF}
+  {$ENDIF}
+
+  {$IFDEF FPC_2_6_2_OR_ABOVE}
     {$DEFINE FPC_2_6_0_OR_ABOVE}
   {$ELSE}
     {$IFDEF FPC_2_6_0}
@@ -446,6 +595,14 @@
   {$ENDIF}
 
   {$IFDEF FPC_2_4_2_OR_ABOVE}
+    {$DEFINE FPC_2_4_0_OR_ABOVE}
+  {$ELSE}
+    {$IFDEF FPC_2_4_0}
+      {$DEFINE FPC_2_4_0_OR_ABOVE}
+    {$ENDIF}
+  {$ENDIF}
+
+  {$IFDEF FPC_2_4_0_OR_ABOVE}
     {$DEFINE FPC_2_2_4_OR_ABOVE}
   {$ELSE}
     {$IFDEF FPC_2_2_4}
@@ -454,6 +611,14 @@
   {$ENDIF}
 
   {$IFDEF FPC_2_2_4_OR_ABOVE}
+    {$DEFINE FPC_2_2_2_OR_ABOVE}
+  {$ELSE}
+    {$IFDEF FPC_2_2_2}
+      {$DEFINE FPC_2_2_2_OR_ABOVE}
+    {$ENDIF}
+  {$ENDIF}
+
+  {$IFDEF FPC_2_2_2_OR_ABOVE}
     {$DEFINE FPC_2_2_0_OR_ABOVE}
   {$ELSE}
     {$IFDEF VER2_2}
@@ -468,14 +633,72 @@
       {$DEFINE FPC_2_1_5_OR_ABOVE}
     {$ENDIF}
   {$ENDIF}
+
+  {.$IFDEF FPC_2_7_1_OR_ABOVE}
+    // support for RawByteString and UnicodeString
+    {.$DEFINE VCL_2009}
+    {.$DEFINE DELPHI_2009}
+  {.$ELSE}
+    {$DEFINE VCL_70}
+    {$DEFINE DELPHI_7}
+  {.$ENDIF}
 {$ENDIF}
 
 // end FPC
 
-{$IFDEF VCL_XE5}
+{$IFDEF VCL_10_2_TOKYO}
+  {$DEFINE VCL_10_2_TOKYO_OR_ABOVE}
+{$ENDIF}
+
+{$IFDEF VCL_10_2_TOKYO_OR_ABOVE}
+  {$DEFINE VCL_10_1_BERLIN_OR_ABOVE}
+{$ELSE}
+  {$IFDEF VCL_10_1_BERLIN}
+    {$DEFINE VCL_10_1_BERLIN_OR_ABOVE}
+  {$ENDIF}
+{$ENDIF}
+
+{$IFDEF VCL_10_1_BERLIN_OR_ABOVE}
+  {$DEFINE VCL_10_0_SEATTLE_OR_ABOVE}
+{$ELSE}
+  {$IFDEF VCL_10_0_SEATTLE}
+    {$DEFINE VCL_10_0_SEATTLE_OR_ABOVE}
+  {$ENDIF}
+{$ENDIF}
+
+{$IFDEF VCL_10_0_SEATTLE_OR_ABOVE}
+  {$DEFINE VCL_XE8_OR_ABOVE}
+{$ELSE}
+  {$IFDEF VCL_XE8}
+    {$DEFINE VCL_XE8_OR_ABOVE}
+  {$ENDIF}
+{$ENDIF}
+
+{$IFDEF VCL_XE8_OR_ABOVE}
+  {$DEFINE VCL_XE7_OR_ABOVE}
+{$ELSE}
+  {$IFDEF VCL_XE7}
+    {$DEFINE VCL_XE7_OR_ABOVE}
+  {$ENDIF}
+{$ENDIF}
+
+{$IFDEF VCL_XE7_OR_ABOVE}
+  {$DEFINE VCL_XE6_OR_ABOVE}
+{$ELSE}
+  {$IFDEF VCL_XE6}
+    {$DEFINE VCL_XE6_OR_ABOVE}
+  {$ENDIF}
+{$ENDIF}
+
+{$IFDEF VCL_XE6_OR_ABOVE}
   {$DEFINE VCL_XE5_OR_ABOVE}
+  {$DEFINE VCL_XE5_UPDATE2_OR_ABOVE}
+{$ELSE}
+  {$IFDEF VCL_XE5}
+    {$DEFINE VCL_XE5_OR_ABOVE}
     // TODO: figure out how to detect this version
     {.$DEFINE VCL_XE5_UPDATE2_OR_ABOVE}
+  {$ENDIF}
 {$ENDIF}
 
 {$IFDEF VCL_XE5_OR_ABOVE}
@@ -718,6 +941,7 @@
   {$DEFINE HAS_SysUtils_IncludeExcludeTrailingPathDelimiter}
   {$DEFINE HAS_SysUtils_DirectoryExists}
   {$DEFINE HAS_UNIT_DateUtils}
+  {$DEFINE HAS_UNIT_StrUtils}
   {$DEFINE HAS_UNIT_Types}
   {$DEFINE HAS_TryStrToInt}
   {$DEFINE HAS_TryStrToInt64}
@@ -728,9 +952,19 @@
     {$DEFINE HAS_IInterface}
     {$DEFINE HAS_TSelectionEditor}
     {$DEFINE HAS_TStringList_CaseSensitive}
+    {$DEFINE HAS_AcquireExceptionObject}
     {$IFNDEF KYLIX}
       {$DEFINE HAS_DEPRECATED}
       {$DEFINE HAS_SYMBOL_PLATFORM}
+      {$DEFINE HAS_UNIT_PLATFORM}
+      {$IFNDEF VCL_8_OR_ABOVE}
+        // Delphi 6 and 7 have an annoying bug that if a class method is declared as
+        // deprecated, the compiler will emit a "symbol is deprecated" warning
+        // on the method's implementation!  So we will have to wrap implementations
+        // of deprecated methods with {$WARN SYMBOL_DEPRECATED OFF} directives
+        // to disable that warning.
+        {$DEFINE DEPRECATED_IMPL_BUG}
+      {$ENDIF}
     {$ENDIF}
   {$ENDIF}
   {$IFNDEF DOTNET}
@@ -741,11 +975,13 @@
 
 {$IFDEF VCL_7_OR_ABOVE}
   {$IFNDEF FPC}
-    {$DEFINE HAS_UInt64}
+    {$DEFINE HAS_UInt64} // Note: it was just an alias for Int64 until D2006!
     {$DEFINE HAS_NAMED_THREADS}
+    {$DEFINE HAS_TStrings_NameValueSeparator}
     {$DEFINE HAS_TStrings_ValueFromIndex}
   {$ENDIF}
   {$DEFINE HAS_TFormatSettings}
+  {$DEFINE HAS_PosEx}
   {$IFNDEF VCL_70}
     // not implemented in D7
     {$DEFINE HAS_STATIC_TThread_Queue}
@@ -764,6 +1000,9 @@
 
 {$IFNDEF VCL_2005_OR_ABOVE}
   {$IFDEF DCC}
+    // InterlockedCompareExchange() was declared in the Windows unit using Pointer
+    // parameters until Delphi 2005, when it was switched to Longint parameters
+    // instead to match the actual Win32 API declaration.
     {$DEFINE HAS_InterlockedCompareExchange_Pointers}
   {$ENDIF}
 {$ENDIF}
@@ -776,6 +1015,12 @@
     {$IFNDEF DOTNET}
       {$DEFINE REGISTER_EXPECTED_MEMORY_LEAK}
     {$ENDIF}
+  {$ENDIF}
+  // In C++Builder 2006 and 2007, UInt64 is emitted as signed __int64 in HPP
+  // files instead of as unsigned __int64.  This causes conflicts in overloaded
+  // routines that have (U)Int64 parameters.  This was fixed in C++Builder 2009...
+  {$IFDEF CBUILDER}
+    {$DEFINE BROKEN_UINT64_HPPEMIT}
   {$ENDIF}
 {$ENDIF}
 
@@ -808,6 +1053,7 @@
     {$DEFINE HAS_InterlockedCompareExchangePointer}
     {$DEFINE HAS_WIDE_TCharArray}
     {$DEFINE HAS_UNIT_AnsiStrings}
+    {$DEFINE HAS_PUInt64}
     {$IFDEF VCL_2009}
       // TODO: need to differentiate between RTM and Update 1
       // FmtStr() is broken in RTM but was fixed in Update 1
@@ -820,8 +1066,22 @@
   // Native(U)Int are still buggy, so do not use them yet
   {.$DEFINE HAS_NativeInt}
   {.$DEFINE HAS_NativeUInt}
-  {$DEFINE HAS_UINT8}
-  {$DEFINE HAS_UINT32}
+  {$DEFINE HAS_Int8}
+  {$DEFINE HAS_UInt8}
+  {$DEFINE HAS_Int16}
+  {$DEFINE HAS_UInt16}
+  {$DEFINE HAS_Int32}
+  {$DEFINE HAS_UInt32}
+  // UInt64 is now emitted as unsigned __int64 in HPP files
+  {$IFDEF CBUILDER}
+    {$UNDEF BROKEN_UINT64_HPPEMIT}
+  {$ENDIF}
+  {$IFDEF DCC}
+    {$IFDEF WINDOWS}
+      // Exception.RaiseOuterException() is only available on Windows at this time
+      {$DEFINE HAS_Exception_RaiseOuterException}
+    {$ENDIF}
+  {$ENDIF}
 {$ENDIF}
 
 {$IFDEF VCL_2010_OR_ABOVE}
@@ -834,6 +1094,7 @@
   {$DEFINE HAS_NativeInt}
   {$DEFINE HAS_NativeUInt}
   {$DEFINE HAS_USHORT}
+  {$DEFINE HAS_IOUtils_TPath}
 {$ENDIF}
 
 {$IFDEF VCL_XE_OR_ABOVE}
@@ -842,6 +1103,11 @@
   {$DEFINE HAS_UnicodeFromLocaleChars}
   {$DEFINE HAS_PVOID}
   {$DEFINE HAS_ULONG64}
+  {$DEFINE HAS_TEncoding_GetEncoding_ByEncodingName}
+  {$IFDEF DCC}
+    // Exception.RaiseOuterException() is now available on all platforms
+    {$DEFINE HAS_Exception_RaiseOuterException}
+  {$ENDIF}
   {$IFNDEF DOTNET}
     {$DEFINE HAS_TInterlocked}
   {$ENDIF}
@@ -849,11 +1115,14 @@
 
 {$IFDEF VCL_XE2_OR_ABOVE}
   {$DEFINE HAS_SIZE_T}
+  {$DEFINE HAS_PSIZE_T}
   {$DEFINE HAS_LONG}
   {$DEFINE HAS_ComponentPlatformsAttribute}
   {$DEFINE HAS_ComponentPlatformsAttribute_Win32}
   {$DEFINE HAS_ComponentPlatformsAttribute_Win64}
   {$DEFINE HAS_ComponentPlatformsAttribute_OSX32}
+  {$DEFINE HAS_System_ReturnAddress}
+  {$DEFINE HAS_DIRECTIVE_WARN_DEFAULT}
 {$ENDIF}
 
 {$IFDEF VCL_XE3_OR_ABOVE}
@@ -887,6 +1156,35 @@
 
 {$IFDEF VCL_XE5_UPDATE2_OR_ABOVE}
   {$DEFINE HAS_DIRECTIVE_HPPEMIT_LINKUNIT}
+{$ENDIF}
+
+{$IFDEF VCL_XE7_OR_ABOVE}
+  {$DEFINE HAS_TNetEncoding}
+{$ENDIF}
+
+{$IFDEF VCL_XE8_OR_ABOVE}
+  {$DEFINE HAS_ComponentPlatformsAttribute_iOS_Device32}
+  {$DEFINE HAS_ComponentPlatformsAttribute_iOS_Device64}
+  // technically, these are present in XE8, but they are not used yet
+  {.$DEFINE HAS_ComponentPlatformsAttribute_Linux64}
+  {.$DEFINE HAS_ComponentPlatformsAttribute_WinIoT32}
+{$ENDIF}
+
+{$IFDEF VCL_10_0_SEATTLE_OR_ABOVE}
+  {$IFDEF ANDROID}
+    {$DEFINE HAS_TAndroidHelper}
+  {$ENDIF}
+{$ENDIF}
+
+{$IFDEF VCL_10_1_BERLIN_OR_ABOVE}
+  {$DEFINE HAS_DIRECTIVE_HPPEMIT_LEGACYHPP}
+  {$DEFINE HAS_TStrings_AddPair}
+{$ENDIF}
+
+{$IFDEF VCL_10_2_TOKYO_OR_ABOVE}
+  {.$WARN IMPLICIT_INTEGER_CAST_LOSS OFF}
+  {.$WARN IMPLICIT_CONVERSION_LOSS OFF}
+  {.$WARN COMBINING_SIGNED_UNSIGNED64 OFF}
 {$ENDIF}
 
 // Delphi XE+ cross-compiling
@@ -925,14 +1223,24 @@
   {$DEFINE FPC_CIRCULAR_BUG}
   {$DEFINE NO_REDECLARE}
   {$DEFINE BYTE_COMPARE_SETS}
+  {$DEFINE HAS_QWord} // TODO: when was QWord introduced?
+  {$DEFINE HAS_PQWord} // TODO: when was PQWord introduced?
   {$IFDEF FPC_2_1_5_OR_ABOVE}
     {$DEFINE HAS_UInt64}
+    {.$DEFINE HAS_PUInt64} // TODO: is this defined?
   {$ENDIF}
   {$IFDEF FPC_2_2_0_OR_ABOVE}
     {$DEFINE HAS_InterlockedCompareExchange_Pointers}
   {$ENDIF}
+  {$IFDEF FPC_2_2_2_OR_ABOVE}
+    {$DEFINE HAS_SharedSuffix}
+  {$ENDIF}
   {$IFDEF FPC_2_2_4_OR_ABOVE}
-    {$DEFINE HAS_SIZE_T}
+    // size_t and psize_t are only available on Unix systems (FreeBSD, Linux, etc)
+    {$IFDEF UNIX}
+      {$DEFINE HAS_SIZE_T}
+      {$DEFINE HAS_PSIZE_T}
+    {$ENDIF}
   {$ENDIF}
   {$DEFINE HAS_PtrInt}
   {$DEFINE HAS_PtrUInt}
@@ -940,25 +1248,47 @@
   {$DEFINE HAS_LPGUID}
   {$DEFINE HAS_PPAnsiChar}
   {$DEFINE HAS_ENUM_ELEMENT_VALUES}
+  {$DEFINE HAS_AcquireExceptionObject} // TODO: when was AcquireExceptionObject introduced?
   {$IFDEF WINDOWS}
     {$DEFINE HAS_ULONG_PTR}
     {.$DEFINE HAS_ULONGLONG} // TODO: is this defined?
   {$ENDIF}
   {$DEFINE HAS_UNIT_ctypes}
   {$DEFINE HAS_sLineBreak}
+  {$IFDEF FPC_HAS_UNICODESTRING}
+    {$DEFINE HAS_UnicodeString}
+  {$ELSE}
+    {$IFDEF FPC_2_4_0_OR_ABOVE}
+      {$DEFINE HAS_UnicodeString}
+    {$ENDIF}
+  {$ENDIF}
   {$IFDEF FPC_2_4_4_OR_ABOVE}
     {$DEFINE DEPRECATED_TThread_SuspendResume}
-    {$DEFINE HAS_DEPRECATED} // TODO: when was deprecated introduced?
-    {$DEFINE HAS_DEPRECATED_MSG}
-    {$DEFINE HAS_UnicodeString} // TODO: when was UnicodeString introduced?
+    {$DEFINE HAS_DEPRECATED} // TODO: when was deprecated introduced? Possibly 1.9.x
+    {$DEFINE HAS_DEPRECATED_MSG} // TODO: when was message support added? Possibly 2.4.x
+    {$IFNDEF FPC_2_6_2_OR_ABOVE}
+      {$DEFINE USE_SEMICOLON_BEFORE_DEPRECATED} // TODO: which earlier versions require a semicolon?
+    {$ENDIF}
   {$ENDIF}
   {$IFDEF FPC_2_6_0_OR_ABOVE}
     {$DEFINE HAS_NativeInt}
     {$DEFINE HAS_NativeUInt}
   {$ENDIF}
-  {$IFDEF FPC_2_7_1_OR_ABOVE}
-    {$DEFINE HAS_UINT8}
-    {$DEFINE HAS_UINT32}
+  {$IFDEF FPC_2_6_2_OR_ABOVE}
+    {$DEFINE HAS_Int8}
+    {$DEFINE HAS_UInt8}
+    {$DEFINE HAS_Int16}
+    {$DEFINE HAS_UInt16}
+    {$DEFINE HAS_Int32}
+    {$DEFINE HAS_UInt32}
+  {$ENDIF}
+  {$IFDEF FPC_2_6_4_OR_ABOVE}
+    {$DEFINE HAS_PInt8}
+    {$DEFINE HAS_PUInt8}
+    {$DEFINE HAS_PInt16}
+    {$DEFINE HAS_PUInt16}
+    {$DEFINE HAS_PInt32}
+    {$DEFINE HAS_PUInt32}
   {$ENDIF}
   {$IFDEF FPC_UNICODESTRINGS}
     {$DEFINE STRING_IS_UNICODE}
@@ -982,12 +1312,25 @@
 {$ENDIF}
 
 // .NET and Delphi 2009+ support UNICODE strings natively!
+//
+// FreePascal 2.4.0+ supports UnicodeString, but does not map its
+// native String type to UnicodeString except when {$MODE DelphiUnicode}
+// or {$MODESWITCH UnicodeStrings} is enabled.  However, UNICODE is not
+// defined in that mode yet until its RTL has been updated to support
+// UnicodeString.  STRING_UNICODE_MISMATCH is defined when the native
+// String/Char types do not map to the same types that APIs are expecting
+// based on whether UNICODE is defined or not.
+//
 // NOTE: Do not define UNICODE here.  The compiler defines
 // the symbol automatically.
-{$IFNDEF STRING_IS_UNICODE}
+{$IFDEF STRING_IS_UNICODE}
+  {$IFNDEF UNICODE}
+    {$DEFINE STRING_UNICODE_MISMATCH}
+  {$ENDIF}
+{$ELSE}
   {$DEFINE STRING_IS_ANSI}
   {$IFDEF UNICODE}
-    {$DEFINE UNICODE_BUT_STRING_IS_ANSI}
+    {$DEFINE STRING_UNICODE_MISMATCH}
   {$ENDIF}
 {$ENDIF}
 
@@ -1007,9 +1350,20 @@
     {$DEFINE HAS_GENERICS_TList}
     {$DEFINE HAS_GENERICS_TObjectList}
     {$DEFINE HAS_GENERICS_TThreadList}
+    // TArray<T>.Copy() was introduced in XE7 but was buggy. It was fixed in XE8:
+    //
+    // RSP-9763 TArray.Copy<T> copies from destination to source for unmanaged types
+    // https://quality.embarcadero.com/browse/RSP-9763
+    //
+    {$IFDEF VCL_XE8_OR_ABOVE}
+      {$DEFINE HAS_GENERICS_TArray_Copy}
+    {$ENDIF}
   {$ENDIF}
 {$ENDIF}
 
+// TODO: Ansi data types were disabled on mobile platforms in XE3, but
+// UTF8String and RawByteString were re-enabled in 10.1 Berlin! What else,
+// if anything, was re-enabled to facilitate that?
 {$IFDEF NO_ANSI_TYPES}
   {$UNDEF HAS_AnsiString}
   {$UNDEF HAS_AnsiChar}
@@ -1036,6 +1390,11 @@
     {$ENDIF}
   {$ENDIF}
 {$ENDIF}
+{$IFDEF WINCE}
+  {$DEFINE USE_OPENSSL}
+  // RLebeau: not sure if the above Win32/64 defines also apply to WinCE,
+  // so keeping them separate for now...
+{$ENDIF}
 
 // High-performance counters are not reliable on multi-core systems, and have
 // been known to cause problems with TIdIOHandler.ReadLn() timeouts in Windows
@@ -1058,6 +1417,10 @@
   {$DEFINE HAS_getifaddrs}
 {$ENDIF}
 
+{$IFDEF LINUX64}
+  {$DEFINE HAS_getifaddrs}
+{$ENDIF}
+
 {$IFDEF IOS}
   {$DEFINE HAS_getifaddrs}
   {$DEFINE USE_OPENSSL}
@@ -1070,6 +1433,10 @@
     // statically linked functions for the IdSSLOpenSSLHeaders unit to use...
     {$DEFINE STATICLOAD_OPENSSL}
   {$ENDIF}
+{$ENDIF}
+
+{$IFDEF FREEBSD}
+  {$DEFINE HAS_getifaddrs}
 {$ENDIF}
 
 {$IFDEF FPC_REQUIRES_PROPER_ALIGNMENT}
@@ -1117,7 +1484,9 @@
 //This also must go before the THandle size calculations.
 {$IFDEF VCL_CROSS_COMPILE}
   {$IFDEF POSIX}
-    {$DEFINE BSD}
+    {$IFNDEF LINUX64}
+      {$DEFINE BSD}
+    {$ENDIF}
     {$DEFINE USE_SAFELOADLIBRARY}
     {$DEFINE USE_INVALIDATE_MOD_CACHE}
   {$ENDIF}
@@ -1185,7 +1554,19 @@ word to an 8 bit byte and an 8 bit byte field named sa_len was added.
 {$ENDIF}
 {$IFDEF BSD}
   //I think BSD might handle FreeBSD, NetBSD, OpenBSD, and Darwin
-  {$DEFINE THANDLE_32}
+  {$IFDEF IOS}
+    {$IFDEF CPUARM64}
+      {$DEFINE CPU64}
+      {$DEFINE THANDLE_64}
+    {$ELSE}
+      {$IFDEF CPUARM32}
+        {$DEFINE CPU32}
+      {$ENDIF}
+      {$DEFINE THANDLE_32}
+    {$ENDIF}
+  {$ELSE}
+    {$DEFINE THANDLE_32}
+  {$ENDIF}
 {$ENDIF}
 {$IFDEF EMBEDDED}
   {$DEFINE THANDLE_CPUBITS}
@@ -1203,7 +1584,15 @@ word to an 8 bit byte and an 8 bit byte field named sa_len was added.
   {$DEFINE THANDLE_32}
 {$ENDIF}
 {$IFDEF LINUX}
-  {$DEFINE THANDLE_32}
+  {$IFDEF LINUX64}
+    {$DEFINE CPU64}
+    {$DEFINE THANDLE_64}
+  {$ELSE}
+    {$IFDEF LINUX32}
+      {$DEFINE CPU32}
+    {$ENDIF}
+    {$DEFINE THANDLE_32}
+  {$ENDIF}
 {$ENDIF}
 {$IFDEF MACOS_CLASSIC}
   {$DEFINE THANDLE_CPUBITS}
@@ -1274,6 +1663,9 @@ word to an 8 bit byte and an 8 bit byte field named sa_len was added.
 {$IFNDEF FREE_ON_FINAL}
   {$IFNDEF REGISTER_EXPECTED_MEMORY_LEAK}
     {$IFDEF USE_FASTMM4}
+      {$DEFINE REGISTER_EXPECTED_MEMORY_LEAK}
+    {$ENDIF}
+    {$IFDEF USE_MADEXCEPT}
       {$DEFINE REGISTER_EXPECTED_MEMORY_LEAK}
     {$ENDIF}
   {$ENDIF}
@@ -1362,13 +1754,34 @@ SOLARIS instead of IFDEF UNIX is not an error, it's deliberate.}
   {$DEFINE HAS_TCP_KEEPINTVL}
 {$ENDIF}
 {$IFDEF USE_VCL_POSIX}
-  {$IFNDEF ANDROID}
-    {$DEFINE HAS_SOCKET_NOSIGPIPE}
+  // TODO: which platforms actually have SO_NOSIGPIPE available?
+  {$DEFINE HAS_SOCKET_NOSIGPIPE}
+  {$IFDEF ANDROID}
+    {$UNDEF HAS_SOCKET_NOSIGPIPE}
+  {$ENDIF}
+  {$IFDEF LINUX}
+    {$UNDEF HAS_SOCKET_NOSIGPIPE}
   {$ENDIF}
 {$ENDIF}
 {end Unix OS specific stuff}
 {$IFDEF DEBUG}
   {$UNDEF USE_INLINE}
+{$ENDIF}
+
+// RLebeau 5/24/2015: In C++Builder 2006 and 2007, UInt64 is emitted as
+// signed __int64 in HPP files instead of as unsigned __int64.  This causes
+// conflicts in overloaded routines that have (U)Int64 parameters.  This
+// was fixed in C++Builder 2009.  For compilers that do not have a native
+// UInt64 type, or for C++Builder 2006/2007, let's define a record type
+// that can hold UInt64 values...
+{$IFDEF HAS_UInt64}
+  {$IFDEF BROKEN_UINT64_HPPEMIT}
+    {$DEFINE TIdUInt64_HAS_QuadPart}
+  {$ENDIF}
+{$ELSE}
+  {$IFNDEF HAS_QWord}
+    {$DEFINE TIdUInt64_HAS_QuadPart}
+  {$ENDIF}
 {$ENDIF}
 
 // RLebeau 9/5/2013: it would take a lot of work to re-write Indy to support

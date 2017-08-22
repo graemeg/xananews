@@ -13,8 +13,9 @@ Any differences between Unix-like operating systems have to dealt with in other
 ways.
 }
 
-{$WARN SYMBOL_PLATFORM OFF}
-{$WARN UNIT_PLATFORM OFF}
+{$I IdSymbolPlatformOff.inc}
+{$I IdUnitPlatformOff.inc}
+
 uses
   Classes,
   IdCTypes,
@@ -27,6 +28,12 @@ uses
   IdStackBSDBase;
 
 type
+  {$IFDEF USE_VCL_POSIX}
+    {$IFDEF ANDROID}
+  EIdAccessWifiStatePermissionNeeded = class(EIdAndroidPermissionNeeded);
+  EIdAccessNetworkStatePermissionNeeded = class(EIdAndroidPermissionNeeded);
+    {$ENDIF}
+  {$ENDIF}
 
   TIdSocketListVCLPosix = class (TIdSocketList)
   protected
@@ -37,8 +44,6 @@ type
       AExceptSet: Pfd_set; const ATimeout: Integer): Integer;
     function GetItem(AIndex: Integer): TIdStackSocketHandle; override;
   public
-
-
     procedure Add(AHandle: TIdStackSocketHandle); override;
     procedure Remove(AHandle: TIdStackSocketHandle); override;
     function Count: Integer; override;
@@ -97,17 +102,17 @@ type
     procedure GetSocketName(ASocket: TIdStackSocketHandle; var VIP: string;
      var VPort: TIdPort; var VIPVersion: TIdIPVersion); override;
     procedure Listen(ASocket: TIdStackSocketHandle; ABackLog: Integer); override;
-    function HostToNetwork(AValue: Word): Word; override;
-    function NetworkToHost(AValue: Word): Word; override;
-    function HostToNetwork(AValue: LongWord): LongWord; override;
-    function NetworkToHost(AValue: LongWord): LongWord; override;
-    function HostToNetwork(AValue: Int64): Int64; override;
-    function NetworkToHost(AValue: Int64): Int64; override;
+    function HostToNetwork(AValue: UInt16): UInt16; override;
+    function NetworkToHost(AValue: UInt16): UInt16; override;
+    function HostToNetwork(AValue: UInt32): UInt32; override;
+    function NetworkToHost(AValue: UInt32): UInt32; override;
+    function HostToNetwork(AValue: TIdUInt64): TIdUInt64; override;
+    function NetworkToHost(AValue: TIdUInt64): TIdUInt64; override;
     function RecvFrom(const ASocket: TIdStackSocketHandle;
       var VBuffer; const ALength, AFlags: Integer; var VIP: string;
       var VPort: TIdPort; var VIPVersion: TIdIPVersion): Integer; override;
     function ReceiveMsg(ASocket: TIdStackSocketHandle;
-      var VBuffer: TIdBytes; APkt: TIdPacketInfo): LongWord;  override;
+      var VBuffer: TIdBytes; APkt: TIdPacketInfo): UInt32;  override;
     procedure WSSendTo(ASocket: TIdStackSocketHandle; const ABuffer;
       const ABufferLength, AFlags: Integer; const AIP: string; const APort: TIdPort;
       AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION); override;
@@ -120,6 +125,7 @@ type
     procedure SetSocketOption(ASocket: TIdStackSocketHandle; ALevel: TIdSocketOptionLevel;
       AOptName: TIdSocketOption; const AOptVal; const AOptLen: Integer); override;
     {$ENDIF}
+    function SupportsIPv4: Boolean; overload; override;
     function SupportsIPv6: Boolean; overload; override;
     function CheckIPVersionSupport(const AIPVersion: TIdIPVersion): boolean; override;
     //In Windows, this writes a checksum into a buffer.  In Linux, it would probably
@@ -134,10 +140,10 @@ type
     procedure WriteChecksum(s : TIdStackSocketHandle; var VBuffer : TIdBytes;
       const AOffset : Integer; const AIP : String; const APort : TIdPort;
       const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION); override;
-    function IOControl(const s: TIdStackSocketHandle; const cmd: LongWord;
-      var arg: LongWord): Integer; override;
+    function IOControl(const s: TIdStackSocketHandle; const cmd: UInt32;
+      var arg: UInt32): Integer; override;
 
-    procedure AddLocalAddressesToList(AAddresses: TStrings); override;
+    procedure GetLocalAddressList(AAddresses: TIdStackLocalAddressList); override;
   end;
 
 implementation
@@ -460,10 +466,13 @@ begin
   LN := SizeOf(LAddrStore);
   Result := Posix.SysSocket.accept(ASocket, LAddr, LN);
   if Result <> -1 then begin
-    case LAddr.sa_family of
+    {$IFDEF HAS_SOCKET_NOSIGPIPE}
+    SetSocketOption(Result, SOL_SOCKET, SO_NOSIGPIPE, 1);
+    {$ENDIF}
+    case LAddrStore.ss_family of
       Id_PF_INET4: begin
         VIP := TranslateTInAddrToString( LAddrIPv4.sin_addr, Id_IPv4);
-        VPort := Ntohs(LAddrIPv4.sin_port);
+        VPort := ntohs(LAddrIPv4.sin_port);
         VIPVersion := Id_IPV4;
       end;
       Id_PF_INET6: begin
@@ -485,7 +494,7 @@ begin
 end;
 
 {$IFDEF HAS_getifaddrs}
-function getifaddrs(ifap: pifaddrs): Integer; cdecl; external libc name _PU + 'getifaddrs'; {do not localize}
+function getifaddrs(var ifap: pifaddrs): Integer; cdecl; external libc name _PU + 'getifaddrs'; {do not localize}
 procedure freeifaddrs(ifap: pifaddrs); cdecl; external libc name _PU + 'freeifaddrs'; {do not localize}
 {$ELSE}
   {$IFDEF ANDROID}
@@ -494,10 +503,11 @@ procedure freeifaddrs(ifap: pifaddrs); cdecl; external libc name _PU + 'freeifad
   {$ENDIF}
 {$ENDIF}
 
-procedure TIdStackVCLPosix.AddLocalAddressesToList(AAddresses: TStrings);
+procedure TIdStackVCLPosix.GetLocalAddressList(AAddresses: TIdStackLocalAddressList);
 var
   {$IFDEF HAS_getifaddrs}
   LAddrList, LAddrInfo: pifaddrs;
+  LSubNetStr: String;
   {$ELSE}
   LRetVal: Integer;
   LHostName: string;
@@ -518,7 +528,7 @@ begin
 
   {$IFDEF HAS_getifaddrs}
 
-  if getifaddrs(@LAddrList) = 0 then // TODO: raise an exception if it fails
+  if getifaddrs(LAddrList) = 0 then // TODO: raise an exception if it fails
   try
     AAddresses.BeginUpdate;
     try
@@ -528,10 +538,15 @@ begin
         begin
           case LAddrInfo^.ifa_addr^.sa_family of
             Id_PF_INET4: begin
-              AAddresses.Add(TranslateTInAddrToString( PSockAddr_In(LAddrInfo^.ifa_addr)^.sin_addr, Id_IPv4));
+              if LAddrInfo^.ifa_netmask <> nil then begin
+                LSubNetStr := TranslateTInAddrToString( PSockAddr_In(LAddrInfo^.ifa_netmask)^.sin_addr, Id_IPv4);
+              end else begin
+                LSubNetStr := '';
+              end;
+              TIdStackLocalAddressIPv4.Create(AAddresses, TranslateTInAddrToString( PSockAddr_In(LAddrInfo^.ifa_addr)^.sin_addr, Id_IPv4), LSubNetStr);
             end;
             Id_PF_INET6: begin
-              AAddresses.Add(TranslateTInAddrToString( PSockAddr_In6(LAddrInfo^.ifa_addr)^.sin6_addr, Id_IPv6));
+              TIdStackLocalAddressIPv6.Create(AAddresses, TranslateTInAddrToString( PSockAddr_In6(LAddrInfo^.ifa_addr)^.sin6_addr, Id_IPv6));
             end;
           end;
         end;
@@ -545,6 +560,84 @@ begin
   end;
 
   {$ELSE}
+
+  // TODO: on Android, either implement getifaddrs() (https://github.com/kmackay/android-ifaddrs)
+  // or use the Java API to enumerate the local network interfaces and their IP addresses, eg:
+  {
+  var
+    en, enumIpAddr: Enumeration;
+    intf: NetworkInterface;
+    inetAddress: InetAddress;
+  begin
+    try
+      en := NetworkInterface.getNetworkInterfaces;
+      if en.hasMoreElements then begin
+        AAddresses.BeginUpdate;
+        try
+          repeat
+            intf := en.nextElement;
+            enumIpAddr := intf.getInetAddresses();
+            while enumIpAddr.hasMoreElements do begin
+              inetAddress := enumIpAddr.nextElement;
+              if not inetAddress.isLoopbackAddress then begin
+                if (inetAddress instanceof Inet4Address) then begin
+                  TIdStackLocalAddressIPv4.Create(AAddresses, inetAddress.getHostAddress.toString, ''); // TODO: subnet mask
+                end
+                else if (inetAddress instanceof Inet6Address) then begin
+                  TIdStackLocalAddressIPv6.Create(AAddresses, inetAddress.getHostAddress.toString);
+                end;
+              end;
+            end;
+          until not en.hasMoreElements;
+        finally
+          AAddresses.EndUpdate;
+        end;
+       end;
+     except
+       if not HasAndroidPermission('android.permission.ACCESS_NETWORK_STATE') then begin
+         IndyRaiseOuterException(EIdAccessNetworkStatePermissionNeeded.CreateError(0, ''));
+       end;
+       if not HasAndroidPermission('android.permission.INTERNET') then begin
+         IndyRaiseOuterException(EIdInternetPermissionNeeded.CreateError(0, ''));
+       end;
+       raise;
+     end;
+   end;
+
+  Note that this requires the application to have ACCESS_NETWORK_STATE and INTERNET permissions.
+
+  Or:
+
+  uses
+    if XE7+
+      Androidapi.Helpers 
+    else
+      FMX.Helpers.Android 
+    ;
+
+  var
+    wifiManager: WifiManager;
+    ipAddress: Integer;
+  begin
+    try
+      wifiManager := (WifiManager) GetActivityContext.getSystemService(WIFI_SERVICE);
+      ipAddress := wifiManager.getConnectionInfo.getIpAddress;
+    except
+      if not HasAndroidPermission('android.permission.ACCESS_WIFI_STATE') then begin
+        IndyRaiseOuterException(EIdAccessWifiStatePermissionNeeded.CreateError(0, ''));
+      end;
+      raise;
+    end;
+
+    // WiFiInfo only supports IPv4
+    TIdStackLocalAddressIPv4.Create(AAddresses,
+      Format('%d.%d.%d.%d', [ipAddress and $ff, (ipAddress shr 8) and $ff, (ipAddress shr 16) and $ff, (ipAddress shr 24) and $ff]),
+      '' // TODO: subnet mask
+    );
+  end;
+
+  This requires only ACCESS_WIFI_STATE permission.
+  }
 
   //IMPORTANT!!!
   //
@@ -584,11 +677,11 @@ begin
         case LAddrInfo^.ai_addr^.sa_family of
         Id_PF_INET4 :
           begin
-            AAddresses.Add(TranslateTInAddrToString( PSockAddr_In(LAddrInfo^.ai_addr)^.sin_addr, Id_IPv4));
+            TIdStackLocalAddressIPv4.Create(AAddresses, TranslateTInAddrToString( PSockAddr_In(LAddrInfo^.ai_addr)^.sin_addr, Id_IPv4), ''); // TODO: SubNet
           end;
         Id_PF_INET6 :
           begin
-            AAddresses.Add(TranslateTInAddrToString( PSockAddr_In6(LAddrInfo^.ai_addr)^.sin6_addr, Id_IPv6));
+            TIdStackLocalAddressIPv6.Create(AAddresses, TranslateTInAddrToString( PSockAddr_In6(LAddrInfo^.ai_addr)^.sin6_addr, Id_IPv6));
           end;
         end;
         LAddrInfo := LAddrInfo^.ai_next;
@@ -618,7 +711,7 @@ begin
           TranslateStringToTInAddr(AIP, LAddrIPv4.sin_addr, Id_IPv4);
         end;
         LAddrIPv4.sin_port := htons(APort);
-        CheckForSocketError(Posix.SysSocket.bind(ASocket, LAddr,SizeOf(LAddrIPv4)));
+        CheckForSocketError(Posix.SysSocket.bind(ASocket, LAddr, SizeOf(LAddrIPv4)));
       end;
     Id_IPv6: begin
         InitSockAddr_in6(LAddrIPv6);
@@ -640,6 +733,8 @@ function TIdStackVCLPosix.CheckIPVersionSupport(
 var
   LTmpSocket: TIdStackSocketHandle;
 begin
+  // TODO: on nix systems (or maybe just Linux?), an alternative would be to
+  // check for the existance of the '/proc/net/if_inet6' kernel pseudo-file
   LTmpSocket := WSSocket(IdIPFamily[AIPVersion], Id_SOCK_STREAM, Id_IPPROTO_IP );
   Result := LTmpSocket <> Id_INVALID_SOCKET;
   if Result then begin
@@ -660,15 +755,13 @@ begin
       InitSockAddr_In(LAddrIPv4);
       TranslateStringToTInAddr(AIP, LAddrIPv4.sin_addr, Id_IPv4);
       LAddrIPv4.sin_port := htons(APort);
-      CheckForSocketError(Posix.SysSocket.connect(
-        ASocket,LAddr,SizeOf(LAddrIPv4)));
+      CheckForSocketError(Posix.SysSocket.connect(ASocket, LAddr, SizeOf(LAddrIPv4)));
     end;
     Id_IPv6: begin
       InitSockAddr_in6(LAddrIPv6);
       TranslateStringToTInAddr(AIP, LAddrIPv6.sin6_addr, Id_IPv6);
       LAddrIPv6.sin6_port := htons(APort);
-      CheckForSocketError(
-        Posix.SysSocket.connect( ASocket, LAddr, SizeOf(LAddrIPv6) ));
+      CheckForSocketError(Posix.SysSocket.connect(ASocket, LAddr, SizeOf(LAddrIPv6)));
     end;
     else begin
       IPVersionUnsupported;
@@ -711,7 +804,7 @@ var
 begin
   i := SizeOf(LAddrStore);
   CheckForSocketError(Posix.SysSocket.getpeername(ASocket, LAddr, i));
-  case LAddr.sa_family of
+  case LAddrStore.ss_family of
     Id_PF_INET4: begin
       VIP := TranslateTInAddrToString(LAddrIPv4.sin_addr, Id_IPv4);
       VPort := ntohs(LAddrIPv4.sin_port);
@@ -719,14 +812,13 @@ begin
     end;
     Id_PF_INET6: begin
       VIP := TranslateTInAddrToString(LAddrIPv6.sin6_addr, Id_IPv6);
-      VPort := Ntohs(LAddrIPv6.sin6_port);
+      VPort := ntohs(LAddrIPv6.sin6_port);
       VIPVersion := Id_IPV6;
     end;
     else begin
       IPVersionUnsupported;
     end;
   end;
-
 end;
 
 procedure TIdStackVCLPosix.GetSocketName(ASocket: TIdStackSocketHandle;
@@ -739,8 +831,8 @@ var
   LAddr : sockaddr absolute LAddrStore;
 begin
   LiSize := SizeOf(LAddrStore);
-  CheckForSocketError(getsockname(ASocket, psockaddr(@LAddr)^, LiSize));
-  case LAddr.sa_family of
+  CheckForSocketError(getsockname(ASocket, LAddr, LiSize));
+  case LAddrStore.ss_family of
     Id_PF_INET4: begin
       VIP := TranslateTInAddrToString(LAddrIPv4.sin_addr, Id_IPv4);
       VPort := ntohs(LAddrIPv4.sin_port);
@@ -813,15 +905,15 @@ IMPORTANT!!!
 
 getnameinfo can return either results from a numeric to text conversion or
 results from a DNS reverse lookup.  Someone could make a malicous PTR record
-such as 
+such as
 
    1.0.0.127.in-addr.arpa. IN PTR  10.1.1.1
-   
+
 and trick a caller into beleiving the socket address is 10.1.1.1 instead of
 127.0.0.1.  If there is a numeric host in LAddr, than this is the case and
 we disregard the result and raise an exception.
 }
-  FillChar(LHints,SizeOf(LHints),0);
+  FillChar(LHints, SizeOf(LHints), 0);
   LHints.ai_socktype := SOCK_DGRAM; //*dummy*/
   LHints.ai_flags := AI_NUMERICHOST;
   if getaddrinfo(
@@ -897,32 +989,34 @@ begin
   end;
 end;
 
-function TIdStackVCLPosix.HostToNetwork(AValue: LongWord): LongWord;
+function TIdStackVCLPosix.HostToNetwork(AValue: UInt32): UInt32;
 begin
  Result := htonl(AValue);
 end;
 
-function TIdStackVCLPosix.HostToNetwork(AValue: Word): Word;
+function TIdStackVCLPosix.HostToNetwork(AValue: UInt16): UInt16;
 begin
   Result := htons(AValue);
 end;
 
-function TIdStackVCLPosix.HostToNetwork(AValue: Int64): Int64;
+function TIdStackVCLPosix.HostToNetwork(AValue: TIdUInt64): TIdUInt64;
 var
-  LParts: TIdInt64Parts;
-  L: LongWord;
+  LParts: TIdUInt64Parts;
+  L: UInt32;
 begin
-  LParts.QuadPart := AValue;
-  L := htonl(LParts.HighPart);
-  if (L <> LParts.HighPart) then begin
+  if (htonl(1) <> 1) then begin
+    LParts.QuadPart := AValue;
+    L := htonl(LParts.HighPart);
     LParts.HighPart := htonl(LParts.LowPart);
     LParts.LowPart := L;
+    Result := LParts.QuadPart;
+  end else begin
+    Result := AValue;
   end;
-  Result := LParts.QuadPart;
 end;
 
 function TIdStackVCLPosix.IOControl(const s: TIdStackSocketHandle;
-  const cmd: LongWord; var arg: LongWord): Integer;
+  const cmd: UInt32; var arg: UInt32): Integer;
 begin
   Result := ioctl(s, cmd, @arg);
 end;
@@ -933,27 +1027,28 @@ begin
   CheckForSocketError(Posix.SysSocket.listen(ASocket, ABacklog));
 end;
 
-function TIdStackVCLPosix.NetworkToHost(AValue: LongWord): LongWord;
+function TIdStackVCLPosix.NetworkToHost(AValue: UInt32): UInt32;
 begin
   Result := ntohl(AValue);
 end;
 
-function TIdStackVCLPosix.NetworkToHost(AValue: Int64): Int64;
+function TIdStackVCLPosix.NetworkToHost(AValue: TIdUInt64): TIdUInt64;
 var
-  LParts: TIdInt64Parts;
-  L: LongWord;
+  LParts: TIdUInt64Parts;
+  L: UInt32;
 begin
-  LParts.QuadPart := AValue;
-  L := ntohl(LParts.HighPart);
-  if (L <> LParts.HighPart) then begin
+  if (ntohl(1) <> 1) then begin
+    LParts.QuadPart := AValue;
+    L := ntohl(LParts.HighPart);
     LParts.HighPart := ntohl(LParts.LowPart);
     LParts.LowPart := L;
+    Result := LParts.QuadPart;
+  end else begin
+    Result := AValue;
   end;
-  Result := LParts.QuadPart;
-
 end;
 
-function TIdStackVCLPosix.NetworkToHost(AValue: Word): Word;
+function TIdStackVCLPosix.NetworkToHost(AValue: UInt16): UInt16;
 begin
    Result := ntohs(AValue);
 end;
@@ -985,7 +1080,7 @@ begin
 end;
 
 function TIdStackVCLPosix.ReceiveMsg(ASocket: TIdStackSocketHandle;
-  var VBuffer: TIdBytes; APkt: TIdPacketInfo): LongWord;
+  var VBuffer: TIdBytes; APkt: TIdPacketInfo): UInt32;
 var
   LSize: socklen_t;
   LAddrStore: sockaddr_storage;
@@ -1019,10 +1114,10 @@ begin
   LMsg.msg_namelen := SizeOf(LAddrStore);
 
   Result := 0;
-  CheckForSocketError(RecvMsg(ASocket, LMsg, Result ));
+  CheckForSocketError(RecvMsg(ASocket, LMsg, Result));
   APkt.Reset;
 
-  case LAddr.sa_family of
+  case LAddrStore.ss_family of
     Id_PF_INET4: begin
       APkt.SourceIP := TranslateTInAddrToString(LAddrIPv4.sin_addr, Id_IPv4);
       APkt.SourcePort := ntohs(LAddrIPv4.sin_port);
@@ -1041,14 +1136,14 @@ begin
 
   LCurCmsg := nil;
   repeat
-    LCurCmsg := CMSG_NXTHDR(@LMsg,LCurCmsg);
-    if LCurCmsg=nil then begin
+    LCurCmsg := CMSG_NXTHDR(@LMsg, LCurCmsg);
+    if LCurCmsg = nil then begin
       break;
     end;
     case LCurCmsg^.cmsg_type of
-      IPV6_PKTINFO :     //done this way because IPV6_PKTINF and  IP_PKTINFO are both 19
+      IPV6_PKTINFO :     //done this way because IPV6_PKTINF and IP_PKTINFO are both 19
       begin
-        case LAddr.sa_family of
+        case LAddrStore.ss_family of
           Id_PF_INET4: begin
             {$IFDEF IOS}
             ToDo('PKTINFO not implemented for IPv4 under iOS yet');
@@ -1092,14 +1187,15 @@ var
   LAddr : sockaddr absolute LAddrStore;
 
 begin
-  LiSize := SizeOf(sockaddr_storage);
-  Result := Posix.SysSocket.recvfrom(ASocket,VBuffer, ALength, AFlags or Id_MSG_NOSIGNAL, psockaddr(@LAddr)^, LiSize);
+  LiSize := SizeOf(LAddrStore);
+  // TODO: only include MSG_NOSIGNAL if SO_NOSIGPIPE is not enabled?
+  Result := Posix.SysSocket.recvfrom(ASocket,VBuffer, ALength, AFlags or Id_MSG_NOSIGNAL, LAddr, LiSize);
   if Result >= 0 then
   begin
-    case LAddr.sa_family of
+    case LAddrStore.ss_family of
       Id_PF_INET4: begin
         VIP := TranslateTInAddrToString(LAddrIPv4.sin_addr, Id_IPv4);
-        VPort := Ntohs(LAddrIPv4.sin_port);
+        VPort := ntohs(LAddrIPv4.sin_port);
         VIPVersion := Id_IPV4;
       end;
       Id_PF_INET6: begin
@@ -1117,7 +1213,21 @@ end;
 
 procedure TIdStackVCLPosix.SetBlocking(ASocket: TIdStackSocketHandle;
   const ABlocking: Boolean);
+{
+var
+  LFlags: Integer;
+}
 begin
+  // TODO: enable this
+  {
+  LFlags := CheckForSocketError(Posix.SysSocket.fcntl(ASocket, F_GETFL, 0));
+  if ABlocking then begin
+    LFlags := LFlags and not O_NONBLOCK;
+  end else begin
+    LFlags := LFlags or O_NONBLOCK;
+  end;
+  CheckForSocketError(Posix.SysSocket.fcntl(ASocket, F_SETFL, LFlags));
+  }
   if not ABlocking then begin
     raise EIdNonBlockingNotSupported.Create(RSStackNonBlockingNotSupported);
   end;
@@ -1146,6 +1256,16 @@ begin
   CheckForSocketError(Posix.SysSocket.setsockopt(ASocket, ALevel, AOptName, AOptVal, AOptLen));
 end;
 
+function TIdStackVCLPosix.SupportsIPv4: Boolean;
+begin
+  {$IFDEF IOS}
+  // TODO: iOS 9+ is IPv6-only...
+  //Result := ([[[UIDevice currentDevice] systemVersion] compare:'9.0' options:NSNumericSearch] == NSOrderedAscending);
+  {$ENDIF}
+  //In Windows, this does something else.  It checks the LSP's installed.
+  Result := CheckIPVersionSupport(Id_IPv4);
+end;
+
 function TIdStackVCLPosix.SupportsIPv6: Boolean;
 begin
   //In Windows, this does something else.  It checks the LSP's installed.
@@ -1156,6 +1276,9 @@ function TIdStackVCLPosix.WouldBlock(const AResult: Integer): Boolean;
 begin
   //non-blocking does not exist in Linux, always indicate things will block
   Result := True;
+
+  // TODO: enable this:
+  //Result := CheckForSocketError(AResult, [EAGAIN, EWOULDBLOCK]) <> 0;
 end;
 
 procedure TIdStackVCLPosix.WriteChecksum(s: TIdStackSocketHandle;
@@ -1163,7 +1286,7 @@ procedure TIdStackVCLPosix.WriteChecksum(s: TIdStackSocketHandle;
   const APort: TIdPort; const AIPVersion: TIdIPVersion);
 begin
   case AIPVersion of
-    Id_IPv4 : CopyTIdWord(HostToLittleEndian(CalcCheckSum(VBuffer)), VBuffer, AOffset);
+    Id_IPv4 : CopyTIdUInt16(HostToLittleEndian(CalcCheckSum(VBuffer)), VBuffer, AOffset);
     Id_IPv6 : WriteChecksumIPv6(s, VBuffer, AOffset, AIP, APort);
   else
     IPVersionUnsupported;
@@ -1222,7 +1345,8 @@ begin
       Result := IndyStrToInt(AServiceName);
     except
       on EConvertError do begin
-        raise EIdInvalidServiceName.CreateFmt(RSInvalidServiceName, [AServiceName]);
+        Result := 0;
+        IndyRaiseOuterException(EIdInvalidServiceName.CreateFmt(RSInvalidServiceName, [AServiceName]));
       end;
     end;
   end;
@@ -1232,7 +1356,7 @@ procedure TIdStackVCLPosix.AddServByPortToList(const APortNumber: TIdPort; AAddr
 //function TIdStackVCLPosix.WSGetServByPort(const APortNumber: TIdPort): TStrings;
 type
   PPAnsiCharArray = ^TPAnsiCharArray;
-  TPAnsiCharArray = packed array[0..(MaxLongint div SizeOf(PIdAnsiChar))-1] of PIdAnsiChar;
+  TPAnsiCharArray = packed array[0..(MaxInt div SizeOf(PIdAnsiChar))-1] of PIdAnsiChar;
 var
   Lps: PServEnt;
   Li: Integer;
@@ -1259,17 +1383,15 @@ function TIdStackVCLPosix.WSRecv(ASocket: TIdStackSocketHandle; var ABuffer;
   const ABufferLength, AFlags: Integer): Integer;
 begin
   //IdStackWindows is just: Result := Recv(ASocket, ABuffer, ABufferLength, AFlags);
+  // TODO: only include MSG_NOSIGNAL if SO_NOSIGPIPE is not enabled?
   Result := Posix.SysSocket.Recv(ASocket, ABuffer, ABufferLength, AFlags or Id_MSG_NOSIGNAL);
-
 end;
 
 function TIdStackVCLPosix.WSSend(ASocket: TIdStackSocketHandle; const ABuffer;
   const ABufferLength, AFlags: Integer): Integer;
 begin
-  //CC: Should Id_MSG_NOSIGNAL be included?
-  //  Result := Send(ASocket, ABuffer, ABufferLength, AFlags or Id_MSG_NOSIGNAL);
+  // TODO: only include MSG_NOSIGNAL if SO_NOSIGPIPE is not enabled?
   Result := CheckForSocketError(Posix.SysSocket.send(ASocket, ABuffer, ABufferLength, AFlags or Id_MSG_NOSIGNAL));
-
 end;
 
 procedure TIdStackVCLPosix.WSSendTo(ASocket: TIdStackSocketHandle;
@@ -1281,6 +1403,7 @@ var
   LAddrIPv6 : sockaddr_in6 absolute LAddrStore;
   LAddr : sockaddr absolute LAddrStore;
   LiSize: socklen_t;
+  LBytesSent: Integer;
 begin
   case AIPVersion of
     Id_IPv4: begin
@@ -1295,13 +1418,14 @@ begin
       LAddrIPv6.sin6_port := htons(APort);
       LiSize := SizeOf(LAddrIPv6);
     end;
- else
-   LiSize := 0; // avoid warning
-   IPVersionUnsupported;
- end;
-  LiSize := Posix.SysSocket.sendto(
-    ASocket, ABuffer, ABufferLength, AFlags or Id_MSG_NOSIGNAL, LAddr,LiSize);
-  if LiSize = Id_SOCKET_ERROR then begin
+  else
+    LiSize := 0; // avoid warning
+    IPVersionUnsupported;
+  end;
+  // TODO: only include MSG_NOSIGNAL if SO_NOSIGPIPE is not enabled?
+  LBytesSent := Posix.SysSocket.sendto(
+    ASocket, ABuffer, ABufferLength, AFlags or Id_MSG_NOSIGNAL, LAddr, LiSize);
+  if LBytesSent = Id_SOCKET_ERROR then begin
     // TODO: move this into RaiseLastSocketError directly
     if WSGetLastError() = Id_WSAEMSGSIZE then begin
       raise EIdPackageSizeTooBig.Create(RSPackageSizeTooBig);
@@ -1309,7 +1433,7 @@ begin
       RaiseLastSocketError;
     end;
   end
-  else if Integer(LiSize) <> ABufferLength then begin
+  else if LBytesSent <> ABufferLength then begin
     raise EIdNotAllBytesSent.Create(RSNotAllBytesSent);
   end;
 
@@ -1337,8 +1461,8 @@ begin
   {$ENDIF}
 end;
 
-{$WARN UNIT_PLATFORM ON}
-{$WARN SYMBOL_PLATFORM ON}
+{$I IdUnitPlatformOn.inc}
+{$I IdSymbolPlatformOn.inc}
 initialization
   GSocketListClass := TIdSocketListVCLPosix;
 end.

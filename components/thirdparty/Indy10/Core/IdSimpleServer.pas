@@ -157,6 +157,7 @@ uses
   IdExceptionCore,
   IdIOHandlerStack,
   IdIOHandlerSocket,
+  IdCustomTransparentProxy,
   IdResourceStringsCore,
   IdStack;
 
@@ -168,15 +169,17 @@ begin
 end;
 
 procedure TIdSimpleServer.BeginListen;
+var
+  // under ARC, convert a weak reference to a strong reference before working with it
+  LProxy: TIdCustomTransparentProxy;
 begin
   // Must be before IOHandler as it resets it
-  if not Assigned(Binding) then begin
-    EndListen;
-    CreateBinding;
-  end;
-  if Socket.TransparentProxy.Enabled then begin
+  EndListen;
+  CreateBinding;
+  LProxy := Socket.TransparentProxy;
+  if LProxy.Enabled then begin
     Socket.Binding.IP := BoundIP;
-    Socket.TransparentProxy.Bind(FIOHandler, BoundPort);
+    LProxy.Bind(FIOHandler, BoundPort);
   end else begin
     Bind;
     Binding.Listen(1);
@@ -263,8 +266,10 @@ end;
 
 procedure TIdSimpleServer.Listen(ATimeout: Integer = IdTimeoutDefault);
 var
+  // under ARC, convert a weak reference to a strong reference before working with it
+  LProxy: TIdCustomTransparentProxy;
   LAccepted: Boolean;
-  
+
   function DoListenTimeout(ALTimeout: Integer; AUseProxy: Boolean): Boolean;
   var
     LSleepTime: Integer;
@@ -278,7 +283,7 @@ var
     if ALTimeout = IdTimeoutInfinite then begin
       repeat
         if AUseProxy then begin
-          Result := Socket.TransparentProxy.Listen(IOHandler, LSleepTime);
+          Result := LProxy.Listen(IOHandler, LSleepTime);
         end else begin
           Result := Binding.Select(LSleepTime);
         end;
@@ -288,7 +293,7 @@ var
 
     while ALTimeout > LSleepTime do begin
       if AUseProxy then begin
-        Result := Socket.TransparentProxy.Listen(IOHandler, LSleepTime);
+        Result := LProxy.Listen(IOHandler, LSleepTime);
       end else begin
         Result := Binding.Select(LSleepTime);
       end;
@@ -301,7 +306,7 @@ var
     end;
 
     if AUseProxy then begin
-      Result := Socket.TransparentProxy.Listen(IOHandler, ALTimeout);
+      Result := LProxy.Listen(IOHandler, ALTimeout);
     end else begin
       Result := Binding.Select(ALTimeout);
     end;
@@ -312,14 +317,16 @@ begin
     BeginListen;
   end;
 
-  if Socket.TransparentProxy.Enabled then begin
+  LProxy := Socket.TransparentProxy;
+  if LProxy.Enabled then begin
     LAccepted := DoListenTimeout(ATimeout, True);
   end else
   begin
     LAccepted := DoListenTimeout(ATimeout, False);
     if LAccepted then begin
-      Binding.Accept(Binding.Handle);
-      IOHandler.AfterAccept;
+      if Binding.Accept(Binding.Handle) then begin
+        IOHandler.AfterAccept;
+      end;
     end;
 
 // This is now protected. Disconnect replaces it - but it also calls shutdown.

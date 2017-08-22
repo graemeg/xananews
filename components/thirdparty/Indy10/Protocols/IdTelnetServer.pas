@@ -66,6 +66,7 @@ interface
 
 uses
   Classes,
+  IdGlobal,
   IdBaseComponent,
   IdAssignedNumbers, IdContext,
   IdCustomTCPServer,
@@ -81,7 +82,7 @@ type
   TTelnetData = class(TObject)
   public
     Username, Password: String;
-    HUserToken: cardinal;
+    HUserToken: UInt32;
   end;
 
   // Custom Peer thread class
@@ -131,7 +132,7 @@ type
 implementation
 
 uses
-  IdException, IdGlobal, IdResourceStringsProtocols, SysUtils;
+  IdException, IdResourceStringsProtocols, SysUtils;
 
 {$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
 constructor TIdTelnetServer.Create(AOwner: TComponent);

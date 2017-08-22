@@ -208,20 +208,31 @@ uses
   Posix.SysSelect,
   Posix.SysTime,
   {$ENDIF}
+  {$IFDEF WINDOWS}
+  Windows,
+  {$ENDIF}
   IdAntiFreezeBase, IdResourceStringsCore, IdResourceStrings, IdStackConsts, IdException,
-  IdTCPConnection, IdComponent, IdIOHandler;
+  IdTCPConnection, IdComponent, IdIOHandler, IdCustomTransparentProxy;
 
 type
   TIdConnectThread = class(TThread)
   protected
     FBinding: TIdSocketHandle;
+    {$IFDEF HAS_AcquireExceptionObject}
+    FConnectException: TObject;
+    {$ELSE}
     FLastSocketError: Integer;
     FExceptionMessage: string;
+    {$ENDIF}
     FExceptionOccured: Boolean;
     procedure Execute; override;
     procedure DoTerminate; override;
   public
     constructor Create(ABinding: TIdSocketHandle); reintroduce;
+    {$IFDEF HAS_AcquireExceptionObject}
+    destructor Destroy; override;
+    {$ENDIF}
+    procedure CheckForConnectError;
     property Terminated;
   end;
 
@@ -237,47 +248,108 @@ procedure TIdIOHandlerStack.ConnectClient;
 
   procedure DoConnectTimeout(ATimeout: Integer);
   var
-    LSleepTime: Integer;
+    LSleepTime, LWaitTime: Integer;
     LThread: TIdConnectThread;
   begin
     if ATimeout = IdTimeoutDefault then begin
       ATimeout := IdTimeoutInfinite;
     end;
+    // IndySleep
+    if TIdAntiFreezeBase.ShouldUse then begin
+      LSleepTime := IndyMin(GAntiFreeze.IdleTimeOut, 125);
+    end else begin
+      LSleepTime := 125;
+    end;
+
     LThread := TIdConnectThread.Create(Binding);
     try
-      // IndySleep
-      if TIdAntiFreezeBase.ShouldUse then begin
-        LSleepTime := IndyMin(GAntiFreeze.IdleTimeOut, 125);
-      end else begin
-        LSleepTime := 125;
-      end;
-
       if ATimeout = IdTimeoutInfinite then begin
-        while not LThread.Terminated do begin
-          IndySleep(LSleepTime);
-          TIdAntiFreezeBase.DoProcess;
+        if TIdAntiFreezeBase.ShouldUse then
+        begin
+          {$IFDEF WINDOWS}
+          while WaitForSingleObject(LThread.Handle, LSleepTime) = WAIT_TIMEOUT do begin
+            TIdAntiFreezeBase.DoProcess;
+          end;
+          {$ELSE}
+          // TODO: figure out what else can be used here...
+          while not LThread.Terminated do begin
+            IndySleep(LSleepTime);
+            TIdAntiFreezeBase.DoProcess;
+          end;
+          {$ENDIF}
+        end else begin
+          LThread.WaitFor;
         end;
       end else
       begin
-        while (ATimeout > 0) and (not LThread.Terminated) do begin
-          IndySleep(IndyMin(ATimeout, LSleepTime));
-          TIdAntiFreezeBase.DoProcess;
-          Dec(ATimeout, IndyMin(ATimeout, LSleepTime));
+        if TIdAntiFreezeBase.ShouldUse then begin
+          // TODO: we need to take the actual clock into account, not just
+          // decrement by the sleep interval.  If IndySleep() runs longer then
+          // requested, that would slow down the loop and exceed the original
+          // timeout that was requested...
+          {
+          Start := GetTicks64;
+          repeat
+            while (GetElapsedTicks(Start) < ATimeout) and (not LThread.Terminated) do begin
+              LWaitTime := IndyMin(ATimeout - GetElapsedTicks(Start), LSleepTime);
+              if LWaitTime <= 0 then Break;
+              ($IFDEF WINDOWS)
+              if WaitForSingleObject(LThread.Handle, LWaitTime) <> WAIT_TIMEOUT then begin
+                Break;
+              end;
+              ($ELSE)
+              // TODO: figure out what else can be used here...
+              IndySleep(LWaitTime);
+              ($ENDIF)
+              TIdAntiFreezeBase.DoProcess;
+            end;
+          end;
+          }
+          while (ATimeout > 0) and (not LThread.Terminated) do begin
+            LWaitTime := IndyMin(ATimeout, LSleepTime);
+            {$IFDEF WINDOWS}
+            if WaitForSingleObject(LThread.Handle, LWaitTime) <> WAIT_TIMEOUT then begin
+              Break;
+            end;
+            {$ELSE}
+            // TODO: figure out what else can be used here...
+            IndySleep(LWaitTime);
+            {$ENDIF}
+            TIdAntiFreezeBase.DoProcess;
+            Dec(ATimeout, LWaitTime);
+          end;
+        end else begin
+          {$IFDEF WINDOWS}
+          WaitForSingleObject(LThread.Handle, ATimeout);
+          {$ELSE}
+          // TODO: figure out what else can be used here...
+          while (ATimeout > 0) and (not LThread.Terminated) do begin
+            LWaitTime := IndyMin(ATimeout, LSleepTime);
+            IndySleep(LWaitTime);
+            Dec(ATimeout, LWaitTime);
+          end;
+          {$ENDIF}
         end;
       end;
 
       if LThread.Terminated then begin
-        if LThread.FExceptionOccured then begin
-          if LThread.FLastSocketError <> 0 then begin
-            raise EIdSocketError.CreateError(LThread.FLastSocketError, LThread.FExceptionMessage);
-          end;
-          EIdConnectException.Toss(LThread.FExceptionMessage);
-        end;
+        LThread.CheckForConnectError;
       end else begin
         LThread.Terminate;
+        // TODO: before closing, maybe enable SO_DONTLINGER, or SO_LINGER with a 0 timeout...
+
+        //Binding.SetSockOpt(Id_SOL_SOCKET, Id_SO_DONTLINGER, 1);
+
+        {
+        var l: linger;
+        l.l_onoff := 1;
+        l.l_linger := 0;
+        Binding.SetSockOpt(Id_SOL_SOCKET, Id_SO_LINGER, Integer(@l));
+        }
+
         Close;
         LThread.WaitFor;
-        EIdConnectTimeout.Toss(RSConnectTimeout);
+        raise EIdConnectTimeout.Create(RSConnectTimeout);
       end;
     finally
       LThread.Free;
@@ -289,13 +361,16 @@ var
   LPort: Integer;
   LIP: string;
   LIPVersion : TIdIPVersion;
+  // under ARC, convert a weak reference to a strong reference before working with it
+  LProxy: TIdCustomTransparentProxy;
 begin
   inherited ConnectClient;
-  if Assigned(FTransparentProxy) then begin
-    if FTransparentProxy.Enabled then begin
-      LHost := FTransparentProxy.Host;
-      LPort := FTransparentProxy.Port;
-      LIPVersion := FTransparentProxy.IPVersion;
+  LProxy := FTransparentProxy;
+  if Assigned(LProxy) then begin
+    if LProxy.Enabled then begin
+      LHost := LProxy.Host;
+      LPort := LProxy.Port;
+      LIPVersion := LProxy.IPVersion;
     end else begin
       LHost := Host;
       LPort := Port;
@@ -346,9 +421,9 @@ begin
   end else begin
     DoConnectTimeout(ConnectTimeout);
   end;
-  if Assigned(FTransparentProxy) then begin
-    if FTransparentProxy.Enabled then begin
-      FTransparentProxy.Connect(Self, Host, Port, IPVersion);
+  if Assigned(LProxy) then begin
+    if LProxy.Enabled then begin
+      LProxy.Connect(Self, Host, Port, IPVersion);
     end;
   end;
 end;
@@ -407,11 +482,26 @@ begin
   inherited Create(False);
 end;
 
+{$IFDEF HAS_AcquireExceptionObject}
+destructor TIdConnectThread.Destroy;
+begin
+  FConnectException.Free;
+  inherited;
+end;
+{$ENDIF}
+
 procedure TIdConnectThread.Execute;
 begin
   try
     FBinding.Connect;
   except
+    {$IFDEF HAS_AcquireExceptionObject}
+    // TThread has a FatalException property, but we can't take ownership of it
+    // so we can re-raise it, so using AcquireExceptionObject() instead to take
+    // ownership of the exception before it can be assigned to FatalException...
+    FExceptionOccured := True;
+    FConnectException := AcquireExceptionObject;
+    {$ELSE}
     on E: Exception do begin
       FExceptionOccured := True;
       FExceptionMessage := E.Message;
@@ -421,6 +511,7 @@ begin
         end;
       end;
     end;
+    {$ENDIF}
   end;
 end;
 
@@ -429,6 +520,28 @@ begin
   // Necessary as caller checks this
   Terminate;
   inherited;
+end;
+
+procedure TIdConnectThread.CheckForConnectError;
+var
+  LException: TObject;
+begin
+  if FExceptionOccured then begin
+    {$IFDEF HAS_AcquireExceptionObject}
+    LException := FConnectException;
+    FConnectException := nil;
+    if LException = nil then begin
+      LException := EIdConnectException.Create(''); // TODO
+    end;
+    {$ELSE}
+    if FLastSocketError <> 0 then begin
+      LException := EIdSocketError.CreateError(FLastSocketError, FExceptionMessage);
+    end else begin
+      LException := EIdConnectException.Create(FExceptionMessage);
+    end;
+    {$ENDIF}
+    raise LException;
+  end;
 end;
 
 initialization

@@ -84,12 +84,14 @@ unit IdTime;
 }
 
 interface
+
 {$i IdCompilerDefines.inc}
 
 uses
   {$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
   Classes,
   {$ENDIF}
+  IdGlobal,
   IdAssignedNumbers, IdGlobalProtocols, IdTCPClient;
 
 const
@@ -99,10 +101,10 @@ type
   TIdCustomTime = class(TIdTCPClientCustom)
   protected
     FBaseDate: TDateTime;
-    FRoundTripDelay: Cardinal;
+    FRoundTripDelay: UInt32;
     FTimeout: Integer;
     //
-    function GetDateTimeCard: Cardinal;
+    function GetDateTimeCard: UInt32;
     function GetDateTime: TDateTime;
     procedure InitComponent; override;
   public
@@ -112,14 +114,14 @@ type
     {This synchronizes the local clock with the Time Server}
     function SyncTime: Boolean;
     {This is the number of seconds since 12:00 AM, 1900 - Jan-1}
-    property DateTimeCard: LongWord read GetDateTimeCard;
+    property DateTimeCard: UInt32 read GetDateTimeCard;
     {This is the current time according to the server.  TimeZone and Time used
     to receive the data are accounted for}
     property DateTime: TDateTime read GetDateTime;
     {This is the time it took to receive the Time from the server.  There is no
     need to use this to calculate the current time when using DateTime property
     as we have done that here}
-    property RoundTripDelay: Cardinal read FRoundTripDelay;
+    property RoundTripDelay: UInt32 read FRoundTripDelay;
   published
     property Timeout: Integer read FTimeout write FTimeout default TIME_TIMEOUT;
     property Host;
@@ -145,7 +147,7 @@ uses
     {$ENDIF}
   Posix.SysTime,
   {$ENDIF}
-  IdGlobal, IdTCPConnection;
+  IdTCPConnection;
 
 { TIdCustomTime }
 
@@ -168,7 +170,7 @@ end;
 
 function TIdCustomTime.GetDateTime: TDateTime;
 var
-  BufCard: LongWord;
+  BufCard: UInt32;
 begin
   BufCard := GetDateTimeCard;
   if BufCard <> 0 then begin
@@ -184,22 +186,22 @@ begin
   end;
 end;
 
-function TIdCustomTime.GetDateTimeCard: LongWord;
+function TIdCustomTime.GetDateTimeCard: UInt32;
 var
-  LTimeBeforeRetrieve: Cardinal;
+  LTimeBeforeRetrieve: TIdTicks;
 begin
   Connect; try
     // Check for timeout
     // Timeout is actually a time with no traffic, not a total timeout.
     IOHandler.ReadTimeout:=Timeout;
-    LTimeBeforeRetrieve := Ticks;
-    Result := IOHandler.ReadLongWord;
+    LTimeBeforeRetrieve := Ticks64;
+    Result := IOHandler.ReadUInt32;
     {Theoritically, it should take about 1/2 of the time to receive the data
     but in practice, it could be any portion depending upon network conditions. This is also
     as per RFC standard}
 
     {This is just in case the TickCount rolled back to zero}
-    FRoundTripDelay := GetTickDiff(LTimeBeforeRetrieve,Ticks) div 2;
+    FRoundTripDelay := GetElapsedTicks(LTimeBeforeRetrieve) div 2;
   finally Disconnect; end;
 end;
 

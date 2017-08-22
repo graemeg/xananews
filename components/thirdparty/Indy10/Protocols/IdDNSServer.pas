@@ -311,7 +311,7 @@ uses
 type
   TIdDomainExpireCheckThread = class(TIdThread)
   protected
-    FInterval: LongWord;
+    FInterval: UInt32;
     FSender: TObject;
     FTimerEvent: TNotifyEvent;
     FBusy : Boolean;
@@ -332,13 +332,13 @@ type
     FHost: string;
     FDomainName: string;
     FBusy : Boolean;
-    FInterval: LongWord;
+    FInterval: UInt32;
     FList: TIdDNSMap;
     procedure SetHost(const Value: string);
-    procedure SetInterval(const Value: LongWord);
+    procedure SetInterval(const Value: UInt32);
   protected
     CheckScheduler : TIdDomainExpireCheckThread;
-    property Interval : LongWord read FInterval write SetInterval;
+    property Interval : UInt32 read FInterval write SetInterval;
     property List : TIdDNSMap read FList write FList;
   public
     constructor Create(AList : TIdDNSMap);
@@ -372,7 +372,7 @@ type
   end;
 
   TIdMWayTreeNodeClass = class of TIdMWayTreeNode;
-                                                                     
+  // TODO: derive from TObjectList instead and remove SubTree member?
   TIdMWayTreeNode = class(TObject)
   private
     SubTree : TIdObjectList{$IFDEF HAS_GENERICS_TObjectList}<TIdMWayTreeNode>{$ENDIF};
@@ -446,8 +446,7 @@ type
     FMyBinding: TIdSocketHandle;
     FMainBinding: TIdSocketHandle;
     FMyData: TStream;
-    FData : string;
-    FDataSize : Integer;
+    FData : TIdBytes;
     FServer: TIdDNS_UDPServer;
     procedure SetMyBinding(const Value: TIdSocketHandle);
     procedure SetMyData(const Value: TStream);
@@ -455,17 +454,17 @@ type
     procedure ComposeErrorResult(var VFinal: TIdBytes; OriginalHeader: TDNSHeader;
       OriginalQuestion : TIdBytes; ErrorStatus: Integer);
     function CombineAnswer(Header : TDNSHeader; const EQuery, Answer : TIdBytes): TIdBytes;
-    procedure InternalSearch(Header: TDNSHeader; QName: string; QType: Word;
+    procedure InternalSearch(Header: TDNSHeader; QName: string; QType: UInt16;
       var Answer: TIdBytes; IfMainQuestion: Boolean; IsSearchCache: Boolean = False;
       IsAdditional: Boolean = False; IsWildCard : Boolean = False;
       WildCardOrgName: string = '');
     procedure ExternalSearch(ADNSResolver: TIdDNSResolver; Header: TDNSHeader;
       Question: TIdBytes; var Answer: TIdBytes);
     function CompleteQuery(DNSHeader: TDNSHeader; Question: string;
-      OriginalQuestion: TIdBytes; var Answer : TIdBytes; QType, QClass : Word;
+      OriginalQuestion: TIdBytes; var Answer : TIdBytes; QType, QClass : UInt16;
       DNSResolver : TIdDNSResolver) : string;
-    procedure SaveToCache(ResourceRecord : string; QueryName : string; OriginalQType : Word);
-    function SearchTree(Root : TIdDNTreeNode; QName : String; QType : Word): TIdDNTreeNode;
+    procedure SaveToCache(ResourceRecord : TIdBytes; QueryName : string; OriginalQType : UInt16);
+    function SearchTree(Root : TIdDNTreeNode; QName : String; QType : UInt16): TIdDNTreeNode;
 
     procedure Run; override;
     procedure QueryDomain;
@@ -475,15 +474,15 @@ type
     property MyData: TStream read FMyData write SetMyData;
     property Server : TIdDNS_UDPServer read FServer write SetServer;
 
-    constructor Create(ACreateSuspended: Boolean = True; Data : String = '';
-      DataSize : Integer = 0; MainBinding : TIdSocketHandle = nil;
-      Binding : TIdSocketHandle = nil; Server : TIdDNS_UDPServer = nil); reintroduce; overload;
+    constructor Create(ACreateSuspended: Boolean = True; Data : TIdBytes = nil;
+      MainBinding : TIdSocketHandle = nil; Binding : TIdSocketHandle = nil;
+      Server : TIdDNS_UDPServer = nil); reintroduce; overload;
 
     destructor Destroy; override;
   end;
 
-  TIdDNSBeforeQueryEvent = procedure(ABinding: TIdSocketHandle; ADNSHeader: TDNSHeader; var ADNSQuery: string) of object;
-  TIdDNSAfterQueryEvent = procedure(ABinding: TIdSocketHandle; ADNSHeader: TDNSHeader; var QueryResult: string; ResultCode: string; Query : string) of object;
+  TIdDNSBeforeQueryEvent = procedure(ABinding: TIdSocketHandle; ADNSHeader: TDNSHeader; var ADNSQuery: TIdBytes) of object;
+  TIdDNSAfterQueryEvent = procedure(ABinding: TIdSocketHandle; ADNSHeader: TDNSHeader; var QueryResult: TIdBytes; var ResultCode: string; Query : TIdBytes) of object;
   TIdDNSAfterCacheSaved = procedure(CacheRoot : TIdDNTreeNode) of object;
 
   TIdDNS_UDPServer = class(TIdUDPServer)
@@ -508,20 +507,20 @@ type
     FofferDNSVersion: Boolean;
 
     procedure DoBeforeQuery(ABinding: TIdSocketHandle; ADNSHeader: TDNSHeader;
-      var ADNSQuery : String); dynamic;
+      var ADNSQuery : TIdBytes); dynamic;
 
     procedure DoAfterQuery(ABinding: TIdSocketHandle; ADNSHeader: TDNSHeader;
-      var QueryResult : String; ResultCode : String; Query : string); dynamic;
+      var QueryResult : TIdBytes; var ResultCode : String; Query : TIdBytes); dynamic;
 
     procedure DoAfterSendBack(ABinding: TIdSocketHandle; ADNSHeader: TDNSHeader;
-      var QueryResult : String; ResultCode : String; Query : string); dynamic;
+      var QueryResult : TIdBytes; var ResultCode : String; Query : TIdBytes); dynamic;
 
     procedure DoAfterCacheSaved(CacheRoot : TIdDNTreeNode); dynamic;
 
     procedure SetZoneMasterFiles(const Value: TStrings);
     procedure SetRootDNS_NET(const Value: TStrings);
     procedure SetHanded_DomainList(const Value: TStrings);
-    procedure InternalSearch(Header: TDNSHeader; QName: string; QType: Word;
+    procedure InternalSearch(Header: TDNSHeader; QName: string; QType: UInt16;
       var Answer: TIdBytes; IfMainQuestion: boolean; IsSearchCache: Boolean = False;
       IsAdditional: Boolean = False; IsWildCard : Boolean = False;
       WildCardOrgName: string = '');
@@ -529,7 +528,7 @@ type
       Question: TIdBytes; var Answer: TIdBytes);
     //modified in May 2004 by Dennies Chang.
     //procedure SaveToCache(ResourceRecord : string);
-    procedure SaveToCache(ResourceRecord : string; QueryName : string; OriginalQType : Word);
+    procedure SaveToCache(ResourceRecord : TIdBytes; QueryName : string; OriginalQType : UInt16);
     //procedure UpdateTree(TreeRoot : TIdDNTreeNode; RR : TResultRecord); overload;
     //MoveTo Public section for RaidenDNSD.
 
@@ -543,15 +542,15 @@ type
     destructor Destroy; override;
     function AXFR(Header : TDNSHeader; Question : string; var Answer : TIdBytes) : string;
     function CompleteQuery(DNSHeader: TDNSHeader; Question: string;
-      OriginalQuestion: TIdBytes; var Answer : TIdBytes; QType, QClass : Word;
-      DNSResolver : TIdDNSResolver) : string;
+      OriginalQuestion: TIdBytes; var Answer : TIdBytes; QType, QClass : UInt16;
+      DNSResolver : TIdDNSResolver) : string; {$IFDEF HAS_DEPRECATED}deprecated;{$ENDIF}
     function LoadZoneFromMasterFile(MasterFileName : String) : boolean;
     function LoadZoneStrings(FileStrings: TStrings; Filename : String;
       TreeRoot : TIdDNTreeNode): Boolean;
-    function SearchTree(Root : TIdDNTreeNode; QName : String; QType : Word): TIdDNTreeNode;
+    function SearchTree(Root : TIdDNTreeNode; QName : String; QType : UInt16): TIdDNTreeNode;
     procedure UpdateTree(TreeRoot : TIdDNTreeNode; RR : TIdTextModeResourceRecord); overload;
-    function FindNodeFullName(Root : TIdDNTreeNode; QName : String; QType : Word) : string;
-    function FindHandedNodeByName(QName : String; QType : Word) : TIdDNTreeNode;
+    function FindNodeFullName(Root : TIdDNTreeNode; QName : String; QType : UInt16) : string;
+    function FindHandedNodeByName(QName : String; QType : UInt16) : TIdDNTreeNode;
     procedure UpdateTree(TreeRoot : TIdDNTreeNode; RR : TResultRecord); overload;
 
     property RootDNS_NET : TStrings read FRootDNS_NET write SetRootDNS_NET;
@@ -611,8 +610,11 @@ implementation
 
 uses
   {$IFDEF VCL_XE3_OR_ABOVE}
-  //System.Contnrs,
+    {$IFNDEF NEXTGEN}
+  System.Contnrs,
+    {$ENDIF}
   System.SyncObjs,
+  System.Types,
   {$ENDIF}
   IdException,
   {$IFDEF DOTNET}
@@ -640,7 +642,7 @@ begin
   Result := CompareStr(LObj1.CLabel, LObj2.CLabel);
 end;
 
-                             
+// TODO: move to IdGlobal.pas
 function PosBytes(const SubBytes, SBytes: TIdBytes): Integer;
 var
   LSubLen, LBytesLen, I: Integer;
@@ -668,7 +670,7 @@ begin
   Result := -1;
 end;
 
-                             
+// TODO: move to IdGlobal.pas
 function FetchBytes(var AInput: TIdBytes; const ADelim: TIdBytes;
   const ADelete: Boolean = IdFetchDeleteDefault): TIdBytes;
 var
@@ -931,9 +933,11 @@ end;
 
 { TIdDNSServer }
 
+{$I IdDeprecatedImplBugOff.inc}
 function TIdDNS_UDPServer.CompleteQuery(DNSHeader : TDNSHeader; Question: string;
-  OriginalQuestion: TIdBytes; var Answer: TIdBytes; QType, QClass: Word;
+  OriginalQuestion: TIdBytes; var Answer: TIdBytes; QType, QClass: UInt16;
   DNSResolver : TIdDNSResolver): string;
+{$I IdDeprecatedImplBugOn.inc}
 var
   IsMyDomains : Boolean;
   LAnswer: TIdBytes;
@@ -1050,8 +1054,8 @@ begin
 end;
 
 procedure TIdDNS_UDPServer.DoAfterQuery(ABinding: TIdSocketHandle;
-  ADNSHeader: TDNSHeader; var QueryResult: String; ResultCode : String;
-  Query : string);
+  ADNSHeader: TDNSHeader; var QueryResult: TIdBytes; var ResultCode : String;
+  Query : TIdBytes);
 begin
   if Assigned(FOnAfterQuery) then begin
     FOnAfterQuery(ABinding, ADNSHeader, QueryResult, ResultCode, Query);
@@ -1059,7 +1063,7 @@ begin
 end;
 
 procedure TIdDNS_UDPServer.DoBeforeQuery(ABinding: TIdSocketHandle;
-  ADNSHeader: TDNSHeader; var ADNSQuery: String);
+  ADNSHeader: TDNSHeader; var ADNSQuery: TIdBytes);
 begin
   if Assigned(FOnBeforeQuery) then begin
     FOnBeforeQuery(ABinding, ADNSHeader, ADNSQuery);
@@ -1072,6 +1076,9 @@ var
   Server_Index : Integer;
   MyDNSResolver : TIdDNSResolver;
 begin
+  if RootDNS_NET.Count = 0 then begin
+    Exit;
+  end;
   Server_Index := 0;
   if ADNSResolver = nil then begin
     MyDNSResolver := TIdDNSResolver.Create(Self);
@@ -1087,7 +1094,7 @@ begin
         MyDNSResolver.Resolve('');
         Answer := MyDNSResolver.PlainTextResult;
       except
-                                                          
+        // Todo: Create DNS server interal resolver error.
         on EIdDnsResolverError do begin
           //Empty Event, for user to custom the event handle.
         end;
@@ -1108,12 +1115,12 @@ begin
   end;
 end;
 
-function TIdDNS_UDPServer.FindHandedNodeByName(QName: String; QType: Word): TIdDNTreeNode;
+function TIdDNS_UDPServer.FindHandedNodeByName(QName: String; QType: UInt16): TIdDNTreeNode;
 begin
   Result := SearchTree(Handed_Tree, QName, QType);
 end;
 
-function TIdDNS_UDPServer.FindNodeFullName(Root: TIdDNTreeNode; QName: String; QType : Word): string;
+function TIdDNS_UDPServer.FindNodeFullName(Root: TIdDNTreeNode; QName: String; QType : UInt16): string;
 var
   MyNode : TIdDNTreeNode;
 begin
@@ -1919,13 +1926,16 @@ begin
   end;
 end;
 
-procedure TIdDNS_UDPServer.SaveToCache(ResourceRecord: string; QueryName : string; OriginalQType : Word);
+procedure TIdDNS_UDPServer.SaveToCache(ResourceRecord: TIdBytes; QueryName : string; OriginalQType : UInt16);
 var
   TempResolver : TIdDNSResolver;
   Count : Integer;
 begin
   TempResolver := TIdDNSResolver.Create(nil);
   try
+    // RLebeau: FillResultWithOutCheckId() is deprecated, but not using FillResult()
+    // here yet because it validates the DNSHeader.RCode, and I do not know if that
+    // is needed here. I don't want to break this logic...
     TempResolver.FillResultWithOutCheckId(ResourceRecord);
     if TempResolver.DNSHeader.ANCount > 0 then begin
       for Count := 0 to TempResolver.QueryResult.Count - 1 do begin
@@ -1937,7 +1947,7 @@ begin
   end;
 end;
 
-function TIdDNS_UDPServer.SearchTree(Root: TIdDNTreeNode; QName: String; QType : Word): TIdDNTreeNode;
+function TIdDNS_UDPServer.SearchTree(Root: TIdDNTreeNode; QName: String; QType : UInt16): TIdDNTreeNode;
 var
   RRIndex : integer;
   NodeCursor : TIdDNTreeNode;
@@ -2048,10 +2058,9 @@ var
   LRR_MX : TIdRR_MX;
   LRR_TXT : TIdRR_TXT;
 begin
-  RRName := RR.Name;
-
   NameNode := TStringList.Create;
   try
+    RRName := RR.Name;
     repeat
       APart := Fetch(RRName, '.');
       if APart <> '' then begin
@@ -2372,10 +2381,9 @@ var
   LRR_TXT : TIdRR_TXT;
   LRR_Error : TIdRR_Error;
 begin
-  RRName := RR.RRName;
-
   NameNode := TStringList.Create;
   try
+    RRName := RR.RRName;
     repeat
       APart := Fetch(RRName, '.');
       if APart <> '' then begin
@@ -2579,8 +2587,8 @@ begin
 end;
 
 procedure TIdDNS_UDPServer.DoAfterSendBack(ABinding: TIdSocketHandle;
-  ADNSHeader: TDNSHeader; var QueryResult: String; ResultCode: String;
-  Query : string);
+  ADNSHeader: TDNSHeader; var QueryResult: TIdBytes; var ResultCode: String;
+  Query : TIdBytes);
 begin
   if Assigned(FOnAfterSendBack) then begin
     FOnAfterSendBack(ABinding, ADNSHeader, QueryResult, ResultCode, Query);
@@ -2641,7 +2649,7 @@ begin
 end;
 
 procedure TIdDNS_UDPServer.InternalSearch(Header: TDNSHeader; QName: string;
-  QType : Word; var Answer: TIdBytes; IfMainQuestion : Boolean;
+  QType : UInt16; var Answer: TIdBytes; IfMainQuestion : Boolean;
   IsSearchCache : Boolean = False; IsAdditional : Boolean = False;
   IsWildCard : Boolean = False; WildCardOrgName : string = '');
 var
@@ -2829,8 +2837,8 @@ begin
               temp := DomainNameToDNSStr(QName+'.'+TargetNode.FullName);
               Fetch(LocalAnswer, temp);
               }
-              TempBytes := DomainNameToDNSStr(QName + '.' + TargetNode.FullName);
-              FetchBytes(LocalAnswer, ToBytes(temp));
+              TempBytes := DomainNameToDNSStr(TargetNode.FullName);
+              FetchBytes(LocalAnswer, TempBytes);
               TempBytes := DomainNameToDNSStr(WildCardOrgName);
               AppendBytes(TempBytes, LocalAnswer);
               LocalAnswer := TempBytes;
@@ -3213,7 +3221,7 @@ begin
             end;
 
             AppendBytes(TempAnswer, LocalAnswer);
-	          LocalAnswer := TempAnswer;
+            LocalAnswer := TempAnswer;
           end else begin
             // ß‰Cache
             TempAnswer := LocalAnswer;
@@ -3231,7 +3239,7 @@ begin
             end;
 
             AppendBytes(TempAnswer, LocalAnswer);
-	          LocalAnswer := TempAnswer;
+            LocalAnswer := TempAnswer;
 
             // Search for AAAA also.
             InternalSearch(Header, MoreAddrSearch.Strings[Count], TypeCode_AAAA, LocalAnswer, True, True, ifAdditional, True);
@@ -3296,6 +3304,7 @@ begin
   FUDPTunnel.Active := Value;
   if ServerType = stSecondary then begin
      TCPTunnel.Active := False;
+     // TODO: should this loop only be run if Value=True?
      for Count := 0 to BackupDNSMap.Count-1 do begin
          DNSMap := BackupDNSMap.Items[Count];
          DNSMap.CheckScheduler.Start;
@@ -3408,7 +3417,7 @@ var
 begin
   inherited DoConnect(AContext);
 
-  LData := AContext.Connection.IOHandler.ReadSmallInt;
+  LData := AContext.Connection.IOHandler.ReadInt16;
   SetLength(Data, 0);
 
   // RLebeau - why not use ReadBuffer() here?
@@ -3416,12 +3425,12 @@ begin
   //           might not generate the data with correct data size we expect.
   AContext.Connection.IOHandler.ReadBytes(Data, LData);
   {for Count := 1 to LData do begin
-    AppendByte(Data, Byte(AThread.Connection.IOHandler.ReadChar));
+    AppendByte(Data, AThread.Connection.IOHandler.ReadByte);
   end;
   }
 
   // PeerIP is ip address.
-  PeerIP := (AContext.Connection.IOHandler as TIdIOHandlerSocket).Binding.PeerIP;
+  PeerIP := AContext.Binding.PeerIP;
   if AccessControl and (AccessList.IndexOf(PeerIP) = -1) then begin
     GenerateAXFRRefuseData;
   end else begin
@@ -3432,7 +3441,7 @@ begin
     SetLength(Answer, 32767);
   end;
 
-  AContext.Connection.IOHandler.Write(SmallInt(Length(Answer)));
+  AContext.Connection.IOHandler.Write(Int16(Length(Answer)));
   AContext.Connection.IOHandler.Write(Answer);
 end;
 
@@ -3501,14 +3510,14 @@ begin
   FHost := Value;
 end;
 
-procedure TIdDomainNameServerMapping.SetInterval(const Value: Cardinal);
+procedure TIdDomainNameServerMapping.SetInterval(const Value: UInt32);
 begin
   FInterval := Value;
   CheckScheduler.FInterval := Value;
 end;
 
 procedure TIdDomainNameServerMapping.SyncAndUpdate(Sender: TObject);
-                                                          
+//Todo - Dennies Chang should append axfr and update Tree.
 var
   Resolver : TIdDNSResolver;
   RR : TResultRecord;
@@ -3545,7 +3554,7 @@ begin
 
       {
       //Update MyDomain
-      if Copy(RR.Name, Length(RR.Name),1) <> '.' then begin
+      if not TextEndsWith(RR.Name, '.') then begin
         RRName := RR.Name + '.';
       end;
       }
@@ -3642,14 +3651,13 @@ end;
 { TIdDNS_ProcessThread }
 
 constructor TIdDNS_ProcessThread.Create(ACreateSuspended: Boolean;
-  Data: String; DataSize: Integer; MainBinding, Binding: TIdSocketHandle;
+  Data: TIdBytes; MainBinding, Binding: TIdSocketHandle;
   Server: TIdDNS_UDPServer);
 begin
   inherited Create(ACreateSuspended);
 
   FMyData := nil;
   FData := Data;
-  FDataSize := DataSize;
 
   FMyBinding := Binding;
   FMainBinding := MainBinding;
@@ -3695,25 +3703,29 @@ end;
 
 procedure TIdDNS_ProcessThread.QueryDomain;
 var
-  Temp, QName, QLabel, RString : string;
-  ExternalQuery, Answer, FinalResult : TIdBytes;
+  QName, QLabel, RString : string;
+  Temp, ExternalQuery, Answer, FinalResult : TIdBytes;
   DNSHeader_Processing : TDNSHeader;
-  QType, QClass : Word;
+  QType, QClass : UInt16;
   QPos, QLength, LLength : Integer;
   ABinding: TIdSocketHandle;
 begin
-  ExternalQuery := ToBytes(FData);
+  ExternalQuery := FData;
   ABinding := MyBinding;
-  Temp := FData;
+  Temp := Copy(FData, 0, Length(FData));
   SetLength(FinalResult, 0);
   QType := TypeCode_A;
 
-  if FDataSize >= 12 then begin
+  if Length(FData) >= 12 then begin
     DNSHeader_Processing := TDNSHeader.Create;
     try
+      // RLebeau: this does not make sense to me. ParseQuery() always returns
+      // 0 when the data length is >= 12 unless an exception is raised, which
+      // should only happen if the GStack object is invalid...
+      //
       if DNSHeader_Processing.ParseQuery(ExternalQuery) <> 0 then begin
-        FServer.DoAfterQuery(ABinding, DNSHeader_Processing, Temp, RString, BytesToString(ExternalQuery));
-        AppendString(FinalResult, Temp);
+        FServer.DoAfterQuery(ABinding, DNSHeader_Processing, Temp, RString, ExternalQuery);
+        AppendBytes(FinalResult, Temp);
       end else begin
         if DNSHeader_Processing.QDCount > 0 then begin
 
@@ -3731,9 +3743,9 @@ begin
             until (QPos >= QLength) or (ExternalQuery[QPos] = 0);
             Inc(QPos);
 
-            QType := GStack.NetworkToHost(TwoByteToWord(ExternalQuery[QPos], ExternalQuery[QPos + 1]));
+            QType := GStack.NetworkToHost(TwoByteToUInt16(ExternalQuery[QPos], ExternalQuery[QPos + 1]));
             Inc(QPos, 2);
-            QClass := GStack.NetworkToHost(TwoByteToWord(ExternalQuery[QPos], ExternalQuery[QPos + 1]));
+            QClass := GStack.NetworkToHost(TwoByteToUInt16(ExternalQuery[QPos], ExternalQuery[QPos + 1]));
             FServer.DoBeforeQuery(ABinding, DNSHeader_Processing, Temp);
 
             RString := CompleteQuery(DNSHeader_Processing, QName, ExternalQuery, Answer, QType, QClass, nil);
@@ -3751,17 +3763,16 @@ begin
               FinalResult := CombineAnswer(DNSHeader_Processing, ExternalQuery, Answer);
             end;
 
-            FServer.DoAfterQuery(ABinding, DNSHeader_Processing, Temp, RString, Temp);
+            FServer.DoAfterQuery(ABinding, DNSHeader_Processing, FinalResult, RString, Temp);
             //AppendString(FinalResult, Temp);
           end;
         end;
       end;
     finally
       try
-        FData := BytesToString(FinalResult);
-        FDataSize := Length(FData);
+        FData := FinalResult;
 
-        FServer.DoAfterSendBack(ABinding, DNSHeader_Processing, Temp, RString, BytesToString(ExternalQuery));
+        FServer.DoAfterSendBack(ABinding, DNSHeader_Processing, FinalResult, RString, ExternalQuery);
 
         if (FServer.CacheUnknowZone) and
           (RString <> cRCodeQueryCacheFindError) and
@@ -3769,7 +3780,7 @@ begin
           (RString <> cRCodeQueryOK) and
           (RString <> cRCodeQueryNotImplement) then
         begin
-          FServer.SaveToCache(BytesToString(FinalResult), QName, QType);
+          FServer.SaveToCache(FinalResult, QName, QType);
           FServer.DoAfterCacheSaved(Self.FServer.FCached_Tree);
         end;
       finally
@@ -3835,7 +3846,7 @@ begin
         MyDNSResolver.Resolve('');
         Answer := MyDNSResolver.PlainTextResult;
       except
-                                                          
+        // Todo: Create DNS server interal resolver error.
         on EIdDnsResolverError do
         begin
           //Empty Event, for user to custom the event handle.
@@ -3858,14 +3869,14 @@ begin
   end;
 end;
 
-procedure TIdDNS_ProcessThread.InternalSearch(Header: TDNSHeader; QName: string; QType: Word;
+procedure TIdDNS_ProcessThread.InternalSearch(Header: TDNSHeader; QName: string; QType: UInt16;
   var Answer: TIdBytes; IfMainQuestion: boolean; IsSearchCache: Boolean = False;
   IsAdditional: boolean = false; IsWildCard : boolean = false;
   WildCardOrgName: string = '');
 begin
 end;
 
-procedure TIdDNS_ProcessThread.SaveToCache(ResourceRecord, QueryName: string; OriginalQType: Word);
+procedure TIdDNS_ProcessThread.SaveToCache(ResourceRecord: TIdBytes; QueryName: string; OriginalQType: UInt16);
 var
   TempResolver : TIdDNSResolver;
   Count : Integer;
@@ -3874,6 +3885,9 @@ var
 begin
   TempResolver := TIdDNSResolver.Create(nil);
   try
+    // RLebeau: FillResultWithOutCheckId() is deprecated, but not using FillResult()
+    // here yet because it validates the DNSHeader.RCode, and I do not know if that
+    // is needed here. I don't want to break this logic...
     TempResolver.FillResultWithOutCheckId(ResourceRecord);
 
     if TempResolver.DNSHeader.ANCount > 0 then begin
@@ -3894,7 +3908,7 @@ begin
   end;
 end;
 
-function TIdDNS_ProcessThread.SearchTree(Root: TIdDNTreeNode; QName: String; QType: Word): TIdDNTreeNode;
+function TIdDNS_ProcessThread.SearchTree(Root: TIdDNTreeNode; QName: String; QType: UInt16): TIdDNTreeNode;
 var
   RRIndex : integer;
   NodeCursor : TIdDNTreeNode;
@@ -3973,7 +3987,7 @@ end;
 
 function TIdDNS_ProcessThread.CompleteQuery(DNSHeader: TDNSHeader;
   Question: string; OriginalQuestion: TIdBytes; var Answer : TIdBytes;
-  QType, QClass : Word; DNSResolver : TIdDNSResolver) : string;
+  QType, QClass : UInt16; DNSResolver : TIdDNSResolver) : string;
 var
   IsMyDomains : boolean;
   LAnswer, TempAnswer, RRData: TIdBytes;
@@ -4007,49 +4021,49 @@ begin
             if Length(LAnswer) > 0 then begin
               AppendBytes(Answer, LAnswer);
             end;
+          end;
 
-            WildQuestion := Question;
-            Fetch(WildQuestion, '.');
-            WildQuestion := '*.' + WildQuestion;
-            FServer.InternalSearch(DNSHeader, WildQuestion, QType, LAnswer, True, False, False, True, Question);
-            {
-            FServer.InternalSearch(DNSHeader, Question, QType, LAnswer, True, True, False);
-            }
+          WildQuestion := Question;
+          Fetch(WildQuestion, '.');
+          WildQuestion := '*.' + WildQuestion;
+          FServer.InternalSearch(DNSHeader, WildQuestion, QType, LAnswer, True, False, False, True, Question);
+          {
+          FServer.InternalSearch(DNSHeader, Question, QType, LAnswer, True, True, False);
+          }
+          if Length(LAnswer) > 0 then begin
+            AppendBytes(Answer, LAnswer);
+          end;
+
+          if Length(Answer) > 0 then begin
+            Result := cRCodeQueryOK;
+          end else begin
+            Result := cRCodeQueryNotFound;
+          end;
+        end else begin
+          FServer.InternalSearch(DNSHeader, Question, QType, Answer, True, True, False);
+
+          if (QType in [TypeCode_A, TypeCode_AAAA]) and (Length(Answer) = 0) then begin
+            FServer.InternalSearch(DNSHeader, Question, TypeCode_CNAME, LAnswer, True, True, False);
             if Length(LAnswer) > 0 then begin
               AppendBytes(Answer, LAnswer);
             end;
+          end;
 
-            if Length(Answer) > 0 then begin
-              Result := cRCodeQueryOK;
-            end else begin
-              Result := cRCodeQueryNotFound;
-            end;
+          if Length(Answer) > 0 then begin
+            Result := cRCodeQueryCacheOK;
           end else begin
+            //QType := TypeCode_Error;
+
             FServer.InternalSearch(DNSHeader, Question, QType, Answer, True, True, False);
-
-            if (QType in [TypeCode_A, TypeCode_AAAA]) and (Length(Answer) = 0) then begin
-              FServer.InternalSearch(DNSHeader, Question, TypeCode_CNAME, LAnswer, True, True, False);
-              if Length(LAnswer) > 0 then begin
-                AppendBytes(Answer, LAnswer);
-              end;
-            end;
-
-            if Length(Answer) > 0 then begin
-              Result := cRCodeQueryCacheOK;
+            if BytesToString(Answer) = 'Error' then begin {do not localize}
+              Result := cRCodeQueryCacheFindError;
             end else begin
-              QType := TypeCode_Error;
+              FServer.ExternalSearch(DNSResolver, DNSHeader, OriginalQuestion, Answer);
 
-              FServer.InternalSearch(DNSHeader, Question, QType, Answer, True, True, False);
-              if BytesToString(Answer) = 'Error' then begin {do not localize}
-                Result := cRCodeQueryCacheFindError;
+              if Length(Answer) > 0 then begin
+                Result := cRCodeQueryReturned;
               end else begin
-                FServer.ExternalSearch(DNSResolver, DNSHeader, OriginalQuestion, Answer);
-
-                if Length(Answer) > 0 then begin
-                  Result := cRCodeQueryReturned;
-                end else begin
-                  Result := cRCodeQueryNotImplement;
-                end;
+                Result := cRCodeQueryNotImplement;
               end;
             end;
           end;
@@ -4063,17 +4077,17 @@ begin
             TempAnswer := DomainNameToDNSStr('version.bind.'); {do not localize}
             RRData := NormalStrToDNSStr(FServer.DNSVersion);
 
-            SetLength(LAnswer, Length(TempAnswer) + (SizeOf(Word)*3) + SizeOf(Cardinal) + Length(RRData));
+            SetLength(LAnswer, Length(TempAnswer) + (SizeOf(UInt16)*3) + SizeOf(UInt32) + Length(RRData));
             CopyTIdBytes(TempAnswer, 0, LAnswer, 0, Length(TempAnswer));
             LIdx := Length(TempAnswer);
-            CopyTIdWord(GStack.HostToNetwork(Word(TypeCode_TXT)), LAnswer, LIdx);
-            Inc(LIdx, SizeOf(Word));
-            CopyTIdWord(GStack.HostToNetwork(Word(Class_CHAOS)), LAnswer, LIdx);
-            Inc(LIdx, SizeOf(Word));
-            CopyTIdLongWord(GStack.HostToNetwork(LongWord(86400)), LAnswer, LIdx); {do not localize}
-            Inc(LIdx, SizeOf(Cardinal));
-            CopyTIdWord(GStack.HostToNetwork(Word(Length(RRData))), LAnswer, LIdx);
-            Inc(LIdx, SizeOf(Word));
+            CopyTIdUInt16(GStack.HostToNetwork(UInt16(TypeCode_TXT)), LAnswer, LIdx);
+            Inc(LIdx, SizeOf(UInt16));
+            CopyTIdUInt16(GStack.HostToNetwork(UInt16(Class_CHAOS)), LAnswer, LIdx);
+            Inc(LIdx, SizeOf(UInt16));
+            CopyTIdUInt32(GStack.HostToNetwork(UInt32(86400)), LAnswer, LIdx); {do not localize}
+            Inc(LIdx, SizeOf(UInt32));
+            CopyTIdUInt16(GStack.HostToNetwork(UInt16(Length(RRData))), LAnswer, LIdx);
+            Inc(LIdx, SizeOf(UInt16));
             CopyTIdBytes(RRData, 0, LAnswer, LIdx, Length(RRData));
 
             Answer := LAnswer;
@@ -4099,7 +4113,7 @@ procedure TIdDNS_ProcessThread.SendData;
 begin
   FServer.GlobalCS.Enter;
   try
-    FMainBinding.SendTo(FMyBinding.PeerIP, FMyBinding.PeerPort, ToBytes(FData), FMyBinding.IPVersion);
+    FMainBinding.SendTo(FMyBinding.PeerIP, FMyBinding.PeerPort, FData, FMyBinding.IPVersion);
   finally
     FServer.GlobalCS.Leave;
   end;
@@ -4116,18 +4130,16 @@ procedure TIdDNS_UDPServer.DoUDPRead(AThread: TIdUDPListenerThread;
   const AData: TIdBytes; ABinding: TIdSocketHandle);
 var
   PThread : TIdDNS_ProcessThread;
-  ExternalQuery : string;
   BBinding : TIdSocketHandle;
   Binded : Boolean;
 begin
   inherited DoUDPRead(AThread, AData, ABinding);
-  ExternalQuery := BytesToString(AData);
 
   Binded := False;
 
   BBinding := TIdSocketHandle.Create(nil);
   try
-    BBinding.SetPeer(ABinding.PeerIP, ABinding.PeerPort);
+    BBinding.SetPeer(ABinding.PeerIP, ABinding.PeerPort, ABinding.IPVersion);
     BBinding.IP := ABinding.IP;
 
     repeat
@@ -4139,7 +4151,7 @@ begin
       end;
     until Binded;
 
-    PThread := TIdDNS_ProcessThread.Create(True, ExternalQuery, Length(AData), ABinding, BBinding, Self);
+    PThread := TIdDNS_ProcessThread.Create(True, AData, ABinding, BBinding, Self);
   except
     FreeAndNil(BBinding);
     raise;

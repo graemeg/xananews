@@ -155,11 +155,7 @@ begin
   end;
   if not FBinding.HandleAllocated then begin
     FBinding.IPVersion := FIPVersion;
-    {$IFDEF LINUX}
-    FBinding.AllocateSocket(LongInt(Id_SOCK_DGRAM));
-    {$ELSE}
     FBinding.AllocateSocket(Id_SOCK_DGRAM);
-    {$ENDIF}
     FBinding.IP := FBoundIP;
     FBinding.Port := FBoundPort;
     FBinding.ReuseSocket := FReuseSocket;
@@ -174,7 +170,7 @@ procedure TIdIPMCastServer.MulticastBuffer(const AHost: string; const APort: Int
 begin
   // DS - if not IsValidMulticastGroup(FMulticastGroup) then
   if not IsValidMulticastGroup(AHost) then begin
-    EIdMCastNotValidAddress.Toss(RSIPMCastInvalidMulticastAddress);
+    raise EIdMCastNotValidAddress.Create(RSIPMCastInvalidMulticastAddress);
   end;
   Binding.SendTo(AHost, APort, ABuffer, Binding.IPVersion);
 end;

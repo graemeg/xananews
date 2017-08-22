@@ -54,10 +54,12 @@ from the UserPass mechanism and link to a UserPass provider.
 unit IdSASL;
 
 interface
+
 {$i IdCompilerDefines.inc}
 
 uses
   Classes,
+  IdGlobal,
   IdBaseComponent,
   IdTCPConnection,
   IdException;
@@ -68,19 +70,23 @@ type
 
   TIdSASL = class(TIdBaseComponent)
   protected
-    FSecurityLevel : Cardinal;
-    function GetSecurityLevel : Cardinal;
+    FSecurityLevel : UInt32;
+    function GetSecurityLevel : UInt32;
     procedure InitComponent; override;
   public
     destructor Destroy; override;
     {
-      The following 4 methods are called when SASL Authentication is
+      The following 5 methods are called when SASL Authentication is
       used. The challenge etc. is already Base64 decoded, if the protocol
       uses Base64 encoding, the mechanism should only process the data
       according to the mechanism, not for any transmission. The same holds
       for return values.
+
+      TryStartAuthenticate() is for handling Initial Client Responses,
+      which can remove an unnecessary round-trip if both parties support it.
     }
     //SASL AProtocolName must be a name from "http://www.iana.org/assignments/gssapi-service-names"
+    function TryStartAuthenticate(const AHost, AProtocolName : string; var VInitialResponse: string): Boolean; virtual;
     function StartAuthenticate(const AChallenge, AHost, AProtocolName : string): string; virtual; abstract;
     function ContinueAuthenticate(const ALastResponse, AHost, AProtocolName : string): string; virtual;
 
@@ -113,7 +119,7 @@ type
       to honour it or not. I suggest the mechanisms are tried in order,
       higher security level first.
     }
-    property SecurityLevel : Cardinal read GetSecurityLevel;
+    property SecurityLevel : UInt32 read GetSecurityLevel;
 
     {
       Returns the service name of the descendant class,
@@ -136,7 +142,7 @@ uses
   {$IFDEF VCL_XE3_OR_ABOVE}
   System.Types,
   {$ENDIF}
-  IdGlobal, SysUtils;
+  SysUtils;
 
 { TIdSASL }
 
@@ -152,6 +158,11 @@ begin
   inherited Destroy;
 end;
 
+function TIdSASL.TryStartAuthenticate(const AHost, AProtocolName : string; var VInitialResponse: string): Boolean;
+begin
+  Result := False;
+end;
+
 function TIdSASL.ContinueAuthenticate(const ALastResponse, AHost, AProtocolName : string): string;
 begin
   // intentionally empty
@@ -162,7 +173,7 @@ begin
   // do nothing, deliberately
 end;
 
-function TIdSASL.GetSecurityLevel: Cardinal;
+function TIdSASL.GetSecurityLevel: UInt32;
 begin
   Result := FSecurityLevel;
 end;

@@ -140,7 +140,7 @@ type
   // RLebeau: find a better place for this
   {$IFNDEF HAS_UInt64}
   {$EXTERNALSYM UINT64}
-  UINT64 = Int64;
+  UINT64 = {$IFDEF HAS_QWord}QWord{$ELSE}Int64{$ENDIF};
   {$ENDIF}
 
   {$NODEFINE PPaddrinfo}
@@ -173,7 +173,13 @@ type
   end;
   {$EXTERNALSYM PSOCKET_SECURITY_SETTINGS_IPSEC}
   PSOCKET_SECURITY_SETTINGS_IPSEC = ^SOCKET_SECURITY_SETTINGS_IPSEC;
-
+  {$EXTERNALSYM SOCKET_SECURITY_SETTINGS}
+  SOCKET_SECURITY_SETTINGS = record
+    SecurityProtocol : SOCKET_SECURITY_PROTOCOL;
+    SecurityFlags : ULONG;
+  end;
+  {$EXTERNALSYM PSOCKET_SECURITY_SETTINGS}
+  PSOCKET_SECURITY_SETTINGS = ^SOCKET_SECURITY_SETTINGS;
   {$EXTERNALSYM SOCKET_PEER_TARGET_NAME}
   SOCKET_PEER_TARGET_NAME = record
     SecurityProtocol : SOCKET_SECURITY_PROTOCOL;
@@ -224,7 +230,7 @@ type
   {$EXTERNALSYM LPFN_FREEADDRINFOW}
   LPFN_FREEADDRINFOW = procedure(ai: PaddrinfoW); stdcall;
 
-//function GetAdaptersAddresses( Family:cardinal; Flags:cardinal; Reserved:pointer; pAdapterAddresses: PIP_ADAPTER_ADDRESSES; pOutBufLen:pcardinal):cardinal;stdcall;  external iphlpapi_dll;
+//function GetAdaptersAddresses( Family:ULONG; Flags:ULONG; Reserved:Pointer; pAdapterAddresses: PIP_ADAPTER_ADDRESSES; pOutBufLen:PULONG):ULONG;stdcall;  external iphlpapi_dll;
 
 { the following are not used, nor tested}
 {function getipnodebyaddr(const src:pointer;  len:integer; af:integer;var error_num:integer) :phostent;stdcall; external Wship6_dll;
@@ -248,29 +254,29 @@ function inet_ntop(af:integer; const src:pointer; dst:pchar;size:integer):pchar;
   {$EXTERNALSYM LPFN_GETADDRINFOEXA}
   LPFN_GETADDRINFOEXA = function(pName : PAnsiChar; pServiceName : PAnsiChar;
     const dwNameSpace: DWord; lpNspId : LPGUID; hints : PADDRINFOEXA;
-    ppResult : PADDRINFOEXA; timeout : Ptimeval; lpOverlapped : LPWSAOVERLAPPED;
+    var ppResult : PADDRINFOEXA; timeout : Ptimeval; lpOverlapped : LPWSAOVERLAPPED;
     lpCompletionRoutine : LPLOOKUPSERVICE_COMPLETION_ROUTINE;
-    var lpNameHandle : THandle) : Integer; stdcall;
+    lpNameHandle : PHandle) : Integer; stdcall;
   {$EXTERNALSYM LPFN_GETADDRINFOEXW}
   LPFN_GETADDRINFOEXW = function(pName : PWideChar; pServiceName : PWideChar;
     const dwNameSpace: DWord; lpNspId : LPGUID;hints : PADDRINFOEXW;
-    ppResult : PADDRINFOEXW; timeout : Ptimeval; lpOverlapped : LPWSAOVERLAPPED;
+    var ppResult : PADDRINFOEXW; timeout : Ptimeval; lpOverlapped : LPWSAOVERLAPPED;
     lpCompletionRoutine : LPLOOKUPSERVICE_COMPLETION_ROUTINE;
-    var lpNameHandle : THandle) : Integer; stdcall;
+    lpNameHandle : PHandle) : Integer; stdcall;
   {$EXTERNALSYM LPFN_SETADDRINFOEXA}
   LPFN_SETADDRINFOEXA= function(pName : PAnsiChar; pServiceName : PAnsiChar;
     pAddresses : PSOCKET_ADDRESS; const dwAddressCount : DWord; lpBlob : LPBLOB;
     const dwFlags : DWord; const dwNameSpace : DWord; lpNspId : LPGUID;
     timeout : Ptimeval;
     lpOverlapped : LPWSAOVERLAPPED;
-    lpCompletionRoutine : LPLOOKUPSERVICE_COMPLETION_ROUTINE; var lpNameHandle : THandle) : Integer; stdcall;
+    lpCompletionRoutine : LPLOOKUPSERVICE_COMPLETION_ROUTINE; lpNameHandle : PHandle) : Integer; stdcall;
   {$EXTERNALSYM LPFN_SETADDRINFOEXW}
   LPFN_SETADDRINFOEXW= function(pName : PWideChar; pServiceName : PWideChar;
     pAddresses : PSOCKET_ADDRESS; const dwAddressCount : DWord; lpBlob : LPBLOB;
     const dwFlags : DWord; const dwNameSpace : DWord; lpNspId : LPGUID;
     timeout : Ptimeval;
     lpOverlapped : LPWSAOVERLAPPED;
-    lpCompletionRoutine : LPLOOKUPSERVICE_COMPLETION_ROUTINE; var lpNameHandle : THandle) : Integer; stdcall;
+    lpCompletionRoutine : LPLOOKUPSERVICE_COMPLETION_ROUTINE; lpNameHandle : PHandle) : Integer; stdcall;
 
   {$EXTERNALSYM LPFN_FREEADDRINFOEX}
   LPFN_FREEADDRINFOEX = procedure(pAddrInfoEx : PADDRINFOEXA) ; stdcall;
@@ -288,6 +294,10 @@ function inet_ntop(af:integer; const src:pointer; dst:pchar;size:integer):pchar;
   {$ENDIF}
 
   //  Fwpuclnt.dll - API
+  {$EXTERNALSYM LPFN_WSASetSocketSecurity}
+  LPFN_WSASetSocketSecurity = function (socket : TSocket;
+    SecuritySettings : PSOCKET_SECURITY_SETTINGS; const SecuritySettingsLen : ULONG;
+    OVERLAPPED : LPWSAOVERLAPPED; CompletionRoutine : LPWSAOVERLAPPED_COMPLETION_ROUTINE) : Integer; stdcall;
   {$EXTERNALSYM LPFN_WSADELETESOCKETPEERTARGETNAME}
   LPFN_WSADELETESOCKETPEERTARGETNAME = function (Socket : TSocket;
     PeerAddr : Psockaddr; PeerAddrLen : ULONG;
@@ -302,56 +312,71 @@ function inet_ntop(af:integer; const src:pointer; dst:pchar;size:integer):pchar;
   {$EXTERNALSYM LPFN_WSAQUERYSOCKETSECURITY}
   LPFN_WSAQUERYSOCKETSECURITY = function (Socket : TSocket;
     SecurityQueryTemplate : PSOCKET_SECURITY_QUERY_TEMPLATE; const SecurityQueryTemplateLen : ULONG;
-    var SecurityQueryInfo : PSOCKET_SECURITY_QUERY_INFO; var SecurityQueryInfoLen : ULONG;
+    SecurityQueryInfo : PSOCKET_SECURITY_QUERY_INFO; var SecurityQueryInfoLen : ULONG;
      Overlapped : LPWSAOVERLAPPED;  CompletionRoutine : LPWSAOVERLAPPED_COMPLETION_ROUTINE) : Integer; stdcall;
   {$EXTERNALSYM LPFN_WSAREVERTIMPERSONATION}
   LPFN_WSAREVERTIMPERSONATION = function : Integer; stdcall;
 {$ENDIF}
 
 const
-  {$NODEFINE fn_GetAddrInfoEx}
-  {$NODEFINE fn_SetAddrInfoEx}
-  {$NODEFINE fn_FreeAddrInfoEx}
   {$NODEFINE fn_GetAddrInfo}
   {$NODEFINE fn_getnameinfo}
   {$NODEFINE fn_freeaddrinfo}
+  {$IFNDEF WINCE}
+  {$NODEFINE fn_GetAddrInfoEx}
+  {$NODEFINE fn_SetAddrInfoEx}
+  {$NODEFINE fn_FreeAddrInfoEx}
   {$NODEFINE fn_inet_pton}
   {$NODEFINE fn_inet_ntop}
+  {$ENDIF}
   {$IFDEF UNICODE}
-     {$IFNDEF WINCE}
+  // WinCE does not support GetAddrInfoW(), GetNameInfoW(), or FreeAddrInfoW().
+  // To support IPv6 on WinCE when UNICODE is defined, we will use our own
+  // wrappers that internally call WinCE's functions...
+  fn_GetAddrInfo = {$IFDEF WINCE}'getaddrinfo'{$ELSE}'GetAddrInfoW'{$ENDIF};
+  fn_getnameinfo = {$IFDEF WINCE}'getnameinfo'{$ELSE}'GetNameInfoW'{$ENDIF};
+  fn_freeaddrinfo = {$IFDEF WINCE}'freeaddrinfo'{$ELSE}'FreeAddrInfoW'{$ENDIF};
+    {$IFNDEF WINCE}
   fn_GetAddrInfoEx = 'GetAddrInfoExW';
   fn_SetAddrInfoEx = 'SetAddrInfoExW';
   fn_FreeAddrInfoEx = 'FreeAddrInfoExW';
-    {$ENDIF}
-  fn_GetAddrInfo = 'GetAddrInfoW';
-  fn_getnameinfo = 'GetNameInfoW';
-  fn_freeaddrinfo = 'FreeAddrInfoW';
-     {$IFNDEF WINCE}
   fn_inet_pton = 'InetPtonW';
   fn_inet_ntop = 'InetNtopW';
     {$ENDIF}
   {$ELSE}
-     {$IFNDEF WINCE}
-  fn_GetAddrInfoEx = 'GetAddrInfoExA';
-  fn_SetAddrInfoEx = 'SetAddrInfoExA';
-  fn_FreeAddrInfoEx = 'FreeAddrInfoEx';
-    {$ENDIF}
   fn_GetAddrInfo = 'getaddrinfo';
   fn_getnameinfo = 'getnameinfo';
   fn_freeaddrinfo = 'freeaddrinfo';
-   {$IFNDEF WINCE}
+    {$IFNDEF WINCE}
+  fn_GetAddrInfoEx = 'GetAddrInfoExA';
+  fn_SetAddrInfoEx = 'SetAddrInfoExA';
+  fn_FreeAddrInfoEx = 'FreeAddrInfoEx';
   fn_inet_pton = 'inet_pton';
   fn_inet_ntop = 'inet_ntop';
     {$ENDIF}
   {$ENDIF}
 
+{$UNDEF WINCE_UNICODE}
+{$IFDEF WINCE}
+  {$IFDEF UNICODE}
+    {$DEFINE WINCE_UNICODE}
+  {$ENDIF}
+{$ENDIF}
+
 var
   {$EXTERNALSYM getaddrinfo}
   {$EXTERNALSYM getnameinfo}
   {$EXTERNALSYM freeaddrinfo}
+  {$IFNDEF WINCE}
   {$EXTERNALSYM inet_pton}
   {$EXTERNALSYM inet_ntop}
+  {$ENDIF}
   {$IFDEF UNICODE}
+    {$IFDEF WINCE}
+  getaddrinfoCE: LPFN_GETADDRINFO = nil;
+  getnameinfoCE: LPFN_GETNAMEINFO = nil;
+  freeaddrinfoCE: LPFN_FREEADDRINFO = nil;
+    {$ENDIF}
   getaddrinfo: LPFN_GETADDRINFOW = nil;
   getnameinfo: LPFN_GETNAMEINFOW = nil;
   freeaddrinfo: LPFN_FREEADDRINFOW = nil;
@@ -385,12 +410,14 @@ var
   //You can't alias the LPFN for this because the ASCII version of this
   //does not end with an "a"
   {$IFDEF UNICODE}
-  FreeAddrInfoEx : LPFN_FREEADDRINFOEX = nil;
-  {$ELSE}
   FreeAddrInfoEx : LPFN_FREEADDRINFOEXW = nil;
+  {$ELSE}
+  FreeAddrInfoEx : LPFN_FREEADDRINFOEX = nil;
   {$ENDIF}
 
   //Fwpuclnt.dll available for Windows Vista and later
+  {$EXTERNALSYM WSASetSocketSecurity}
+  WSASetSocketSecurity : LPFN_WSASetSocketSecurity = nil;
   {$EXTERNALSYM WSASETSOCKETPEERTARGETNAME}
   WSASetSocketPeerTargetName : LPFN_WSASETSOCKETPEERTARGETNAME = nil;
   {$EXTERNALSYM WSADELETESOCKETPEERTARGETNAME}
@@ -402,9 +429,9 @@ var
   {$EXTERNALSYM WSAREVERTIMPERSONATION}
   WSARevertImpersonation : LPFN_WSAREVERTIMPERSONATION = nil;
   {$ENDIF}
-  
+
 var
-  GIdIPv6FuncsAvailable: Boolean = False {$IFDEF HAS_DEPRECATED}deprecated{$ENDIF};
+  GIdIPv6FuncsAvailable: Boolean = False{$IFDEF HAS_DEPRECATED}{$IFDEF USE_SEMICOLON_BEFORE_DEPRECATED};{$ENDIF} deprecated{$ENDIF};
 
 function gaiErrorToWsaError(const gaiError: Integer): Integer;
 
@@ -466,12 +493,15 @@ begin
     FreeLibrary(h);
   end;
   {$ENDIF}
-  {$IFDEF HAS_DEPRECATED}
-    {$WARN SYMBOL_DEPRECATED OFF}
-  {$ENDIF}
+
+  {$I IdSymbolDeprecatedOff.inc}
   GIdIPv6FuncsAvailable := False;
-  {$IFDEF HAS_DEPRECATED}
-    {$WARN SYMBOL_DEPRECATED ON}
+  {$I IdSymbolDeprecatedOn.inc}
+
+  {$IFDEF WINCE_UNICODE}
+  getaddrinfoCE := nil;
+  getnameinfoCE := nil;
+  freeaddrinfoCE := nil;
   {$ENDIF}
   getaddrinfo := nil;
   getnameinfo := nil;
@@ -489,6 +519,48 @@ begin
   WSARevertImpersonation := nil;
   {$ENDIF}
 end;
+
+{$IFDEF FPC} //{$IFDEF STRING_IS_ANSI}
+  {$IFDEF UNICODE}
+
+// FreePascal does not have PWideChar overloads of these functions
+
+function StrComp(const Str1, Str2: PWideChar): Integer; overload;
+var
+  P1, P2: PWideChar;
+begin
+  P1 := Str1;
+  P2 := Str2;
+  while True do
+  begin
+    if (P1^ <> P2^) or (P1^ = #0) then
+    begin
+      Result := Ord(P1^) - Ord(P2^);
+      Exit;
+    end;
+    Inc(P1);
+    Inc(P2);
+  end;
+  Result := 0;
+end;
+
+function StrScan(const Str: PWideChar; Chr: WideChar): PWideChar; overload;
+begin
+  Result := Str;
+  while Result^ <> #0 do
+  begin
+    if Result^ = Chr then begin
+      Exit;
+    end;
+    Inc(Result);
+  end;
+  if Chr <> #0 then begin
+    Result := nil;
+  end;
+end;
+
+  {$ENDIF}
+{$ENDIF}
 
 // The IPv6 functions were added to the Ws2_32.dll on Windows XP and later.
 // To execute an application that uses these functions on earlier versions of
@@ -517,7 +589,7 @@ begin
   FreeMem(p);
 end;
 
-procedure WspiapiSwap(var a, b, c: PChar);
+procedure WspiapiSwap(var a, b, c: PIdPlatformChar);
   {$IFDEF USE_INLINE}inline;{$ENDIF}
 begin
   c := a;
@@ -525,9 +597,9 @@ begin
   b := c;
 end;
 
-function WspiapiStrdup(const pszString: PChar): PChar; stdcall;
+function WspiapiStrdup(const pszString: PIdPlatformChar): PIdPlatformChar; stdcall;
 var
-  pszMemory: PChar;
+  pszMemory: PIdPlatformChar;
   cchMemory: size_t;
 begin
   if pszString = nil then begin
@@ -536,7 +608,7 @@ begin
   end;
 
   cchMemory := StrLen(pszString) + 1;
-  pszMemory := PChar(WspiapiMalloc(cchMemory * SizeOf(Char)));
+  pszMemory := PIdPlatformChar(WspiapiMalloc(cchMemory * SizeOf(TIdPlatformChar)));
   if pszMemory = nil then begin
     Result := nil;
     Exit;
@@ -546,17 +618,17 @@ begin
   Result := pszMemory;
 end;
 
-function WspiapiParseV4Address(const pszAddress: PChar; var pdwAddress: DWORD): BOOL; stdcall;
+function WspiapiParseV4Address(const pszAddress: PIdPlatformChar; var pdwAddress: DWORD): BOOL; stdcall;
 var
   dwAddress: DWORD;
-  pcNext: PChar;
+  pcNext: PIdPlatformChar;
   iCount: Integer;
 begin
   iCount := 0;
 
   // ensure there are 3 '.' (periods)
   pcNext := pszAddress;
-  while pcNext^ <> #0 do begin
+  while pcNext^ <> TIdPlatformChar(0) do begin
     if pcNext^ = '.' then begin
       Inc(iCount);
     end;
@@ -570,7 +642,7 @@ begin
   // return an error if dwAddress is INADDR_NONE (255.255.255.255)
   // since this is never a valid argument to getaddrinfo.
   dwAddress := inet_addr(
-    {$IFDEF STRING_IS_ANSI}
+    {$IFNDEF UNICODE}
     pszAddress
     {$ELSE}
     PAnsiChar(AnsiString(pszAddress))
@@ -621,8 +693,8 @@ begin
   Result := ptNew;
 end;
 
-function WspiapiQueryDNS(const pszNodeName: PChar; iSocketType, iProtocol: Integer;
-  wPort: WORD; pszAlias: PChar; var pptResult: {$IFDEF UNICODE}PaddrinfoW{$ELSE}Paddrinfo{$ENDIF}): Integer; stdcall;
+function WspiapiQueryDNS(const pszNodeName: PIdPlatformChar; iSocketType, iProtocol: Integer;
+  wPort: WORD; pszAlias: PIdPlatformChar; var pptResult: {$IFDEF UNICODE}PaddrinfoW{$ELSE}Paddrinfo{$ENDIF}): Integer; stdcall;
 var
   pptNext: {$IFDEF UNICODE}PPaddrinfoW{$ELSE}PPaddrinfo{$ENDIF};
   ptHost: Phostent;
@@ -631,10 +703,10 @@ begin
   pptNext := @pptResult;
 
   pptNext^ := nil;
-  pszAlias^ := #0;
+  pszAlias^ := TIdPlatformChar(0);
 
   ptHost := gethostbyname(
-    {$IFDEF STRING_IS_ANSI}
+    {$IFNDEF UNICODE}
     pszNodeName
     {$ELSE}
     PAnsiChar(AnsiString(pszNodeName))
@@ -658,10 +730,10 @@ begin
 
     // pick up the canonical name.
     StrLCopy(pszAlias,
-      {$IFDEF STRING_IS_ANSI}
+      {$IFNDEF UNICODE}
       ptHost^.h_name
       {$ELSE}
-      PChar(String(ptHost^.h_name))
+      PIdPlatformChar(TIdPlatformString(ptHost^.h_name))
       {$ENDIF}
       , NI_MAXHOST);
 
@@ -679,21 +751,21 @@ begin
   end;
 end;
 
-function WspiapiLookupNode(const pszNodeName: PChar; iSocketType: Integer;
+function WspiapiLookupNode(const pszNodeName: PIdPlatformChar; iSocketType: Integer;
   iProtocol: Integer; wPort: WORD; bAI_CANONNAME: BOOL; var pptResult: {$IFDEF UNICODE}PaddrinfoW{$ELSE}Paddrinfo{$ENDIF}): Integer; stdcall;
 var
   iError: Integer;
   iAliasCount: Integer;
-  szFQDN1: array[0..NI_MAXHOST-1] of Char;
-  szFQDN2: array[0..NI_MAXHOST-1] of Char;
-  pszName: PChar;
-  pszAlias: PChar;
-  pszScratch: PChar;
+  szFQDN1: array[0..NI_MAXHOST-1] of TIdPlatformChar;
+  szFQDN2: array[0..NI_MAXHOST-1] of TIdPlatformChar;
+  pszName: PIdPlatformChar;
+  pszAlias: PIdPlatformChar;
+  pszScratch: PIdPlatformChar;
 begin
   iAliasCount := 0;
 
-  FillChar(szFQDN1, SizeOf(szFQDN1), 0);
-  FillChar(szFQDN2, SizeOf(szFQDN2), 0);
+  ZeroMemory(@szFQDN1, SizeOf(szFQDN1));
+  ZeroMemory(@szFQDN2, SizeOf(szFQDN2));
   pszName := @szFQDN1[0];
   pszAlias := @szFQDN2[0];
   pszScratch := nil;
@@ -793,7 +865,7 @@ begin
 end;
 {$ENDIF}
 
-function WspiapiLegacyGetAddrInfo(const pszNodeName: PChar; const pszServiceName: PChar;
+function WspiapiLegacyGetAddrInfo(const pszNodeName: PIdPlatformChar; const pszServiceName: PIdPlatformChar;
   const ptHints: {$IFDEF UNICODE}PaddrinfoW{$ELSE}Paddrinfo{$ENDIF};
   var pptResult: {$IFDEF UNICODE}PaddrinfoW{$ELSE}Paddrinfo{$ENDIF}): Integer; stdcall;
 var
@@ -895,7 +967,7 @@ begin
     begin
       if (iSocketType = 0) or (iSocketType = SOCK_DGRAM) then begin
         ptService := getservbyname(
-          {$IFDEF STRING_IS_ANSI}
+          {$IFNDEF UNICODE}
           pszServiceName
           {$ELSE}
           PAnsiChar(AnsiString(pszServiceName))
@@ -909,7 +981,7 @@ begin
 
       if (iSocketType = 0) or (iSocketType = SOCK_STREAM) then begin
         ptService := getservbyname(
-          {$IFDEF STRING_IS_ANSI}
+          {$IFNDEF UNICODE}
           pszServiceName
           {$ELSE}
           PAnsiChar(AnsiString(pszServiceName))
@@ -945,7 +1017,7 @@ begin
   // return the binary address.
   //
   if ((pszNodeName = nil) or WspiapiParseV4Address(pszNodeName, dwAddress)) then begin
-    if pszNodeName <> nil then begin
+    if pszNodeName = nil then begin
       dwAddress := htonl(iif((iFlags and AI_PASSIVE) <> 0, INADDR_ANY, INADDR_LOOPBACK));
     end;
 
@@ -954,7 +1026,7 @@ begin
     if pptResult = nil then begin
       iError := EAI_MEMORY;
     end;
-        
+
     if (iError = 0) and (pszNodeName <> nil) then begin
       // implementation specific behavior: set AI_NUMERICHOST
       // to indicate that we got a numeric host address string.
@@ -962,10 +1034,10 @@ begin
       // return the numeric address string as the canonical name
       if (iFlags and AI_CANONNAME) <> 0 then begin
         pptResult^.ai_canonname := WspiapiStrdup(
-          {$IFDEF STRING_IS_ANSI}
+          {$IFNDEF UNICODE}
           inet_ntoa(PInAddr(@dwAddress)^)
           {$ELSE}
-          PChar(String(inet_ntoa(PInAddr(@dwAddress)^)))
+          PWideChar(TIdUnicodeString(inet_ntoa(PInAddr(@dwAddress)^)))
           {$ENDIF}
           );
         if pptResult^.ai_canonname = nil then begin
@@ -1010,20 +1082,20 @@ begin
 end;
 
 function WspiapiLegacyGetNameInfo(ptSocketAddress: Psockaddr;
-  tSocketLength: u_int; pszNodeName: PChar; tNodeLength: size_t;
-  pszServiceName: PChar; tServiceLength: size_t; iFlags: Integer): Integer; stdcall;
+  tSocketLength: u_int; pszNodeName: PIdPlatformChar; tNodeLength: size_t;
+  pszServiceName: PIdPlatformChar; tServiceLength: size_t; iFlags: Integer): Integer; stdcall;
 var
   ptService: Pservent;
   wPort: WORD;
-  szBuffer: array[0..5] of Char;
-  pszService: PChar;
+  szBuffer: array[0..5] of TIdPlatformChar;
+  pszService: PIdPlatformChar;
   ptHost: Phostent;
   tAddress: in_addr;
-  pszNode: PChar;
-  pc: PChar;
-  {$IFNDEF STRING_IS_ANSI}
-  tmpService: String;
-  tmpNode: String;
+  pszNode: PIdPlatformChar;
+  pc: PIdPlatformChar;
+  {$IFDEF UNICODE}
+  tmpService: TIdUnicodeString;
+  tmpNode: TIdUnicodeString;
   {$ENDIF}
 begin
   StrCopy(szBuffer, '65535');
@@ -1072,11 +1144,11 @@ begin
       ptService := getservbyport(wPort, iif((iFlags and NI_DGRAM) <> 0, 'udp', nil));
       if (ptService <> nil) and (ptService^.s_name <> nil) then begin
         // lookup successful.
-        {$IFDEF STRING_IS_ANSI}
+        {$IFNDEF UNICODE}
         pszService := ptService^.s_name;
         {$ELSE}
-        tmpService := String(ptService^.s_name);
-        pszService := PChar(tmpService);
+        tmpService := TIdUnicodeString(ptService^.s_name);
+        pszService := PWideChar(tmpService);
         {$ENDIF}
       end else begin
         // DRAFT: return numeric form of the port!
@@ -1084,7 +1156,7 @@ begin
       end;
     end;
 
-    if tServiceLength > StrLen(pszService) then begin
+    if tServiceLength > size_t(StrLen(pszService)) then begin
       StrLCopy(pszServiceName, pszService, tServiceLength);
     end else begin
       Result := EAI_FAIL;
@@ -1099,11 +1171,11 @@ begin
 
     if (iFlags and NI_NUMERICHOST) <> 0 then begin
       // return numeric form of the address.
-      {$IFDEF STRING_IS_ANSI}
+      {$IFNDEF UNICODE}
       pszNode := inet_ntoa(tAddress);
       {$ELSE}
-      tmpNode := String(inet_ntoa(tAddress));
-      pszNode := PChar(tmpNode);
+      tmpNode := TIdUnicodeString(inet_ntoa(tAddress));
+      pszNode := PWideChar(tmpNode);
       {$ENDIF}
     end else
     begin
@@ -1112,16 +1184,16 @@ begin
       if (ptHost <> nil) and (ptHost^.h_name <> nil) then begin
         // DNS lookup successful.
         // stop copying at a "." if NI_NOFQDN is specified.
-        {$IFDEF STRING_IS_ANSI}
+        {$IFNDEF UNICODE}
         pszNode := ptHost^.h_name;
         {$ELSE}
-        tmpNode := String(ptHost^.h_name);
-        pszNode := PChar(tmpNode);
+        tmpNode := TIdUnicodeString(ptHost^.h_name);
+        pszNode := PWideChar(tmpNode);
         {$ENDIF}
         if (iFlags and NI_NOFQDN) <> 0 then begin
           pc := StrScan(pszNode, '.');
           if pc <> nil then begin
-            pc^ := #0;
+            pc^ := TIdPlatformChar(0);
           end;
         end;
       end else
@@ -1137,17 +1209,17 @@ begin
           end;
           Exit;
         end else begin
-          {$IFDEF STRING_IS_ANSI}
+          {$IFNDEF UNICODE}
           pszNode := inet_ntoa(tAddress);
           {$ELSE}
-          tmpNode := String(inet_ntoa(tAddress));
-          pszNode := PChar(tmpNode);
+          tmpNode := TIdUnicodeString(inet_ntoa(tAddress));
+          pszNode := PWideChar(tmpNode);
           {$ENDIF}
         end;
       end;
     end;
 
-    if tNodeLength > StrLen(pszNode) then begin
+    if tNodeLength > size_t(StrLen(pszNode)) then begin
       StrLCopy(pszNodeName, pszNode, tNodeLength);
     end else begin
       Result := EAI_FAIL;
@@ -1158,7 +1230,210 @@ begin
   Result := 0;
 end;
 
+{$IFDEF WINCE_UNICODE}
+
+function IndyStrdupAToW(const pszString: PAnsiChar): PWideChar;
+var
+  szStr: TIdUnicodeString;
+  pszMemory: PWideChar;
+  cchMemory: size_t;
+begin
+  if pszString = nil then begin
+    Result := nil;
+    Exit;
+  end;
+
+  szStr := TIdUnicodeString(pszString);
+  cchMemory := Length(szStr) + 1;
+
+  pszMemory := PWideChar(WspiapiMalloc(cchMemory * SizeOf(WideChar)));
+  if pszMemory = nil then begin
+    Result := nil;
+    Exit;
+  end;
+
+  StrLCopy(pszMemory, PWideChar(szStr), cchMemory);
+  Result := pszMemory;
+end;
+
+procedure IndyFreeAddrInfoW(ptHead: PaddrinfoW); stdcall;
+var
+ ptNext: PaddrinfoW;
+begin
+  ptNext := ptHead;
+  while ptNext <> nil do
+  begin
+    if ptNext^.ai_canonname <> nil then begin
+      WspiapiFree(ptNext^.ai_canonname);
+    end;
+    if ptNext^.ai_addr <> nil then begin
+      WspiapiFree(ptNext^.ai_addr);
+    end;
+    ptHead := ptNext^.ai_next;
+    WspiapiFree(ptNext);
+    ptNext := ptHead;
+  end;
+end;
+
+function IndyAddrInfoConvert(AddrInfo: Paddrinfo): PaddrinfoW;
+var
+  ptNew: PaddrinfoW;
+  ptAddress: Pointer;
+begin
+  Result := nil;
+
+  if AddrInfo = nil then begin
+    Exit;
+  end;
+
+  // allocate a new addrinfo structure.
+  ptNew := PaddrinfoW(WspiapiMalloc(SizeOf(addrinfoW)));
+  if ptNew = nil then begin
+    WspiapiFree(ptNew);
+    Exit;
+  end;
+
+  ptAddress := WspiapiMalloc(AddrInfo^.ai_addrlen);
+  if ptAddress = nil then begin
+    WspiapiFree(ptNew);
+    Exit;
+  end;
+  Move(AddrInfo^.ai_addr^, ptAddress^, AddrInfo^.ai_addrlen);
+
+  // fill in the fields...
+  ptNew^.ai_flags             := AddrInfo^.ai_flags;
+  ptNew^.ai_family            := AddrInfo^.ai_family;
+  ptNew^.ai_socktype          := AddrInfo^.ai_socktype;
+  ptNew^.ai_protocol          := AddrInfo^.ai_protocol;
+  ptNew^.ai_addrlen           := AddrInfo^.ai_addrlen;
+  ptNew^.ai_canonname         := nil;
+  ptNew^.ai_addr              := Psockaddr(ptAddress);
+  ptNew^.ai_next              := nil;
+
+  if AddrInfo^.ai_canonname <> nil then begin
+    ptNew^.ai_canonname := IndyStrdupAToW(AddrInfo^.ai_canonname);
+    if ptNew^.ai_canonname = nil then begin
+      IndyFreeAddrInfoW(ptNew);
+      Exit;
+    end;
+  end;
+
+  if AddrInfo^.ai_next <> nil then begin
+    ptNew^.ai_next := IndyAddrInfoConvert(AddrInfo^.ai_next);
+    if ptNew^.ai_next = nil then begin
+      IndyFreeAddrInfoW(ptNew);
+      Exit;
+    end;
+  end;
+
+  Result := ptNew;
+end;
+
+function IndyGetAddrInfoW(const pszNodeName: PWideChar; const pszServiceName: PWideChar;
+  const ptHints: PaddrinfoW; var pptResult: PaddrinfoW): Integer; stdcall;
+var
+  LNodeName: AnsiString;
+  LPNodeName: PAnsiChar;
+  LServiceName: AnsiString;
+  LPServiceName: PAnsiChar;
+  LHints: addrinfo;
+  LPHints: Paddrinfo;
+  LResult: Paddrinfo;
+begin
+  // initialize pptResult with default return value.
+  pptResult := nil;
+
+  if pszNodeName <> nil then begin
+    LNodeName := AnsiString(pszNodeName);
+    LPNodeName := PAnsiChar(LNodeName);
+  end else begin
+    LPNodeName := nil;
+  end;
+
+  if pszServiceName <> nil then begin
+    LServiceName := AnsiString(pszServiceName);
+    LPServiceName := PAnsiChar(LServiceName);
+  end else begin
+    LPServiceName := nil;
+  end;
+
+  if ptHints <> nil then begin
+    ZeroMemory(@LHints, SizeOf(LHints));
+    LHints.ai_flags     := ptHints^.ai_flags;
+    LHints.ai_family    := ptHints^.ai_family;
+    LHints.ai_socktype  := ptHints^.ai_socktype;
+    LHints.ai_protocol  := ptHints^.ai_protocol;
+    LPHints := @LHints;
+  end else begin
+    LPHints := nil;
+  end;
+
+  Result := getaddrinfoCE(LPNodeName, LPServiceName, LPHints, @LResult);
+  if Result = 0 then begin
+    try
+      pptResult := IndyAddrInfoConvert(LResult);
+    finally
+      freeaddrinfoCE(LResult);
+    end;
+    if pptResult = nil then begin
+      Result := EAI_MEMORY;
+    end;
+  end;
+end;
+
+function IndyGetNameInfoW(ptSocketAddress: Psockaddr; tSocketLength: u_int;
+  pszNodeName: PWideChar; tNodeLength: size_t; pszServiceName: PWideChar;
+  tServiceLength: size_t; iFlags: Integer): Integer; stdcall;
+var
+  LHost: array[0..NI_MAXHOST-1] of AnsiChar;
+  LPHost: PAnsiChar;
+  LHostLen: u_int;
+  LServ: array[0..NI_MAXSERV-1] of AnsiChar;
+  LPServ: PAnsiChar;
+  LServLen: u_int;
+begin
+  if pszNodeName <> nil then
+  begin
+    LPHost := @LHost[0];
+    LHostLen := Length(LHost);
+  end else begin
+    LPHost := nil;
+    LHostLen := 0;
+  end;
+
+  if pszServiceName <> nil then
+  begin
+    LPServ := @LServ[0];
+    LServLen := Length(LServ);
+  end else begin
+    LPServ := nil;
+    LServLen := 0;
+  end;
+
+  Result := getnameinfoCE(ptSocketAddress, tSocketLength, LPHost, LHostLen, LPServ, LServLen, iFlags);
+  if Result = 0 then begin
+    if pszNodeName <> nil then begin
+      StrPLCopy(pszNodeName, TIdUnicodeString(LPHost), tNodeLength);
+    end;
+    if pszServiceName <> nil then begin
+      StrPLCopy(pszServiceName, TIdUnicodeString(LPServ), tServiceLength);
+    end;
+  end;
+end;
+
+{$ENDIF}
+
 procedure InitLibrary;
+var
+  {$IFDEF WINCE_UNICODE}
+  gai: LPFN_GETADDRINFO;
+  gni: LPFN_GETNAMEINFO;
+  fai: LPFN_FREEADDRINFO;
+  {$ELSE}
+  gai: {$IFDEF UNICODE}LPFN_GETADDRINFOW{$ELSE}LPFN_GETADDRINFO{$ENDIF};
+  gni: {$IFDEF UNICODE}LPFN_GETNAMEINFOW{$ELSE}LPFN_GETNAMEINFO{$ENDIF};
+  fai: {$IFDEF UNICODE}LPFN_FREEADDRINFOW{$ELSE}LPFN_FREEADDRINFO{$ENDIF};
+  {$ENDIF}
 begin
 {
 IMPORTANT!!!
@@ -1178,22 +1453,36 @@ locations.  hWship6Dll is kept so we can unload the Wship6.dll if necessary.
     IdWinsock2.InitializeWinSock;
   end;
   hProcHandle := IdWinsock2.WinsockHandle;
-  getaddrinfo := GetProcAddress(hProcHandle, fn_getaddrinfo);
-  if not Assigned(getaddrinfo) then
+
+  gai := GetProcAddress(hProcHandle, fn_getaddrinfo);
+  if not Assigned(gai) then
   begin
     hWship6Dll := SafeLoadLibrary(Wship6_dll);
     hProcHandle := hWship6Dll;
-    getaddrinfo := GetProcAddress(hProcHandle, fn_getaddrinfo);  {do not localize}
+    gai := GetProcAddress(hProcHandle, fn_getaddrinfo);  {do not localize}
   end;
 
-  if Assigned(getaddrinfo) then
+  if Assigned(gai) then
   begin
-    getnameinfo := GetProcAddress(hProcHandle, fn_getnameinfo);  {do not localize}
-    if Assigned(getnameinfo) then
+    gni := GetProcAddress(hProcHandle, fn_getnameinfo);  {do not localize}
+    if Assigned(gni) then
     begin
-      freeaddrinfo := GetProcAddress(hProcHandle, fn_freeaddrinfo);  {do not localize}
-      if Assigned(freeaddrinfo) then
+      fai := GetProcAddress(hProcHandle, fn_freeaddrinfo);  {do not localize}
+      if Assigned(fai) then
       begin
+        {$IFDEF WINCE_UNICODE}
+        getaddrinfoCE := gai;
+        getnameinfoCE := gni;
+        freeaddrinfoCE := fai;
+        getaddrinfo := @IndyGetAddrInfoW;
+        getnameinfo := @IndyGetNameInfoW;
+        freeaddrinfo := @IndyFreeAddrInfoW;
+        {$ELSE}
+        getaddrinfo := gai;
+        getnameinfo := gni;
+        freeaddrinfo := fai;
+        {$ENDIF}
+
         //Additional functions should be initialized here.
         {$IFNDEF WINCE}
         inet_pton := GetProcAddress(hProcHandle, fn_inet_pton);  {do not localize}
@@ -1204,13 +1493,17 @@ locations.  hWship6Dll is kept so we can unload the Wship6.dll if necessary.
         hfwpuclntDll := SafeLoadLibrary(fwpuclnt_dll);
         if hfwpuclntDll <> 0 then
         begin
+          WSASetSocketSecurity := GetProcAddress(hfwpuclntDll,
+             'WSASetSocketSecurity');
+          WSAQuerySocketSecurity := GetProcAddress(hfwpuclntDll, 'WSAQuerySocketSecurity'); {Do not localize}
           WSASetSocketPeerTargetName := GetProcAddress(hfwpuclntDll, 'WSASetSocketPeerTargetName'); {Do not localize}
           WSADeleteSocketPeerTargetName := GetProcAddress(hfwpuclntDll, 'WSADeleteSocketPeerTargetName');  {Do not localize}
           WSAImpersonateSocketPeer := GetProcAddress(hfwpuclntDll, 'WSAImpersonateSocketPeer'); {Do not localize}
-          WSAQuerySocketSecurity := GetProcAddress(hfwpuclntDll, 'WSAQuerySocketSecurity'); {Do not localize}
+
           WSARevertImpersonation := GetProcAddress(hfwpuclntDll, 'WSARevertImpersonation'); {Do not localize}
         end;
         {$ENDIF}
+
         Exit;
       end;
     end;
@@ -1218,17 +1511,13 @@ locations.  hWship6Dll is kept so we can unload the Wship6.dll if necessary.
 
   CloseLibrary;
 
-  getaddrinfo := @WspiapiLegacyGetAddrInfo;
-  getnameinfo := @WspiapiLegacyGetNameInfo;
-  freeaddrinfo := @WspiapiLegacyFreeAddrInfo;
+  getaddrinfo := Addr(WspiapiLegacyGetAddrInfo);
+  getnameinfo := Addr(WspiapiLegacyGetNameInfo);
+  freeaddrinfo := Addr(WspiapiLegacyFreeAddrInfo);
 
-  {$IFDEF HAS_DEPRECATED}
-    {$WARN SYMBOL_DEPRECATED OFF}
-  {$ENDIF}
+  {$I IdSymbolDeprecatedOff.inc}
   GIdIPv6FuncsAvailable := True;
-  {$IFDEF HAS_DEPRECATED}
-    {$WARN SYMBOL_DEPRECATED ON}
-  {$ENDIF}
+  {$I IdSymbolDeprecatedOn.inc}
 end;
 
 initialization

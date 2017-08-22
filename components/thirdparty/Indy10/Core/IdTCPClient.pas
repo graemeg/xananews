@@ -142,6 +142,14 @@ uses
   Classes,
   IdGlobal, IdExceptionCore, IdIOHandler, IdTCPConnection;
 
+(*$HPPEMIT '#if defined(_VCL_ALIAS_RECORDS)' *)
+(*$HPPEMIT '#if !defined(UNICODE)' *)
+(*$HPPEMIT '#pragma alias "@Idtcpclient@TIdTCPClientCustom@SetPortA$qqrxus"="@Idtcpclient@TIdTCPClientCustom@SetPort$qqrxus"' *)
+(*$HPPEMIT '#else' *)
+(*$HPPEMIT '#pragma alias "@Idtcpclient@TIdTCPClientCustom@SetPortW$qqrxus"="@Idtcpclient@TIdTCPClientCustom@SetPort$qqrxus"' *)
+(*$HPPEMIT '#endif' *)
+(*$HPPEMIT '#endif' *)
+
 type
 
   TIdTCPClientCustom = class(TIdTCPConnection)
@@ -264,23 +272,22 @@ end;
 procedure TIdTCPClientCustom.Connect;
 begin
   if Connected then begin
-    EIdAlreadyConnected.Toss(RSAlreadyConnected);
+    raise EIdAlreadyConnected.Create(RSAlreadyConnected);
   end;
 
   if Host = '' then begin
-    EIdHostRequired.Toss('');
+    raise EIdHostRequired.Create('A Host is required'); {do not localize}
   end;
   if Port = 0 then begin
-    EIdPortRequired.Toss('');
+    raise EIdPortRequired.Create('A Port is required'); {do not localize}
   end;
 
   if IOHandler = nil then begin
     IOHandler := MakeImplicitClientHandler;
+    ManagedIOHandler := True;
 
     // TODO: always assign the OnStatus event even if the IOHandler is not implicit?
     IOHandler.OnStatus := OnStatus;
-
-    ManagedIOHandler := True;
   end;
 
   try

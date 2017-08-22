@@ -90,7 +90,7 @@ const
 type
   TIdSNMP = class;
 
-                                                               
+  // TODO: create TIdMIBValueList for non-Generics compilers...
   {$IFDEF HAS_GENERICS_TList}
   TIdMIBValue = record
     OID: String;
@@ -103,7 +103,7 @@ type
 
   TSNMPInfo = class(TObject)
   private
-    fOwner : TIdSNMP;
+    {$IFDEF USE_OBJECT_ARC}[Weak]{$ENDIF} fOwner : TIdSNMP;
     fCommunity: string;
     function GetValue (idx : Integer) : string;
     function GetValueCount: Integer;
@@ -290,8 +290,10 @@ begin
   MIBOID := TStringList.Create;
   MIBValue := TStringList.Create;
   {$ENDIF}
-  fCommunity := AOwner.Community;
-  Port := AOwner.Port;
+  if fOwner <> nil then begin
+    fCommunity := fOwner.Community;
+    Port := fOwner.Port;
+  end;
 end;
 
 (*----------------------------------------------------------------------------*
@@ -395,11 +397,11 @@ begin
     end;
     data := data + ASNObject(s, ASN1_SEQ);
   end;
-  data := ASNObject(char(ID), ASN1_INT)
-         + ASNObject(char(ErrorStatus), ASN1_INT)
-         + ASNObject(char(ErrorIndex), ASN1_INT)
+  data := ASNObject(ASNEncInt(ID), ASN1_INT)
+         + ASNObject(ASNEncInt(ErrorStatus), ASN1_INT)
+         + ASNObject(ASNEncInt(ErrorIndex), ASN1_INT)
          + ASNObject(data, ASN1_SEQ);
-  data := ASNObject(char(Version), ASN1_INT)
+  data := ASNObject(ASNEncInt(Version), ASN1_INT)
          + ASNObject(Community, ASN1_OCTSTR)
          + ASNObject(data, PDUType);
   data := ASNObject(data, ASN1_SEQ);
@@ -412,15 +414,25 @@ end;
  | Clear the header info and  MIBOID/Value lists.                             |
  *----------------------------------------------------------------------------*)
 procedure TSNMPInfo.Clear;
+var
+  // under ARC, convert a weak reference to a strong reference before working with it
+  LOwner: TIdSNMP;
 begin
-  Version:=0;
-  fCommunity := Owner.Community;
-  if Self = fOwner.Trap then begin
-    Port := Owner.TrapPort
+  LOwner := fOwner;
+  Version := 0;
+  if LOwner <> nil then begin
+    fCommunity := LOwner.Community;
+    if Self = LOwner.Trap then begin
+      Port := LOwner.TrapPort
+    end else begin
+      Port := LOwner.Port;
+    end;
+    Host := LOwner.Host;
   end else begin
-    Port := Owner.Port;
+    fCommunity := '';
+    Port := 0;
+    Host := '';
   end;
-  Host := Owner.Host;
   PDUType := 0;
   ID := 0;
   ErrorStatus := 0;
@@ -562,7 +574,7 @@ begin
     + ASNObject(ASNEncInt(SpecTrap), ASN1_INT)
     + ASNObject(ASNEncInt(TimeTicks), ASN1_TIMETICKS)
     + ASNObject(Buffer, ASN1_SEQ);
-  Buffer := ASNObject(Char(Version), ASN1_INT)
+  Buffer := ASNObject(ASNEncInt(Version), ASN1_INT)
     + ASNObject(Community, ASN1_OCTSTR)
     + ASNObject(Buffer, PDUType);
   Buffer := ASNObject(Buffer, ASN1_SEQ);
@@ -680,11 +692,7 @@ begin
   end;
   if (not fTrapRecvBinding.HandleAllocated) and (fTrapPort <> 0) then begin
     fTrapRecvBinding.IPVersion := Result.IPVersion;
-    {$IFDEF LINUX}
-    fTrapRecvBinding.AllocateSocket(LongInt(Id_SOCK_DGRAM));
-    {$ELSE}
     fTrapRecvBinding.AllocateSocket(Id_SOCK_DGRAM);
-    {$ENDIF}
     fTrapRecvBinding.IP := Result.IP;
     fTrapRecvBinding.Port := fTrapPort;
     fTrapRecvBinding.Bind;
@@ -733,7 +741,7 @@ begin
   LEncoding := IndyTextEncoding_8Bit;
   Send(Query.Host, Query.Port, Query.Buffer, LEncoding{$IFDEF STRING_IS_ANSI}, LEncoding{$ENDIF});
   try
-    Reply.Buffer := ReceiveString(Query.Host, Query.Port, FReceiveTimeout, LEncoding{$IFDEF STRING_IS_ANSI}, LEncoding{$ENDIF});
+    Reply.Buffer := ReceiveString(Reply.Host, Reply.Port, FReceiveTimeout, LEncoding{$IFDEF STRING_IS_ANSI}, LEncoding{$ENDIF});
   except
     on e : EIdSocketError do
     begin
@@ -802,6 +810,8 @@ var
   LIPVersion: TIdIPVersion;
 begin
   Result := False;
+
+  Trap.Clear;
   Trap.PDUType := PDUTrap;
 
   LMSec := ReceiveTimeOut;
@@ -837,18 +847,13 @@ function TIdSNMP.QuickSendTrap(const DestHost, Enterprise, DestCommunity: string
 var
   i: integer;
 begin
+  Trap.Clear;
   Trap.Host := DestHost;
   Trap.Port := DestPort;
   Trap.Community := DestCommunity;
   Trap.Enterprise := Enterprise;
   Trap.GenTrap := Generic;
   Trap.SpecTrap := Specific;
-  {$IFDEF HAS_GENERICS_TList}
-  Trap.MIBValues.Clear;
-  {$ELSE}
-  Trap.MIBOID.Clear;
-  Trap.MIBValue.Clear;
-  {$ENDIF}
   for i := 0 to {$IFDEF HAS_GENERICS_TList}MIBValues{$ELSE}MIBName{$ENDIF}.Count-1 do begin
     Trap.MIBAdd(
       {$IFDEF HAS_GENERICS_TList}

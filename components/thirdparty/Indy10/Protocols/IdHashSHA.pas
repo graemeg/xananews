@@ -64,32 +64,31 @@ FIPS-complient.  Unfortunately, SHA1 will not be permitted after 2010.
 3) SHA224 is not exposed.
 }
 type
-  T5x4LongWordRecord = array[0..4] of LongWord;
+  T5x4LongWordRecord = array[0..4] of UInt32;
   T512BitRecord = array [0..63] of Byte;
+
   {$IFNDEF DOTNET}
   TIdHashSHA1 = class(TIdHashNativeAndIntF)
   {$ELSE}
   TIdHashSHA1 = class(TIdHashIntF)
   {$ENDIF}
   protected
-
     {$IFNDEF DOTNET}
     FCheckSum: T5x4LongWordRecord;
     FCBuffer: TIdBytes;
     procedure Coder;
     function NativeGetHashBytes(AStream: TStream; ASize: TIdStreamSize): TIdBytes; override;
     function HashToHex(const AHash: TIdBytes): String; override;
-
     {$ENDIF}
     function InitHash : TIdHashIntCtx; override;
   public
-    {$IFDEF DOTNET}
-    class function IsAvailable : Boolean; override;
-    {$ELSE}
+    {$IFNDEF DOTNET}
     constructor Create; override;
     {$ENDIF}
+    class function IsAvailable : Boolean; override;
     class function IsIntfAvailable: Boolean; override;
   end;
+
   {$IFNDEF DOTNET}
   TIdHashSHA224 = class(TIdHashIntF)
   protected
@@ -98,18 +97,21 @@ type
     class function IsAvailable : Boolean; override;
   end;
   {$ENDIF}
+
   TIdHashSHA256 = class(TIdHashIntF)
   protected
     function InitHash : TIdHashIntCtx; override;
   public
     class function IsAvailable : Boolean; override;
   end;
+
   TIdHashSHA384 = class(TIdHashIntF)
   protected
     function InitHash : TIdHashIntCtx; override;
   public
     class function IsAvailable : Boolean; override;
   end;
+
   TIdHashSHA512 = class(TIdHashIntF)
   protected
     function InitHash : TIdHashIntCtx; override;
@@ -118,12 +120,6 @@ type
   end;
 
 implementation
-uses
-  {$IFDEF DOTNET}
-  IdStreamNET;
-  {$ELSE}
-  IdStreamVCL;
-  {$ENDIF}
 
 { TIdHashSHA1 }
 
@@ -140,14 +136,9 @@ begin
   Result := True;
 end;
 
-class function TIdHashSHA1.IsAvailable : Boolean; 
-begin
-  Result := True;
-end;
-
 {$ELSE}
 
-function SwapLongWord(const AValue: LongWord): LongWord;
+function SwapLongWord(const AValue: UInt32): UInt32;
 begin
   Result := ((AValue and $FF) shl 24) or ((AValue and $FF00) shl 8) or ((AValue and $FF0000) shr 8) or ((AValue and $FF000000) shr 24);
 end;
@@ -171,12 +162,12 @@ end;
 {$Q-,R-} // Operations performed modulo $100000000
 procedure TIdHashSHA1.Coder;
 var
-  T, A, B, C, D, E: LongWord;
+  T, A, B, C, D, E: UInt32;
   { The size of the W variable has been reduced to make the Coder method
     consume less memory on dotNet. This change has been tested with the v1.1
     framework and entails a general increase of performance by >50%. }
-  W: array [0..19] of LongWord;
-  i: LongWord;
+  W: array [0..19] of UInt32;
+  i: UInt32;
 begin
   { The first 16 W values are identical to the input block with endian
     conversion. }
@@ -394,8 +385,8 @@ end;
 function TIdHashSHA1.NativeGetHashBytes(AStream: TStream; ASize: TIdStreamSize): TIdBytes;
 var
   LSize: Integer;
-  LLenHi: LongWord;
-  LLenLo: LongWord;
+  LLenHi: UInt32;
+  LLenLo: UInt32;
   I: Integer;
 begin
   Result := nil;
@@ -409,37 +400,47 @@ begin
   LLenHi := 0;
   LLenLo := 0;
 
-  repeat
+  // Code the entire file in complete 64-byte chunks.
+  while ASize >= 64 do begin
     LSize := ReadTIdBytesFromStream(AStream, FCBuffer, 64);
-                                     
+    // TODO: handle stream read error
     Inc(LLenLo, LSize * 8);
-    if LLenLo < LongWord(LSize * 8) then begin
+    if LLenLo < UInt32(LSize * 8) then begin
       Inc(LLenHi);
     end;
-    if LSize < 64 then begin
-      FCBuffer[LSize] := $80;
-      if LSize >= 56 then begin
-        for I := (LSize + 1) to 63 do begin
-          FCBuffer[i] := 0;
-        end;
-        Coder;
-        LSize := -1;
-      end;
-      for I := (LSize + 1) to 55 do begin
-        FCBuffer[i] := 0;
-      end;
-      FCBuffer[56] := (LLenHi shr 24);
-      FCBuffer[57] := (LLenHi shr 16) and $FF;
-      FCBuffer[58] := (LLenHi shr 8) and $FF;
-      FCBuffer[59] := (LLenHi and $FF);
-      FCBuffer[60] := (LLenLo shr 24);
-      FCBuffer[61] := (LLenLo shr 16) and $FF;
-      FCBuffer[62] := (LLenLo shr 8) and $FF;
-      FCBuffer[63] := (LLenLo and $FF);
-      LSize := 0;
+    Coder;
+    Dec(ASize, LSize);
+  end;
+
+  // Read the last set of bytes.
+  LSize := ReadTIdBytesFromStream(AStream, FCBuffer, ASize);
+  // TODO: handle stream read error
+  Inc(LLenLo, LSize * 8);
+  if LLenLo < UInt32(LSize * 8) then begin
+    Inc(LLenHi);
+  end;
+
+  FCBuffer[LSize] := $80;
+  if LSize >= 56 then begin
+    for I := (LSize + 1) to 63 do begin
+      FCBuffer[i] := 0;
     end;
     Coder;
-  until LSize < 64;
+    LSize := -1;
+  end;
+
+  for I := (LSize + 1) to 55 do begin
+    FCBuffer[i] := 0;
+  end;
+  FCBuffer[56] := (LLenHi shr 24);
+  FCBuffer[57] := (LLenHi shr 16) and $FF;
+  FCBuffer[58] := (LLenHi shr 8) and $FF;
+  FCBuffer[59] := (LLenHi and $FF);
+  FCBuffer[60] := (LLenLo shr 24);
+  FCBuffer[61] := (LLenLo shr 16) and $FF;
+  FCBuffer[62] := (LLenLo shr 8) and $FF;
+  FCBuffer[63] := (LLenLo and $FF);
+  Coder;
 
   FCheckSum[0] := SwapLongWord(FCheckSum[0]);
   FCheckSum[1] := SwapLongWord(FCheckSum[1]);
@@ -447,9 +448,9 @@ begin
   FCheckSum[3] := SwapLongWord(FCheckSum[3]);
   FCheckSum[4] := SwapLongWord(FCheckSum[4]);
 
-  SetLength(Result, SizeOf(LongWord)*5);
+  SetLength(Result, SizeOf(UInt32)*5);
   for I := 0 to 4 do begin
-    CopyTIdLongWord(FCheckSum[I], Result, SizeOf(LongWord)*I);
+    CopyTIdUInt32(FCheckSum[I], Result, SizeOf(UInt32)*I);
   end;
 end;
 
@@ -459,7 +460,13 @@ begin
 end;
 {$ENDIF}
 
+class function TIdHashSHA1.IsAvailable : Boolean;
+begin
+  Result := True;
+end;
+
 {$IFNDEF DOTNET}
+
 { TIdHashSHA224 }
 
 function TIdHashSHA224.InitHash: TIdHashIntCtx;
@@ -469,7 +476,7 @@ end;
 
 class function TIdHashSHA224.IsAvailable: Boolean;
 begin
-  Result := IsHashingIntfAvail and  IsSHA224HashIntfAvail;
+  Result := IsHashingIntfAvail and IsSHA224HashIntfAvail;
 end;
 {$ENDIF}
 
@@ -477,7 +484,7 @@ end;
 
 function TIdHashSHA256.InitHash: TIdHashIntCtx;
 begin
-    Result := GetSHA256HashInst;
+  Result := GetSHA256HashInst;
 end;
 
 class function TIdHashSHA256.IsAvailable : Boolean;

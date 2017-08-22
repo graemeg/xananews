@@ -460,6 +460,7 @@ begin
 end;
 
 {$IFNDEF HAS_TryStrToInt64}
+// TODO: move this to IdGlobalProtocols...
 function TryStrToInt64(const S: string; out Value: Int64): Boolean;
 {$IFDEF USE_INLINE}inline;{$ENDIF}
 var
@@ -508,7 +509,7 @@ const
       LNameValue := LValue;
       LValue := Fetch(LNameValue, '"');
     end;
-    CookieProp.Add(LName + '=' + LValue);
+    IndyAddPair(CookieProp, LName, LValue);
 
     while LAttrs <> '' do
     begin
@@ -550,12 +551,12 @@ const
             end else begin
               LExpiryTime := EncodeDate(1, 1, 1);
             end;
-            CookieProp.Add('EXPIRES=' + FloatToStr(LExpiryTime));
+            IndyAddPair(CookieProp, 'EXPIRES', FloatToStr(LExpiryTime)); {do not localize}
           end else
           begin
             LExpiryTime := CookieStrToLocalDateTime(LValue);
             if LExpiryTime <> 0.0 then begin
-              CookieProp.Add('EXPIRES=' + FloatToStr(LExpiryTime));
+              IndyAddPair(CookieProp, 'EXPIRES', FloatToStr(LExpiryTime)); {do not localize}
             end;
           end;
         end;
@@ -568,7 +569,7 @@ const
             end else begin
               LExpiryTime := EncodeDate(1, 1, 1);
             end;
-            CookieProp.Add('MAX-AGE=' + FloatToStr(LExpiryTime));
+            IndyAddPair(CookieProp, 'MAX-AGE', FloatToStr(LExpiryTime)); {do not localize}
           end;
         end;
         2: begin
@@ -585,20 +586,20 @@ const
             if I > 0 then begin
               LValue := Copy(S, 1, I-1);
             end;
-            CookieProp.Add('DOMAIN=' + LowerCase(LValue));
+            IndyAddPair(CookieProp, 'DOMAIN', LowerCase(LValue)); {do not localize}
           end;
         end;
         3: begin
           if (LValue = '') or (not TextStartsWith(LValue, '/')) then begin
             LValue := GetDefaultPath(AURI);
           end;
-          CookieProp.Add('PATH=' + LValue);
+          IndyAddPair(CookieProp, 'PATH', LValue); {do not localize}
         end;
         4: begin
-          CookieProp.Add('SECURE=');
+          IndyAddPair(CookieProp, 'SECURE', ''); {do not localize}
         end;
         5: begin
-          CookieProp.Add('HTTPONLY=');
+          IndyAddPair(CookieProp, 'HTTPONLY', ''); {do not localize}
         end;
       end;
     end;
@@ -613,11 +614,7 @@ const
     begin
       if TextIsSame(CookieProp.Names[I], AName) then
       begin
-        {$IFDEF HAS_TStrings_ValueFromIndex}
-        VValue := CookieProp.ValueFromIndex[I];
-        {$ELSE}
-        VValue := Copy(CookieProp[I], Pos('=', CookieProp[I])+1, MaxInt); {Do not Localize}
-        {$ENDIF}
+        VValue := IndyValueFromIndex(CookieProp, I);
         Result := True;
         Exit;
       end;
@@ -641,12 +638,7 @@ begin
     end;
 
     FName := CookieProp.Names[0];
-    {$IFDEF HAS_TStrings_ValueFromIndex}
-    FValue := CookieProp.ValueFromIndex[0];
-    {$ELSE}
-    S := CookieProp[0];
-    FValue := Copy(S, Pos('=', S)+1, MaxInt);
-    {$ENDIF}
+    FValue := IndyValueFromIndex(CookieProp, 0);
     CookieProp.Delete(0);
 
     FCreatedAt := Now;
@@ -855,7 +847,7 @@ var
         LTemp := TrimLeft(LTemp);
       end;
       if LName <> '' then begin
-        CookieProp.Add(LName + '=' + LValue);    {Do not Localize}
+        IndyAddPair(CookieProp, LName, LValue);
       end;
     end;
 end;
@@ -871,11 +863,7 @@ begin
     end;
 
     FName := CookieProp.Names[0];
-    {$IFDEF HAS_TStrings_ValueFromIndex}
-    FValue := CookieProp.ValueFromIndex[0];
-    {$ELSE}
-    FValue := Copy(CookieProp[0], Pos('=', CookieProp[0])+1, MaxInt);
-    {$ENDIF}
+    FValue := IndyValueFromIndex(CookieProp, 0);
 
     Result := True;
   finally

@@ -66,7 +66,12 @@ type
 
   // RLebeau 2/14/09: this forces C++Builder to link to this unit so
   // RegisterFTPListParser can be called correctly at program startup...
-  {$HPPEMIT LINKUNIT}
+
+  {$IFDEF HAS_DIRECTIVE_HPPEMIT_LINKUNIT}
+    {$HPPEMIT LINKUNIT}
+  {$ELSE}
+    {$HPPEMIT '#pragma link "IdFTPListParseKA9Q"'}
+  {$ENDIF}
 
 implementation
 
@@ -136,7 +141,7 @@ begin
   end;
   LWords := TStringList.Create;
   try
-    SplitDelimitedString(StringReplace(AData, '-', ' ', [rfReplaceAll]), LWords, True);
+    SplitDelimitedString(ReplaceAll(AData, '-', ' '), LWords, True);
     if LWords.Count > 1 then
     begin
       Result := (LWords[1] = 'files.') or (LWords[1] = 'file.') or  {do not localize}

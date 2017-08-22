@@ -559,15 +559,19 @@ varies between servers.  A typical line that gets parsed into this is:
 }
   TIdIMAPLineStruct = class(TObject)
   protected
-    HasStar: Boolean;       //Line starts with a '*'
-    MessageNumber: string;    //Line has a message number (after the *)
-    Command: string;      //IMAP servers send back the command they are responding to, e.g. FETCH
-    UID: string;        //Sometimes the UID is echoed back
+    HasStar: Boolean;           //Line starts with a '*'
+    MessageNumber: string;      //Line has a message number (after the *)
+    Command: string;            //IMAP servers send back the command they are responding to, e.g. FETCH
+    UID: string;                //Sometimes the UID is echoed back
     Flags: TIdMessageFlagsSet;  //Sometimes the FLAGS are echoed back
-    Complete: Boolean;      //If false, line has no closing bracket (response continues on following line(s))
-    ByteCount: integer;     //The value in a trailing byte count like {123}, -1 means not present
-    IMAPFunction: string;     //E.g. FLAGS
-    IMAPValue: string;      //E.g. '(\Seen \Deleted)'
+    FlagsStr: string;           //unparsed FLAGS for the message
+    Complete: Boolean;          //If false, line has no closing bracket (response continues on following line(s))
+    ByteCount: integer;         //The value in a trailing byte count like {123}, -1 means not present
+    IMAPFunction: string;       //E.g. FLAGS
+    IMAPValue: string;          //E.g. '(\Seen \Deleted)'
+    GmailMsgID: string;         //Gmail-specific unique identifier for the message
+    GmailThreadID: string;      //Gmail-specific thread identifier for the message
+    GmailLabels: string;        //Gmail-specific labels for the message
   end;
 
   TIdIMAP4Commands = (
@@ -653,7 +657,7 @@ varies between servers.  A typical line that gets parsed into this is:
     skUnflagged, //Messages that do not have the \Flagged flag set.
     skUnKeyWord, //Messages that do not have the specified keyword set.
     skUnseen,
-    skGmailRaw, //Gmail-specific extension toaccess full Gmail search syntax
+    skGmailRaw, //Gmail-specific extension to access full Gmail search syntax
     skGmailMsgID, //Gmail-specific unique message identifier
     skGmailThreadID, //Gmail-specific thread identifier
     skGmailLabels //Gmail-specific labels
@@ -666,6 +670,7 @@ varies between servers.  A typical line that gets parsed into this is:
     Size: Integer;
     Text: String;
     SearchKey : TIdIMAP4SearchKey;
+    FieldName: String;
   end;
 
   TIdIMAP4SearchRecArray = array of TIdIMAP4SearchRec;
@@ -771,9 +776,9 @@ varies between servers.  A typical line that gets parsed into this is:
           ADestFileNameAndPath: string = '';                     {Do not Localize}
           AContentTransferEncoding: string = 'text'): Boolean;             {Do not Localize}
     //Retrieves the specified number of headers of the selected mailbox to the specified TIdMessageCollection.
-    function  InternalRetrieveHeaders(AMsgList: TIdMessageCollection; ACount: LongInt): Boolean;
+    function  InternalRetrieveHeaders(AMsgList: TIdMessageCollection; ACount: Integer): Boolean;
     //Retrieves the specified number of messages of the selected mailbox to the specified TIdMessageCollection.
-    function  InternalRetrieveMsgs(AMsgList: TIdMessageCollection; ACount: LongInt): Boolean;
+    function  InternalRetrieveMsgs(AMsgList: TIdMessageCollection; ACount: Integer): Boolean;
     function  InternalSearchMailBox(const ASearchInfo: array of TIdIMAP4SearchRec; AUseUID: Boolean; const ACharSet: string): Boolean;
     function  ParseBodyStructureSectionAsEquates(AParam: string): string;
     function  ParseBodyStructureSectionAsEquates2(AParam: string): string;
@@ -799,6 +804,9 @@ varies between servers.  A typical line that gets parsed into this is:
     procedure SetSASLMechanisms(AValue: TIdSASLEntries);
   public
     { TIdIMAP4 Commands }
+    {$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
+    constructor Create(AOwner: TComponent); reintroduce; overload;
+    {$ENDIF}
     destructor Destroy; override;
     //Requests a listing of capabilities that the server supports...
     function  Capability: Boolean; overload;
@@ -816,12 +824,15 @@ varies between servers.  A typical line that gets parsed into this is:
     can use the second version of AppendMsg, passing it AMsg.LastGeneratedHeaders as
     the AAlternativeHeaders field.  Note that IdSMTP puts both the Headers and
     the ExtraHeaders fields in LastGeneratedHeaders.}
-    function  AppendMsg(const AMBName: String; AMsg: TIdMessage; const AFlags: TIdMessageFlagsSet = []): Boolean; overload;
+    function  AppendMsg(const AMBName: String; AMsg: TIdMessage; const AFlags: TIdMessageFlagsSet = [];
+          const AInternalDateTimeGMT: TDateTime = 0.0): Boolean; overload;
     function  AppendMsg(const AMBName: String; AMsg: TIdMessage; AAlternativeHeaders: TIdHeaderList;
-          const AFlags: TIdMessageFlagsSet = []): Boolean; overload;
+          const AFlags: TIdMessageFlagsSet = []; const AInternalDateTimeGMT: TDateTime = 0.0): Boolean; overload;
     //The following are used for raw (unparsed) messages in a file or stream...
-    function  AppendMsgNoEncodeFromFile(const AMBName: String; ASourceFile: string; const AFlags: TIdMessageFlagsSet = []): Boolean;
-    function  AppendMsgNoEncodeFromStream(const AMBName: String; AStream: TStream; const AFlags: TIdMessageFlagsSet = []): Boolean;
+    function  AppendMsgNoEncodeFromFile(const AMBName: String; ASourceFile: string; const AFlags: TIdMessageFlagsSet = [];
+          const AInternalDateTimeGMT: TDateTime = 0.0): Boolean;
+    function  AppendMsgNoEncodeFromStream(const AMBName: String; AStream: TStream; const AFlags: TIdMessageFlagsSet = [];
+          const AInternalDateTimeGMT: TDateTime = 0.0): Boolean;
     //Requests a checkpoint of the currently selected mailbox.  Does NOTHING on most servers.
     function  CheckMailBox: Boolean;
     //Checks if the message was read or not.
@@ -874,6 +885,9 @@ varies between servers.  A typical line that gets parsed into this is:
     //Changes (adds or removes) message flags.
     function  StoreFlags(const AMsgNumList: array of Integer; const AStoreMethod: TIdIMAP4StoreDataItem;
           const AFlags: TIdMessageFlagsSet): Boolean;
+    //Changes (adds or removes) a message value.
+    function  StoreValue(const AMsgNumList: array of Integer; const AStoreMethod: TIdIMAP4StoreDataItem;
+          const AField, AValue: String): Boolean;
     //Adds the specified mailbox name to the server's set of "active" or "subscribed"
     //mailboxes as returned by the LSUB command.
     function  SubscribeMailBox(const AMBName: String): Boolean;
@@ -885,23 +899,27 @@ varies between servers.  A typical line that gets parsed into this is:
     function  Retrieve(const AMsgNum: Integer; AMsg: TIdMessage): Boolean;
     //Retrieves a whole message "raw" and saves it to file, while marking it read.
     function  RetrieveNoDecodeToFile(const AMsgNum: Integer; ADestFile: string): Boolean;
+    function  RetrieveNoDecodeToFilePeek(const AMsgNum: Integer; ADestFile: string): Boolean;
     function  RetrieveNoDecodeToStream(const AMsgNum: Integer; AStream: TStream): Boolean;
+    function  RetrieveNoDecodeToStreamPeek(const AMsgNum: Integer; AStream: TStream): Boolean;
     //Retrieves all envelope of the selected mailbox to the specified TIdMessageCollection.
     function  RetrieveAllEnvelopes(AMsgList: TIdMessageCollection): Boolean;
     //Retrieves all headers of the selected mailbox to the specified TIdMessageCollection.
     function  RetrieveAllHeaders(AMsgList: TIdMessageCollection): Boolean;
     //Retrieves the first NN headers of the selected mailbox to the specified TIdMessageCollection.
-    function  RetrieveFirstHeaders(AMsgList: TIdMessageCollection; ACount: LongInt): Boolean;
+    function  RetrieveFirstHeaders(AMsgList: TIdMessageCollection; ACount: Integer): Boolean;
     //Retrieves all messages of the selected mailbox to the specified TIdMessageCollection.
     function  RetrieveAllMsgs(AMsgList: TIdMessageCollection): Boolean;
     //Retrieves the first NN messages of the selected mailbox to the specified TIdMessageCollection.
-    function  RetrieveFirstMsgs(AMsgList: TIdMessageCollection; ACount: LongInt): Boolean;
+    function  RetrieveFirstMsgs(AMsgList: TIdMessageCollection; ACount: Integer): Boolean;
     //Retrieves the message envelope, parses it, and discards the envelope.
     function  RetrieveEnvelope(const AMsgNum: Integer; AMsg: TIdMessage): Boolean;
     //Retrieves the message envelope into a TStringList but does NOT parse it.
     function  RetrieveEnvelopeRaw(const AMsgNum: Integer; ADestList: TStrings): Boolean;
     //Returnes the message flag values.
     function  RetrieveFlags(const AMsgNum: Integer; var AFlags: TIdMessageFlagsSet): Boolean;
+    //Returnes a requested message value.
+    function  RetrieveValue(const AMsgNum: Integer; const AField: string; var AValue: string): Boolean;
     {CC2: Following added for retrieving individual parts of a message...}
     function  InternalRetrieveStructure(const AMsgNum: Integer; AMsg: TIdMessage; AParts: TIdImapMessageParts): Boolean;
     //Retrieve only the message structure (this tells you what parts are in the message).
@@ -986,13 +1004,17 @@ varies between servers.  A typical line that gets parsed into this is:
     function  UIDRetrieve(const AMsgUID: String; AMsg: TIdMessage): Boolean;
     //Retrieves a whole message "raw" and saves it to file, while marking it read.
     function  UIDRetrieveNoDecodeToFile(const AMsgUID: String; ADestFile: string): Boolean;
+    function  UIDRetrieveNoDecodeToFilePeek(const AMsgUID: String; ADestFile: string): Boolean;
     function  UIDRetrieveNoDecodeToStream(const AMsgUID: String; AStream: TStream): Boolean;
+    function  UIDRetrieveNoDecodeToStreamPeek(const AMsgUID: String; AStream: TStream): Boolean;
     //Retrieves the message envelope, parses it, and discards the envelope.
     function  UIDRetrieveEnvelope(const AMsgUID: String; AMsg: TIdMessage): Boolean;
     //Retrieves the message envelope into a TStringList but does NOT parse it.
     function  UIDRetrieveEnvelopeRaw(const AMsgUID: String; ADestList: TStrings): Boolean;
     //Returnes the message flag values.
     function  UIDRetrieveFlags(const AMsgUID: String; var AFlags: TIdMessageFlagsSet): Boolean;
+    //Returnes a requested message value.
+    function  UIDRetrieveValue(const AMsgUID: String; const AField: string; var AValue: string): Boolean;
     {CC2: Following added for retrieving individual parts of a message...}
     function  UIDInternalRetrieveStructure(const AMsgUID: String; AMsg: TIdMessage; AParts: TIdImapMessageParts): Boolean;
     //Retrieve only the message structure (this tells you what parts are in the message).
@@ -1058,17 +1080,22 @@ varies between servers.  A typical line that gets parsed into this is:
           const AFlags: TIdMessageFlagsSet): Boolean; overload;
     function  UIDStoreFlags(const AMsgUIDList: array of String; const AStoreMethod: TIdIMAP4StoreDataItem;
           const AFlags: TIdMessageFlagsSet): Boolean; overload;
+    //Changes (adds or removes) a message value.
+    function  UIDStoreValue(const AMsgUID: String; const AStoreMethod: TIdIMAP4StoreDataItem;
+          const AField, AValue: String): Boolean; overload;
+    function  UIDStoreValue(const AMsgUIDList: array of String; const AStoreMethod: TIdIMAP4StoreDataItem;
+          const AField, AValue: string): Boolean; overload;
     //Removes the specified mailbox name from the server's set of "active" or "subscribed"
     //mailboxes as returned by the LSUB command.
     function  UnsubscribeMailBox(const AMBName: String): Boolean;
     { IdTCPConnection Commands }
     function  GetInternalResponse(const ATag: String; AExpectedResponses: array of String; ASingleLineMode: Boolean;
-          ASingleLineMayBeSplit: Boolean = False): string; reintroduce; overload;
+          ASingleLineMayBeSplit: Boolean = True): string; reintroduce; overload;
     function  GetResponse: string; reintroduce; overload;
     function  SendCmd(const AOut: string; AExpectedResponses: array of String;
-      ASingleLineMode: Boolean = False; ASingleLineMayBeSplit: Boolean = False): string; reintroduce; overload;
+      ASingleLineMode: Boolean = False; ASingleLineMayBeSplit: Boolean = True): string; reintroduce; overload;
     function  SendCmd(const ATag, AOut: string; AExpectedResponses: array of String;
-      ASingleLineMode: Boolean = False; ASingleLineMayBeSplit: Boolean = False): string; overload;
+      ASingleLineMode: Boolean = False; ASingleLineMayBeSplit: Boolean = True): string; overload;
     function  ReadLnWait: string; {$IFDEF HAS_DEPRECATED}deprecated{$IFDEF HAS_DEPRECATED_MSG} 'Use IOHandler.ReadLnWait()'{$ENDIF};{$ENDIF}
     procedure WriteLn(const AOut: string = ''); {$IFDEF HAS_DEPRECATED}deprecated{$IFDEF HAS_DEPRECATED_MSG} 'Use IOHandler.WriteLn()'{$ENDIF};{$ENDIF}
   { IdTCPConnection Commands }
@@ -1126,7 +1153,7 @@ uses
     {$IFDEF USE_INLINE}
   System.IO,
     {$ENDIF}
-  {$ENDIF} 
+  {$ENDIF}
   {$IFDEF DOTNET}
   IdStreamNET,
   {$ELSE}
@@ -1154,7 +1181,20 @@ uses
   IdTCPConnection,
   IdSSL,
   IdSASL,
+  IdMessageHelper,
   SysUtils;
+
+// TODO: move this to IdCompilerDefines.inc
+{$IFDEF DCC}
+  // class helpers were first introduced in D2005, but were buggy and not
+  // officially supported until D2006...
+  {$IFDEF VCL_2006_OR_ABOVE}
+    {$DEFINE HAS_CLASS_HELPER}
+  {$ENDIF}
+{$ENDIF}
+{$IFDEF FPC}
+  {$DEFINE HAS_CLASS_HELPER} // TODO: when were class helpers introduced?
+{$ENDIF}
 
 type
   TIdIMAP4FetchDataItem = (
@@ -1302,15 +1342,6 @@ const
     'X-GM-LABELS'{Do not Localize}   //Gmail extension to SEARCH command to allow access to Gmail labels
   );
 
-  IMAP4StoreDataItem : array [TIdIMAP4StoreDataItem] of String = (
-    'FLAGS',         {Do not Localize}
-    'FLAGS.SILENT',  {Do not Localize}
-    '+FLAGS',        {Do not Localize}
-    '+FLAGS.SILENT', {Do not Localize}
-    '-FLAGS',        {Do not Localize}
-    '-FLAGS.SILENT'  {Do not Localize}
-  );
-
   IMAP4StatusDataItem : array [TIdIMAP4StatusDataItem] of String = (
     'MESSAGES',      {Do not Localize}
     'RECENT',        {Do not Localize}
@@ -1345,31 +1376,50 @@ const
   AContinueReplies: array[0..0] of string = (IMAP_CONT);
 var
   S: String;
+  AuthStarted: Boolean;
 begin
   Result := False;
-  // TODO: support 'SASL-IR' extension...
-  AClient.SendCmd(AClient.NewCmdCounter, 'AUTHENTICATE ' + String(ASASL.ServiceName), [], True); {Do not Localize}
-  if CheckStrFail(AClient.LastCmdResult.Code, AOkReplies, AContinueReplies) then begin
-    Exit; // this mechanism is not supported
+  AuthStarted := False;
+  if AClient.IsCapabilityListed('SASL-IR') then begin {Do not localize}
+    if ASASL.TryStartAuthenticate(AClient.Host, IdGSKSSN_imap, S) then begin
+      AClient.SendCmd(AClient.NewCmdCounter, 'AUTHENTICATE ' + String(ASASL.ServiceName) + ' ' + AEncoder.Encode(S), [], True); {Do not Localize}
+      if CheckStrFail(AClient.LastCmdResult.Code, AOkReplies, AContinueReplies) then begin
+        ASASL.FinishAuthenticate;
+        Exit; // this mechanism is not supported
+      end;
+      AuthStarted := True;
+    end;
+  end;
+  if not AuthStarted then begin
+    AClient.SendCmd(AClient.NewCmdCounter, 'AUTHENTICATE ' + String(ASASL.ServiceName), [], True); {Do not Localize}
+    if CheckStrFail(AClient.LastCmdResult.Code, AOkReplies, AContinueReplies) then begin
+      Exit; // this mechanism is not supported
+    end;
   end;
   if (PosInStrArray(AClient.LastCmdResult.Code, AOkReplies) > -1) then begin
+    if AuthStarted then begin
+      ASASL.FinishAuthenticate;
+    end;
     Result := True;
     Exit; // we've authenticated successfully :)
   end;
-  S := ADecoder.DecodeString(TrimRight(TIdReplyIMAP4(AClient.LastCmdResult).Extra.Text));
-  S := ASASL.StartAuthenticate(S, AClient.Host, IdGSKSSN_imap);
-  AClient.IOHandler.WriteLn(AEncoder.Encode(S));
-  AClient.GetInternalResponse('', [], True);
-  if CheckStrFail(AClient.LastCmdResult.Code, AOkReplies, AContinueReplies) then
-  begin
-    ASASL.FinishAuthenticate;
-    Exit;
+  // must be a continue reply...
+  if not AuthStarted then begin
+    S := ADecoder.DecodeString(TrimRight(TIdReplyIMAP4(AClient.LastCmdResult).Extra.Text));
+    S := ASASL.StartAuthenticate(S, AClient.Host, IdGSKSSN_imap);
+    AClient.IOHandler.WriteLn(AEncoder.Encode(S));
+    AClient.GetInternalResponse(AClient.LastCmdCounter, [], True);
+    if CheckStrFail(AClient.LastCmdResult.Code, AOkReplies, AContinueReplies) then
+    begin
+      ASASL.FinishAuthenticate;
+      Exit;
+    end;
   end;
   while PosInStrArray(AClient.LastCmdResult.Code, AContinueReplies) > -1 do begin
     S := ADecoder.DecodeString(TrimRight(TIdReplyIMAP4(AClient.LastCmdResult).Extra.Text));
     S := ASASL.ContinueAuthenticate(S, AClient.Host, IdGSKSSN_imap);
     AClient.IOHandler.WriteLn(AEncoder.Encode(S));
-    AClient.GetInternalResponse('', [], True);
+    AClient.GetInternalResponse(AClient.LastCmdCounter, [], True);
     if CheckStrFail(AClient.LastCmdResult.Code, AOkReplies, AContinueReplies) then
     begin
       ASASL.FinishAuthenticate;
@@ -1435,7 +1485,7 @@ begin
     end;
 
     if LSASLList.Count = 0 then begin
-      EIdSASLNotSupported.Toss(RSSASLNotSupported);
+      raise EIdSASLNotSupported.Create(RSSASLNotSupported);
     end;
 
     //now do it
@@ -1466,7 +1516,7 @@ begin
           if Assigned(LError) then begin
             LError.RaiseReplyError;
           end else begin
-            EIdSASLNotReady.Toss(RSSASLNotReady);
+            raise EIdSASLNotReady.Create(RSSASLNotReady);
           end;
         finally
           FreeAndNil(LError);
@@ -1552,7 +1602,7 @@ POST: returns a string encoded as described in IETF RFC 3501, section 5.1.3
     2004-02-29 roman puls: initial version                ---}
 var
   c : Word;
-  bitBuf : Cardinal;
+  bitBuf : UInt32;
   bitShift : Integer;
   x : Integer;
   escaped : Boolean;
@@ -1663,11 +1713,11 @@ POST: SUCCESS: an 8bit string
          loops. Delphi 8 compatible.
     2004-02-29 roman puls: initial version                ---}
 const
-  bitMasks: array[0..4] of Cardinal = ($00000000, $00000001, $00000003, $00000007, $0000000F);
+  bitMasks: array[0..4] of UInt32 = ($00000000, $00000001, $00000003, $00000007, $0000000F);
 var
   ch : Byte;
   last : Char;
-  bitBuf  : Cardinal;
+  bitBuf  : UInt32;
   escaped : Boolean;
   x, bitShift: Integer;
   CharToAppend: WideChar;
@@ -1889,6 +1939,7 @@ var
   i: integer;
 begin
   if High(AAllowedStates) > -1 then begin
+    // Cannot use PosInSmallIntArray() here...
     for i := Low(AAllowedStates) to High(AAllowedStates) do begin
       if FConnectionState = AAllowedStates[i] then begin
         Result := FConnectionState;
@@ -2048,13 +2099,16 @@ begin
   end;
 end;
 
-
+{$I IdDeprecatedImplBugOff.inc}
 procedure TIdIMAP4.WriteLn(const AOut: string = '');
+{$I IdDeprecatedImplBugOn.inc}
 begin
   IOHandler.WriteLn(AOut);
 end;
 
+{$I IdDeprecatedImplBugOff.inc}
 function  TIdIMAP4.ReadLnWait: string;
+{$I IdDeprecatedImplBugOn.inc}
 begin
   Result := IOHandler.ReadLnWait;  {This can have hit an exception of Connection Reset By Peer (timeout)}
 end;
@@ -2062,7 +2116,7 @@ end;
 { IdTCPConnection Commands... }
 
 function TIdIMAP4.GetInternalResponse(const ATag: String; AExpectedResponses: array of String;
-  ASingleLineMode: Boolean; ASingleLineMayBeSplit: Boolean {= False}): string;
+  ASingleLineMode: Boolean; ASingleLineMayBeSplit: Boolean {= True}): string;
 {ASingleLineMode is True if the caller just wants the FIRST line of the response,
 e.g., he may be looking only for "* FETCH (blah blah)", because he needs to parse
 that line to figure out how the rest will follow.  This arises with a number of the
@@ -2075,16 +2129,16 @@ In ASingleLineMode, we ignore any lines that dont have one of AExpectedResponses
 at the start, otherwise we add all lines to .Text and later strip out any lines that
 dont have one of AExpectedResponses at the start.
 ASingleLineMayBeSplit (which should only be used with ASingleLineMode = True) deals
-with the (unusual) case where the server cannot or does not fit a single-line
+with the case where the server cannot or does not fit a single-line
 response onto one line.  This arises when FETCHing the BODYSTRUCTURE, which can
 be very long.  The server (Courier, anyway) signals it by adding a byte-count to
 the end of the first line, that would not normally be present.}
 //For example, for normal short responses, the server would send:
 //   * FETCH (BODYSTRUCTURE (Part1 Part2))
 //but if it splits it, it sends:
-//   * FETCH (BODYSTRUCTURE (Part1 {16}
+//   * FETCH (BODYSTRUCTURE (Part1 {7}
 //   Part2))
-//The number in the chain brackets {16} seems to be random.
+//The number in the curly brackets {7} is the byte count following the line break.
 {WARNING: If you use ASingleLineMayBeSplit on a line that is EXPECTED to end
 with a byte-count, the code will break, so don't use it unless absolutely
 necessary.}
@@ -2103,7 +2157,6 @@ begin
   try
     repeat
       LLine := IOHandler.ReadLnWait;
-      LResponse.Add(LLine);
       {CCB: Trap case of server telling you that you have been disconnected, usually because
       you were inactive for too long (get "* BYE idle time too long").  }
       if TextStartsWith(LLine, '* BYE') then begin       {Do not Localize}
@@ -2118,17 +2171,14 @@ begin
         end;
       end;
       if ASingleLineMode then begin
-        LStrippedLine := LLine;
-        if TextStartsWith(LStrippedLine, '* ') then begin  {Do not Localize}
-          LStrippedLine := Copy(LStrippedLine, 3, MaxInt);
-        end;
-        LGotALineWithAnExpectedResponse := TIdReplyIMAP4(FLastCmdResult).DoesLineHaveExpectedResponse(LStrippedLine, AExpectedResponses);
-        if LGotALineWithAnExpectedResponse then begin
-          //See if it may continue on the next line...
-          if ASingleLineMayBeSplit then begin
-            //If the line is split, it will have a byte-count field at the end...
-            while TextEndsWith(LStrippedLine, '}') do begin
-              //It is split.
+        //See if it may continue on the next line...
+        if ASingleLineMayBeSplit then begin
+          //If the line is split, it will have a byte-count field at the end...
+          if TextEndsWith(LLine, '}') then begin
+            //It is split.
+            LStrippedLine := LLine;
+            LLine := '';
+            repeat
               //First, remove the byte count...
               LPos := Length(LStrippedLine)-1;
               while LPos >= 1 do begin
@@ -2137,24 +2187,65 @@ begin
                 end;
                 Dec(LPos);
               end;
-              LStrippedLineLength := StrToInt(Copy(LStrippedLine, LPos+1, (Length(LStrippedLine)-LPos)-1));
+              LWord := Copy(LStrippedLine, LPos+1, (Length(LStrippedLine)-LPos)-1);
+              if TextIsSame(LWord, 'NIL') then begin
+                LStrippedLineLength := 0;
+              end else begin
+                LStrippedLineLength := StrToInt(LWord);
+              end;
               LStrippedLine := Copy(LStrippedLine, 1, LPos-1);
               //The rest of the reply is on the following line...
               LSplitLine := IOHandler.ReadString(LStrippedLineLength);
               // At this point LSplitLine should be parsed and the following characters should be escaped... " CR LF.
-              LResponse.Add(LSplitLine);
-              LStrippedLine := LStrippedLine + LSplitLine;
-
-              LSplitLine := IOHandler.ReadLnWait;  //Cannot thrash LLine, need it later
-              LResponse.Add(LSplitLine);
-              LStrippedLine := LStrippedLine + LSplitLine;
-            end;
+              LLine := LLine + LStrippedLine + LSplitLine;
+              LStrippedLine := IOHandler.ReadLn;  //Cannot thrash LLine, need it later
+            until not TextEndsWith(LStrippedLine, '}');
+            LLine := LLine + LStrippedLine;
           end;
+        end;
+        LStrippedLine := LLine;
+        if TextStartsWith(LLine, '* ') then begin  {Do not Localize}
+          LStrippedLine := Copy(LLine, 3, MaxInt);
+        end;
+        LGotALineWithAnExpectedResponse := TIdReplyIMAP4(FLastCmdResult).DoesLineHaveExpectedResponse(LStrippedLine, AExpectedResponses);
+        if LGotALineWithAnExpectedResponse then begin
           FLastCmdResult.Text.Clear;
           TIdReplyIMAP4(FLastCmdResult).Extra.Clear;
           FLastCmdResult.Text.Add(LStrippedLine);
         end;
+      end else
+      begin
+        //If the line is split, it will have a byte-count field at the end...
+        if TextEndsWith(LLine, '}') then begin
+          LStrippedLine := LLine;
+          LLine := '';
+          repeat
+            //It is split.
+            //First, remove the byte count...
+            LPos := Length(LStrippedLine)-1;
+            while LPos >= 1 do begin
+              if LStrippedLine[LPos] = '{' then begin
+                Break;
+              end;
+              Dec(LPos);
+            end;
+            LWord := Copy(LStrippedLine, LPos+1, (Length(LStrippedLine)-LPos)-1);
+            if TextIsSame(LWord, 'NIL') then begin
+              LStrippedLineLength := 0;
+            end else begin
+              LStrippedLineLength := StrToInt(LWord);
+            end;
+            LStrippedLine := Copy(LStrippedLine, 1, LPos-1);
+            //The rest of the reply is on the following line...
+            LSplitLine := IOHandler.ReadString(LStrippedLineLength);
+            // At this point LSplitLine should be parsed and the following characters should be escaped... " CR LF.
+            LLine := LLine + LStrippedLine + LSplitLine;
+            LStrippedLine := IOHandler.ReadLn;  //Cannot thrash LLine, need it later
+          until not TextEndsWith(LStrippedLine, '}');
+          LLine := LLine + LStrippedLine;
+        end;
       end;
+      LResponse.Add(LLine);
       //Need to get the 1st word on the line in case it is +, PREAUTH, etc...
       LPos := Pos(' ', LLine);                      {Do not Localize}
       if LPos <> 0 then begin
@@ -2183,13 +2274,13 @@ begin
 end;
 
 function TIdIMAP4.SendCmd(const AOut: string; AExpectedResponses: array of String;
-  ASingleLineMode: Boolean = False; ASingleLineMayBeSplit: Boolean = False): string;
+  ASingleLineMode: Boolean = False; ASingleLineMayBeSplit: Boolean = True): string;
 begin
   Result := SendCmd(NewCmdCounter, AOut, AExpectedResponses, ASingleLineMode, ASingleLineMayBeSplit);
 end;
 
 function TIdIMAP4.SendCmd(const ATag, AOut: string; AExpectedResponses: array of String;
-  ASingleLineMode: Boolean = False; ASingleLineMayBeSplit: Boolean = False): string;
+  ASingleLineMode: Boolean = False; ASingleLineMayBeSplit: Boolean = True): string;
 var
   LCmd: String;
 begin
@@ -2208,8 +2299,7 @@ begin
     Result := GetInternalResponse(ATag, AExpectedResponses, ASingleLineMode, ASingleLineMayBeSplit);
   except
     on E: EIdSocketError do begin
-      if E.LastError = Id_WSAECONNRESET then begin
-        //Connection reset by peer...
+      if ((E.LastError = Id_WSAECONNABORTED) or (E.LastError = Id_WSAECONNRESET)) then begin
         FConnectionState := csUnexpectedlyDisconnected;
       end;
       raise;
@@ -2275,7 +2365,7 @@ begin
       if not FHasCapa then begin
         Capability;
       end;
-      // FSASLMechanisms.LoginSASL('AUTHENTICATE', FHost, IdGSKSSN_imap, [IMAP_OK], [IMAP_CONT], Self, FCapabilities);     {Do not Localize}
+      // FSASLMechanisms.LoginSASL('AUTHENTICATE', FHost, IdGSKSSN_imap, [IMAP_OK], [IMAP_CONT], Self, FCapabilities, 'AUTH', IsCapabilityListed('SASL-IR'));     {Do not Localize}
       TIdSASLEntriesIMAP4(FSASLMechanisms).LoginSASL_IMAP(Self);
     end;
     FConnectionState := csAuthenticated;
@@ -2333,6 +2423,13 @@ begin
   Result := True;
 end;
 
+{$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
+constructor TIdIMAP4.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+end;
+{$ENDIF}
+
 procedure TIdIMAP4.InitComponent;
 begin
   inherited InitComponent;
@@ -2348,8 +2445,9 @@ begin
   FMUTF7 := TIdMUTF7.Create;
 
   //Todo:  Not sure which number is appropriate.  Should be tested further.
-  FImplicitTLSProtPort := IdPORT_IMAP4S;
   FRegularProtPort := IdPORT_IMAP4;
+  FImplicitTLSProtPort := IdPORT_IMAP4S;
+  FExplicitTLSProtPort := IdPORT_IMAP4;
 
   FMilliSecsToWaitToClearBuffer := IDF_DEFAULT_MS_TO_WAIT_TO_CLEAR_BUFFER;
   FCmdCounter := 0;
@@ -2382,7 +2480,7 @@ end;
 
 procedure TIdIMAP4.KeepAlive;
 begin
-  //Avialable in any state.
+  //Available in any state.
   SendCmd(NewCmdCounter, IMAP4Commands[cmdNoop], []);
 end;
 
@@ -2404,21 +2502,26 @@ function TIdIMAP4.Capability(ASlCapability: TStrings): Boolean;
 begin
   //Available in any state.
   Result := False;
-  ASlCapability.Clear;
-  SendCmd(NewCmdCounter, IMAP4Commands[CmdCapability], [IMAP4Commands[CmdCapability]]);
-  if LastCmdResult.Code = IMAP_OK then begin
-    if LastCmdResult.Text.Count > 0 then begin
-      BreakApart(LastCmdResult.Text[0], ' ', ASlCapability);        {Do not Localize}
+  ASlCapability.BeginUpdate;
+  try
+    ASlCapability.Clear;
+    SendCmd(NewCmdCounter, IMAP4Commands[CmdCapability], [IMAP4Commands[CmdCapability]]);
+    if LastCmdResult.Code = IMAP_OK then begin
+      if LastCmdResult.Text.Count > 0 then begin
+        BreakApart(LastCmdResult.Text[0], ' ', ASlCapability);        {Do not Localize}
+      end;
+      // RLebeau: do not delete the first item anymore! It specifies the IMAP
+      // version/revision, which is needed to support certain extensions, like
+      // 'IMAP4rev1'...
+      {
+      if ASlCapability.Count > 0 then begin
+        ASlCapability.Delete(0);
+      end;
+      }
+      Result := True;
     end;
-    // RLebeau: do not delete the first item anymore! It specifies the IMAP
-    // version/revision, which is needed to support certain extensions, like
-    // 'IMAP4rev1'...
-    {
-    if ASlCapability.Count > 0 then begin
-      ASlCapability.Delete(0);
-    end;
-    }
-    Result := True;
+  finally
+    ASlCapability.EndUpdate;
   end;
 end;
 
@@ -2653,6 +2756,7 @@ var
         skBody,
         skCc,
         skFrom,
+        skHeader,
         skSubject,
         skText,
         skTo,
@@ -2670,6 +2774,7 @@ var
 
 begin
   Result := False;
+  LTextBuf := nil; // keep the compiler happy
   CheckConnectionState(csSelected);
 
   LCmd := NewCmdCounter + ' ';                    {Do not Localize}
@@ -2731,6 +2836,40 @@ begin
         skUnseen:
           LCmd := LCmd + ' ' + IMAP4SearchKeys[ASearchInfo[Ln].SearchKey]; {Do not Localize}
 
+        skHeader:
+        begin
+          // TODO: support RFC 5738 to allow for UTF-8 encoded quoted strings
+          if not RequiresEncoding(ASearchInfo[Ln].Text) then begin
+            LCmd := LCmd + ' ' + IMAP4SearchKeys[ASearchInfo[Ln].SearchKey] + ' ' + ASearchInfo[Ln].FieldName + ' ' + IMAPQuotedStr(ASearchInfo[Ln].Text); {Do not Localize}
+          end else
+          begin
+            if LUseUTF8QuotedString then begin
+              LCmd := LCmd + ' ' + IMAP4SearchKeys[ASearchInfo[Ln].SearchKey] + ' ' + ASearchInfo[Ln].FieldName + ' *'; {Do not Localize}
+              IOHandler.Write(LCmd);
+              IOHandler.Write(IMAPQuotedStr(ASearchInfo[Ln].Text), LEncoding{$IFDEF STRING_IS_ANSI}, IndyTextEncoding_OSDefault{$ENDIF});
+            end else
+            begin
+              LTextBuf := ToBytes(ASearchInfo[Ln].Text, LEncoding{$IFDEF STRING_IS_ANSI}, IndyTextEncoding_OSDefault{$ENDIF});
+              if LUseNonSyncLiteral then begin
+                LLiteral := '{' + IntToStr(Length(LTextBuf)) + '+}'; {Do not Localize}
+              end else begin
+                LLiteral := '{' + IntToStr(Length(LTextBuf)) + '}';  {Do not Localize}
+              end;
+              LCmd := LCmd + ' ' + IMAP4SearchKeys[ASearchInfo[Ln].SearchKey] + ' ' + ASearchInfo[Ln].FieldName + ' ' + LLiteral; {Do not Localize}
+              IOHandler.WriteLn(LCmd);
+              if not LUseNonSyncLiteral then begin
+                if GetInternalResponse(LastCmdCounter, [IMAP4Commands[cmdSearch], IMAP4Commands[cmdUID]], False) <> IMAP_CONT then begin
+                  RaiseExceptionForLastCmdResult;
+                end;
+              end;
+              IOHandler.Write(LTextBuf);
+            end;
+            LTextBuf := nil;
+            LCmd := '';
+          end;
+        end;
+
+        skKeyword,
         skUID:
           LCmd := LCmd + ' ' + IMAP4SearchKeys[ASearchInfo[Ln].SearchKey] + ' ' + ASearchInfo[Ln].Text; {Do not Localize}
 
@@ -2766,7 +2905,7 @@ begin
               LCmd := LCmd + ' ' + IMAP4SearchKeys[ASearchInfo[Ln].SearchKey] + ' ' + LLiteral; {Do not Localize}
               IOHandler.WriteLn(LCmd);
               if not LUseNonSyncLiteral then begin
-                if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdSearch], IMAP4Commands[cmdUID]], False) <> IMAP_CONT then begin
+                if GetInternalResponse(LastCmdCounter, [IMAP4Commands[cmdSearch], IMAP4Commands[cmdUID]], False) <> IMAP_CONT then begin
                   RaiseExceptionForLastCmdResult;
                 end;
               end;
@@ -2798,14 +2937,13 @@ begin
     // After we send the last of the data, we need to send an EXTRA CRLF to terminates the SEARCH command...
     IOHandler.WriteLn;
 
-    if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdSearch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
+    if GetInternalResponse(LastCmdCounter, [IMAP4Commands[cmdSearch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
       ParseSearchResult(FMailBox, LastCmdResult.Text);
       Result := True;
     end;
   except
     on E: EIdSocketError do begin
-      if E.LastError = Id_WSAECONNRESET then begin
-        //Connection reset by peer...
+      if ((E.LastError = Id_WSAECONNABORTED) or (E.LastError = Id_WSAECONNRESET)) then begin
         FConnectionState := csUnexpectedlyDisconnected;
       end;
       raise;
@@ -2917,23 +3055,32 @@ end;
 
 function TIdIMAP4.StoreFlags(const AMsgNumList: array of Integer;
   const AStoreMethod: TIdIMAP4StoreDataItem; const AFlags: TIdMessageFlagsSet): Boolean;
+begin
+  Result := StoreValue(AMsgNumList, AStoreMethod, IMAP4FetchDataItem[fdFlags], MessageFlagSetToStr(AFlags));
+end;
+
+function TIdIMAP4.StoreValue(const AMsgNumList: array of Integer;
+  const AStoreMethod: TIdIMAP4StoreDataItem; const AField, AValue: String): Boolean;
 var
   LDataItem,
-  LMsgSet,
-  LFlags: String;
+  LMsgSet: string;
 begin
   Result := False;
   if Length(AMsgNumList) > 0 then begin
     LMsgSet := ArrayToNumberStr(AMsgNumList);
     case AStoreMethod of
-      sdReplace: LDataItem := IMAP4StoreDataItem[sdReplaceSilent];
-      sdAdd:     LDataItem := IMAP4StoreDataItem[sdAddSilent];
-      sdRemove:  LDataItem := IMAP4StoreDataItem[sdRemoveSilent];
+      sdReplace, sdReplaceSilent:
+        LDataItem := AField+'.SILENT';      {Do not Localize}
+      sdAdd, sdAddSilent:
+        LDataItem := '+'+AField+'.SILENT';  {Do not Localize}
+      sdRemove, sdRemoveSilent:
+        LDataItem := '-'+AField+'.SILENT';  {Do not Localize}
+    else
+      Exit;
     end;
-    LFlags := MessageFlagSetToStr(AFlags);
     CheckConnectionState(csSelected);
     SendCmd(NewCmdCounter,
-      IMAP4Commands[cmdStore] + ' ' + LMsgSet + ' ' + LDataItem + ' (' + LFlags + ')', {Do not Localize}
+      IMAP4Commands[cmdStore] + ' ' + LMsgSet + ' ' + LDataItem + ' (' + AValue + ')', {Do not Localize}
       []);
     if LastCmdResult.Code = IMAP_OK then begin
       Result := True;
@@ -2943,33 +3090,47 @@ end;
 
 function TIdIMAP4.UIDStoreFlags(const AMsgUID: String;
   const AStoreMethod: TIdIMAP4StoreDataItem; const AFlags: TIdMessageFlagsSet): Boolean;
+begin
+  Result := UIDStoreValue(AMsgUID, AStoreMethod, IMAP4FetchDataItem[fdFlags], MessageFlagSetToStr(AFlags));
+end;
+
+function TIdIMAP4.UIDStoreFlags(const AMsgUIDList: array of String;
+  const AStoreMethod: TIdIMAP4StoreDataItem; const AFlags: TIdMessageFlagsSet): Boolean;
+begin
+ Result := UIDStoreValue(AMsgUIDList, AStoreMethod, IMAP4FetchDataItem[fdFlags], MessageFlagSetToStr(AFlags));
+end;
+
+function TIdIMAP4.UIDStoreValue(const AMsgUID: String;
+  const AStoreMethod: TIdIMAP4StoreDataItem; const AField, AValue: string): Boolean;
 var
-  LDataItem,
-  LFlags : String;
+  LDataItem : String;
 begin
   Result := False;
   IsUIDValid(AMsgUID);
   case AStoreMethod of
-    sdReplace: LDataItem := IMAP4StoreDataItem[sdReplaceSilent];
-    sdAdd:     LDataItem := IMAP4StoreDataItem[sdAddSilent];
-    sdRemove:  LDataItem := IMAP4StoreDataItem[sdRemoveSilent];
+    sdReplace, sdReplaceSilent:
+      LDataItem := AField+'.SILENT';      {Do not Localize}
+    sdAdd, sdAddSilent:
+      LDataItem := '+'+AField+'.SILENT';  {Do not localize}
+    sdRemove, sdRemoveSilent:
+      LDataItem := '-'+AField+'.SILENT';  {Do not Localize}
+  else
+    Exit;
   end;
-  LFlags := MessageFlagSetToStr(AFlags);
   CheckConnectionState(csSelected);
   SendCmd(NewCmdCounter,
-    IMAP4Commands[cmdUID] + ' ' + IMAP4Commands[cmdStore] + ' ' + AMsgUID + ' ' + LDataItem + ' (' + LFlags + ')', {Do not Localize}
+    IMAP4Commands[cmdUID] + ' ' + IMAP4Commands[cmdStore] + ' ' + AMsgUID + ' ' + LDataItem + ' (' + AValue + ')', {Do not Localize}
     []);
   if LastCmdResult.Code = IMAP_OK then begin
     Result := True;
   end;
 end;
 
-function TIdIMAP4.UIDStoreFlags(const AMsgUIDList: array of String;
-  const AStoreMethod: TIdIMAP4StoreDataItem; const AFlags: TIdMessageFlagsSet): Boolean;
+function TIdIMAP4.UIDStoreValue(const AMsgUIDList: array of String;
+  const AStoreMethod: TIdIMAP4StoreDataItem; const AField, AValue: String): Boolean;
 var
   LDataItem,
-  LMsgSet,
-  LFlags : String;
+  LMsgSet : String;
   LN: integer;
 begin
   Result := False;
@@ -2982,14 +3143,18 @@ begin
     LMsgSet := LMsgSet+AMsgUIDList[LN];
   end;
   case AStoreMethod of
-    sdReplace: LDataItem := IMAP4StoreDataItem[sdReplaceSilent];
-    sdAdd:     LDataItem := IMAP4StoreDataItem[sdAddSilent];
-    sdRemove:  LDataItem := IMAP4StoreDataItem[sdRemoveSilent];
+    sdReplace, sdReplaceSilent:
+      LDataItem := AField+'.SILENT';      {Do not Localize}
+    sdAdd, sdAddSilent:
+      LDataItem := '+'+AField+'.SILENT';  {Do not Localize}
+    sdRemove, sdRemoveSilent:
+      LDataItem := '-'+AField+'.SILENT';  {Do not Localize}
+  else
+    Exit;
   end;
-  LFlags := MessageFlagSetToStr(AFlags);
   CheckConnectionState(csSelected);
   SendCmd(NewCmdCounter,
-    IMAP4Commands[cmdUID] + ' ' + IMAP4Commands[cmdStore] + ' ' + LMsgSet + ' ' + LDataItem + ' (' + LFlags + ')', {Do not Localize}
+    IMAP4Commands[cmdUID] + ' ' + IMAP4Commands[cmdStore] + ' ' + LMsgSet + ' ' + LDataItem + ' (' + AValue + ')', {Do not Localize}
     []);
   if LastCmdResult.Code = IMAP_OK then begin
     Result := True;
@@ -3061,34 +3226,47 @@ begin
 end;
 
 
-function TIdIMAP4.AppendMsg(const AMBName: String; AMsg: TIdMessage; const AFlags: TIdMessageFlagsSet = []): Boolean;
+function TIdIMAP4.AppendMsg(const AMBName: String; AMsg: TIdMessage; const AFlags: TIdMessageFlagsSet = [];
+  const AInternalDateTimeGMT: TDateTime = 0.0): Boolean;
 begin
-  Result := AppendMsg(AMBName, AMsg, nil, AFlags);
+  Result := AppendMsg(AMBName, AMsg, nil, AFlags, AInternalDateTimeGMT);
 end;
 
-function TIdIMAP4.AppendMsg(const AMBName: String; AMsg: TIdMessage; AAlternativeHeaders: TIdHeaderList; const AFlags: TIdMessageFlagsSet = []): Boolean;
+function TIdIMAP4.AppendMsg(const AMBName: String; AMsg: TIdMessage; AAlternativeHeaders: TIdHeaderList; const AFlags: TIdMessageFlagsSet = [];
+  const AInternalDateTimeGMT: TDateTime = 0.0): Boolean;
 var
   LFlags,
-  LMsgLiteral: String;
+  LMsgLiteral, LDateTime: String;
   LUseNonSyncLiteral: Boolean;
   Ln: Integer;
   LCmd: string;
   LLength: TIdStreamSize;
-  LHeadersToSend: TIdHeaderList;
+  LHeadersToSend, LCopiedHeaders: TIdHeaderList;
   LHeadersAsString: string;
   LHeadersAsBytes: TIdBytes;
+  LMimeBoundary: string;
   LStream: TStream;
   LHelper: TIdIMAP4WorkHelper;
-  LMsgClient: TIdMessageClient;
-  LMsgIO: TIdIOHandlerStreamMsg;
 begin
   Result := False;
+  LHeadersasBytes := nil; // keep the compiler happy
+
   CheckConnectionState([csAuthenticated, csSelected]);
   if Length(AMBName) <> 0 then begin
     LFlags := MessageFlagSetToStr(AFlags);
     if LFlags <> '' then begin                                {Do not Localize}
       LFlags := '(' + LFlags + ')';                           {Do not Localize}
     end;
+    if AInternalDateTimeGMT <> 0.0 then begin
+      // even though flags are optional, some servers, such as GMail, will
+      // fail to parse the command correctly if no flags are specified in
+      // front of the internal date...
+      if LFlags = '' then begin
+        LFlags := '()'; // TODO: should 'NIL' be used instead?      {Do not Localize}
+      end;
+      LDateTime := '"' + DateTimeGMTToImapStr(AInternalDateTimeGMT) + '"'; {do not localize}
+    end;
+
     {CC8: In Indy 10, we want to support attachments (previous versions did
     not).  The problem is that we have to know the size of the message
     in advance of sending it for the IMAP APPEND command.
@@ -3103,53 +3281,78 @@ begin
 
     LStream := TMemoryStream.Create;
     try
-      {RLebeau 12/09/2012: this is a workaround to a design limitation in
-      TIdMessage.SaveToStream().  It always outputs the stream data in an
-      escaped format using SMTP dot transparency, but that is not used in
-      IMAP! Until this design is corrected, we have to use a workaround
-      for now.  This logic is copied from TIdMessage.SaveToSteam() and
-      slightly tweaked...}
+      {RLebeau 04/02/2014: if the user passed in AMsg.LastGeneratedHeaders
+      or AMsg.Headers as AAlternativeHeaders, then assume the user wants to
+      use the headers that existed prior to AMsg being saved below, which
+      may create new header values...}
 
-      //AMsg.SaveToStream(LStream);
-      LMsgClient := TIdMessageClient.Create(nil);
+      LCopiedHeaders := nil;
       try
-        LMsgIO := TIdIOHandlerStreamMsg.Create(nil, nil, LStream);
-        try
-          LMsgIO.FreeStreams := False;
-          LMsgIO.UnescapeLines := True; // this is the key piece that makes it work!
-          LMsgClient.IOHandler := LMsgIO;
-          try
-            LMsgClient.SendMsg(AMsg, False);
-          finally
-            LMsgClient.IOHandler := nil;
+        if (AAlternativeHeaders <> nil) and
+           ((AAlternativeHeaders = AMsg.LastGeneratedHeaders) or (AAlternativeHeaders = AMsg.Headers)) then
+        begin
+          LCopiedHeaders := TIdHeaderList.Create(QuoteRFC822);
+          LCopiedHeaders.Assign(AAlternativeHeaders);
+        end;
+
+        {RLebeau 12/09/2012: this is a workaround to a design limitation in
+        TIdMessage.SaveToStream().  It always outputs the stream data in an
+        escaped format using SMTP dot transparency, but that is not used in
+        IMAP! Until this design is corrected, we have to use a workaround
+        for now.  This logic is copied from TIdMessage.SaveToSteam() and
+        slightly tweaked...}
+
+        //AMsg.SaveToStream(LStream);
+        {$IFDEF HAS_CLASS_HELPER}
+        AMsg.SaveToStream(LStream, False, False);
+        {$ELSE}
+        TIdMessageHelper_SaveToStream(AMsg, LStream, False, False);
+        {$ENDIF}
+
+        LStream.Position := 0;
+        {We are better off making up the headers as a string first rather than predicting
+        its length.  Slightly wasteful of memory, but it will not take up much.}
+        LHeadersAsString := '';
+
+        {Make sure the headers we end up using have the correct MIME boundary actually
+        used in the message being saved...}
+        if AMsg.NoEncode then begin
+          LMimeBoundary := AMsg.Headers.Params['Content-Type', 'boundary']; {do not localize}
+        end else begin
+          LMimeBoundary := AMsg.LastGeneratedHeaders.Params['Content-Type', 'boundary']; {do not localize}
+        end;
+        if (LCopiedHeaders = nil) and (AAlternativeHeaders <> nil) then begin
+          if AAlternativeHeaders.Params['Content-Type', 'boundary'] <> LMimeBoundary then {do not localize}
+          begin
+            LCopiedHeaders := TIdHeaderList.Create(QuoteRFC822);
+            LCopiedHeaders.Assign(AAlternativeHeaders);
           end;
-        finally
-          LMsgIO.Free;
+        end;
+
+        if LCopiedHeaders <> nil then begin
+          {Use the copied headers that the user has passed to us, adjusting the MIME boundary...}
+          LCopiedHeaders.Params['Content-Type', 'boundary'] := LMimeBoundary; {do not localize}
+          LHeadersToSend := LCopiedHeaders;
+        end
+        else if AAlternativeHeaders <> nil then begin
+          {Use the headers that the user has passed to us...}
+          LHeadersToSend := AAlternativeHeaders;
+        end
+        else if AMsg.NoEncode then begin
+          {Use the headers that are in the message AMsg...}
+          LHeadersToSend := AMsg.Headers;
+        end else begin
+          {Use the headers that SaveToStream() generated...}
+          LHeadersToSend := AMsg.LastGeneratedHeaders;
+        end;
+        // not using LHeadersToSend.Text because it uses platform-specific line breaks
+        for Ln := 0 to Pred(LHeadersToSend.Count) do begin
+          LHeadersAsString := LHeadersAsString + LHeadersToSend[Ln] + EOL;
         end;
       finally
-        LMsgClient.Free;
+        LCopiedHeaders.Free;
       end;
-      // end workaround
 
-      LStream.Position := 0;
-      {We are better off making up the headers as a string first rather than predicting
-      its length.  Slightly wasteful of memory, but it will not take up much.}
-      LHeadersAsString := '';
-      if AAlternativeHeaders <> nil then begin
-        {Use the headers that the user has passed to us...}
-        LHeadersToSend := AAlternativeHeaders;
-      end
-      else if AMsg.NoEncode then begin
-        {Use the headers that are in the message AMsg...}
-        LHeadersToSend := AMsg.Headers;
-      end else begin
-        {Use the headers that SaveToStream() generated...}
-        LHeadersToSend := AMsg.LastGeneratedHeaders;
-      end;
-      // not using LHeadersToSend.Text because it uses platform-specific line breaks
-      for Ln := 0 to Pred(LHeadersToSend.Count) do begin
-        LHeadersAsString := LHeadersAsString + LHeadersToSend[Ln] + EOL;
-      end;
       LHeadersAsBytes := ToBytes(LHeadersAsString + EOL);
       LHeadersAsString := '';
 
@@ -3175,6 +3378,9 @@ begin
       LCmd := IMAP4Commands[cmdAppend] + ' "' + DoMUTFEncode(AMBName) + '" ';         {Do not Localize}
       if Length(LFlags) <> 0 then begin
         LCmd := LCmd + LFlags + ' ';                    {Do not Localize}
+      end;
+      if Length(LDateTime) <> 0 then begin
+        LCmd := LCmd + LDateTime + ' ';                 {Do not Localize}
       end;
       LCmd := LCmd + LMsgLiteral;                       {Do not Localize}
 
@@ -3210,8 +3416,7 @@ begin
         end;
       except
         on E: EIdSocketError do begin
-          if E.LastError = Id_WSAECONNRESET then begin
-            //Connection reset by peer...
+          if ((E.LastError = Id_WSAECONNABORTED) or (E.LastError = Id_WSAECONNRESET)) then begin
             FConnectionState := csUnexpectedlyDisconnected;
           end;
           raise;
@@ -3223,23 +3428,25 @@ begin
   end;
 end;
 
-function  TIdIMAP4.AppendMsgNoEncodeFromFile(const AMBName: String; ASourceFile: string; const AFlags: TIdMessageFlagsSet = []): Boolean;
+function  TIdIMAP4.AppendMsgNoEncodeFromFile(const AMBName: String; ASourceFile: string; const AFlags: TIdMessageFlagsSet = [];
+  const AInternalDateTimeGMT: TDateTime = 0.0): Boolean;
 var
   LSourceStream: TIdReadFileExclusiveStream;
 begin
   LSourceStream := TIdReadFileExclusiveStream.Create(ASourceFile);
   try
-    Result := AppendMsgNoEncodeFromStream(AMBName, LSourceStream, AFlags);
+    Result := AppendMsgNoEncodeFromStream(AMBName, LSourceStream, AFlags, AInternalDateTimeGMT);
   finally
     FreeAndNil(LSourceStream);
   end;
 end;
 
-function  TIdIMAP4.AppendMsgNoEncodeFromStream(const AMBName: String; AStream: TStream; const AFlags: TIdMessageFlagsSet = []): Boolean;
+function  TIdIMAP4.AppendMsgNoEncodeFromStream(const AMBName: String; AStream: TStream; const AFlags: TIdMessageFlagsSet = [];
+  const AInternalDateTimeGMT: TDateTime = 0.0): Boolean;
 const
   cTerminator: array[0..4] of Byte = (13, 10, Ord('.'), 13, 10);
 var
-  LFlags, LMsgLiteral: String;
+  LFlags, LDateTime, LMsgLiteral: String;
   LUseNonSyncLiteral: Boolean;
   I: Integer;
   LFound: Boolean;
@@ -3251,12 +3458,21 @@ var
 begin
   Result := False;
   CheckConnectionState([csAuthenticated, csSelected]);
-  if Length(AMBName) <> 0 then begin                      {Do not Localize}
+  if Length(AMBName) <> 0 then begin
     LFlags := MessageFlagSetToStr(AFlags);
     if LFlags <> '' then begin                        {Do not Localize}
       LFlags := '(' + LFlags + ')';                   {Do not Localize}
     end;
-    LLength := AStream.Size;
+    if AInternalDateTimeGMT <> 0.0 then begin
+      // even though flags are optional, some servers, such as GMail, will
+      // fail to parse the command correctly if no flags are specified in
+      // front of the internal date...
+      if LFlags = '' then begin
+        LFlags := '()'; // TODO: should 'NIL' be used instead?      {Do not Localize}
+      end;
+      LDateTime := '"' + DateTimeGMTToImapStr(AInternalDateTimeGMT) + '"'; {Do not Localize}
+    end;
+    LLength := AStream.Size - AStream.Position;
     LTempStream := TMemoryStream.Create;
     try
       //Hunt for CRLF.CRLF, if present then we need to remove it...
@@ -3269,8 +3485,10 @@ begin
       // truncating the message that is stored on the server...
 
       SetLength(LBuf, 5);
-      LTempStream.CopyFrom(AStream, LLength);
-      LTempStream.Position := 0;
+      if LLength > 0 then begin
+        LTempStream.CopyFrom(AStream, LLength);
+        LTempStream.Position := 0;
+      end;
       repeat
         if TIdStreamHelper.ReadBytes(LTempStream, LBuf, 5) < 5 then begin
           Break;
@@ -3303,8 +3521,11 @@ begin
 
       //CC: Added double quotes around mailbox name, else mailbox names with spaces will cause server parsing error
       LCmd := IMAP4Commands[cmdAppend] + ' "' + DoMUTFEncode(AMBName) + '" ';     {Do not Localize}
-      if Length(LFlags) <> 0 then begin                 {Do not Localize}
+      if Length(LFlags) <> 0 then begin
         LCmd := LCmd + LFlags + ' ';                {Do not Localize}
+      end;
+      if Length(LDateTime) <> 0 then begin
+        LCmd := LCmd + LDateTime + ' ';             {Do not Localize}
       end;
       LCmd := LCmd + LMsgLiteral;                   {Do not Localize}
 
@@ -3338,8 +3559,7 @@ begin
         end;
       except
         on E: EIdSocketError do begin
-          if E.LastError = Id_WSAECONNRESET then begin
-            //Connection reset by peer...
+          if ((E.LastError = Id_WSAECONNABORTED) or (E.LastError = Id_WSAECONNRESET)) then begin
             FConnectionState := csUnexpectedlyDisconnected;
           end;
           raise;
@@ -3376,8 +3596,13 @@ begin
     if LastCmdResult.Text.Count > 0 then begin
       if ParseLastCmdResult(LastCmdResult.Text[0], IMAP4Commands[cmdFetch], [IMAP4FetchDataItem[fdEnvelope]]) then begin
         if ADestList <> nil then begin
-          ADestList.Clear;
-          ADestList.Add(FLineStruct.IMAPValue);
+          ADestList.BeginUpdate;
+          try
+            ADestList.Clear;
+            ADestList.Add(FLineStruct.IMAPValue);
+          finally
+            ADestList.EndUpdate;
+          end;
         end;
         if AMsg <> nil then begin
           ParseEnvelopeResult(AMsg, FLineStruct.IMAPValue);
@@ -3413,8 +3638,13 @@ begin
     if LastCmdResult.Text.Count > 0 then begin
       if ParseLastCmdResult(LastCmdResult.Text[0], IMAP4Commands[cmdFetch], [IMAP4FetchDataItem[fdEnvelope]]) then begin
         if ADestList <> nil then begin
-          ADestList.Clear;
-          ADestList.Add(FLineStruct.IMAPValue);
+          ADestList.BeginUpdate;
+          try
+            ADestList.Clear;
+            ADestList.Add(FLineStruct.IMAPValue);
+          finally
+            ADestList.EndUpdate;
+          end;
         end;
         if AMsg <> nil then begin
           ParseEnvelopeResult(AMsg, FLineStruct.IMAPValue);
@@ -3634,18 +3864,14 @@ begin
       end;
 
       {Get the info we want out of LParts...}
+      {Some emails have their first parts empty, so search for the first non-empty part.}
       repeat
-        LThePart := LParts.Items[LTextPart];   {Part 1 is index 0}
-        if LThePart.FSize = 0 then begin
-          {Some emails have part 0 empty, they intend you to use part 1}
-          if LTextPart = 0 then begin
-            LTextPart := 1;
-            Continue;
-          end else begin
-            Break;
-          end;
+        LThePart := LParts.Items[LTextPart];
+        if (LThePart.FSize <> 0) then begin
+          Break;
         end;
-      until False;
+        Inc(LTextPart);
+      until LTextPart >= LParts.Count - 1;
 
       LCharSet := LThePart.CharSet;
       LContentTransferEncoding := LThePart.ContentTransferEncoding;
@@ -3671,7 +3897,7 @@ begin
     LCmd := LCmd + '[' + IntToStr(LTextPart+1) + '])';            {Do not Localize}
   end;
 
-  SendCmd(NewCmdCounter, LCmd, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], True);
+  SendCmd(NewCmdCounter, LCmd, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], True, False);
   if LastCmdResult.Code = IMAP_OK then begin
     try
       {For an invalid request (non-existent part or message), NIL is returned as the size...}
@@ -3681,20 +3907,18 @@ begin
         or (PosInStrArray(FLineStruct.IMAPValue, ['NIL', '""'], False) <> -1) {do not localize}
         or (FLineStruct.ByteCount < 1) then
       begin
-        GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False);
+        GetInternalResponse(LastCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False);
         Result := False;
         Exit;
       end;
 
       LHelper := TIdIMAP4WorkHelper.Create(Self);
       try
-        if TextIsSame(LContentTransferEncoding, 'base64') then begin  {Do not Localize}
-          DoDecode(TIdDecoderMIME, True);
-        end else if TextIsSame(LContentTransferEncoding, 'quoted-printable') then begin  {Do not Localize}
-          DoDecode(TIdDecoderQuotedPrintable);
-        end else if TextIsSame(LContentTransferEncoding, 'binhex40') then begin  {Do not Localize}
-          DoDecode(TIdDecoderBinHex4);
-        end else begin
+        case PosInStrArray(LContentTransferEncoding, ['base64', 'quoted-printable', 'binhex40'], False) of {Do not Localize}
+          0: DoDecode(TIdDecoderMIME, True);
+          1: DoDecode(TIdDecoderQuotedPrintable);
+          2: DoDecode(TIdDecoderBinHex4);
+        else
           {Assume no encoding (8bit) or something we cannot decode...}
           DoDecode();
         end;
@@ -3702,13 +3926,12 @@ begin
         FreeAndNil(LHelper);
       end;
       IOHandler.ReadLnWait;  {Remove last line, ')' or 'UID 1)'}
-      if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
+      if GetInternalResponse(LastCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
         Result := True;
       end;
     except
       on E: EIdSocketError do begin
-        if E.LastError = Id_WSAECONNRESET then begin
-          //Connection reset by peer...
+        if ((E.LastError = Id_WSAECONNABORTED) or (E.LastError = Id_WSAECONNRESET)) then begin
           FConnectionState := csUnexpectedlyDisconnected;
         end;
         raise;
@@ -3737,7 +3960,7 @@ begin
   CheckConnectionState(csSelected);
   SendCmd(NewCmdCounter,
     IMAP4Commands[cmdFetch] + ' ' + IntToStr(AMsgNum) + ' (' + IMAP4FetchDataItem[fdBodyStructure] + ')',
-    [IMAP4Commands[cmdFetch]], True);
+    [IMAP4Commands[cmdFetch]], True, False);
   if LastCmdResult.Code = IMAP_OK then begin
     {CC3: Catch "Connection reset by peer"...}
     try
@@ -3749,15 +3972,14 @@ begin
             LTheParts := nil;
           end;
           ParseBodyStructureResult(FLineStruct.IMAPValue, LTheParts, AParts);
-          if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch]], False) = IMAP_OK then begin
+          if GetInternalResponse(LastCmdCounter, [IMAP4Commands[cmdFetch]], False) = IMAP_OK then begin
             Result := True;
           end;
         end;
       end;
     except
       on E: EIdSocketError do begin
-        if E.LastError = Id_WSAECONNRESET then begin
-          //Connection reset by peer...
+        if ((E.LastError = Id_WSAECONNABORTED) or (E.LastError = Id_WSAECONNRESET)) then begin
           FConnectionState := csUnexpectedlyDisconnected;
         end;
         raise;
@@ -4088,7 +4310,7 @@ begin
   end;
   LCmd := LCmd + '[' + APartNum + '])';                     {Do not Localize}
 
-  SendCmd(NewCmdCounter, LCmd, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], True);
+  SendCmd(NewCmdCounter, LCmd, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], True, False);
   if LastCmdResult.Code = IMAP_OK then begin
     {CC3: Catch "Connection reset by peer"...}
     try
@@ -4098,7 +4320,7 @@ begin
         or (PosInStrArray(FLineStruct.IMAPValue, ['NIL', '""'], False) <> -1)    {do not localize}
         or (FLineStruct.ByteCount < 1) ) then
       begin
-        GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False);
+        GetInternalResponse(LastCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False);
         Result := False;
         Exit;
       end;
@@ -4149,13 +4371,12 @@ begin
         end;
       end;
       IOHandler.ReadLnWait;  {Remove last line, ')' or 'UID 1)'}
-      if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
+      if GetInternalResponse(LastCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
         Result := True;
       end;
     except
       on E: EIdSocketError do begin
-        if E.LastError = Id_WSAECONNRESET then begin
-          //Connection reset by peer...
+        if ((E.LastError = Id_WSAECONNABORTED) or (E.LastError = Id_WSAECONNRESET)) then begin
           FConnectionState := csUnexpectedlyDisconnected;
         end;
         raise;
@@ -4202,15 +4423,14 @@ begin
             LTheParts := nil;
           end;
           ParseBodyStructureResult(FLineStruct.IMAPValue, LTheParts, AParts);
-          if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
+          if GetInternalResponse(LastCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
             Result := True;
           end;
         end;
       end;
     except
       on E: EIdSocketError do begin
-        if E.LastError = Id_WSAECONNRESET then begin
-          //Connection reset by peer...
+        if ((E.LastError = Id_WSAECONNABORTED) or (E.LastError = Id_WSAECONNRESET)) then begin
           FConnectionState := csUnexpectedlyDisconnected;
         end;
         raise;
@@ -4229,13 +4449,14 @@ begin
 
   SendCmd(NewCmdCounter,
     IMAP4Commands[cmdFetch] + ' ' + IntToStr(AMsgNum) + ' (' + IMAP4FetchDataItem[fdRFC822Header] + ')', {Do not Localize}
-    [IMAP4Commands[cmdFetch]], True);
+    [IMAP4Commands[cmdFetch]], True, False);
   if LastCmdResult.Code = IMAP_OK then begin
     {CC3: Catch "Connection reset by peer"...}
     try
       if LastCmdResult.Text.Count > 0 then begin
         if ParseLastCmdResult(LastCmdResult.Text[0], IMAP4Commands[cmdFetch], [IMAP4FetchDataItem[fdRFC822Header]])
-          and (FLineStruct.ByteCount > 0) then begin
+          and (FLineStruct.ByteCount > 0) then
+        begin
           BeginWork(wmRead, FLineStruct.ByteCount);  //allow ReadString to use OnWork
           try
             LStr := IOHandler.ReadString(FLineStruct.ByteCount);
@@ -4248,15 +4469,14 @@ begin
           AMsg.ProcessHeaders;
           LStr := IOHandler.ReadLnWait;  {Remove trailing line after the message, probably a ')' }
           ParseLastCmdResultButAppendInfo(LStr);  //There may be a UID or FLAGS in this
-          if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch]], False) = IMAP_OK then begin
+          if GetInternalResponse(LastCmdCounter, [IMAP4Commands[cmdFetch]], False) = IMAP_OK then begin
             Result := True;
           end;
         end;
       end;
     except
       on E: EIdSocketError do begin
-        if E.LastError = Id_WSAECONNRESET then begin
-          //Connection reset by peer...
+        if ((E.LastError = Id_WSAECONNABORTED) or (E.LastError = Id_WSAECONNRESET)) then begin
           FConnectionState := csUnexpectedlyDisconnected;
         end;
         raise;
@@ -4274,13 +4494,14 @@ begin
   CheckConnectionState(csSelected);
   SendCmd(NewCmdCounter,
     IMAP4Commands[cmdUID] + ' ' + IMAP4Commands[cmdFetch] + ' ' + AMsgUID + ' (' + IMAP4FetchDataItem[fdRFC822Header] + ')', {Do not Localize}
-    [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], True);
+    [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], True, False);
   if LastCmdResult.Code = IMAP_OK then begin
     {CC3: Catch "Connection reset by peer"...}
     try
       if LastCmdResult.Text.Count > 0 then begin
         if ParseLastCmdResult(LastCmdResult.Text[0], IMAP4Commands[cmdFetch], [IMAP4FetchDataItem[fdRFC822Header]])
-          and (FLineStruct.ByteCount > 0) then begin
+          and (FLineStruct.ByteCount > 0) then
+        begin
           BeginWork(wmRead, FLineStruct.ByteCount); //allow ReadString to use OnWork
           try
             LStr := IOHandler.ReadString(FLineStruct.ByteCount);
@@ -4293,15 +4514,14 @@ begin
           AMsg.ProcessHeaders;
           LStr := IOHandler.ReadLnWait;  {Remove trailing line after the message, probably a ')' }
           ParseLastCmdResultButAppendInfo(LStr);  //There may be a UID or FLAGS in this
-          if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
+          if GetInternalResponse(LastCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
             Result := True;
           end;
         end;
       end;
     except
       on E: EIdSocketError do begin
-        if E.LastError = Id_WSAECONNRESET then begin
-          //Connection reset by peer...
+        if ((E.LastError = Id_WSAECONNABORTED) or (E.LastError = Id_WSAECONNRESET)) then begin
           FConnectionState := csUnexpectedlyDisconnected;
         end;
         raise;
@@ -4335,7 +4555,7 @@ begin
   end;
   LCmd := LCmd + IMAP4Commands[cmdFetch] + ' ' + IntToStr(AMsgNum) + ' (' + IMAP4FetchDataItem[fdBody] + '[' + APartNum + '.' + IMAP4FetchDataItem[fdHeader] + '])'; {Do not Localize}
 
-  SendCmd(NewCmdCounter, LCmd, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], True);
+  SendCmd(NewCmdCounter, LCmd, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], True, False);
   if LastCmdResult.Code = IMAP_OK then begin
     {CC3: Catch "Connection reset by peer"...}
     try
@@ -4360,13 +4580,12 @@ begin
         end;
       end;
       IOHandler.ReadLnWait;
-      if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
+      if GetInternalResponse(LastCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
         Result := True;
       end;
     except
       on E: EIdSocketError do begin
-        if E.LastError = Id_WSAECONNRESET then begin
-          //Connection reset by peer...
+        if ((E.LastError = Id_WSAECONNABORTED) or (E.LastError = Id_WSAECONNRESET)) then begin
           FConnectionState := csUnexpectedlyDisconnected;
         end;
         raise;
@@ -4416,6 +4635,47 @@ begin
       know how this method is being used and I don't want to break anything
       that may be depending on that transparent output being generated...}
       LMsg.SaveToFile(ADestFile);
+
+      {TODO: add an optional parameter to specify whether dot transparency
+      should be used or not, and then pass that to SaveToFile(). Or better,
+      just deprecate this method and implement a replacement that downloads
+      the message directly to the file without dot transparency, since it
+      has no meaning in IMAP. InternalRetrieve() uses an internal stream
+      anyway to receive the data, so let's just cut out TIdMessage here...}
+
+      Result := True;
+    end;
+  finally
+    FreeAndNil(LMsg);
+  end;
+end;
+
+//Retrieves a whole message "raw" and saves it to file
+function  TIdIMAP4.RetrieveNoDecodeToFilePeek(const AMsgNum: Integer; ADestFile: string): Boolean;
+var
+  LMsg: TIdMessage;
+begin
+  Result := False;
+  IsNumberValid(AMsgNum);
+  LMsg := TIdMessage.Create(nil);
+  try
+    LMsg.NoDecode := True;
+    LMsg.NoEncode := True;
+    if InternalRetrieve(AMsgNum, False, True, LMsg) then begin
+      {RLebeau 12/09/2012: NOT currently using the same workaround here that
+      is being used in AppendMsg() to avoid SMTP dot transparent output from
+      TIdMessage.SaveToStream().  The reason for this is because I don't
+      know how this method is being used and I don't want to break anything
+      that may be depending on that transparent output being generated...}
+      LMsg.SaveToFile(ADestFile);
+
+      {TODO: add an optional parameter to specify whether dot transparency
+      should be used or not, and then pass that to SaveToFile(). Or better,
+      just deprecate this method and implement a replacement that downloads
+      the message directly to the file without dot transparency, since it
+      has no meaning in IMAP. InternalRetrieve() uses an internal stream
+      anyway to receive the data, so let's just cut out TIdMessage here...}
+
       Result := True;
     end;
   finally
@@ -4441,6 +4701,47 @@ begin
       know how this method is being used and I don't want to break anything
       that may be depending on that transparent output being generated...}
       LMsg.SaveToStream(AStream);
+
+      {TODO: add an optional parameter to specify whether dot transparency
+      should be used or not, and then pass that to SaveToStream(). Or better,
+      just deprecate this method and implement a replacement that downloads
+      the message directly to the file without dot transparency, since it
+      has no meaning in IMAP. InternalRetrieve() uses an internal stream
+      anyway to receive the data, so let's just cut out TIdMessage here...}
+
+      Result := True;
+    end;
+  finally
+    FreeAndNil(LMsg);
+  end;
+end;
+
+//Retrieves a whole message "raw" and saves it to file
+function  TIdIMAP4.RetrieveNoDecodeToStreamPeek(const AMsgNum: Integer; AStream: TStream): Boolean;
+var
+  LMsg: TIdMessage;
+begin
+  Result := False;
+  IsNumberValid(AMsgNum);
+  LMsg := TIdMessage.Create(nil);
+  try
+    LMsg.NoDecode := True;
+    LMsg.NoEncode := True;
+    if InternalRetrieve(AMsgNum, False, True, LMsg) then begin
+      {RLebeau 12/09/2012: NOT currently using the same workaround here that
+      is being used in AppendMsg() to avoid SMTP dot transparent output from
+      TIdMessage.SaveToStream().  The reason for this is because I don't
+      know how this method is being used and I don't want to break anything
+      that may be depending on that transparent output being generated...}
+      LMsg.SaveToStream(AStream);
+
+      {TODO: add an optional parameter to specify whether dot transparency
+      should be used or not, and then pass that to SaveToStream(). Or better,
+      just deprecate this method and implement a replacement that downloads
+      the message directly to the file without dot transparency, since it
+      has no meaning in IMAP. InternalRetrieve() uses an internal stream
+      anyway to receive the data, so let's just cut out TIdMessage here...}
+
       Result := True;
     end;
   finally
@@ -4478,6 +4779,47 @@ begin
       know how this method is being used and I don't want to break anything
       that may be depending on that transparent output being generated...}
       LMsg.SaveToFile(ADestFile);
+
+      {TODO: add an optional parameter to specify whether dot transparency
+      should be used or not, and then pass that to SaveToFile(). Or better,
+      just deprecate this method and implement a replacement that downloads
+      the message directly to the file without dot transparency, since it
+      has no meaning in IMAP. InternalRetrieve() uses an internal stream
+      anyway to receive the data, so let's just cut out TIdMessage here...}
+
+      Result := True;
+    end;
+  finally
+    FreeAndNil(LMsg);
+  end;
+end;
+
+//Retrieves a whole message "raw" and saves it to file.
+function  TIdIMAP4.UIDRetrieveNoDecodeToFilePeek(const AMsgUID: String; ADestFile: string): Boolean;
+var
+  LMsg: TIdMessage;
+begin
+  Result := False;
+  IsUIDValid(AMsgUID);
+  LMsg := TIdMessage.Create(nil);
+  try
+    LMsg.NoDecode := True;
+    LMsg.NoEncode := True;
+    if InternalRetrieve(IndyStrToInt(AMsgUID), True, True, LMsg) then begin
+      {RLebeau 12/09/2012: NOT currently using the same workaround here that
+      is being used in AppendMsg() to avoid SMTP dot transparent output from
+      TIdMessage.SaveToStream().  The reason for this is because I don't
+      know how this method is being used and I don't want to break anything
+      that may be depending on that transparent output being generated...}
+      LMsg.SaveToFile(ADestFile);
+
+      {TODO: add an optional parameter to specify whether dot transparency
+      should be used or not, and then pass that to SaveToFile(). Or better,
+      just deprecate this method and implement a replacement that downloads
+      the message directly to the file without dot transparency, since it
+      has no meaning in IMAP. InternalRetrieve() uses an internal stream
+      anyway to receive the data, so let's just cut out TIdMessage here...}
+
       Result := True;
     end;
   finally
@@ -4503,6 +4845,47 @@ begin
       know how this method is being used and I don't want to break anything
       that may be depending on that transparent output being generated...}
       LMsg.SaveToStream(AStream);
+
+      {TODO: add an optional parameter to specify whether dot transparency
+      should be used or not, and then pass that to SaveToStream(). Or better,
+      just deprecate this method and implement a replacement that downloads
+      the message directly to the file without dot transparency, since it
+      has no meaning in IMAP. InternalRetrieve() uses an internal stream
+      anyway to receive the data, so let's just cut out TIdMessage here...}
+
+      Result := True;
+    end;
+  finally
+    FreeAndNil(LMsg);
+  end;
+end;
+
+//Retrieves a whole message "raw" and saves it to file.
+function  TIdIMAP4.UIDRetrieveNoDecodeToStreamPeek(const AMsgUID: String; AStream: TStream): Boolean;
+var
+  LMsg: TIdMessage;
+begin
+  Result := False;
+  IsUIDValid(AMsgUID);
+  LMsg := TIdMessage.Create(nil);
+  try
+    LMsg.NoDecode := True;
+    LMsg.NoEncode := True;
+    if InternalRetrieve(IndyStrToInt(AMsgUID), True, True, LMsg) then begin
+      {RLebeau 12/09/2012: NOT currently using the same workaround here that
+      is being used in AppendMsg() to avoid SMTP dot transparent output from
+      TIdMessage.SaveToStream().  The reason for this is because I don't
+      know how this method is being used and I don't want to break anything
+      that may be depending on that transparent output being generated...}
+      LMsg.SaveToStream(AStream);
+
+      {TODO: add an optional parameter to specify whether dot transparency
+      should be used or not, and then pass that to SaveToStream(). Or better,
+      just deprecate this method and implement a replacement that downloads
+      the message directly to the file without dot transparency, since it
+      has no meaning in IMAP. InternalRetrieve() uses an internal stream
+      anyway to receive the data, so let's just cut out TIdMessage here...}
+
       Result := True;
     end;
   finally
@@ -4522,8 +4905,6 @@ var
   LCmd: string;
   LDestStream: TStream;
   LHelper: TIdIMAP4WorkHelper;
-  LMsgClient: TIdMessageClient;
-  LMsgIO: TIdIOHandlerStreamMsg;
 begin
   Result := False;
   CheckConnectionState(csSelected);
@@ -4539,7 +4920,7 @@ begin
   end;
   LCmd := LCmd + ')';                             {Do not Localize}
 
-  SendCmd(NewCmdCounter, LCmd, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], True);
+  SendCmd(NewCmdCounter, LCmd, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], True, False);
   if LastCmdResult.Code = IMAP_OK then begin
     {CC3: Catch "Connection reset by peer"...}
     try
@@ -4558,6 +4939,9 @@ begin
       AMsg.Clear;
       if FLineStruct.ByteCount > 0 then begin
         {Use a temporary memory block to suck the message into...}
+        // TODO: use TIdTCPStream instead and let TIdIOHandlerStreamMsg below read
+        // from this IOHandler directly so we don't have to waste memory reading
+        // potentially large messages...
         LDestStream := TMemoryStream.Create;
         try
           LHelper := TIdIMAP4WorkHelper.Create(Self);
@@ -4577,41 +4961,25 @@ begin
           and slightly tweaked...}
 
           //AMsg.LoadFromStream(LDestStream);
-          LMsgClient := TIdMessageClient.Create(nil);
-          try
-            LMsgIO := TIdIOHandlerStreamMsg.Create(nil, LDestStream);
-            try
-              LMsgIO.FreeStreams := False;
-              LMsgIO.EscapeLines := True; // this is the key piece that makes it work!
-              LMsgClient.IOHandler := LMsgIO;
-              try
-                LMsgIO.Open;
-                LMsgClient.ProcessMessage(AMsg, False);
-              finally
-                LMsgClient.IOHandler := nil;
-              end;
-            finally
-              LMsgIO.Free;
-            end;
-          finally
-            LMsgClient.Free;
-          end;
-          // end workaround
+          {$IFDEF HAS_CLASS_HELPER}
+          AMsg.LoadFromStream(LDestStream, False, False);
+          {$ELSE}
+          TIdMessageHelper_LoadFromStream(AMsg, LDestStream, False, False);
+          {$ENDIF}
         finally
           FreeAndNil(LDestStream);
         end;
       end;
       LStr := IOHandler.ReadLnWait;  {Remove trailing line after the message, probably a ')' }
       ParseLastCmdResultButAppendInfo(LStr);  //There may be a UID or FLAGS in this
-      if GetInternalResponse(GetCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
+      if GetInternalResponse(LastCmdCounter, [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]], False) = IMAP_OK then begin
         AMsg.UID := FLineStruct.UID;
         AMsg.Flags := FLineStruct.Flags;
         Result := True;
       end;
     except
       on E: EIdSocketError do begin
-        if E.LastError = Id_WSAECONNRESET then begin
-          //Connection reset by peer...
+        if ((E.LastError = Id_WSAECONNABORTED) or (E.LastError = Id_WSAECONNRESET)) then begin
           FConnectionState := csUnexpectedlyDisconnected;
         end;
         raise;
@@ -4625,7 +4993,7 @@ begin
   Result := InternalRetrieveHeaders(AMsgList, -1);
 end;
 
-function TIdIMAP4.RetrieveFirstHeaders(AMsgList: TIdMessageCollection; ACount: LongInt): Boolean;
+function TIdIMAP4.RetrieveFirstHeaders(AMsgList: TIdMessageCollection; ACount: Integer): Boolean;
 begin
   Result := InternalRetrieveHeaders(AMsgList, ACount);
 end;
@@ -4642,6 +5010,7 @@ begin
     if (ACount < 0) or (ACount > FMailBox.TotalMsgs) then begin
       ACount := FMailBox.TotalMsgs;
     end;
+    // TODO: can this be accomplished using a single FETCH, similar to RetrieveAllEnvelopes()?
     for Ln := 1 to ACount do begin
       LMsgItem := AMsgList.Add;
       if not RetrieveHeader(Ln, LMsgItem.Msg) then begin
@@ -4657,12 +5026,12 @@ begin
   Result := InternalRetrieveMsgs(AMsgList, -1);
 end;
 
-function TIdIMAP4.RetrieveFirstMsgs(AMsgList: TIdMessageCollection; ACount: LongInt): Boolean;
+function TIdIMAP4.RetrieveFirstMsgs(AMsgList: TIdMessageCollection; ACount: Integer): Boolean;
 begin
   Result := InternalRetrieveMsgs(AMsgList, ACount);
 end;
 
-function TIdIMAP4.InternalRetrieveMsgs(AMsgList: TIdMessageCollection; ACount: LongInt): Boolean;
+function TIdIMAP4.InternalRetrieveMsgs(AMsgList: TIdMessageCollection; ACount: Integer): Boolean;
 var
   LMsgItem : TIdMessageItem;
   Ln : Integer;
@@ -4674,6 +5043,7 @@ begin
     if (ACount < 0) or (ACount > FMailBox.TotalMsgs) then begin
       ACount := FMailBox.TotalMsgs;
     end;
+    // TODO: can this be accomplished using a single FETCH, similar to RetrieveAllEnvelopes()?
     for Ln := 1 to ACount do begin
       LMsgItem := AMsgList.Add;
       if not Retrieve(Ln, LMsgItem.Msg) then begin
@@ -4785,8 +5155,6 @@ begin
 end;
 
 function TIdIMAP4.CheckMsgSeen(const AMsgNum: Integer): Boolean;
-var
-  LFlags: TIdMessageFlagsSet;
 begin
   IsNumberValid(AMsgNum);
   Result := False;
@@ -4796,9 +5164,9 @@ begin
     [IMAP4Commands[cmdFetch]]);
   if LastCmdResult.Code = IMAP_OK then begin
     if (LastCmdResult.Text.Count > 0) and
-      ParseLastCmdResult(LastCmdResult.Text[0], IMAP4Commands[cmdFetch], [IMAP4FetchDataItem[fdFlags]]) then begin
-      LFlags := FLineStruct.Flags;
-      if mfSeen in LFlags then begin
+      ParseLastCmdResult(LastCmdResult.Text[0], IMAP4Commands[cmdFetch], [IMAP4FetchDataItem[fdFlags]]) then
+    begin
+      if mfSeen in FLineStruct.Flags then begin
         Result := True;
       end;
     end;
@@ -4806,8 +5174,6 @@ begin
 end;
 
 function TIdIMAP4.UIDCheckMsgSeen(const AMsgUID: String): Boolean;
-var
-  LFlags: TIdMessageFlagsSet;
 begin
   IsUIDValid(AMsgUID);
   {Default to unseen, so if get no flags back (i.e. no \Seen flag)
@@ -4820,9 +5186,9 @@ begin
     [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]]);
   if LastCmdResult.Code = IMAP_OK then begin
     if (LastCmdResult.Text.Count > 0) and
-      ParseLastCmdResult(LastCmdResult.Text[0], IMAP4Commands[cmdFetch], [IMAP4FetchDataItem[fdFlags]]) then begin
-      LFlags := FLineStruct.Flags;
-      if mfSeen in LFlags then begin
+      ParseLastCmdResult(LastCmdResult.Text[0], IMAP4Commands[cmdFetch], [IMAP4FetchDataItem[fdFlags]]) then
+    begin
+      if mfSeen in FLineStruct.Flags then begin
         Result := True;
       end;
     end;
@@ -4833,7 +5199,7 @@ function TIdIMAP4.RetrieveFlags(const AMsgNum: Integer; var AFlags: {Pointer}TId
 begin
   IsNumberValid(AMsgNum);
   Result := False;
-  {CC: Empty set to avoid returning resuts from a previous call if call fails}
+  {CC: Empty set to avoid returning results from a previous call if call fails}
   AFlags := [];
   CheckConnectionState(csSelected);
   SendCmd(NewCmdCounter,
@@ -4841,7 +5207,8 @@ begin
     [IMAP4Commands[cmdFetch]]);
   if LastCmdResult.Code = IMAP_OK then begin
     if (LastCmdResult.Text.Count > 0) and
-      ParseLastCmdResult(LastCmdResult.Text[0], IMAP4Commands[cmdFetch], [IMAP4FetchDataItem[fdFlags]]) then begin
+      ParseLastCmdResult(LastCmdResult.Text[0], IMAP4Commands[cmdFetch], [IMAP4FetchDataItem[fdFlags]]) then
+    begin
       AFlags := FLineStruct.Flags;
       Result := True;
     end;
@@ -4852,7 +5219,7 @@ function TIdIMAP4.UIDRetrieveFlags(const AMsgUID: String; var AFlags: TIdMessage
 begin
   IsUIDValid(AMsgUID);
   Result := False;
-  {BUG FIX: Empty set to avoid returning resuts from a previous call if call fails}
+  {BUG FIX: Empty set to avoid returning results from a previous call if call fails}
   AFlags := [];
   CheckConnectionState(csSelected);
   SendCmd(NewCmdCounter,
@@ -4860,8 +5227,65 @@ begin
     [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]]);
   if LastCmdResult.Code = IMAP_OK then begin
     if (LastCmdResult.Text.Count > 0) and
-      ParseLastCmdResult(LastCmdResult.Text[0], IMAP4Commands[cmdFetch], [IMAP4FetchDataItem[fdFlags]]) then begin
+      ParseLastCmdResult(LastCmdResult.Text[0], IMAP4Commands[cmdFetch], [IMAP4FetchDataItem[fdFlags]]) then
+    begin
       AFlags := FLineStruct.Flags;
+      Result := True;
+    end;
+  end;
+end;
+
+function TIdIMAP4.RetrieveValue(const AMsgNum: Integer; const AField: String; var AValue: String): Boolean;
+begin
+  IsNumberValid(AMsgNum);
+  Result := False;
+  {CC: Empty string to avoid returning results from a previous call if call fails}
+  AValue := '';
+  CheckConnectionState(csSelected);
+  SendCmd(NewCmdCounter,
+    IMAP4Commands[cmdFetch] + ' ' + IntToStr (AMsgNum) + ' (' + AField + ')', {Do not Localize}
+    [IMAP4Commands[cmdFetch]]);
+  if LastCmdResult.Code = IMAP_OK then begin
+    if (LastCmdResult.Text.Count > 0) and
+       ParseLastCmdResult(LastCmdResult.Text[0], IMAP4Commands[cmdFetch], [AField]) then
+    begin
+      case PosInStrArray(AField, ['UID', 'FLAGS', 'X-GM-MSGID', 'X-GM-THRID', 'X-GM-LABELS'], False) of {Do not Localize}
+        0: AValue := FLineStruct.UID;
+        1: AValue := FLineStruct.FlagsStr;
+        2: AValue := FLineStruct.GmailMsgID;
+        3: AValue := FLineStruct.GmailThreadID;
+        4: AValue := FLineStruct.GmailLabels;
+        else
+          AValue := FLineStruct.IMAPValue;
+      end;
+      Result := True;
+    end;
+  end;
+end;
+
+function TIdIMAP4.UIDRetrieveValue(const AMsgUID: String; const AField: String; var AValue: String): Boolean;
+begin
+  IsUIDValid(AMsgUID);
+  Result := False;
+  {CC: Empty string to avoid returning results from a previous call if call fails}
+  AValue := '';
+  CheckConnectionState(csSelected);
+  SendCmd(NewCmdCounter,
+    IMAP4Commands[cmdUID] + ' ' + IMAP4Commands[cmdFetch] + ' ' + AMsgUID + ' (' + AField + ')', {Do not Localize}
+    [IMAP4Commands[cmdFetch], IMAP4Commands[cmdUID]]);
+  if LastCmdResult.Code = IMAP_OK then begin
+    if (LastCmdResult.Text.Count > 0) and
+      ParseLastCmdResult(LastCmdResult.Text[0], IMAP4Commands[cmdFetch], [AField]) then
+    begin
+      case PosInStrArray(AField, ['UID', 'FLAGS', 'X-GM-MSGID', 'X-GM-THRID', 'X-GM-LABELS'], False) of {Do not Localize}
+        0: AValue := FLineStruct.UID;
+        1: AValue := FLineStruct.FlagsStr;
+        2: AValue := FLineStruct.GmailMsgID;
+        3: AValue := FLineStruct.GmailThreadID;
+        4: AValue := FLineStruct.GmailLabels;
+        else
+          AValue := FLineStruct.IMAPValue;
+      end;
       Result := True;
     end;
   end;
@@ -5192,6 +5616,16 @@ begin
   end;
 end;
 
+function ResolveQuotedSpecials(const AParam: string): string;
+begin
+  // Handle quoted_specials, RFC1730
+  // \ with other chars than " or \ after, looks illegal in RFC1730, but leave them untouched
+  // TODO: use StringsReplace() instead
+  //Result := StringsReplace(AParam, ['\"', '\\'], ['"', '\']);
+  Result := ReplaceAll(AParam, '\"', '"');
+  Result := ReplaceAll(Result, '\\', '\');
+end;
+
 procedure TIdIMAP4.ParseIntoParts(APartString: string; AParams: TStrings);
 var
   LInPart: Integer;
@@ -5202,15 +5636,6 @@ var
   Ln: Integer;
   LInQuotesInsideBrackets: Boolean;
   LInQuotedSpecial: Boolean;
-
-  function ResolveQuotedSpecials(const AParam: string): string;
-  begin
-    // Handle quoted_specials, RFC1730
-    // \ with other chars than " or \ after, looks illegal in RFC1730, but leave them untouched
-    Result := StringReplace(AParam, '\"', '"', [rfReplaceAll]);
-    Result := StringReplace(Result, '\\', '\', [rfReplaceAll]);
-  end;
-
 begin
   LStartPos := 0; {Stop compiler whining}
   LBracketLevel := 0; {Stop compiler whining}
@@ -5218,7 +5643,7 @@ begin
   LInQuotedSpecial := False; {Stop compiler whining}
   LInPart := 0;   {0 is not in a part, 1 is in a quote-delimited part, 2 is in a bracketted parameter-pair list}
   for Ln := 1 to Length(APartString) do begin
-    if LInPart = 1 then begin
+    if (LInPart = 1) or ((LInPart = 2) and LInQuotesInsideBrackets) then begin
       if LInQuotedSpecial then begin
         LInQuotedSpecial := False;
       end
@@ -5226,28 +5651,30 @@ begin
         LInQuotedSpecial := True;
       end
       else if APartString[Ln] = '"' then begin {Do not Localize}
-        LParamater := Copy(APartString, LStartPos+1, Ln-LStartPos-1);
-        AParams.Add(ResolveQuotedSpecials(LParamater));
-        LInPart := 0;
+        if LInPart = 1 then begin
+          LParamater := Copy(APartString, LStartPos+1, Ln-LStartPos-1);
+          AParams.Add(ResolveQuotedSpecials(LParamater));
+          LInPart := 0;
+        end else begin
+          LInQuotesInsideBrackets := False;
+        end;
       end;
     end else if LInPart = 2 then begin
       //We have to watch out that we don't close this entry on a closing bracket within
       //quotes, like ("Blah" "Blah)Blah"), so monitor if we are in quotes within brackets.
       if APartString[Ln] = '"' then begin {Do not Localize}
-        LInQuotesInsideBrackets := not LInQuotesInsideBrackets;
-      end else begin
-        //Brackets don't count if they are within quoted strings...
-        if not LInQuotesInsideBrackets then begin
-          if APartString[Ln] = '(' then begin {Do not Localize}
-            Inc(LBracketLevel);
-          end else if APartString[Ln] = ')' then begin {Do not Localize}
-            Dec(LBracketLevel);
-            if LBracketLevel = 0 then begin
-              LParamater := Copy(APartString, LStartPos+1, Ln-LStartPos-1);
-              AParams.Add(LParamater);
-              LInPart := 0;
-            end;
-          end;
+        LInQuotesInsideBrackets := True;
+        LInQuotedSpecial := False;
+      end
+      else if APartString[Ln] = '(' then begin {Do not Localize}
+        Inc(LBracketLevel);
+      end
+      else if APartString[Ln] = ')' then begin {Do not Localize}
+        Dec(LBracketLevel);
+        if LBracketLevel = 0 then begin
+          LParamater := Copy(APartString, LStartPos+1, Ln-LStartPos-1);
+          AParams.Add(LParamater);
+          LInPart := 0;
         end;
       end;
     end else if LInPart = 3 then begin
@@ -5266,6 +5693,7 @@ begin
       {Start of a quoted param like "text"}
       LStartPos := Ln;
       LInPart := 1;
+      LInQuotedSpecial := False;
     end else if APartString[Ln] = '(' then begin {Do not Localize}
       {Start of a set of paired parameter/value strings within brackets,
       such as ("charset" "us-ascii").  Note these can be nested (bracket pairs
@@ -5300,6 +5728,7 @@ var
   LBracketLevel: Integer;
   Ln: Integer;
   LInQuotesInsideBrackets: Boolean;
+  LInQuotedSpecial: Boolean;
 begin
   {Break:
     * LIST (\UnMarked \AnotherFlag) "/" "Mailbox name"
@@ -5311,87 +5740,102 @@ begin
     "Mailbox name"
   If AKeepBrackets is false, return '\UnMarked \AnotherFlag' instead of '(\UnMarked \AnotherFlag)'
   }
-  AParams.Clear;
-  LStartPos := 0; {Stop compiler whining}
-  LBracketLevel := 0; {Stop compiler whining}
-  LInQuotesInsideBrackets := False;  {Stop compiler whining}
-  LInPart := 0;   {0 is not in a part, 1 is in a quote-delimited part, 2 is in a bracketted part, 3 is a word}
-  APartString := Trim(APartString);
-  for Ln := 1 to Length(APartString) do begin
-    if LInPart = 1 then begin
-      if APartString[Ln] = '"' then begin {Do not Localize}
-        LParamater := Copy(APartString, LStartPos+1, Ln-LStartPos-1);
-        AParams.Add(LParamater);
-        LInPart := 0;
-      end;
-    end else if LInPart = 2 then begin
-      //We have to watch out that we don't close this entry on a closing bracket within
-      //quotes, like ("Blah" "Blah)Blah"), so monitor if we are in quotes within brackets.
-      if APartString[Ln] = '"' then begin {Do not Localize}
-        LInQuotesInsideBrackets := not LInQuotesInsideBrackets;
-      end else begin
-        //Brackets don't count if they are within quoted strings...
-        if not LInQuotesInsideBrackets then begin
-          if APartString[Ln] = '(' then begin {Do not Localize}
-            Inc(LBracketLevel);
-          end else if APartString[Ln] = ')' then begin {Do not Localize}
-            Dec(LBracketLevel);
-            if LBracketLevel = 0 then begin
-              if AKeepBrackets then begin
-                LParamater := Copy(APartString, LStartPos, Ln-LStartPos+1);
-              end else begin
-                LParamater := Copy(APartString, LStartPos+1, Ln-LStartPos-1);
-              end;
-              AParams.Add(LParamater);
-              LInPart := 0;
-            end;
+  AParams.BeginUpdate;
+  try
+    AParams.Clear;
+    LStartPos := 0; {Stop compiler whining}
+    LBracketLevel := 0; {Stop compiler whining}
+    LInQuotesInsideBrackets := False;  {Stop compiler whining}
+    LInQuotedSpecial := False; {Stop compiler whining}
+    LInPart := 0;   {0 is not in a part, 1 is in a quote-delimited part, 2 is in a bracketted part, 3 is a word}
+    APartString := Trim(APartString);
+    for Ln := 1 to Length(APartString) do begin
+      if (LInPart = 1) or ((LInPart = 2) and LInQuotesInsideBrackets) then begin
+        if LInQuotedSpecial then begin
+          LInQuotedSpecial := False;
+        end
+        else if APartString[Ln] = '\' then begin {Do not Localize}
+          LInQuotedSpecial := True;
+        end
+        else if APartString[Ln] = '"' then begin {Do not Localize}
+          if LInPart = 1 then begin
+            LParamater := Copy(APartString, LStartPos+1, Ln-LStartPos-1);
+            AParams.Add(ResolveQuotedSpecials(LParamater));
+            LInPart := 0;
+          end else begin
+            LInQuotesInsideBrackets := False;
           end;
         end;
+      end else if LInPart = 2 then begin
+        //We have to watch out that we don't close this entry on a closing bracket within
+        //quotes, like ("Blah" "Blah)Blah"), so monitor if we are in quotes within brackets.
+        if APartString[Ln] = '"' then begin {Do not Localize}
+          LInQuotesInsideBrackets := True;
+          LInQuotedSpecial := False;
+        end
+        else if APartString[Ln] = '(' then begin {Do not Localize}
+          Inc(LBracketLevel);
+        end
+        else if APartString[Ln] = ')' then begin {Do not Localize}
+          Dec(LBracketLevel);
+          if LBracketLevel = 0 then begin
+            if AKeepBrackets then begin
+              LParamater := Copy(APartString, LStartPos, Ln-LStartPos+1);
+            end else begin
+              LParamater := Copy(APartString, LStartPos+1, Ln-LStartPos-1);
+            end;
+            AParams.Add(LParamater);
+            LInPart := 0;
+          end;
+        end;
+      end else if LInPart = 3 then begin
+        if APartString[Ln] = ' ' then begin {Do not Localize}
+          LParamater := Copy(APartString, LStartPos, Ln-LStartPos);
+          AParams.Add(LParamater);
+          LInPart := 0;
+        end;
+      end else if APartString[Ln] = '"' then begin {Do not Localize}
+        {Start of a quoted param like "text"}
+        LStartPos := Ln;
+        LInPart := 1;
+        LInQuotedSpecial := False;
+      end else if APartString[Ln] = '(' then begin {Do not Localize}
+        {Start of a set of paired parameter/value strings within brackets,
+        such as ("charset" "us-ascii").  Note these can be nested (bracket pairs
+        within bracket pairs) }
+        LStartPos := Ln;
+        LInPart := 2;
+        LBracketLevel := 1;
+        LInQuotesInsideBrackets := False;
+      end else if APartString[Ln] <> ' ' then begin {Do not Localize}
+        {Start of an entry like 12345}
+        LStartPos := Ln;
+        LInPart := 3;
       end;
-    end else if LInPart = 3 then begin
-      if APartString[Ln] = ' ' then begin {Do not Localize}
-        LParamater := Copy(APartString, LStartPos, Ln-LStartPos);
-        AParams.Add(LParamater);
-        LInPart := 0;
-      end;
-    end else if APartString[Ln] = '"' then begin {Do not Localize}
-      {Start of a quoted param like "text"}
-      LStartPos := Ln;
-      LInPart := 1;
-    end else if APartString[Ln] = '(' then begin {Do not Localize}
-      {Start of a set of paired parameter/value strings within brackets,
-      such as ("charset" "us-ascii").  Note these can be nested (bracket pairs
-      within bracket pairs) }
-      LStartPos := Ln;
-      LInPart := 2;
-      LBracketLevel := 1;
-      LInQuotesInsideBrackets := False;
-    end else if APartString[Ln] <> ' ' then begin {Do not Localize}
-      {Start of an entry like 12345}
-      LStartPos := Ln;
-      LInPart := 3;
     end;
-  end;
-  {We could be in an entry when we hit the end of the line...}
-  if LInPart = 3 then begin
-    LParamater := Copy(APartString, LStartPos, MaxInt);
-    AParams.Add(LParamater);
-  end else if LInPart = 2 then begin
-    if AKeepBrackets then begin
+    {We could be in an entry when we hit the end of the line...}
+    if LInPart = 3 then begin
       LParamater := Copy(APartString, LStartPos, MaxInt);
-    end else begin
+      AParams.Add(LParamater);
+    end else if LInPart = 2 then begin
+      if AKeepBrackets then begin
+        LParamater := Copy(APartString, LStartPos, MaxInt);
+      end else begin
+        LParamater := Copy(APartString, LStartPos+1, MaxInt);
+      end;
+      if (not AKeepBrackets) and TextEndsWith(LParamater, ')') then begin    {Do not Localize}
+        LParamater := Copy(LParamater, 1, Length(LParamater)-1);
+      end;
+      AParams.Add(LParamater);
+    end else if LInPart = 1 then begin
       LParamater := Copy(APartString, LStartPos+1, MaxInt);
+      if TextEndsWith(LParamater, '"') then begin    {Do not Localize}
+        LParamater := Copy(LParamater, 1, Length(LParamater)-1);
+      end;
+      AParams.Add(ResolveQuotedSpecials(LParamater));
     end;
-    if (not AKeepBrackets) and TextEndsWith(LParamater, ')') then begin    {Do not Localize}
-      LParamater := Copy(LParamater, 1, Length(LParamater)-1);
-    end;
-    AParams.Add(LParamater);
-  end else if LInPart = 1 then begin
-    LParamater := Copy(APartString, LStartPos+1, MaxInt);
-    if TextEndsWith(LParamater, '"') then begin    {Do not Localize}
-      LParamater := Copy(LParamater, 1, Length(LParamater)-1);
-    end;
-    AParams.Add(LParamater);
+  finally
+    AParams.EndUpdate;
   end;
 end;
 
@@ -5482,16 +5926,22 @@ var
   LN: integer;
   LPos: integer;
 begin
+  Result := '';
   {CCB: Modified code so it did not access past the end of the string if
   AParam was not actually in quotes (e.g. the MIME boundary parameter
   is only optionally in quotes).}
   LN := 1;
   {Skip any preceding spaces...}
-  while AParam[LN] = ' ' do begin  {Do not Localize}
+  //TODO: use TrimLeft(AParam) instead
+  while (LN <= Length(AParam)) and (AParam[LN] = ' ') do begin  {Do not Localize}
     LN := LN + 1;
+  end;
+  if LN > Length(AParam) then begin
+    Exit;
   end;
   if AParam[LN] <> '"' then begin {Do not Localize}
     {Not actually enclosed in quotes.  Must be a single word.}
+    // TODO: use Fetch(AParam) instead
     AParam := Copy(AParam, LN, MaxInt);
     LPos := Pos(' ', AParam);   {Do not Localize}
     if LPos > 0 then begin
@@ -5503,9 +5953,11 @@ begin
     end;
   end else begin
     {It starts with a quote...}
+    // TODO: use Fetch(AParam, '"') instead
+    // TODO: do we need to handle escaped characters?
     AParam := Copy(AParam, LN, MaxInt);
     LN := 2;
-    while AParam[LN] <> '"' do begin  {Do not Localize}
+    while (LN <= Length(AParam)) and (AParam[LN] <> '"') do begin  {Do not Localize}
       LN := LN + 1;
     end;
     Result := Copy(AParam, 1, LN);
@@ -5521,18 +5973,23 @@ var
   LStartPos: Integer;
 begin
   LStartPos := -1;
-  AParsedList.Clear;
-  for Ln := 1 to Length(AParam) do begin
-    if AParam[LN] = '"' then begin {Do not Localize}
-      if LStartPos > -1 then begin
-        {The end of a quoted parameter...}
-        AParsedList.Add(Copy(AParam, LStartPos, LN-LStartPos+1));
-        LStartPos := -1;
-      end else begin
-        {The start of a quoted parameter...}
-        LStartPos := Ln;
+  AParsedList.BeginUpdate;
+  try
+    AParsedList.Clear;
+    for Ln := 1 to Length(AParam) do begin
+      if AParam[LN] = '"' then begin {Do not Localize}
+        if LStartPos > -1 then begin
+          {The end of a quoted parameter...}
+          AParsedList.Add(Copy(AParam, LStartPos, LN-LStartPos+1));
+          LStartPos := -1;
+        end else begin
+          {The start of a quoted parameter...}
+          LStartPos := Ln;
+        end;
       end;
     end;
+  finally
+    AParsedList.EndUpdate;
   end;
 end;
 
@@ -5541,7 +5998,7 @@ var
   Ln : Integer;
   LSlExpunge : TStringList;
 begin
-  SetLength ( AMB.DeletedMsgs, 0 );
+  SetLength(AMB.DeletedMsgs, 0);
   LSlExpunge := TStringList.Create;
   try
     if ACmdResultDetails.Count > 1 then begin
@@ -5618,6 +6075,7 @@ begin
       if Pos(IMAP4Commands[cmdSearch], ACmdResultDetails[0]) > 0 then begin
         BreakApart(ACmdResultDetails[0], ' ', LSlSearch); {Do not Localize}
         for Ln := 1 to LSlSearch.Count - 1 do begin
+           // TODO: for a UID search, store LSlSearch[Ln] as-is without converting it to an Integer...
            SetLength(AMB.SearchResult, (Length(AMB.SearchResult) + 1));
            AMB.SearchResult[Length(AMB.SearchResult) - 1] := IndyStrToInt(LSlSearch[Ln]);
         end;
@@ -5767,40 +6225,45 @@ var Ln : Integer;
   LStr : String;
   LWord: string;
 begin
-  AMBList.Clear;
-  LSlRetrieve := TStringList.Create;
+  AMBList.BeginUpdate;
   try
-    for Ln := 0 to ACmdResultDetails.Count - 1 do begin
-      LStr := ACmdResultDetails[Ln];
-      //Todo: Get mail box attributes here
-      {CC2: Could put mailbox attributes in AMBList's Objects property?}
-      {The line is of the form:
-      * LIST (\UnMarked \AnotherFlag) "/" "Mailbox name"
-      }
-      {CCA: code modified because some servers return NIL as the mailbox
-      separator, i.e.:
-      * LIST (\UnMarked \AnotherFlag) NIL "Mailbox name"
-      }
+    AMBList.Clear;
+    LSlRetrieve := TStringList.Create;
+    try
+      for Ln := 0 to ACmdResultDetails.Count - 1 do begin
+        LStr := ACmdResultDetails[Ln];
+        //Todo: Get mail box attributes here
+        {CC2: Could put mailbox attributes in AMBList's Objects property?}
+        {The line is of the form:
+        * LIST (\UnMarked \AnotherFlag) "/" "Mailbox name"
+        }
+        {CCA: code modified because some servers return NIL as the mailbox
+        separator, i.e.:
+        * LIST (\UnMarked \AnotherFlag) NIL "Mailbox name"
+        }
 
-      ParseIntoBrackettedQuotedAndUnquotedParts(LStr, LSlRetrieve, False);
-      if LSlRetrieve.Count > 3 then begin
-        //Make sure 1st word is LIST (may be an unsolicited response)...
-        if TextIsSame(LSlRetrieve[0], {IMAP4Commands[cmdList]} ACmd) then begin
-          {Get the mailbox separator...}
-          LWord := Trim(LSlRetrieve[LSlRetrieve.Count-2]);
-          if TextIsSame(LWord, 'NIL') or (LWord = '') then begin {Do not Localize}
-            FMailBoxSeparator := #0;
-          end else begin
-            FMailBoxSeparator := LWord[1];
+        ParseIntoBrackettedQuotedAndUnquotedParts(LStr, LSlRetrieve, False);
+        if LSlRetrieve.Count > 3 then begin
+          //Make sure 1st word is LIST (may be an unsolicited response)...
+          if TextIsSame(LSlRetrieve[0], {IMAP4Commands[cmdList]} ACmd) then begin
+            {Get the mailbox separator...}
+            LWord := Trim(LSlRetrieve[LSlRetrieve.Count-2]);
+            if TextIsSame(LWord, 'NIL') or (LWord = '') then begin {Do not Localize}
+              FMailBoxSeparator := #0;
+            end else begin
+              FMailBoxSeparator := LWord[1];
+            end;
+            {Now get the mailbox name...}
+            LWord := Trim(LSlRetrieve[LSlRetrieve.Count-1]);
+            AMBList.Add(DoMUTFDecode(LWord));
           end;
-          {Now get the mailbox name...}
-          LWord := Trim(LSlRetrieve[LSlRetrieve.Count-1]);
-          AMBList.Add(DoMUTFDecode(LWord));
         end;
       end;
+    finally
+      FreeAndNil(LSlRetrieve);
     end;
   finally
-    FreeAndNil(LSlRetrieve);
+    AMBList.EndUpdate;
   end;
 end;
 
@@ -6077,10 +6540,15 @@ begin
   FLineStruct.MessageNumber := '';
   FLineStruct.Command := '';
   FLineStruct.UID := '';
+  FLineStruct.Flags := [];
+  FLineStruct.FlagsStr := '';
   FLineStruct.Complete := True;
   FLineStruct.IMAPFunction := '';
   FLineStruct.IMAPValue := '';
   FLineStruct.ByteCount := -1;
+  FLineStruct.GmailMsgID := '';
+  FLineStruct.GmailThreadID := '';
+  FLineStruct.GmailLabels := '';
   ALine := Trim(ALine);  //Can get garbage like a spurious CR at start
   //Look for (optional) * at start...
   LPos := Pos(' ', ALine);            {Do not Localize}
@@ -6124,7 +6592,7 @@ begin
   //This is a line like '* 9 FETCH (UID 47 RFC822.SIZE 3456)', i.e. with a bracketted response.
   //See is it complete (has a closing bracket) or does it continue on other lines...
   ALine := Copy(ALine, 2, MaxInt);
-  if Copy(ALine, Length(ALine), 1) = ')' then begin    {Do not Localize}
+  if TextEndsWith(ALine, ')') then begin    {Do not Localize}
     ALine := Copy(ALine, 1, Length(ALine) - 1);  //Strip trailing bracket
     FLineStruct.Complete := True;
   end else begin
@@ -6173,11 +6641,51 @@ begin
     if LPos <> -1 then begin
       //The FLAGS are in the "word" (really a string) after 'FLAGS'...
       if LPos < LWords.Count-1 then begin
-        ParseMessageFlagString(LWords[LPos+1], FLineStruct.Flags);
+        FLineStruct.FlagsStr := LWords[LPos+1];
+        ParseMessageFlagString(FLineStruct.FlagsStr, FLineStruct.Flags);
         LWords.Delete(LPos+1);
         LWords.Delete(LPos);
       end;
       if PosInStrArray(IMAP4FetchDataItem[fdFlags], AExpectedIMAPFunction) > -1 then begin
+        LWordInExpectedIMAPFunction := True;
+      end;
+    end;
+    //See is the X-GM-MSGID present...
+    LPos := LWords.IndexOf(IMAP4FetchDataItem[fdGmailMsgID]);  {Do not Localize}
+    if LPos <> -1 then begin
+      //The MSGID is in the "word" (really a string) after 'X-GM-MSGID'...
+      if LPos < LWords.Count-1 then begin
+        FLineStruct.GmailMsgID := LWords[LPos+1];
+        LWords.Delete(LPos+1);
+        LWords.Delete(LPos);
+      end;
+      if PosInStrArray(IMAP4FetchDataItem[fdGmailMsgID], AExpectedIMAPFunction) > -1 then begin
+        LWordInExpectedIMAPFunction := True;
+      end;
+    end;
+    //See is the X-GM-THRID present...
+    LPos := LWords.IndexOf(IMAP4FetchDataItem[fdGmailThreadID]);  {Do not Localize}
+    if LPos <> -1 then begin
+      //The THREADID is in the "word" (really a string) after 'X-GM-THRID'...
+      if LPos < LWords.Count-1 then begin
+        FLineStruct.GmailThreadID := LWords[LPos+1];
+        LWords.Delete(LPos+1);
+        LWords.Delete(LPos);
+      end;
+      if PosInStrArray(IMAP4FetchDataItem[fdGmailThreadID], AExpectedIMAPFunction) > -1 then begin
+        LWordInExpectedIMAPFunction := True;
+      end;
+    end;
+    //See is the X-GM-LABELS present...
+    LPos := LWords.IndexOf(IMAP4FetchDataItem[fdGmailLabels]);  {Do not Localize}
+    if LPos <> -1 then begin
+      //The LABELS is in the "word" (really a string) after 'X-GM-LABELS'...
+      if LPos < LWords.Count-1 then begin
+        FLineStruct.GmailLabels := DoMUTFDecode(LWords[LPos+1]);
+        LWords.Delete(LPos+1);
+        LWords.Delete(LPos);
+      end;
+      if PosInStrArray(IMAP4FetchDataItem[fdGmailLabels], AExpectedIMAPFunction) > -1 then begin
         LWordInExpectedIMAPFunction := True;
       end;
     end;
@@ -6253,7 +6761,8 @@ begin
     LPos := LWords.IndexOf('FLAGS');  {Do not Localize}
     if LPos <> -1 then begin
       //The FLAGS are in the "word" (really a string) after 'FLAGS'...
-      ParseMessageFlagString(LWords[LPos+1], FLineStruct.Flags);
+      FLineStruct.FlagsStr := LWords[LPos+1];
+      ParseMessageFlagString(FLineStruct.FlagsStr, FLineStruct.Flags);
       LWords.Delete(LPos+1);
       LWords.Delete(LPos);
     end;
@@ -6379,10 +6888,18 @@ const
     try
       IOHandler.Capture(LMStream, LDelim, True, IndyTextEncoding_8Bit{$IFDEF STRING_IS_ANSI}, IndyTextEncoding_8Bit{$ENDIF});
       LMStream.Position := 0;
+      // TODO: when String is AnsiString, TIdMessageClient uses AMsg.ChaarSet as
+      // the destination encoding, should this be doing the same? Otherwise, we
+      // could just use AMsg.Body.LoadFromStream() instead...
       ReadStringsAsCharSet(LMStream, AMsg.Body, AMsg.CharSet{$IFDEF STRING_IS_ANSI}, IndyTextEncoding_8Bit{$ENDIF});
     finally
       LMStream.Free;
     end;
+  end;
+
+  function IsContentTypeHtml(const AContentType: String) : Boolean;
+  begin
+    Result := IsHeaderMediaTypes(AContentType, ['text/html', 'text/html-sandboxed','application/xhtml+xml']); {do not localize}
   end;
 
   procedure ProcessTextPart(var VDecoder: TIdMessageDecoder);
@@ -6391,9 +6908,10 @@ const
     Li: integer;
     LTxt: TIdText;
     LNewDecoder: TIdMessageDecoder;
-    {$IFNDEF HAS_TStrings_ValueFromIndex}
-    LTmp: String;
+    {$IFDEF STRING_IS_ANSI}
+    LAnsiEncoding: IIdTextEncoding;
     {$ENDIF}
+    LContentType, LCharSet: string;
   begin
     LDestStream := TMemoryStream.Create;
     try
@@ -6402,7 +6920,29 @@ const
         LDestStream.Position := 0;
         LTxt := TIdText.Create(AMsg.MessageParts);
         try
-          LTxt.ContentType := VDecoder.Headers.Values[SContentType];
+          // if the Content-Type is HTML and does not specify a charset, parse
+          // the HTML looking for a <meta> tag that specifies a charset...
+
+          // TODO: if the media type is not a 'text/...' based XML type, ignore
+          // the charset from the headers, if present, and parse the XML itself...
+
+          LContentType := VDecoder.Headers.Values[SContentType];
+          {
+          if IsContentTypeAppXml(LContentType) then begin
+            LCharSet := DetectXmlCharset(LDestStream);
+            LDestStream.Position := 0;
+          end else
+          begin
+          }
+            LCharSet := LTxt.GetCharSet(LContentType);
+            if (LCharSet = '') and IsContentTypeHtml(LContentType) then begin
+              ParseMetaHTTPEquiv(LDestStream, nil, LCharSet);
+              LDestStream.Position := 0;
+            end;
+          //end;
+
+          LTxt.ContentType := LContentType;
+          LTxt.CharSet := LCharSet;
           LTxt.ContentID := VDecoder.Headers.Values['Content-ID'];  {Do not Localize}
           LTxt.ContentLocation := VDecoder.Headers.Values['Content-Location'];  {Do not Localize}
           LTxt.ContentDescription := VDecoder.Headers.Values['Content-Description']; {Do not Localize}
@@ -6410,20 +6950,16 @@ const
           LTxt.ContentTransfer := VDecoder.Headers.Values['Content-Transfer-Encoding'];  {Do not Localize}
           for Li := 0 to VDecoder.Headers.Count-1 do begin
             if LTxt.Headers.IndexOfName(VDecoder.Headers.Names[Li]) < 0 then begin
-              {$IFNDEF HAS_TStrings_ValueFromIndex}
-              LTmp := VDecoder.Headers.Strings[Li];
-              {$ENDIF}
               LTxt.ExtraHeaders.AddValue(
                 VDecoder.Headers.Names[Li],
-                {$IFDEF HAS_TStrings_ValueFromIndex}
-                VDecoder.Headers.ValueFromIndex[Li]
-                {$ELSE}
-                Copy(LTmp, Pos('=', LTmp)+1, MaxInt) {Do not Localize}
-                {$ENDIF}
+                IndyValueFromIndex(VDecoder.Headers, Li)
               );
             end;
           end;
-          ReadStringsAsCharset(LDestStream, LTxt.Body, LTxt.CharSet);
+          {$IFDEF STRING_IS_ANSI}
+          LAnsiEncoding := CharsetToEncoding(LCharSet);
+          {$ENDIF}
+          ReadStringsAsCharset(LDestStream, LTxt.Body, LCharSet{$IFDEF STRING_IS_ANSI}, LAnsiEncoding{$ENDIF});
         except
           //this should also remove the Item from the TCollection.
           //Note that Delete does not exist in the TCollection.
@@ -6447,9 +6983,6 @@ const
     Li: integer;
     LAttachment: TIdAttachment;
     LNewDecoder: TIdMessageDecoder;
-    {$IFNDEF HAS_TStrings_ValueFromIndex}
-    LTmp: String;
-    {$ENDIF}
   begin
     AMsg.DoCreateAttachment(VDecoder.Headers, LAttachment);
     Assert(Assigned(LAttachment), 'Attachment must not be unassigned here!');    {Do not Localize}
@@ -6471,16 +7004,9 @@ const
         LAttachment.Filename := VDecoder.Filename;
         for Li := 0 to VDecoder.Headers.Count-1 do begin
           if LAttachment.Headers.IndexOfName(VDecoder.Headers.Names[Li]) < 0 then begin
-            {$IFNDEF HAS_TStrings_ValueFromIndex}
-            LTmp := VDecoder.Headers.Strings[Li];
-            {$ENDIF}
             LAttachment.ExtraHeaders.AddValue(
               VDecoder.Headers.Names[Li],
-              {$IFDEF HAS_TStrings_ValueFromIndex}
-              VDecoder.Headers.ValueFromIndex[Li]
-              {$ELSE}
-              Copy(LTmp, Pos('=', LTmp)+1, MaxInt) {Do not Localize}
-              {$ENDIF}
+              IndyValueFromIndex(VDecoder.Headers, Li)
             );
           end;
         end;

@@ -108,7 +108,7 @@ uses
 	the definitions are not intented to be compiled in non-Unix-like operating
 	systems, platform warnings are not going to be too helpful.
 	}
-     {$WARN SYMBOL_PLATFORM OFF}
+      {$I IdSymbolPlatformOff.inc}
       IdVCLPosixSupplemental,
       Posix.Errno,Posix.NetDB, Posix.NetinetIn, Posix.SysSocket;
     {$ENDIF}
@@ -272,7 +272,7 @@ type
   TIdSocketType = __socket_type;
   {$ENDIF}
   {$IFDEF SOCKETTYPE_IS_LONGINT}
-  TIdSocketType = LongInt;
+  TIdSocketType = Integer;
   {$ENDIF}
   {$IFDEF SOCKETTYPE_IS_SOCKETTYPE}
   TIdSocketType = SocketType;
@@ -333,7 +333,7 @@ const
   Id_IPPROTO_IDP    = IPPROTO_IDP;
 
   Id_IPPROTO_IGMP   = IPPROTO_IGMP;
-  {$ENDIF}
+    {$ENDIF}
   Id_IPPROTO_IP     = IPPROTO_IP;
   Id_IPPROTO_IPv6   = IPPROTO_IPV6;
   Id_IPPROTO_ND     = 77; //IPPROTO_ND; is not defined in some headers in FPC
@@ -390,13 +390,23 @@ const
   Id_SO_DEBUG            =  SO_DEBUG;
   Id_SO_DONTLINGER       =  SO_DONTLINGER;
   Id_SO_DONTROUTE        =  SO_DONTROUTE;
+  Id_SO_ERROR            =  SO_ERROR;
   Id_SO_KEEPALIVE        =  SO_KEEPALIVE;
   Id_SO_LINGER	         =  SO_LINGER;
   Id_SO_OOBINLINE        =  SO_OOBINLINE;
   Id_SO_RCVBUF           =  SO_RCVBUF;
   Id_SO_REUSEADDR        =  SO_REUSEADDR;
+    {$IFDEF LINUX}
+   // SO_REUSEPORT has different values on different platforms, but for
+   // right now we are only interested in it on Linux (it is 512 on BSD)...
+  Id_SO_REUSEPORT        =  15;//SO_REUSEPORT; is not defined in some headers in FPC
+    {$ENDIF}
   Id_SO_SNDBUF           =  SO_SNDBUF;
   Id_SO_TYPE             =  SO_TYPE;
+    {$IFDEF WINDOWS}
+  Id_SO_UPDATE_ACCEPT_CONTEXT  = SO_UPDATE_ACCEPT_CONTEXT;
+  Id_SO_UPDATE_CONNECT_CONTEXT = SO_UPDATE_CONNECT_CONTEXT;
+    {$ENDIF}
   {$ELSE}
 {
 SocketOptionName.AcceptConnection;// Socket is listening.
@@ -418,7 +428,9 @@ SocketOptionName.DontFragment;//  Do not fragment IP datagrams.
 {
 SocketOptionName.DropMembership;//  Drop an IP group membership.
 SocketOptionName.DropSourceMembership;//  Drop a source group.
-SocketOptionName.Error;//  Get error status and clear.
+}
+  Id_SO_ERROR            =  SocketOptionName.Error;//  Get error status and clear.
+{
 SocketOptionName.ExclusiveAddressUse;//  Enables a socket to be bound for exclusive access.
 SocketOptionName.Expedited;//  Use expedited data as defined in RFC-1222. This option can be set only once, and once set, cannot be turned off.
 SocketOptionName.HeaderIncluded;//  Indicates application is providing the IP header for outgoing datagrams.
@@ -453,6 +465,10 @@ SocketOptionName.SendTimeout;//  Send timeout. This option applies only to synch
 {
 SocketOptionName.TypeOfService;//  Change the IP header type of service field.
 SocketOptionName.UnblockSource;//  Unblock a previously blocked source.
+}
+  Id_SO_UPDATE_ACCEPT_CONTEXT  = SocketOptionName.UpdateAcceptContext;// Updates an accepted socket's properties by using those of an existing socket.
+  Id_SO_UPDATE_CONNECT_CONTEXT = SocketOptionName.UpdateConnectContext;// Updates a connected socket's properties by using those of an existing socket.
+{
 SocketOptionName.UseLoopback;//  Bypass hardware when possible.
 }
   {$ENDIF}
@@ -487,7 +503,7 @@ SocketOptionName.UseLoopback;//  Bypass hardware when possible.
   {$IFNDEF DOTNET}
     {$IFDEF USE_VCL_POSIX}
   INVALID_SOCKET           = -1;
-  SOCKET_ERROR             = socklen_t(-1);
+  SOCKET_ERROR             = -1;
     {$ENDIF}
   Id_TCP_NODELAY           = TCP_NODELAY;
   Id_INVALID_SOCKET        = INVALID_SOCKET;
@@ -931,6 +947,6 @@ SocketOptionName.UseLoopback;//  Bypass hardware when possible.
 implementation
 
 {$IFDEF USE_VCL_POSIX}
-  {$WARN SYMBOL_PLATFORM ON}
+  {$I IdSymbolPlatformOn.inc}
 {$ENDIF}
 end.
