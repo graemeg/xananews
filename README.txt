@@ -46,4 +46,7 @@ Here's what it does so far...
 
 * Integrates with ISpell spell checker.
 
+* Applications settings can be stored in a XML file instead of the
+  Windows registry. Simply start XanaNews with the following command
+  line parameter:  XanaNews.exe -XMLSettings=xana.xml
 
