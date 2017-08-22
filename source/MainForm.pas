@@ -766,6 +766,8 @@ type
     procedure actFolderRenameExecute(Sender: TObject);
 
     procedure actHelpAboutExecute(Sender: TObject);
+    procedure actHelpContentsExecute(Sender: TObject);
+    procedure actHelpTopicSearchExecute(Sender: TObject);
 
     procedure actMessageAddToBozoBinExecute(Sender: TObject);
     procedure actMessageCopyXFaceExecute(Sender: TObject);
@@ -1850,6 +1852,30 @@ begin
   NTAboutBox.SupportURL := cSupportURL;
   NTAboutBox.BuildStr := cGitSHA1;
   NTAboutBox.Execute;
+end;
+
+procedure TfmMain.actHelpContentsExecute(Sender: TObject);
+begin
+  HtmlHelp(0, Application.HelpFile, HH_DISPLAY_TOC, 0);
+//  Application.HelpContext(2);
+end;
+
+procedure TfmMain.actHelpTopicSearchExecute(Sender: TObject);
+var
+  Query: THH_Fts_QueryW;
+begin
+  with Query do
+  begin
+    cbStruct := SizeOf(THH_Fts_QueryW);
+    fUniCodeStrings := True;
+    pszSearchQuery := '';
+    iProximity := 0;
+    fStemmedSearch := True;
+    fTitleOnly := False;
+    fExecute := True;
+    pszWindow := nil;
+  end;
+  HtmlHelp(0, Application.HelpFile, HH_DISPLAY_SEARCH, DWORD(@Query));
 end;
 
 procedure TfmMain.actViewHideMessagesNotToMeExecute(Sender: TObject);
@@ -6577,6 +6603,8 @@ begin
   actToolsOptions.Enabled := True;
   actToolsAccounts.Enabled := True;
   actHelpAbout.Enabled := True;
+  actHelpContents.Enabled := Application.HelpFile <> '';
+  actHelpTopicSearch.Enabled := Application.HelpFile <> '';
   actToolsBatches.Enabled := True;
 
   s := Application.Title {$ifdef CPUX64} + ' (x64)' {$endif};
