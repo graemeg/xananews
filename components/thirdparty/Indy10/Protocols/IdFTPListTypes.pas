@@ -49,16 +49,19 @@
 unit IdFTPListTypes;
 
 interface
+
 {$i IdCompilerDefines.inc}
+
 uses
   Classes,
+  IdGlobal,
   IdFTPList;
 
 type
   { For FTP servers using OS/2 and other MS-DOS-like file systems that report file attributes }
   TIdDOSAttributes = class(TPersistent)
   protected
-    FFileAttributes: Cardinal;
+    FFileAttributes: UInt32;
     function GetRead_Only: Boolean;
     procedure SetRead_Only(const AValue: Boolean);
     function GetHidden: Boolean;
@@ -76,7 +79,7 @@ type
     function GetAsString: String; virtual;
     function AddAttribute(const AString : String) : Boolean;
   published
-    property FileAttributes : Cardinal read FFileAttributes write FFileAttributes;
+    property FileAttributes : UInt32 read FFileAttributes write FFileAttributes;
     property AsString : String read GetAsString;
     // can't be ReadOnly because that's a reserved word
     property Read_Only : Boolean read GetRead_Only write SetRead_Only;
@@ -256,7 +259,7 @@ implementation
 
 uses
   IdException,
-  IdFTPCommon, IdGlobal, SysUtils;
+  IdFTPCommon, SysUtils;
 
 { TIdMinimalFTPListItem }
 

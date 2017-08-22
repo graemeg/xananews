@@ -307,63 +307,63 @@ type
   EIdDNSServerSyncException = class(EIdSilentException);
   EIdDNSServerSettingException = class(EIdSilentException);
 
-                                                                                                      
+  // TODO: enable AD and CD properties. Those fields are reserved in RFC 1035, but defined in RFC 6895
   TDNSHeader = class
   private
-    FID: Word;
-    FBitCode: Word;
-    FQDCount: Word;
-    FANCount: Word;
-    FNSCount: Word;
-    FARCount: Word;
-    function GetAA: Word;
-    //function GetAD: Word;
-    //function GetCD: Word;
-    function GetOpCode: Word;
-    function GetQr: Word;
-    function GetRA: Word;
-    function GetRCode: Word;
-    function GetRD: Word;
-    function GetTC: Word;
-    procedure SetAA(const Value: Word);
-    //procedure SetAD(const Value: Word);
-    //procedure SetCD(const Value: Word);
-    procedure SetOpCode(const Value: Word);
-    procedure SetQr(const Value: Word);
-    procedure SetRA(const Value: Word);
-    procedure SetRCode(const Value: Word);
-    procedure SetRD(const Value: Word);
-    procedure SetTC(const Value: Word);
-    procedure SetBitCode(const Value: Word);
+    FID: UInt16;
+    FBitCode: UInt16;
+    FQDCount: UInt16;
+    FANCount: UInt16;
+    FNSCount: UInt16;
+    FARCount: UInt16;
+    function GetAA: UInt16;
+    //function GetAD: UInt16;
+    //function GetCD: UInt16;
+    function GetOpCode: UInt16;
+    function GetQr: UInt16;
+    function GetRA: UInt16;
+    function GetRCode: UInt16;
+    function GetRD: UInt16;
+    function GetTC: UInt16;
+    procedure SetAA(const Value: UInt16);
+    //procedure SetAD(const Value: UInt16);
+    //procedure SetCD(const Value: UInt16);
+    procedure SetOpCode(const Value: UInt16);
+    procedure SetQr(const Value: UInt16);
+    procedure SetRA(const Value: UInt16);
+    procedure SetRCode(const Value: UInt16);
+    procedure SetRD(const Value: UInt16);
+    procedure SetTC(const Value: UInt16);
+    procedure SetBitCode(const Value: UInt16);
   public
     constructor Create;
     procedure ClearByteCode;
     function ParseQuery(Data : TIdBytes) : integer;
     function GenerateBinaryHeader : TIdBytes;
 
-    property ID: Word read FID write FID;
-    property Qr: Word read GetQr write SetQr;
-    property OpCode: Word read GetOpCode write SetOpCode;
-    property AA: Word read GetAA write SetAA;
-    //property AD: Word get GetAD write SetAD;
-    //property CD: Word get GetCD write SetCD;
-    property TC: Word read GetTC write SetTC;
-    property RD: Word read GetRD write SetRD;
-    property RA: Word read GetRA write SetRA;
-    property RCode: Word read GetRCode write SetRCode;
-    property BitCode: Word read FBitCode write SetBitCode;
-    property QDCount: Word read FQDCount write FQDCount;
-    property ANCount: Word read FANCount write FANCount;
-    property NSCount: Word read FNSCount write FNSCount;
-    property ARCount: Word read FARCount write FARCount;
+    property ID: UInt16 read FID write FID;
+    property Qr: UInt16 read GetQr write SetQr;
+    property OpCode: UInt16 read GetOpCode write SetOpCode;
+    property AA: UInt16 read GetAA write SetAA;
+    //property AD: UInt16 get GetAD write SetAD;
+    //property CD: UInt16 get GetCD write SetCD;
+    property TC: UInt16 read GetTC write SetTC;
+    property RD: UInt16 read GetRD write SetRD;
+    property RA: UInt16 read GetRA write SetRA;
+    property RCode: UInt16 read GetRCode write SetRCode;
+    property BitCode: UInt16 read FBitCode write SetBitCode;
+    property QDCount: UInt16 read FQDCount write FQDCount;
+    property ANCount: UInt16 read FANCount write FANCount;
+    property NSCount: UInt16 read FNSCount write FNSCount;
+    property ARCount: UInt16 read FARCount write FARCount;
   end;
 
   TIdTextModeResourceRecord = class(TObject)
   protected
     FAnswer : TIdBytes;
     FRRName: string;
-    FRRDatas: TStrings;                                 
-    FTTL: integer;
+    FRRDatas: TStrings;  //TODO Should not be TIdStrings
+    FTTL: Int32;
     FTypeCode: Integer;
     FTimeOut: string;
     function FormatQName(const AFullName: string): string; overload;
@@ -371,7 +371,7 @@ type
     function FormatQNameFull(const AFullName: string): string;
     function FormatRecord(const AFullName: String; const ARRData: TIdBytes): TIdBytes;
     procedure SetRRDatas(const Value: TStrings);
-    procedure SetTTL(const Value: integer);
+    procedure SetTTL(const Value: Int32);
   public
     constructor CreateInit(const ARRName: String; ATypeCode: Integer);
     destructor Destroy; override;
@@ -579,7 +579,7 @@ type
      function TextRecord(AFullName : string) : string; override;
   end;
 
-                                          
+     { TODO : implement WKS record class }
   TIdRR_WKS = class(TIdTextModeResourceRecord)
   public
     constructor Create;
@@ -617,7 +617,9 @@ implementation
 
 uses
   {$IFDEF VCL_XE3_OR_ABOVE}
-  //System.Contnrs,
+    {$IFNDEF NEXTGEN}
+  System.Contnrs,
+    {$ENDIF}
   {$ENDIF}
   {$IFDEF HAS_UNIT_DateUtils}
   DateUtils,
@@ -634,16 +636,16 @@ begin
   Inc(VDestIndex, Length(ASource));
 end;
 
-procedure IdBytesCopyWord(const ASource: Word; var VDest: TIdBytes; var VDestIndex: Integer);
+procedure IdBytesCopyUInt16(const ASource: UInt16; var VDest: TIdBytes; var VDestIndex: Integer);
 begin
-  CopyTIdWord(ASource, VDest, VDestIndex);
-  Inc(VDestIndex, SizeOf(Word));
+  CopyTIdUInt16(ASource, VDest, VDestIndex);
+  Inc(VDestIndex, SizeOf(UInt16));
 end;
 
-procedure IdBytesCopyLongWord(const ASource: LongWord; var VDest: TIdBytes; var VDestIndex: Integer);
+procedure IdBytesCopyUInt32(const ASource: UInt32; var VDest: TIdBytes; var VDestIndex: Integer);
 begin
-  CopyTIdLongWord(ASource, VDest, VDestIndex);
-  Inc(VDestIndex, SizeOf(LongWord));
+  CopyTIdUInt32(ASource, VDest, VDestIndex);
+  Inc(VDestIndex, SizeOf(UInt32));
 end;
 
 function DomainNameToDNSStr(const ADomain : string): TIdBytes;
@@ -655,7 +657,7 @@ begin
   if Length(ADomain) = 0 then begin
     SetLength(Result, 0);
   end else begin
-                                    
+    // TODO: ned to re-write this...
     SetLength(Result, Length(ADomain)+1);
     LIdx := 0;
     LDomain := ADomain;
@@ -707,7 +709,7 @@ end;
 
 procedure IdHexToBin(const AText: TIdBytes; var Buffer: TIdBytes; const BufSize: Integer);
 const
-  Convert: array['0'..'f'] of SmallInt =                   {do not localize}
+  Convert: array['0'..'f'] of Int16 =                   {do not localize}
     ( 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,-1,-1,-1,-1,-1,-1,
      -1,10,11,12,13,14,15,-1,-1,-1,-1,-1,-1,-1,-1,-1,
      -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
@@ -733,16 +735,11 @@ end;
 
 function IPv6AAAAToDNSStr(const AIPv6Address : String): TIdBytes;
 var
-  LAddr : string;
-  TempAddr : TIdBytes;
+  LAddr : TIdIPv6Address;
 begin
-  LAddr := AIPv6Address;
-  SetLength(TempAddr, 0);
-  repeat
-    AppendString(TempAddr, Fetch(LAddr, ':')); {do not localize}
-  until LAddr = '';                   {do not localize}
+  IPv6ToIdIPv6Address(AIPv6Address, LAddr);
   SetLength(Result, 16);
-  IdHexToBin(TempAddr, Result, 16);
+  CopyTIdIPV6Address(LAddr, Result, 0);
 end;
 
 function IsValidIPv6(const v6Address : String): boolean;
@@ -887,7 +884,7 @@ begin
   SetLength(Result, Length(Result) - 1); //Remove last :
 end;
 
-                               
+{ TODO : Move these to member }
 function GetErrorStr(const Code, Id: Integer): String;
 begin
   case Code of
@@ -1053,57 +1050,57 @@ ARCOUNT         an unsigned 16 bit integer specifying the number of
 }
 begin
   SetLength(Result, 12);
-  WordToTwoBytes(GStack.HostToNetwork(ID), Result, 0);
-  WordToTwoBytes(GStack.HostToNetwork(BitCode), Result, 2);
-  WordToTwoBytes(GStack.HostToNetwork(QDCount), Result, 4);
-  WordToTwoBytes(GStack.HostToNetwork(ANCount), Result, 6);
-  WordToTwoBytes(GStack.HostToNetwork(NSCount), Result, 8);
-  WordToTwoBytes(GStack.HostToNetwork(ARCount), Result, 10);
+  UInt16ToTwoBytes(GStack.HostToNetwork(ID), Result, 0);
+  UInt16ToTwoBytes(GStack.HostToNetwork(BitCode), Result, 2);
+  UInt16ToTwoBytes(GStack.HostToNetwork(QDCount), Result, 4);
+  UInt16ToTwoBytes(GStack.HostToNetwork(ANCount), Result, 6);
+  UInt16ToTwoBytes(GStack.HostToNetwork(NSCount), Result, 8);
+  UInt16ToTwoBytes(GStack.HostToNetwork(ARCount), Result, 10);
 end;
 
-function TDNSHeader.GetAA: Word;
+function TDNSHeader.GetAA: UInt16;
 begin
   Result := (FBitCode shr 10) and $0001;
 end;
 
 {
-function TDNSHeader.GetAD: Word;
+function TDNSHeader.GetAD: UInt16;
 begin
   Result := (FBitCode shr 5) and $0001;
 end;
 
-function TDNSHeader.GetCD: Word;
+function TDNSHeader.GetCD: UInt16;
 begin
   Result := (FBitCode shr 4) and $0001;
 end;
 }
 
-function TDNSHeader.GetOpCode: Word;
+function TDNSHeader.GetOpCode: UInt16;
 begin
   Result := (FBitCode shr 11) and $000F;
 end;
 
-function TDNSHeader.GetQr: Word;
+function TDNSHeader.GetQr: UInt16;
 begin
   Result := (FBitCode shr 15) and $0001;
 end;
 
-function TDNSHeader.GetRA: Word;
+function TDNSHeader.GetRA: UInt16;
 begin
   Result := (FBitCode shr 7) and $0001;
 end;
 
-function TDNSHeader.GetRCode: Word;
+function TDNSHeader.GetRCode: UInt16;
 begin
   Result := FBitCode and $000F;
 end;
 
-function TDNSHeader.GetRD: Word;
+function TDNSHeader.GetRD: UInt16;
 begin
   Result := (FBitCode shr 8) and $0001;
 end;
 
-function TDNSHeader.GetTC: Word;
+function TDNSHeader.GetTC: UInt16;
 begin
   Result := (FBitCode shr 9) and $0001;
 end;
@@ -1113,19 +1110,19 @@ begin
   Result := -1;
   if Length(Data) >= 12 then begin
     try
-      ID      := GStack.NetworkToHost(BytesToWord(Data, 0));
-      BitCode := GStack.NetworkToHost(BytesToWord(Data, 2));
-      QDCount := GStack.NetworkToHost(BytesToWord(Data, 4));
-      ANCount := GStack.NetworkToHost(BytesToWord(Data, 6));
-      NSCount := GStack.NetworkToHost(BytesToWord(Data, 8));
-      ARCount := GStack.NetworkToHost(BytesToWord(Data, 10));
+      ID      := GStack.NetworkToHost(BytesToUInt16(Data, 0));
+      BitCode := GStack.NetworkToHost(BytesToUInt16(Data, 2));
+      QDCount := GStack.NetworkToHost(BytesToUInt16(Data, 4));
+      ANCount := GStack.NetworkToHost(BytesToUInt16(Data, 6));
+      NSCount := GStack.NetworkToHost(BytesToUInt16(Data, 8));
+      ARCount := GStack.NetworkToHost(BytesToUInt16(Data, 10));
       Result := 0;
     except
     end;
   end;
 end;
 
-procedure TDNSHeader.SetAA(const Value: Word);
+procedure TDNSHeader.SetAA(const Value: UInt16);
 begin
   if Value = 0 then begin
     FBitCode := FBitCode and $FBFF;
@@ -1135,7 +1132,7 @@ begin
 end;
 
 {
-procedure TDNSHeader.SetAD(const Value: Word);
+procedure TDNSHeader.SetAD(const Value: UInt16);
 begin
   if Value = 0 then begin
     FBitCode := FBitCode and $FFDF;
@@ -1145,13 +1142,13 @@ begin
 end;
 }
 
-procedure TDNSHeader.SetBitCode(const Value: Word);
+procedure TDNSHeader.SetBitCode(const Value: UInt16);
 begin
   FBitCode := Value;
 end;
 
 {
-procedure TDNSHeader.SetCD(const Value: Word);
+procedure TDNSHeader.SetCD(const Value: UInt16);
 begin
   if Value = 0 then begin
     FBitCode := FBitCode and $FFEF;
@@ -1161,12 +1158,12 @@ begin
 end;
 }
 
-procedure TDNSHeader.SetOpCode(const Value: Word);
+procedure TDNSHeader.SetOpCode(const Value: UInt16);
 begin
   FBitCode := (FBitCode and $87FF) or ((Value and $000F) shl 11);
 end;
 
-procedure TDNSHeader.SetQr(const Value: Word);
+procedure TDNSHeader.SetQr(const Value: UInt16);
 begin
   if Value = 0 then begin
     FBitCode := FBitCode and $7FFF;
@@ -1175,7 +1172,7 @@ begin
   end;
 end;
 
-procedure TDNSHeader.SetRA(const Value: Word);
+procedure TDNSHeader.SetRA(const Value: UInt16);
 begin
   if Value = 0 then begin
     FBitCode := FBitCode and $FF7F;
@@ -1184,12 +1181,12 @@ begin
   end;
 end;
 
-procedure TDNSHeader.SetRCode(const Value: Word);
+procedure TDNSHeader.SetRCode(const Value: UInt16);
 begin
   FBitCode := (FBitCode and $FFF0) or (Value and $000F);
 end;
 
-procedure TDNSHeader.SetRD(const Value: Word);
+procedure TDNSHeader.SetRD(const Value: UInt16);
 begin
   if Value = 0 then begin
     FBitCode := FBitCode and $FEFF;
@@ -1198,7 +1195,7 @@ begin
   end;
 end;
 
-procedure TDNSHeader.SetTC(const Value: Word);
+procedure TDNSHeader.SetTC(const Value: UInt16);
 begin
   if Value = 0 then begin
     FBitCode := FBitCode and $FDFF;
@@ -1213,7 +1210,7 @@ end;
 function TIdTextModeResourceRecord.BinQueryRecord(AFullName: string): TIdBytes;
 begin
   // This was empty? Where did it go?
-         
+  //todo;
   // Explain by Dennies : No, here must be empty, it's only a
   // virtual method, for child class to implement.
   Result := nil;
@@ -1275,13 +1272,13 @@ var
   LIdx: Integer;
 begin
   LDomain := DomainNameToDNSStr(FormatQName(AFullName));
-  SetLength(Result, Length(LDomain)+(SizeOf(Word)*3)+SizeOf(Cardinal)+Length(ARRData));
+  SetLength(Result, Length(LDomain)+(SizeOf(UInt16)*3)+SizeOf(UInt32)+Length(ARRData));
   LIdx := 0;
   IdBytesCopyBytes(LDomain, Result, LIdx);
-  IdBytesCopyWord(GStack.HostToNetwork(Word(TypeCode)), Result, LIdx);
-  IdBytesCopyWord(GStack.HostToNetwork(Word(Class_IN)), Result, LIdx);
-  IdBytesCopyLongWord(GStack.HostToNetwork(LongWord(TTL)), Result, LIdx);
-  IdBytesCopyWord(GStack.HostToNetwork(Word(Length(ARRData))), Result, LIdx);
+  IdBytesCopyUInt16(GStack.HostToNetwork(UInt16(TypeCode)), Result, LIdx);
+  IdBytesCopyUInt16(GStack.HostToNetwork(UInt16(Class_IN)), Result, LIdx);
+  IdBytesCopyUInt32(GStack.HostToNetwork(UInt32(TTL)), Result, LIdx);
+  IdBytesCopyUInt16(GStack.HostToNetwork(UInt16(Length(ARRData))), Result, LIdx);
   IdBytesCopyBytes(ARRData, Result, LIdx);
 end;
 
@@ -1628,12 +1625,12 @@ end;
 function TIdRR_MX.BinQueryRecord(AFullName: string): TIdBytes;
 var
   RRData, Tmp: TIdBytes;
-  Pref : Word;
+  Pref : UInt16;
 begin
   Tmp := nil; // keep the compiler happy
   if Length(FAnswer) = 0 then begin
     Pref := IndyStrToInt(Preference);
-    RRData := ToBytes(SmallInt(Pref));
+    RRData := ToBytes(GStack.HostToNetwork(Pref));
     Tmp := DomainNameToDNSStr(FormatQName(Exchange,AFullName));
     AppendBytes(RRData, Tmp);
     FAnswer := FormatRecord(AFullName, RRData);
@@ -1759,17 +1756,17 @@ begin
     LMName := DomainNameToDNSStr(MName);
     LRName := DomainNameToDNSStr(RName);
 
-    SetLength(RRData, Length(LMName)+Length(LRName)+(SizeOf(Word)*5));
+    SetLength(RRData, Length(LMName)+Length(LRName)+(SizeOf(UInt32)*5));
 
     LIdx := 0;
     IdBytesCopyBytes(LMName, RRData, LIdx);
     IdBytesCopyBytes(LRName, RRData, LIdx);
 
-    IdBytesCopyWord(GStack.HostToNetwork(Word(IndyStrToInt(Serial))), RRData, LIdx);
-    IdBytesCopyWord(GStack.HostToNetwork(Word(IndyStrToInt(Refresh))), RRData, LIdx);
-    IdBytesCopyWord(GStack.HostToNetwork(Word(IndyStrToInt(Retry))), RRData, LIdx);
-    IdBytesCopyWord(GStack.HostToNetwork(Word(IndyStrToInt(Expire))), RRData, LIdx);
-    IdBytesCopyWord(GStack.HostToNetwork(Word(IndyStrToInt(Minimum))), RRData, LIdx);
+    IdBytesCopyUInt32(GStack.HostToNetwork(UInt32(IndyStrToInt(Serial))), RRData, LIdx);
+    IdBytesCopyUInt32(GStack.HostToNetwork(UInt32(IndyStrToInt(Refresh))), RRData, LIdx);
+    IdBytesCopyUInt32(GStack.HostToNetwork(UInt32(IndyStrToInt(Retry))), RRData, LIdx);
+    IdBytesCopyUInt32(GStack.HostToNetwork(UInt32(IndyStrToInt(Expire))), RRData, LIdx);
+    IdBytesCopyUInt32(GStack.HostToNetwork(UInt32(IndyStrToInt(Minimum))), RRData, LIdx);
 
     FAnswer := FormatRecord(AFullName, RRData);
   end;

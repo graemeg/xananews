@@ -210,7 +210,7 @@ var
   gExSettingsFile: string = '';
 
 procedure FixHeaders(hdrs: TAnsiStrings);
-function ProductVersion: string;
+function ProductVersion(const AHideSHA1: boolean = False): string;
 procedure UseXMLSettings(const fn: string);
 
 procedure WrapStrings(m: TStrings; maxLen: Integer; textPartStyle: TTextPartStyle; nest, strictSigSep: Boolean);
@@ -351,7 +351,7 @@ begin
   end;
 end;
 
-function ProductVersion: string;
+function ProductVersion(const AHideSHA1: boolean = False): string;
 var
   size, zero: DWORD;
   buffer, pBuffer: pointer;
@@ -378,11 +378,15 @@ begin
 
       info := PVSFixedFileInfo(pBuffer);
 
-      Result := Format('%d.%d-%s', [HiWord(info^.dwProductVersionMS),
-                                       LoWord(info^.dwProductVersionMS),
-                                       {HiWord(info^.dwProductVersionLS),
-                                       LoWord(info^.dwProductVersionLS),}
-                                       cGitSHA1]);
+      if AHideSHA1 then
+        Result := Format('%d.%d', [HiWord(info^.dwProductVersionMS),
+                                         LoWord(info^.dwProductVersionMS)])
+      else
+        Result := Format('%d.%d-%s', [HiWord(info^.dwProductVersionMS),
+                                         LoWord(info^.dwProductVersionMS),
+                                         {HiWord(info^.dwProductVersionLS),
+                                         LoWord(info^.dwProductVersionLS),}
+                                         cGitSHA1]);
     finally
       FreeMem(buffer);
     end;

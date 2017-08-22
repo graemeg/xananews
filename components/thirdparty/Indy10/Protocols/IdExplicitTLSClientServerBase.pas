@@ -100,6 +100,7 @@ type
   protected
     FRegularProtPort : TIdPort;
     FImplicitTLSProtPort : TIdPort;
+    FExplicitTLSProtPort : TIdPort;
     FUseTLS : TIdUseTLS;
     procedure Loaded; override;
     procedure SetIOHandler(const AValue: TIdServerIOHandler); override;
@@ -112,6 +113,7 @@ type
   protected
     FRegularProtPort : TIdPort;
     FImplicitTLSProtPort : TIdPort;
+    FExplicitTLSProtPort : TIdPort;
     FUseTLS : TIdUseTLS;
     FOnTLSNotAvailable : TIdOnTLSNegotiationFailure;
     FOnTLSNegCmdFailed : TIdOnTLSNegotiationFailure;
@@ -192,32 +194,38 @@ end;
 
 procedure TIdExplicitTLSServer.SetUseTLS(AValue: TIdUseTLS);
 begin
-  if (not Active) or IsDesignTime then
+  if Active and (not IsDesignTime) then begin
+    raise EIdTLSClientCanNotSetWhileActive.Create(RSTLSSLCanNotSetWhileConnected);
+  end;
+  if IsLoading then begin
+    FUseTLS := AValue;
+    Exit;
+  end;
+  if FUseTLS <> AValue then
   begin
-    if IsLoading then begin
-      FUseTLS := AValue;
-      Exit;
-    end;
-    if (not (IOHandler is TIdServerIOHandlerSSLBase)) and (AValue <> utNoTLSSupport) then begin
-      raise EIdTLSServerSSLIOHandlerRequired.Create(RSTLSSSLIOHandlerRequired);
-    end;
-    if FUseTLS <> AValue then
+    if AValue <> utNoTLSSupport then
     begin
-      if AValue = utUseImplicitTLS then
-      begin
-        if DefaultPort = FRegularProtPort then begin
+      if not (IOHandler is TIdServerIOHandlerSSLBase) then begin
+        raise EIdTLSServerSSLIOHandlerRequired.Create(RSTLSSSLIOHandlerRequired);
+      end;
+    end;
+    case AValue of
+      utUseImplicitTLS: begin
+        if (DefaultPort = FRegularProtPort) or (DefaultPort = FExplicitTLSProtPort) then begin
           DefaultPort := FImplicitTLSProtPort;
         end;
-      end else
-      begin
-        if DefaultPort = FImplicitTLSProtPort then begin
-          DefaultPort := FRegularProtPort;
+      end;
+      utUseExplicitTLS: begin
+        if (DefaultPort = FRegularProtPort) or (DefaultPort = FImplicitTLSProtPort) then begin
+          DefaultPort := iif(FExplicitTLSProtPort <> 0, FExplicitTLSProtPort, FRegularProtPort);
         end;
       end;
-      FUseTLS := AValue;
+    else
+      if (DefaultPort = FImplicitTLSProtPort) or (DefaultPort = FExplicitTLSProtPort) then begin
+        DefaultPort := FRegularProtPort;
+      end;
     end;
-  end else begin
-    raise EIdTLSClientCanNotSetWhileActive.Create(RSTLSSLCanNotSetWhileConnected);
+    FUseTLS := AValue;
   end;
 end;
 
@@ -293,7 +301,7 @@ begin
     FOnTLSNegCmdFailed(Self, LContinue);
   end;
   if not LContinue then begin
-    TLSNotAvailable;
+    TLSNegCmdFailed;
   end;
 end;
 
@@ -364,16 +372,24 @@ begin
     FUseTLS := AValue;
     Exit;
   end;
-  if AValue <> utNoTLSSupport then begin
-    CheckIfCanUseTLS;
-  end;
-  if FUseTLS <> AValue then begin
-    if AValue = utUseImplicitTLS then begin
-      if Port = FRegularProtPort then begin
-        Port := FImplicitTLSProtPort;
+  if FUseTLS <> AValue then
+  begin
+    if AValue <> utNoTLSSupport then begin
+      CheckIfCanUseTLS;
+    end;
+    case AValue of
+      utUseImplicitTLS: begin
+        if (Port = FRegularProtPort) or (Port = FExplicitTLSProtPort) then begin
+          Port := FImplicitTLSProtPort;
+        end;
       end;
-    end else begin
-      if Port = FImplicitTLSProtPort then begin
+      utUseExplicitTLS: begin
+        if (Port = FRegularProtPort) or (Port = FImplicitTLSProtPort) then begin
+          Port := iif(FExplicitTLSProtPort <> 0, FExplicitTLSProtPort, FRegularProtPort);
+        end;
+      end;
+    else
+      if (Port = FImplicitTLSProtPort) or (Port = FExplicitTLSProtPort) then begin
         Port := FRegularProtPort;
       end;
     end;
@@ -395,9 +411,14 @@ end;
 procedure TIdExplicitTLSClient.TLSHandShakeFailed;
 begin
   if Connected then begin
-    Disconnect;
+    // RLebeau 9/19/2013: do not send a goodbye command to the peer.
+    // The socket data may be in a bad state at this point!
+    Disconnect(False);
   end;
-  raise EIdTLSClientTLSHandShakeFailed.Create(RSTLSSLSSLNotAvailable);
+  // This method should always be called in the context of an active 'except'
+  // block, so use IndyRaiseOuterException() to capture the inner exception
+  // (if possible) when raising this outer exception...
+  IndyRaiseOuterException(EIdTLSClientTLSHandShakeFailed.Create(RSTLSSLSSLHandshakeFailed));
 end;
 
 procedure TIdExplicitTLSClient.TLSNegCmdFailed;
@@ -405,7 +426,10 @@ begin
   if Connected then begin
     Disconnect;
   end;
-  raise EIdTLSClientTLSNotAvailable.Create(RSTLSSLSSLNotAvailable);
+  // This method should never be called in the context of an active 'except'
+  // block, so do not use IndyRaiseOuterException() to capture an inner exception
+  // when raising this exception...
+  raise EIdTLSClientTLSNegCmdFailed.Create(RSTLSSLSSLCmdFailed);
 end;
 
 procedure TIdExplicitTLSClient.TLSNotAvailable;
@@ -413,7 +437,7 @@ begin
   if Connected then begin
     Disconnect;
   end;
-  raise EIdTLSClientTLSNotAvailable.Create(RSTLSSLSSLCmdFailed);
+  raise EIdTLSClientTLSNotAvailable.Create(RSTLSSLSSLNotAvailable);
 end;
 
 function TIdExplicitTLSClient.GetSupportsTLS: boolean;

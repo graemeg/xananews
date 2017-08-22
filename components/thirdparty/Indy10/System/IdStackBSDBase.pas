@@ -171,33 +171,46 @@ type
     case Integer of
     0: (
        {$IFDEF ENDIAN_BIG}
-      HighPart: LongWord;
-      LowPart: LongWord);
+      HighPart: UInt32;
+      LowPart: UInt32);
        {$ELSE}
-      LowPart: LongWord;
-      HighPart: LongWord);
+      LowPart: UInt32;
+      HighPart: UInt32);
       {$ENDIF}
     1: (
       QuadPart: Int64);
   end;
+  TIdUInt64Parts = packed record
+    case Integer of
+    0: (
+       {$IFDEF ENDIAN_BIG}
+      HighPart: UInt32;
+      LowPart: UInt32);
+       {$ELSE}
+      LowPart: UInt32;
+      HighPart: UInt32);
+      {$ENDIF}
+    1: (
+      QuadPart: UInt64);
+  end;
 
-  TIdIPv6AddressRec = packed array[0..7] of Word;
+  TIdIPv6AddressRec = packed array[0..7] of UInt16;
 
   TIdIPAddressRec = packed record
     IPVer: TIdIPVersion;
     case Integer of
-    0: (IPv4, Junk1, Junk2, Junk3: LongWord);
+    0: (IPv4, Junk1, Junk2, Junk3: UInt32);
     2: (IPv6 : TIdIPv6AddressRec);
   end;
 
 //procedure EmptyIPRec(var VIP : TIdIPAddress);
 
   TIdSunB = packed record
-    s_b1, s_b2, s_b3, s_b4: Byte;
+    s_b1, s_b2, s_b3, s_b4: UInt8;
   end;
 
   TIdSunW = packed record
-    s_w1, s_w2: Word;
+    s_w1, s_w2: UInt16;
   end;
 
   PIdIn4Addr = ^TIdIn4Addr;
@@ -205,17 +218,20 @@ type
     case integer of
         0: (S_un_b: TIdSunB);
         1: (S_un_w: TIdSunW);
-        2: (S_addr: LongWord);
+        2: (S_addr: UInt32);
   end;
 
   PIdIn6Addr = ^TIdIn6Addr;
   TIdIn6Addr = packed record
     case Integer of
-    0: (s6_addr: packed array [0..16-1] of Byte);
-    1: (s6_addr16: packed array [0..8-1] of Word);
+    0: (s6_addr: packed array [0..16-1] of UInt8);
+    1: (s6_addr16: packed array [0..8-1] of UInt16);
   end;
   (*$HPPEMIT '#ifdef s6_addr'*)
   (*$HPPEMIT '  #undef s6_addr'*)
+  (*$HPPEMIT '#endif'*)
+  (*$HPPEMIT '#ifdef s6_addr16'*)
+  (*$HPPEMIT '  #undef s6_addr16'*)
   (*$HPPEMIT '#endif'*)
 
   PIdInAddr = ^TIdInAddr;
@@ -229,7 +245,7 @@ type
   end;
   TIdIPv6Mreq = packed record
     ipv6mr_multiaddr : TIdIn6Addr;  //IPv6 multicast addr
-    ipv6mr_interface : LongWord;  //interface index
+    ipv6mr_interface : UInt32;      //interface index
   end;
 
   TIdStackBSDBase = class(TIdStack)
@@ -321,22 +337,26 @@ implementation
 
 uses
   //done this way so we can have a separate stack for the Unix systems in FPC
-  {$IFDEF UNIX}
-    {$IFDEF KYLIXCOMPAT}
-  IdStackLibc,
-    {$ENDIF}
-    {$IFDEF USE_BASEUNIX}
-  IdStackUnix,
-    {$ENDIF}
-    {$IFDEF USE_VCL_POSIX}
-  IdStackVCLPosix,
-    {$ENDIF}
-  {$ENDIF}
-  {$IFDEF WINDOWS}
-  IdStackWindows,
-  {$ENDIF}
   {$IFDEF DOTNET}
   IdStackDotNet,
+  {$ELSE}
+    {$IFDEF WINDOWS}
+  IdStackWindows,
+    {$ELSE}
+      {$IFDEF USE_VCL_POSIX}
+  IdStackVCLPosix,
+      {$ELSE}
+        {$IFDEF UNIX}
+          {$IFDEF KYLIXCOMPAT}
+  IdStackLibc,
+          {$ELSE}
+            {$IFDEF USE_BASEUNIX}
+  IdStackUnix,
+            {$ENDIF}
+          {$ENDIF}
+        {$ENDIF}
+      {$ENDIF}
+    {$ENDIF}
   {$ENDIF}
   IdResourceStrings,
   SysUtils;
@@ -426,10 +446,20 @@ end;
 
 function TIdStackBSDBase.Send(ASocket: TIdStackSocketHandle; const ABuffer: TIdBytes;
   const AOffset: Integer = 0; const ASize: Integer = -1): Integer;
+var
+  Tmp: Byte;
 begin
   Result := IndyLength(ABuffer, ASize, AOffset);
   if Result > 0 then begin
     Result := WSSend(ASocket, ABuffer[AOffset], Result, 0);
+  end else begin
+    // RLebeau: this is to allow UDP sockets to send 0-length packets.
+    // Have to use a variable because the Buffer parameter is declared
+    // as an untyped 'const'...
+    //
+    // TODO: check the socket type and only allow this for UDP sockets...
+    //
+    Result := WSSend(ASocket, Tmp, 0, 0);
   end;
 end;
 
@@ -445,10 +475,20 @@ function TIdStackBSDBase.SendTo(ASocket: TIdStackSocketHandle;
   const ABuffer: TIdBytes; const AOffset: Integer; const ASize: Integer;
   const AIP: string; const APort: TIdPort;
   const AIPVersion: TIdIPVersion = ID_DEFAULT_IP_VERSION): Integer;
+var
+  Tmp: Byte;
 begin
   Result := IndyLength(ABuffer, ASize, AOffset);
   if Result > 0 then begin
     WSSendTo(ASocket, ABuffer[AOffset], Result, 0, AIP, APort, AIPVersion);
+  end else begin
+    // RLebeau: this is to allow UDP sockets to send 0-length packets.
+    // Have to use a variable because the Buffer parameter is declared
+    // as an untyped 'const'...
+    //
+    // TODO: check the socket type and only allow this for UDP sockets...
+    //
+    WSSendTo(ASocket, Tmp, 0, 0, AIP, APort, AIPVersion);
   end;
 end;
 
@@ -584,7 +624,9 @@ begin
   end;
 end;
 
+{$I IdDeprecatedImplBugOff.inc}
 function TIdStackBSDBase.WSGetServByPort(const APortNumber: TIdPort): TStrings;
+{$I IdDeprecatedImplBugOn.inc}
 begin
   Result := TStringList.Create;
   try

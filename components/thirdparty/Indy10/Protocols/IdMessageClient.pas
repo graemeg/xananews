@@ -436,6 +436,8 @@ type
       ); override;
     property EscapeLines: Boolean read FEscapeLines write FEscapeLines;
     property UnescapeLines: Boolean read FUnescapeLines write FUnescapeLines;
+  published
+    property MaxLineLength default MaxInt;
   end;
 
   TIdMessageClient = class(TIdExplicitTLSClient)
@@ -549,6 +551,7 @@ begin
   FEscapeLines := False; // do not set this to True! This is for users to set manually...
   FUnescapeLines := False; // do not set this to True! This is for users to set manually...
   FLastByteRecv := 0;
+  MaxLineLength := MaxInt;
 end;
 
 function TIdIOHandlerStreamMsg.Readable(AMSec: integer = IdTimeoutDefault): Boolean;
@@ -559,11 +562,7 @@ begin
       Exit;
     end;
   end;
-  if ReceiveStream <> nil then begin
-    Result := not FTerminatorWasRead;
-  end else begin
-    Result := False;
-  end;
+  Result := ReceiveStream <> nil;
 end;
 
 function TIdIOHandlerStreamMsg.ReadDataFromSource(var VBuffer: TIdBytes): Integer;
@@ -596,7 +595,7 @@ begin
     // instead of ASCII...
     CopyTIdString(LTerminator, VBuffer, 0);
     Result := Length(LTerminator);
-  end else begin;
+  end else begin
     Result := 0;
   end;
 end;
@@ -694,23 +693,27 @@ var
   LParentPart: integer;
   LPreviousParentPart: integer;
   LEncoding, LCharsetEncoding: IIdTextEncoding;
+  LContentTransferEncoding: string;
+  LUnknownContentTransferEncoding: Boolean;
 
   // TODO - move this procedure into TIdIOHandler as a new Capture method?
-  procedure CaptureAndDecodeCharset(AByteEncoding: IIdTextEncoding);
+  procedure CaptureAndDecodeCharset;
   var
     LMStream: TMemoryStream;
-    {$IFDEF STRING_IS_ANSI}
-    LAnsiEncoding: IIdTextEncoding;
-    {$ENDIF}
   begin
     LMStream := TMemoryStream.Create;
     try
-      IOHandler.Capture(LMStream, ADelim, True, AByteEncoding{$IFDEF STRING_IS_ANSI}, AByteEncoding{$ENDIF});
+      IOHandler.Capture(LMStream, ADelim, True, IndyTextEncoding_8Bit{$IFDEF STRING_IS_ANSI}, IndyTextEncoding_8Bit{$ENDIF});
       LMStream.Position := 0;
-      {$IFDEF STRING_IS_ANSI}
-      LAnsiEncoding := CharsetToEncoding(AMsg.CharSet);
-      {$ENDIF}
-      ReadStringsAsCharSet(LMStream, AMsg.Body, AMsg.CharSet{$IFDEF STRING_IS_ANSI}, LAnsiEncoding{$ENDIF});
+
+      // TODO: when String is AnsiString, TIdIMAP4 uses 8bit as the destination
+      // encoding, should this be doing the same? Otherwise, we could just use
+      // AMsg.Body.LoadFromStream() instead...
+
+      // TODO: if the Content-Type is HTML, parse the HTML data looking for a charset
+      // declaration, and if found then use that instead of the MIME charset...
+
+      ReadStringsAsCharSet(LMStream, AMsg.Body, AMsg.CharSet{$IFDEF STRING_IS_ANSI}, CharsetToEncoding(AMsg.CharSet){$ENDIF});
     finally
       FreeAndNil(LMStream);
     end;
@@ -718,7 +721,7 @@ var
 
   // RLebeau 11/2/2013: TIdMessage.Headers is a TIdHeaderList, but
   // TIdMessageDecoder.Headers is a plain TStringList.  Although TIdHeaderList
-  // is a TStrings descendant, but it reintroduces its own Values[] property
+  // is a TStrings descendant, it reintroduces its own Values[] property
   // instead of implementing the TStrings.Values[] property, so we cannot
   // access TIdMessage.Headers using a TStrings pointer or else the wrong
   // property will be invoked and we won't get the right value when accessing
@@ -744,9 +747,6 @@ var
     {$IFDEF STRING_IS_ANSI}
     LAnsiEncoding: IIdTextEncoding;
     {$ENDIF}
-    {$IFNDEF HAS_TStrings_ValueFromIndex}
-    LTmp: string;
-    {$ENDIF}
   begin
     LMStream := TMemoryStream.Create;
     try
@@ -755,6 +755,8 @@ var
       try
         LMStream.Position := 0;
         if AUseBodyAsTarget then begin
+          // TODO: if the Content-Type is HTML, parse the HTML data looking for a charset
+          // declaration, and if found then use that instead of the MIME charset...
           if AMsg.IsMsgSinglePartMime then begin
             {$IFDEF STRING_IS_ANSI}
             LAnsiEncoding := CharsetToEncoding(AMsg.CharSet);
@@ -784,16 +786,9 @@ var
             if not AMsg.IsMsgSinglePartMime then begin
               for i := 0 to VDecoder.Headers.Count-1 do begin
                 if LTxt.Headers.IndexOfName(VDecoder.Headers.Names[i]) < 0 then begin
-                  {$IFNDEF HAS_TStrings_ValueFromIndex}
-                  LTmp := VDecoder.Headers.Strings[i];
-                  {$ENDIF}
                   LTxt.ExtraHeaders.AddValue(
                     VDecoder.Headers.Names[i],
-                    {$IFDEF HAS_TStrings_ValueFromIndex}
-                    VDecoder.Headers.ValueFromIndex[i]
-                    {$ELSE}
-                    Copy(LTmp, Pos('=', LTmp)+1, MaxInt) {do not localize}
-                    {$ENDIF}
+                    IndyValueFromIndex(VDecoder.Headers, i)
                   );
                 end;
               end;
@@ -813,7 +808,7 @@ var
               // and ignore illegal "Content-Transfer-Encoding" values if present...
 
               if LTxt.ContentTransfer <> '' then begin
-                if PosInStrArray(LTxt.ContentTransfer, ['7bit', '8bit', 'binary'], False) = -1 then begin {do not localize}
+                if not IsHeaderValue(LTxt.ContentTransfer, ['7bit', '8bit', 'binary']) then begin {do not localize}
                   LTxt.ContentTransfer := '';
                 end;
               end;
@@ -842,9 +837,6 @@ var
     i: integer;
     LAttachment: TIdAttachment;
     LNewDecoder: TIdMessageDecoder;
-    {$IFNDEF HAS_TStrings_ValueFromIndex}
-    LTmp: String;
-    {$ENDIF}
   begin
     LParentPart := AMsg.MIMEBoundary.ParentPart;
     AMsg.DoCreateAttachment(VDecoder.Headers, LAttachment);
@@ -878,16 +870,9 @@ var
         if not AMsg.IsMsgSinglePartMime then begin
           for i := 0 to VDecoder.Headers.Count-1 do begin
             if LAttachment.Headers.IndexOfName(VDecoder.Headers.Names[i]) < 0 then begin
-              {$IFNDEF HAS_TStrings_ValueFromIndex}
-              LTmp := VDecoder.Headers.Strings[i];
-              {$ENDIF}
               LAttachment.ExtraHeaders.AddValue(
                 VDecoder.Headers.Names[i],
-                {$IFDEF HAS_TStrings_ValueFromIndex}
-                VDecoder.Headers.ValueFromIndex[i]
-                {$ELSE}
-                Copy(LTmp, Pos('=', LTmp)+1, MaxInt) {do not localize}
-                {$ENDIF}
+                IndyValueFromIndex(VDecoder.Headers, i)
               );
             end;
           end;
@@ -907,7 +892,7 @@ var
           // and ignore illegal "Content-Transfer-Encoding" values if present...
 
           if LAttachment.ContentTransfer <> '' then begin
-            if PosInStrArray(LAttachment.ContentTransfer, ['7bit', '8bit', 'binary'], False) = -1 then begin {do not localize}
+            if not IsHeaderValue(LAttachment.ContentTransfer, ['7bit', '8bit', 'binary']) then begin {do not localize}
               LAttachment.ContentTransfer := '';
             end;
           end;
@@ -936,45 +921,70 @@ begin
   // is not available for use below.  What is the best way to detect that so
   // the user could be allowed to set up the IOHandler.DefStringEncoding
   // beforehand?
-  
-  // RLebeau 08/17/09 - According to RFC 2045 Section 6.4:
-  // "If an entity is of type "multipart" the Content-Transfer-Encoding is not
-  // permitted to have any value other than "7bit", "8bit" or "binary"."
-  //
-  // However, came across one message where the "Content-Type" was set to
-  // "multipart/related" and the "Content-Transfer-Encoding" was set to
-  // "quoted-printable".  Outlook and Thunderbird were apparently able to parse
-  // the message correctly, but Indy was not.  So let's check for that scenario
-  // and ignore illegal "Content-Transfer-Encoding" values if present...
 
-  if IsHeaderMediaType(AMsg.ContentType, 'multipart') and (AMsg.ContentTransferEncoding <> '') then {do not localize}
-  begin
-    if PosInStrArray(AMsg.ContentTransferEncoding, ['7bit', '8bit', 'binary'], False) = -1 then begin {do not localize}
-      AMsg.ContentTransferEncoding := '';
-    end;
-  end;
+  LUnknownContentTransferEncoding := False;
 
-  case PosInStrArray(AMsg.ContentTransferEncoding, ['7bit', 'quoted-printable', 'base64', '8bit', 'binary'], False) of {do not localize}
-    0..2: LEncoding := IndyTextEncoding_ASCII;
-    3..4: LEncoding := IndyTextEncoding_8Bit;
-  else
-    // According to RFC 2045 Section 6.4:
-    // "Any entity with an unrecognized Content-Transfer-Encoding must be
-    // treated as if it has a Content-Type of "application/octet-stream",
-    // regardless of what the Content-Type header field actually says."
+  if AMsg.NoDecode then begin
     LEncoding := IndyTextEncoding_8Bit;
+  end else
+  begin
+    LContentTransferEncoding := ExtractHeaderItem(AMsg.ContentTransferEncoding);
+    if LContentTransferEncoding = '' then begin
+      // RLebeau 04/08/2014: According to RFC 2045 Section 6.1:
+      // "Content-Transfer-Encoding: 7BIT" is assumed if the
+      // Content-Transfer-Encoding header field is not present."
+      if IsHeaderMediaType(AMsg.ContentType, 'application/mac-binhex40') then begin  {Do not Localize}
+        LContentTransferEncoding := 'binhex40'; {do not localize}
+      end
+      else if (AMsg.Encoding = meMIME) and (AMsg.MIMEBoundary.Count > 0) then begin
+        LContentTransferEncoding := '7bit'; {do not localize}
+      end;
+    end
+    else if IsHeaderMediaType(AMsg.ContentType, 'multipart') then {do not localize}
+    begin
+      // RLebeau 08/17/09 - According to RFC 2045 Section 6.4:
+      // "If an entity is of type "multipart" the Content-Transfer-Encoding is not
+      // permitted to have any value other than "7bit", "8bit" or "binary"."
+      //
+      // However, came across one message where the "Content-Type" was set to
+      // "multipart/related" and the "Content-Transfer-Encoding" was set to
+      // "quoted-printable".  Outlook and Thunderbird were apparently able to parse
+      // the message correctly, but Indy was not.  So let's check for that scenario
+      // and ignore illegal "Content-Transfer-Encoding" values if present...
+      if PosInStrArray(LContentTransferEncoding, ['7bit', '8bit', 'binary'], False) = -1 then begin {do not localize}
+        LContentTransferEncoding := '';
+        //LUnknownContentTransferEncoding := True;
+      end;
+    end;
+
+    if LContentTransferEncoding <> '' then begin
+      case PosInStrArray(LContentTransferEncoding, ['7bit', 'quoted-printable', 'base64', '8bit', 'binary'], False) of {do not localize}
+        0..2: LEncoding := IndyTextEncoding_ASCII;
+        3..4: LEncoding := IndyTextEncoding_8Bit;
+      else
+        // According to RFC 2045 Section 6.4:
+        // "Any entity with an unrecognized Content-Transfer-Encoding must be
+        // treated as if it has a Content-Type of "application/octet-stream",
+        // regardless of what the Content-Type header field actually says."
+        LEncoding := IndyTextEncoding_8Bit;
+        LContentTransferEncoding := '';
+        LUnknownContentTransferEncoding := True;
+      end;
+    end else begin
+      LEncoding := IndyTextEncoding_8Bit;
+    end;
   end;
 
   BeginWork(wmRead);
   try
     if AMsg.NoDecode then begin
-      CaptureAndDecodeCharset(LEncoding);
+      CaptureAndDecodeCharset;
     end else begin
       LActiveDecoder := nil;
       try
-        if (
+        if ((not LUnknownContentTransferEncoding) and
          ((AMsg.Encoding = meMIME) and (AMsg.MIMEBoundary.Count > 0)) or
-         ((AMsg.Encoding = mePlainText) and (PosInStrArray(AMsg.ContentTransferEncoding, ['base64', 'quoted-printable'], False) = -1))  {do not localize}
+         ((AMsg.Encoding = mePlainText) and (not IsHeaderValue(AMsg.ContentTransferEncoding, ['base64', 'quoted-printable'])))  {do not localize}
          ) then begin
           {NOTE: You hit this code path with multipart MIME messages and with
           plain-text messages (which may have UUE or XXE attachments embedded).}
@@ -988,7 +998,18 @@ begin
             // and charset encoding together!  Need to read the raw bytes into
             // an intermediate buffer of some kind using the transfer encoding,
             // and then decode the characters using the charset afterwards...
-            LLine := IOHandler.ReadLnRFC(LMsgEnd, LF, ADelim, LCharsetEncoding{$IFDEF STRING_IS_ANSI}, LCharsetEncoding{$ENDIF});
+            //
+            // Need to do this anyway because ReadLnRFC() processes the LF and
+            // ADelim values in terms of the charset specified, which is wrong.
+            // EBCDIC-based charsets totally break that logic! For example, cp1026
+            // converts #10 (LF) to $25 instead of $0A during encoding, and converts
+            // $0A (LF) and $2E ('.') to #$83 and #6 during decoding, etc. And what
+            // if the charset is UTF-16 instead?  So we need to read raw bytes into
+            // a buffer, checking it for handling of line breaks, dot-transparency,
+            // and message termination, and THEN decode whatever is left using the
+            // charset...
+
+            LLine := IOHandler.ReadLnRFC(LMsgEnd, LF, ADelim, IndyTextEncoding_8Bit{$IFDEF STRING_IS_ANSI}, IndyTextEncoding_8Bit{$ENDIF});
             if LMsgEnd then begin
               Break;
             end;
@@ -997,6 +1018,7 @@ begin
             end;
             // Check again, the if above can set it.
             if LActiveDecoder = nil then begin
+              LLine := LCharsetEncoding.GetString(ToBytes(LLine, IndyTextEncoding_8Bit{$IFDEF STRING_IS_ANSI}, IndyTextEncoding_8Bit{$ENDIF}));
               AMsg.Body.Add(LLine);
             end else begin
               RemoveLastBlankLine(AMsg.Body);
@@ -1023,7 +1045,13 @@ begin
           TIdMessageDecoderMime(LActiveDecoder).BodyEncoded := True;
           TIdMessageDecoderMime(LActiveDecoder).ReadHeader;
           case LActiveDecoder.PartType of
-            mcptText:       ProcessTextPart(LActiveDecoder, True); //Put the text into TIdMessage.Body
+            mcptText: begin
+              if LUnknownContentTransferEncoding then begin
+                ProcessAttachment(LActiveDecoder);
+              end else begin
+                ProcessTextPart(LActiveDecoder, True); //Put the text into TIdMessage.Body
+              end;
+            end;
             mcptAttachment: ProcessAttachment(LActiveDecoder);
             mcptIgnore:     FreeAndNil(LActiveDecoder);
             mcptEOF:        FreeAndNil(LActiveDecoder);
@@ -1113,7 +1141,7 @@ var
 
     if IsHeaderMediaType(ATextPart.ContentType, 'multipart') then begin {do not localize}
       if ATextPart.ContentTransfer <> '' then begin
-        if PosInStrArray(ATextPart.ContentTransfer, ['7bit', '8bit', 'binary'], False) = -1 then begin {do not localize}
+        if not IsHeaderValue(ATextPart.ContentTransfer, ['7bit', '8bit', 'binary']) then begin {do not localize}
           ATextPart.ContentTransfer := '';
         end;
       end;
@@ -1121,7 +1149,7 @@ var
     else if ATextPart.ContentTransfer = '' then begin
       ATextPart.ContentTransfer := 'quoted-printable'; {do not localize}
     end
-    else if (PosInStrArray(ATextPart.ContentTransfer, ['quoted-printable', 'base64'], False) = -1) {do not localize}
+    else if (not IsHeaderValue(ATextPart.ContentTransfer, ['quoted-printable', 'base64'])) {do not localize}
       and ATextPart.IsBodyEncodingRequired then
     begin
       ATextPart.ContentTransfer := '8bit';                    {do not localize}
@@ -1131,6 +1159,7 @@ var
       ATextPart.ContentDisposition := 'inline'; {do not localize}
     end;
 
+    // TODO: when STRING_IS_ANSI is defined, provide a way for the user to specify the AnsiString encoding for header values...
     LFileName := EncodeHeader(ExtractFileName(ATextPart.FileName), '', HeaderEncoding, ISOCharSet); {do not localize}
 
     if ATextPart.ContentType <> '' then begin
@@ -1168,20 +1197,17 @@ var
     IOHandler.WriteLn;
 
     LEncoding := CharsetToEncoding(ATextPart.CharSet);
-    if TextIsSame(ATextPart.ContentTransfer, 'quoted-printable') then begin {do not localize}
-      EncodeStrings(ATextPart.Body, TIdMessageEncoderQuotedPrintable, LEncoding{$IFDEF STRING_IS_ANSI}, LEncoding{$ENDIF});
-    end
-    else if TextIsSame(ATextPart.ContentTransfer, 'base64') then begin  {do not localize}
-      EncodeStrings(ATextPart.Body, TIdMessageEncoderMIME, LEncoding{$IFDEF STRING_IS_ANSI}, LEncoding{$ENDIF});
-    end else
-    begin
+    case PosInStrArray(ExtractHeaderItem(ATextPart.ContentTransfer), ['quoted-printable', 'base64'], False) of  {do not localize}
+      0: EncodeStrings(ATextPart.Body, TIdMessageEncoderQuotedPrintable, LEncoding{$IFDEF STRING_IS_ANSI}, LEncoding{$ENDIF});
+      1: EncodeStrings(ATextPart.Body, TIdMessageEncoderMIME, LEncoding{$IFDEF STRING_IS_ANSI}, LEncoding{$ENDIF});
+    else
       IOHandler.WriteRFCStrings(ATextPart.Body, False, LEncoding{$IFDEF STRING_IS_ANSI}, LEncoding{$ENDIF});
       { No test for last line break necessary because IOHandler.WriteRFCStrings() uses WriteLn(). }
     end;
   end;
 
 var
-  LFileName: String;
+  LFileName, LContentTransferEncoding: String;
   LTextPart: TIdText;
   LAddedTextPart: Boolean;
   LLastPart: Integer;
@@ -1192,8 +1218,9 @@ begin
   AMsg.InitializeISO(HeaderEncoding, ISOCharSet);
   BeginWork(wmWrite);
   try
+    LContentTransferEncoding := ExtractHeaderItem(AMsg.ContentTransferEncoding);
     if (not AMsg.IsMsgSinglePartMime) and
-      (PosInStrArray(AMsg.ContentTransferEncoding, ['base64', 'quoted-printable'], False) <> -1) then {do not localize}
+      (PosInStrArray(LContentTransferEncoding, ['base64', 'quoted-printable'], False) <> -1) then {do not localize}
     begin
       //CC2: The user wants the body encoded.
       if AMsg.MessageParts.Count > 0 then begin
@@ -1205,7 +1232,7 @@ begin
       DoStatus(hsStatusText, [RSMsgClientEncodingText]);
       LEncoding := CharsetToEncoding(AMsg.CharSet);
       //CC2: Now output AMsg.Body in the chosen encoding...
-      if TextIsSame(AMsg.ContentTransferEncoding, 'base64') then begin  {do not localize}
+      if TextIsSame(LContentTransferEncoding, 'base64') then begin  {do not localize}
         EncodeStrings(AMsg.Body, TIdMessageEncoderMIME, LEncoding{$IFDEF STRING_IS_ANSI}, LEncoding{$ENDIF});
       end else begin  {'quoted-printable'}
         EncodeStrings(AMsg.Body, TIdMessageEncoderQuotedPrintable, LEncoding{$IFDEF STRING_IS_ANSI}, LEncoding{$ENDIF});
@@ -1244,7 +1271,7 @@ begin
                 LAttachment.ContentTransfer := 'UUE';  {do not localize}
               end;
             end;
-            case PosInStrArray(LAttachment.ContentTransfer, ['UUE', 'XXE'], False) of  {do not localize}
+            case PosInStrArray(ExtractHeaderItem(LAttachment.ContentTransfer), ['UUE', 'XXE'], False) of  {do not localize}
               0: EncodeAttachment(LAttachment, TIdMessageEncoderUUE);
               1: EncodeAttachment(LAttachment, TIdMessageEncoderXXE);
             end;
@@ -1360,21 +1387,27 @@ begin
             LAttachment := TIdAttachment(AMsg.MessageParts[i]);
             DoStatus(hsStatusText, [RSMsgClientEncodingAttachment]);
             if LAttachment.ContentTransfer = '' then begin
-              LAttachment.ContentTransfer := 'base64'; {do not localize}
+              LContentTransferEncoding := 'base64'; {do not localize}
+              LAttachment.ContentTransfer := LContentTransferEncoding;
+            end else begin;
+              LContentTransferEncoding := ExtractHeaderItem(LAttachment.ContentTransfer);
             end;
             if LAttachment.ContentDisposition = '' then begin
               LAttachment.ContentDisposition := 'attachment'; {do not localize}
             end;
             if LAttachment.ContentType = '' then begin
-              if TextIsSame(LAttachment.ContentTransfer, 'base64') then begin {do not localize}
+              if TextIsSame(LContentTransferEncoding, 'base64') then begin {do not localize}
                 LAttachment.ContentType := 'application/octet-stream'; {do not localize}
               end else begin
                 {CC4: Set default type if not base64 encoded...}
                 LAttachment.ContentType := 'text/plain'; {do not localize}
               end;
             end;
+
+            // TODO: when STRING_IS_ANSI is defined, provide a way for the user to specify the AnsiString encoding for header values...
             LFileName := EncodeHeader(ExtractFileName(LAttachment.FileName), '', HeaderEncoding, ISOCharSet); {do not localize}
-            if TextIsSame(LAttachment.ContentTransfer, 'binhex40') then begin   {do not localize}
+
+            if TextIsSame(LContentTransferEncoding, 'binhex40') then begin   {do not localize}
               //This is special - you do NOT write out any Content-Transfer-Encoding
               //header!  We also have to write a Content-Type specified in RFC 1741
               //(overriding any ContentType present, if necessary).
@@ -1417,7 +1450,7 @@ begin
             IOHandler.Write(LAttachment.ExtraHeaders);
             IOHandler.WriteLn;
 
-            case PosInStrArray(LAttachment.ContentTransfer, ['base64', 'quoted-printable', 'binhex40'], False) of {do not localize}
+            case PosInStrArray(LContentTransferEncoding, ['base64', 'quoted-printable', 'binhex40'], False) of {do not localize}
               0: EncodeAttachment(LAttachment, TIdMessageEncoderMIME);
               1: EncodeAttachment(LAttachment, TIdMessageEncoderQuotedPrintable);
               2: EncodeAttachment(LAttachment, TIdMessageEncoderBinHex4);

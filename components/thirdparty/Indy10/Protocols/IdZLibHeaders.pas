@@ -58,11 +58,11 @@ The only things that still are cdecl are the callback functions.
 
 uses
   //reference off_t
-  {$IFDEF KYLIXCOMPAT}
-  libc,
-  {$ENDIF}
   {$IFDEF USE_VCL_POSIX}
   Posix.SysTypes,
+  {$ENDIF}
+  {$IFDEF KYLIXCOMPAT}
+  libc,
   {$ENDIF}
   {$IFDEF USE_BASEUNIX}
   baseunix,
@@ -141,6 +141,7 @@ uses
 (*$HPPEMIT '#pragma sizeof(z_stream)'*)
 (*$HPPEMIT '#endif'*)
 (*$HPPEMIT ''*)
+{$IFDEF VCL_2009_OR_ABOVE}
 (*$HPPEMIT '#if alignof(z_stream) < 1'*)
 (*$HPPEMIT '#pragma message "Pascal/C++ alignment mismatch: (C++) alignof(z_stream) < (Pascal) [size: 56, align: 1] (WARNING)"'*)
 (*$HPPEMIT '#endif'*)
@@ -148,6 +149,10 @@ uses
 (*$HPPEMIT '#if alignof(z_stream) > 1'*)
 (*$HPPEMIT '#pragma message "Pascal/C++ alignment mismatch: (C++) alignof(z_stream) > (Pascal) [size: 56, align: 1] (WARNING)"'*)
 (*$HPPEMIT '#endif'*)
+{$ELSE}
+// TODO: what to put here for older C++Builder compilers that do not have alignof()?
+// see http://www.wambold.com/Martin/writings/alignof.html for ideas...
+{$ENDIF}
 (*$HPPEMIT '#endif'*)
 (*$HPPEMIT ''*)
 (*$HPPEMIT ''*)
@@ -190,6 +195,7 @@ uses
 (*$HPPEMIT '#pragma sizeof(gz_header)'*)
 (*$HPPEMIT '#endif'*)
 (*$HPPEMIT ''*)
+{$IFDEF VCL_2009_OR_ABOVE}
 (*$HPPEMIT '#if alignof(gz_header) < 1'*)
 (*$HPPEMIT '#pragma message "Pascal/C++ alignment mismatch: (C++) alignof(gz_header) < (Pascal) [size: 52, align: 1] (WARNING)"'*)
 (*$HPPEMIT '#endif'*)
@@ -197,6 +203,10 @@ uses
 (*$HPPEMIT '#if alignof(gz_header) > 1'*)
 (*$HPPEMIT '#pragma message "Pascal/C++ alignment mismatch: (C++) alignof(gz_header) > (Pascal) [size: 52, align: 1] (WARNING)"'*)
 (*$HPPEMIT '#endif'*)
+{$ELSE}
+// TODO: what to put here for older C++Builder compilers that do not have alignof()?
+// see http://www.wambold.com/Martin/writings/alignof.html for ideas...
+{$ENDIF}
 (*$HPPEMIT '#endif'*)
 (*$HPPEMIT '#endif'*)
 (*$HPPEMIT '#if defined(__REMOVE_MACTYPES__)'*)
@@ -225,17 +235,20 @@ type
 {JPM - I made some types from our old header to the new C types defined originally
  for compatability.}
   {$EXTERNALSYM z_off_t}
-  {$IFDEF USE_VCL_POSIX}
-  z_off_t = off_t;
-  {$ENDIF}
-  {$IFDEF KYLIXCOMPAT}
-  z_off_t = off_t;
-  {$ENDIF}
-  {$IFDEF USE_BASEUNIX}
-  z_off_t = off_t;
-  {$ENDIF}
   {$IFDEF WINDOWS}
   z_off_t = TIdC_LONG;
+  {$ELSE}
+    {$IFDEF USE_VCL_POSIX}
+  z_off_t = off_t;
+    {$ELSE}
+      {$IFDEF KYLIXCOMPAT}
+  z_off_t = off_t;
+      {$ELSE}
+        {$IFDEF USE_BASEUNIX}
+  z_off_t = off_t;
+        {$ENDIF}
+      {$ENDIF}
+    {$ENDIF}
   {$ENDIF}
 
   {$EXTERNALSYM alloc_func}
@@ -466,12 +479,12 @@ function inflateInitEx(var strm: z_stream; streamtype: TZStreamType = zsZLib): T
 type
   EIdZLibStubError = class(EIdException)
   protected
-    FError : LongWord;
+    FError : UInt32;
     FErrorMessage : String;
     FTitle : String;
   public
-    constructor Build(const ATitle : String; AError : LongWord);
-    property Error : LongWord read FError;
+    constructor Build(const ATitle : String; AError : UInt32);
+    property Error : UInt32 read FError;
     property ErrorMessage : String read FErrorMessage;
     property Title : String read FTitle;
   end;
@@ -854,8 +867,8 @@ var
   hZLib: THandle = 0;
   {$ENDIF}
 
+  {$IFDEF UNIX}
 const
-  {$IFDEF UNIX} 
   //The extensions will be resolved by IdGlobal.HackLoad
   //This is a little messy because symbolic links to libraries may not always be the same
   //in various Unix types.  Even then, there could possibly be differences.
@@ -863,11 +876,13 @@ const
   libvers : array [0..3] of string = ('.1','','.3','.2');
   {$ENDIF}
   {$IFDEF NETWARE}  {zlib.nlm comes with netware6}
+const
   libzlib = 'zlib';
   {$ENDIF}
   {$IFDEF WIN32}
   //Note that this is the official ZLIB1 .DLL from the http://www.zlib.net/
-  libzlib = 'zlib1.dll'; 
+const
+  libzlib = 'zlib1.dll';
   {$ENDIF}
   {$IFDEF WIN64}
   //Note that this is not an official ZLIB .DLL.  It was obtained from:
@@ -875,10 +890,16 @@ const
   //
   //It is defined with the WINAPI conventions instead of the standard cdecl
   //conventions.  Get the DLL for Win32-x86.
-  libzlib = 'zlibwapi.dll'; 
-  {$ENDIF}  
+const
+  libzlib = 'zlibwapi.dll';
+  {$ENDIF}
+  {$IFDEF WINCE}
+  //Note that zlibce can be found at http://www.tenik.co.jp/~adachi/wince/zlibce/
+const
+  libzlib = 'zlibce';
+  {$ENDIF}
 
-constructor EIdZLibStubError.Build(const ATitle : String; AError : LongWord);
+constructor EIdZLibStubError.Build(const ATitle : String; AError : UInt32);
 begin
   FTitle := ATitle;
   FError := AError;
@@ -890,35 +911,37 @@ begin
   end;
 end;
 
-function FixupStub(hDll: THandle; const AName: string): Pointer;
+function FixupStub(const AName: {$IFDEF WINCE}TIdUnicodeString{$ELSE}string{$ENDIF}): Pointer;
 begin
-  if hDll = 0 then begin
-    raise EIdZLibStubError.Build(Format(RSZLibCallError, [AName]), 0);
+  if hZLib = 0 then begin
+    if not Load then begin
+      raise EIdZLibStubError.Build(Format(RSZLibCallError, [AName]), 0);
+    end;
   end;
-  Result := GetProcAddress(hDll, PChar(AName));
+  Result := GetProcAddress(hZLib, {$IFDEF WINCE}PWideChar{$ELSE}PChar{$ENDIF}(AName));
   if Result = nil then begin
     raise EIdZLibStubError.Build(Format(RSZLibCallError, [AName]), 10022);
   end;
 end;
- 
+
 function stub_adler32(adler: TIdC_ULONG; const buf: PIdAnsiChar;
   len: TIdC_UINT): TIdC_ULONG; cdecl;
 begin
-  adler32 := FixupStub(hZLib, 'adler32'); {Do not Localize}
+  adler32 := FixupStub('adler32'); {Do not Localize}
   Result := adler32(adler, buf, len);
 end;
 
 function stub_adler32_combine (crc1, crc2 : TIdC_ULONG;
   len2 : z_off_t) : TIdC_ULONG; cdecl;
 begin
-  adler32_combine := FixupStub(hZLib, 'adler32_combine'); {Do not Localize}
+  adler32_combine := FixupStub('adler32_combine'); {Do not Localize}
   Result := adler32_combine(crc1, crc2, len2);
 end;
 
 function stub_compress(dest: PIdAnsiChar; var destLen: TIdC_ULONG;
   const source: PIdAnsiChar; sourceLen: TIdC_ULONG): TIdC_INT; cdecl;
 begin
-  compress := FixupStub(hZLib, 'compress'); {Do not Localize}
+  compress := FixupStub('compress'); {Do not Localize}
   Result := compress(dest,destLen,source,sourceLen);
 end;
 
@@ -926,60 +949,60 @@ function stub_compress2(dest: PIdAnsiChar; var destLen: TIdC_ULONG;
   const source: PIdAnsiChar; sourceLen: TIdC_ULONG;
   level: TIdC_INT): TIdC_INT; cdecl;
 begin
-  compress2 := FixupStub(hZLib, 'compress2'); {Do not Localize}
+  compress2 := FixupStub('compress2'); {Do not Localize}
   Result := compress2(dest, destLen, source, sourceLen, level);
 end;
 
 
 function stub_compressBound(sourceLen: TIdC_ULONG): TIdC_ULONG; cdecl;
 begin
-  compressBound := FixupStub(hZLib, 'compressBound'); {Do not Localize}
+  compressBound := FixupStub('compressBound'); {Do not Localize}
   Result := compressBound(sourcelen);
 end;
 
 function stub_crc32(crc: TIdC_ULONG; const buf: PIdAnsiChar;
   len: TIdC_UINT): TIdC_ULONG; cdecl;
 begin
-  crc32 := FixupStub(hZLib, 'crc32'); {Do not Localize}
+  crc32 := FixupStub('crc32'); {Do not Localize}
   Result := crc32(crc, buf, len);
 end;
 
 function stub_crc32_combine (crc1, crc2 : TIdC_ULONG;
   len2 : z_off_t) : TIdC_ULONG; cdecl;
 begin
-  crc32_combine := FixupStub(hZLib, 'crc32_combine'); {Do not Localize}
+  crc32_combine := FixupStub('crc32_combine'); {Do not Localize}
   Result := crc32_combine(crc1, crc2, len2);
 end;
 
 function stub_deflate(var strm: z_stream; flush: TIdC_INT): TIdC_INT; cdecl;
 begin
-  deflate := FixupStub(hZLib, 'deflate'); {Do not Localize}
+  deflate := FixupStub('deflate'); {Do not Localize}
   Result := deflate(strm, flush);
 end;
 
 function stub_deflateBound(var strm: z_stream;
   sourceLen: TIdC_ULONG): TIdC_ULONG; cdecl;
 begin
-  deflateBound := FixupStub(hZLib, 'deflateBound'); {Do not Localize}
+  deflateBound := FixupStub('deflateBound'); {Do not Localize}
   Result := deflateBound(strm, sourceLen);
 end;
 
 function stub_deflateCopy(var dest, source: z_stream): TIdC_INT; cdecl;
 begin
-  deflateCopy := FixupStub(hZLib, 'deflateCopy'); {Do not Localize}
+  deflateCopy := FixupStub('deflateCopy'); {Do not Localize}
   Result := deflateCopy(dest, source);
 end;
 
 function stub_deflateEnd(var strm: z_stream):  TIdC_INT; cdecl;
 begin
-  deflateEnd := FixupStub(hZLib, 'deflateEnd'); {Do not Localize}
+  deflateEnd := FixupStub('deflateEnd'); {Do not Localize}
   Result := deflateEnd(strm);
 end;
 
 function stub_deflateInit_(var strm: z_stream; level: TIdC_INT;
   const version: PIdAnsiChar; stream_size: TIdC_INT): TIdC_INT;cdecl;
 begin
-  deflateInit_ := FixupStub(hZLib, 'deflateInit_'); {Do not Localize}
+  deflateInit_ := FixupStub('deflateInit_'); {Do not Localize}
   Result := deflateInit_(strm, level, version, stream_size);
 end;                
 
@@ -987,65 +1010,65 @@ function stub_deflateInit2_(var strm: z_stream;
   level, method, windowBits, memLevel, strategy: TIdC_INT;
   const version: PIdAnsiChar; stream_size: TIdC_INT): TIdC_INT;cdecl;
 begin
-  deflateInit2_ := FixupStub(hZLib, 'deflateInit2_'); {Do not Localize}
+  deflateInit2_ := FixupStub('deflateInit2_'); {Do not Localize}
   Result := deflateInit2_(strm,level, method, windowBits, memLevel, strategy,
     version, stream_size);
 end;
 
 function stub_deflateParams (var strm: z_stream; level, strategy: TIdC_INT): TIdC_INT; cdecl;
 begin
-  deflateParams := FixupStub(hZLib, 'deflateParams'); {Do not Localize}
+  deflateParams := FixupStub('deflateParams'); {Do not Localize}
   Result := deflateParams (strm, level, strategy);
 end;
 
 function stub_deflatePrime (var strm: z_stream; bits, value: TIdC_INT): TIdC_INT; cdecl;
 begin
-  deflatePrime := FixupStub(hZLib, 'deflatePrime'); {Do not Localize}
+  deflatePrime := FixupStub('deflatePrime'); {Do not Localize}
   Result := deflateParams (strm, bits, value);
 end;
 
 function stub_deflateTune(var strm : z_stream; good_length : TIdC_INT;
   max_lazy, nice_length, max_chain : TIdC_INT) : TIdC_INT; cdecl;
 begin
-  deflateTune := FixupStub(hZLib, 'deflateTune'); {Do not Localize}
+  deflateTune := FixupStub('deflateTune'); {Do not Localize}
   Result := deflateTune(strm, good_length, max_lazy, nice_length, max_chain) ;
 end;
 
 function stub_deflateReset (var strm: z_stream): TIdC_INT; cdecl;
 begin
-  deflateReset := FixupStub(hZLib, 'deflateReset'); {Do not Localize}
+  deflateReset := FixupStub('deflateReset'); {Do not Localize}
   Result := deflateReset(strm);
 end;
   
 function stub_deflateSetDictionary(var strm: z_stream; const dictionary: PIdAnsiChar;
   dictLength: TIdC_UINT): TIdC_INT; cdecl;
 begin
-  deflateSetDictionary := FixupStub(hZLib, 'deflateSetDictionary'); {Do not Localize}
+  deflateSetDictionary := FixupStub('deflateSetDictionary'); {Do not Localize}
   Result := deflateSetDictionary(strm, dictionary, dictLength);
 end;
 
 function stub_inflate(var strm: z_stream; flush: TIdC_INT): TIdC_INT;  cdecl;
 begin
-  inflate := FixupStub(hZLib, 'inflate'); {Do not Localize}
+  inflate := FixupStub('inflate'); {Do not Localize}
   Result := inflate(strm, flush);
 end;
 
 function stub_inflateBack(var strm: z_stream; in_fn: in_func; in_desc: Pointer;
   out_fn: out_func; out_desc: Pointer): TIdC_INT; cdecl;  
 begin
-  inflateBack := FixupStub(hZLib, 'inflateBack'); {Do not Localize}
+  inflateBack := FixupStub('inflateBack'); {Do not Localize}
   Result := inflateBack(strm, in_fn, in_desc, out_fn, out_desc);
 end;
  
 function stub_inflateBackEnd(var strm: z_stream): TIdC_INT; cdecl;     
 begin
-  inflateBackEnd := FixupStub(hZLib, 'inflateBackEnd'); {Do not Localize}
+  inflateBackEnd := FixupStub('inflateBackEnd'); {Do not Localize}
   Result := inflateBackEnd(strm);
 end;
 
 function stub_inflateEnd(var strm: z_stream): TIdC_INT; cdecl;
 begin
-  inflateEnd := FixupStub(hZLib, 'inflateEnd'); {Do not Localize}
+  inflateEnd := FixupStub('inflateEnd'); {Do not Localize}
   Result := inflateEnd(strm);
 end;
 
@@ -1053,20 +1076,20 @@ function stub_inflateBackInit_(var strm: z_stream;
   windowBits: TIdC_INT; window: PIdAnsiChar;
   const version: PIdAnsiChar; stream_size: TIdC_INT): TIdC_INT; cdecl;
 begin
-  inflateBackInit_ := FixupStub(hZLib, 'inflateBackInit_'); {Do not Localize}
+  inflateBackInit_ := FixupStub('inflateBackInit_'); {Do not Localize}
   Result := inflateBackInit_(strm, windowBits, window, version, stream_size);
 end;
 
 function stub_inflateInit2_(var strm: z_stream; windowBits: TIdC_INT;
   const version: PIdAnsiChar; stream_size: TIdC_INT): TIdC_INT;cdecl;
 begin
-  inflateInit2_ := FixupStub(hZLib, 'inflateInit2_'); {Do not Localize}
+  inflateInit2_ := FixupStub('inflateInit2_'); {Do not Localize}
   Result := inflateInit2_(strm, windowBits, version, stream_size);
 end;
 
 function stub_inflateCopy(var dest, source: z_stream): TIdC_INT; cdecl;
 begin
-  inflateCopy := FixupStub(hZLib, 'inflateCopy'); {Do not Localize}
+  inflateCopy := FixupStub('inflateCopy'); {Do not Localize}
   Result := inflateCopy(dest, source);
 end;
 
@@ -1074,88 +1097,88 @@ end;
 function  stub_inflateInit_(var strm: z_stream; const version: PIdAnsiChar;
   stream_size: TIdC_INT): TIdC_INT; cdecl;
 begin
-  inflateInit_ := FixupStub(hZLib, 'inflateInit_'); {Do not Localize}
+  inflateInit_ := FixupStub('inflateInit_'); {Do not Localize}
   Result := inflateInit_(strm, version, stream_size);
 end;
 
 function stub_inflateReset(var strm: z_stream): TIdC_INT; cdecl;
 begin
-  inflateReset := FixupStub(hZLib, 'inflateReset'); {Do not Localize}
+  inflateReset := FixupStub('inflateReset'); {Do not Localize}
   Result := inflateReset(strm);
 end;
 
 function stub_inflateReset2(var strm : z_stream; windowBits : TIdC_INT) : TIdC_INT; cdecl;
 begin
-  inflateReset2 := FixupStub(hZLib, 'inflateReset2'); {Do not Localize}
+  inflateReset2 := FixupStub('inflateReset2'); {Do not Localize}
   Result := inflateReset2(strm, windowBits);
 end;
 
 function stub_inflatePrime(var strm : z_stream; bits, value : TIdC_INT ) : TIdC_INT; cdecl;
 begin
-  inflatePrime := FixupStub(hZLib, 'inflatePrime'); {Do not Localize}
+  inflatePrime := FixupStub('inflatePrime'); {Do not Localize}
   Result := inflatePrime(strm, bits, value);
 end;
 
 function stub_inflateMark(var strm : z_stream) : TIdC_LONG; cdecl;
 begin
-  inflateMark := FixupStub(hZLib, 'inflateMark'); {Do not Localize}
+  inflateMark := FixupStub('inflateMark'); {Do not Localize}
   Result := inflateMark(strm);
 end;
 
 function stub_inflateSetDictionary(var strm: z_stream; const dictionary: PIdAnsiChar;
   dictLength: TIdC_UINT): TIdC_INT;cdecl;
 begin
-  inflateSetDictionary := FixupStub(hZLib, 'inflateSetDictionary'); {Do not Localize}
+  inflateSetDictionary := FixupStub('inflateSetDictionary'); {Do not Localize}
   Result := inflateSetDictionary(strm, dictionary, dictLength);
 end;                              
 
 function stub_inflateSync(var strm: z_stream): TIdC_INT; cdecl;
 begin
-  inflateSync := FixupStub(hZLib, 'inflateSync'); {Do not Localize}
+  inflateSync := FixupStub('inflateSync'); {Do not Localize}
   Result := inflateSync(strm);
 end;
   
 function stub_uncompress (dest: PIdAnsiChar; var destLen: TIdC_ULONG;
   const source: PIdAnsiChar; sourceLen: TIdC_ULONG): TIdC_INT;cdecl;
 begin
-  uncompress := FixupStub(hZLib, 'uncompress'); {Do not Localize}
+  uncompress := FixupStub('uncompress'); {Do not Localize}
   Result := uncompress (dest, destLen, source, sourceLen);
 end;
                    
 function stub_zlibCompileFlags : TIdC_ULONG; cdecl;
 begin
-  zlibCompileFlags := FixupStub(hZLib, 'zlibCompileFlags'); {Do not Localize}
+  zlibCompileFlags := FixupStub('zlibCompileFlags'); {Do not Localize}
   Result := zlibCompileFlags;
 end;
 
 function stub_zError(err : TIdC_INT) : PIdAnsiChar; cdecl;
 begin
-  zError := FixupStub(hZLib, 'zError'); {Do not Localize}
+  zError := FixupStub('zError'); {Do not Localize}
   Result := zError(err);
 end;
 
 function stub_inflateSyncPoint(var z : TZStreamRec) : TIdC_INT; cdecl;
 begin
-  inflateSyncPoint := FixupStub(hZLib, 'inflateSyncPoint'); {Do not Localize}
+  inflateSyncPoint := FixupStub('inflateSyncPoint'); {Do not Localize}
   Result := inflateSyncPoint(z);
 end; 
 
 function stub_get_crc_table : PIdC_ULONG; cdecl;
 begin
-  get_crc_table := FixupStub(hZLib, 'get_crc_table'); {Do not Localize}
+  get_crc_table := FixupStub('get_crc_table'); {Do not Localize}
   Result := get_crc_table;
 end;
 
 function stub_inflateUndermine(var strm: z_stream; subvert : TIdC_INT ) : TIdC_INT; cdecl;
 begin
-  inflateUndermine := FixupStub(hZLib, 'inflateUndermine'); {Do not Localize}
+  inflateUndermine := FixupStub('inflateUndermine'); {Do not Localize}
   Result := inflateUndermine(strm,subvert);
 end;
 
 function stub_zlibVersion : PIdAnsiChar; cdecl;
 begin
   Result := '';
-  zlibVersion := FixupStub(hZLib, 'zlibVersion'); {Do not Localize}
+  zlibVersion := FixupStub('zlibVersion'); {Do not Localize}
   if Assigned(zlibVersion) then begin
     Result := zlibVersion;
   end;
@@ -1163,13 +1186,13 @@ end;
 
 function stub_deflateSetHeader(var strm: z_stream; var head: gz_header): TIdC_INT; cdecl;
 begin
-  deflateSetHeader := FixupStub(hZLib, 'deflateSetHeader'); {Do not Localize}
+  deflateSetHeader := FixupStub('deflateSetHeader'); {Do not Localize}
   Result := deflateSetHeader(strm, head);
 end;  
 
 function stub_inflateGetHeader(var strm: z_stream; var head: gz_header): TIdC_INT; cdecl;
 begin
-  inflateGetHeader := FixupStub(hZLib, 'inflateGetHeader'); {Do not Localize}
+  inflateGetHeader := FixupStub('inflateGetHeader'); {Do not Localize}
   Result := inflateGetHeader(strm, head);
 end;
 
@@ -1379,7 +1402,6 @@ end;
 {$IFNDEF STATICLOAD_ZLIB}
 initialization
   InitializeStubs;
-  Load;
 
 finalization
   Unload;

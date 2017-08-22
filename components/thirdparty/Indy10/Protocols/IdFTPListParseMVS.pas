@@ -153,7 +153,12 @@ type
 
   // RLebeau 2/14/09: this forces C++Builder to link to this unit so
   // RegisterFTPListParser can be called correctly at program startup...
-  {$HPPEMIT LINKUNIT}
+
+  {$IFDEF HAS_DIRECTIVE_HPPEMIT_LINKUNIT}
+    {$HPPEMIT LINKUNIT}
+  {$ELSE}
+    {$HPPEMIT '#pragma link "IdFTPListParseMVS"'}
+  {$ENDIF}
 
 implementation
 
@@ -305,7 +310,7 @@ begin
       if s.Count > 8 then
       begin
         LI.Org := s[8];
-                                             
+        // TODO: use PosInStrArray() instead?
         if (LI.Org = 'PO') or (LI.Org = 'PO-E') then begin {do not localize}
           LI.ItemType :=  ditDirectory;
         end else begin

@@ -175,7 +175,7 @@ type
   TIdEventNewNewsList = procedure(AMsgID: string; var ACanContinue: Boolean) of object;
   TIdEventXHDREntry = procedure(AHeader : String; AMsg, AHeaderData : String; var ACanContinue: Boolean) of object;
 
-                                                                                                   
+  //TODO: Add a TranslateRFC822 Marker - probably need to do it in TCPConnection and modify Capture
   // Better yet, make capture an object
   TIdNNTP = class(TIdMessageClient)
   protected
@@ -264,8 +264,8 @@ type
     procedure ParseXHDRLine(ALine : String; out AMsg : String; out AHeaderData : String);
     procedure Post(AMsg: TIdMessage); overload;
     procedure Post(AStream: TStream); overload;
-    function SendCmd(AOut: string; const AResponse: array of SmallInt;
-      AEncoding: IIdTextEncoding = nil): SmallInt; override;
+    function SendCmd(AOut: string; const AResponse: array of Int16;
+      AEncoding: IIdTextEncoding = nil): Int16; override;
     function SelectArticle(AMsgNo: Int64): Boolean;
     procedure SelectGroup(AGroup: string);
     function TakeThis(AMsgID: string; AMsg: TStream): string;
@@ -329,7 +329,7 @@ procedure TIdNNTP.ParseXOVER(Aline : String;
 
 begin
   {Strip backspace and tab junk sequences which occur after a tab separator so they don't throw off any code}
-  ALine := StringReplace(ALine, #9#8#9, #9, [rfReplaceAll]);
+  ALine := ReplaceAll(ALine, #9#8#9, #9);
   {Article Index}
   AArticleIndex := IndyStrToInt64(Fetch(ALine, #9), 0);
   {Subject}
@@ -368,10 +368,11 @@ begin
 
   FRegularProtPort := IdPORT_NNTP;
   FImplicitTLSProtPort := IdPORT_SNEWS;
+  FExplicitTLSProtPort := IdPORT_NNTP;
 end;
 
-function TIdNNTP.SendCmd(AOut: string; const AResponse: Array of SmallInt;
-  AEncoding: IIdTextEncoding = nil): SmallInt;
+function TIdNNTP.SendCmd(AOut: string; const AResponse: Array of Int16;
+  AEncoding: IIdTextEncoding = nil): Int16;
 begin
   // NOTE: Responses must be passed as arrays so that the proper inherited SendCmd is called
   // and a stack overflow is not caused.
@@ -391,6 +392,10 @@ begin
   try
     FGreetingCode := GetResponse;
     AfterConnect;
+    StartTLS;
+    if ForceAuth then begin
+      SendAuth;
+    end;
   except
     Disconnect(False);
     raise;
@@ -478,7 +483,7 @@ procedure TIdNNTP.SelectGroup(AGroup: string);
 var
   s: string;
 begin
-  SendCmd('GROUP ' + AGroup, [211]);  {do not localize}
+  SendCmd('GROUP ' + AGroup, 211);  {do not localize}
   s := LastCmdResult.Text[0];
   FMsgCount := IndyStrToInt64(Fetch(s), 0);
   FMsgLow := IndyStrToInt64(Fetch(s), 0);
@@ -497,7 +502,7 @@ var
   i     : Integer;
   MsgID : string;
 begin
-                                                                
+//TODO: Im not sure this fucntion works properly - needs checked
 // Why is it not using a TIdMessage?
   // Since we are merely forwarding messages we have already received
   // it is assumed that the required header fields and body are already in place
@@ -944,7 +949,9 @@ end;
 
 function TIdNNTP.GetArticle(AMsgNo: Int64; AMsg: TIdMessage): Boolean;
 begin
-  Result := SendCmd('ARTICLE ' + IntToStr(AMsgNo), [220, 423]) = 220; {do not localize}
+  // RLebeau: 430 is not supposed to be used with this version of ARTICLE,
+  // but have seen servers that do, so let's check for it as well...
+  Result := SendCmd('ARTICLE ' + IntToStr(AMsgNo), [220, 423, 430]) = 220; {do not localize}
   if Result then begin
     AMsg.Clear;
     //Don't call ReceiveBody if the message ended at the end of the headers
@@ -983,7 +990,9 @@ end;
 
 function TIdNNTP.GetArticle(AMsgNo: Int64; AMsg: TStrings): Boolean;
 begin
-  Result := SendCmd('ARTICLE ' + IntToStr(AMsgNo), [220, 423]) = 220; {do not localize}
+  // RLebeau: 430 is not supposed to be used with this version of ARTICLE,
+  // but have seen servers that do, so let's check for it as well...
+  Result := SendCmd('ARTICLE ' + IntToStr(AMsgNo), [220, 423, 430]) = 220; {do not localize}
   if Result then begin
     AMsg.Clear;
     // per RFC 3977, headers should be in UTF-8, but are not required to,
@@ -1022,7 +1031,9 @@ function TIdNNTP.GetArticle(AMsgNo: Int64; AMsg: TStream): Boolean;
 var
   LEncoding: IIdTextEncoding;
 begin
-  Result := SendCmd('ARTICLE ' + IntToStr(AMsgNo), [220, 423]) = 220; {do not localize}
+  // RLebeau: 430 is not supposed to be used with this version of ARTICLE,
+  // but have seen servers that do, so let's check for it as well...
+  Result := SendCmd('ARTICLE ' + IntToStr(AMsgNo), [220, 423, 430]) = 220; {do not localize}
   if Result then begin
     // per RFC 3977, headers should be in UTF-8, but are not required to,
     // so lets read them as 8-bit...
@@ -1046,9 +1057,13 @@ end;
 
 function TIdNNTP.GetBody(AMsg: TIdMessage): Boolean;
 begin
-  Result := True;
+  // RLebeau: The single-parameter GetArticle(TIdMessage) and GetHeader(TIdMessage)
+  // methods raise an exception if the currently selected message is not available.
+  // All of the single-parameter TStrings and TStream versions of GetArticle(),
+  // GetHeader(), and GetBody() do as well. So why is this one method acting
+  // differently?  Why is it not raising an exception on 420 like the others do?
+  Result := SendCmd('BODY', [222, 420]) = 222; {do not localize}
   if Result then begin
-    SendCmd('BODY', 222); {do not localize}
     AMsg.Clear;
     ReceiveBody(AMsg);
   end;
@@ -1056,7 +1071,9 @@ end;
 
 function TIdNNTP.GetBody(AMsgNo: Int64; AMsg: TIdMessage): Boolean;
 begin
-  Result := SendCmd('BODY ' + IntToStr(AMsgNo), [222, 423]) = 222;  {do not localize}
+  // RLebeau: 430 is not supposed to be used with this version of BODY,
+  // but have seen servers that do, so let's check for it as well...
+  Result := SendCmd('BODY ' + IntToStr(AMsgNo), [222, 423, 430]) = 222;  {do not localize}
   if Result then begin
     AMsg.Clear;
     ReceiveBody(AMsg);
@@ -1087,7 +1104,9 @@ function TIdNNTP.GetBody(AMsgNo: Int64; AMsg: TStrings): Boolean;
 var
   LEncoding: IIdTextEncoding;
 begin
-  Result := SendCmd('BODY ' + IntToStr(AMsgNo), [222, 423]) = 222;  {do not localize}
+  // RLebeau: 430 is not supposed to be used with this version of BODY,
+  // but have seen servers that do, so let's check for it as well...
+  Result := SendCmd('BODY ' + IntToStr(AMsgNo), [222, 423, 430]) = 222;  {do not localize}
   if Result then begin
     AMsg.Clear;
     LEncoding := IndyTextEncoding_8Bit;
@@ -1121,7 +1140,9 @@ function TIdNNTP.GetBody(AMsgNo: Int64; AMsg: TStream): Boolean;
 var
   LEncoding: IIdTextEncoding;
 begin
-  Result := SendCmd('BODY ' + IntToStr(AMsgNo), [222, 423]) = 222;  {do not localize}
+  // RLebeau: 430 is not supposed to be used with this version of BODY,
+  // but have seen servers that do, so let's check for it as well...
+  Result := SendCmd('BODY ' + IntToStr(AMsgNo), [222, 423, 430]) = 222;  {do not localize}
   if Result then begin
     LEncoding := IndyTextEncoding_8Bit;
     IOHandler.Capture(AMsg, LEncoding{$IFDEF STRING_IS_ANSI}, LEncoding{$ENDIF});
@@ -1149,7 +1170,9 @@ end;
 
 function TIdNNTP.GetHeader(AMsgNo: Int64; AMsg: TIdMessage): Boolean;
 begin
-  Result := SendCmd('HEAD ' + IntToStr(AMsgNo), [221, 423]) = 221;  {do not localize}
+  // RLebeau: 430 is not supposed to be used with this version of HEAD,
+  // but have seen servers that do, so let's check for it as well...
+  Result := SendCmd('HEAD ' + IntToStr(AMsgNo), [221, 423, 430]) = 221;  {do not localize}
   if Result then begin
     AMsg.Clear;
     ReceiveHeader(AMsg);
@@ -1182,7 +1205,9 @@ function TIdNNTP.GetHeader(AMsgNo: Int64; AMsg: TStrings): Boolean;
 var
   LEncoding: IIdTextEncoding;
 begin
-  Result := SendCmd('HEAD ' + IntToStr(AMsgNo), [221, 423]) = 221;  {do not localize}
+  // RLebeau: 430 is not supposed to be used with this version of HEAD,
+  // but have seen servers that do, so let's check for it as well...
+  Result := SendCmd('HEAD ' + IntToStr(AMsgNo), [221, 423, 430]) = 221;  {do not localize}
   if Result then begin
     AMsg.Clear;
     // per RFC 3977, headers should be in UTF-8, but are not required to,
@@ -1222,7 +1247,9 @@ function TIdNNTP.GetHeader(AMsgNo: Int64; AMsg: TStream): Boolean;
 var
   LEncoding: IIdTextEncoding;
 begin
-  Result := SendCmd('HEAD ' + IntToStr(AMsgNo), [221, 423]) = 221;  {do not localize}
+  // RLebeau: 430 is not supposed to be used with this version of HEAD,
+  // but have seen servers that do, so let's check for it as well...
+  Result := SendCmd('HEAD ' + IntToStr(AMsgNo), [221, 423, 430]) = 221;  {do not localize}
   if Result then begin
     // per RFC 3977, headers should be in UTF-8, but are not required to,
     // so lets read them as 8-bit...
@@ -1296,10 +1323,6 @@ begin
       end;
     end;
     GetCapability;
-    StartTLS;
-    if ForceAuth then begin
-      SendAuth;
-    end;
   except
     Disconnect;
     Raise;
@@ -1490,6 +1513,9 @@ end;
 
 procedure TIdNNTP.SendAuth;
 begin
+  // calling the inherited SendCmd() so as not to handle 480 and 450
+  // again, causing a recursive loop...
+
   // RLebeau - RFC 2980 says that if the password is not required,
   // then 281 will be returned for the username request, not 381.
   if (inherited SendCmd('AUTHINFO USER ' + Username, [281, 381]) = 381) then begin {do not localize}

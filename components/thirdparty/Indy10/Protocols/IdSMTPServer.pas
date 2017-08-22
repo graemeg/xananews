@@ -411,6 +411,7 @@ begin
   HelpReply.Code := ''; //we will handle the help ourselves
   FRegularProtPort := IdPORT_SMTP;
   FImplicitTLSProtPort := IdPORT_ssmtp;
+  FExplicitTLSProtPort := 587; // TODO: define a constant for this!
   DefaultPort := IdPORT_SMTP;
   FServerName  := 'Indy SMTP Server'; {do not localize}
 end;
@@ -905,6 +906,8 @@ begin
       EMailAddress := TIdEMailAddressItem.Create(nil);
       try
         S := TrimLeft(Copy(ASender.UnparsedParams, 4, MaxInt));
+        // TODO: remove this Fetch() and let TIdEMailAddressItem parse the
+        // entire text, as it may have embedded spaces in it
         EMailAddress.Text := Fetch(S);
         if Assigned(FOnRcptTo) then begin
           LParams := TStringList.Create;
@@ -972,6 +975,7 @@ begin
   if not LContext.CanUseExplicitTLS then begin
     CmdSyntaxError(ASender);
     LContext.PipeLining := False;
+    Exit;
   end;
   if LContext.UsingTLS then begin // we are already using TLS
     BadSequenceError(ASender);

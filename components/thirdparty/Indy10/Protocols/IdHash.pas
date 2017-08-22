@@ -86,13 +86,13 @@ type
     function GetHashBytes(AStream: TStream; ASize: TIdStreamSize): TIdBytes; override;
     function HashToHex(const AHash: TIdBytes): String; override;
   public
-    function HashValue(const ASrc: string; ADestEncoding: IIdTextEncoding = nil{$IFDEF STRING_IS_ANSI}; ASrcEncoding: IIdTextEncoding = nil{$ENDIF}): Word; overload;
-    function HashValue(const ASrc: TIdBytes): Word; overload;
-    function HashValue(AStream: TStream): Word; overload;
-    function HashValue(AStream: TStream; const AStartPos, ASize: TIdStreamSize): Word; overload;
-    procedure HashStart(var VRunningHash : Word); virtual; abstract;
-    procedure HashEnd(var VRunningHash : Word); virtual;
-    procedure HashByte(var VRunningHash : Word; const AByte : Byte); virtual; abstract;
+    function HashValue(const ASrc: string; ADestEncoding: IIdTextEncoding = nil{$IFDEF STRING_IS_ANSI}; ASrcEncoding: IIdTextEncoding = nil{$ENDIF}): UInt16; overload;
+    function HashValue(const ASrc: TIdBytes): UInt16; overload;
+    function HashValue(AStream: TStream): UInt16; overload;
+    function HashValue(AStream: TStream; const AStartPos, ASize: TIdStreamSize): UInt16; overload;
+    procedure HashStart(var VRunningHash : UInt16); virtual; abstract;
+    procedure HashEnd(var VRunningHash : UInt16); virtual;
+    procedure HashByte(var VRunningHash : UInt16; const AByte : Byte); virtual; abstract;
   end;
 
   TIdHash32 = class(TIdHash)
@@ -100,13 +100,13 @@ type
     function GetHashBytes(AStream: TStream; ASize: TIdStreamSize): TIdBytes; override;
     function HashToHex(const AHash: TIdBytes): String; override;
   public
-    function HashValue(const ASrc: string; ADestEncoding: IIdTextEncoding = nil{$IFDEF STRING_IS_ANSI}; ASrcEncoding: IIdTextEncoding = nil{$ENDIF}): LongWord; overload;
-    function HashValue(const ASrc: TIdBytes): LongWord; overload;
-    function HashValue(AStream: TStream): LongWord; overload;
-    function HashValue(AStream: TStream; const AStartPos, ASize: TIdStreamSize): LongWord; overload;
-    procedure HashStart(var VRunningHash : LongWord); virtual; abstract;
-    procedure HashEnd(var VRunningHash : LongWord); virtual;
-    procedure HashByte(var VRunningHash : LongWord; const AByte : Byte); virtual; abstract;
+    function HashValue(const ASrc: string; ADestEncoding: IIdTextEncoding = nil{$IFDEF STRING_IS_ANSI}; ASrcEncoding: IIdTextEncoding = nil{$ENDIF}): UInt32; overload;
+    function HashValue(const ASrc: TIdBytes): UInt32; overload;
+    function HashValue(AStream: TStream): UInt32; overload;
+    function HashValue(AStream: TStream; const AStartPos, ASize: TIdStreamSize): UInt32; overload;
+    procedure HashStart(var VRunningHash : UInt32); virtual; abstract;
+    procedure HashEnd(var VRunningHash : UInt32); virtual;
+    procedure HashByte(var VRunningHash : UInt32; const AByte : Byte); virtual; abstract;
   end;
 
   TIdHashClass = class of TIdHash;
@@ -122,11 +122,11 @@ type
     class function IsAvailable : Boolean; override;
     class function IsIntfAvailable : Boolean; virtual;
   end;
+
   TIdHashNativeAndIntF = class(TIdHashIntF)
   protected
     function NativeGetHashBytes(AStream: TStream; ASize: TIdStreamSize): TIdBytes; virtual;
     function GetHashBytes(AStream: TStream; ASize: TIdStreamSize): TIdBytes; override;
-
   end;
 
   {$IFDEF DOTNET}
@@ -175,6 +175,7 @@ function TIdHash.HashBytes(const ASrc: TIdBytes): TIdBytes;
 var
   LStream: TStream;
 begin
+  // TODO: use TBytesStream on versions that support it
   LStream := TMemoryStream.Create; try
     WriteTIdBytesToStream(LStream, ASrc);
     LStream.Position := 0;
@@ -220,19 +221,19 @@ end;
 
 function TIdHash.WordHashToHex(const AHash: TIdBytes; const ACount: Integer): String;
 var
-  LValue: Word;
+  LValue: UInt16;
   I: Integer;
 begin
   Result := '';
   for I := 0 to ACount-1 do begin
-    LValue := BytesToWord(AHash, SizeOf(Word)*I);
+    LValue := BytesToUInt16(AHash, SizeOf(UInt16)*I);
     Result := Result + IntToHex(LValue, 4);
   end;
 end;
 
 function TIdHash.LongWordHashToHex(const AHash: TIdBytes; const ACount: Integer): String;
 begin
-  Result := ToHex(AHash, ACount*SizeOf(LongWord));
+  Result := ToHex(AHash, ACount*SizeOf(UInt32));
 end;
 
 class function TIdHash.IsAvailable : Boolean;
@@ -249,7 +250,7 @@ var
   I: Integer;
   LBuffer: TIdBytes;
   LSize: Integer;
-  LHash: Word;
+  LHash: UInt16;
 begin
   Result := nil;
   HashStart(LHash);
@@ -260,7 +261,7 @@ begin
   begin
     LSize := ReadTIdBytesFromStream(AStream, LBuffer, IndyMin(cBufSize, ASize));
     if LSize < 1 then begin
-      Break;                                                
+      Break; // TODO: throw a stream read exception instead?
     end;
     for i := 0 to LSize - 1 do begin
       HashByte(LHash, LBuffer[i]);
@@ -270,39 +271,39 @@ begin
 
   HashEnd(LHash);
 
-  SetLength(Result, SizeOf(Word));
-  CopyTIdWord(LHash, Result, 0);
+  SetLength(Result, SizeOf(UInt16));
+  CopyTIdUInt16(LHash, Result, 0);
 end;
 
 function TIdHash16.HashToHex(const AHash: TIdBytes): String;
 begin
-  Result := IntToHex(BytesToWord(AHash), 4);
+  Result := IntToHex(BytesToUInt16(AHash), 4);
 end;
 
-procedure TIdHash16.HashEnd(var VRunningHash : Word);
+procedure TIdHash16.HashEnd(var VRunningHash : UInt16);
 begin
 end;
 
 function TIdHash16.HashValue(const ASrc: string; ADestEncoding: IIdTextEncoding = nil
   {$IFDEF STRING_IS_ANSI}; ASrcEncoding: IIdTextEncoding = nil{$ENDIF}
-  ): Word;
+  ): UInt16;
 begin
-  Result := BytesToWord(HashString(ASrc, ADestEncoding{$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF}));
+  Result := BytesToUInt16(HashString(ASrc, ADestEncoding{$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF}));
 end;
 
-function TIdHash16.HashValue(const ASrc: TIdBytes): Word;
+function TIdHash16.HashValue(const ASrc: TIdBytes): UInt16;
 begin
-  Result := BytesToWord(HashBytes(ASrc));
+  Result := BytesToUInt16(HashBytes(ASrc));
 end;
 
-function TIdHash16.HashValue(AStream: TStream): Word;
+function TIdHash16.HashValue(AStream: TStream): UInt16;
 begin
-  Result := BytesToWord(HashStream(AStream));
+  Result := BytesToUInt16(HashStream(AStream));
 end;
 
-function TIdHash16.HashValue(AStream: TStream; const AStartPos, ASize: TIdStreamSize): Word;
+function TIdHash16.HashValue(AStream: TStream; const AStartPos, ASize: TIdStreamSize): UInt16;
 begin
-  Result := BytesToWord(HashStream(AStream, AStartPos, ASize));
+  Result := BytesToUInt16(HashStream(AStream, AStartPos, ASize));
 end;
 
 { TIdHash32 }
@@ -314,7 +315,7 @@ var
   I: Integer;
   LBuffer: TIdBytes;
   LSize: Integer;
-  LHash: LongWord;
+  LHash: UInt32;
 begin
   Result := nil;
   HashStart(LHash);
@@ -325,7 +326,7 @@ begin
   begin
     LSize := ReadTIdBytesFromStream(AStream, LBuffer, IndyMin(cBufSize, ASize));
     if LSize < 1 then begin
-      Break;                                                 
+      Break;  // TODO: throw a stream read exception instead?
     end;
     for i := 0 to LSize - 1 do begin
       HashByte(LHash, LBuffer[i]);
@@ -335,39 +336,39 @@ begin
 
   HashEnd(LHash); // RLebeau: TIdHashCRC32 uses this to XOR the hash with $FFFFFFFF
 
-  SetLength(Result, SizeOf(LongWord));
-  CopyTIdLongWord(LHash, Result, 0);
+  SetLength(Result, SizeOf(UInt32));
+  CopyTIdUInt32(LHash, Result, 0);
 end;
 
 function TIdHash32.HashToHex(const AHash: TIdBytes): String;
 begin
-  Result := LongWordToHex(BytesToLongWord(AHash)); //IntToHex(BytesToLongWord(AHash), 8);
+  Result := UInt32ToHex(BytesToUInt32(AHash));
 end;
 
-procedure TIdHash32.HashEnd(var VRunningHash : LongWord);
+procedure TIdHash32.HashEnd(var VRunningHash : UInt32);
 begin
 end;
 
 function TIdHash32.HashValue(const ASrc: string; ADestEncoding: IIdTextEncoding = nil
   {$IFDEF STRING_IS_ANSI}; ASrcEncoding: IIdTextEncoding = nil{$ENDIF}
-  ): LongWord;
+  ): UInt32;
 begin
-  Result := BytesToLongWord(HashString(ASrc, ADestEncoding{$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF}));
+  Result := BytesToUInt32(HashString(ASrc, ADestEncoding{$IFDEF STRING_IS_ANSI}, ASrcEncoding{$ENDIF}));
 end;
 
-function TIdHash32.HashValue(const ASrc: TIdBytes): LongWord;
+function TIdHash32.HashValue(const ASrc: TIdBytes): UInt32;
 begin
-  Result := BytesToLongWord(HashBytes(ASrc));
+  Result := BytesToUInt32(HashBytes(ASrc));
 end;
 
-function TIdHash32.HashValue(AStream: TStream) : LongWord;
+function TIdHash32.HashValue(AStream: TStream) : UInt32;
 begin
-  Result := BytesToLongWord(HashStream(AStream));
+  Result := BytesToUInt32(HashStream(AStream));
 end;
 
-function TIdHash32.HashValue(AStream: TStream; const AStartPos, ASize: TIdStreamSize) : LongWord;
+function TIdHash32.HashValue(AStream: TStream; const AStartPos, ASize: TIdStreamSize) : UInt32;
 begin
-  Result := BytesToLongWord(HashStream(AStream, AStartPos, ASize));
+  Result := BytesToUInt32(HashStream(AStream, AStartPos, ASize));
 end;
 
 
@@ -399,20 +400,22 @@ var
 begin
   LCtx := InitHash;
   try
-    SetLength(LBuf,2048);
-    repeat
-      LSize := ReadTIdBytesFromStream(AStream,LBuf,2048);
-      if LSize = 0 then begin
-        break;
-      end;
-      if LSize < 2048 then begin
-        SetLength(LBuf,LSize);
+    if ASize > 0 then begin
+      SetLength(LBuf, 2048);
+      repeat
+        LSize := ReadTIdBytesFromStream(AStream,LBuf,IndyMin(ASize, 2048));
+        if LSize < 1 then begin
+          break; // TODO: throw a stream read exception?
+        end;
+        if LSize < 2048 then begin
+          SetLength(LBuf,LSize);
+          UpdateHash(LCtx,LBuf);
+          break;
+        end;
         UpdateHash(LCtx,LBuf);
-        break;
-      end else begin
-        UpdateHash(LCtx,LBuf);
-      end;
-    until False;
+        Dec(ASize, LSize);
+      until ASize = 0;
+    end;
   finally
     Result := FinalHash(LCtx);
   end;
@@ -434,7 +437,7 @@ begin
    Result := False;
 end;
 {$ELSE}
-                                                                  
+//done this way so we can override IsAvailble if there is a native
 //implementation.
 
 
@@ -473,7 +476,7 @@ end;
 function TIdHashNativeAndIntF.NativeGetHashBytes(AStream: TStream;
   ASize: TIdStreamSize): TIdBytes;
 begin
-
+  Result := nil;
 end;
 
 end.

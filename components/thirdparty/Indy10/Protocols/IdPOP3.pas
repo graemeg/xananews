@@ -228,7 +228,7 @@ type
     procedure InitComponent; override;
     procedure Notification(AComponent: TComponent; Operation: TOperation); override;
   public
-    function CheckMessages: LongInt;
+    function CheckMessages: Integer;
     procedure Connect; override;
     procedure Login; virtual;
     destructor Destroy; override;
@@ -242,10 +242,10 @@ type
     function Retrieve(const MsgNum: Integer; AMsg: TIdMessage): Boolean;
     function RetrieveHeader(const MsgNum: Integer; AMsg: TIdMessage): Boolean;
     function RetrieveMsgSize(const MsgNum: Integer): Integer;
-    function RetrieveMailBoxSize: integer;
+    function RetrieveMailBoxSize: Int64;
     function RetrieveRaw(const aMsgNo: Integer; const aDest: TStrings): boolean; overload;
     function RetrieveRaw(const aMsgNo: Integer; const aDest: TStream): boolean; overload;
-    function RetrieveStats(var VMsgCount, VMailBoxSize: Integer): Boolean;
+    function RetrieveStats(var VMsgCount: Integer; var VMailBoxSize: Int64): Boolean;
     function UIDL(const ADest: TStrings; const AMsgNum: Integer = -1): Boolean;
     function Top(const AMsgNum: Integer; const ADest: TStrings; const AMaxLines: Integer = 0): boolean;
     function CAPA: Boolean;
@@ -253,7 +253,7 @@ type
     property HasCAPA: boolean read FHasCAPA;
   published
     property AuthType : TIdPOP3AuthenticationType read FAuthType write FAuthType default DEF_ATYPE;
-    property AutoLogin: Boolean read FAutoLogin write FAutoLogin;
+    property AutoLogin: Boolean read FAutoLogin write FAutoLogin default True;
     property Host;
     property Username;
     property UseTLS;
@@ -282,16 +282,15 @@ uses
 
 { TIdPOP3 }
 
-function TIdPOP3.CheckMessages: longint;
+function TIdPOP3.CheckMessages: Integer;
 var
-  LMsgCount, LIgnore: Integer;
+  LIgnore: Int64;
 begin
   // RLebeau: for backwards compatibility, raise an exception if STAT fails
-  if not RetrieveStats(LMsgCount, LIgnore) then begin
+  if not RetrieveStats(Result, LIgnore) then begin
     RaiseExceptionForLastCmdResult;
   end;
   // Only gets here if exception is not raised
-  Result := LMsgCount;
 end;
 
 procedure TIdPOP3.Login;
@@ -334,7 +333,14 @@ begin
       end;//if APOP
     patSASL:
       begin
-        FSASLMechanisms.LoginSASL('AUTH', FHost, IdGSKSSN_pop, [ST_OK], [ST_SASLCONTINUE], Self, Capabilities, 'SASL'); {do not localize}
+        // SASL in POP3 did not originally support Initial-Response. It was added
+        // in RFC 2449 along with the CAPA command. If a server supports the CAPA
+        // command then it *should* also support Initial-Response as well, however
+        // many POP3 servers support CAPA but do not support Initial-Response
+        // (which was formalized in RFC 5034). So, until we can handle that
+        // descrepency better, we will simply disable Initial-Response for now.
+
+        FSASLMechanisms.LoginSASL('AUTH', FHost, IdGSKSSN_pop, [ST_OK], [ST_SASLCONTINUE], Self, Capabilities, 'SASL', False); {do not localize}
       end;
   end;
 end;
@@ -346,6 +352,7 @@ begin
   FSASLMechanisms := TIdSASLEntries.Create(Self);
   FRegularProtPort := IdPORT_POP3;
   FImplicitTLSProtPort := IdPORT_POP3S;
+  FExplicitTLSProtPort := IdPORT_POP3;
   Port := IdPORT_POP3;
   FAuthType := DEF_ATYPE;
 end;
@@ -357,7 +364,7 @@ end;
 
 procedure TIdPOP3.DisconnectNotifyPeer;
 begin
-  inherited;
+  inherited DisconnectNotifyPeer;
   SendCmd('QUIT', ST_OK);    {do not localize}
 end;
 
@@ -421,7 +428,7 @@ begin
   Result := True;
 end;
 
-function TIdPOP3.RetrieveMailBoxSize: integer;
+function TIdPOP3.RetrieveMailBoxSize: Int64;
 var
   LIgnore: Integer;
 begin
@@ -451,7 +458,7 @@ begin
   end;
 end;
 
-function TIdPOP3.RetrieveStats(var VMsgCount, VMailBoxSize: Integer): Boolean;
+function TIdPOP3.RetrieveStats(var VMsgCount: Integer; var VMailBoxSize: Int64): Boolean;
 var
   s: string;
 begin
@@ -462,7 +469,7 @@ begin
     s := LastCmdResult.Text[0];
     if Length(s) > 0 then begin
       VMsgCount := IndyStrToInt(Fetch(s));
-      VMailBoxSize := IndyStrToInt(Fetch(s));
+      VMailBoxSize := IndyStrToInt64(Fetch(s));
     end;
   end;
 end;

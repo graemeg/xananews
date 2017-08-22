@@ -93,7 +93,6 @@ interface
 
 uses
   Classes,
-  IdCTypes,
   IdException,
   IdGlobal,
   IdGlobalProtocols,
@@ -118,9 +117,9 @@ type
     FCompressRec: TZStreamRec;
     FDecompressRec: TZStreamRec;
     FRecvBuf: TIdBytes;
-    FRecvCount, FRecvSize: TIdC_UINT;
+    FRecvCount, FRecvSize: UInt32;
     FSendBuf: TIdBytes;
-    FSendCount, FSendSize: TIdC_UINT;
+    FSendCount, FSendSize: UInt32;
     procedure SetCompressionLevel(Value: TIdCompressionLevel);
     procedure InitCompressors;
     procedure DeinitCompressors;
@@ -186,7 +185,7 @@ begin
     FCompressRec.zfree := IdZLibHeaders.zlibFreeMem;
     if deflateInit_(FCompressRec, FCompressionLevel, zlib_Version, SizeOf(FCompressRec)) <> Z_OK then
     begin
-      EIdCompressorInitFailure.Toss(RSZLCompressorInitializeFailure);
+      raise EIdCompressorInitFailure.Create(RSZLCompressorInitializeFailure);
     end;
   end;
   if not Assigned(FDecompressRec.zalloc) then
@@ -195,7 +194,7 @@ begin
     FDecompressRec.zfree := IdZLibHeaders.zlibFreeMem;
     if inflateInit_(FDecompressRec, zlib_Version, SizeOf(FDecompressRec)) <> Z_OK then
     begin
-      EIdDecompressorInitFailure.Toss(RSZLDecompressorInitializeFailure);
+      raise EIdDecompressorInitFailure.Create(RSZLDecompressorInitializeFailure);
     end;
   end;
 end;
@@ -204,7 +203,7 @@ procedure TIdCompressionIntercept.Receive(var VBuffer: TIdBytes);
 var
   LBuffer: TIdBytes;
   LPos : integer;
-  nChars, C : TIdC_UINT;
+  nChars, C : UInt32;
   StreamEnd: Boolean;
 begin
   // let the next Intercept in the chain decode its data first
@@ -246,7 +245,7 @@ begin
           Z_STREAM_ERROR,
           Z_DATA_ERROR,
           Z_MEM_ERROR:
-            EIdDecompressionError.Toss(RSZLDecompressionError);
+            raise EIdDecompressionError.Create(RSZLDecompressionError);
         end;
         Inc(FRecvCount, C - FDecompressRec.avail_out);
       end;
@@ -260,7 +259,7 @@ end;
 procedure TIdCompressionIntercept.Send(var VBuffer: TIdBytes);
 var
   LBuffer: TIdBytes;
-  LLen, LSize: TIdC_UINT;
+  LLen, LSize: UInt32;
 begin
   LBuffer := nil;
   if FCompressionLevel in [1..9] then
@@ -302,8 +301,8 @@ begin
       end;
       // Place the compressed data into the output stream
       LLen := Length(VBuffer);
-      SetLength(VBuffer, LLen + TIdC_UINT(Length(LBuffer)) - FCompressRec.avail_out);
-      CopyTIdBytes(LBuffer, 0, VBuffer, LLen, TIdC_UINT(Length(LBuffer)) - FCompressRec.avail_out);
+      SetLength(VBuffer, LLen + UInt32(Length(LBuffer)) - FCompressRec.avail_out);
+      CopyTIdBytes(LBuffer, 0, VBuffer, LLen, UInt32(Length(LBuffer)) - FCompressRec.avail_out);
     end;
   end;
 

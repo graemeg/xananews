@@ -245,14 +245,16 @@ type
 const
   DEF_SSLVERSION = sslvTLSv1;
   DEF_SSLVERSIONS = [sslvTLSv1];
+  P12_FILETYPE = 3;
+  MAX_SSL_PASSWORD_LENGTH = 128;
 
 type
   TIdSSLULong = packed record
     case Byte of
-      0: (B1, B2, B3, B4: Byte);
-      1: (W1, W2: Word);
-      2: (L1: Longint);
-      3: (C1: LongWord);
+      0: (B1, B2, B3, B4: UInt8);
+      1: (W1, W2: UInt16);
+      2: (L1: Int32);
+      3: (C1: UInt32);
   end;
 
   TIdSSLEVP_MD = record
@@ -370,6 +372,7 @@ type
     fSSL: PSSL;
     fSSLCipher: TIdSSLCipher;
     fSSLContext: TIdSSLContext;
+    fHostName: String;
     function GetPeerCert: TIdX509;
     function GetSSLError(retCode: Integer): Integer;
     function GetSSLCipher: TIdSSLCipher;
@@ -386,9 +389,21 @@ type
     //
     property PeerCert: TIdX509 read GetPeerCert;
     property Cipher: TIdSSLCipher read GetSSLCipher;
+    property HostName: String read fHostName;
   end;
 
-  TIdSSLIOHandlerSocketOpenSSL = class(TIdSSLIOHandlerSocketBase)
+  // TIdSSLIOHandlerSocketOpenSSL and TIdServerIOHandlerSSLOpenSSL have some common
+  // functions, but they do not have a common ancestor, so this interface helps
+  // bridge the gap...
+  IIdSSLOpenSSLCallbackHelper = interface(IInterface)
+    ['{583F1209-10BA-4E06-8810-155FAEC415FE}']
+    function GetPassword(const AIsWrite : Boolean): string;
+    procedure StatusInfo(const ASSL: PSSL; AWhere, ARet: TIdC_INT; const AStatusStr: string);
+    function VerifyPeer(ACertificate: TIdX509; AOk: Boolean; ADepth, AError: Integer): Boolean;
+    function GetIOHandlerSelf: TIdSSLIOHandlerSocketOpenSSL;
+  end;
+
+  TIdSSLIOHandlerSocketOpenSSL = class(TIdSSLIOHandlerSocketBase, IIdSSLOpenSSLCallbackHelper)
   protected
     fSSLContext: TIdSSLContext;
     fxSSLOptions: TIdSSLOptions;
@@ -422,13 +437,22 @@ type
     procedure ConnectClient; override;
     function CheckForError(ALastResult: Integer): Integer; override;
     procedure RaiseError(AError: Integer); override;
+
+    { IIdSSLOpenSSLCallbackHelper }
+    function GetPassword(const AIsWrite : Boolean): string;
+    procedure StatusInfo(const ASslSocket: PSSL; AWhere, ARet: TIdC_INT; const AStatusStr: string);
+    function VerifyPeer(ACertificate: TIdX509; AOk: Boolean; ADepth, AError: Integer): Boolean;
+    function GetIOHandlerSelf: TIdSSLIOHandlerSocketOpenSSL;
+
   public
     destructor Destroy; override;
+    // TODO: add an AOwner parameter
     function Clone :  TIdSSLIOHandlerSocketBase; override;
     procedure StartSSL; override;
     procedure AfterAccept; override;
     procedure Close; override;
     procedure Open; override;
+    function Readable(AMSec: Integer = IdTimeoutDefault): Boolean; override;
     property SSLSocket: TIdSSLSocket read fSSLSocket write fSSLSocket;
     property OnBeforeConnect: TIOHandlerNotify read fOnBeforeConnect write fOnBeforeConnect;
     property SSLContext: TIdSSLContext read fSSLContext write fSSLContext;
@@ -441,7 +465,7 @@ type
     property OnVerifyPeer: TVerifyPeerEvent read fOnVerifyPeer write fOnVerifyPeer;
   end;
 
-  TIdServerIOHandlerSSLOpenSSL = class(TIdServerIOHandlerSSLBase)
+  TIdServerIOHandlerSSLOpenSSL = class(TIdServerIOHandlerSSLBase, IIdSSLOpenSSLCallbackHelper)
   protected
     fxSSLOptions: TIdSSLOptions;
     fSSLContext: TIdSSLContext;
@@ -462,6 +486,13 @@ type
     procedure DoGetPasswordEx(var VPassword: String; const AIsWrite : Boolean); virtual;
     function DoVerifyPeer(Certificate: TIdX509; AOk: Boolean; ADepth, AError: Integer): Boolean; virtual;
     procedure InitComponent; override;
+
+    { IIdSSLOpenSSLCallbackHelper }
+    function GetPassword(const AIsWrite : Boolean): string;
+    procedure StatusInfo(const ASslSocket: PSSL; AWhere, ARet: TIdC_INT; const AStatusStr: string);
+    function VerifyPeer(ACertificate: TIdX509; AOk: Boolean; ADepth, AError: Integer): Boolean;
+    function GetIOHandlerSelf: TIdSSLIOHandlerSocketOpenSSL;
+
   public
     procedure Init; override;
     procedure Shutdown; override;
@@ -497,6 +528,8 @@ type
     property Hash: TIdSSLULong read GetHash;
     property HashAsString: string read GetHashAsString;
     property OneLine: string read CertInOneLine;
+    //
+    property CertificateName: PX509_NAME read fX509Name;
   end;
 
   TIdX509Info = class(TObject)
@@ -506,6 +539,8 @@ type
     FX509 : PX509;
   public
     constructor Create( aX509: PX509);
+    //
+    property Certificate: PX509 read FX509;
   end;
 
   TIdX509Fingerprints = class(TIdX509Info)
@@ -593,6 +628,8 @@ http://csrc.nist.gov/CryptoToolkit/tkhash.html
     property notAfter: TDateTime read RnotAfter;
     property SerialNumber : string read GetSerialNumber;
     property DisplayInfo : TStrings read GetDisplayInfo;
+    //
+    property Certificate: PX509 read FX509;
   end;
 
   TIdSSLCipher = class(TObject)
@@ -626,6 +663,9 @@ http://csrc.nist.gov/CryptoToolkit/tkhash.html
   EIdOSSLDataBindingError = class(EIdOpenSSLAPISSLError);
   EIdOSSLAcceptError = class(EIdOpenSSLAPISSLError);
   EIdOSSLConnectError = class(EIdOpenSSLAPISSLError);
+  {$IFNDEF OPENSSL_NO_TLSEXT}
+  EIdOSSLSettingTLSHostNameError = class(EIdOpenSSLAPISSLError);
+  {$ENDIF}
 
 function LoadOpenSSLLibrary: Boolean;
 procedure UnLoadOpenSSLLibrary;
@@ -653,6 +693,8 @@ uses
   IdExceptionCore,
   IdResourceStrings,
   IdThreadSafe,
+  IdCustomTransparentProxy,
+  IdURI,
   SysUtils,
   SyncObjs;
 
@@ -793,6 +835,7 @@ var
   {$ENDIF}
   IdSSLContext: TIdSSLContext;
   LErr : Integer;
+  LHelper: IIdSSLOpenSSLCallbackHelper;
 begin
   //Preserve last eror just in case OpenSSL is using it and we do something that
   //clobers it.  CYA.
@@ -802,17 +845,9 @@ begin
     try
       Password := '';    {Do not Localize}
       IdSSLContext := TIdSSLContext(userdata);
-      if (IdSSLContext.Parent is TIdSSLIOHandlerSocketOpenSSL) then begin
-        TIdSSLIOHandlerSocketOpenSSL(IdSSLContext.Parent).DoGetPasswordEx(Password,rwflag > 0);
-        if Password = '' then begin
-          TIdSSLIOHandlerSocketOpenSSL(IdSSLContext.Parent).DoGetPassword(Password);
-        end;
-      end;
-      if (IdSSLContext.Parent is TIdServerIOHandlerSSLOpenSSL) then begin
-        TIdServerIOHandlerSSLOpenSSL(IdSSLContext.Parent).DoGetPasswordEx(Password,rwflag > 0);
-        if Password = '' then begin
-          TIdServerIOHandlerSSLOpenSSL(IdSSLContext.Parent).DoGetPassword(Password);
-        end;
+      if Supports(IdSSLContext.Parent, IIdSSLOpenSSLCallbackHelper, IInterface(LHelper)) then begin
+        Password := LHelper.GetPassword(rwflag > 0);
+        LHelper := nil;
       end;
       FillChar(buf^, size, 0);
       {$IFDEF STRING_IS_UNICODE}
@@ -842,8 +877,8 @@ procedure InfoCallback(const sslSocket: PSSL; where, ret: TIdC_INT); cdecl;
 var
   IdSSLSocket: TIdSSLSocket;
   StatusStr : String;
-  LMsg : String;
   LErr : Integer;
+  LHelper: IIdSSLOpenSSLCallbackHelper;
 begin
 {
 You have to save the value of WSGetLastError as some Operating System API
@@ -858,20 +893,10 @@ JPM.
     LockInfoCB.Enter;
     try
       IdSSLSocket := TIdSSLSocket(SSL_get_app_data(sslSocket));
-      StatusStr := IndyFormat(RSOSSLStatusString, [String(SSL_state_string_long(sslSocket))]);
-      if (IdSSLSocket.fParent is TIdSSLIOHandlerSocketOpenSSL) then begin
-        TIdSSLIOHandlerSocketOpenSSL(IdSSLSocket.fParent).DoStatusInfo(StatusStr);
-        if Assigned(TIdSSLIOHandlerSocketOpenSSL(IdSSLSocket.fParent).fOnStatusInfoEx) then begin
-          GetStateVars(sslSocket,where,ret,StatusStr,LMsg);
-          TIdSSLIOHandlerSocketOpenSSL(IdSSLSocket.fParent).DoStatusInfoEx(sslSocket,where,ret,StatusStr,LMsg);
-        end;
-      end;
-      if (IdSSLSocket.fParent is TIdServerIOHandlerSSLOpenSSL) then begin
-        TIdServerIOHandlerSSLOpenSSL(IdSSLSocket.fParent).DoStatusInfo(StatusStr);
-        if Assigned(TIdServerIOHandlerSSLOpenSSL(IdSSLSocket.fParent).fOnStatusInfoEx) then begin
-          GetStateVars(sslSocket,where,ret,StatusStr,LMsg);
-          TIdServerIOHandlerSSLOpenSSL(IdSSLSocket.fParent).DoStatusInfoEx(sslSocket,where,ret,StatusStr,LMsg);
-        end;
+      if Supports(IdSSLSocket.fParent, IIdSSLOpenSSLCallbackHelper, IInterface(LHelper)) then begin
+        StatusStr := IndyFormat(RSOSSLStatusString, [String(SSL_state_string_long(sslSocket))]);
+        LHelper.StatusInfo(sslSocket, where, ret, StatusStr);
+        LHelper := nil;
       end;
     finally
       LockInfoCB.Leave;
@@ -907,6 +932,7 @@ var
   Depth: Integer;
   Error: Integer;
   LOk: Boolean;
+  LHelper: IIdSSLOpenSSLCallbackHelper;
 begin
   LockVerifyCB.Enter;
   try
@@ -933,16 +959,15 @@ begin
         if Ok = 1 then begin
           LOk := True;
         end;
-        if (IdSSLSocket.fParent is TIdSSLIOHandlerSocketOpenSSL) then begin
-          VerifiedOK := TIdSSLIOHandlerSocketOpenSSL(IdSSLSocket.fParent).DoVerifyPeer(Certificate, LOk, Depth, Error);
-        end;
-        if (IdSSLSocket.fParent is TIdServerIOHandlerSSLOpenSSL) then begin
-          VerifiedOK := TIdServerIOHandlerSSLOpenSSL(IdSSLSocket.fParent).DoVerifyPeer(Certificate, LOk, Depth, Error);
+        if Supports(IdSSLSocket.fParent, IIdSSLOpenSSLCallbackHelper, IInterface(LHelper)) then begin
+          VerifiedOK := LHelper.VerifyPeer(Certificate, LOk, Depth, Error);
+          LHelper := nil;
         end;
       finally
         FreeAndNil(Certificate);
       end;
     except
+      VerifiedOK := False;
     end;
     //if VerifiedOK and (Ok > 0) then begin
     if VerifiedOK {and (Ok > 0)} then begin
@@ -966,6 +991,9 @@ function IndySSL_CTX_use_PrivateKey_file(ctx: PSSL_CTX; const AFileName: String;
   AType: Integer): TIdC_INT; forward;
 function IndySSL_CTX_use_certificate_file(ctx: PSSL_CTX; const AFileName: String;
   AType: Integer): TIdC_INT; forward;
+function IndySSL_CTX_use_certificate_chain_file(ctx :PSSL_CTX;
+  const AFileName: String) : TIdC_INT; forward;
+
 function IndyX509_STORE_load_locations(ctx: PX509_STORE;
   const AFileName, APathName: String): TIdC_INT; forward;
 function IndySSL_CTX_load_verify_locations(ctx: PSSL_CTX;
@@ -980,6 +1008,153 @@ begin
   Result := PDH(ASN1_d2i_bio(@DH_new, @d2i_DHparams, bp, x));
 end;
 }
+
+// SSL_CTX_use_PrivateKey_file() and SSL_CTX_use_certificate_file() do not
+// natively support PKCS12 certificates/keys, only PEM/ASN1, so load them
+// manually...
+
+function IndySSL_CTX_use_PrivateKey_file_PKCS12(ctx: PSSL_CTX; const AFileName: String): TIdC_INT;
+var
+  LM: TMemoryStream;
+  B: PBIO;
+  LKey: PEVP_PKEY;
+  LCert: PX509;
+  P12: PPKCS12;
+  CertChain: PSTACK_OF_X509;
+  LPassword: array of TIdAnsiChar;
+  LPasswordPtr: PIdAnsiChar;
+begin
+  Result := 0;
+
+  LM := nil;
+  try
+    LM := TMemoryStream.Create;
+    LM.LoadFromFile(AFileName);
+  except
+    // Surpress exception here since it's going to be called by the OpenSSL .DLL
+    // Follow the OpenSSL .DLL Error conventions.
+    SSLerr(SSL_F_SSL_CTX_USE_PRIVATEKEY_FILE, ERR_R_SYS_LIB);
+    LM.Free;
+    Exit;
+  end;
+
+  try
+    B := BIO_new_mem_buf(LM.Memory, LM.Size);
+    if not Assigned(B) then begin
+      SSLerr(SSL_F_SSL_CTX_USE_PRIVATEKEY_FILE, ERR_R_BUF_LIB);
+      Exit;
+    end;
+    try
+      SetLength(LPassword, MAX_SSL_PASSWORD_LENGTH+1);
+      LPassword[MAX_SSL_PASSWORD_LENGTH] := TIdAnsiChar(0);
+      LPasswordPtr := PIdAnsiChar(LPassword);
+      if Assigned(ctx^.default_passwd_callback) then begin
+        ctx^.default_passwd_callback(LPasswordPtr, MAX_SSL_PASSWORD_LENGTH, 0, ctx^.default_passwd_callback_userdata);
+        // TODO: check return value for failure
+      end else begin
+        // TODO: call PEM_def_callback(), like PEM_read_bio_X509() does
+        // when default_passwd_callback is nil
+      end;
+      P12 := d2i_PKCS12_bio(B, nil);
+      if not Assigned(P12) then begin
+        SSLerr(SSL_F_SSL_CTX_USE_PRIVATEKEY_FILE, ERR_R_PKCS12_LIB);
+        Exit;
+      end;
+      try
+        CertChain := nil;
+        if PKCS12_parse(P12, LPasswordPtr, LKey, LCert, @CertChain) <> 1 then begin
+          SSLerr(SSL_F_SSL_CTX_USE_CERTIFICATE_FILE, ERR_R_PKCS12_LIB);
+          Exit;
+        end;
+        try
+          Result := SSL_CTX_use_PrivateKey(ctx, LKey);
+        finally
+          sk_pop_free(CertChain, @X509_free);
+          X509_free(LCert);
+          EVP_PKEY_free(LKey);
+        end;
+      finally
+        PKCS12_free(P12);
+      end;
+    finally
+      BIO_free(B);
+    end;
+  finally
+    FreeAndNil(LM);
+  end;
+end;
+
+function IndySSL_CTX_use_certificate_file_PKCS12(ctx: PSSL_CTX; const AFileName: String): TIdC_INT;
+var
+  LM: TMemoryStream;
+  B: PBIO;
+  LCert: PX509;
+  P12: PPKCS12;
+  PKey: PEVP_PKEY;
+  CertChain: PSTACK_OF_X509;
+  LPassword: array of TIdAnsiChar;
+  LPasswordPtr: PIdAnsiChar;
+begin
+  Result := 0;
+
+  LM := nil;
+  try
+    LM := TMemoryStream.Create;
+    LM.LoadFromFile(AFileName);
+  except
+    // Surpress exception here since it's going to be called by the OpenSSL .DLL
+    // Follow the OpenSSL .DLL Error conventions.
+    SSLerr(SSL_F_SSL_CTX_USE_CERTIFICATE_FILE, ERR_R_SYS_LIB);
+    LM.Free;
+    Exit;
+  end;
+
+  try
+    B := BIO_new_mem_buf(LM.Memory, LM.Size);
+    if not Assigned(B) then begin
+      SSLerr(SSL_F_SSL_CTX_USE_CERTIFICATE_FILE, ERR_R_BUF_LIB);
+      Exit;
+    end;
+    try
+      SetLength(LPassword, MAX_SSL_PASSWORD_LENGTH+1);
+      LPassword[MAX_SSL_PASSWORD_LENGTH] := TIdAnsiChar(0);
+      LPasswordPtr := PIdAnsiChar(LPassword);
+      if Assigned(ctx^.default_passwd_callback) then begin
+        ctx^.default_passwd_callback(LPasswordPtr, MAX_SSL_PASSWORD_LENGTH, 0, ctx^.default_passwd_callback_userdata);
+        // TODO: check return value for failure
+      end else begin
+        // TODO: call PEM_def_callback(), like PEM_read_bio_X509() does
+        // when default_passwd_callback is nil
+      end;
+      P12 := d2i_PKCS12_bio(B, nil);
+      if not Assigned(P12) then
+      begin
+        SSLerr(SSL_F_SSL_CTX_USE_CERTIFICATE_FILE, ERR_R_PKCS12_LIB);
+        Exit;
+      end;
+      try
+        CertChain := nil;
+        if PKCS12_parse(P12, LPasswordPtr, PKey, LCert, @CertChain) <> 1 then begin
+          SSLerr(SSL_F_SSL_CTX_USE_CERTIFICATE_FILE, ERR_R_PKCS12_LIB);
+          Exit;
+        end;
+        try
+          Result := SSL_CTX_use_certificate(ctx, LCert);
+        finally
+          sk_pop_free(CertChain, @X509_free);
+          X509_free(LCert);
+          EVP_PKEY_free(PKey);
+        end;
+      finally
+        PKCS12_free(P12);
+      end;
+    finally
+      BIO_free(B);
+    end;
+  finally
+    FreeAndNil(LM);
+  end;
+end;
 
 {
   IMPORTANT!!!
@@ -1453,6 +1628,96 @@ begin
   end;
 end;
 
+function IndySSL_CTX_use_certificate_chain_file(ctx :PSSL_CTX;
+  const AFileName: String) : TIdC_INT;
+var
+  LM: TMemoryStream;
+  B: PBIO;
+  LX: PX509;
+  ca :PX509;
+  r: TIdC_INT;
+  LErr :TIdC_ULONG;
+
+begin
+  Result := 0;
+
+  ERR_clear_error();    //* clear error stack for
+                        //* SSL_CTX_use_certificate() */
+
+  LM := nil;
+  try
+    LM := TMemoryStream.Create;
+    LM.LoadFromFile(AFileName);
+  except
+    // Surpress exception here since it's going to be called by the OpenSSL .DLL
+    // Follow the OpenSSL .DLL Error conventions.
+    SSLerr(SSL_F_SSL_CTX_USE_CERTIFICATE_CHAIN_FILE, ERR_R_SYS_LIB);
+    LM.Free;
+    Exit;
+  end;
+  try
+    B := BIO_new_mem_buf(LM.Memory, LM.Size);
+    if not Assigned(B) then begin
+      SSLerr(SSL_F_SSL_CTX_USE_CERTIFICATE_FILE, ERR_R_BUF_LIB);
+      Exit;
+    end;
+    try
+      LX := PEM_read_bio_X509_AUX(B, nil, ctx^.default_passwd_callback,
+                              ctx^.default_passwd_callback_userdata);
+      if (Lx = nil) then begin
+        SSLerr(SSL_F_SSL_CTX_USE_CERTIFICATE_CHAIN_FILE, ERR_R_PEM_LIB);
+      end else begin
+        Result := SSL_CTX_use_certificate(ctx, Lx);
+        if (ERR_peek_error() <> 0) then begin
+          Result := 0;         //* Key/certificate mismatch doesn't imply
+                               //* ret==0 ... */
+        end;
+        if Result <> 0 then begin
+          SSL_CTX_clear_chain_certs(ctx);
+          repeat
+            ca := PEM_read_bio_X509(B, nil,
+              ctx^.default_passwd_callback,
+              ctx^.default_passwd_callback_userdata);
+            if ca = nil then begin
+              break;
+            end;
+            r := SSL_CTX_add0_chain_cert(ctx, ca);
+            if (r = 0) then begin
+                X509_free(ca);
+                Result := 0;
+                break;
+//                goto end;
+            end;
+            //*
+            //* Note that we must not free r if it was successfully added to
+            //* the chain (while we must free the main certificate, since its
+            //* reference count is increased by SSL_CTX_use_certificate).
+            // */
+          until False;
+          if ca <> nil then begin
+            //* When the while loop ends, it's usually just EOF. */
+            LErr := ERR_peek_last_error();
+            if (ERR_GET_LIB(Lerr) = ERR_LIB_PEM)
+              and (ERR_GET_REASON(Lerr) = PEM_R_NO_START_LINE) then begin
+              ERR_clear_error();
+            end else begin
+              Result := 0;            //* some real error */
+            end;
+          end;
+        end;
+        //err:
+        if LX <> nil then begin
+          X509_free(LX);
+        end;
+      end;
+    finally
+      BIO_free(B);
+    end;
+  finally
+    FreeAndNil(LM);
+  end;
+end;
+
 function IndyX509_STORE_load_locations(ctx: PX509_STORE;
   const AFileName, APathName: String): TIdC_INT;
 var
@@ -1464,7 +1729,7 @@ begin
     if not Assigned(lookup) then begin
       Exit;
     end;
-    if (X509_LOOKUP_load_file(lookup, PAnsiChar(@AFileName[1]),
+    if (X509_LOOKUP_load_file(lookup, PAnsiChar(Pointer(AFileName)),
         X509_FILETYPE_PEM) <> 1) then begin
       Exit;
     end;
@@ -1604,6 +1869,22 @@ begin
     , AType);
 end;
 
+function IndySSL_CTX_use_certificate_chain_file(ctx :PSSL_CTX;
+  const AFileName: String) : TIdC_INT;
+{$IFDEF USE_INLINE} inline; {$ENDIF}
+{$IFDEF USE_MARSHALLED_PTRS}
+var
+  M: TMarshaller;
+{$ENDIF}
+begin
+  Result := SSL_CTX_use_certificate_chain_file(ctx,
+    {$IFDEF USE_MARSHALLED_PTRS}
+    M.AsUtf8(AFileName).ToPointer
+    {$ELSE}
+    PAnsiChar(UTF8String(AFileName))
+    {$ENDIF});
+end;
+
 function IndyX509_STORE_load_locations(ctx: PX509_STORE;
   const AFileName, APathName: String): TIdC_INT;
 {$IFDEF USE_INLINE} inline; {$ENDIF}
@@ -1633,6 +1914,20 @@ function IndySSL_CTX_load_verify_locations(ctx: PSSL_CTX;
   const ACAFile, ACAPath: String): TIdC_INT;
 {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+  // RLebeau: why are we calling X509_STORE_load_locations() directly
+  // instead of just calling SSL_CTX_load_verify_locations() with
+  // UTF-8 input?
+
+  //Result := SSL_CTX_load_verify_locations(ctx,
+  //  {$IFDEF USE_MARSHALLED_PTRS}
+  //  M.AsUtf8(ACAFile).ToPointer,
+  //  M.AsUtf8(ACAPath).ToPointer
+  //  {$ELSE}
+  //  PAnsiChar(Pointer(UTF8String(ACAFile))),
+  //  PAnsiChar(Pointer(UTF8String(ACAPath)))
+  //  {$ENDIF}
+  //);
+
   Result := IndyX509_STORE_load_locations(ctx^.cert_store, ACAFile, ACAPath);
 end;
 
@@ -1710,6 +2005,13 @@ function IndySSL_CTX_use_certificate_file(ctx: PSSL_CTX;
 {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
   Result := SSL_CTX_use_certificate_file(ctx, PAnsiChar(AFileName), AType);
+end;
+
+function IndySSL_CTX_use_certificate_chain_file(ctx :PSSL_CTX;
+  const AFileName: String) : TIdC_INT;
+{$IFDEF USE_INLINE} inline; {$ENDIF}
+begin
+  Result := SSL_CTX_use_certificate_chain_file(ctx, PAnsiChar(AFileName));
 end;
 
 function IndyX509_STORE_load_locations(ctx: PX509_STORE;
@@ -1806,12 +2108,12 @@ end;
 
 {$IFDEF OPENSSL_SET_MEMORY_FUNCS}
 
-function IdMalloc(num: Cardinal): Pointer cdecl;
+function IdMalloc(num: UInt32): Pointer cdecl;
 begin
   Result := AllocMem(num);
 end;
 
-function IdRealloc(addr: Pointer; num: Cardinal): Pointer cdecl;
+function IdRealloc(addr: Pointer; num: UInt32): Pointer cdecl;
 begin
   Result := addr;
   ReallocMem(Result, num);
@@ -1833,22 +2135,6 @@ begin
   Assert(r <> 0);
 end;
 {$ENDIF}
-
-function IsTLSv1_1Available : Boolean;
-{$IFDEF USE_INLINE} inline; {$ENDIF}
-begin
-  Result := Assigned(TLSv1_1_method) and
-    Assigned(TLSv1_1_server_method) and
-    Assigned(TLSv1_1_client_method);
-end;
-
-function IsTLSv1_2Available : Boolean;
-{$IFDEF USE_INLINE} inline; {$ENDIF}
-begin
-  Result := Assigned(TLSv1_2_method) and
-    Assigned(TLSv1_2_server_method) and
-    Assigned(TLSv1_2_client_method);
-end;
 
 {$IFNDEF OPENSSL_NO_BIO}
 procedure DumpCert(AOut: TStrings; AX509: PX509);
@@ -2043,11 +2329,11 @@ begin
   try
     if SSLIsLoaded.Value then begin
       Result := True;
-      exit;
+      Exit;
     end;
     Result := IdSSLOpenSSLHeaders.Load;
     if not Result then begin
-      exit;
+      Exit;
     end;
 {$IFDEF OPENSSL_SET_MEMORY_FUNCS}
     // has to be done before anything that uses memory
@@ -2062,7 +2348,7 @@ begin
     // Successful loading if true
     Result := SSLeay_add_ssl_algorithms > 0;
     if not Result then begin
-      exit;
+      Exit;
     end;
     // Create locking structures, we need them for callback routines
     Assert(LockInfoCB = nil);
@@ -2097,10 +2383,10 @@ var
 {$ENDIF}
 begin
   // ssl was never loaded
-  if LockInfoCB = nil then begin
-    exit;
+  if Assigned(CRYPTO_set_locking_callback) then begin
+    CRYPTO_set_locking_callback(nil);
   end;
-  CRYPTO_set_locking_callback(nil);
+  CleanupRandom; // <-- RLebeau: why is this here and not in IdSSLOpenSSLHeaders.Unload()?
   IdSSLOpenSSLHeaders.Unload;
   FreeAndNil(LockInfoCB);
   FreeAndNil(LockPassCB);
@@ -2129,8 +2415,11 @@ end;
 function OpenSSLVersion: string;
 begin
   Result := '';
-  if IdSSLOpenSSL.LoadOpenSSLLibrary then
-  begin
+  // RLebeau 9/7/2015: even if LoadOpenSSLLibrary() fails, _SSLeay_version()
+  // might have been loaded OK before the failure occured. LoadOpenSSLLibrary()
+  // does not unload ..
+  IdSSLOpenSSL.LoadOpenSSLLibrary;
+  if Assigned(_SSLeay_version) then begin
     Result := String(_SSLeay_version(SSLEAY_VERSION));
   end;
 end;
@@ -2149,13 +2438,10 @@ end;
 procedure TIdSSLOptions.SetMethod(const AValue: TIdSSLVersion);
 begin
   fMethod := AValue;
-  case AValue of
-    sslvSSLv2 : fSSLVersions := [sslvSSLv2];
-    sslvSSLv23 : fSSLVersions := [sslvSSLv2,sslvSSLv3,sslvTLSv1,sslvTLSv1_1,sslvTLSv1_2];
-    sslvSSLv3 : fSSLVersions := [sslvSSLv3];
-    sslvTLSv1 : fSSLVersions := [sslvTLSv1];
-    sslvTLSv1_1 : fSSLVersions := [sslvTLSv1_1];
-    sslvTLSv1_2 : fSSLVersions := [sslvTLSv1_2];
+  if AValue = sslvSSLv23 then begin
+    fSSLVersions := [sslvSSLv2,sslvSSLv3,sslvTLSv1,sslvTLSv1_1,sslvTLSv1_2];
+  end else begin
+    fSSLVersions := [AValue];
   end;
 end;
 
@@ -2176,7 +2462,6 @@ begin
   end
   else if fSSLVersions = [sslvTLSv1_2 ] then begin
     fMethod := sslvTLSv1_2;
-
   end
   else begin
     fMethod := sslvSSLv23;
@@ -2274,6 +2559,13 @@ begin
       LIO.fxSSLOptions := fxSSLOptions;
       LIO.fSSLSocket := TIdSSLSocket.Create(Self);
       LIO.fSSLContext := fSSLContext;
+      // TODO: to enable server-side SNI, we need to:
+      // - Set up an additional SSL_CTX for each different certificate;
+      // - Add a servername callback to each SSL_CTX using SSL_CTX_set_tlsext_servername_callback();
+      // - In the callback, retrieve the client-supplied servername with
+      //   SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name). Figure out the right
+      //   SSL_CTX to go with that host name, then switch the SSL object to that
+      //   SSL_CTX with SSL_set_SSL_CTX().
     end else begin
       FreeAndNil(LIO);
     end;
@@ -2369,6 +2661,39 @@ begin
     raise;
   end;
   Result := LIO;
+end;
+
+{ IIdSSLOpenSSLCallbackHelper }
+
+function TIdServerIOHandlerSSLOpenSSL.GetPassword(const AIsWrite : Boolean): string;
+begin
+  DoGetPasswordEx(Result, AIsWrite);
+  if Result = '' then begin
+    DoGetPassword(Result);
+  end;
+end;
+
+procedure TIdServerIOHandlerSSLOpenSSL.StatusInfo(const ASslSocket: PSSL;
+  AWhere, ARet: TIdC_INT; const AStatusStr: string);
+var
+  LType, LMsg: string;
+begin
+  DoStatusInfo(AStatusStr);
+  if Assigned(fOnStatusInfoEx) then begin
+    GetStateVars(ASslSocket, AWhere, ARet, LType, LMsg);
+    DoStatusInfoEx(ASslSocket, AWhere, ARet, LType, LMsg);
+  end;
+end;
+
+function TIdServerIOHandlerSSLOpenSSL.VerifyPeer(ACertificate: TIdX509;
+  AOk: Boolean; ADepth, AError: Integer): Boolean;
+begin
+  Result := DoVerifyPeer(ACertificate, AOk, ADepth, AError);
+end;
+
+function TIdServerIOHandlerSSLOpenSSL.GetIOHandlerSelf: TIdSSLIOHandlerSocketOpenSSL;
+begin
+  Result := nil;
 end;
 
 ///////////////////////////////////////////////////////
@@ -2468,6 +2793,16 @@ procedure TIdSSLIOHandlerSocketOpenSSL.Open;
 begin
   FOpened := False;
   inherited Open;
+end;
+
+function TIdSSLIOHandlerSocketOpenSSL.Readable(AMSec: Integer = IdTimeoutDefault): Boolean;
+begin
+  if not fPassThrough then
+  begin
+    Result := ssl_pending(fSSLSocket.fSSL) > 0;
+    if Result then Exit;
+  end;
+  Result := inherited Readable(AMSec);
 end;
 
 procedure TIdSSLIOHandlerSocketOpenSSL.SetPassThrough(const Value: Boolean);
@@ -2585,10 +2920,53 @@ begin
 end;
 
 procedure TIdSSLIOHandlerSocketOpenSSL.OpenEncodedConnection;
-{$IFDEF WIN32_OR_WIN64}
 var
+  {$IFDEF WIN32_OR_WIN64}
   LTimeout: Integer;
-{$ENDIF}
+  {$ENDIF}
+  LMode: TIdSSLMode;
+  LHost: string;
+
+  function GetURIHost: string;
+  var
+    LURI: TIdURI;
+  begin
+    Result := '';
+    if URIToCheck <> '' then
+    begin
+      LURI := TIdURI.Create(URIToCheck);
+      try
+        Result := LURI.Host;
+      finally
+        LURI.Free;
+      end;
+    end;
+  end;
+
+  function GetProxyTargetHost: string;
+  var
+    // under ARC, convert a weak reference to a strong reference before working with it
+    LTransparentProxy, LNextTransparentProxy: TIdCustomTransparentProxy;
+  begin
+    Result := '';
+    // RLebeau: not reading from the property as it will create a
+    // default Proxy object if one is not already assigned...
+    LTransparentProxy := FTransparentProxy;
+    if Assigned(LTransparentProxy) then
+    begin
+      if LTransparentProxy.Enabled then
+      begin
+        repeat
+          LNextTransparentProxy := LTransparentProxy.ChainedProxy;
+          if not Assigned(LNextTransparentProxy) then Break;
+          if not LNextTransparentProxy.Enabled then Break;
+          LTransparentProxy := LNextTransparentProxy;
+        until False;
+        Result := LTransparentProxy.Host;
+      end;
+    end;
+  end;
+
 begin
   Assert(Binding<>nil);
   if not Assigned(fSSLSocket) then begin
@@ -2611,10 +2989,42 @@ begin
   end;
   // end bug fix
   {$ENDIF}
-  if IsPeer then begin
-    fSSLSocket.Accept(Binding.Handle);
-  end else begin
+  // RLebeau 7/2/2015: do not rely on IsPeer to decide whether to call Connect()
+  // or Accept(). SSLContext.Mode controls whether a client or server method is
+  // used to handle the connection, so that same value should be used here as well.
+  // A user encountered a scenario where he needed to connect a TIdTCPClient to a
+  // TCP server on a hardware device, but run the client's SSLIOHandler as an SSL
+  // server because the device was initiating the SSL handshake as an SSL client.
+  // IsPeer was not designed to handle that scenario.  Setting IsPeer to True
+  // allowed Accept() to be called here, but at the cost of causing memory leaks
+  // in TIdSSLIOHandlerSocketOpenSSL.Destroy() and TIdSSLIOHandlerSocketOpenSSL.Close()
+  // in client components!  IsPeer is intended to be set to True only in server
+  // components...
+  LMode := fSSLContext.Mode;
+  if not (LMode in [sslmClient, sslmServer]) then begin
+    // Mode must be sslmBoth (or else TIdSSLContext.SetSSLMethod() would have
+    // raised an exception), so just fall back to previous behavior for now,
+    // until we can figure out a better way to handle this scenario...
+    if IsPeer then begin
+      LMode := sslmServer;
+    end else begin
+      LMode := sslmClient;
+    end;
+  end;
+  if LMode = sslmClient then begin
+    LHost := GetURIHost;
+    if LHost = '' then
+    begin
+      LHost := GetProxyTargetHost;
+      if LHost = '' then begin
+        LHost := Self.Host;
+      end;
+    end;
+    fSSLSocket.fHostName := LHost;
     fSSLSocket.Connect(Binding.Handle);
+  end else begin
+    fSSLSocket.fHostName := '';
+    fSSLSocket.Accept(Binding.Handle);
   end;
   fPassThrough := False;
 end;
@@ -2626,6 +3036,8 @@ begin
   end;
 end;
 
+
+// TODO: add an AOwner parameter
 function TIdSSLIOHandlerSocketOpenSSL.Clone: TIdSSLIOHandlerSocketBase;
 var
   LIO : TIdSSLIOHandlerSocketOpenSSL;
@@ -2672,6 +3084,39 @@ begin
   end else begin
     EIdOpenSSLAPISSLError.RaiseException(fSSLSocket.fSSL, AError, '');
   end;
+end;
+
+{ IIdSSLOpenSSLCallbackHelper }
+
+function TIdSSLIOHandlerSocketOpenSSL.GetPassword(const AIsWrite : Boolean): string;
+begin
+  DoGetPasswordEx(Result, AIsWrite);
+  if Result = '' then begin
+    DoGetPassword(Result);
+  end;
+end;
+
+procedure TIdSSLIOHandlerSocketOpenSSL.StatusInfo(const ASslSocket: PSSL;
+  AWhere, ARet: TIdC_INT; const AStatusStr: string);
+var
+  LType, LMsg: string;
+begin
+  DoStatusInfo(AStatusStr);
+  if Assigned(fOnStatusInfoEx) then begin
+    GetStateVars(ASslSocket, AWhere, ARet, LType, LMsg);
+    DoStatusInfoEx(ASslSocket, AWhere, ARet, LType, LMsg);
+  end;
+end;
+
+function TIdSSLIOHandlerSocketOpenSSL.VerifyPeer(ACertificate: TIdX509;
+  AOk: Boolean; ADepth, AError: Integer): Boolean;
+begin
+  Result := DoVerifyPeer(ACertificate, AOk, ADepth, AError);
+end;
+
+function TIdSSLIOHandlerSocketOpenSSL.GetIOHandlerSelf: TIdSSLIOHandlerSocketOpenSSL;
+begin
+  Result := Self;
 end;
 
 { TIdSSLContext }
@@ -2726,32 +3171,61 @@ begin
   // create new SSL context
   fContext := SSL_CTX_new(SSLMethod);
   if fContext = nil then begin
-    raise EIdOSSLCreatingContextError.Create(RSSSLCreatingContextError);
+    EIdOSSLCreatingContextError.RaiseException(RSSSLCreatingContextError);
   end;
   //set SSL Versions we will use
-  if not (sslvSSLv2 in SSLVersions) then begin
-    SSL_CTX_set_options(fContext, SSL_OP_NO_SSLv2);
+
+  // in OpenSSL 1.0.2g onwards, SSLv2 is disabled and not exported by default
+  // at compile-time. If OpenSSL is compiled with "enable-ssl2" enabled so the
+  // SSLv2_xxx_method() functions are exported, SSLv2 is still disabled by
+  // default in the SSLv23_xxx_method() functions and must be enabled explicitly...
+  if IsOpenSSL_SSLv2_Available then begin
+    if not (sslvSSLv2 in SSLVersions) then begin
+      SSL_CTX_set_options(fContext, SSL_OP_NO_SSLv2);
+    end
+    else if (fMethod = sslvSSLv23) then begin
+      SSL_CTX_clear_options(fContext, SSL_OP_NO_SSLv2);
+    end;
   end;
-  if not (sslvSSLv3 in SSLVersions) then begin
-    SSL_CTX_set_options(fContext, SSL_OP_NO_SSLv3);
+  // SSLv3 might also be disabled as well..
+  if IsOpenSSL_SSLv3_Available then begin
+    if not (sslvSSLv3 in SSLVersions) then begin
+      SSL_CTX_set_options(fContext, SSL_OP_NO_SSLv3);
+    end
+    else if (fMethod = sslvSSLv23) then begin
+      SSL_CTX_clear_options(fContext, SSL_OP_NO_SSLv3);
+    end;
   end;
-  if not (sslvTLSv1 in SSLVersions) then begin
-    SSL_CTX_set_options(fContext, SSL_OP_NO_TLSv1);
+  // may as well do the same for all of them...
+  if IsOpenSSL_TLSv1_0_Available then begin
+    if not (sslvTLSv1 in SSLVersions) then begin
+      SSL_CTX_set_options(fContext, SSL_OP_NO_TLSv1);
+    end
+    else if (fMethod = sslvSSLv23) then begin
+      SSL_CTX_clear_options(fContext, SSL_OP_NO_TLSv1);
+    end;
   end;
 {IMPORTANT!!!  Do not set SSL_CTX_set_options SSL_OP_NO_TLSv1_1 and
 SSL_OP_NO_TLSv1_2 if that functionality is not available.  OpenSSL 1.0 and
 earlier do not support those flags.  Those flags would only cause
 an invalid MAC when doing SSL.}
-  if IsTLSv1_1Available then begin
-    if not ( sslvTLSv1_1 in SSLVersions) then begin
+  if IsOpenSSL_TLSv1_1_Available then begin
+    if not (sslvTLSv1_1 in SSLVersions) then begin
       SSL_CTX_set_options(fContext, SSL_OP_NO_TLSv1_1);
+    end
+    else if (fMethod = sslvSSLv23) then begin
+      SSL_CTX_clear_options(fContext, SSL_OP_NO_TLSv1_1);
     end;
   end;
-  if IsTLSv1_2Available then begin
-    if not ( sslvTLSv1_2 in SSLVersions) then begin
+  if IsOpenSSL_TLSv1_2_Available then begin
+    if not (sslvTLSv1_2 in SSLVersions) then begin
       SSL_CTX_set_options(fContext, SSL_OP_NO_TLSv1_2);
+    end
+    else if (fMethod = sslvSSLv23) then begin
+      SSL_CTX_clear_options(fContext, SSL_OP_NO_TLSv1_2);
     end;
   end;
+
   SSL_CTX_set_mode(fContext, SSL_MODE_AUTO_RETRY);
   // assign a password lookup routine
 //  if PasswordRoutineOn then begin
@@ -2808,6 +3282,7 @@ an invalid MAC when doing SSL.}
     );
   end;
   if error <= 0 then begin
+    // TODO: should this be using EIdOSSLSettingCipherError.RaiseException() instead?
     raise EIdOSSLSettingCipherError.Create(RSSSLSettingCipherError);
   end;
   if fVerifyMode <> [] then begin
@@ -2859,93 +3334,173 @@ end;
 function SelectTLS1Method(const AMode : TIdSSLMode) : PSSL_METHOD;
 {$IFDEF USE_INLINE} inline; {$ENDIF}
 begin
+  Result := nil;
   case AMode of
-    sslmServer : Result := TLSv1_server_method;
-    sslmClient : Result := TLSv1_client_method;
+    sslmServer : begin
+      if Assigned(TLSv1_server_method) then begin
+        Result := TLSv1_server_method();
+      end;
+    end;
+    sslmClient : begin
+      if Assigned(TLSv1_client_method) then begin
+        Result := TLSv1_client_method();
+      end;
+    end;
   else
-    Result := TLSv1_method;
+    if Assigned(TLSv1_method) then begin
+      Result := TLSv1_method();
+    end;
   end;
 end;
 
 function TIdSSLContext.SetSSLMethod: PSSL_METHOD;
 begin
+  Result := nil;
   if fMode = sslmUnassigned then begin
-    raise EIdOSSLModeNotSet.create(RSOSSLModeNotSet);
+    raise EIdOSSLModeNotSet.Create(RSOSSLModeNotSet);
   end;
   case fMethod of
     sslvSSLv2:
       case fMode of
-        sslmServer : Result := SSLv2_server_method;
-        sslmClient : Result := SSLv2_client_method;
+        sslmServer : begin
+          if Assigned(SSLv2_server_method) then begin
+            Result := SSLv2_server_method();
+          end;
+        end;
+        sslmClient : begin
+          if Assigned(SSLv2_client_method) then begin
+            Result := SSLv2_client_method();
+          end;
+        end;
       else
-        Result := SSLv2_method;
+        if Assigned(SSLv2_method) then begin
+          Result := SSLv2_method();
+        end;
       end;
     sslvSSLv23:
-        case fMode of
-          sslmServer : Result := SSLv23_server_method;
-          sslmClient : Result := SSLv23_client_method;
-        else
-          Result := SSLv23_method;
+      case fMode of
+        sslmServer : begin
+          if Assigned(SSLv23_server_method) then begin
+            Result := SSLv23_server_method();
+          end;
         end;
+        sslmClient : begin
+          if Assigned(SSLv23_client_method) then begin
+            Result := SSLv23_client_method();
+          end;
+        end;
+      else
+        if Assigned(SSLv23_method) then begin
+          Result := SSLv23_method();
+        end;
+      end;
     sslvSSLv3:
       case fMode of
-        sslmServer : Result := SSLv3_server_method;
-        sslmClient : Result := SSLv3_client_method;
+        sslmServer : begin
+          if Assigned(SSLv3_server_method) then begin
+            Result := SSLv3_server_method();
+          end;
+        end;
+        sslmClient : begin
+          if Assigned(SSLv3_client_method) then begin
+            Result := SSLv3_client_method();
+          end;
+        end;
       else
-        Result := SSLv3_method;
+        if Assigned(SSLv3_method) then begin
+          Result := SSLv3_method();
+        end;
       end;
-{IMPORTANT!!!  fallback to TLS 1.0 if TLS 1.1 or 1.2 is not available.
-This is important because OpenSSL earlier than 1.0.1 does not support this
-functionality.
+      {IMPORTANT!!!  fallback to TLS 1.0 if TLS 1.1 or 1.2 is not available.
+      This is important because OpenSSL earlier than 1.0.1 does not support this
+      functionality.
 
-Todo:  Figure out a better fallback.
-}
+      Todo:  Figure out a better fallback.
+      }
     sslvTLSv1:
-      Result :=  SelectTLS1Method(fMode);
-    sslvTLSv1_1 :
-      if IsTLSv1_1Available then begin
-        case fMode of
-          sslmServer : Result := TLSv1_1_server_method;
-          sslmClient : Result := TLSv1_1_client_method;
-        else
-          Result := TLSv1_1_method;
+      Result := SelectTLS1Method(fMode);
+    sslvTLSv1_1:
+      case fMode of
+        sslmServer : begin
+          if Assigned(TLSv1_1_server_method) then begin
+            Result := TLSv1_1_server_method();
+          end else begin
+            Result := SelectTLS1Method(fMode);
+          end;
         end;
-      end else begin
-        Result :=  SelectTLS1Method(fMode);
+        sslmClient : begin
+          if Assigned(TLSv1_1_client_method) then begin
+            Result := TLSv1_1_client_method();
+          end else begin
+            Result := SelectTLS1Method(fMode);
+          end;
+        end;
+      else
+        if Assigned(TLSv1_1_method) then begin
+          Result := TLSv1_1_method();
+        end else begin
+          Result := SelectTLS1Method(fMode);
+        end;
       end;
-    sslvTLSv1_2 :
-      if IsTLSv1_2Available then begin
-
-        case fMode of
-          sslmServer : Result := TLSv1_2_server_method;
-          sslmClient : Result := TLSv1_2_client_method;
-        else
-          Result := TLSv1_2_method;
+    sslvTLSv1_2:
+      case fMode of
+        sslmServer : begin
+          if Assigned(TLSv1_2_server_method) then begin
+            Result := TLSv1_2_server_method();
+          end else begin
+            // TODO: fallback to TLSv1.1 if available?
+            Result := SelectTLS1Method(fMode);
+          end;
         end;
-      end else begin
-        Result :=  SelectTLS1Method(fMode);
-      end
-  else
+        sslmClient : begin
+          if Assigned(TLSv1_2_client_method) then begin
+            Result := TLSv1_2_client_method();
+          end else begin
+            // TODO: fallback to TLSv1.1 if available?
+            Result := SelectTLS1Method(fMode);
+          end;
+        end;
+      else
+        if Assigned(TLSv1_2_method) then begin
+          Result := TLSv1_2_method();
+        end else begin
+          // TODO: fallback to TLSv1.1 if available?
+          Result := SelectTLS1Method(fMode);
+        end;
+      end;
+  end;
+  if Result = nil then begin
     raise EIdOSSLGetMethodError.Create(RSSSLGetMethodError);
   end;
 end;
 
 function TIdSSLContext.LoadRootCert: Boolean;
 begin
-    Result := IndySSL_CTX_load_verify_locations(
-                   fContext,
-                   RootCertFile,
-                   VerifyDirs) > 0;
+  Result := IndySSL_CTX_load_verify_locations(fContext, RootCertFile, VerifyDirs) > 0;
 end;
 
 function TIdSSLContext.LoadCert: Boolean;
 begin
-  Result := IndySSL_CTX_use_certificate_file(fContext, CertFile, SSL_FILETYPE_PEM) > 0;
+  if PosInStrArray(ExtractFileExt(CertFile), ['.p12', '.pfx'], False) <> -1 then begin
+    Result := IndySSL_CTX_use_certificate_file_PKCS12(fContext, CertFile) > 0;
+  end else begin
+    //OpenSSL 1.0.2 has a new function, SSL_CTX_use_certificate_chain_file
+    //that handles a chain of certificates in a PEM file.  That is prefered.
+    if Assigned(SSL_CTX_use_certificate_chain_file) then begin
+       Result := IndySSL_CTX_use_certificate_chain_file(fContext, CertFile) > 0;
+    end else begin
+      Result := IndySSL_CTX_use_certificate_file(fContext, CertFile, SSL_FILETYPE_PEM) > 0;
+    end;
+  end;
 end;
 
 function TIdSSLContext.LoadKey: Boolean;
 begin
-  Result := IndySSL_CTX_use_PrivateKey_file(fContext, fsKeyFile, SSL_FILETYPE_PEM) > 0;
+  if PosInStrArray(ExtractFileExt(KeyFile), ['.p12', '.pfx'], False) <> -1 then begin
+    Result := IndySSL_CTX_use_PrivateKey_file_PKCS12(fContext, KeyFile) > 0;
+  end else begin
+    Result := IndySSL_CTX_use_PrivateKey_file(fContext, KeyFile, SSL_FILETYPE_PEM) > 0;
+  end;
   if Result then begin
     Result := SSL_CTX_check_private_key(fContext) > 0;
   end;
@@ -2985,6 +3540,8 @@ end;
 destructor TIdSSLSocket.Destroy;
 begin
   if fSSL <> nil then begin
+    // TODO: should this be moved to TIdSSLContext instead?  Is this here
+    // just to make sure the SSL shutdown does not log any messages?
     if (fSSLContext <> nil) and (fSSLContext.StatusInfoOn) and
        (fSSLContext.fContext <> nil) then begin
       SSL_CTX_set_info_callback(fSSLContext.fContext, nil);
@@ -3062,14 +3619,10 @@ var
   error: Integer;
   StatusStr: String;
   LParentIO: TIdSSLIOHandlerSocketOpenSSL;
+  LHelper: IIdSSLOpenSSLCallbackHelper;
 begin
   Assert(fSSL=nil);
   Assert(fSSLContext<>nil);
-  if fParent is TIdSSLIOHandlerSocketOpenSSL then begin
-    LParentIO := fParent as TIdSSLIOHandlerSocketOpenSSL;
-  end else begin
-    LParentIO := nil;
-  end;
   fSSL := SSL_new(fSSLContext.fContext);
   if fSSL = nil then begin
     raise EIdOSSLCreatingSessionError.Create(RSSSLCreatingSessionError);
@@ -3089,12 +3642,16 @@ begin
   if error <= 0 then begin
     EIdOSSLAcceptError.RaiseException(fSSL, error, RSSSLAcceptError);
   end;
-  StatusStr := 'Cipher: name = ' + Cipher.Name + '; ' +    {Do not Localize}
-               'description = ' + Cipher.Description + '; ' +    {Do not Localize}
-               'bits = ' + IntToStr(Cipher.Bits) + '; ' +    {Do not Localize}
-               'version = ' + Cipher.Version + '; ';    {Do not Localize}
-  if LParentIO <> nil then begin
-    LParentIO.DoStatusInfo(StatusStr);
+  if Supports(fParent, IIdSSLOpenSSLCallbackHelper, IInterface(LHelper)) then begin
+    LParentIO := LHelper.GetIOHandlerSelf;
+    if LParentIO <> nil then begin
+      StatusStr := 'Cipher: name = ' + Cipher.Name + '; ' +    {Do not Localize}
+                   'description = ' + Cipher.Description + '; ' +    {Do not Localize}
+                   'bits = ' + IntToStr(Cipher.Bits) + '; ' +    {Do not Localize}
+                   'version = ' + Cipher.Version + '; ';    {Do not Localize}
+      LParentIO.DoStatusInfo(StatusStr);
+    end;
+    LHelper := nil;
   end;
 end;
 
@@ -3103,11 +3660,12 @@ var
   error: Integer;
   StatusStr: String;
   LParentIO: TIdSSLIOHandlerSocketOpenSSL;
+  LHelper: IIdSSLOpenSSLCallbackHelper;
 begin
   Assert(fSSL=nil);
   Assert(fSSLContext<>nil);
-  if fParent is TIdSSLIOHandlerSocketOpenSSL then begin
-    LParentIO := fParent as TIdSSLIOHandlerSocketOpenSSL;
+  if Supports(fParent, IIdSSLOpenSSLCallbackHelper, IInterface(LHelper)) then begin
+    LParentIO := LHelper.GetIOHandlerSelf;
   end else begin
     LParentIO := nil;
   end;
@@ -3130,8 +3688,21 @@ begin
   begin
     SSL_copy_session_id(fSSL, LParentIO.fSSLSocket.fSSL);
   end;
+  {$IFNDEF OPENSSL_NO_TLSEXT}
+  error := SSL_set_tlsext_host_name(fSSL, fHostName);
+  if error <= 0 then begin
+    // RLebeau: for the time being, not raising an exception on error, as I don't
+    // know which OpenSSL versions support this extension, and which error code(s)
+    // are safe to ignore on those versions...
+    //EIdOSSLSettingTLSHostNameError.RaiseException(fSSL, error, RSSSLSettingTLSHostNameError);
+  end;
+  {$ENDIF}
   error := SSL_connect(fSSL);
   if error <= 0 then begin
+    // TODO: if sslv23 is being used, but sslv23 is not being used on the
+    // remote side, SSL_connect() will fail. In that case, before giving up,
+    // try re-connecting using a version-specific method for each enabled
+    // version, maybe one will succeed...
     EIdOSSLConnectError.RaiseException(fSSL, error, RSSSLConnectError);
   end;
   // TODO: even if SSL_connect() returns success, the connection might
@@ -3140,13 +3711,30 @@ begin
   // It would report such a failure via SSL_get_verify_result() instead of
   // returning an error code, so we should call SSL_get_verify_result() here
   // to make sure...
-  StatusStr := 'Cipher: name = ' + Cipher.Name + '; ' +    {Do not Localize}
-               'description = ' + Cipher.Description + '; ' +    {Do not Localize}
-               'bits = ' + IntToStr(Cipher.Bits) + '; ' +    {Do not Localize}
-               'version = ' + Cipher.Version + '; ';    {Do not Localize}
   if LParentIO <> nil then begin
+    StatusStr := 'Cipher: name = ' + Cipher.Name + '; ' +    {Do not Localize}
+                 'description = ' + Cipher.Description + '; ' +    {Do not Localize}
+                 'bits = ' + IntToStr(Cipher.Bits) + '; ' +    {Do not Localize}
+                 'version = ' + Cipher.Version + '; ';    {Do not Localize}
     LParentIO.DoStatusInfo(StatusStr);
   end;
+  // TODO: enable this
+  {
+  var
+    peercert: PX509;
+    lHostName: AnsiString;
+  peercert := SSL_get_peer_certificate(fSSL);
+  try
+    lHostName := AnsiString(fHostName);
+    if (X509_check_host(peercert, PByte(PAnsiChar(lHostName)), Length(lHostName), 0) != 1) and
+       (not certificate_host_name_override(peercert, PAnsiChar(lHostName)) then
+    begin
+      EIdOSSLCertificateError.RaiseException(fSSL, error, 'SSL certificate does not match host name');
+    end;
+  finally
+    X509_free(peercert);
+  end;
+}
 end;
 
 function TIdSSLSocket.Recv(var ABuffer: TIdBytes): Integer;
@@ -3590,14 +4178,16 @@ initialization
   Assert(SSLIsLoaded=nil);
   SSLIsLoaded := TIdThreadSafeBoolean.Create;
   RegisterSSL('OpenSSL','Indy Pit Crew',                                  {do not localize}
-    'Copyright '+Char(169)+' 1993 - 2012'#10#13 +                                     {do not localize}
+    'Copyright '+Char(169)+' 1993 - 2014'#10#13 +                                     {do not localize}
     'Chad Z. Hower (Kudzu) and the Indy Pit Crew. All rights reserved.',  {do not localize}
     'Open SSL Support DLL Delphi and C++Builder interface',               {do not localize}
     'http://www.indyproject.org/'#10#13 +                                 {do not localize}
     'Original Author - Gregor Ibic',                                        {do not localize}
     TIdSSLIOHandlerSocketOpenSSL,
     TIdServerIOHandlerSSLOpenSSL);
+  TIdSSLIOHandlerSocketOpenSSL.RegisterIOHandler;
 finalization
+  // TODO: TIdSSLIOHandlerSocketOpenSSL.UnregisterIOHandler;
   UnLoadOpenSSLLibrary;
   //free the lock last as unload makes calls that use it
   FreeAndNil(SSLIsLoaded);

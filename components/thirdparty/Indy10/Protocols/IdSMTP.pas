@@ -322,6 +322,19 @@ begin
       end;
     satDefault:
       begin
+        {
+        RLebeau: TODO - implement the following code in the future instead
+        of the code below.  This way, TIdSASLLogin can be utilized here.
+
+        SASLMechanisms.LoginSASL('AUTH', FHost, IdGSKSSN_smtp, 'LOGIN', ['235'], ['334'], Self, Capabilities);
+        FDidAuthenticate := True;
+
+        Or better, if the SASLMechanisms is empty, put some default entries
+        in it, including TIdSASLLogin, and then reset the AuthType to satSASL.
+        Maybe even do that in SetAuthType/Loaded() instead.  That way, everything
+        goes through SASLMechanisms only...
+        }
+
         if Username <> '' then begin
           if FValidateAuthLoginCapability then begin
             s := TStringList.Create;
@@ -347,13 +360,6 @@ begin
           end;
           FDidAuthenticate := True;
         end;
-{
-        RLebeau: TODO - implement the following code in the future
-        instead of the code above.  This way, TIdSASLLogin can be utilized.
-
-        SASLMechanisms.LoginSASL('AUTH', 'LOGIN', ['235'], ['334'], Self, Capabilities);
-        FDidAuthenticate := True;
-}
       end;
     satSASL:
       begin
@@ -394,7 +400,7 @@ end;
 
 procedure TIdSMTP.Expand(AUserName: String; AResults: TStrings);
 begin
-  SendCMD('EXPN ' + AUserName, [250, 251]);    {Do not Localize}
+  SendCmd('EXPN ' + AUserName, [250, 251]);    {Do not Localize}
 end;
 
 procedure InternalQuickSend(const AHost, ASubject, ATo, AFrom, AText,
@@ -431,13 +437,17 @@ begin
   end;
 end;
 
+{$I IdDeprecatedImplBugOff.inc}
 class procedure TIdSMTP.QuickSend(const AHost, ASubject, ATo, AFrom, AText: String);
+{$I IdDeprecatedImplBugOn.inc}
 begin
   InternalQuickSend(AHost, ASubject, ATo, AFrom, AText, '', '', '');
 end;
 
+{$I IdDeprecatedImplBugOff.inc}
 class procedure TIdSMTP.QuickSend(const AHost, ASubject, ATo, AFrom, AText,
   AContentType, ACharset, AContentTransferEncoding: String);
+{$I IdDeprecatedImplBugOn.inc}
 begin
   InternalQuickSend(AHost, ASubject, ATo, AFrom, AText, AContentType, ACharset, AContentTransferEncoding);
 end;
@@ -476,7 +486,7 @@ End;
 
 function TIdSMTP.Verify(AUserName: string): string;
 begin
-  SendCMD('VRFY ' + AUserName, [250, 251]);    {Do not Localize}
+  SendCmd('VRFY ' + AUserName, [250, 251]);    {Do not Localize}
   Result := LastCmdResult.Text[0];
 end;
 

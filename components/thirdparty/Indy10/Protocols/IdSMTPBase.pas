@@ -90,6 +90,7 @@ interface
 {$i IdCompilerDefines.inc}
 
 uses
+  IdGlobal,
   IdEMailAddress,
   IdMessage,
   IdMessageClient,
@@ -108,11 +109,11 @@ const
   XMAILER_HEADER = 'X-Mailer';  {do not localize}
 
 const
-  RCPTTO_ACCEPT : array [0..1] of SmallInt = (250, 251);
-  MAILFROM_ACCEPT : SmallInt = 250;
-  DATA_ACCEPT : SmallInt = 354;
-  DATA_PERIOD_ACCEPT : SmallInt = 250;
-  RSET_ACCEPT : SmallInt = 250;
+  RCPTTO_ACCEPT : array [0..1] of Int16 = (250, 251);
+  MAILFROM_ACCEPT : Int16 = 250;
+  DATA_ACCEPT : Int16 = 354;
+  DATA_PERIOD_ACCEPT : Int16 = 250;
+  RSET_ACCEPT : Int16 = 250;
 
 const
   RSET_CMD = 'RSET';            {do not localize}
@@ -175,7 +176,7 @@ uses
   {$IFDEF VCL_XE3_OR_ABOVE}
   System.Classes,
   {$ENDIF}
-  IdAssignedNumbers, IdException, IdGlobal,
+  IdAssignedNumbers, IdException,
   IdExplicitTLSClientServerBase,
   IdGlobalProtocols, IdIOHandler, IdReplySMTP,
   IdSSL,
@@ -191,8 +192,9 @@ end;
 procedure TIdSMTPBase.InitComponent;
 begin
   inherited InitComponent;
-  FImplicitTLSProtPort := IdPORT_ssmtp;
   FRegularProtPort := IdPORT_SMTP;
+  FImplicitTLSProtPort := IdPORT_ssmtp;
+  FExplicitTLSProtPort := 587; // TODO: define a constant for this!
   FPipeLine := DEF_SMTP_PIPELINE;
   FUseEhlo := IdDEF_UseEhlo;
   FUseVerp := IdDEF_UseVerp;
@@ -345,9 +347,8 @@ begin
       end;
       raise;
     end;
-
-    //RSET
     {
+    //RSET
     if PosInSmallIntArray(GetResponse, RSET_ACCEPT) = -1 then begin
       LError := SetupErrorReply;
     end;
@@ -400,7 +401,9 @@ end;
 procedure TIdSMTPBase.StartTLS;
 var
   LIO : TIdSSLIOHandlerSocketBase;
+  LSendQuitOnError: Boolean;
 begin
+  LSendQuitOnError := True;
   try
     if (IOHandler is TIdSSLIOHandlerSocketBase) and (FUseTLS <> utNoTLSSupport) then
     begin
@@ -412,6 +415,7 @@ begin
         if SupportsTLS then
         begin
           if SendCmd('STARTTLS') = 220 then begin {do not localize}
+            LSendQuitOnError := False;
             TLSHandshake;
             //send EHLO
             SendGreeting;
@@ -424,7 +428,7 @@ begin
       end;
     end;
   except
-    Disconnect;
+    Disconnect(LSendQuitOnError); // RLebeau: do not send the QUIT command if the handshake was started
     Raise;
   end;
 end;
@@ -439,7 +443,7 @@ end;
 
 function TIdSMTPBase.WriteRecipientNoPipelining(const AEmailAddress: TIdEmailAddressItem): Boolean;
 var
-  LReply: SmallInt;
+  LReply: Int16;
 begin
   LReply := SendCmd(RCPTTO_CMD + '<' + AEMailAddress.Address + '>'); {do not localize}
   Result := PosInSmallIntArray(LReply, RCPTTO_ACCEPT) <> -1;

@@ -275,24 +275,26 @@ end;
 
 procedure TIdSocketHandle.CloseSocket;
 begin
-  if HandleAllocated then begin
-    FConnectionHandle.Enter; try
+  FConnectionHandle.Enter;
+  try
+    if HandleAllocated then begin
       // Must be first, closing socket will trigger some errors, and they
       // may then call (in other threads) Connected, which in turn looks at
       // FHandleAllocated.
       FHandleAllocated := False;
       Disconnect;
       SetHandle(Id_INVALID_SOCKET);
-    finally
-      FConnectionHandle.Leave;
     end;
+  finally
+    FConnectionHandle.Leave;
   end;
 end;
 
 procedure TIdSocketHandle.Connect;
 begin
   GStack.Connect(Handle, PeerIP, PeerPort, FIPVersion);
-  FConnectionHandle.Enter; try
+  FConnectionHandle.Enter;
+  try
     if HandleAllocated then begin
       // UpdateBindingLocal needs to be called even though Bind calls it. After
       // Bind is may be 0.0.0.0 (INADDR_ANY). After connect it will be a real IP.
@@ -367,14 +369,42 @@ begin
 end;
 
 procedure TIdSocketHandle.Bind;
+var
+  LValue: Integer;
 begin
-  SetSockOpt(Id_SOL_SOCKET, Id_SO_REUSEADDR,
-    iif(
-      (FReuseSocket = rsTrue) or ((FReuseSocket = rsOSDependent) and (GOSType = otUnix)),
-      Id_SO_True,
-      Id_SO_False
-    )
+  LValue := iif(
+    (FReuseSocket = rsTrue) or ((FReuseSocket = rsOSDependent) and (GOSType = otUnix)),
+    Id_SO_True,
+    Id_SO_False
   );
+  SetSockOpt(Id_SOL_SOCKET, Id_SO_REUSEADDR, LValue);
+
+  {$IFDEF DCC}
+    {$IFDEF LINUX64}
+  // RLebeau 1/18/2016: Embarcadero's PAServer on Linux64 fails quickly with
+  // "socket in use" errors without this option enabled.  PAServer bug?  For
+  // now, noone else has complained about problems related to this option,
+  // so let's limit this fix to just Delphi for now. Should we add a
+  // HAS_SO_REUSEPORT define so FPC can use this too?  What about adding a
+  // new ReusePort property to configure this separately from ReuseSocket?
+
+  // RLebeau 3/7/2017: Windows 10 has a Developer Mode that includes a Linux
+  // Bash shell for running Linux executables directly in Windows. However,
+  // PAServer fails to open a listening socket in this Shell with an
+  // "Error #22 invalid argument" error.  Since SO_REUSEPORT does not exist
+  // on Windows, could that be why?  Let's just ignore any socket errors here
+  // for now...
+
+  try
+    SetSockOpt(Id_SOL_SOCKET, Id_SO_REUSEPORT, LValue);
+  except
+    on E: EIdSocketError do begin
+      //if E.LastError <> EINVAL then raise;
+    end;
+  end;
+    {$ENDIF}
+  {$ENDIF}
+
   if (Port = 0) and (FClientPortMin <> 0) and (FClientPortMax <> 0) then begin
     if (FClientPortMin > FClientPortMax) then begin
       raise EIdInvalidPortRange.CreateFmt(RSInvalidPortRange, [FClientPortMin, FClientPortMax]);
@@ -401,16 +431,24 @@ var
 begin
   LIP := Trim(AIP);
   if LIP = '' then begin
-    // TODO: on Windows, use WSAIoctl(SIO_GET_BROADCAST_ADDRESS) instead.
-    // On other platforms, use getifaddrs() or other suitable API to retreive
-    // the broadcast IP if possible, or else the local IP/Subnet and then
-    // calculate the broadcast IP manually...
-    LIP := '255.255.255.255'; {Do not Localize}
+    if IPVersion = Id_IPv4 then begin
+      // TODO: on Windows, use WSAIoctl(SIO_GET_BROADCAST_ADDRESS) instead.
+      // On other platforms, use getifaddrs() or other suitable API to retreive
+      // the broadcast IP if possible, or else the local IP/Subnet and then
+      // calculate the broadcast IP manually...
+      LIP := '255.255.255.255'; {Do not Localize}
+    end else begin
+      // IPv6 does not support broadcasts, multicast must be used instead...
+
+      // TODO: make TIdStack.IPVersionUnsupported() public
+      //GStack.IPVersionUnsupported;
+      raise EIdIPVersionUnsupported.Create(RSIPVersionUnsupported);
+    end;
   end else begin
     LIP := GStack.ResolveHost(LIP, IPVersion);
   end;
   SetBroadcastFlag(True);
-  SendTo(LIP, APort, AData);
+  SendTo(LIP, APort, AData, IPVersion);
   BroadcastEnabledChanged;
 end;
 
@@ -445,7 +483,7 @@ end;
 
 procedure TIdSocketHandle.SetBroadcastFlag(const AEnabled: Boolean);
 begin
-  GStack.SetSocketOption(Handle, Id_SOL_SOCKET, Id_SO_BROADCAST, iif(AEnabled, 1, 0));
+  SetSockOpt(Id_SOL_SOCKET, Id_SO_BROADCAST, iif(AEnabled, 1, 0));
 end;
 
 procedure TIdSocketHandle.SetOverLapped(const AValue:boolean);
@@ -497,7 +535,7 @@ function TIdSocketHandle.Readable(AMSec: Integer = IdTimeoutDefault): Boolean;
   function CheckIsReadable(ALMSec: Integer): Boolean;
   begin
     if not HandleAllocated then begin
-      EIdConnClosedGracefully.Toss(RSConnectionClosedGracefully);
+      raise EIdConnClosedGracefully.Create(RSConnectionClosedGracefully);
     end;
     Result := Select(ALMSec);
   end;

@@ -59,7 +59,12 @@ type
 
   // RLebeau 2/14/09: this forces C++Builder to link to this unit so
   // RegisterFTPListParser can be called correctly at program startup...
-  {$HPPEMIT LINKUNIT}
+
+  {$IFDEF HAS_DIRECTIVE_HPPEMIT_LINKUNIT}
+    {$HPPEMIT LINKUNIT}
+  {$ELSE}
+    {$HPPEMIT '#pragma link "IdFTPListParseBullGCOS7"'}
+  {$ENDIF}
 
 implementation
 
@@ -140,7 +145,7 @@ begin
     LI.ItemType := ditFile;
   end;
   LI.FileName := Copy(AItem.Data, 55, MaxInt);
-  LBuf := StringReplace(Copy(AItem.Data, 42, 12), ',', '', [rfReplaceAll]);
+  LBuf := ReplaceAll(Copy(AItem.Data, 42, 12), ',', '');
   if not IsWhiteString(LBuf) then begin
     LI.ModifiedDate := DateStrMonthDDYY(LBuf, ' ');
   end;

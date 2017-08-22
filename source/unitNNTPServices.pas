@@ -30,7 +30,7 @@ unit unitNNTPServices;
 interface
 
 uses
-  Windows, Classes, SysUtils, Forms, Dialogs, Controls, Contnrs, StrUtils, idGlobal,
+  Windows, Classes, SysUtils, Forms, Dialogs, Contnrs, StrUtils, idGlobal,
   unitMessages, unitMessageMime, unitNNTPFilters, NewsGlobals, unitObjectCache,
   unitIdentities, unitSearchString, unitSettings, unitBatches, unitExSettings,
   unitStreamTextReader, Shfolder, ShellAPI, SyncObjs, XnClasses, XnRawByteStrings;
@@ -149,7 +149,7 @@ type
     fTo: string;
     fMessageOffset: Int64;        // Offset of message body in messages.dat
     fMultipartFlags: TMultipartFlags;
-    fFlags: DWORD;                // See fgXXXX constants above
+    fFlags: UInt32;                // See fgXXXX constants above
     fArticleNo: Int64;          // 0 = Dummy article
     fNewestMessage: TDateTime;
 
@@ -166,7 +166,7 @@ type
     procedure SetCodePage(const Value: Integer); virtual;
     function PeekAtMsgHdr(const hdr: string): string; virtual;
     function PeekAtMsgHdrFromFile(const hdr: RawByteString): RawByteString;
-    procedure SetFlag(flag: DWORD; value: Boolean);
+    procedure SetFlag(flag: UInt32; value: Boolean);
     function GetNext: TArticleBase; virtual;
     function GetMsgFromFile: TmvMessage;
     function GetCodePageFromFile: Integer;
@@ -201,7 +201,7 @@ type
     property FromName: string read GetFromName;
     property FromEmail: string read GetFromEmail;
     property CodePage: Integer read GetCodePage write SetCodePage;
-    property Flags: DWORD read fFlags;
+    property Flags: UInt32 read fFlags;
     property MultipartFlags: TMultipartFlags read fMultipartFlags;
     property HasAttachment: Boolean read GetHasAttachment;
 
@@ -251,7 +251,7 @@ type
     function GetHasKeyPhrase(idx: Integer): Boolean;
     function GetAccount: TNNTPAccount;
     function GetSubscribedGroup: TSubscribedGroup;
-    procedure SetCrossPostsFlag(flag: DWORD; value: Boolean);
+    procedure SetCrossPostsFlag(flag: UInt32; value: Boolean);
     function GetHasAnyKeyPhrase: Boolean;
     function MatchesKeyPhrase(st: string; searcher: TStringSearcher): Boolean;
   protected
@@ -555,7 +555,7 @@ type
     procedure SaveArticles(recreateMessageFile: Boolean); override;
     procedure LeaveGroup(clearMessages: Boolean = True); override;          // Save articles, and release memory
     function MarkOnLeave: Boolean; override;
-    function CreateGroupRegistry(access: DWORD): TExSettings;
+    function CreateGroupRegistry(access: UInt32): TExSettings;
     procedure CloseMessageFile; override;
     procedure OpenMessageFile; override;
     function TSGetLastArticle: Int64;
@@ -635,7 +635,7 @@ type
     procedure UnsubscribeTo(const groupName: string; save: Boolean = True);
     function FindSubscribedGroup(const groupName: string): TSubscribedGroup;
     procedure CopySettingsFrom(account: TNNTPAccount);
-    function CreateAccountRegistry(access: DWORD): TExSettings;
+    function CreateAccountRegistry(access: UInt32): TExSettings;
 
     property AccountName: string read fAccountName write SetAccountName;
     property NoXNews: Boolean read fNoXNews write fNoXNews;
@@ -892,10 +892,16 @@ uses
   unitSavedArticles, unitMailServices, unitNewUserWizard, unitLog,
   unitCheckVersion, unitNNTPThreadManager, DateUtils, IdGlobalProtocols;
 
+const
+  // no need to pull in the Windows unit
+  KEY_WRITE = $20006;
+  KEY_READ  = $20019;
+  MAX_PATH = 260;
+
 
 function ForceRenameFile(const Source, Dest: string): Boolean;
 begin
-  Result := MoveFileEx(PChar(Source), PChar(Dest), MOVEFILE_REPLACE_EXISTING or MOVEFILE_COPY_ALLOWED);
+  Result := False;
   if not Result then
   begin
     Sleep(100);
@@ -1980,7 +1986,7 @@ procedure TNNTPAccounts.PerfCue(freq: Integer; const st: string);
 begin
   if gAudiblePerformanceCues then
   begin
-    Windows.Beep(freq, 20);
+    Beep;
     LogMessage('PerfCue ' + IntToStr(freq) + ' ' + st);
   end
 end;
@@ -2400,7 +2406,7 @@ begin
   fSecretGroupCount := -1;
 end;
 
-function TNNTPAccount.CreateAccountRegistry(access: DWORD): TExSettings;
+function TNNTPAccount.CreateAccountRegistry(access: UInt32): TExSettings;
 begin
   Result := CreateExSettings;
   Result.Section := 'Accounts\' + FixFileNameString(AccountName);
@@ -3158,7 +3164,7 @@ begin
   fDisplaySettings := TDisplaySettings.Create(fOwner.DisplaySettings);
 end;
 
-function TSubscribedGroup.CreateGroupRegistry(access: DWORD): TExSettings;
+function TSubscribedGroup.CreateGroupRegistry(access: UInt32): TExSettings;
 begin
   Result := CreateExSettings;
   Result.Section := 'Accounts\' + FixFileNameString(fOwner.AccountName) + '\Subscribed Groups\' + FixFileNameString(Name);
@@ -4302,7 +4308,7 @@ begin
   Result := fDisplaySettings;
 end;
 
-procedure TArticle.SetCrossPostsFlag(flag: DWORD; value: Boolean);
+procedure TArticle.SetCrossPostsFlag(flag: UInt32; value: Boolean);
 var
   xref, st, group: string;
   artNo: Int64;
@@ -4880,7 +4886,7 @@ var
   c, t, old, prev, rest, tail, newc: TArticleBase;
   subject_table: PHashTable;
   subj: RawByteString;
-  hash: DWORD;
+  hash: UInt32;
 begin
   subject_table := AllocHashTable;
   try
@@ -5559,7 +5565,7 @@ var
   ref: RawByteString;
   article, refArticle, prevArticle, prev, rest, tempRoot: TArticleBase;
   id_table: PHashTable;
-  hash: DWORD;
+  hash: UInt32;
   hideReadMessages: Boolean;
   hideIgnoredMessages: Boolean;
   mine: Boolean;
@@ -5835,14 +5841,14 @@ begin
               // separated, but RFC 2822 suggests that the space is optional.
               // So handle either.
 
-              while (DWORD(pe) > DWORD(pss)) and (pe^ = '>') do
+              while (UInt32(pe) > UInt32(pss)) and (pe^ = '>') do
               begin
                 ps := pe;
-                if DWORD(ps) > DWORD(pss) then
+                if UInt32(ps) > UInt32(pss) then
                   repeat
                     Dec(ps);
-                  until (ps^ = '<') or (DWORD(ps) < DWORD(pss));
-                if DWORD(ps) < DWORD(pss) then
+                  until (ps^ = '<') or (UInt32(ps) < UInt32(pss));
+                if UInt32(ps) < UInt32(pss) then
                   Break;
 
                 len := pe - ps + 1;
@@ -5850,7 +5856,7 @@ begin
 
                 pe := ps;
                 Dec(pe);
-                while (DWORD(pe) > DWORD(pss)) and (pe^ <> '>') do
+                while (UInt32(pe) > UInt32(pss)) and (pe^ <> '>') do
                   Dec(pe);
 
                 if (len <> 0) and (ref[1] = '<') and (ref[len] = '>') then
@@ -6453,7 +6459,7 @@ end;
 function TArticleBase.GetMsgFromFile: TmvMessage;
 var
   st: RawByteString;
-  len: DWORD;
+  len: UInt32;
   hLen: Word;
   cp: Integer;
 begin
@@ -6757,7 +6763,7 @@ begin
   end;
 end;
 
-procedure TArticleBase.SetFlag(flag: DWORD; value: Boolean);
+procedure TArticleBase.SetFlag(flag: UInt32; value: Boolean);
 begin
   if ((fFlags and flag) <> 0) <> value then
   begin

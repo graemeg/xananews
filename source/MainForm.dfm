@@ -4033,12 +4033,14 @@ object fmMain: TfmMain
       Caption = '&Contents'
       Hint = 'Help Contents'
       ImageIndex = 6
+      OnExecute = actHelpContentsExecute
     end
     object actHelpTopicSearch: THelpTopicSearch
       Category = 'Help'
       Caption = '&Topic Search'
       Hint = 'Topic Search'
       ImageIndex = 2
+      OnExecute = actHelpTopicSearchExecute
     end
     object actMessageSaveAttachment: TAction
       Category = 'Message'
@@ -5069,7 +5071,7 @@ object fmMain: TfmMain
         Caption = '-'
       end
       object mnuFileExit: TMenuItem
-        Action = actFileExit
+        Action = actTrayExit
       end
     end
     object mnuEdit: TMenuItem

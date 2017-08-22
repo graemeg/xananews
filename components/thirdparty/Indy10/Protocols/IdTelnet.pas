@@ -433,14 +433,14 @@ begin
   // this  code is necessary to allow the client to receive data properly
   // from a non-telnet server
   for I := 1 to Length(S) do begin
-    if not Connected then begin
-      Break;
-    end;
-    Ch := S[I];
-    if (Ch <> CR) or IamTelnet then begin
-      IOHandler.Write(Ch);
-    end else begin
-      IOHandler.Write(EOL);
+    try
+      Ch := S[I];
+      if (Ch <> CR) or IamTelnet then begin
+        IOHandler.Write(Ch);
+      end else begin
+        IOHandler.Write(EOL);
+      end;
+    except
     end;
   end;
 end;
@@ -475,10 +475,10 @@ begin
   try
     inherited Disconnect(ANotifyPeer);
   finally
-    if Assigned(FTelnetThread) then begin
+    if Assigned(FTelnetThread) and (not IsCurrentThread(FTelnetThread)) then begin
       FTelnetThread.WaitFor;
+      FreeAndNil(FTelnetThread);
     end;
-    FreeAndNil(FTelnetThread);
   end;
 end;
 
@@ -500,7 +500,7 @@ begin
     FTelnetThread := TIdTelnetReadThread.Create(Self);
   except
     Disconnect(True);
-    raise EIdTelnetClientConnectError.Create(RSNoCreateListeningThread);  // translate
+    IndyRaiseOuterException(EIdTelnetClientConnectError.Create(RSNoCreateListeningThread));  // translate
   end;
 end;
 

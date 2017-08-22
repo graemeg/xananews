@@ -545,14 +545,18 @@ begin
 end;
 
 function TIdCustomTCPServer.DoExecute(AContext: TIdContext): Boolean;
+var
+  // under ARC, convert a weak reference to a strong reference before working with it
+  LConn: TIdTCPConnection;
 begin
   if Assigned(OnExecute) then begin
     OnExecute(AContext);
   end;
   Result := False;
   if AContext <> nil then begin
-    if AContext.Connection <> nil then begin
-      Result := AContext.Connection.Connected;
+    LConn := AContext.Connection;
+    if LConn <> nil then begin
+      Result := LConn.Connected;
     end;
   end;
 end;
@@ -607,7 +611,8 @@ begin
   // Loaded will recall it to toggle it
   if IsDesignTime or IsLoading then begin
     FActive := AValue;
-  end else if FActive <> AValue then begin
+  end
+  else if FActive <> AValue then begin
     if AValue then begin
       CheckOkToBeActive;
       try
@@ -671,7 +676,7 @@ begin
     // gets called by Notification() if the Scheduler is freed while
     // the server is still Active?
     if Active then begin
-      EIdException.Toss(RSTCPServerSchedulerAlreadyActive);
+      raise EIdException.Create(RSTCPServerSchedulerAlreadyActive);
     end;
 
     // under ARC, all weak references to a freed object get nil'ed automatically
@@ -720,6 +725,16 @@ begin
   LIOHandler := FIOHandler;
 
   if LIOHandler <> AValue then begin
+
+    // RLebeau - is this needed?  SetScheduler() does it, so should SetIOHandler()
+    // also do it? What should happen if this gets called by Notification() if the
+    // IOHandler is freed while the server is still Active?
+    {
+    if Active then begin
+      raise EIdException.Create(RSTCPServerIOHandlerAlreadyActive);
+    end;
+    }
+
     if FImplicitIOHandler then begin
       FIOHandler := nil;
       FImplicitIOHandler := False;
@@ -946,33 +961,45 @@ end;
 // Linux/Unix does not allow an IPv4 socket and an IPv6 socket
 // to listen on the same port at the same time! Windows does not
 // have that problem...
-{$IFNDEF IdIPv6}
-  {$DEFINE CanCreateTwoBindings}
-  {$IFDEF LINUX} // should this be UNIX instead?
-    {$UNDEF CanCreateTwoBindings}
-  {$ENDIF}
-  {$IFDEF ANDROID}
-    {$UNDEF CanCreateTwoBindings}
-  {$ENDIF}
+{$DEFINE CanCreateTwoBindings}
+{$IFDEF LINUX} // should this be UNIX instead?
+  {$UNDEF CanCreateTwoBindings}
 {$ENDIF}
+{$IFDEF ANDROID}
+  {$UNDEF CanCreateTwoBindings}
+{$ENDIF}
+// TODO: Would this be solved by enabling the SO_REUSEPORT option on
+// platforms that support it?
 
 procedure TIdCustomTCPServer.Startup;
 var
   LScheduler: TIdScheduler;
   LIOHandler: TIdServerIOHandler;
+  {$IFDEF CanCreateTwoBindings}
+  LBinding: TIdSocketHandle;
+  {$ENDIF}
 begin
   // Set up bindings
   if Bindings.Count = 0 then begin
     // TODO: on systems that support dual-stack sockets, create a single
     // Binding object that supports both IPv4 and IPv6 on the same socket...
-    Bindings.Add; // IPv4 or IPv6 by default
-    {$IFNDEF IdIPv6}
-      {$IFDEF CanCreateTwoBindings}
-    if GStack.SupportsIPv6 then begin
-      // maybe add a property too, so the developer can switch it on/off
-      Bindings.Add.IPVersion := Id_IPv6;
+
+    {$IFDEF CanCreateTwoBindings}LBinding := {$ENDIF}Bindings.Add; // IPv4 or IPv6 by default
+
+    {$IFDEF CanCreateTwoBindings}
+    // TODO: maybe add a property so the developer can switch this behavior on/off
+    case LBinding.IPVersion of
+      Id_IPv4: begin
+        if GStack.SupportsIPv6 then begin
+          Bindings.Add.IPVersion := Id_IPv6;
+        end;
+      end;
+      Id_IPv6: begin
+        if GStack.SupportsIPv4 then begin
+          Bindings.Add.IPVersion := Id_IPv4;
+        end;
+      end;
     end;
-      {$ENDIF}
     {$ENDIF}
   end;
 
@@ -1066,7 +1093,7 @@ begin
       // under ARC, the TIdTCPConnection.IOHandler property is a weak reference.
       // TIdServerIOHandler.Accept() returns an IOHandler with no Owner assigned,
       // so lets make the TIdTCPConnection become the Owner in order to keep the
-      // IOHandler alive whic this method exits.
+      // IOHandler alive when this method exits.
       //
       // TODO: should we assign Ownership unconditionally on all platforms?
       //

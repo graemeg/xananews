@@ -264,6 +264,7 @@ resourcestring
   RSHTTPUnsupportedAuthorisationScheme = 'Unsupported authorization scheme.';
   RSHTTPCannotSwitchSessionStateWhenActive = 'Cannot change session state when the server is active.';
   RSHTTPCannotSwitchSessionListWhenActive = 'Cannot change session list when the server is active.';
+  RSHTTPCannotSwitchSessionIDCookieNameWhenActive = 'Cannot change session ID cookie name when the server is active.';
 
   //HTTP Authentication
   RSHTTPAuthAlreadyRegistered = 'This authentication method is already registered with class name %s.';
@@ -285,7 +286,6 @@ resourcestring
   RSFTPStatusStartTransfer = 'Starting FTP transfer';
   RSFTPStatusDoneTransfer  = 'Transfer complete';
   RSFTPStatusAbortTransfer = 'Transfer aborted';
-  RSFTPProtocolMismatch = 'Network protocol mismatch, use'; { may not include '(' or ')' }
   RSFTPParamError = 'Error in parameters to %s';
   RSFTPParamNotImp = 'Parameter %s Not Implemented';
   RSFTPInvalidPort = 'Invalid port number';
@@ -467,6 +467,7 @@ resourcestring
   RSSSLFDSetError = 'Error setting File Descriptor for SSL';
   RSSSLDataBindingError = 'Error binding data to SSL socket.';
   RSSSLEOFViolation = 'EOF was observed that violates the protocol';
+  RSSSLSettingTLSHostNameError = 'Error setting TLS hostname for SSL socket';
 
   {IdMessage Component Editor}
   RSMsgCmpEdtrNew = '&New Message Part...';
@@ -669,7 +670,7 @@ resourcestring
   RSFTPSameIPAddress = 'Data port can only be used by the same IP address used by the control connection.';
   RSFTPCantOpenData = 'Can''t open data connection.';
   RSFTPEPSVAllEntered = ' EPSV ALL sent, now only accepting EPSV connections';
-  RSFTPNetProtNotSup = 'Network protocol not supported, use %s';
+  RSFTPNetProtNotSup = 'Network protocol not supported, use (%s)';
   RSFTPFileOpSuccess = 'File Operation Successful';
   RSFTPIsAFile = '%s: Is a file.';
   RSFTPInvalidOps = 'Invalid %s options';
@@ -693,6 +694,7 @@ resourcestring
   RSFTPNeedAccountForLogin = 'Need account for login.';
   RSFTPAuthSSL = 'AUTH Command OK. Initializing SSL';
   RSFTPDataProtBuffer0 = 'PBSZ Command OK. Protection buffer size set to 0.';
+  RSFTPDeniedForPolicyReasons = 'Request denied for policy reasons.';
 
   RSFTPInvalidProtTypeForMechanism = 'Requested PROT level not supported by mechanism.';
   RSFTPProtTypeClear   = 'PROT Command OK. Using Clear data connection';
@@ -873,6 +875,7 @@ resourcestring
   RSTLSSLCanNotSetWhileConnected = 'This value can not be set while the client is connected.';
   RSTLSSLSSLNotAvailable = 'SSL is not available on this server.';
   RSTLSSLSSLCmdFailed = 'Start SSL negotiation command failed.';
+  RSTLSSLSSLHandshakeFailed = 'SSL negotiation failed.';
 
   ///IdPOP3Reply
   //user's provided reply will follow this string
@@ -915,6 +918,8 @@ resourcestring
   RSWBBInvalidIdxGetStrVariable = 'Invalid Index %s in TIdHTTPAppResponse.GetStringVariable';
   RSWBBInvalidStringVar = 'TIdHTTPAppResponse.SetStringVariable: Cannot set the version';
   RSWBBInvalidIdxSetStringVar = 'Invalid Index %s in TIdHTTPAppResponse.SetStringVariable';
+
+  RSHMACHashNotAvailable = 'HMAC hash algorithm "%s" is not available';
 
 implementation
 

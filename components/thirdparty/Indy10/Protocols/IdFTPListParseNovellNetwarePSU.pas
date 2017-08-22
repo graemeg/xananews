@@ -87,7 +87,12 @@ const
 
   // RLebeau 2/14/09: this forces C++Builder to link to this unit so
   // RegisterFTPListParser can be called correctly at program startup...
-  {$HPPEMIT LINKUNIT}
+
+  {$IFDEF HAS_DIRECTIVE_HPPEMIT_LINKUNIT}
+    {$HPPEMIT LINKUNIT}
+  {$ELSE}
+    {$HPPEMIT '#pragma link "IdFTPListParseNovellNetwarePSU"'}
+  {$ENDIF}
 
 implementation
 
@@ -331,11 +336,6 @@ begin
   LI.ModifiedDate := AItem.ModifiedDate + TimeHHMMSS(LBuf2);
   // File name
   if IndyPos(UNIX_LINKTO_SYM,LBuf) > 0 then
-  begin
-    LI.FileName := Fetch(LBuf, UNIX_LINKTO_SYM);
-    LI.LinkedItemName := LBuf;
-  end
-  else if IndyPos(UNIX_LINKTO_SYM, LBuf) > 0 then
   begin
     LI.FileName := Fetch(LBuf, UNIX_LINKTO_SYM);
     LI.LinkedItemName := LBuf;

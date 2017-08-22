@@ -78,7 +78,7 @@ uses
 type
   TIdEntityHeaderInfo = class(TPersistent)
   protected
-    FOwner: TPersistent;
+    {$IFDEF USE_OBJECT_ARC}[Weak]{$ENDIF} FOwner: TPersistent;
     FCacheControl: String;
     FRawHeaders: TIdHeaderList;
     FCharSet: String;
@@ -294,13 +294,13 @@ type
     procedure ProcessMetaHTTPEquiv(AStream: TStream);
   end;
 
+var
+  GIdDefaultUserAgent: String = 'Mozilla/3.0 (compatible; Indy Library)'; {do not localize}
+
 implementation
 
 uses
   SysUtils;
-
-const
-  DefaultUserAgent = 'Mozilla/3.0 (compatible; Indy Library)'; {do not localize}
 
 { TIdEntityHeaderInfo }
 
@@ -336,8 +336,10 @@ begin
   begin
     LDest := TIdEntityHeaderInfo(Destination);
     LDest.FRawHeaders.Assign(FRawHeaders);
+    LDest.FCustomHeaders.Assign(FCustomHeaders);
     LDest.FCacheControl := FCacheControl;
     LDest.FCharSet := FCharSet;
+    LDest.FConnection := FConnection;
     LDest.FContentDisposition := FContentDisposition;
     LDest.FContentEncoding := FContentEncoding;
     LDest.FContentLanguage := FContentLanguage;
@@ -352,6 +354,9 @@ begin
     LDest.FETag := FETag;
     LDest.FExpires := FExpires;
     LDest.FLastModified := FLastModified;
+    LDest.FPragma := FPragma;
+    LDest.FHasContentLength := FHasContentLength;
+    LDest.FTransferEncoding := FTransferEncoding;
   end else
   begin
     inherited AssignTo(Destination);
@@ -665,6 +670,7 @@ type
 
 function TIdEntityHeaderInfo.GetOwnerComponent: TComponent;
 var
+  // under ARC, convert a weak reference to a strong reference before working with it
   LOwner: TPersistent;
 begin
   Result := nil;
@@ -733,6 +739,7 @@ begin
   // Use Basic authentication by default
   else if FBasicByDefault then begin
     FAuthentication := TIdBasicAuthentication.Create;
+    // TODO: use FAuthentication Username/Password properties instead
     FAuthentication.Params.Values['Username'] := FUsername;  {do not localize}
     FAuthentication.Params.Values['Password'] := FPassword;  {do not localize}
     S := FAuthentication.Authentication;
@@ -964,16 +971,16 @@ begin
     // TODO: omitted intentionally?
     // LDest.FHost := FHost;
     // LDest.FProxyConnection := FProxyConnection;
-  end else begin
-    inherited AssignTo(Destination);
   end;
+  // always allow TIdEntityHeaderInfo to assign its properties as well
+  inherited AssignTo(Destination);
 end;
 
 procedure TIdRequestHeaderInfo.Clear;
 begin
   FAccept := 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'; // 'text/html, */*'; {do not localize}
   FAcceptCharSet := '';
-  FUserAgent := DefaultUserAgent;
+  FUserAgent := GIdDefaultUserAgent;
   FBasicByDefault := false;
   FRanges.Text := '';
   FMethodOverride := '';
@@ -1066,6 +1073,7 @@ begin
   end
   else if FBasicByDefault then begin
     FAuthentication := TIdBasicAuthentication.Create;
+    // TODO: use FAuthentication Username/Password properties instead
     FAuthentication.Params.Values['Username'] := FUserName;  {do not localize}
     FAuthentication.Params.Values['Password'] := FPassword;  {do not localize}
     S := FAuthentication.Authentication;
@@ -1205,10 +1213,15 @@ end;
 { TIdMetaHTTPEquiv }
 
 procedure TIdMetaHTTPEquiv.ProcessMetaHTTPEquiv(AStream: TStream);
+var
+  LCharSet: string;
 begin
-  ParseMetaHTTPEquiv(AStream, RawHeaders);
+  ParseMetaHTTPEquiv(AStream, RawHeaders, LCharSet);
   if FRawHeaders.Count > 0 then begin
     ProcessHeaders;
+  end;
+  if LCharSet <> '' then begin
+    FCharSet := LCharset;
   end;
 end;
 

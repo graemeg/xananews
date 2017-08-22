@@ -180,7 +180,7 @@ type
     procedure Synchronize(AMethod: TThreadMethod);
     procedure Terminate; virtual;
     procedure TerminateAndWaitFor; virtual;
-    function WaitFor: LongWord;
+    function WaitFor: UInt32;
     // Properties
     {$IFDEF USE_OBJECT_ARC}
     property DataObject: TObject read GetDataObject write SetDataObject;
@@ -389,7 +389,7 @@ begin
     FThread.Terminate;
     FThread.Start;//resume for terminate
   end;
-  FreeAndNil(FThread);
+  IdDisposeAndNil(FThread);
   inherited Destroy;
 end;
 
@@ -575,7 +575,7 @@ procedure TIdThreadComponent.Start;
 begin
   if not IsDesignTime then begin
     if Assigned(FThread) and FThread.Terminated then begin
-      FreeAndNil(FThread);
+      IdDisposeAndNil(FThread);
     end;
 
     if not Assigned(FThread) then begin
@@ -621,7 +621,7 @@ begin
   FThread.TerminateAndWaitFor;
 end;
 
-function TIdThreadComponent.WaitFor: LongWord;
+function TIdThreadComponent.WaitFor: UInt32;
 begin
   Result := FThread.WaitFor;
 end;
@@ -670,7 +670,7 @@ end;
 procedure TIdThreadComponent.SetLoop(const AValue: Boolean);
 begin
   if IsRunning then begin
-    EIdException.Toss(RSThreadComponentLoopAlreadyRunning);
+    raise EIdException.Create(RSThreadComponentLoopAlreadyRunning);
   end;
   FLoop := AValue;
 end;
@@ -678,7 +678,7 @@ end;
 procedure TIdThreadComponent.SetThreadName(const AValue: string);
 begin
   if IsRunning then begin
-    EIdException.Toss(RSThreadComponentThreadNameAlreadyRunning);
+    raise EIdException.Create(RSThreadComponentThreadNameAlreadyRunning);
   end;
   FThreadName := AValue;
 end;

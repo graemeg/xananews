@@ -66,6 +66,7 @@ type
     FCurrentStep: Integer;
     FParams: TIdHeaderList;
     FAuthParams: TIdHeaderList;
+    FCharset: string;
 
     function ReadAuthInfo(AuthName: String): String;
     function DoNext: TIdAuthWhatsNext; virtual; abstract;
@@ -207,6 +208,9 @@ begin
   inherited Create;
   FAuthParams := TIdHeaderList.Create(QuoteHTTP);
   FParams := TIdHeaderList.Create(QuoteHTTP);
+  {$IFDEF HAS_TStringList_CaseSensitive}
+  FParams.CaseSensitive := False;
+  {$ENDIF}
   FCurrentStep := 0;
 end;
 
@@ -288,7 +292,7 @@ var
 begin
   LEncoder := TIdEncoderMIME.Create;
   try
-    Result := 'Basic ' + LEncoder.Encode(Username + ':' + Password); {do not localize}
+    Result := 'Basic ' + LEncoder.Encode(Username + ':' + Password, CharsetToEncoding(FCharset)); {do not localize}
   finally
     LEncoder.Free;
   end;
@@ -296,18 +300,35 @@ end;
 
 function TIdBasicAuthentication.DoNext: TIdAuthWhatsNext;
 var
-  S: String;
+  S, LSep: String;
 begin
   S := ReadAuthInfo('Basic');        {Do not Localize}
   Fetch(S);
 
+  LSep := Params.NameValueSeparator;
   while Length(S) > 0 do begin
     // realm have 'realm="SomeRealmValue"' format    {Do not Localize}
     // FRealm never assigned without StringReplace
-    Params.Add(ReplaceOnlyFirst(Fetch(S, ', '), '=', Params.NameValueSeparator));  {do not localize}
+    Params.Add(ReplaceOnlyFirst(Fetch(S, ', '), '=', LSep));  {do not localize}
   end;
 
-  FRealm := Copy(Params.Values['realm'], 2, Length(Params.Values['realm']) - 2);   {Do not Localize}
+  FRealm := UnquotedStr(Params.Values['realm']);   {Do not Localize}
+
+  FCharset := UnquotedStr(Params.Values['charset']); // RFC 7617
+  if FCharset = '' then begin
+    FCharset := UnquotedStr(Params.Values['accept-charset']); // draft-reschke-basicauth-enc-05 onwards
+    if FCharset = '' then begin
+      FCharset := UnquotedStr(Params.Values['encoding']); // draft-reschke-basicauth-enc-04
+      if FCharset = '' then begin
+        FCharset := UnquotedStr(Params.Values['enc']); // I saw this mentioned in a Mozilla bug report, and apparently Opera supports it
+      end;
+      if FCharset = '' then begin
+        // TODO: check the user's input and encode using ISO-8859-1 only if
+        // the characters will actually fit, otherwise use UTF-8 instead?
+        FCharset := 'ISO-8859-1';
+      end;
+    end;
+  end;
 
   if FCurrentStep = 0 then
   begin

@@ -45,6 +45,9 @@ interface
 //Put FPC into Delphi mode
 
 uses
+  {$IFDEF VCL_2010_OR_ABOVE}
+  Classes,    //here to facilitate inlining
+  {$ENDIF}
   IdException,
   IdGlobal,
   IdIPMCastBase,
@@ -142,7 +145,7 @@ begin
         if Bindings[i].HandleAllocated then begin
           // RLebeau: DropMulticastMembership() can raise an exception if
           // the network cable has been pulled out...
-                                                                                
+          // TODO: update DropMulticastMembership() to not raise an exception...
           try
             Bindings[i].DropMulticastMembership(FMulticastGroup);
           except
@@ -186,12 +189,7 @@ begin
       end;
     end;
     for i := 0 to Bindings.Count - 1 do begin
-
-{$IFDEF LINUX}
-      Bindings[i].AllocateSocket(LongInt(Id_SOCK_DGRAM));
-{$ELSE}
       Bindings[i].AllocateSocket(Id_SOCK_DGRAM);
-{$ENDIF}
       // do not overwrite if the default. This allows ReuseSocket to be set per binding
       if FReuseSocket <> rsOSDependent then begin
         Bindings[i].ReuseSocket := FReuseSocket;

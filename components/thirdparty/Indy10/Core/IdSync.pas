@@ -110,7 +110,7 @@ type
     {$IFNDEF HAS_STATIC_TThread_Synchronize}
     property Thread: TIdThread read FThread;
     {$ENDIF}
-  end;
+  end {$IFDEF HAS_STATIC_TThread_Synchronize}{$IFDEF HAS_DEPRECATED}deprecated{$IFDEF HAS_DEPRECATED_MSG} 'Use static TThread.Synchronize()'{$ENDIF}{$ENDIF}{$ENDIF};
 
   TIdNotify = class(TObject)
   protected
@@ -128,9 +128,10 @@ type
     {$ENDIF}
     class procedure NotifyMethod(AMethod: TThreadMethod);
     //
-    property MainThreadUsesNotify: Boolean read FMainThreadUsesNotify write FMainThreadUsesNotify;
-  end;
+    property MainThreadUsesNotify: Boolean read FMainThreadUsesNotify write FMainThreadUsesNotify; // deprecated
+  end {$IFDEF HAS_STATIC_TThread_Queue}{$IFDEF HAS_DEPRECATED}deprecated{$IFDEF HAS_DEPRECATED_MSG} 'Use static TThread.Queue()'{$ENDIF}{$ENDIF}{$ENDIF};
 
+  {$I IdSymbolDeprecatedOff.inc}
   TIdNotifyMethod = class(TIdNotify)
   protected
     FMethod: TThreadMethod;
@@ -138,7 +139,8 @@ type
     procedure DoNotify; override;
   public
     constructor Create(AMethod: TThreadMethod); reintroduce; virtual;
-  end {$IFDEF HAS_DEPRECATED}deprecated{$IFDEF HAS_DEPRECATED_MSG} 'Use TIdNotify.NotifyMethod()'{$ENDIF}{$ENDIF};
+  end {$IFDEF HAS_DEPRECATED}deprecated{$IFDEF HAS_DEPRECATED_MSG} {$IFDEF HAS_STATIC_TThread_Queue}'Use static TThread.Queue()'{$ELSE}'Use TIdNotify.NotifyMethod()'{$ENDIF}{$ENDIF}{$ENDIF};
+  {$I IdSymbolDeprecatedOn.inc}
 
 implementation
 
@@ -163,7 +165,20 @@ uses
   Posix.SysSelect,
   Posix.SysTime,
   {$ENDIF}
-  SysUtils;
+  SysUtils
+  {$IFNDEF NotifyThreadNeeded}
+  , IdThread
+  {$ENDIF}
+  ;
+
+// TODO: there is a bug in FireMonkey prior to XE7 where FMX.TApplication does
+// not assign a handler to the Classes.WakeMainThread callback (see QC #123579).
+// Without that, TThread.Synchronize() and TThread.Queue() will not do anything
+// if the main message queue is idle at the moment they are called!!!  If the
+// main thread *happens* to receive a message at a later time, say from UI
+// activity, then they will be processed.  But for a background process, we
+// cannot rely on that.  Need an alternative solution for those versions of
+// FireMonkey...
 
 {$IFDEF NotifyThreadNeeded}
 type
@@ -197,10 +212,20 @@ type
 var
   GNotifyThread: TIdNotifyThread = nil;
 
-// RLebeau: this function has a race condition if it is called by multiple
-// threads at the same time and GNotifyThread has not been assigned yet!
 procedure CreateNotifyThread;
 begin
+  // TODO: this function has a race condition if it is called by multiple
+  // threads at the same time and GNotifyThread has not been assigned yet!
+  // Need to use something like InterlockedCompareExchangeObj() so any
+  // duplicate threads can be freed...
+  {
+  Thread := TIdNotifyThread.Create(True);
+  if InterlockedCompareExchangeObj(GNotifyThread, Thread, nil) <> nil then begin
+    Thread.Free;
+  end else begin
+    Thread.Start;
+  end;
+  }
   if GNotifyThread = nil then begin
     GNotifyThread := TIdNotifyThread.Create;
   end;
@@ -233,22 +258,110 @@ begin
   {$ENDIF}
 end;
 
+procedure DoThreadSync(
+  {$IFNDEF HAS_STATIC_TThread_Synchronize}
+  AThread: TIdThread;
+  {$ENDIF}
+  SyncProc: TThreadMethod);
+begin
+  {
+  if not Assigned(Classes.WakeMainThread) then
+  begin
+    // TODO: if WakeMainThread is not assigned, need to force a message into
+    // the main message queue so TApplication.Idle() will be called so it can
+    // call CheckSynchronize():
+    //
+    // on Windows, call PostMessage() to post a WM_NULL message to the TApplication window...
+    //
+    // on OSX (and iOS?), call NSApp.sendEvent(???), but with what kind of event?
+    //
+    // on Android, what to do???
+
+    // We can't put the message in the queue before calling TThread.Synchronize(),
+    // as it might get processed before Synchronize() can queue the procedure.
+    // Might have to use TThread.Queue() instead and wait on a manual TEvent...
+  end else
+  begin
+  }
+    // RLebeau 6/7/2016: there are race conditions if multiple threads call
+    // TThread.Synchronize() on the same TThread object at the same time
+    // (such as this unit's GNotifyThread object)... 
+    {$IFDEF HAS_STATIC_TThread_Synchronize}
+    // Fortunately, the static versions of TThread.Synchronize() can skip the
+    // race conditions when the AThread parameter is nil, so we are safe here...
+    TThread.Synchronize(nil, SyncProc);
+    {$ELSE}
+    // However, in Delphi 7 and later, the static versions of TThread.Synchronize()
+    // call the non-static versions when AThread is not nil, and the non-static
+    // versions are not even close to being thread-safe (see QualityPortal #RSP-15139).
+    // They share a private FSynchronize variable that is not protected from
+    // concurrent access.
+    //
+    // In Delphi 6, TThread.Synchronize() is thread-safe UNLESS a synch'ed method
+    // raises an uncaught exception, then there is a race condition on a private
+    // FSynchronizeException variable used to capture and re-raise the exception,
+    // so multiple threads could potentially re-raise the same exception object,
+    // or cancel out another thread's exception before it can be re-raised.
+    //
+    // In Delphi 5, there are race conditions on private FSynchronizeException and
+    // FMethod variables, making Synchronize() basically not thread-safe at all.
+    //
+    // So, in Delphi 5 and 6 at least, we need a way for TIdSync to synch
+    // a method more safely.  Thread.Queue() does not exist in those versions.
+    //
+    // At this time, I do not know if FreePascal's implementation of TThread
+    // has any issues.
+    //
+    // TODO: We might need to expand TIdNotifyThread to handle both TIdSync and
+    // TIdNotify from within its own context...
+    //
+    AThread.Synchronize(SyncProc);
+    {$ENDIF}
+  // end;
+end;
+
+{$IFDEF HAS_STATIC_TThread_Queue}
+procedure DoThreadQueue(QueueProc: TThreadMethod);
+begin
+  {
+  if not Assigned(Classes.WakeMainThread) then
+  begin
+    // TODO: if WakeMainThread is not assigned, need to force a message into
+    // the main message queue so TApplication.Idle() will be called so it can
+    // call CheckSynchronize():
+    //
+    // on Windows, call PostMessage() to post a WM_NULL message to the TApplication window...
+    //
+    // on OSX (and iOS?), call NSApp.sendEvent(???), but with what kind of event?
+    //
+    // on Android, what to do???
+
+    // We can't put the message in the queue before calling TThread.Queue(),
+    // as it might get processed before Queue() can queue the procedure.
+    // Might have to wait on a manual TEvent...
+  end else
+  begin
+  }
+    TThread.Queue(nil, QueueProc);
+  // end;
+end;
+{$ENDIF}
+
 procedure TIdSync.Synchronize;
 begin
-  {$IFDEF HAS_STATIC_TThread_Synchronize}
-  TThread.Synchronize(nil, DoSynchronize);
-  {$ELSE}
-  FThread.Synchronize(DoSynchronize);
-  {$ENDIF}
+  DoThreadSync(
+    {$IFNDEF HAS_STATIC_TThread_Synchronize}FThread,{$ENDIF}
+    DoSynchronize
+  );
 end;
 
 class procedure TIdSync.SynchronizeMethod(AMethod: TThreadMethod);
 begin
   {$IFDEF HAS_STATIC_TThread_Synchronize}
-  TThread.Synchronize(nil, AMethod);
+  DoThreadSync(AMethod);
   {$ELSE}
   CreateNotifyThread;
-  GNotifyThread.Synchronize(AMethod);
+  DoThreadSync(GNotifyThread, AMethod);
   {$ENDIF}
 end;
 
@@ -261,6 +374,10 @@ end;
 
 procedure TIdNotify.Notify;
 begin
+  // Note: MainThreadUsesNotify only has meaning now when TThread.Queue() is
+  // not available, as it calls the specified method immediately if invoked
+  // in the main thread!  To go back to the old behavior, we would have to
+  // re-enable use of TIdNotifyThread, which is another interface change...
   if InMainThread and (not MainThreadUsesNotify) then begin
     {$IFNDEF USE_OBJECT_ARC}
     try
@@ -276,7 +393,7 @@ begin
     try
     {$ENDIF}
       {$IFDEF HAS_STATIC_TThread_Queue}
-      TThread.Queue(nil,
+      DoThreadQueue(
         {$IFDEF TNotify_InternalDoNotify_Needed}
         InternalDoNotify
         {$ELSE}
@@ -310,9 +427,11 @@ end;
 class procedure TIdNotify.NotifyMethod(AMethod: TThreadMethod);
 begin
   {$IFDEF HAS_STATIC_TThread_Queue}
-  TThread.Queue(nil, AMethod);
+  DoThreadQueue(AMethod);
   {$ELSE}
+    {$I IdSymbolDeprecatedOff.inc}
   TIdNotifyMethod.Create(AMethod).Notify;
+    {$I IdSymbolDeprecatedOn.inc}
   {$ENDIF}
 end;
 
@@ -321,7 +440,10 @@ end;
 // guaranteed to remain valid while this method is running since the
 // notify thread frees the object.  Also, this makes the calling thread
 // block, so TIdSync should be used instead...
+
+{$I IdDeprecatedImplBugOff.inc}
 procedure TIdNotify.WaitFor;
+{$I IdDeprecatedImplBugOn.inc}
 var
   LNotifyIndex: Integer;
   LList: TIdNotifyList;
@@ -339,6 +461,7 @@ begin
     IndySleep(10);
   until False;
 end;
+
 {$ENDIF}
 
 {$IFDEF NotifyThreadNeeded}
@@ -420,7 +543,9 @@ begin
         FNotifications.UnlockList;
       end;
       try
-        Synchronize(LNotify.DoNotify);
+        DoThreadSync(
+          {$IFNDEF HAS_STATIC_TThread_Synchronize}Self,{$ENDIF}
+          LNotify.DoNotify);
       finally
         FreeAndNil(LNotify);
       end;
@@ -433,13 +558,17 @@ end;
 
 { TIdNotifyMethod }
 
+{$I IdDeprecatedImplBugOff.inc}
 constructor TIdNotifyMethod.Create(AMethod: TThreadMethod);
+{$I IdDeprecatedImplBugOn.inc}
 begin
   inherited Create;
   FMethod := AMethod;
 end;
 
+{$I IdDeprecatedImplBugOff.inc}
 procedure TIdNotifyMethod.DoNotify;
+{$I IdDeprecatedImplBugOn.inc}
 begin
   FMethod;
 end;

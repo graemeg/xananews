@@ -43,18 +43,19 @@ interface
 
 uses
   Classes,
+  IdGlobal,
   IdFTPList, IdFTPListParseBase, IdFTPListTypes;
 
 type
   TIdMPiXFTPListItem = class(TIdRecFTPListItem)
   protected
-    FLimit : Cardinal;
+    FLimit : UInt32;
   public
     constructor Create(AOwner: TCollection); override;
     property RecLength;
     property RecFormat;
     property NumberRecs;
-    property Limit : Cardinal read FLimit write FLimit;
+    property Limit : UInt32 read FLimit write FLimit;
   end;
 
   //Anscestor for the MPE/iX Parsers
@@ -86,12 +87,17 @@ type
 
   // RLebeau 2/14/09: this forces C++Builder to link to this unit so
   // RegisterFTPListParser can be called correctly at program startup...
-  {$HPPEMIT LINKUNIT}
+
+  {$IFDEF HAS_DIRECTIVE_HPPEMIT_LINKUNIT}
+    {$HPPEMIT LINKUNIT}
+  {$ELSE}
+    {$HPPEMIT '#pragma link "IdFTPListParseMPEiX"'}
+  {$ENDIF}
 
 implementation
 
 uses
-  IdGlobal, IdFTPCommon, IdGlobalProtocols, IdStrings, SysUtils;
+  IdFTPCommon, IdGlobalProtocols, IdStrings, SysUtils;
 
 { TIdFTPLPMPiXBase }
 
@@ -159,7 +165,7 @@ begin
   begin
     LCols := TStringList.Create;
     try
-      SplitDelimitedString(StringReplace(AData, '-', ' ', [rfReplaceAll]), LCols, True);
+      SplitDelimitedString(ReplaceAll(AData, '-', ' '), LCols, True);
       Result := (LCols.Count > 3) and
                 (LCols[0] = 'FILENAME') and   {do not localize}
                 (LCols[1] = 'CODE') and       {do not localize}
@@ -260,7 +266,7 @@ begin
   begin
     LCols := TStringList.Create;
     try
-      SplitDelimitedString(StringReplace(AData, '-', ' ', [rfReplaceAll]), LCols, True);
+      SplitDelimitedString(ReplaceAll(AData, '-', ' '), LCols, True);
       Result := (LCols.Count = 5) and
                 (LCols[0] = 'CODE') and       {do not localize}
                 (LCols[1] = 'LOGICAL') and    {do not localize}

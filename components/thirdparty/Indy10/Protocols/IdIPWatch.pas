@@ -65,10 +65,12 @@ unit IdIPWatch;
 }
 
 interface
+
 {$i IdCompilerDefines.inc}
 
 uses
   Classes,
+  IdGlobal,
   IdComponent, IdThread;
 
 const
@@ -100,13 +102,13 @@ type
     FOnStatusChanged: TNotifyEvent;
     FPreviousIP: string;
     FThread: TIdIPWatchThread;
-    FWatchInterval: Cardinal;
+    FWatchInterval: UInt32;
     //
     procedure AddToIPHistoryList(Value: string);
     procedure CheckStatus(Sender: TObject);
     procedure SetActive(Value: Boolean);
     procedure SetMaxHistoryEntries(Value: Integer);
-    procedure SetWatchInterval(Value: Cardinal);
+    procedure SetWatchInterval(Value: UInt32);
     procedure InitComponent; override;
   public
     {$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
@@ -129,7 +131,7 @@ type
     property MaxHistoryEntries: Integer read FMaxHistoryEntries write SetMaxHistoryEntries
      default IP_WATCH_HIST_MAX;
     property OnStatusChanged: TNotifyEvent read FOnStatusChanged write FOnStatusChanged;
-    property WatchInterval: Cardinal read FWatchInterval write SetWatchInterval
+    property WatchInterval: UInt32 read FWatchInterval write SetWatchInterval
      default IP_WATCH_INTERVAL;
   end;
 
@@ -146,13 +148,13 @@ uses
   Posix.SysSelect,
   Posix.SysTime,
   {$ENDIF}
-  IdGlobal, IdStack, SysUtils;
+  IdStack, SysUtils;
 
 { TIdIPWatch }
 
 procedure TIdIPWatch.AddToIPHistoryList(Value: string);
 begin
-  if (Value = '') or (Value = '127.0.0.1') then    {Do not Localize}
+  if (Value = '') or (Value = '127.0.0.1') or (Value = '::1') then    {Do not Localize}
   begin
     Exit;
   end;
@@ -186,11 +188,11 @@ begin
     WasOnLine := FIsOnline;
     OldIP := FCurrentIP;
     FCurrentIP := LocalIP;
-    FIsOnline := (FCurrentIP <> '127.0.0.1') and (FCurrentIP <> '');    {Do not Localize}
+    FIsOnline := (FCurrentIP <> '127.0.0.1') and (FCurrentIP <> '::1') and (FCurrentIP <> '');    {Do not Localize}
 
     if (WasOnline) and (not FIsOnline) then
     begin
-      if (OldIP <> '127.0.0.1') and (OldIP <> '') then    {Do not Localize}
+      if (OldIP <> '127.0.0.1') and (OldIP <> '::1') and (OldIP <> '') then    {Do not Localize}
       begin
         FPreviousIP := OldIP;
       end;
@@ -298,6 +300,9 @@ function TIdIPWatch.LocalIP: string;
 begin
   FLocalIpHuntBusy := True;
   try
+    // TODO: use GStack.GetLocalAddressList() instead, as
+    // GStack.LocalAddress only supports IPv4 addresses
+    // at this time... 
     Result := GStack.LocalAddress;
   finally
     FLocalIPHuntBusy := False;
@@ -338,7 +343,7 @@ begin
     FIPHistoryList.Delete(0);
 end;
 
-procedure TIdIPWatch.SetWatchInterval(Value: Cardinal);
+procedure TIdIPWatch.SetWatchInterval(Value: UInt32);
 begin
   if Value <> FWatchInterval then begin
     FWatchInterval := Value;

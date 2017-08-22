@@ -766,6 +766,8 @@ type
     procedure actFolderRenameExecute(Sender: TObject);
 
     procedure actHelpAboutExecute(Sender: TObject);
+    procedure actHelpContentsExecute(Sender: TObject);
+    procedure actHelpTopicSearchExecute(Sender: TObject);
 
     procedure actMessageAddToBozoBinExecute(Sender: TObject);
     procedure actMessageCopyXFaceExecute(Sender: TObject);
@@ -1850,6 +1852,30 @@ begin
   NTAboutBox.SupportURL := cSupportURL;
   NTAboutBox.BuildStr := cGitSHA1;
   NTAboutBox.Execute;
+end;
+
+procedure TfmMain.actHelpContentsExecute(Sender: TObject);
+begin
+  HtmlHelp(0, Application.HelpFile, HH_DISPLAY_TOC, 0);
+//  Application.HelpContext(2);
+end;
+
+procedure TfmMain.actHelpTopicSearchExecute(Sender: TObject);
+var
+  Query: THH_Fts_QueryW;
+begin
+  with Query do
+  begin
+    cbStruct := SizeOf(THH_Fts_QueryW);
+    fUniCodeStrings := True;
+    pszSearchQuery := '';
+    iProximity := 0;
+    fStemmedSearch := True;
+    fTitleOnly := False;
+    fExecute := True;
+    pszWindow := nil;
+  end;
+  HtmlHelp(0, Application.HelpFile, HH_DISPLAY_SEARCH, DWORD(@Query));
 end;
 
 procedure TfmMain.actViewHideMessagesNotToMeExecute(Sender: TObject);
@@ -4454,7 +4480,8 @@ end;
 
 procedure TfmMain.FormShow(Sender: TObject);
 begin
-  Caption := Application.Title + ' ' + ProductVersion;
+  gProductVersion := ''; // force a reload of version info
+  Caption := Application.Title + ' ' + ProductVersion(True);
   SaveDefaultActions;
   vstSubscribed.SetFocus;
   LoadToolbarLayout;
@@ -6399,9 +6426,14 @@ var
 begin
   // Enable/Disable actions depending on state.
   if gAppTerminating then Exit;
-  SelectedAccount := GetFocusedAccount; hasSelAccount := Assigned(SelectedAccount);
-  SelectedGroup := GetFocusedGroup;     hasSelGroup   := Assigned(SelectedGroup);
-  SelectedFolder := GetFocusedArticleFolder; hasSelFolder := Assigned(SelectedFolder);
+  SelectedAccount := GetFocusedAccount;
+  hasSelAccount := Assigned(SelectedAccount);
+
+  SelectedGroup := GetFocusedGroup;
+  hasSelGroup   := Assigned(SelectedGroup);
+
+  SelectedFolder := GetFocusedArticleFolder;
+  hasSelFolder := Assigned(SelectedFolder);
 
   FocusedArticle := GetFocusedArticle;
   isNNTPArticle := FocusedArticle is TArticle;
@@ -6577,13 +6609,10 @@ begin
   actToolsOptions.Enabled := True;
   actToolsAccounts.Enabled := True;
   actHelpAbout.Enabled := True;
+  actHelpContents.Enabled := Application.HelpFile <> '';
+  actHelpTopicSearch.Enabled := Application.HelpFile <> '';
   actToolsBatches.Enabled := True;
 
-  s := Application.Title {$ifdef CPUX64} + ' (x64)' {$endif};
-  if Assigned(SelectedGroup) then
-    Caption := Format('%s %s - %s', [s, ProductVersion, SelectedGroup.Name])
-  else
-    Caption := s + ' ' + ProductVersion;
 
   actToolsMessagebaseManagement.Enabled := True;
   actToolsAdminCreateGroup.Enabled := hasSelAccount;

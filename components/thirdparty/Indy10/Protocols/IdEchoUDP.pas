@@ -31,33 +31,35 @@
 unit IdEchoUDP;
 
 interface
+
 {$i IdCompilerDefines.inc}
+
 uses
+  IdGlobal,
   IdAssignedNumbers, IdUDPBase, IdUDPClient;
 
 type
   TIdEchoUDP = class(TIdUDPClient)
   protected
-    FEchoTime: Cardinal;
+    FEchoTime: UInt32;
     procedure InitComponent; override;
   public
     {This sends Text to the peer and returns the reply from the peer}
     Function Echo(AText: String): String;
     {Time taken to send and receive data}
-    Property EchoTime: Cardinal read FEchoTime;
+    Property EchoTime: UInt32 read FEchoTime;
   published
     property Port default IdPORT_ECHO;
   end;
 
 implementation
 
+{$IFDEF USE_VCL_POSIX}
+  {$IFDEF DARWIN}
 uses
-  {$IFDEF USE_VCL_POSIX}
-	  {$IFDEF DARWIN}
-  Macapi.CoreServices,
-	  {$ENDIF}
+  Macapi.CoreServices;
   {$ENDIF}
-  IdGlobal;
+{$ENDIF}
 
 { TIdIdEchoUDP }
 
@@ -69,15 +71,15 @@ end;
 
 function TIdEchoUDP.Echo(AText: String): String;
 var
-  StartTime: Cardinal;
+  StartTime: TIdTicks;
   LEncoding: IIdTextEncoding;
 begin
-  StartTime := Ticks;
+  StartTime := Ticks64;
   LEncoding := IndyTextEncoding_8Bit;
   Send(AText, LEncoding{$IFDEF STRING_IS_ANSI}, LEncoding{$ENDIF});
   Result := ReceiveString(IdTimeoutDefault, LEncoding{$IFDEF STRING_IS_ANSI}, LEncoding{$ENDIF});
   {This is just in case the TickCount rolled back to zero}
-  FEchoTime := GetTickDiff(StartTime,Ticks);
+  FEchoTime := GetElapsedTicks(StartTime);
 end;
 
 end.

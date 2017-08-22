@@ -43,17 +43,18 @@ interface
 
 uses
   Classes,
+  IdGlobal,
   IdFTPList, IdFTPListParseBase;
 
 type
    TIdXecomMicroRTOSTPListItem = class(TIdFTPListItem)
    protected
-     FMemStart: LongWord;
-     FMemEnd: LongWord;
+     FMemStart: UInt32;
+     FMemEnd: UInt32;
    public
      constructor Create(AOwner: TCollection); override;
-     property MemStart: LongWord read FMemStart write FMemStart;
-     property MemEnd: LongWord read FMemEnd write FMemEnd;
+     property MemStart: UInt32 read FMemStart write FMemStart;
+     property MemEnd: UInt32 read FMemEnd write FMemEnd;
    end;
 
   TIdFTPLPXecomMicroRTOS = class(TIdFTPListBaseHeader)
@@ -68,12 +69,17 @@ type
 
   // RLebeau 2/14/09: this forces C++Builder to link to this unit so
   // RegisterFTPListParser can be called correctly at program startup...
-  {$HPPEMIT LINKUNIT}
+
+  {$IFDEF HAS_DIRECTIVE_HPPEMIT_LINKUNIT}
+    {$HPPEMIT LINKUNIT}
+  {$ELSE}
+    {$HPPEMIT '#pragma link "IdFTPListParseXecomMicroRTOS"'}
+  {$ENDIF}
 
 implementation
 
 uses
-  IdGlobal, IdFTPCommon, IdGlobalProtocols, IdStrings,
+  IdFTPCommon, IdGlobalProtocols, IdStrings,
   SysUtils;
 
 { TIdFTPLPXecomMicroRTOS }

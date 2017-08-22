@@ -602,7 +602,7 @@ begin
     //prefer lower case filenames.  We do not want to force lowercase if a file
     //has both uppercase and lowercase because the uppercase letters are probably intentional
     LDoLowerCase := True;
-                                                          
+    // TODO: add IsLower() functions in IdGlobal/Protocol?
     for i := 1 to Length(AValue) do begin
       if CharIsInSet(AValue, i, LLowCase) then begin
         LDoLowerCase := False;

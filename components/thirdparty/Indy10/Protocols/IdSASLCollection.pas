@@ -79,12 +79,14 @@ type
   public
     constructor Create ( AOwner : TPersistent ); reintroduce;
     function Add: TIdSASLListEntry;
-    procedure LoginSASL(const ACmd, AHost, AProtocolName: String; const AOkReplies, AContinueReplies: array of string;
-      AClient : TIdTCPConnection; ACapaReply : TStrings;
-      const AAuthString : String = 'AUTH'); overload;      {Do not Localize}
-    procedure LoginSASL(const ACmd, AHost, AProtocolName: String; const AServiceName: String;
+    procedure LoginSASL(const ACmd, AHost, AProtocolName: String;
       const AOkReplies, AContinueReplies: array of string; AClient : TIdTCPConnection;
-      ACapaReply : TStrings; const AAuthString : String = 'AUTH'); overload;      {Do not Localize}
+      ACapaReply : TStrings; const AAuthString : String = 'AUTH';      {Do not Localize}
+      ACanAttemptIR: Boolean = True); overload;
+    procedure LoginSASL(const ACmd, AHost, AProtocolName, AServiceName: String;
+      const AOkReplies, AContinueReplies: array of string; AClient : TIdTCPConnection;
+      ACapaReply : TStrings; const AAuthString : String = 'AUTH';      {Do not Localize}
+      ACanAttemptIR: Boolean = True); overload;
     function ParseCapaReply(ACapaReply: TStrings; const AAuthString: String = 'AUTH') : TStrings; {$IFDEF HAS_DEPRECATED}deprecated{$IFDEF HAS_DEPRECATED_MSG} 'Use ParseCapaReplyToList()'{$ENDIF};{$ENDIF} {do not localize}
     procedure ParseCapaReplyToList(ACapaReply, ADestList: TStrings; const AAuthString: String = 'AUTH'); {do not localize}
     function FindSASL(const AServiceName: String): TIdSASL;
@@ -185,28 +187,71 @@ begin
     (PosInStrArray(AStr, ACont) = -1);
 end;
 
-function PerformSASLLogin(const ACmd, AHost, AProtocolName: String; ASASL: TIdSASL; AEncoder: TIdEncoder;
-  ADecoder: TIdDecoder; const AOkReplies, AContinueReplies: array of string;
-  AClient : TIdTCPConnection): Boolean;
+function PerformSASLLogin(const ACmd, AHost, AProtocolName: String; ASASL: TIdSASL;
+  AEncoder: TIdEncoder; ADecoder: TIdDecoder; const AOkReplies, AContinueReplies: array of string;
+  AClient : TIdTCPConnection; ACanAttemptIR: Boolean): Boolean;
 var
   S: String;
+  AuthStarted: Boolean;
 begin
   Result := False;
-  AClient.SendCmd(ACmd + ' ' + String(ASASL.ServiceName), []);//[334, 504]);
-  if CheckStrFail(AClient.LastCmdResult.Code, AOkReplies, AContinueReplies) then begin
-    Exit; // this mechanism is not supported
+  AuthStarted := False;
+
+  // TODO: handle ACanAttemptIR based on AProtocolName.
+  //
+  // SASL in SMTP and DICT supported Initial-Response from the beginning,
+  // as should any new SASL-enabled protocol moving forward.
+  //
+  // SASL in IMAP did not originally support Initial-Response, but it was
+  // added in RFC 4959 along with an explicit capability ('SASL-IR') to
+  // indicate when Initial-Response is supported. SASL in IMAP is currently
+  // handled by TIdIMAP4 directly, but should it be updated to use
+  // TIdSASLEntries.LoginSASL() in the future then it will set the
+  // ACanAttemptIR parameter accordingly.
+  //
+  // SASL in POP3 did not originally support Initial-Response. It was added
+  // in RFC 2449 along with the CAPA command. If a server supports the CAPA
+  // command then it *should* also support Initial-Response as well, however
+  // many POP3 servers support CAPA but do not support Initial-Response
+  // (which was formalized in RFC 5034). So, to handle that descrepency,
+  // TIdPOP3 currently sets ACanAttemptIR to false.  In the future, we could
+  // let it set ACanAttemptIR to True instead, and then if Initial-Response
+  // fails here for POP3 then re-attempt without Initial-Response before
+  // exiting with a failure.
+
+  if ACanAttemptIR then begin
+    if ASASL.TryStartAuthenticate(AHost, AProtocolName, S) then begin
+      AClient.SendCmd(ACmd + ' ' + String(ASASL.ServiceName) + ' ' + AEncoder.Encode(S), []);//[334, 504]);
+      if CheckStrFail(AClient.LastCmdResult.Code, AOkReplies, AContinueReplies) then begin
+        ASASL.FinishAuthenticate;
+        Exit; // this mechanism is not supported
+      end;
+      AuthStarted := True;
+    end;
+  end;
+  if not AuthStarted then begin
+    AClient.SendCmd(ACmd + ' ' + String(ASASL.ServiceName), []);//[334, 504]);
+    if CheckStrFail(AClient.LastCmdResult.Code, AOkReplies, AContinueReplies) then begin
+      Exit; // this mechanism is not supported
+    end;
   end;
   if (PosInStrArray(AClient.LastCmdResult.Code, AOkReplies) > -1) then begin
+    if AuthStarted then begin
+      ASASL.FinishAuthenticate;
+    end;
     Result := True;
     Exit; // we've authenticated successfully :)
   end;
-  S := ADecoder.DecodeString(TrimRight(AClient.LastCmdResult.Text.Text));
-  S := ASASL.StartAuthenticate(S, AHost, AProtocolName);
-  AClient.SendCmd(AEncoder.Encode(S));
-  if CheckStrFail(AClient.LastCmdResult.Code, AOkReplies, AContinueReplies) then
-  begin
-    ASASL.FinishAuthenticate;
-    Exit;
+  // must be a continue reply...
+  if not AuthStarted then begin
+    S := ADecoder.DecodeString(TrimRight(AClient.LastCmdResult.Text.Text));
+    S := ASASL.StartAuthenticate(S, AHost, AProtocolName);
+    AClient.SendCmd(AEncoder.Encode(S));
+    if CheckStrFail(AClient.LastCmdResult.Code, AOkReplies, AContinueReplies) then
+    begin
+      ASASL.FinishAuthenticate;
+      Exit;
+    end;
   end;
   while PosInStrArray(AClient.LastCmdResult.Code, AContinueReplies) > -1 do begin
     S := ADecoder.DecodeString(TrimRight(AClient.LastCmdResult.Text.Text));
@@ -241,7 +286,7 @@ begin
       Exit;
     end;
   end;
-  EIdSASLMechNeeded.Toss(RSSASLRequired);
+  raise EIdSASLMechNeeded.Create(RSSASLRequired);
 end;
 
 function TIdSASLEntries.GetItem(Index: Integer): TIdSASLListEntry;
@@ -288,7 +333,7 @@ type
 
 procedure TIdSASLEntries.LoginSASL(const ACmd, AHost, AProtocolName: String; const AOkReplies,
   AContinueReplies: array of string; AClient: TIdTCPConnection;
-  ACapaReply: TStrings; const AAuthString: String);
+  ACapaReply: TStrings; const AAuthString: String; ACanAttemptIR: Boolean);
 var
   i : Integer;
   LE : TIdEncoderMIME;
@@ -330,7 +375,7 @@ begin
     end;
 
     if LSASLList.Count = 0 then begin
-      EIdSASLNotSupported.Toss(RSSASLNotSupported);
+      raise EIdSASLNotSupported.Create(RSSASLNotSupported);
     end;
 
     //now do it
@@ -351,7 +396,7 @@ begin
             if not Assigned(LD) then begin
               LD := TIdDecoderMIME.Create(nil);
             end;
-            if PerformSASLLogin(ACmd, AHost, AProtocolName, LSASL, LE, LD, AOkReplies, AContinueReplies, AClient) then begin
+            if PerformSASLLogin(ACmd, AHost, AProtocolName, LSASL, LE, LD, AOkReplies, AContinueReplies, AClient, ACanAttemptIR) then begin
               Exit;
             end;
             if not Assigned(LError) then begin
@@ -361,7 +406,7 @@ begin
           if Assigned(LError) then begin
             LError.RaiseReplyError;
           end else begin
-            EIdSASLNotReady.Toss(RSSASLNotReady);
+            raise EIdSASLNotReady.Create(RSSASLNotReady);
           end;
         finally
           FreeAndNil(LError);
@@ -377,9 +422,9 @@ begin
   end;
 end;
 
-procedure TIdSASLEntries.LoginSASL(const ACmd, AHost, AProtocolName: String; const AServiceName: String;
+procedure TIdSASLEntries.LoginSASL(const ACmd, AHost, AProtocolName, AServiceName: String;
   const AOkReplies, AContinueReplies: array of string; AClient: TIdTCPConnection;
-  ACapaReply: TStrings; const AAuthString: String);
+  ACapaReply: TStrings; const AAuthString: String; ACanAttemptIR: Boolean);
 var
   LE : TIdEncoderMIME;
   LD : TIdDecoderMIME;
@@ -403,10 +448,10 @@ begin
   end;
 
   if LSASL = nil then begin
-    EIdSASLNotSupported.Toss(RSSASLNotSupported);
-  end
-  else if not LSASL.IsReadyToStart then begin
-    EIdSASLNotReady.Toss(RSSASLNotReady);
+    raise EIdSASLNotSupported.Create(RSSASLNotSupported);
+  end;
+  if not LSASL.IsReadyToStart then begin
+    raise EIdSASLNotReady.Create(RSSASLNotReady);
   end;
 
   //now do it
@@ -414,7 +459,7 @@ begin
   try
     LD := TIdDecoderMIME.Create(nil);
     try
-      if not PerformSASLLogin(ACmd, AHost, AProtocolName, LSASL, LE, LD, AOkReplies, AContinueReplies, AClient) then begin
+      if not PerformSASLLogin(ACmd, AHost, AProtocolName, LSASL, LE, LD, AOkReplies, AContinueReplies, AClient, ACanAttemptIR) then begin
         AClient.RaiseExceptionForLastCmdResult;
       end;
     finally
@@ -425,7 +470,9 @@ begin
   end;
 end;
 
+{$I IdDeprecatedImplBugOff.inc}
 function TIdSASLEntries.ParseCapaReply(ACapaReply: TStrings; const AAuthString: String): TStrings;
+{$I IdDeprecatedImplBugOn.inc}
 begin
   Result := TStringList.Create;
   try
@@ -456,7 +503,7 @@ begin
       if TextStartsWith(s, AAuthString) and CharIsInSet(s, Length(AAuthString)+1, VALIDDELIMS) then
       begin
         s := UpperCase(Copy(s, Length(AAuthString)+1, MaxInt));
-        s := StringReplace(s, '=', ' ', [rfReplaceAll]);    {Do not Localize}
+        s := ReplaceAll(s, '=', ' ');    {Do not Localize}
         while Length(s) > 0 do
         begin
           LEntry := Fetch(s, ' ');    {Do not Localize}

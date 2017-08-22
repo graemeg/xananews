@@ -1,8 +1,10 @@
 unit IdCTypes;
 
+// TODO: deprecate this unit and move the declarations to the IdGlobal unit.
+
 interface
 
-{$i IdCompilerDefines.inc}
+{$I IdCompilerDefines.inc}
 
 {This unit should not contain ANY program code.  It is meant to be extremely 
 thin.  The idea is that the unit will contain type mappings that used for headers
@@ -25,6 +27,7 @@ types while also making this header compile with Borland Delphi.
 }
 type 
   {$IFDEF FPC}
+
   TIdC_LONG  = cLong;
   PIdC_LONG  = pcLong;
   TIdC_ULONG = cuLong;
@@ -81,7 +84,9 @@ type
 
   //this is necessary because Borland still doesn't support QWord
   // (unsigned 64bit type).
+  {$IFNDEF HAS_QWord}
   qword = {$IFDEF HAS_UInt64}UInt64{$ELSE}Int64{$ENDIF};
+  {$ENDIF}
 
   TIdC_LONG  = LongInt;
   PIdC_LONG  = ^TIdC_LONG;
@@ -89,50 +94,50 @@ type
   PIdC_ULONG = ^TIdC_ULONG;
 
   TIdC_LONGLONG = Int64;
-  PIdC_LONGLONG = ^TIdC_ULONGLONG;
-  TIdC_ULONGLONG = qword;
+  PIdC_LONGLONG = ^TIdC_LONGLONG;
+  TIdC_ULONGLONG = QWord;
   PIdC_ULONGLONG = ^TIdC_ULONGLONG;
 
-  TIdC_SHORT = smallint;
+  TIdC_SHORT = Smallint;
   PIdC_SHORT = ^TIdC_SHORT;
   TIdC_USHORT = Word;
   PIdC_USHORT = ^TIdC_USHORT;
 
-  TIdC_INT   = LongInt;
+  TIdC_INT   = Integer;
   PIdC_INT   = ^TIdC_INT;
-  TIdC_UINT  = LongWord;
+  TIdC_UINT  = Cardinal;
   PIdC_UINT  = ^TIdC_UINT;
 
-  TIdC_SIGNED = LongInt;
+  TIdC_SIGNED = Integer;
   PIdC_SIGNED = ^TIdC_SIGNED;
-  TIdC_UNSIGNED = LongWord;
+  TIdC_UNSIGNED = Cardinal;
   PIdC_UNSIGNED = ^TIdC_UNSIGNED;
 
-  TIdC_INT8 = shortint;
+  TIdC_INT8 = Shortint;
   PIdC_INT8  = ^TIdC_INT8;
-  TIdC_UINT8 = byte;
+  TIdC_UINT8 = Byte;
   PIdC_UINT8 = ^TIdC_UINT8;
 
-  TIdC_INT16 = smallint;
+  TIdC_INT16 = Smallint;
   PIdC_INT16 = ^TIdC_INT16;
-  TIdC_UINT16 = word;
+  TIdC_UINT16 = Word;
   PIdC_UINT16 = ^TIdC_UINT16;
 
-  TIdC_INT32 = longint;
+  TIdC_INT32 = Integer;
   PIdC_INT32 = ^TIdC_INT32;
-  TIdC_UINT32 = longword;
+  TIdC_UINT32 = Cardinal;
   PIdC_UINT32 = ^TIdC_UINT32;
 
   TIdC_INT64 = Int64;
   PIdC_INT64 = ^TIdC_INT64;
-  TIdC_UINT64 = qword;
+  TIdC_UINT64 = QWord;
   PIdC_UINT64 = ^TIdC_UINT64;
 
-  TIdC_FLOAT = single;
+  TIdC_FLOAT = Single;
   PIdC_FLOAT = ^TIdC_FLOAT;
-  TIdC_DOUBLE = double;
+  TIdC_DOUBLE = Double;
   PIdC_DOUBLE = ^TIdC_DOUBLE;
-  TIdC_LONGDOUBLE = extended;
+  TIdC_LONGDOUBLE = Extended;
   PIdC_LONGDOUBLE = ^TIdC_LONGDOUBLE;
 
   //Some headers require this in D5 or earlier.

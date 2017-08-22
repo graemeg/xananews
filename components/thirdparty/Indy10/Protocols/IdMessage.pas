@@ -459,7 +459,7 @@ type
     property MsgId: string read FMsgId write SetMsgID;
     property Headers: TIdHeaderList read FHeaders write SetHeaders;
     property MessageParts: TIdMessageParts read FMessageParts;
-    property MIMEBoundary: TIdMIMEBoundary read FMIMEBoundary write FMIMEBoundary;
+    property MIMEBoundary: TIdMIMEBoundary read FMIMEBoundary;
     property UID: String read FUID write FUID;
     property IsMsgSinglePartMime: Boolean read FIsMsgSinglePartMime write FIsMsgSinglePartMime;
   published
@@ -734,7 +734,7 @@ begin
   end;
   for LN := 0 to MessageParts.Count-1 do begin
     {Change any encodings we don't know to base64 for MIME and UUE for PlainText...}
-    LEncoding := MessageParts[LN].ContentTransfer;
+    LEncoding := ExtractHeaderItem(MessageParts[LN].ContentTransfer);
     if LEncoding <> '' then begin
       if Encoding = meMIME then begin
         if PosInStrArray(LEncoding, ['7bit', '8bit', 'binary', 'base64', 'quoted-printable', 'binhex40'], False) = -1 then begin {do not localize}
@@ -753,7 +753,7 @@ begin
   Change it to a supported combination...}
   if MessageParts.Count > 0 then begin
     if (ContentTransferEncoding <> '') and
-     (PosInStrArray(ContentTransferEncoding, ['7bit', '8bit', 'binary'], False) = -1) then begin {do not localize}
+     (not IsHeaderValue(ContentTransferEncoding, ['7bit', '8bit', 'binary'])) then begin {do not localize}
       ContentTransferEncoding := '';
     end;
   end;
@@ -791,6 +791,8 @@ begin
   InitializeISO(HeaderEncoding, ISOCharSet);
   FLastGeneratedHeaders.Assign(FHeaders);
   FIsMsgSinglePartMime := (Encoding = meMIME) and (MessageParts.Count = 1) and IsBodyEmpty;
+
+  // TODO: when STRING_IS_ANSI is defined, provide a way for the user to specify the AnsiString encoding for header values...
 
   {CC: If From has no Name field, use the Address field as the Name field by setting last param to True (for SA)...}
   FLastGeneratedHeaders.Values['From'] := EncodeAddress(FromList, HeaderEncoding, ISOCharSet, True); {do not localize}
@@ -880,31 +882,29 @@ begin
     FLastGeneratedHeaders.Values['Importance'] := '';    {do not localize}
   end;
 
-  {CC: SaveToFile sets FSavingToFile to True so that Message IDs
-  are saved when saving to file and omitted otherwise ...}
-  if not FSavingToFile then begin
-    FLastGeneratedHeaders.Values['Message-Id'] := '';
-  end else begin
-    FLastGeneratedHeaders.Values['Message-Id'] := MsgId;
-  end;
+  FLastGeneratedHeaders.Values['Message-ID'] := MsgId;
+
+  // RLebeau 9/12/2016: no longer auto-generating In-Reply-To based on
+  // Message-ID. Many email servers will reject an outgoing email that
+  // does not have a client-assigned Message-ID, and this method does not
+  // know whether this email is a new message or a response to another
+  // email when generating headers.  If the calling app wants to send
+  // In-Reply-To, it will just have to populate that header like any other.
+
+  FLastGeneratedHeaders.Values['In-Reply-To'] := InReplyTo; {do not localize}
 
   // Add extra headers created by UA - allows duplicates
   if (FExtraHeaders.Count > 0) then begin
     FLastGeneratedHeaders.AddStrings(FExtraHeaders);
   end;
 
-  {Generate In-Reply-To if at all possible to pacify SA.  Do this after FExtraHeaders
+  {TODO: Generate Message-ID if at all possible to pacify SA.  Do this after FExtraHeaders
    added in case there is a message-ID present as an extra header.}
-  if InReplyTo = '' then begin
-    if FLastGeneratedHeaders.Values['Message-ID'] <> '' then begin  {do not localize}
-      FLastGeneratedHeaders.Values['In-Reply-To'] := FLastGeneratedHeaders.Values['Message-ID'];  {do not localize}
-    end else begin
-      {CC: The following was originally present, but it so wrong that it has to go!
-      Values['In-Reply-To'] := Subject;   {do not localize}
-    end;
-  end else begin
-    FLastGeneratedHeaders.Values['In-Reply-To'] := InReplyTo; {do not localize}
+  {
+  if FLastGeneratedHeaders.Values['Message-ID'] = '' then begin //do not localize
+    FLastGeneratedHeaders.Values['Message-ID'] := '<' + IntToStr(Abs( CurrentProcessId )) + '.' + IntToStr(Abs( GetClockValue )) + '@' + GStack.HostName + '>'; //do not localize
   end;
+  }
 end;
 
 procedure TIdMessage.ProcessHeaders;
@@ -1201,7 +1201,7 @@ var
   LStream: TIdReadFileExclusiveStream;
 begin
   if not FileExists(AFilename) then begin
-    EIdMessageCannotLoad.Toss(IndyFormat(RSIdMessageCannotLoad, [AFilename]));
+    raise EIdMessageCannotLoad.CreateFmt(RSIdMessageCannotLoad, [AFilename]);
   end;
   LStream := TIdReadFileExclusiveStream.Create(AFilename); try
     LoadFromStream(LStream, AHeadersOnly);
@@ -1252,28 +1252,41 @@ begin
 end;
 
 procedure TIdMessage.DoInitializeISO(var VHeaderEncoding: Char; var VCharSet: string);
-Begin
+begin
   if Assigned(FOnInitializeISO) then begin
     FOnInitializeISO(VHeaderEncoding, VCharSet);//APR
   end;
-End;//
+end;
 
 procedure TIdMessage.InitializeISO(var VHeaderEncoding: Char; var VCharSet: String);
-Begin
-  VHeaderEncoding := 'B';     { base64 / quoted-printable }    {Do not Localize}
-  VCharSet := IdCharsetNames[IdGetDefaultCharSet];
-
-  // it's not clear when VHeaderEncoding should be Q not B.
+var
+  LDefCharset: TIdCharSet;
+begin
+  // it's not clear when FHeaderEncoding should be Q not B.
   // Comments welcome on atozedsoftware.indy.general
 
-  case IdGetDefaultCharSet of
-    idcs_ISO_8859_1 : VHeaderEncoding := 'Q';    {Do not Localize}
-    idcs_UNICODE_1_1 : VCharSet := IdCharsetNames[idcs_UTF_8];
-  else
-    // nothing
+  LDefCharset := IdGetDefaultCharSet;
+
+  case LDefCharset of
+    idcs_ISO_8859_1:
+      begin
+        VHeaderEncoding := 'Q';     { quoted-printable }    {Do not Localize}
+        VCharSet := IdCharsetNames[LDefCharset];
+      end;
+    idcs_UNICODE_1_1:
+      begin
+        VHeaderEncoding := 'B';     { base64 }    {Do not Localize}
+        VCharSet := IdCharsetNames[idcs_UTF_8];
+      end;
+    else
+      begin
+        VHeaderEncoding := 'B';     { base64 }    {Do not Localize}
+        VCharSet := IdCharsetNames[LDefCharset];
+      end;
   end;
+
   DoInitializeISO(VHeaderEncoding, VCharSet);
-End;
+end;
 
 procedure TIdMessage.DoCreateAttachment(const AHeaders: TStrings;
   var VAttachment: TIdAttachment);
@@ -1313,6 +1326,14 @@ procedure TIdMessage.SetInReplyTo(const AValue: String);
 begin
   FInReplyTo := EnsureMsgIDBrackets(AValue);
 end;
+
+// TODO: add this?
+{
+procedure TIdMessage.GetMsgID: String;
+begin
+  Result := EnsureMsgIDBrackets(FMsgId);
+end;
+}
 
 procedure TIdMessage.SetMsgID(const AValue: String);
 begin

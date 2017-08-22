@@ -342,10 +342,13 @@ type
     procedure ExtractToIdBuffer(ABuffer: TIdBuffer; AByteCount: Integer = -1; const AIndex : Integer = -1);
     procedure ExtractToBytes(var VBytes: TIdBytes; AByteCount: Integer = -1;
       AAppend: Boolean = True; AIndex : Integer = -1);
-    function ExtractToByte(const AIndex : Integer): Byte;
-    function ExtractToWord(const AIndex : Integer): Word;
-    function ExtractToLongWord(const AIndex : Integer): LongWord;
-    function ExtractToInt64(const AIndex : Integer): Int64;
+    function ExtractToUInt8(const AIndex : Integer): UInt8;
+    function ExtractToByte(const AIndex : Integer): UInt8; {$IFDEF HAS_DEPRECATED}deprecated{$IFDEF HAS_DEPRECATED_MSG} 'Use ExtractToUInt8()'{$ENDIF};{$ENDIF}
+    function ExtractToUInt16(const AIndex : Integer): UInt16;
+    function ExtractToWord(const AIndex : Integer): UInt16; {$IFDEF HAS_DEPRECATED}deprecated{$IFDEF HAS_DEPRECATED_MSG} 'Use ExtractToUInt16()'{$ENDIF};{$ENDIF}
+    function ExtractToUInt32(const AIndex : Integer): UInt32;
+    function ExtractToLongWord(const AIndex : Integer): UInt32; {$IFDEF HAS_DEPRECATED}deprecated{$IFDEF HAS_DEPRECATED_MSG} 'Use ExtractToUInt32()'{$ENDIF};{$ENDIF}
+    function ExtractToUInt64(const AIndex : Integer): TIdUInt64;
     procedure ExtractToIPv6(const AIndex : Integer; var VAddress: TIdIPv6Address);
     function IndexOf(const AByte: Byte; AStartPos: Integer = 0): Integer; overload;
     function IndexOf(const ABytes: TIdBytes; AStartPos: Integer = 0): Integer; overload;
@@ -370,10 +373,10 @@ type
     procedure Write(const ABytes: TIdBytes; const ADestIndex: Integer = -1); overload;
     procedure Write(const ABytes: TIdBytes; const ALength, AOffset : Integer; const ADestIndex: Integer = -1); overload;
     procedure Write(AStream: TStream; AByteCount: Integer = 0); overload;
-    procedure Write(const AValue: Int64; const ADestIndex: Integer = -1); overload;
-    procedure Write(const AValue: LongWord; const ADestIndex: Integer = -1); overload;
-    procedure Write(const AValue: Word; const ADestIndex: Integer = -1); overload;
-    procedure Write(const AValue: Byte; const ADestIndex: Integer = -1); overload;
+    procedure Write(const AValue: TIdUInt64; const ADestIndex: Integer = -1); overload;
+    procedure Write(const AValue: UInt32; const ADestIndex: Integer = -1); overload;
+    procedure Write(const AValue: UInt16; const ADestIndex: Integer = -1); overload;
+    procedure Write(const AValue: UInt8; const ADestIndex: Integer = -1); overload;
     procedure Write(const AValue: TIdIPv6Address; const ADestIndex: Integer = -1); overload;
     //
     //Kudzu: I have removed the Bytes property. Do not add it back - it allowed "internal" access
@@ -404,7 +407,7 @@ uses
 procedure TIdBuffer.CheckAdd(AByteCount : Integer; const AIndex : Integer);
 begin
   if (MaxInt - AByteCount) < (Size + AIndex) then begin
-    EIdTooMuchDataInBuffer.Toss(RSTooMuchDataInBuffer);
+    raise EIdTooMuchDataInBuffer.Create(RSTooMuchDataInBuffer);
   end;
 end;
 
@@ -414,7 +417,7 @@ begin
     VByteCount := Size+AIndex;
   end
   else if VByteCount > (Size+AIndex) then begin
-    EIdNotEnoughDataInBuffer.Toss(RSNotEnoughDataInBuffer + ' (' + IntToStr(VByteCount) + '/' + IntToStr(Size) + ')'); {do not localize}
+    raise EIdNotEnoughDataInBuffer.CreateFmt('%s (%d/%d)', [RSNotEnoughDataInBuffer, VByteCount, Size]); {do not localize}
   end;
 end;
 
@@ -463,9 +466,11 @@ begin
   TIdStack.DecUsage;
 end;
 
+{$I IdDeprecatedImplBugOff.inc}
 function TIdBuffer.Extract(AByteCount: Integer = -1; AByteEncoding: IIdTextEncoding = nil
   {$IFDEF STRING_IS_ANSI}; ADestEncoding: IIdTextEncoding = nil{$ENDIF}
   ): string;
+{$I IdDeprecatedImplBugOn.inc}
 {$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
 begin
   Result := ExtractToString(AByteCount, AByteEncoding{$IFDEF STRING_IS_ANSI}, ADestEncoding{$ENDIF});
@@ -668,10 +673,10 @@ begin
   // Dont search if it empty
   if Size > 0 then begin
     if Length(ABytes) = 0 then begin
-      EIdException.Toss(RSBufferMissingTerminator);
+      raise EIdException.Create(RSBufferMissingTerminator);
     end;
     if (AStartPos < 0) or (AStartPos >= Size) then begin
-      EIdException.Toss(RSBufferInvalidStartPos);
+      raise EIdException.Create(RSBufferInvalidStartPos);
     end;
     BytesLen := Length(ABytes);
     LEnd := FHeadIndex + Size;
@@ -702,7 +707,7 @@ begin
   // Dont search if it empty
   if Size > 0 then begin
     if (AStartPos < 0) or (AStartPos >= Size) then begin
-      EIdException.Toss(RSBufferInvalidStartPos);
+      raise EIdException.Create(RSBufferInvalidStartPos);
     end;
     for i := (FHeadIndex + AStartPos) to (FHeadIndex + Size - 1) do begin
       if FBytes[i] = AByte then begin
@@ -739,7 +744,7 @@ end;
 procedure TIdBuffer.SetCapacity(AValue: Integer);
 begin
   if AValue < Size then begin
-    EIdException.Toss('Capacity cannot be smaller than Size'); {do not localize}
+    raise EIdException.Create('Capacity cannot be smaller than Size'); {do not localize}
   end;
   CompactHead;
   SetLength(FBytes, AValue);
@@ -756,10 +761,10 @@ end;
 function TIdBuffer.PeekByte(AIndex: Integer): Byte;
 begin
   if Size = 0 then begin
-    EIdException.Toss('No bytes in buffer.'); {do not localize}
+    raise EIdException.Create('No bytes in buffer.'); {do not localize}
   end;
   if (AIndex < 0) or (AIndex >= Size) then begin
-    EIdException.Toss('Index out of bounds.'); {do not localize}
+    raise EIdException.Create('Index out of bounds.'); {do not localize}
   end;
   Result := FBytes[FHeadIndex + AIndex];
 end;
@@ -786,7 +791,7 @@ begin
   end;
 end;
 
-function TIdBuffer.ExtractToInt64(const AIndex: Integer): Int64;
+function TIdBuffer.ExtractToUInt64(const AIndex: Integer): TIdUInt64;
 var
   LIndex : Integer;
 begin
@@ -795,14 +800,14 @@ begin
   end else begin
     LIndex := AIndex;
   end;
-  Result := BytesToInt64(FBytes, LIndex);
+  Result := BytesToUInt64(FBytes, LIndex);
   Result := GStack.NetworkToHost(Result);
   if AIndex < 0 then begin
     Remove(8);
   end;
 end;
 
-function TIdBuffer.ExtractToLongWord(const AIndex: Integer): LongWord;
+function TIdBuffer.ExtractToUInt32(const AIndex: Integer): UInt32;
 var
   LIndex : Integer;
 begin
@@ -811,14 +816,22 @@ begin
   end else begin
     LIndex := AIndex;
   end;
-  Result := BytesToLongWord(FBytes, LIndex);
+  Result := BytesToUInt32(FBytes, LIndex);
   Result := GStack.NetworkToHost(Result);
   if AIndex < 0 then begin
     Remove(4);
   end;
 end;
 
-function TIdBuffer.ExtractToWord(const AIndex: Integer): Word;
+{$I IdDeprecatedImplBugOff.inc}
+function TIdBuffer.ExtractToLongWord(const AIndex: Integer): UInt32;
+{$I IdDeprecatedImplBugOn.inc}
+{$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
+begin
+  Result := ExtractToUInt32(AIndex);
+end;
+
+function TIdBuffer.ExtractToUInt16(const AIndex: Integer): UInt16;
 var
   LIndex : Integer;
 begin
@@ -827,14 +840,22 @@ begin
   end else begin
     LIndex := AIndex;
   end;
-  Result := BytesToWord(FBytes, LIndex);
+  Result := BytesToUInt16(FBytes, LIndex);
   Result := GStack.NetworkToHost(Result);
   if AIndex < 0 then begin
     Remove(2);
   end;
 end;
 
-function TIdBuffer.ExtractToByte(const AIndex: Integer): Byte;
+{$I IdDeprecatedImplBugOff.inc}
+function TIdBuffer.ExtractToWord(const AIndex: Integer): UInt16;
+{$I IdDeprecatedImplBugOn.inc}
+{$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
+begin
+  Result := ExtractToUInt16(AIndex);
+end;
+
+function TIdBuffer.ExtractToUInt8(const AIndex: Integer): UInt8;
 var
   LIndex : Integer;
 begin
@@ -849,9 +870,17 @@ begin
   end;
 end;
 
-procedure TIdBuffer.Write(const AValue: Word; const ADestIndex: Integer);
+{$I IdDeprecatedImplBugOff.inc}
+function TIdBuffer.ExtractToByte(const AIndex: Integer): UInt8;
+{$I IdDeprecatedImplBugOn.inc}
+{$IFDEF USE_CLASSINLINE}inline;{$ENDIF}
+begin
+  Result := ExtractToUInt8(AIndex);
+end;
+
+procedure TIdBuffer.Write(const AValue: UInt16; const ADestIndex: Integer);
 var
-  LVal : Word;
+  LVal : UInt16;
   LIndex : Integer;
 begin
   if ADestIndex < 0 then
@@ -863,13 +892,13 @@ begin
     LIndex := ADestIndex;
   end;
   LVal := GStack.HostToNetwork(AValue);
-  CopyTIdWord(LVal, FBytes, LIndex);
+  CopyTIdUInt16(LVal, FBytes, LIndex);
   if LIndex >= FSize then begin
     FSize := LIndex+2;
   end;
 end;
 
-procedure TIdBuffer.Write(const AValue: Byte; const ADestIndex: Integer);
+procedure TIdBuffer.Write(const AValue: UInt8; const ADestIndex: Integer);
 var
   LIndex : Integer;
 begin
@@ -907,43 +936,41 @@ begin
   end;
 end;
 
-procedure TIdBuffer.Write(const AValue: Int64; const ADestIndex: Integer);
+procedure TIdBuffer.Write(const AValue: TIdUInt64; const ADestIndex: Integer);
 var
-  LVal: Int64;
+  LVal: TIdUInt64;
   LIndex: Integer;
-  LSize: Integer;
 begin
-  LSize := SizeOf(Int64);
   if ADestIndex < 0 then
   begin
     LIndex := FHeadIndex + Size;
-    SetLength(FBytes, LIndex + LSize);
+    SetLength(FBytes, LIndex + 8);
   end else
   begin
     LIndex := ADestIndex;
   end;
   LVal := GStack.HostToNetwork(AValue);
-  CopyTIdInt64(LVal, FBytes, LIndex);
+  CopyTIdUInt64(LVal, FBytes, LIndex);
   if LIndex >= FSize then begin
-    FSize := LIndex + LSize;
+    FSize := LIndex + 8;
   end;
 end;
 
-procedure TIdBuffer.Write(const AValue: LongWord; const ADestIndex: Integer);
+procedure TIdBuffer.Write(const AValue: UInt32; const ADestIndex: Integer);
 var
-  LVal : LongWord;
+  LVal : UInt32;
   LIndex : Integer;
 begin
   if ADestIndex < 0 then
   begin
     LIndex := FHeadIndex + Size;
-    SetLength(FBytes, LIndex + SizeOf(LongWord));
+    SetLength(FBytes, LIndex + 4);
   end else
   begin
     LIndex := ADestIndex;
   end;
   LVal := GStack.HostToNetwork(AValue);
-  CopyTIdLongWord(LVal, FBytes, LIndex);
+  CopyTIdUInt32(LVal, FBytes, LIndex);
   if LIndex >= FSize then begin
     FSize := LIndex+4;
   end;

@@ -221,13 +221,14 @@ type
   TIdHTTPHeadersBlockedEvent = procedure(AContext: TIdContext; AHeaders: TIdHeaderList; var VResponseNo: Integer; var VResponseText, VContentText: String) of object;
   TIdHTTPHeaderExpectationsEvent = procedure(AContext: TIdContext; const AExpectations: String; var VContinueProcessing: Boolean) of object;
   TIdHTTPQuerySSLPortEvent = procedure(APort: TIdPort; var VUseSSL: Boolean) of object;
-  
+
   //objects
   EIdHTTPServerError = class(EIdException);
   EIdHTTPHeaderAlreadyWritten = class(EIdHTTPServerError);
   EIdHTTPErrorParsingCommand = class(EIdHTTPServerError);
   EIdHTTPUnsupportedAuthorisationScheme = class(EIdHTTPServerError);
   EIdHTTPCannotSwitchSessionStateWhenActive = class(EIdHTTPServerError);
+  EIdHTTPCannotSwitchSessionIDCookieNameWhenActive = class(EIdHTTPServerError);
 
   TIdHTTPRequestInfo = class(TIdRequestHeaderInfo)
   protected
@@ -437,6 +438,7 @@ type
     //
     FSessionCleanupThread: TIdThread;
     FMaximumHeaderLineCount: Integer;
+    FSessionIDCookieName: string;
     //
     procedure CreatePostStream(ASender: TIdContext; AHeaders: TIdHeaderList; var VPostStream: TStream); virtual;
     procedure DoneWithPostStream(ASender: TIdContext; ARequestInfo: TIdHTTPRequestInfo); virtual;
@@ -465,6 +467,8 @@ type
     procedure Shutdown; override;
     procedure SetSessionList(const AValue: TIdHTTPCustomSessionList);
     procedure SetSessionState(const Value: Boolean);
+    procedure SetSessionIDCookieName(const AValue: string);
+    function IsSessionIDCookieNameStored: Boolean;
     function GetSessionFromCookie(AContext:TIdContext;
      AHTTPrequest: TIdHTTPRequestInfo; AHTTPResponse: TIdHTTPResponseInfo;
      var VContinueProcessing: Boolean): TIdHTTPSession;
@@ -475,6 +479,9 @@ type
     property OnDoneWithPostStream: TIdHTTPDoneWithPostStream read FOnDoneWithPostStream write FOnDoneWithPostStream;
     property OnCommandGet: TIdHTTPCommandEvent read FOnCommandGet write FOnCommandGet;
   public
+    {$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
+    constructor Create(AOwner: TComponent); reintroduce; overload;
+    {$ENDIF}
     function CreateSession(AContext:TIdContext;
      HTTPResponse: TIdHTTPResponseInfo;
      HTTPRequest: TIdHTTPRequestInfo): TIdHTTPSession;
@@ -492,6 +499,7 @@ type
     property ServerSoftware: string read FServerSoftware write FServerSoftware;
     property SessionState: Boolean read FSessionState write SetSessionState default Id_TId_HTTPServer_SessionState;
     property SessionTimeOut: Integer read FSessionTimeOut write FSessionTimeOut default Id_TId_HTTPSessionTimeOut;
+    property SessionIDCookieName: string read FSessionIDCookieName write SetSessionIDCookieName stored IsSessionIDCookieNameStored;
     //
     property OnCommandError: TIdHTTPCommandError read FOnCommandError write FOnCommandError;
     property OnCommandOther: TIdHTTPCommandEvent read FOnCommandOther write FOnCommandOther;
@@ -599,10 +607,10 @@ end;
 }
 
 
-function GetRandomString(NumChar: Cardinal): string;
+function GetRandomString(NumChar: UInt32): string;
 const
   CharMap = 'qwertzuiopasdfghjklyxcvbnmQWERTZUIOPASDFGHJKLYXCVBNM1234567890';    {Do not Localize}
-  MaxChar: Cardinal = Length(CharMap) - 1;
+  MaxChar: UInt32 = Length(CharMap) - 1;
 var
   i: integer;
   {$IFDEF STRING_IS_IMMUTABLE}
@@ -894,6 +902,7 @@ begin
   FAutoStartSession := Id_TId_HTTPAutoStartSession;
   FKeepAlive := Id_TId_HTTPServer_KeepAlive;
   FMaximumHeaderLineCount := Id_TId_HTTPMaximumHeaderLineCount;
+  FSessionIDCookieName := GSessionIDCookie;
 end;
 
 // under ARC, all weak references to a freed object get nil'ed automatically
@@ -958,7 +967,7 @@ begin
       end;
 
       LCookie := HTTPResponse.Cookies.Add;
-      LCookie.CookieName := GSessionIDCookie;
+      LCookie.CookieName := SessionIDCookieName;
       LCookie.Value := Result.SessionID;
       LCookie.Path := '/';    {Do not Localize}
 
@@ -969,6 +978,13 @@ begin
     end;
   end;
 end;
+
+{$IFDEF WORKAROUND_INLINE_CONSTRUCTORS}
+constructor TIdCustomHTTPServer.Create(AOwner: TComponent);
+begin
+  inherited Create(AOwner);
+end;
+{$ENDIF}
 
 destructor TIdCustomHTTPServer.Destroy;
 var
@@ -1215,7 +1231,14 @@ var
         LRequestInfo.PostStream.Position := 0;
       end;
     end
-    else begin
+    // If HTTP Pipelining is used by the client, bytes may exist that belong to
+    // the NEXT request!  We need to look at the CURRENT request and only check
+    // for misreported body data if a body is actually expected.  GET and HEAD
+    // requests do not have bodies...
+    else if LRequestInfo.CommandType in [hcPOST, hcPUT] then
+    begin
+      // TODO: need to handle the case where the ContentType is 'multipart/...',
+      // which is self-terminating and does not strictly require the above headers...
       if LIOHandler.InputBufferIsEmpty then begin
         LIOHandler.CheckForDataOnSource(1);
       end;
@@ -1275,6 +1298,8 @@ begin
             // Retrieve the HTTP header
             LRequestInfo.RawHeaders.Clear;
             LConn.IOHandler.Capture(LRequestInfo.RawHeaders, '', False);    {Do not Localize}
+            // TODO: call HeadersCanContinue() here before the headers are parsed,
+            // in case the user needs to overwrite any values...
             LRequestInfo.ProcessHeaders;
 
             // HTTP 1.1 connections are keep-alive by default
@@ -1290,9 +1315,19 @@ begin
             {TODO Check for 1.0 only at this point}
             LCmd := UpperCase(Fetch(LInputLine, ' '));    {Do not Localize}
 
-            s := LRequestInfo.MethodOverride;
-            if s <> '' then begin
-              LCmd := UpperCase(s);
+            // check for overrides when LCmd is 'POST'...
+            if TextIsSame(LCmd, 'POST') then begin
+              s := LRequestInfo.MethodOverride; // Google/GData
+              if s = '' then begin
+                // TODO: make RequestInfo properties for these
+                s := LRequestInfo.RawHeaders.Values['X-HTTP-Method']; // Microsoft      {do not localize}
+                if s = '' then begin
+                  s := LRequestInfo.RawHeaders.Values['X-METHOD-OVERRIDE']; // IBM      {do not localize}
+                end;
+              end;
+              if s <> '' then begin
+                LCmd := UpperCase(s);
+              end;
             end;
 
             LRequestInfo.FRawHTTPCommand := LRawHTTPCommand;
@@ -1377,9 +1412,11 @@ begin
             // Parse Params
             if ParseParams then begin
               if TextIsSame(LContentType, ContentTypeFormUrlencoded) then begin
+                // TODO: decode the data using the algorithm outlined in HTML5 section 4.10.22.6 "URL-encoded form data"
                 LRequestInfo.DecodeAndSetParams(LRequestInfo.UnparsedParams);
               end else begin
                 // Parse only query params when content type is not 'application/x-www-form-urlencoded'    {Do not Localize}
+                // TODO: decode the data using a uer-specified charset, defaulting to UTF-8
                 LRequestInfo.DecodeAndSetParams(LRequestInfo.QueryParams);
               end;
             end;
@@ -1511,7 +1548,7 @@ begin
   if SessionState then
   begin
     LSessionList := FSessionList;
-    LIndex := AHTTPRequest.Cookies.GetCookieIndex(GSessionIDCookie);
+    LIndex := AHTTPRequest.Cookies.GetCookieIndex(SessionIDCookieName);
     while LIndex >= 0 do
     begin
       LSessionID := AHTTPRequest.Cookies[LIndex].Value;
@@ -1525,7 +1562,7 @@ begin
       if not VContinueProcessing then begin
         Break;
       end;
-      LIndex := AHTTPRequest.Cookies.GetCookieIndex(GSessionIDCookie, LIndex+1);
+      LIndex := AHTTPRequest.Cookies.GetCookieIndex(SessionIDCookieName, LIndex+1);
     end;    { while }
     // check if a session was returned. If not and if AutoStartSession is set to
     // true, Create a new session
@@ -1608,7 +1645,7 @@ begin
     // gets called by Notification() if the sessionList is freed while
     // the server is still Active?
     if Active then begin
-      EIdException.Toss(RSHTTPCannotSwitchSessionListWhenActive);
+      raise EIdException.Create(RSHTTPCannotSwitchSessionListWhenActive);
     end;
 
     // under ARC, all weak references to a freed object get nil'ed automatically
@@ -1651,6 +1688,27 @@ begin
     raise EIdHTTPCannotSwitchSessionStateWhenActive.Create(RSHTTPCannotSwitchSessionStateWhenActive);
   end;
   FSessionState := Value;
+end;
+
+procedure TIdCustomHTTPServer.SetSessionIDCookieName(const AValue: string);
+var
+  LCookieName: string;
+begin
+  // ToDo: Add thread multiwrite protection here
+  if (not (IsDesignTime or IsLoading)) and Active then begin
+    raise EIdHTTPCannotSwitchSessionIDCookieNameWhenActive.Create(RSHTTPCannotSwitchSessionIDCookieNameWhenActive);
+  end;
+  LCookieName := Trim(AValue);
+  if LCookieName = '' then begin
+    // TODO: move this into IdResourceStringsProtocols.pas
+    raise EIdException.Create('Invalid cookie name'); {do not localize}
+  end;
+  FSessionIDCookieName := AValue;
+end;
+
+function TIdCustomHTTPServer.IsSessionIDCookieNameStored: Boolean;
+begin
+  Result := not TextIsSame(SessionIDCookieName, GSessionIDCookie);
 end;
 
 procedure TIdCustomHTTPServer.CreatePostStream(ASender: TIdContext;
@@ -1783,6 +1841,10 @@ begin
   Params.BeginUpdate;
   try
     Params.Clear;
+    // TODO: provide an event or property that lets the user specify
+    // which charset to use for decoding query string parameters.  We
+    // should not be using the 'Content-Type' charset for that.  For
+    // 'application/x-www-form-urlencoded' forms, we should be, though...
     LEncoding := CharsetToEncoding(CharSet);
     i := 1;
     while i <= Length(AValue) do
@@ -1794,7 +1856,7 @@ begin
       end;
       s := Copy(AValue, i, j-i);
       // See RFC 1866 section 8.2.1. TP
-      s := StringReplace(s, '+', ' ', [rfReplaceAll]);  {do not localize}
+      s := ReplaceAll(s, '+', ' ');  {do not localize}
       Params.Add(TIdURI.URLDecode(s, LEncoding));
       i := j + 1;
     end;
@@ -1824,13 +1886,13 @@ var
   i: Integer;
   LCookie: TIdCookie;
 begin
-  i := Cookies.GetCookieIndex(GSessionIDCookie);
+  i := Cookies.GetCookieIndex(HTTPServer.SessionIDCookieName);
   while i > -1 do begin
     Cookies.Delete(i);
-    i := Cookies.GetCookieIndex(GSessionIDCookie, i);
+    i := Cookies.GetCookieIndex(HTTPServer.SessionIDCookieName, i);
   end;
   LCookie := Cookies.Add;
-  LCookie.CookieName := GSessionIDCookie;
+  LCookie.CookieName := HTTPServer.SessionIDCookieName;
   LCookie.Expires := Date-7;
   FreeAndNil(FSession);
 end;
@@ -1884,6 +1946,7 @@ end;
 procedure TIdHTTPResponseInfo.SetCloseConnection(const Value: Boolean);
 begin
   Connection := iif(Value, 'close', 'keep-alive');    {Do not Localize}
+  // TODO: include a 'Keep-Alive' header to specify a timeout value
   FCloseConnection := Value;
 end;
 
@@ -1906,7 +1969,7 @@ begin
   end;
   if AuthRealm <> '' then begin
     FRawHeaders.Values['WWW-Authenticate'] := 'Basic realm="' + AuthRealm + '"';    {Do not Localize}
-  end;
+    end;
 end;
 
 procedure TIdHTTPResponseInfo.SetResponseNo(const AValue: Integer);
@@ -2026,18 +2089,55 @@ begin
   if not HeaderHasBeenWritten then begin
     WriteHeader;
   end;
-  // Always check ContentText first
-  if ContentText <> '' then begin
-    FConnection.IOHandler.Write(ContentText, CharsetToEncoding(CharSet));
-  end
-  else if Assigned(ContentStream) then begin
-    ContentStream.Position := 0;
-    FConnection.IOHandler.Write(ContentStream);
-  end
-  else begin
-    FConnection.IOHandler.WriteLn('<HTML><BODY><B>' + IntToStr(ResponseNo) + ' ' + ResponseText    {Do not Localize}
-     + '</B></BODY></HTML>', CharsetToEncoding(CharSet));    {Do not Localize}
+
+  // RLebeau 11/23/2014: Per RFC 2616 Section 4.3:
+  //
+  // For response messages, whether or not a message-body is included with
+  // a message is dependent on both the request method and the response
+  // status code (section 6.1.1). All responses to the HEAD request method
+  // MUST NOT include a message-body, even though the presence of entity-
+  // header fields might lead one to believe they do. All 1xx
+  // (informational), 204 (no content), and 304 (not modified) responses
+  // MUST NOT include a message-body. All other responses do include a
+  // message-body, although it MAY be of zero length.
+
+  if not (
+    (FRequestInfo.CommandType = hcHEAD) or
+    ((ResponseNo div 100) = 1) or   // informational
+    (ResponseNo = 204) or           // no content
+    (ResponseNo = 304)              // not modified
+    ) then
+  begin
+    // Always check ContentText first
+    if ContentText <> '' then begin
+      FConnection.IOHandler.Write(ContentText, CharsetToEncoding(CharSet));
+    end
+    else if Assigned(ContentStream) then begin
+      // If ContentLength has been assigned then do not send the entire file,
+      // in case it grew after WriteHeader() generated the 'Content-Length'
+      // header.  We cannot exceed the byte count that we told the client
+      // we will be sending...
+
+      // TODO: apply this rule to ContentText as well...
+
+      // TODO: stop resetting Position to 0, send from the current Position...
+
+      if HasContentLength then begin
+        if ContentLength > 0 then begin
+          ContentStream.Position := 0;
+          FConnection.IOHandler.Write(ContentStream, ContentLength, False);
+        end;
+      end else begin
+        ContentStream.Position := 0;
+        FConnection.IOHandler.Write(ContentStream);
+      end;
+    end
+    else begin
+      FConnection.IOHandler.Write('<HTML><BODY><B>' + IntToStr(ResponseNo) + ' ' + ResponseText    {Do not Localize}
+       + '</B></BODY></HTML>', CharsetToEncoding(CharSet));    {Do not Localize}
+    end;
   end;
+
   // Clear All - This signifies that WriteConent has been called.
   ContentText := '';    {Do not Localize}
   ReleaseContentStream;
@@ -2049,7 +2149,7 @@ var
   LBufferingStarted: Boolean;
 begin
   if HeaderHasBeenWritten then begin
-    EIdHTTPHeaderAlreadyWritten.Toss(RSHTTPHeaderAlreadyWritten);
+    raise EIdHTTPHeaderAlreadyWritten.Create(RSHTTPHeaderAlreadyWritten);
   end;
   FHeaderHasBeenWritten := True;
 
@@ -2089,12 +2189,24 @@ begin
   if (ContentLength = -1) and
     ((TransferEncoding = '') or TextIsSame(TransferEncoding, 'identity')) then {do not localize}
   begin
-    // Always check ContentText first
-    if ContentText <> '' then begin
-      ContentLength := CharsetToEncoding(CharSet).GetByteCount(ContentText);
-    end
-    else if Assigned(ContentStream) then begin
-      ContentLength := ContentStream.Size;
+    if not (
+      (FRequestInfo.CommandType = hcHEAD) or
+      ((ResponseNo div 100) = 1) or   // informational
+      (ResponseNo = 204) or           // no content
+      (ResponseNo = 304)              // not modified
+      ) then
+    begin
+      // Always check ContentText first
+      if ContentText <> '' then begin
+        ContentLength := CharsetToEncoding(CharSet).GetByteCount(ContentText);
+      end
+      else if Assigned(ContentStream) then begin
+        ContentLength := ContentStream.Size;
+      end else begin
+        ContentType := 'text/html; charset=utf-8';    {Do not Localize}
+        ContentText := '<HTML><BODY><B>' + IntToStr(ResponseNo) + ' ' + ResponseText + '</B></BODY></HTML>';    {Do not Localize}
+        ContentLength := CharsetToEncoding(CharSet).GetByteCount(ContentText);
+      end;
     end else begin
       ContentLength := 0;
     end;
@@ -2112,6 +2224,7 @@ begin
   end;
   try
     // Write HTTP status response
+    // TODO: if the client sent an HTTP/1.0 request, send an HTTP/1.0 response?
     FConnection.IOHandler.WriteLn('HTTP/1.1 ' + IntToStr(ResponseNo) + ' ' + ResponseText);    {Do not Localize}
     // Write headers
     FConnection.IOHandler.Write(RawHeaders);
@@ -2323,7 +2436,6 @@ begin
   // under DotNet. How low do you want to go?
   IndySetThreadPriority(Self, tpLowest);
   FSessionList := SessionList;
-  FreeOnTerminate := False;
 end;
 
 procedure TIdHTTPSessionCleanerThread.Run;

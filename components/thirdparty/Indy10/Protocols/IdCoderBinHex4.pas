@@ -264,11 +264,11 @@ begin
 
   //did we get the initial colon?
   if LCopyToPos = -1 then begin
-    EIdMissingColon.Toss('Block passed to TIdDecoderBinHex4.Decode is missing a starting colon :');    {Do not Localize}
+    raise EIdMissingColon.Create('Block passed to TIdDecoderBinHex4.Decode is missing a starting colon :');    {Do not Localize}
   end;
   //did we get the terminating colon?
   if LCopyToPos <> -2 then begin
-    EIdMissingColon.Toss('Block passed to TIdDecoderBinHex4.Decode is missing a terminating colon :'); {Do not Localize}
+    raise EIdMissingColon.Create('Block passed to TIdDecoderBinHex4.Decode is missing a terminating colon :'); {Do not Localize}
   end;
 
   if Length(LIn) = 0 then begin
@@ -277,8 +277,8 @@ begin
 
   LOut := InternalDecode(LIn);
 
-  //Now expand the run-length encoding.
-  //$90 is the marker, encoding is made for 3->255 characters
+  // Now expand the run-length encoding.
+  // $90 is the marker, encoding is made for 3->255 characters
   // 00 11 22 33 44 55 66 77   -> 00 11 22 33 44 55 66 77
   // 11 22 22 22 22 22 22 33   -> 11 22 90 06 33
   // 11 22 90 33 44            -> 11 22 90 00 33 44
@@ -406,7 +406,7 @@ var
   LRemainder: integer;
 begin
   if FFileName = '' then begin
-    EIdMissingFileName.Toss('Data passed to TIdEncoderBinHex4.Encode is missing a filename');    {Do not Localize}
+    raise EIdMissingFileName.Create('Data passed to TIdEncoderBinHex4.Encode is missing a filename');    {Do not Localize}
   end;
   //Read in the attachment first...
   LSSize := IndyLength(ASrcStream, ABytes);
@@ -437,8 +437,8 @@ begin
     LOut[LOffset+LN] := 32;                   //Use spaces for Type & Creator
   end;
   Inc(LOffset, 8);
-  LOut[LOffset] := 0;                         //Flags
-  LOut[LOffset] := 0;                         //Flags
+  LOut[LOffset]   := 0;                       //Flags
+  LOut[LOffset+1] := 0;                       //Flags
   Inc(LOffset, 2);
   LTemp := LSSize;
   LOut[LOffset] := LTemp mod 256;             //Length of data fork
@@ -449,7 +449,7 @@ begin
   LTemp := LTemp div 256;
   LOut[LOffset+3] := LTemp;                   //Length of data fork
   Inc(LOffset, 4);
-  LOut[LOffset] := 0;                         //Length of resource fork
+  LOut[LOffset]   := 0;                       //Length of resource fork
   LOut[LOffset+1] := 0;                       //Length of resource fork
   LOut[LOffset+2] := 0;                       //Length of resource fork
   LOut[LOffset+3] := 0;                       //Length of resource fork
@@ -475,11 +475,12 @@ begin
     ExpandBytes(LOut, LOffset, 3-LSSize);
   end;
   //We now need to 3to4 encode LOut...
+  //TODO: compress repetitive bytes to "<byte> $90 <run length>"
   LOut := InternalEncode(LOut);
   //Need to add a colon at the start & end of the block...
   InsertByte(LOut, 58, 0);
   AppendByte(LOut, 58);
-  //Expand any 90 to 90 00
+  //Expand any bare $90 to $90 $00
   LN := 0;
   while LN < Length(LOut) do begin
     if LOut[LN] = $90 then begin

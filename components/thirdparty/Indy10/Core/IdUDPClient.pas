@@ -78,6 +78,14 @@ uses
   IdSocketHandle,
   IdCustomTransparentProxy;
 
+(*$HPPEMIT '#if defined(_VCL_ALIAS_RECORDS)' *)
+(*$HPPEMIT '#if !defined(UNICODE)' *)
+(*$HPPEMIT '#pragma alias "@Idudpclient@TIdUDPClient@SetPortA$qqrxus"="@Idudpclient@TIdUDPClient@SetPort$qqrxus"' *)
+(*$HPPEMIT '#else' *)
+(*$HPPEMIT '#pragma alias "@Idudpclient@TIdUDPClient@SetPortW$qqrxus"="@Idudpclient@TIdUDPClient@SetPort$qqrxus"' *)
+(*$HPPEMIT '#endif' *)
+(*$HPPEMIT '#endif' *)
+
 type
   EIdMustUseOpenProxy = class(EIdUDPException);
 
@@ -188,7 +196,7 @@ begin
   end else begin
     LIP := Host;
   end;
-  Binding.SetPeer(LIP, Port);
+  Binding.SetPeer(LIP, Port, FIPVersion);
   Binding.Connect;
 
   DoStatus(hsConnected, [Host]);
@@ -243,11 +251,7 @@ begin
   end;
   if not FBinding.HandleAllocated then begin
     FBinding.IPVersion := FIPVersion;
-    {$IFDEF LINUX}
-    FBinding.AllocateSocket(LongInt(Id_SOCK_DGRAM));
-    {$ELSE}
     FBinding.AllocateSocket(Id_SOCK_DGRAM);
-    {$ENDIF}
     FBinding.IP := FBoundIP;
     FBinding.Port := FBoundPort;
     FBinding.ClientPortMin := FBoundPortMin;

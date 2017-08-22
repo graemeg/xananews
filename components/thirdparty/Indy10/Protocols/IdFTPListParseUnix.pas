@@ -185,7 +185,12 @@ const
 
   // RLebeau 2/14/09: this forces C++Builder to link to this unit so
   // RegisterFTPListParser can be called correctly at program startup...
-  {$HPPEMIT LINKUNIT}
+
+  {$IFDEF HAS_DIRECTIVE_HPPEMIT_LINKUNIT}
+    {$HPPEMIT LINKUNIT}
+  {$ELSE}
+    {$HPPEMIT '#pragma link "IdFTPListParseUnix"'}
+  {$ENDIF}
 
 implementation
 
@@ -202,7 +207,7 @@ class function TIdFTPLPUnix.CheckListing(AListing: TStrings;
 var
   i : Integer;
 begin
-                                                          
+  // TODO: return True if ASysDescript starts with 'Unix'?
   Result := False;
   for i := 0 to AListing.Count - 1 do
   begin
@@ -381,8 +386,10 @@ var
   begin
     LB := AStrPart;
     Result := Fetch(LB);
-    Result := StringReplace(Result, '-', ' ', [rfReplaceAll]); {do not localize}
-    Result := StringReplace(Result, '/', ' ', [rfReplaceAll]); {do not localize}
+    //TODO: use StringsReplace() instead
+    //Result := StringsReplace(Result, ['-', '/'], [' ', ' ']); {do not localize}
+    Result := ReplaceAll(Result, '-', ' '); {do not localize}
+    Result := ReplaceAll(Result, '/', ' '); {do not localize}
     Result := Result + ' ' + LB; {do not localize}
   end;
 

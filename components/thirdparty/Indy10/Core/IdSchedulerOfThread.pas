@@ -137,6 +137,7 @@ uses
 type
   TIdYarnOfThread = class(TIdYarn)
   protected
+    // TODO: should these be [Weak] on ARC systems?
     FScheduler: TIdScheduler;
     FThread: TIdThreadWithTask;
   public
@@ -194,7 +195,7 @@ function TIdSchedulerOfThread.NewThread: TIdThreadWithTask;
 begin
   Assert(FThreadClass<>nil);
   if (FMaxThreads <> 0) and (not ActiveYarns.IsCountLessThan(FMaxThreads + 1)) then begin
-    EIdSchedulerMaxThreadsExceeded.Toss(RSchedMaxThreadEx);
+    raise EIdSchedulerMaxThreadsExceeded.Create(RSchedMaxThreadEx);
   end;
   Result := FThreadClass.Create(nil, IndyFormat('%s User', [Name])); {do not localize}
   if ThreadPriority <> tpNormal then begin
@@ -205,7 +206,7 @@ end;
 function TIdSchedulerOfThread.NewYarn(AThread: TIdThreadWithTask): TIdYarnOfThread;
 begin
   if not Assigned(AThread) then begin
-    EIdException.Toss(RSThreadSchedulerThreadRequired);
+    raise EIdException.Create(RSThreadSchedulerThreadRequired);
   end;
   // Create Yarn
   Result := TIdYarnOfThread.Create(Self, AThread);
@@ -229,7 +230,7 @@ begin
     // RLebeau: free the yarn here as well. This allows TIdSchedulerOfThreadPool
     // to put the suspended thread, if present, back in the pool.
 
-    FreeAndNil(LYarn);
+    IdDisposeAndNil(LYarn);
   end;
 end;
 
