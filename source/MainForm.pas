@@ -6425,9 +6425,14 @@ var
 begin
   // Enable/Disable actions depending on state.
   if gAppTerminating then Exit;
-  SelectedAccount := GetFocusedAccount; hasSelAccount := Assigned(SelectedAccount);
-  SelectedGroup := GetFocusedGroup;     hasSelGroup   := Assigned(SelectedGroup);
-  SelectedFolder := GetFocusedArticleFolder; hasSelFolder := Assigned(SelectedFolder);
+  SelectedAccount := GetFocusedAccount;
+  hasSelAccount := Assigned(SelectedAccount);
+
+  SelectedGroup := GetFocusedGroup;
+  hasSelGroup   := Assigned(SelectedGroup);
+
+  SelectedFolder := GetFocusedArticleFolder;
+  hasSelFolder := Assigned(SelectedFolder);
 
   FocusedArticle := GetFocusedArticle;
   isNNTPArticle := FocusedArticle is TArticle;
