@@ -361,7 +361,7 @@
 						<VersionInfo Name="IncludeVerInfo">True</VersionInfo>
 						<VersionInfo Name="AutoIncBuild">False</VersionInfo>
 						<VersionInfo Name="MajorVer">1</VersionInfo>
-						<VersionInfo Name="MinorVer">20</VersionInfo>
+						<VersionInfo Name="MinorVer">21</VersionInfo>
 						<VersionInfo Name="Release">0</VersionInfo>
 						<VersionInfo Name="Build">0</VersionInfo>
 						<VersionInfo Name="Debug">False</VersionInfo>
@@ -375,13 +375,13 @@
 					<VersionInfoKeys>
 						<VersionInfoKeys Name="CompanyName">Colin Wilson</VersionInfoKeys>
 						<VersionInfoKeys Name="FileDescription">XanaNews News Reader</VersionInfoKeys>
-						<VersionInfoKeys Name="FileVersion">1.20.0.0</VersionInfoKeys>
+						<VersionInfoKeys Name="FileVersion">1.21.0.0</VersionInfoKeys>
 						<VersionInfoKeys Name="InternalName">XanaNews</VersionInfoKeys>
-						<VersionInfoKeys Name="LegalCopyright">Copyright (c) XanaNews 2015</VersionInfoKeys>
+						<VersionInfoKeys Name="LegalCopyright">Copyright (c) XanaNews 2017</VersionInfoKeys>
 						<VersionInfoKeys Name="LegalTrademarks">All Rights Reserved</VersionInfoKeys>
 						<VersionInfoKeys Name="OriginalFilename">NewsReader.exe</VersionInfoKeys>
 						<VersionInfoKeys Name="ProductName">XanaNews</VersionInfoKeys>
-						<VersionInfoKeys Name="ProductVersion">1.20</VersionInfoKeys>
+						<VersionInfoKeys Name="ProductVersion">1.21</VersionInfoKeys>
 						<VersionInfoKeys Name="Comments"/>
 					</VersionInfoKeys>
 					<Excluded_Packages>
