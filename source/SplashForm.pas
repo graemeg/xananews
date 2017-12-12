@@ -54,8 +54,10 @@ var
   st: string;
   bmp: TBitmap;
 begin
+  {$WARN SYMBOL_PLATFORM OFF}
   if DebugHook <> 0 then
     FormStyle := fsNormal;
+  {$WARN SYMBOL_PLATFORM ON}
 
   Jpeg := nil;
   strm := TResourceStream.Create(hInstance, 'SPLASH', 'JPEG');

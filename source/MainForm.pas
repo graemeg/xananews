@@ -6133,10 +6133,10 @@ var
   function VersionCompare(v1, v2: string): Boolean;
   var
     v1hh, v1h, v1l: string;
-    v2hh, v2h, v2l: string;
+    v2hh, v2h: string;
 
-    l1hh, l1h, l1l, l1ll: Integer;
-    l2hh, l2h, l2l, l2ll: Integer;
+    l1hh, l1h: Integer;
+    l2hh, l2h: Integer;
     i: Integer;
   begin
     if Pos('-', v1) > 0 then
@@ -6422,10 +6422,10 @@ var
   QIdx: Integer;
   prMin, prMax, prPos: Integer;
   sbText: string;
-  s: string;
 begin
   // Enable/Disable actions depending on state.
-  if gAppTerminating then Exit;
+  if gAppTerminating then
+    Exit;
   SelectedAccount := GetFocusedAccount;
   hasSelAccount := Assigned(SelectedAccount);
 
